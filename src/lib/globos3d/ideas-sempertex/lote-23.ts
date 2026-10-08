@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { fuenteIdea, type FuenteIdea } from "./fuentes";
 import { ocasionesDeEtiquetas } from "./index";
 import { armarEscena, SALA_INICIAL, type Escena, type NodoEscena, type Sala } from "../escena";
@@ -466,14 +466,15 @@ function fuente(slug: string): FuenteIdea {
 function idea(numero: number, slug: string, nombre: string, escena: () => Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
   const f = fuente(slug);
   if (f.numero !== numero) throw new Error(`«${slug}» es la #${f.numero}, no la #${numero}.`);
-  let hecha: Escena | null = null;
-  let hechos: ProductoDeIdea[] | null = null;
-  return {
-    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, nota,
-    get contenido() { return { tipo: "escena" as const, escena: (hecha ??= escena()) }; },
-    get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
-    get productos() { return (hechos ??= productosDe((hecha ??= escena()), publicados)); },
-  };
+  const laEscena = perezoso(escena);
+  return ideaPerezosa(
+    {
+      id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, clase: "escena", nota,
+      get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
+    },
+    () => ({ tipo: "escena", escena: laEscena() }),
+    () => productosDe(laEscena(), publicados),
+  );
 }
 
 const escenaDe = (...montajes: Array<Montaje | NodoEscena[]>) => (s: Sala): Escena => ({ sala: s, nodos: montajes.flatMap((m) => (Array.isArray(m) ? m : m.nodos)) });

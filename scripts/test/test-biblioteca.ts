@@ -28,7 +28,8 @@ import { IMPRESOS_TIENDA } from "../../src/lib/globos3d/impresos-catalogo";
 import { METALIZADOS_TIENDA } from "../../src/lib/globos3d/metalizados";
 import {
   BIBLIOTECA_FABRICA, bibliotecaCompleta, claveContenido, clasePieza, contenidoDeEscena, decoracionesPegadas, escenaDeConjunto, escenaDeItem, extraerConjunto,
-  filtrarBiblioteca, huellaItem, insertarEnEscena, itemDeEscena, itemDeNodo, miembrosDeConjunto, productosDe, resumenDe, validarItem,
+  filtrarBiblioteca, firmaDeClave, huellaItem, indexarEscena, insertarEnEscena, itemDeEscena, itemDeNodo, miembrosDeConjunto, productosDe, resumenDe, tipoDePieza,
+  unirBiblioteca, validarItem,
   type Conjunto, type ItemBiblioteca, type ResumenItem,
 } from "../../src/lib/globos3d/biblioteca";
 
@@ -186,6 +187,20 @@ assert.equal(columnas.length, 1);
 assert.deepEqual(columnas[0]!.apareceEn![0]!.nodoIds, ["columna-izq", "columna-der"]);
 assert.equal(columnas[0]!.nombre, "Columna");
 console.log(`OK índice: ${biblioteca.length} items (${[...porTipo].map(([t, n]) => `${n} ${t}`).join(", ")}) sin duplicados`);
+
+// Lo de fábrica es perezoso (ver `ideas-sempertex/tipos.ts`): su tipo se declara sin armarlo y debe casar con lo que
+// sale al armarlo; la pestaña Biblioteca junta por firmas (las calcula su motor fuera de la página) y debe dar lo mismo
+// que juntar por claves enteras.
+for (const i of BIBLIOTECA_FABRICA) if (i.contenido.tipo === "pieza") assert.equal(i.tipo, tipoDePieza(i.contenido.pieza), `${i.id}: el tipo declarado casa con su pieza`);
+for (const idea of IDEAS_SEMPERTEX) assert.equal(idea.clase, idea.contenido.tipo === "escena" ? "escena" : tipoDePieza(idea.contenido.pieza), `${idea.id}: su clase casa con su contenido`);
+{
+  const algunas = new Map(BIBLIOTECA_FABRICA.filter((i) => i.tipo === "escena").slice(0, 12).map((i) => [i.id, indexarEscena(i)]));
+  const porClave = unirBiblioteca(BIBLIOTECA_FABRICA, algunas);
+  const porFirma = unirBiblioteca(BIBLIOTECA_FABRICA, algunas, (i) => firmaDeClave(claveContenido(i.contenido)));
+  const resumen = (l: readonly ItemBiblioteca[]) => l.map((i) => `${i.id}|${i.nombre}|${i.ocasiones.join(",")}|${(i.apareceEn ?? []).map((o) => `${o.itemId}:${o.nodoIds.join("+")}`).join(";")}`);
+  assert.deepEqual(resumen(porFirma), resumen(porClave), "juntar por firmas da lo mismo que por claves");
+  console.log(`OK perezoso: ${BIBLIOTECA_FABRICA.length} items de fábrica con su tipo declarado; firmas = claves en ${porClave.length} items`);
+}
 
 // ----------------------------------------------------------------------------------------------------------
 // 5. Productos

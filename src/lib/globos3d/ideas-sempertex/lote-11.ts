@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { armarEscena, HUNDIMIENTO_SOBRE_CM, SALA_INICIAL, type Colocacion, type Escena, type NodoEscena, type Sala } from "../escena";
 import { armarPieza, type Pieza } from "../piezas";
 import { formatoPorId } from "../formatos";
@@ -262,11 +262,14 @@ function productosDe(contenido: IdeaDigitalizada["contenido"], publicados: reado
 const FOTO = (archivo: string) => `https://sempertex.com/cdn/shop/articles/${archivo}`;
 const ESCENA = (escena: Escena): IdeaDigitalizada["contenido"] => ({ tipo: "escena", escena });
 
-/** Base de una idea: id «idea:<slug>» y productos del 3D (con los publicados primero). */
-type Base = Omit<IdeaDigitalizada, "id" | "productos"> & { publicados?: Publicado[] };
+/**
+ * Base de una idea: id «idea:<slug>» y productos del 3D (con los publicados primero). Perezosa (ver `tipos.ts`): la
+ * escena se arma y los productos se cuentan la primera vez que se piden; todas las del lote son escenas.
+ */
+type Base = Omit<IdeaDigitalizada, "id" | "productos" | "contenido" | "clase"> & { contenido: () => IdeaDigitalizada["contenido"]; publicados?: Publicado[] };
 function idea(b: Base): IdeaDigitalizada {
-  const { publicados, ...resto } = b;
-  return { id: `idea:${b.slug}`, ...resto, productos: productosDe(b.contenido, publicados ?? []) };
+  const { publicados, contenido, ...resto } = b;
+  return ideaPerezosa({ id: `idea:${b.slug}`, ...resto, clase: "escena" }, contenido, (c) => productosDe(c, publicados ?? []));
 }
 
 // Impresos de la tienda que usa el lote.
@@ -290,7 +293,7 @@ const HALLOWEEN_NOCHE = "infinity-happy-halloween-noche-fashion-surtido";
  * el globo mide ~17 px). Va un 12 % más lejos que el frente de la mesa (1,55 px/cm): eslabones de ~11 cm (R-5) y
  * nudos de ~5,5 cm, 4,4 m × ~46 cm, de 1,28 a 1,75 m del piso (con la cámara a ~1,6 m). Los M&M son recortes.
  */
-const escena458 = ((): Escena => {
+const escena458 = (): Escena => {
   const malla: Pieza = { tipo: "pared_malla", formatoId: "R-5", infladoCm: 11, anchoCm: 440, altoCm: 46, patron: "un_color", colores: ["014"], union: { infladoCm: 5.5, codigo: "020" } };
   const NEGRO = "#2a1712", AMARILLO = "#f2d21a", ALTO = 78;
   // El faldón amarillo con las gotas negras que bajan: el borde de arriba ondula entre 64 cm (entre gotas) y 26 cm (la
@@ -330,7 +333,7 @@ const escena458 = ((): Escena => {
       { id: "mm", nombre: "M&M gigantes de cartón", pieza: escenografia(figuras), colocacion: libre(0, 0, -205) },
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 471 · Decoración Corazones Brillantes (escena: arco rectangular orgánico)
@@ -344,7 +347,7 @@ const escena458 = ((): Escena => {
  * cortina de flecos dorada en tres paños, dos huacales de pie con el banderín «FELIZ DÍA», el plato, los vasos y las
  * servilletas de corazones; tapete rosado.
  */
-const escena471 = ((): Escena => {
+const escena471 = (): Escena => {
   const opciones = opcionesArcoRectangular({
     anchoEjeCm: 227, altoEjeCm: 242, radioEsquinaCm: 45, radioBaseCm: 50, radioPataCm: 42, radioArribaCm: 31, hueco: null,
     mezcla: { base: { "R-12": 5, "R-9": 1.5, "R-5": 1.2 }, pata: { "R-12": 5, "R-9": 1.5, "R-5": 1.2 }, arriba: { "R-12": 5, "R-9": 1.5, "R-5": 2 } },
@@ -391,7 +394,7 @@ const escena471 = ((): Escena => {
       { id: "tapete", nombre: "Tapete rosado", pieza: escenografia(tapete({ anchoCm: 330, fondoCm: 150, hex: "#cd607a" })), colocacion: enPiso(0, 20) },
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 473 · Decoración Corazones Surtidos (escena: aro orgánico y ramo)
@@ -405,7 +408,7 @@ const escena471 = ((): Escena => {
  * 2 R-12 cobrizos, amarrados a un peso de globos (un R-24 rosado, magentas y frambuesas). Escalera repisa blanca,
  * pedestal con espirales moradas, letrero LOVE, cajita LOVE y tapete de lentejuelas fucsia.
  */
-const escena473 = ((): Escena => {
+const escena473 = (): Escena => {
   const opciones = opcionesAroOrganico({
     diametroCm: 290, exterior: { formatoId: "R-12", radioCm: 17 }, interior: { pesos: { "R-12": 3, "R-18": 0.25, "R-9": 0.8 }, radioCm: 34, adelanteCm: 10 },
     colores: [
@@ -460,7 +463,7 @@ const escena473 = ((): Escena => {
       { id: "tapete", nombre: "Tapete de lentejuelas fucsia", pieza: escenografia([caja(v(0, 0.3, 0), v(400, 0.6, 190), "#d65a9a", "lentejuelas")]), colocacion: enPiso(10, 70) },
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 476 · Decoración Feliz Año Nuevo (escena: guirnalda en L invertida y ramo)
@@ -475,7 +478,7 @@ const escena473 = ((): Escena => {
  * redondo, amarrado a un peso orgánico (dorados, arena, gris, plata y negro). Cortina de flecos dorada, el cartel «Feliz
  * Año», 3 mesas de marco plateado (de 60, 87 y 80 cm) con flores, cupcakes, platos y vasos, y 5 toppers «Feliz Año».
  */
-const escena476 = ((): Escena => {
+const escena476 = (): Escena => {
   const eje: Vec3[] = [
     v(-150, 186, 0), v(-105, 192, 0), v(-77, 190, 0), v(-52, 182, 0), v(-22, 177, 0), v(5, 172, 0), v(30, 177, 0), v(55, 188, 0),
     v(78, 176, 0), v(86, 150, 0), v(80, 120, 0), v(77, 90, 0), v(83, 60, 0), v(92, 32, 0), v(104, 14, 0),
@@ -533,7 +536,7 @@ const escena476 = ((): Escena => {
       ...toppers.map(([x, y], i) => ({ id: `topper-${i + 1}`, nombre: `Topper «Feliz Año» ${i + 1}`, pieza: letrero({ forma: "circulo", anchoCm: 12, altoCm: 12, hex: "#16161a", motivo: { dibujo: "texto", texto: "Feliz Año", hex: DORADO }, apoyo: "palito", productoId: null, descripcion: "topper redondo «Feliz Año»" }), colocacion: libre(x, y - 7, -112) })),
     ],
   };
-})();
+};
 
 /** Un elemento de escenografía corrido `d` (para repetir un mueble en otro sitio). */
 function mover(e: ElementoEscenografia, d: Vec3): ElementoEscenografia {
@@ -556,7 +559,7 @@ function mover(e: ElementoEscenografia, d: Vec3): ElementoEscenografia {
  * de cuartetos negros y naranjas impresos (5 niveles, ~1,1 m) con aros de tubito violeta y 5 arañitas trepando; en la
  * mesa (faldón naranja, tapa morada) 8 calabacitas de R-5 con tallo de tubito verde en una torre de 3 pisos.
  */
-const escena478 = ((): Escena => {
+const escena478 = (): Escena => {
   const TECHO = 290;
   const negro = (formatoId: string, d: number): Pieza => globo(R(formatoId, d, "080"));
   const collar = (codigo: string, d: number): Pieza => deco(anillo(R("R-5", d, codigo), 4, 0, 45));
@@ -644,7 +647,7 @@ const escena478 = ((): Escena => {
       ...calabazas.map((p, i) => ({ id: `calabaza-${i + 1}`, nombre: `Calabacita de R-5 ${i + 1}`, pieza: deco({ tipo: "calabaza", propiedades: calabacita }), colocacion: libre(20 + p.x, p.y, -44 + p.z) })),
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 479 · Decoración Mundialista (arco asimétrico)
@@ -658,7 +661,7 @@ const escena478 = ((): Escena => {
  * negro y 3 en lo blanco) y un trébol suelto en el hueco del arco. Tres estructuras (el motor reparte los colores en
  * toda la pieza): lo verde (corona y montículo, con los balones y los tréboles), lo negro y lo blanco.
  */
-const escena479 = ((): Escena => {
+const escena479 = (): Escena => {
   const px = (x: number, y: number, z = 0) => v(r2((x - 375) / 2.15), r2((548 - y) / 2.15), z);
   const mezclaFina = constante({ "R-12": 3, "R-5": 2.6 });
   const inflados = { "R-12": 21, "R-9": 15, "R-5": 10 };
@@ -702,7 +705,7 @@ const escena479 = ((): Escena => {
       ...impresos.map(([x, y, donde], i) => sobreCentrada(`futbolmania-${i + 1}`, `R-12 Futbolmanía ${i + 1} (${donde === "corona" ? "en la corona" : donde === "negro" ? "en lo negro" : "en lo blanco"})`, donde === "corona" ? "arco" : donde, futbolmania, px(x, y, 12), AL_FRENTE)),
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 498 · Día del Árbol
@@ -715,7 +718,7 @@ const escena479 = ((): Escena => {
  * 22 verde, 16 verde selva, 16 eucalipto y 14 verde lima). La raíz es el tronco con su base; la copa (sus colores son
  * otros: el motor reparte los colores en toda la pieza) y los tubitos van `sobre` él.
  */
-const escena498 = ((): Escena => {
+const escena498 = (): Escena => {
   const tronco: OpcionesOrganico = {
     ...opcionesTroncoConBase({
       base: { radioAnilloCm: 32, radioCm: 24, mezcla: { "R-12": 1 } },
@@ -734,7 +737,7 @@ const escena498 = ((): Escena => {
       ...[0, 90, 180, 270].map((g, i) => sobreEn(`tubito-${i + 1}`, `Tubito café enrollado ${i + 1}`, "tronco", espiral(g), v(0, 44, 0))),
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 515 · El Principito (escena: pared de globos azules y estrellas)
@@ -746,7 +749,7 @@ const escena498 = ((): Escena => {
  * 11 estrellas metalizadas doradas (manchas amarillas de ~50 px ≈ 31 cm) con sus cintas, la mesa de mantel rojo con el
  * paño azul y el banderín «MICAEL», el pastel de maletas, los dulceros y 2 estrellas blancas recortadas.
  */
-const escena515 = ((): Escena => {
+const escena515 = (): Escena => {
   const pared: Pieza = {
     tipo: "forma",
     forma: {
@@ -785,7 +788,7 @@ const escena515 = ((): Escena => {
       { id: "banderin", nombre: "Banderín «MICAEL»", pieza: micael, colocacion: libre(-3, MESA - 4, -103) },
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 539 · Fantasía metalizada (columna orgánica)
@@ -798,7 +801,7 @@ const escena515 = ((): Escena => {
  * de 63 a 110 cm) y el R-24 frambuesa encima. Tubito plata: 3 tirabuzones arriba a la izquierda, 3 capullos y un moño
  * de 3 lazos grandes en la base con un moñito de tubito cobre.
  */
-const escena539 = ((): Escena => {
+const escena539 = (): Escena => {
   const px = (x: number, y: number, z = 0) => v(r2((x - 375) / 2.6), r2((565 - y) / 2.6), z);
   const base539: OpcionesOrganico = {
     densidad: 1.3,
@@ -829,7 +832,7 @@ const escena539 = ((): Escena => {
       sobreEn("mono-cobre", "Moñito de tubito cobre (base)", "columna", deco(florTubito(lazos("T-260", 3, ["968"], 4, 14, 8, 0, 45))), px(265, 410, 30), v(-0.55, 0.15, 0.82)),
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 573 · Fiesta en Halloween (escena: arco de cuartetos sobre la mesa)
@@ -842,7 +845,7 @@ const escena539 = ((): Escena => {
  * Metalink. Al pie de los postes, R-12 violeta y globos-ojo verdes. Fondo verde oscuro de telarañas, mesa de faldón
  * naranja con el esqueleto de papel, la bruja de la esquina y dulces.
  */
-const escena573 = ((): Escena => {
+const escena573 = (): Escena => {
   const px = (x: number, y: number, z = 0) => v(r2((x - 370) / 2.37), r2((555 - y) / 2.37), z);
   // El eje: media elipse de los postes (y = 150) a lo alto (centro de los cuartetos a ~2,2 m).
   const A = 80, B = 72, Y0 = 150;
@@ -913,7 +916,7 @@ const escena573 = ((): Escena => {
       sobreEn("ojo-derecho-2", "Globo-ojo verde (derecha, arriba)", "pie-derecho", ojo(160), v(12, 26, 4), v(0.4, 0.8, 0.4)),
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // Las 10 ideas
@@ -924,7 +927,7 @@ export const LOTE_11: readonly IdeaDigitalizada[] = [
   idea({
     numero: 458, slug: "cumpleano-de-m-ms", nombre: "Cumpleaños de M&M: malla frambuesa sobre la mesa de dulces", ocasiones: ["general"],
     fotoUrl: FOTO("4ce80d1140bd93b3c6f363923394e863.jpg"),
-    contenido: ESCENA(escena458),
+    contenido: () => ESCENA(escena458()),
     nota: "Igual: la malla en rombos de R-5 Fashion Frambuesa 014 (medido #c51048, ΔE 9) con un nudo de R-5 Fashion Amarillo 020 en cada cruce (medido #d5d405), de 4,4 m × 46 cm a la altura de las caras de los M&M (3 filas de nudos a la vista a 17,5 px; globo de ~17 px a 1,55 px/cm ≈ 11 cm), detrás de la mesa de dulces de 4 m (baldosas de 40 cm y mesa de 76 cm: 1,75 px/cm) con faldón negro y 8 gotas sobre el amarillo, los 6 dispensadores de colores, la fila de dulces y los dos M&M gigantes de cartón (rojo a la izquierda, naranja a la derecha) con sus brazos; piso de terracota y pared celeste. No publica productos: colores medidos. Distinto: la malla es la de Link-O-Loon de Sempertex hecha con R-5 (la foto usa redondos: el frambuesa no se fabrica en Link-O-Loon) y lleva una pareja de R-5 amarilla por nudo (en la foto se ve uno; algunos nudos parecen verde lima); la altura de la malla se dedujo de la perspectiva (~1,3–1,75 m); los M&M, dispensadores y dulces son escenografía sencilla (sin caras dibujadas).",
   }),
   idea({
@@ -935,7 +938,7 @@ export const LOTE_11: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO REDONDO FASHION PALO DE ROSA", url: "/products/globo-para-fiesta-latex-redondo-fashion-palo-de-rosa", formato: "R-12", codigo: "010" },
       { nombre: "GLOBO REDONDO PASTEL MATE ROSADO", url: "/products/globo-para-fiesta-latex-redondo-pastel-mate-rosado", formato: "R-12", codigo: "609" },
     ],
-    contenido: ESCENA(escena471),
+    contenido: () => ESCENA(escena471()),
     nota: "Igual: arco rectangular orgánico de ~3,2 × 2,6 m (R-24 de 130–160 px y R-12 de ~70 px: 2,75 px/cm) en los publicados —Pastel Mate Rosado 609 de fondo, Palo de Rosa 010 en los R-5 y en unos R-12 de arriba— con los impresos Infinity® Corazones Brillantes en la proporción contada (de ~95 R-12 de frente, 23 impresos), 3 R-24 rosados donde la foto, la cortina de flecos dorada en tres paños, dos huacales de pie con el banderín «FELIZ ♥ DÍA» (cartel de letras Corazones Brillantes), el plato, los vasos y las servilletas Corazones Brillantes de la tienda y el tapete rosado. Distinto: el surtido de la tienda trae rosado, dorado rosa, dorado y satín rosado: los rojizos van en Metal Dorado Rosa 568 (el más cercano, ΔE 18), los caqui y los dorados en Metal Dorado 570 y los durazno en Fashion Rosado 009; la foto lleva los R-5 en tríos y aquí van sueltos por el arco (el relleno en tríos daba cientos); las patas de la foto son más anchas y planas (~1,2 m) que el tubo del motor; el motor da los globos para el grosor medido (no se cuentan uno a uno).",
   }),
   idea({
@@ -946,7 +949,7 @@ export const LOTE_11: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO LATEX REDONDO REFLEX DORADO", url: "/products/globo-para-fiesta-latex-redondo-reflex-dorado", formato: "R-12", codigo: "970" },
       { nombre: "GLOBO REDONDO FASHION LATTE", url: "/products/globo-para-fiesta-latex-redondo-fashion-latte", formato: "R-12", codigo: "073" },
     ],
-    contenido: ESCENA(escena473),
+    contenido: () => ESCENA(escena473()),
     nota: "Igual: aro orgánico de ~2,9 m apoyado en el piso (R-12 de 60–65 px: 2,6 px/cm) con banda de ~80 cm en cromado magenta (Reflex Fucsia 912), cobrizo (el Reflex Dorado 970 publicado), frambuesa (el 014 publicado), Pastel Mate Rosado 609 (medido #f3d8de, ΔE 3,8) e impresos Infinity® Corazones Brillantes rosados claros (009) y fuertes (409), un R-18 cromado a la derecha y el banderín «FELIZ ♥ DÍA»; el ramo con helio de 2 R-12 Latte 073 (publicado) y 2 cobrizos con 4 corazones metalizados de 18 pulgadas (3 fucsia y uno rosa oro), amarrado a su peso (R-24 rosado, 2 magentas y 2 frambuesas); escalera repisa blanca con platos y vasos, pedestal blanco con espirales moradas, la cajita LOVE, el letrero LOVE y el tapete de lentejuelas fucsia. Distinto: los cromados engañan (reflejan): el cobrizo mide como Reflex Dorado Rosa 968 y va el Reflex Dorado publicado, y el frambuesa de la foto mide como Neón Fucsia (#e450a0) y va el Frambuesa publicado; los corazones del ramo son de látex cromado (no hay corazón Reflex en la tabla): van como metalizados; faltan las calcomanías de corazón pegadas en los globos; el motor da los globos del aro (no se cuentan uno a uno).",
   }),
   idea({
@@ -959,13 +962,13 @@ export const LOTE_11: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO REDONDO FASHION ARENA", url: "/products/globo-para-fiesta-latex-redondo-fashion-arena", formato: "R-12", codigo: "071" },
       { nombre: "GLOBO REDONDO FASHION GRIS", url: "/products/globo-para-fiesta-latex-redondo-fashion-gris", formato: "R-12", codigo: "081" },
     ],
-    contenido: ESCENA(escena476),
+    contenido: () => ESCENA(escena476()),
     nota: "Igual: la guirnalda orgánica en L invertida (R-24 impreso de 242 px ≈ 60 cm: 4 px/cm) que cruza lo alto y baja por la derecha hasta el piso, en los publicados —Reflex Plata 981, Fashion Negro 080, Gris 081, Arena 071 y racimos de R-5 Reflex Dorado 970 diminutos (~7 cm)— con R-18 plata y arena abajo a la derecha; el R-24 negro Infinity® Feliz Año Estrellas de la tienda arriba a la izquierda; el ramo de 5 R-12 con helio —Feliz Año Estrellas dorado y plata, uno negro de estrellas, uno negro y uno blanco— con un metalizado redondo, sobre su peso orgánico de dorados, arena, gris, plata y negro; la cortina de flecos dorada, el cartel «Feliz Año», las 3 mesas de marco plateado (60, 87 y 80 cm) con hortensias, cupcakes, platos y vasos, y 5 toppers «Feliz Año». Distinto: el negro de lunares dorados y el blanco de estrellas doradas del ramo no están en la tienda (van lisos) y el negro de estrellas lleva el «Feliz Año» de su impreso; el Reflex Dorado se publica como R-12 y en la foto son R-5 (y 4 R-12); el motor da los globos de la guirnalda (no se cuentan uno a uno) y sus R-9 de relleno.",
   }),
   idea({
     numero: 478, slug: "decoracion-mesa", nombre: "Mesa de Halloween: columnas de techo con arañas", ocasiones: ["halloween"],
     fotoUrl: FOTO("78d91cba2ceba7999de7029ff1b63408_95f329c1-7fb3-468f-bc21-bbee8fed1e86.jpg"),
-    contenido: ESCENA(escena478),
+    contenido: () => ESCENA(escena478()),
     nota: "Igual: las 4 columnas que cuelgan del techo (R-12 negros de ~52 px: 2,1 px/cm), con sus módulos contados de la foto —la de fuera a la izquierda, R-12 negros entre collares de R-5 Amarillo Miel 021 (medido #ffac06); la de dentro, R-9 negros con collares de R-5 Fashion Naranja 061 (#fe7f06); la del centro, y la de la derecha de pares de R-12 negros y pares de R-5—, cada una con su araña grande (cuerpo R-12, cabeza R-9 con ojos rojos y 8 patas de T-260 negro), 3 arañitas colgando bajo la del centro, las 2 columnas de 5 cuartetos de la mesa (~1,1 m) en espiral de negro y naranja impreso Infinity® Happy Halloween (el más parecido de la tienda) con 3 aros de tubito Fashion Violeta 051 cada una y 5 arañitas trepando, la mesa de faldón naranja y tapa morada y las 8 calabacitas de R-5 naranja con tallo de T-260 verde en una torre de 3 pisos. No publica productos: colores medidos. Distinto: los impresos naranjas de la foto llevan puntitos y arañitas negras (aquí el Happy Halloween, con su letrero); los módulos de las columnas se apoyan unos en otros (la altura total sale igual a ±5 cm); en la foto hay más arañitas por la mesa y los pisos de la torre no se ven; el techo de la foto no sale (se supuso a 2,9 m).",
   }),
   idea({
@@ -979,7 +982,7 @@ export const LOTE_11: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO REDONDO FASHION BLANCO", url: "/products/globo-para-fiesta-latex-redondo-fashion-blanco", formato: "R-12", codigo: "005" },
       { nombre: "GLOBO TUBITO FASHION VERDE LIMA", url: "/products/globo-para-fiesta-latex-tubito-fashion-verde-lima", formato: "T-260", codigo: "031" },
     ],
-    contenido: ESCENA(escena479),
+    contenido: () => ESCENA(escena479()),
     nota: "Igual: el arco asimétrico de ~2 × 2,3 m (balones de 115–120 px ≈ 55 cm: 2,15 px/cm) con los productos publicados: la pata izquierda de 3 balones R-24 Infinity® Balón de Fútbol apilados en curva sobre un montículo de R-12 Verde Lima 031, con un trébol de 4 burbujas de T-260 Verde Lima entre balón y balón y otro suelto en el hueco; la corona orgánica verde lima (R-12 y R-5), la pata derecha negra (080) que pasa a blanca (005) hasta el piso y los 7 R-12 Infinity Futbolmanía repartidos como en la foto (2 en la corona, 2 en lo negro y 3 en lo blanco). Distinto: el verde de la foto mide más neón (#abec5b → Neón Verde 230) y va el Verde Lima publicado; el arco son tres estructuras (verde, negro y blanco), no una, porque el motor orgánico reparte los colores en toda la pieza; el motor da los globos de cada tramo (no se cuentan uno a uno); el impreso de balón de la tienda se cataloga en R-12 y aquí va en R-24 (la tienda también lo vende en R-24).",
   }),
   idea({
@@ -993,13 +996,13 @@ export const LOTE_11: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO REDONDO FASHION CHOCOLATE", url: "/products/globo-para-fiesta-latex-redondo-fashion-chocolate", formato: "R-12", codigo: "076" },
       { nombre: "GLOBO REDONDO FASHION CAFÉ", url: "/products/globo-para-fiesta-latex-redondo-fashion-cafe", formato: "R-12", codigo: "074" },
     ],
-    contenido: ESCENA(escena498),
+    contenido: () => ESCENA(escena498()),
     nota: "Igual: árbol de ~2,7 m (R-12 de la copa de 75–80 px y tubito de ~16 px: 3,2 px/cm) con base de ~1,1 m y tronco de ~1,3 m de R-12 Fashion Chocolate 076 a ~18 cm (el publicado más cercano: medido #564228, ΔE 11), 4 tubitos café enroscados al tronco desde la base y la copa de ~1,7 × 1,4 m de R-12 en los 4 verdes publicados en la proporción contada de frente —Verde 030 (22), Verde Selva 032 (16), Eucalipto 027 (16) y Verde Lima 031 (14)—. Distinto: el café publicado es el R-12 y en la foto el café está en los tubitos: van T-260 Fashion Café 074 (el R-12 café queda sin cantidad); la copa es una esfera achatada (en la foto, más plana abajo e irregular); los tubitos de la foto se cruzan sueltos y aquí son 4 espirales de vuelta y cuarto; el verde vivo de la foto (#00ba4f) es más trébol que el Verde 030 publicado.",
   }),
   idea({
     numero: 515, slug: "el-principito", nombre: "El Principito: pared azul con estrellas doradas", ocasiones: ["cumpleaños"],
     fotoUrl: FOTO("9afe2a8b2e488642399e9d17fdda4224.jpg"),
-    contenido: ESCENA(escena515),
+    contenido: () => ESCENA(escena515()),
     nota: "Igual: la pared de globos de 3,56 × 2,28 m (mesa de 81 cm a 1,6 px/cm) en retícula de R-9 a 16,5 cm (~25 px) con un R-5 en cada hueco, en Fashion Azul 040, las 11 estrellas metalizadas doradas de ~31 cm contadas y puestas donde la foto (manchas amarillas) con sus cintas hasta la mesa, la mesa de mantel rojo con el paño azul y el banderín «MICAEL», el pastel de maletas con su vela, los dulceros y 2 estrellas blancas recortadas. No publica productos: colores medidos. Distinto: el azul medido (#0186d5) queda entre Metal Azul 540 y Fashion Azul 040 (ΔE 15–26: la luz de fondo lo vuelve cian en el centro) y se tomó el Fashion, de pared; la foto parece llevar los R-9 en filas algo desordenadas; las estrellas son de 13 pulgadas (la tienda las vende de 18); el pastel y los dulces son escenografía sencilla.",
   }),
   idea({
@@ -1009,13 +1012,13 @@ export const LOTE_11: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO REDONDO FASHION FRAMBUESA", url: "/products/globo-para-fiesta-latex-redondo-fashion-frambuesa", formato: "R-12", codigo: "014" },
       { nombre: "GLOBO LATEX REDONDO REFLEX PLATA", url: "/products/globo-para-fiesta-latex-redondo-reflex-plata", formato: "R-12", codigo: "981" },
     ],
-    contenido: ESCENA(escena539),
+    contenido: () => ESCENA(escena539()),
     nota: "Igual: columna de ~2 m (R-24 de 145 px ≈ 56 cm: 2,6 px/cm): base orgánica ancha (~1,2 m) y racimo arriba en Fashion Frambuesa 014 y Reflex Plata 981 (los publicados) y cromado cobre, el tallo de R-5 en espiral de los tres colores (6 niveles, de ~60 a 115 cm), el R-24 frambuesa encima, 3 tirabuzones de T-260 plata arriba a la izquierda (finos, como T-160: el plata no se fabrica en T-160), 3 capullos de tubito plata y el moño de 3 lazos de T-260 plata con su moñito cobre en la base. Distinto: el cobre no está entre los productos publicados: medido #d28467 → Reflex Dorado Rosa 968; el motor da los globos de la base y del racimo (no se cuentan uno a uno); el R-24 queda ~10 cm más bajo (se apoya en el racimo); falta el bichito de tubito plata de la derecha.",
   }),
   idea({
     numero: 573, slug: "fiesta-en-halloween", nombre: "Fiesta en Halloween: arco verde lima sobre la mesa", ocasiones: ["halloween"],
     fotoUrl: FOTO("fb4d3a1893de65f5c86d1e2e7be84aad_4d6a9247-d977-469a-842a-dab0ee3dfe11.jpg"),
-    contenido: ESCENA(escena573),
+    contenido: () => ESCENA(escena573()),
     nota: "Igual: el arco de 13 cuartetos de R-12 Fashion Verde Lima 031 (~25 cm: mesa de 76 cm a 2,37 px/cm) con un collar de 4 R-5 Fashion Violeta 051 entre cuarteto y cuarteto (12), de lo alto de los dos postes naranjas (~1,5 m) a ~2,3 m; 3 R-12 negros con el impreso Infinity® Araña Metalink de la tienda en cada pie; al pie de los postes, R-12 violeta y 3 globos-ojo verdes; el fondo verde oscuro de telarañas con círculos de papel, la mesa de faldón naranja con el esqueleto y los murciélagos de papel, la bruja de la esquina, las telarañas de algodón de los postes y dulces. No publica productos: colores medidos (el verde de la foto sale quemado: #bafda7 → Verde Lima, el más cercano; violeta #231c86 → Violeta 051). Distinto: los postes, la bruja, las telarañas y lo de la mesa son escenografía sencilla; los ojos de la foto son calcomanías sobre globos verdes (aquí, ojos saltones impresos); la trenza gira 1/8 por nivel.",
   }),
 ];

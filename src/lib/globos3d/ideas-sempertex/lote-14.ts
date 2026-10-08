@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { fuenteIdea, type FuenteIdea } from "./fuentes";
 import { ocasionesDeEtiquetas } from "./index";
 import { armarEscena, HUNDIMIENTO_SOBRE_CM, SALA_INICIAL, type Colocacion, type Escena, type NodoEscena, type Sala } from "../escena";
@@ -373,17 +373,21 @@ function fuente(slug: string): FuenteIdea {
 }
 
 /**
- * La idea con su id «idea:<slug>», su foto y sus productos (los de lo armado). Ocasiones y productos se calculan al
- * pedirlos: el índice importa este lote y este lote toma `ocasionesDeEtiquetas` del índice.
+ * La idea con su id «idea:<slug>», su foto y sus productos (los de lo armado). Escena, ocasiones y productos se
+ * calculan al pedirlos: el índice importa este lote y este lote toma `ocasionesDeEtiquetas` del índice.
  */
-function idea(slug: string, nombre: string, escena: Escena, nota: string, publicados: readonly Publicado[] = [], fueraDeCatalogo: readonly FueraDeCatalogo[] = []): IdeaDigitalizada {
+function idea(slug: string, nombre: string, escena: () => Escena, nota: string, publicados: readonly Publicado[] = [], fueraDeCatalogo: readonly FueraDeCatalogo[] = []): IdeaDigitalizada {
   const f = fuente(slug);
-  let hechos: ProductoDeIdea[] | null = null;
-  return {
-    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, contenido: { tipo: "escena", escena }, nota,
-    get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
-    get productos() { return (hechos ??= productosDe(escena, publicados, fueraDeCatalogo)); },
-  };
+  // Perezosa (ver `ideaPerezosa` en tipos.ts): la escena se arma la primera vez que se pide, no al importar el lote.
+  const laEscena = perezoso(escena);
+  return ideaPerezosa(
+    {
+      id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, clase: "escena", nota,
+      get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
+    },
+    () => ({ tipo: "escena", escena: laEscena() }),
+    () => productosDe(laEscena(), publicados, fueraDeCatalogo),
+  );
 }
 
 const SALA_RAMO = () => sala(360, 320, 300);
@@ -419,7 +423,7 @@ function escena29(): Escena {
   return m.escena(SALA_RAMO());
 }
 
-const idea29 = idea("arana-graffiti-invierno-violeta", "Ramo Araña, Graffiti Invierno y Violeta (globo dentro de globo)", escena29(),
+const idea29 = idea("arana-graffiti-invierno-violeta", "Ramo Araña, Graffiti Invierno y Violeta (globo dentro de globo)", escena29,
   "Igual: 9 R-12 de helio contados en 3 pisos, de abajo arriba 3 violeta (dos de frente y uno detrás), 3 naranja (uno al frente y dos a los lados) y 3 cristal con arañas (dos de frente y uno que asoma detrás), cada piso girado sobre el de abajo como en la foto. Las arañas y los violeta son globo dentro de globo, como dice la idea: el Infinity® Araña Transparente de la tienda (exacto, con su producto) con un Reflex Plata dentro, y el violeta con un Satín Plata dentro. Distinto: el «Cristal Violeta» no está en la tabla oficial de color: va el Fashion Violeta 051 (opaco: el satín de dentro no se ve, como casi en la foto, que mide más oscuro, #24174e). El «061 - Fashion Graffiti Invierno» (remolinos blancos sobre naranja) no se vende en naranja (la tienda tiene el Graffiti Invierno en rojo y en cristal): va el Fashion Naranja 061 liso, que es el color publicado; el impreso más parecido sería el Graffiti Invierno Fashion Rojo. El peso y el largo de las cintas no salen en la foto (cortada).");
 
 // ----------------------------------------------------------------------------------------------------------
@@ -476,7 +480,7 @@ function escena68(): Escena {
   return m.escena(sala(360, 300, 280));
 }
 
-const idea68 = idea("arco-bebito", "Arco bebito: cadena de R-12 celestes con nudos de R-5 azul rey", escena68(),
+const idea68 = idea("arco-bebito", "Arco bebito: cadena de R-12 celestes con nudos de R-5 azul rey", escena68,
   "Igual: 8 R-12 celestes impresos en cadena, 4 por pata, ensartados en un cordón que dibuja media elipse de 1,45 m entre pies y 1,04 m de alto al eje (1,25 m con los globos), y 9 nudos de cuarteto R-5 Fashion Azul Rey (uno en cada pie, uno entre cada dos R-12 y uno en la clave), contados en la foto: 8 R-12 y 36 R-5. Cada R-12 va a lo largo de la cadena con lo impreso al frente (en las patas el letrero queda de lado, como el eje del globo). Distinto: el impreso de la foto (biberones, coches y ositos blancos sobre celeste) no lo vende la tienda: va el impreso de bebé más parecido que sí vende, el Infinity® Es un Niño Estrella (estrellas blancas y «es un niño» sobre Pastel Mate Azul 640), un celeste más pálido que el de la foto (medido #66d4f7, entre Fashion Azul Caribe y Fashion Azul). Los R-5 miden casi violeta en la foto vieja y sobresaturada (#0a2ca9): por el tono van Azul Rey 041, el «azul rey» de la idea.");
 
 // ----------------------------------------------------------------------------------------------------------
@@ -515,7 +519,7 @@ function escena131(): Escena {
   };
 }
 
-const idea131 = idea("arco-polka-azul", "Arco polka azul: cuartetos blancos con franja azul de lunares", escena131(),
+const idea131 = idea("arco-polka-azul", "Arco polka azul: cuartetos blancos con franja azul de lunares", escena131,
   "Igual: arco parabólico de cuartetos de R-12 (patas rectas y clave redonda) de 2,7 m de ancho y de alto por fuera, con 36 niveles (contados a lo largo de la franja azul) de 3 R-12 Fashion Blanco y 1 azul impreso al frente, y un R-5 Fashion Blanco en cada hueco entre globos, como la foto. Distinto: la tienda no vende el Polka (lunares blancos) en azul (solo en rojo y en verde lima): va el impreso que vende más parecido, el Infinity® Terrazo Azul (manchitas blancas y celestes sobre azul), que en un globo blanco toma su fondo Azul Naval 044 (la foto mide #163082, un azul rey). El arco del taller gira cada cuarteto 1/8 de vuelta: el azul sale al frente en un nivel y al frente por fuera en el siguiente, una franja que culebrea un poco donde la foto es recta. Los R-5 de los huecos quedan metidos entre los R-12 (en la foto asoman un poco más).");
 
 // ----------------------------------------------------------------------------------------------------------
@@ -560,7 +564,7 @@ function escena203(): Escena {
   return m.escena(SALA_RAMO());
 }
 
-const idea203 = idea("bouquet-filigree-con-base", "Bouquet Filigree con base de burbuja", escena203(),
+const idea203 = idea("bouquet-filigree-con-base", "Bouquet Filigree con base de burbuja", escena203,
   "Igual: 3 R-12 de helio uno sobre otro a la altura de la foto (Metal Dorado Rosa a 1,15 m, Metal Dorado a 1,41 m y Reflex Plata a 1,67 m al centro), con sus cintas lila a la base, y la base de la foto: un R-12 Cristal Transparente relleno de R-5 (plata, dorado, perla y blanco) y confeti dorado sobre un anillo de 38 R-5 dorados, plata, perla y oro rosa en tres pisos (52 cm de ancho). Colores medidos en la foto (la idea no publica productos). Distinto: la filigrana blanca (encaje) del plateado y del oro rosa no la vende la tienda ni en otro color: van lisos en su fondo (Reflex Plata 981 y Metal Dorado Rosa 568). Los R-5 de la base van a 8 cm (en la foto se ven muy pequeños) y el anillo no se cuenta uno a uno: se ven unos 40.");
 
 // ----------------------------------------------------------------------------------------------------------
@@ -605,7 +609,7 @@ function escena206(): Escena {
   return m.escena(SALA_RAMO());
 }
 
-const idea206 = idea("bouquet-regalo-de-cumpleano", "Bouquet regalo de cumpleaños con cadenas de R-5", escena206(),
+const idea206 = idea("bouquet-regalo-de-cumpleano", "Bouquet regalo de cumpleaños con cadenas de R-5", escena206,
   "Igual: dos metalizados de cumpleaños de 18\" con helio (el de la izquierda más bajo, centros a 1,42 y 1,70 m), y debajo de cada uno, ensartada en su cinta, la cadena de la foto: cuarteto de R-5, R-12 Fashion Amarillo Miel (alargado, 23 cm) y otro cuarteto de R-5 (verde, rosa, violeta y azul); abajo, la base con un cuarteto de R-5 (violeta, rojo, azul y amarillo) y el moño de T-260 Fashion Naranja en X con su R-5 rosa al centro. Colores medidos (la idea no publica productos): el verde lima mide Neón Verde 230 y el azul Fashion Azul 040. Distinto: el metalizado de la foto (una caja de regalo con estallido amarillo y «Happy Birthday») no lo vende la tienda: va el metalizado de cumpleaños de 18\" que sí vende, el Feliz Cumpleaños Festivo (redondo, blanco y con letras), con su producto. Los R-5 van a 7,5 cm, como se ven.");
 
 // ----------------------------------------------------------------------------------------------------------
@@ -654,7 +658,7 @@ function escena211(): Escena {
   return m.escena(SALA_RAMO());
 }
 
-const idea211 = idea("bouquet", "Bouquet Feliz Día con estrella verde y base de números", escena211(),
+const idea211 = idea("bouquet", "Bouquet Feliz Día con estrella verde y base de números", escena211,
   "Igual: estrella metalizada verde de 18\" arriba (la Estrella Verde Vibrante de la tienda, exacta), dos R-12 de helio con «Feliz Día» blanco, el amarillo a la izquierda y el fucsia a la derecha, con cintas rojas, y la base de la foto: «2» y «0» de T-260 Verde Trébol de 20 cm de alto con una estrellita metalizada entre ellos y 6 R-5 Fashion Amarillo (5 a la vista). Colores medidos (la idea no publica productos): amarillo 020, fucsia 012, verde 029. Distinto: el «Feliz Día!» con estrellitas de la foto no lo vende la tienda; van los Infinity® con «Feliz Día» blanco que sí vende en esos colores: Feliz Día Fiesta Bigotes (en su Fashion Amarillo) y Corazones Brillantes con «Feliz Día» (en su Fashion Fucsia), con bigotes y corazones que la foto no tiene. La estrellita roja de 8\" tampoco: va la Estrella Rosada Vibrante de la tienda (18\") a 8\". Los números de la foto son de un solo T-260; el taller los trenza con dos.");
 
 // ----------------------------------------------------------------------------------------------------------
@@ -681,7 +685,7 @@ function escena231(): Escena {
   return m.escena(SALA_RAMO());
 }
 
-const idea231 = idea("calabaza-verde-lima-negro", "Ramo Calabaza, Verde Lima y Negro", escena231(),
+const idea231 = idea("calabaza-verde-lima-negro", "Ramo Calabaza, Verde Lima y Negro", escena231,
   "Igual: 7 globos de helio contados en 3 pisos, de abajo arriba 3 R-12 Fashion Negro (uno al frente y dos a los lados), 3 R-12 Reflex Verde Lima (dos de frente y uno detrás) y arriba la calabaza naranja con su cara impresa (ojos y nariz de triángulo, boca con dientes) y el tallo de 4 lazos de T-260 Reflex Verde Lima, todo con los productos que publica la idea. Distinto: la «Calabaza Naranja» de la tienda (2 caras) no está en el catálogo de impresos del taller: va su producto con su cantidad y el globo Fashion Naranja 061 con la cara de calabaza del taller (un dibujo propio, parecido). En la foto la calabaza mide 46 × 36 cm, más que un R-12 (máx. 30 cm): va un R-18 a 42 cm, de pie (en la foto va acostada, con el nudo de lado). El peso y las cintas no salen en la foto.",
   [P_TUBITO_VL, P_CALABAZA, P_VERDE_LIMA, P_NEGRO],
   [{ publicado: P_CALABAZA, formato: "R-18", codigo: "061", cantidad: 1 }]);
@@ -719,7 +723,7 @@ function escena307(): Escena {
   return m.escena(sala(320, 300, 280));
 }
 
-const idea307 = idea("centro-de-mesa-primera-comunion", "Centro de mesa Primera Comunión con pompón y estrellas", escena307(),
+const idea307 = idea("centro-de-mesa-primera-comunion", "Centro de mesa Primera Comunión con pompón y estrellas", escena307,
   "Igual: sobre una mesa, el pompón de papel verde (32 × 25 cm) con tres R-12 de helio a la altura de la foto (rosado a 1,30 m sobre la mesa, verde a 1,02 m y lila a 0,70 m) y sus cintas rosadas y verdes, y dos estrellas metalizadas plateadas de 9\" a los lados (la Estrella Plata de la tienda, exacta). Colores medidos (la idea no publica productos): rosado Satín Fucsia 412, verde Pastel Dusk Té Verde 126, lila Reflex Violeta 951 (el más cercano: en la foto se ve perlado). Distinto: el «Mi Primera Comunión» impreso del rosado y del lila no lo vende la tienda en esos colores (solo el Infinity® con palomas doradas sobre blanco): van lisos en su fondo. La tienda vende la estrella en 18\"; aquí a 9\", como se ve. Los rizos de cinta verde bajo las estrellas son la cinta de cada una (de papel), sin los bucles.");
 
 // ----------------------------------------------------------------------------------------------------------
@@ -745,7 +749,7 @@ function escena821(): Escena {
   return m.escena(SALA_RAMO());
 }
 
-const idea821 = idea("palomas-perla-azul", "Ramo Palomas, Perla y Azul", escena821(),
+const idea821 = idea("palomas-perla-azul", "Ramo Palomas, Perla y Azul", escena821,
   "Igual: 11 R-12 de helio contados en 3 pisos, de abajo arriba 4 Reflex Azul (dos de frente, uno detrás a la derecha y uno que asoma debajo, detrás), 3 Satín Perla (uno al frente y dos a los lados) y arriba 4 «Mi Primera Comunión Palomas» (dos de frente y dos detrás), con los tres productos que publica la idea y cintas doradas al peso. Distinto: el impreso de palomas y ángeles blancos sobre Reflex Dorado de la tienda no está en el catálogo de impresos del taller: va su producto con su cantidad y el globo liso en su fondo, Reflex Dorado 970 (en la foto mide #895e3c por el cromado). El azul de la foto mide más oscuro (#203c55) que el Reflex Azul 940 publicado. El peso y las cintas no salen en la foto.",
   [P_PALOMAS, P_PERLA, P_AZUL],
   [{ publicado: P_PALOMAS, formato: "R-12", codigo: "970", cantidad: 4 }]);
@@ -774,7 +778,7 @@ function escena859(): Escena {
   return m.escena(SALA_RAMO());
 }
 
-const idea859 = idea("primera-comunion-blanco-chocolate-azul", "Ramo Primera Comunión Blanco, Chocolate y Azul", escena859(),
+const idea859 = idea("primera-comunion-blanco-chocolate-azul", "Ramo Primera Comunión Blanco, Chocolate y Azul", escena859,
   "Igual: 11 R-12 de helio contados en 4 pisos, de abajo arriba 2 azul claro lado a lado, 3 Fashion Chocolate (uno al frente y dos a los lados), 3 Fashion Blanco (dos de frente y uno que asoma detrás) y arriba 3 «Mi Primera Comunión» Satín Azul (uno al frente y dos a los lados), con los productos que publica la idea y cintas rosadas y blancas. El azul claro liso de abajo mide Satín Azul 440 (#bed7e2): el mismo látex del impreso, liso. Distinto: el «Mi Primera Comunión» (cáliz y letras blancas) de la tienda no está en el catálogo de impresos del taller: va su producto con su cantidad y el globo liso en su fondo, Satín Azul 440. Abajo se ven 2 azules (si hay un tercero detrás, no asoma). El peso no sale en la foto.",
   [P_COMUNION_AZUL, P_BLANCO, P_CHOCOLATE],
   [{ publicado: P_COMUNION_AZUL, formato: "R-12", codigo: "440", cantidad: 3 }]);
@@ -804,7 +808,7 @@ function escena863(): Escena {
   return m.escena(SALA_RAMO());
 }
 
-const idea863 = idea("primera-comunion-verde-arena-cafe", "Ramo Primera Comunión Verde, Arena y Café", escena863(),
+const idea863 = idea("primera-comunion-verde-arena-cafe", "Ramo Primera Comunión Verde, Arena y Café", escena863,
   "Igual: 11 R-12 de helio contados en 4 pisos, de abajo arriba 3 Fashion Café (dos de frente y uno que asoma detrás a la derecha), 3 Fashion Arena (uno al frente y dos a los lados), 2 Metal Verde lado a lado y arriba 3 «Mi Primera Comunión» Satín Perla con su impreso dorado (uno al frente y dos a los lados), con los productos que publica la idea y cintas de colores al peso. Distinto: el «Mi Primera Comunión» dorado (niña, cáliz y letras) de la tienda no está en el catálogo de impresos del taller: va su producto con su cantidad y el globo liso en su fondo, Satín Perla 406. En la foto el Metal Verde mide más azulado (#5d9f76) y el café más claro (#9a6a33, Moca) que los publicados, que son los que van. El peso no sale en la foto.",
   [P_COMUNION_PERLA, P_METAL_VERDE, P_ARENA, P_CAFE],
   [{ publicado: P_COMUNION_PERLA, formato: "R-12", codigo: "406", cantidad: 3 }]);
@@ -852,7 +856,7 @@ function escena884(): Escena {
   return m.escena(sala(320, 300, 280));
 }
 
-const idea884 = idea("regalo-con-corazones", "Regalo con corazones: caja dorada con globos Te Amo", escena884(),
+const idea884 = idea("regalo-con-corazones", "Regalo con corazones: caja dorada con globos Te Amo", escena884,
   "Igual: sobre una mesa, la caja de regalo dorada de 20 cm con su moño rojo y papel picado blanco, tres R-12 de helio a la altura de la foto con cintas rosadas (el «Te Amo» arriba a la izquierda, el Reflex Dorado detrás a la derecha y el de corazones al frente) y dos corazones metalizados plateados a los lados de la caja; con los productos que publica la idea. Los dos rojos son el mismo «Te Amo Brillante» (2 caras: «Te Amo» por una cara y corazones por la otra), cada uno mostrando una cara. Distinto: ese impreso de la tienda no está en el catálogo del taller: va su producto con su cantidad y el globo liso en su fondo; en la foto el rojo mide Fashion Rojo 015 (#ef2330), así que ese es el fondo. Los corazones de la foto miden ~17 cm (7\"): el producto de la tienda (paquete de 4) se lista por los 2 que se usan. Los corazones van en su cinta; en la foto, en varillas.",
   [P_TE_AMO, P_DORADO, P_CORAZONES_PLATA],
   [{ publicado: P_TE_AMO, formato: "R-12", codigo: "015", cantidad: 2 }]);
@@ -881,7 +885,7 @@ function escena953(): Escena {
   return m.escena(SALA_RAMO());
 }
 
-const idea953 = idea("turquesa-azul-naval-verde-lima", "Ramo Turquesa, Azul Naval y Verde Lima con Graffiti Cielo", escena953(),
+const idea953 = idea("turquesa-azul-naval-verde-lima", "Ramo Turquesa, Azul Naval y Verde Lima con Graffiti Cielo", escena953,
   "Igual: 11 R-12 de helio contados en 4 pisos, de abajo arriba 3 Reflex Verde Lima (uno al frente y dos a los lados), 2 Fashion Azul Naval lado a lado, 3 Fashion Azul Caribe (uno al frente y dos a los lados) y arriba 3 Infinity® Graffiti Cielo (dos de frente y uno detrás), con los cuatro productos que publica la idea; el Graffiti Cielo es el impreso exacto de la tienda (remolinos celestes y blancos sobre cristal) y cintas doradas al peso. Distinto: el «turquesa» de la foto mide más verdoso y oscuro (#008a97) que el Azul Caribe 038 publicado, que es el que va; el dibujo del graffiti es el del taller (aproximado). El peso no sale en la foto.",
   [P_GRAFFITI_CIELO, P_CARIBE, P_NAVAL, P_VERDE_LIMA]);
 
@@ -944,7 +948,7 @@ function escena5(): Escena {
   return m.escena(sala(320, 280, 260));
 }
 
-const idea5 = idea("algas-marinas", "Algas marinas de tubitos con burbujas", escena5(),
+const idea5 = idea("algas-marinas", "Algas marinas de tubitos con burbujas", escena5,
   "Igual: la figura de la foto de 1,35 m: un R-12 Reflex Verde Lima de base, 5 T-260 que salen de ella curvándose (los dos largos de los lados, dos casi rectos al centro y uno corto) con dos R-5 Reflex Verde Lima en la punta de cada uno, y arriba dos R-12 Reflex Verde Lima de helio amarrados a la base; con los productos que publica la idea. Tres tubitos son el Reflex Verde Lima publicado y los dos claros del centro el Satín Verde Lima publicado. Distinto: el Satín Verde Lima no está en la tabla oficial de color: el 3D lo pinta Fashion Verde Lima 031 y el producto se lista con ese color. En la foto los tubitos se ven verde vivo (#2dcc2a y #02c178), más que los publicados. La base de la foto está medio desinflada; aquí es un R-12 a 26 cm. Las puntas de las R-5 van de a dos, como se ven.",
   [P_VERDE_LIMA, P_TUBITO_VL, P_TUBITO_SATIN_VL],
   [{ publicado: P_TUBITO_SATIN_VL, formato: "T-260", codigo: "031", cantidad: "todos" }]);
@@ -987,7 +991,7 @@ function escena31(): Escena {
   return m.escena(sala(320, 280, 300));
 }
 
-const idea31 = idea("arana", "Araña de patas en rizo", escena31(),
+const idea31 = idea("arana", "Araña de patas en rizo", escena31,
   "Igual: la araña de la foto colgada de su hilo: cuerpo R-12 Fashion Negro (26 cm), dos ojos R-5 Fashion Blanco con pupila negra debajo, una boquita R-5 negra y 8 patas de T-260 Fashion Negro (cuatro a cada lado) que salen en rizo, con bucles de ~13 cm, como en la foto. Colores medidos (la idea no publica productos): negro 080 y blanco 005. Distinto: en la foto cada pata hace sus bucles a su manera (unos sueltos, otros cerrados); en el 3D todas son el mismo resorte, abierto hacia su lado, y alcanzan ~40 cm desde la unión (en la foto, 45 a 65 cm: un T-260 por pata no da para más bucles tan grandes). La foto no dice cómo se cuelga: aquí va de un hilo, con el cuerpo a 1,5 m.");
 
 /** Ideas de fiesta de sempertex.com digitalizadas: lote 14. */

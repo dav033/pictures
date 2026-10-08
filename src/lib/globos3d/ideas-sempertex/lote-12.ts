@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { fuenteIdea, type FuenteIdea } from "./fuentes";
 import { ocasionesDeEtiquetas } from "./index";
 import { armarEscena, HUNDIMIENTO_SOBRE_CM, SALA_INICIAL, type Colocacion, type Escena, type NodoEscena, type Sala } from "../escena";
@@ -266,18 +266,18 @@ function fuente(slug: string): FuenteIdea {
 }
 
 /**
- * La idea con su número, ocasiones y foto de su fuente, y sus productos calculados la primera vez que se piden (salen de
- * armar la escena: los orgánicos tardan unas décimas). Las ocasiones salen de las etiquetas con `ocasionesDeEtiquetas`,
- * que vive en `index.ts` (que importa este lote): se calculan al leerlas, como en los lotes 06 y 09.
+ * La idea con su número, ocasiones y foto de su fuente; perezosa (ver `tipos.ts`): la escena se arma y sus productos se
+ * calculan la primera vez que se piden (salen de armar la escena: los orgánicos tardan unas décimas). Las ocasiones
+ * salen de las etiquetas con `ocasionesDeEtiquetas`, que vive en `index.ts` (que importa este lote): se calculan al
+ * leerlas, como en los lotes 06 y 09.
  */
-function idea(slug: string, nombre: string, escena: Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
+function idea(slug: string, nombre: string, escena: () => Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
   const f = fuente(slug);
-  let hechos: ProductoDeIdea[] | null = null;
-  return {
-    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, contenido: { tipo: "escena", escena }, nota,
+  const hecha = perezoso(escena);
+  return ideaPerezosa({
+    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, clase: "escena", nota,
     get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
-    get productos() { return (hechos ??= productosDe(escena, publicados)); },
-  };
+  }, () => ({ tipo: "escena", escena: hecha() }), () => productosDe(hecha(), publicados));
 }
 
 // Productos que publican varias ideas (nombre y url tal cual de la tienda).
@@ -300,7 +300,7 @@ const P_BLANCO = P("GLOBO REDONDO FASHION BLANCO", "/products/globo-para-fiesta-
  * R-12 de helio amarrado a un racimo en el piso; a la derecha un pedestal de cartón kraft (60 × 90 cm) con una
  * guirnalda baja en media luna a su pie y un R-12 dorado «Feliz Grado».
  */
-const escena640 = ((): Escena => {
+const escena640 = (): Escena => {
   const S = sala(520, 420, 300, { piso: "#a07a3a", paredes: "#ebeae6", techo: "#f6f5f2" });
   const Z_TORRE = -S.fondoCm / 2 + 32;
   // Filas de la torre: altura del eje, borde izquierdo y derecho de la silueta (medidos en la foto) y radio.
@@ -359,7 +359,7 @@ const escena640 = ((): Escena => {
       { id: "pedestal", nombre: "Pedestal de cartón kraft con platos y vasos dorados", pieza: escenografia(pedestal), colocacion: libre(PEDESTAL.x, 0, PEDESTAL.z) },
     ],
   };
-})();
+};
 const idea640 = idea("graduacion", "Graduación: torre orgánica merlot y dorado con ramo de helio", escena640,
   "Igual: la torre orgánica escalonada contra la pared, ~2,6 m de alto y 1,8 m de ancho abajo que se angosta a 0,9 m arriba (8 filas medidas por el perfil de la foto), de R-18, R-12, R-9 y R-5 en Merlot, Reflex Violeta, Reflex Dorado y Arena, con sus 3 R-12 dorados de «Feliz Grado» en los mismos sitios; el ramo de 5 R-12 de helio (dorado, dorado, violeta, arena y merlot) amarrado a un racimo en el piso a la izquierda; el pedestal de cartón kraft de 60 × 90 cm con platos y vasos dorados y negros, la guirnalda baja en media luna a su pie con el R-12 dorado grande, y el piso de tela dorada. Distinto: los «Feliz Grado» van lisos (la tienda solo vende ese impreso en Reflex Plata y en la foto son dorados); el ciruela cromado de la foto mide Reflex Fucsia (ΔE 8) y va el Reflex Violeta que publica la idea; en la foto los colores van por grupos (los racimitos de R-5 dorados, el arena) y el motor los reparte; los globos de lo orgánico los da el motor para el grosor y el largo medidos (la torre lleva muchos R-5 de relleno); el Merlot no está publicado (va con el liso de la tienda).", [P_DORADO, P_VIOLETA, P_ARENA]);
 
@@ -376,7 +376,7 @@ const idea640 = idea("graduacion", "Graduación: torre orgánica merlot y dorado
  * murciélago de lentejuelas, una guirnalda de papel de esqueletos y, detrás, el mural metalizado de cuadros plata
  * (1 × 2 m). Delante, dos mesas de coctel con mantel blanco y cara de fantasma.
  */
-const escena654 = ((): Escena => {
+const escena654 = (): Escena => {
   const S = sala(580, 440, 320, { piso: "#232323", paredes: "#262626", techo: "#2a2a2a" });
   const Z_ARCO = -150;
   const recorrido = [
@@ -454,7 +454,7 @@ const escena654 = ((): Escena => {
       { id: "adornos", nombre: "Esqueleto, sombrero de bruja y araña", pieza: escenografia(adornos), colocacion: libre(0, 0, 0) },
     ],
   };
-})();
+};
 const idea654 = idea("halloween-fantasmal", "Halloween fantasmal: arco violeta con mesas de fantasma", escena654,
   "Igual: el arco orgánico en «A» de ~3,5 m de pie a pie y ~2,8 m de alto, con el montículo grande al pie izquierdo, la pata izquierda delgada, el remate grueso arriba y la pata derecha gruesa, en Reflex Violeta (mayoría), Fashion Gris y Fashion Negro (los 3 publicados); el R-24 gris de arriba, el R-24 gris en el piso a la derecha, los dos cristal, dos telarañas de fibra blanca, los letreros de calavera, el murciélago de lentejuelas, la guirnalda de papel de esqueletos, el esqueleto, el sombrero de bruja, la araña morada y el mural metalizado de cuadros plata de la tienda (1 × 2 m) detrás; delante, las dos mesas de coctel con mantel blanco y cara de fantasma, con platos morados y de zigzag, vasos y cupcakes. Distinto: en la foto el arco es más ancho abajo (el montículo izquierdo sube hasta ~1 m) y el motor lo deja algo más esbelto; el cristal de la izquierda lleva una araña dentro y el de la derecha escarcha plateada (aquí lisos); las telarañas de la foto son fibra estirada (aquí una red de hilo); los globos de lo orgánico los da el motor (no se contaron uno a uno).", [P_VIOLETA, P("GLOBO REDONDO FASHION GRIS", "/products/globo-para-fiesta-latex-redondo-fashion-gris", "R-12", "081"), P_NEGRO, P("MURAL METALIZADO CUADROS PLATA", "/products/mural-metalizado-cuadros-plata", null, null)]);
 
@@ -474,7 +474,7 @@ const idea654 = idea("halloween-fantasmal", "Halloween fantasmal: arco violeta c
  * lo publica y no se fabrica en R-18: los grandes van en R-12 a 30 cm); el resto, los publicados (el rojo vino mide
  * Rojo Imperial, ΔE 7, y va Merlot, que es el publicado).
  */
-const escena705 = ((): Escena => {
+const escena705 = (): Escena => {
   const S = sala(480, 380, 300, { piso: "#b98a5f", paredes: "#ece8e1", techo: "#f6f4f0" });
   const pared: OpcionesMural = {
     disposicion: "tablero", grande: { formatoId: "R-12", infladoCm: 20 }, chico: { formatoId: "R-5", infladoCm: 9 },
@@ -558,7 +558,7 @@ const escena705 = ((): Escena => {
     { id: "pedestales", nombre: "Pedestales de acrílico, tapete y vajilla LOVE", pieza: escenografia(escenario), colocacion: libre(0, 0, 0) },
   ];
   return { sala: S, nodos };
-})();
+};
 const idea705 = idea("love", "Love: pared blanca con guirnaldas de racimos rojos y rosados", escena705,
   "Igual: la pared blanca de ~2,2 × 2,1 m (tablero de 17 × 16: 136 R-12 y 136 R-5) y, encima, las tres guirnaldas en diagonal armadas como en la foto, racimo de un color junto a otro: arriba merlot, fucsia, rosado (con el R-24 rosado) y merlot; en medio merlot, coral (con un coral grande), un racimito rosado-merlot-rojo, fucsia con rosado, coral y merlot; abajo coral, rojo, merlot y fucsia a la izquierda y rojo (con el R-24 fucsia) y rosado a la derecha; los dos pedestales de acrílico llenos de globos rojos, coral, rosados y merlot, el racimo rojo y coral entre ellos con su coral grande, el R-24 fucsia en el tapete blanco y la vajilla «LOVE». Distinto: el coral de la foto es Fashion Coral Tropical (ΔE 7–9), que la idea no publica (va con el liso de la tienda) y no se fabrica en R-18: los corales grandes son R-12 a 30 cm (en la foto, ~40 cm); el rojo vino mide Rojo Imperial (ΔE 7) y va el Merlot publicado; cada racimo es su propia estructura (la biblioteca no saca «la guirnalda entera»); los globos de cada racimo los da el motor; el acrílico es solo el canto (no se ve transparente).", [
   P("GLOBO REDONDO FASHION FUCSIA", "/products/globo-para-fiesta-latex-redondo-fashion-fucsia", "R-12", "012"),
@@ -580,7 +580,7 @@ const idea705 = idea("love", "Love: pared blanca con guirnaldas de racimos rojos
  * una flor de 8 hojas de tubito dorado retorcido (~45 cm) con plumas de pampa y un centro de R-5. Debajo de la mesa,
  * un monticulo orgánico en el piso. Colores: los 4 publicados (el rosado de la foto se ve más salmón).
  */
-const escena795 = ((): Escena => {
+const escena795 = (): Escena => {
   const S = sala(460, 320, 280, { piso: "#e3dfd8", paredes: "#dedad4", techo: "#f4f2ee" });
   const Z_ARO = -85, CENTRO = v(8, 119, 0), RADIO = 88;
   const enAro = (grados: number, radio = RADIO) => v(r2(CENTRO.x + radio * Math.cos(rad(grados))), r2(CENTRO.y + radio * Math.sin(rad(grados))), 0);
@@ -645,7 +645,7 @@ const escena795 = ((): Escena => {
       { id: "mesa", nombre: "Mesa dorada de patas torneadas con cupcakes y platos", pieza: escenografia(mesa), colocacion: libre(0, 0, 0) },
     ],
   };
-})();
+};
 const idea795 = idea("ocasiones-especiales-tonos-neutros", "Tonos neutros: aro orgánico con flor de hojas doradas y mesa dorada", escena795,
   "Igual: el aro de metal dorado de ~1,8 m (centro y radio ajustados a seis puntos de la foto) con la guirnalda orgánica de arriba a la izquierda por la derecha hasta abajo, más gruesa a la derecha, y el racimo de abajo a la izquierda, en Arena, Pastel Mate Rosado, Pastel Mate Azul y Reflex Dorado (los 4 publicados; el dorado en R-5 y R-9); en el tramo de aro sin globos la flor de 8 hojas de T-260 Reflex Dorado de ~45 cm con su centro de R-5 azul y rosado y las plumas de pampa; el montículo orgánico en el piso bajo la mesa; la mesa dorada de 1,5 m con patas torneadas, la base de cupcakes de 3 pisos, los platos coral de pie con su plato plata y dorado, los vasos y las servilletas doradas. Distinto: las hojas de la foto son dos tubitos retorcidos juntos; aquí una cadena de burbujas de un tubito por hoja; algunos R-5 dorados de la foto parecen de escarcha (aquí Reflex Dorado liso); el rosado de la foto se ve más salmón; los globos de lo orgánico los da el motor (no se contaron uno a uno).", [
   P_ARENA, P_DORADO,
@@ -668,7 +668,7 @@ const idea795 = idea("ocasiones-especiales-tonos-neutros", "Tonos neutros: aro o
  * girado con el «5» azul, el tubo de pintura azul y el pincel a la izquierda, el tubo verde a la derecha, la mesa negra
  * con la torta de 3 pisos, las letras «M» y «A» y las cajas de madera con dulces.
  */
-const escena847 = ((): Escena => {
+const escena847 = (): Escena => {
   const S = sala(560, 420, 340, { piso: "#5a4a4c", paredes: "#f2eee8", techo: "#f7f5f2" });
   const FRANJAS: ReadonlyArray<readonly [string, number]> = [["041", 3], ["015", 2], ["061", 3], ["020", 4], ["030", 2], ["932", 5], ["038", 3], ["040", 4], ["012", 3]];
   const fila = FRANJAS.map(([, n], k) => "abcdefghi"[k]!.repeat(n)).join("");
@@ -730,7 +730,7 @@ const escena847 = ((): Escena => {
       { id: "letras-cajas", nombre: "Letras M y A de foami y cajas de dulces", pieza: escenografia(delante), colocacion: libre(0, 0, 0) },
     ],
   };
-})();
+};
 const idea847 = idea("pinturas", "Pinturas: pared de franjas arcoíris", escena847,
   "Igual: la pared de franjas verticales celda a celda, 29 columnas × 22 filas de R-12 a 16 cm (≈ 4,2 × 3,2 m): azul rey 3, rojo 2, naranja 3, amarillo 4, verde 2, verde aurora 5, azul caribe 3, azul 4 y fucsia 3 columnas, con los colores medidos en la foto; delante, el marco lila de foami girado con el «5» azul, la lata que vierte pintura rosada, el tubo de pintura azul y el pincel, el tubo verde, la mesa negra con la torta de 3 pisos y los cupcakes, las letras «M» y «A» de foami, las cajas de madera con dulces y el balde de chupetines. Distinto: en la foto cada columna va corrida medio globo de la vecina (aquí en retícula cuadrada); la foto corta las dos franjas de las orillas (se completaron a 3 columnas); la franja roja se ve fucsia arriba por la luz (va Fashion Rojo, ΔE 3 abajo); el verde oscuro es Reflex Verde Aurora (ΔE 4), único que se le parece; la idea no publica productos y la escala es aproximada (sin una medida segura en la foto); la utilería de foami es de bloques simples.");
 
@@ -747,7 +747,7 @@ const idea847 = idea("pinturas", "Pinturas: pared de franjas arcoíris", escena8
  * dos pedestales blancos con arreglos de flores, dos figuras de cartón de Jesús, dos palomas y la mesa blanca de dos
  * pisos con los postres.
  */
-const escena862 = ((): Escena => {
+const escena862 = (): Escena => {
   const S = sala(560, 400, 300, { piso: "#d9cfc8", paredes: "#eef0f2", techo: "#f2f3f5" });
   const COLS = 26, FILAS = 12;
   // Un R-5 en la mitad de los huecos (en damero); en la otra mitad, el hueco queda abierto.
@@ -807,7 +807,7 @@ const escena862 = ((): Escena => {
       { id: "mesa", nombre: "Mesa blanca de dos pisos con postres", pieza: escenografia(mesa), colocacion: libre(MESA.x, 0, MESA.z) },
     ],
   };
-})();
+};
 const idea862 = idea("primera-comunion-nino", "Primera comunión niño: pared azul con nubes", escena862,
   "Igual: la pared azul del piso al falso techo, celda a celda: 26 × 12 R-12 Fashion Azul a 21 cm en retícula cuadrada y un R-5 azul en la mitad de los 275 huecos, en damero (138), dejando abierta la otra mitad como los rombos claros de la foto (≈ 4,9 × 2,3 m); las dos nubes de globos blancos arriba (28 cada una); los dos pedestales blancos con arreglos de flores, las dos figuras de cartón de Jesús, las dos palomas, el falso techo y la mesa blanca de dos pisos con patas torneadas, la torta, los frascos y los postres. Distinto: el azul mide Neón Azul (ΔE 12) y va Fashion Azul por el tono (200°); la escala sale del alto del falso techo (~2,5 m), sin otra medida segura; las nubes son siluetas de nube rellenas con el motor (R-12 y R-9 que da él); las figuras de cartón, las flores y los postres son escenografía simple; la idea no publica productos.");
 
@@ -824,7 +824,7 @@ const idea862 = idea("primera-comunion-nino", "Primera comunión niño: pared az
  * Rosita Fresita, los biombos calados, la fresa gigante de foami, pompones de papel, cortinas y la máquina de crispetas;
  * a la izquierda, un ramo de helio con el corazón metalizado rojo y dos R-12 frambuesa de lunares blancos.
  */
-const escena896 = ((): Escena => {
+const escena896 = (): Escena => {
   const S = sala(600, 460, 290, { piso: "#e3d3cb", paredes: "#ecd3d0", techo: "#f3e6e4" });
   const COLS = 7, FILAS = 11;
   const chicos: Array<[number, number]> = [];
@@ -881,7 +881,7 @@ const escena896 = ((): Escena => {
       { id: "escenario", nombre: "Biombos, pompones, cortinas y máquina de crispetas", pieza: escenografia(escenario), colocacion: libre(0, 0, 0) },
     ],
   };
-})();
+};
 const idea896 = idea("rosita-fresita", "Rosita Fresita: pared roja con lunares coral", escena896,
   "Igual: la pared roja celda a celda, 7 × 11 R-12 a 22 cm (≈ 1,4 × 2,2 m) con los R-5 coral en damero en los huecos y en los lados (40), dejando abiertos los otros huecos como en la foto; el corazón metalizado rojo de la tienda con su cinta y dos R-12 frambuesa en un ramo de helio a la izquierda; la mesa de 2,3 m con faldón rosado de encaje, los dulceros, la torre fucsia, las figuritas y las flores naranjas; la figura de cartón de Rosita Fresita, los biombos calados, la fresa gigante de foami, los tres pompones de papel, las cortinas y la máquina de crispetas. Distinto: los R-12 del ramo llevan lunares blancos en la foto (la tienda los tiene en rojo y verde lima: van lisos, Fashion Frambuesa medido, ΔE 7); los chicos miden Fashion Coral Tropical (ΔE 11) aunque se ven rosados; la idea no publica productos (colores medidos); figuras, biombos y fresa son escenografía simple.");
 
@@ -897,7 +897,7 @@ const idea896 = idea("rosita-fresita", "Rosita Fresita: pared roja con lunares c
  * por debajo, abriéndose un poco. La raíz es el moño (no lleva globos: lo demás queda donde se pide, a la medida de la
  * foto); cada flor va en la punta de su tallo, mirando hacia fuera del ramo.
  */
-const escena876 = ((): Escena => {
+const escena876 = (): Escena => {
   const S = sala(300, 280, 240, { piso: "#f2f2f2", paredes: "#ffffff", techo: "#ffffff" });
   const MONO = v(0, 80, 0);
   const TALLO = { formatoId: "T-260", grosorCm: 4.5, codigo: "981" };
@@ -923,7 +923,7 @@ const escena876 = ((): Escena => {
     nodos.push(sobreCentrada(`flor-${i + 1}`, `Flor de 5 pétalos Reflex Dorado Rosa ${i + 1}`, "mono", flor876, cabeza, f.mira));
   });
   return { sala: S, nodos };
-})();
+};
 const idea876 = idea("ramo-de-flores-en-reflex", "Ramo de flores de tubito en reflex", escena876,
   "Igual: el ramo de ~1 × 1,1 m con 16 flores contadas (13 con el centro a la vista y 3 de canto) de 5 pétalos en lazo de T-260 Reflex Dorado Rosa y centro de T-260 Reflex Plata, cada una en su tallo de T-260 Reflex Plata, todos amarrados con el moño de T-260 Dorado Rosa de dos lazos y dos colas y abiertos por debajo, con los 2 productos que publica la idea. Distinto: la ficha dice ~20 flores y la foto deja ver 16; cada tallo baja por debajo del moño lo mismo que sube (en la foto los de abajo son algo más cortos y parejos); el centro plateado de la foto es más redondo (aquí una burbuja de tubito); los tubitos se cuentan por largo con el desperdicio de cada lazo (en la práctica una flor sale de un solo tubito); no hay estructura de globos: el moño es la raíz.", [
   P("GLOBO TUBITO REFLEX DORADO ROSA", "/products/globo-para-fiesta-latex-tubito-reflex-dorado-rosa", "T-260", "968"),
@@ -943,7 +943,7 @@ const idea876 = idea("ramo-de-flores-en-reflex", "Ramo de flores de tubito en re
  * burbujitas doradas) en ramitas de T-260 dorado que salen de la base. Colores: los publicados; las florecitas rojas no
  * están publicadas y miden Fashion Rojo (ΔE 10; el Metal Rojo, ΔE 8, queda a menos de 6 y se toma el Fashion).
  */
-const escena899 = ((): Escena => {
+const escena899 = (): Escena => {
   const S = sala(380, 340, 300, { piso: "#efeceb", paredes: "#f7f6f4", techo: "#ffffff" });
   const Y0 = 22;
   const en = (x: number, y: number, z: number) => v(x, y - Y0, z);
@@ -982,7 +982,7 @@ const escena899 = ((): Escena => {
     nodos.push(sobreCentrada(`flor-${f.id}`, f.nombre, "tallo", florecita(f.codigo, f.petalos), cabeza, unitario(v(cabeza.x * 0.01, 0.35, 1))));
   }
   return { sala: S, nodos };
-})();
+};
 const idea899 = idea("san-valentin", "San Valentín: topiario de flor frambuesa con tallo trenzado", escena899,
   "Igual: el topiario de ~2,25 m: el tallo trenzado de T-260 Reflex Dorado (11 cm de grueso), la base de 4 R-12 Reflex Fucsia, la flor grande de 5 R-12 Fashion Frambuesa con su lazo de T-260 dorado de ~46 cm alrededor de cada pétalo, la corona de 5 R-5 Reflex Fucsia y el R-5 dorado al centro, y abajo las 8 florecitas de tubito contadas (3 rojas de 9 pétalos y 5 fucsia de 8, con centro de burbujitas doradas), 5 en ramitas de T-260 dorado y 3 sobre la base, con los 4 productos que publica la idea. Distinto: las ramitas de la foto llevan nuditos en los codos (aquí rectas); los pétalos de la flor grande son algo ovalados en la foto; las florecitas rojas no están publicadas (Fashion Rojo, medido) y las fucsia miden Neón Fucsia (ΔE 2) pero va el Fashion Fucsia publicado; el R-5 de la corona va Reflex Fucsia (la idea lo publica en redondo, sin talla).", [
   P("GLOBO REDONDO FASHION FRAMBUESA", "/products/globo-para-fiesta-latex-redondo-fashion-frambuesa", "R-12", "014"),
@@ -1004,7 +1004,7 @@ const idea899 = idea("san-valentin", "San Valentín: topiario de flor frambuesa 
  * verde con uñas negras. Colores: los publicados (la pared clara mide Pastel Mate Verde, ΔE 7, pero la idea publica
  * Fashion Blanco; el corbatín mide Fashion Lila, ΔE 11, y va el Reflex Violeta publicado).
  */
-const escena929 = ((): Escena => {
+const escena929 = (): Escena => {
   const S = sala(380, 300, 280, { piso: "#f2f2f2", paredes: "#ffffff", techo: "#ffffff" });
   const pared: OpcionesMural = {
     disposicion: "simple", grande: { formatoId: "R-9", infladoCm: 16 }, chico: null,
@@ -1039,7 +1039,7 @@ const escena929 = ((): Escena => {
       { id: "cadenita", nombre: "Cadenita de R-5 verde lima del pelo", pieza: cadenita, colocacion: libre(0, 0, Z_PELO + 26) },
     ],
   };
-})();
+};
 const idea929 = idea("temporada-de-sustos", "Temporada de sustos: pared de Frankenstein", escena929,
   "Igual: la pared de 10 columnas alternadas blanca y negra de 10 globos (R-9 a 16 cm; ≈ 1,45 × 1,45 m), con la cabellera orgánica de R-12 cromados Reflex Verde Lima (y algunos Neón Verde) que sobresale por los lados, la cadenita de R-5 verde lima que la recorre por delante, el corbatín de T-260 Reflex Violeta con su R-5 al centro y las dos manos de T-260 Neón Verde que cuelgan de la pared, con los 6 productos que publica la idea. Distinto: en la foto cada columna va corrida medio globo de la vecina (aquí en retícula cuadrada); la pared clara mide Pastel Mate Verde (ΔE 7) y va el Fashion Blanco publicado; las uñas negras de las manos no van y la muñeca sube hacia el pelo; el corbatín de la foto tiene los lazos más llenos; la cadenita de la foto se mete y sale del pelo a tramos (aquí corrida por delante); los globos de la cabellera los da el motor.", [
   P("GLOBO REDONDO REFLEX VERDE LIMA", "/products/globo-para-fiesta-latex-redondo-reflex-verde-lima", "R-12", "931"),

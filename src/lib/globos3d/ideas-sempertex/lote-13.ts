@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { fuenteIdea, type FuenteIdea } from "./fuentes";
 import { ocasionesDeEtiquetas } from "./index";
 import { armarEscena, HUNDIMIENTO_SOBRE_CM, SALA_INICIAL, type Escena, type NodoEscena, type Sala } from "../escena";
@@ -406,19 +406,16 @@ function fuente(slug: string): FuenteIdea {
 }
 
 /**
- * La idea con su número, ocasiones y foto de su fuente, y sus productos calculados la primera vez que se piden (salen de
- * armar la escena). Las ocasiones salen de las etiquetas con `ocasionesDeEtiquetas`, que vive en `index.ts` (que importa
- * este lote): se calculan al leerlas, como en los lotes 06 y 09.
+ * La idea con su número, ocasiones y foto de su fuente; perezosa (ver `tipos.ts`): la escena se arma y sus productos se
+ * calculan la primera vez que se piden (salen de armar la escena). Las ocasiones salen de las etiquetas con
+ * `ocasionesDeEtiquetas`, que vive en `index.ts` (que importa este lote): se calculan al leerlas, como en los lotes 06 y 09.
  */
-function idea(slug: string, nombre: string, escena: Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
+function idea(slug: string, nombre: string, escena: () => Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
   const f = fuente(slug);
-  const contenido: IdeaDigitalizada["contenido"] = { tipo: "escena", escena };
-  let hechos: ProductoDeIdea[] | null = null;
-  return {
-    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, contenido, nota,
+  return ideaPerezosa({
+    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, clase: "escena", nota,
     get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
-    get productos() { return (hechos ??= productosDe(contenido, publicados)); },
-  };
+  }, () => ({ tipo: "escena", escena: escena() }), (contenido) => productosDe(contenido, publicados));
 }
 
 // ----------------------------------------------------------------------------------------------------------
@@ -432,7 +429,7 @@ function idea(slug: string, nombre: string, escena: Escena, nota: string, public
  * regalos) son 398 px ≈ 2,25 m: 11 niveles. La perla mide 80 px de ancho y 143 px de alto, más al fondo (≈ 1,43 px/cm):
  * 5 niveles. La chimenea de cartón con el Grinch sentado, los regalos, las medias, el cuadro y las luces son escenografía.
  */
-const escena933 = ((): Escena => {
+const escena933 = (): Escena => {
   const ROJO = "#d8231c", VERDE = "#8fbf3a", AMARILLO = "#f4c21a", NARANJA = "#ec8a2a", BLANCO = "#f7f2ea";
   const columnaEspiral = columna("R-12", 25, 11, ["015", "406"], "dos_colores");
   const columnas: NodoEscena[] = [
@@ -497,7 +494,7 @@ const escena933 = ((): Escena => {
       enPiso("tapete", "Tapete lila", escenografia(tapete({ anchoCm: 300, fondoCm: 170, hex: "#9a8cab" })), 40, -40),
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 524 · Escenario Halloween
@@ -511,7 +508,7 @@ const escena933 = ((): Escena => {
  * y R-18 aguamarina, dos R-18 violeta, con collares de R-5 cromados) y el ramo de 6 R-12 sobre su base de R-5 cromados.
  * Foto → mundo: x = (px − 690)/2,8, y = (810 − py)/2,8.
  */
-const escena524 = ((): Escena => {
+const escena524 = (): Escena => {
   const malla: Pieza = { tipo: "pared_malla", formatoId: "LOL-12", infladoCm: 25, anchoCm: 225, altoCm: 225, patron: "damero", colores: ["080", "061"], union: { infladoCm: 10, codigo: "061" } };
   const g = (t: number, radioCm: number): PuntoGrosor => ({ t, radioCm });
   const guirnalda = organicoSuelto("guirnalda", "Guirnalda orgánica cromada verde menta", [{
@@ -573,7 +570,7 @@ const escena524 = ((): Escena => {
       enPiso("tapete", "Tapete naranja", escenografia(tapete({ anchoCm: 500, fondoCm: 170, hex: "#c95a26" })), 15, -122),
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 553 · Feliz cumpleaños Terra
@@ -588,7 +585,7 @@ const escena524 = ((): Escena => {
  * peso en un racimo dorado y blanco sobre un canasto; el de la derecha (mármol, mostaza y verde salvia) sale cortado.
  * Foto → mundo: x = (px − 360)/1,9, y = (610 − py)/1,9.
  */
-const escena553 = ((): Escena => {
+const escena553 = (): Escena => {
   const INF553 = { ...INFLADOS, "R-12": 28 };
   const tubosA = [v(-166, 240, -168), v(-132, 268, -166), v(-84, 262, -164), v(-37, 258, -163), v(8, 250, -160), v(38, 214, -150), v(34, 165, -142), v(8, 128, -138), v(-18, 86, -134), v(-20, 40, -132), v(-16, 4, -132)];
   const armazonA = suelta("armazon-arco", "Armazón del arco terracota y durazno", escenografia(tubo(tubosA, 1.6, "#dedbd4")), v(0, 0, 0));
@@ -648,7 +645,7 @@ const escena553 = ((): Escena => {
       { id: "fondo", nombre: "Pared de madera y pared naranja", pieza: escenografia(fondo), colocacion: { en: "libre", xCm: 0, yCm: 0, zCm: -189, giroGrados: 0 } },
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 554 · Feliz día bigotes y padres
@@ -663,7 +660,7 @@ const escena553 = ((): Escena => {
  * peso en el montículo y el de la derecha (7: terrazo azul, mostaza y plata) sobre el pedestal de la derecha.
  * Foto → mundo: x = (px − 357)/2,2, y = (600 − py)/2,2.
  */
-const escena554 = ((): Escena => {
+const escena554 = (): Escena => {
   const ARO = { centro: v(8, 136, -168), radio: 93 };
   const aroPuntos = Array.from({ length: 41 }, (_, i) => mas(ARO.centro, v(ARO.radio * Math.cos((2 * Math.PI * i) / 40), ARO.radio * Math.sin((2 * Math.PI * i) / 40), 0)));
   const DORADO = "#c9a34a";
@@ -724,7 +721,7 @@ const escena554 = ((): Escena => {
       { id: "mantel", nombre: "Mantel azul de lunares en el piso", pieza: escenografia(piso), colocacion: { en: "libre", xCm: 0, yCm: 0, zCm: -40, giroGrados: 0 } },
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 639 · Feliz Año
@@ -738,7 +735,7 @@ const escena554 = ((): Escena => {
  * un satín plata y 3 negros de estrellas) tiene el peso en el racimo del piso, que lleva los R-5 Estrellas Reflex Plata.
  * Foto → mundo: x = (px − 370)/1,9, y = (565 − py)/1,9.
  */
-const escena639 = ((): Escena => {
+const escena639 = (): Escena => {
   const tubos = [v(-184, 229, -172), v(-158, 258, -172), v(-116, 266, -170), v(-86, 252, -170), v(-80, 240, -170), v(-53, 258, -170), v(-28, 252, -170), v(-20, 236, -170), v(0, 252, -170), v(22, 240, -170), v(42, 248, -172), v(79, 258, -172), v(114, 226, -170), v(132, 178, -165), v(142, 124, -160), v(147, 72, -155), v(142, 22, -150), v(132, 4, -150)];
   const armazon = suelta("armazon", "Armazón del arco Feliz Año", escenografia(tubo(tubos, 1.6, "#d9d6d0")), v(0, 0, 0));
   const dorado5 = (peso: number) => color("970", peso, ["R-5"]);
@@ -784,7 +781,7 @@ const escena639 = ((): Escena => {
       { id: "mesas", nombre: "Mesas de marco blanco y vidrio", pieza: escenografia(mesas), colocacion: { en: "libre", xCm: 0, yCm: 0, zCm: 0, giroGrados: 0 } },
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 650 · Halloween (showroom)
@@ -799,7 +796,7 @@ const escena639 = ((): Escena => {
  * cilíndricas negras, el tapete naranja, las arañas y el gato de oropel. Foto → mundo: x = (px − 500)·0,385,
  * y = (860 − py)·0,385.
  */
-const escena650 = ((): Escena => {
+const escena650 = (): Escena => {
   const arriba = mezcla({ "R-18": 0.18, "R-12": 0.57, "R-9": 0.25 }, { "R-18": 0.12, "R-12": 0.55, "R-9": 0.33 });
   const abajo = mezcla({ "R-18": 0.22, "R-12": 0.55, "R-9": 0.23 }, { "R-18": 0.15, "R-12": 0.55, "R-9": 0.3 });
   const colores: ColorOrganico[] = [color("230", 20), color("061", 22), color("261", 18), color("060", 16), color("951", 24, ["R-5", "R-12"])];
@@ -853,7 +850,7 @@ const escena650 = ((): Escena => {
       { id: "vasos", nombre: "Vasos lila con servilleta verde", pieza: vasos({ cantidad: 3, altoCm: 10, diametroCm: 7, hex: "#9b7fd6", servilleta: "#b7e04a", productoId: null, descripcion: "vasos de Halloween" }), colocacion: { en: "libre", xCm: -28, yCm: 62, zCm: -105, giroGrados: 0 } },
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 794 · Ocasiones especiales Reflex Luxury
@@ -866,7 +863,7 @@ const escena650 = ((): Escena => {
  * la pata derecha café y champaña con la flor café de centro dorado entre plumas y cuernos dorados, y el pie izquierdo
  * café y champaña. Dos ramos (7 y 6) con el peso en racimitos café. Foto → mundo: x = (px − 540)/3, y = (915 − py)/3.
  */
-const escena794 = ((): Escena => {
+const escena794 = (): Escena => {
   const tubos = [v(-150, 10, -150), v(-157, 62, -150), v(-158, 120, -156), v(-160, 180, -160), v(-150, 235, -160), v(-125, 262, -160), v(-95, 255, -160), v(-75, 235, -160), v(-80, 262, -162), v(-48, 262, -160), v(-34, 225, -158), v(-44, 195, -156), v(5, 240, -160), v(36, 258, -162), v(55, 226, -160), v(18, 205, -156), v(78, 198, -155), v(86, 150, -152), v(92, 105, -150), v(110, 52, -148), v(122, 10, -146)];
   const armazon = suelta("armazon", "Armazón del marco Reflex Luxury", escenografia(tubo(tubos, 1.6, "#d4ccc2")), v(0, 0, 0));
   const g = (t: number, radioCm: number): PuntoGrosor => ({ t, radioCm });
@@ -920,7 +917,7 @@ const escena794 = ((): Escena => {
       { id: "plumas", nombre: "Plumas blancas y cuernos dorados", pieza: escenografia(plumas), colocacion: { en: "libre", xCm: 0, yCm: 0, zCm: 0, giroGrados: 0 } },
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 948 · Tropical Sunset
@@ -934,7 +931,7 @@ const escena794 = ((): Escena => {
  * burbujas de T-260, 8 racimitos de bayas de R-5 y 5 florecitas de 3 pétalos en el pasto. El letrero de neón «Let's
  * Party», la mesa alta y el pasto son escenografía. Foto → mundo: x = (px − 470)/2,8, y = (835 − py)/2,8.
  */
-const escena948 = ((): Escena => {
+const escena948 = (): Escena => {
   const INF948 = { "R-24": 50, "R-18": 40, "R-12": 28, "R-9": 20, "R-5": 12 };
   const base = (id: string, nombre: string, puntos: Vec3[], semilla: number) => organicoSuelto(id, nombre, [{
     id: id.replace(/-/g, "_"), nombre, puntos, tapas: { inicio: false, fin: true }, grosor: [{ t: 0, radioCm: 58 }, { t: 0.5, radioCm: 52 }, { t: 1, radioCm: 42 }],
@@ -1002,7 +999,7 @@ const escena948 = ((): Escena => {
     enPiso("pasto", "Tapete de pasto", escenografia(tapete({ anchoCm: 460, fondoCm: 230, hex: "#2f7d34" })), 0, -85),
   );
   return { sala: sala(460, 400, 320, { piso: "#cfc9c0", paredes: "#ecebe8", techo: "#f5f5f3" }), nodos };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // 961 · Una tierna fiesta en tonos pasteles
@@ -1015,7 +1012,7 @@ const escena948 = ((): Escena => {
  * y R-5 de cristal sueltos. Tres jaulas con globitos pastel dentro, el muro de estibas con el letrero «Amaia», las mesas
  * provenzales blancas y el pasto. Foto → mundo: x = (px − 315)/1,75, y = (420 − py)/1,75.
  */
-const escena961 = ((): Escena => {
+const escena961 = (): Escena => {
   const tubos = [v(-140, 10, -140), v(-130, 48, -150), v(-120, 76, -160), v(-112, 108, -165), v(-106, 140, -165), v(-100, 170, -165), v(-88, 196, -165), v(-62, 214, -165), v(-30, 220, -165), v(4, 216, -165), v(34, 212, -165), v(66, 204, -165), v(96, 188, -165), v(110, 162, -165), v(116, 134, -165), v(119, 108, -165), v(122, 84, -162), v(126, 60, -160), v(134, 38, -150), v(146, 22, -145), v(162, 12, -140)];
   const armazon = suelta("armazon", "Armazón del arco arcoíris", escenografia(tubo(tubos, 1.6, "#efece8")), v(0, 0, 0));
   const pastel = mezcla({ "R-18": 0.08, "R-12": 0.55, "R-9": 0.12, "R-5": 0.25 });
@@ -1069,7 +1066,7 @@ const escena961 = ((): Escena => {
     enPiso("pasto", "Tapete de pasto", escenografia(tapete({ anchoCm: 420, fondoCm: 210, hex: "#2e7d32" })), 10, -90),
   ];
   return { sala: sala(460, 400, 300, { piso: "#e9e1d7", paredes: "#f2f0ed", techo: "#f7f6f3" }), nodos };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 // Las 9 ideas

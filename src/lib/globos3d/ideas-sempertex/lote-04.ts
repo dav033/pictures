@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type FijoDeIdea, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { armarEscena, HUNDIMIENTO_SOBRE_CM, SALA_INICIAL, type Colocacion, type Escena, type NodoEscena, type Sala } from "../escena";
 import { armarPieza, type Pieza } from "../piezas";
 import { centroCuerpo } from "../geometria";
@@ -250,9 +250,8 @@ function productosDe(contenido: IdeaDigitalizada["contenido"], publicados: reado
  * La idea con sus productos calculados la primera vez que se piden: salen de armar la escena (los orgánicos tardan
  * unas décimas) y la biblioteca carga todas las ideas al abrir el taller.
  */
-function idea(base: Omit<IdeaDigitalizada, "productos">, calcular: () => ProductoDeIdea[]): IdeaDigitalizada {
-  let hechos: ProductoDeIdea[] | null = null;
-  return { ...base, get productos() { return (hechos ??= calcular()); } };
+function idea(fijo: FijoDeIdea, contenido: () => IdeaDigitalizada["contenido"], calcular: () => ProductoDeIdea[]): IdeaDigitalizada {
+  return ideaPerezosa(fijo, contenido, () => calcular());
 }
 
 const P = (nombre: string, url: string, formato: string | null, codigo: string | null): Publicado => ({ nombre, url, formato, codigo });
@@ -287,20 +286,20 @@ function raqueta(hex: string, variante: string): Pieza {
     productos: [...(plato.productos ?? []), productoDe("cuchillo-desechable-deluxe-oxo", paquetesPara("cuchillo-desechable-deluxe-oxo", 1), "cuchillo desechable", "negro")],
   };
 }
-const escena930: Escena = {
+const escena930 = perezoso((): Escena => ({
   sala: sala(320, 280, 280, { piso: "#a88c69" }),
   nodos: [
     { id: "globo", nombre: "R-12 Fashion Azul Hortensia (la pelota)", pieza: { tipo: "globo", formatoId: "R-12", infladoCm: 28, codigo: "042" }, colocacion: { en: "piso", xCm: -14, zCm: 16, giroGrados: 0 } },
     { id: "raqueta-naranja", nombre: "Raqueta de plato naranja", pieza: raqueta("#e2541c", "naranja"), colocacion: { en: "piso", xCm: -20, zCm: -18, giroGrados: -45 } },
     { id: "raqueta-verde", nombre: "Raqueta de plato verde lima", pieza: raqueta("#6fa312", "verde lima"), colocacion: { en: "piso", xCm: 24, zCm: -6, giroGrados: -130 } },
   ],
-};
+}));
 const idea930 = idea({
   id: "idea:tenis-en-casa", numero: 930, slug: "tenis-en-casa", nombre: "Tenis en casa (juego con globo)", ocasiones: ["general"],
   fotoUrl: FOTO("Sempertex-Tenis-en-Casa_1c34111c-200e-47af-83dd-3374c7b9381d.jpg"),
-  contenido: { tipo: "escena", escena: escena930 },
+  clase: "escena",
   nota: "Igual: un R-12 azul de pelota (la idea no publica productos: medido #1484cd en la cara iluminada → Fashion Azul Hortensia 042) y dos raquetas hechas con un plato desechable de 23 cm (naranja y verde lima: el plato Deluxe Oxo de la tienda) y un cuchillo negro pegado de mango, sobre piso de madera, como en la foto cenital. Distinto: es un juego, no una decoración; el letrero «Indoor Balloon Tennis · Moms & Kids» de la foto no se modela y la cinta adhesiva no se ve.",
-}, () => productosDe({ tipo: "escena", escena: escena930 }));
+}, () => ({ tipo: "escena", escena: escena930() }), () => productosDe({ tipo: "escena", escena: escena930() }));
 
 // ----------------------------------------------------------------------------------------------------------
 // 940 · Topiario (bola de 12 R-12 con flores de tubito)
@@ -328,32 +327,32 @@ function huecosDeBola(pieza: Pieza): Array<{ p: Vec3; n: Vec3 }> {
   }
   return salida.sort((a, b) => b.n.y - a.n.y || a.n.x - b.n.x || a.n.z - b.n.z);
 }
-const HUECOS_940 = (() => {
+const HUECOS_940 = perezoso(() => {
   const todos = huecosDeBola(BOLA_940);
   const frente = todos.reduce((a, b) => (punto3(b.n, unitario(v(-0.5, 0.35, 0.8))) > punto3(a.n, unitario(v(-0.5, 0.35, 0.8))) ? b : a));
   return todos.filter((h) => h.n.z <= 0.55 || h === frente);
-})();
-const escena940: Escena = {
+});
+const escena940 = perezoso((): Escena => ({
   sala: structuredClone(SALA_CHICA),
   nodos: [
     { id: "mesa", nombre: "Mesa", pieza: { tipo: "escenografia", elementos: MESA() }, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } },
     { id: "bola", nombre: "Bola de 12 R-12 Verde Selva", pieza: BOLA_940, colocacion: { en: "libre", xCm: 0, yCm: ALTO_MESA + 0.5, zCm: 0, giroGrados: 0 } },
-    ...HUECOS_940.map((h, i) => decoSobre(`flor-${i + 1}`, `Flor roja de 5 burbujas ${i + 1}`, "bola", FLOR_ROJA_940, h.p, h.n, i * 23)),
+    ...HUECOS_940().map((h, i) => decoSobre(`flor-${i + 1}`, `Flor roja de 5 burbujas ${i + 1}`, "bola", FLOR_ROJA_940, h.p, h.n, i * 23)),
   ],
-};
+}));
 const idea940 = idea({
   id: "idea:topiario", numero: 940, slug: "topiario", nombre: "Topiario: bola verde con flores rojas", ocasiones: ["navidad"],
   fotoUrl: FOTO("dac52ce5b6558e12f6dd03416b5a1c94_d4e5fb4b-ece4-4618-8912-7fa25ea5de6d.jpg"),
-  contenido: { tipo: "escena", escena: escena940 },
-  nota: `Igual: bola de 12 R-12 (la geodésica de icosaedro: se ven 9 y 3 quedan detrás) en verde oscuro (la idea no publica productos: medido #086b38 → Fashion Verde Selva 032) de ~82 cm, con flores rojas de 5 burbujas de T-260 Fashion Rojo (medido #e51619 → 015) metidas en los huecos de tres globos: ${HUECOS_940.length} flores, todas las del contorno y la de frente arriba a la izquierda (en la foto se ven 11). Distinto: la foto no muestra base ni tallo (por «topiario» podría ir en una maceta): aquí va sobre una mesa redonda; las flores de detrás se suponen.`,
-}, () => productosDe({ tipo: "escena", escena: escena940 }));
+  clase: "escena",
+  get nota() { return `Igual: bola de 12 R-12 (la geodésica de icosaedro: se ven 9 y 3 quedan detrás) en verde oscuro (la idea no publica productos: medido #086b38 → Fashion Verde Selva 032) de ~82 cm, con flores rojas de 5 burbujas de T-260 Fashion Rojo (medido #e51619 → 015) metidas en los huecos de tres globos: ${HUECOS_940().length} flores, todas las del contorno y la de frente arriba a la izquierda (en la foto se ven 11). Distinto: la foto no muestra base ni tallo (por «topiario» podría ir en una maceta): aquí va sobre una mesa redonda; las flores de detrás se suponen.`; },
+}, () => ({ tipo: "escena", escena: escena940() }), () => productosDe({ tipo: "escena", escena: escena940() }));
 
 // ----------------------------------------------------------------------------------------------------------
 // 947 · Tropical Sunset (ramo)
 // ----------------------------------------------------------------------------------------------------------
 
 /** Foto de 1000 × 1000: R-12 de 175 px (28 cm: 6,25 px/cm); un piso cada ~170 px (27 cm). */
-const escena947 = escenaRamo({
+const escena947 = perezoso(() => escenaRamo({
   pisos: [
     piso(120, DOS_Y_DETRAS_DERECHA, R("R-12", 28, "056")),
     piso(147, tres(0), R("R-12", 28, "062")),
@@ -361,20 +360,20 @@ const escena947 = escenaRamo({
     piso(201, tres(0), R("R-12", 28, "021")),
   ],
   cinta: "#ebe3cf", peso: "#c9c9cf",
-});
+}));
 const idea947 = idea({
   id: "idea:tropical-sunset-1", numero: 947, slug: "tropical-sunset-1", nombre: "Ramo Tropical Sunset", ocasiones: ["general"],
   fotoUrl: FOTO("Tropical_Sunset_b4855735-7136-480e-a1f8-cb3212265d63.jpg"),
-  contenido: { tipo: "escena", escena: escena947 },
+  clase: "escena",
   nota: "Igual: 12 R-12 en 4 pisos con los 4 productos que publica la idea, de abajo arriba 3 Orquídea Morada (dos de frente y uno que asoma detrás a la derecha), 3 Naranja Cobrizo, 3 Eucalipto (el tercero asoma entre los dos de frente, por detrás) y 3 Amarillo Miel, cada piso girado sobre el de abajo y con su cinta crema al peso. Distinto: el peso no sale en la foto (cortada) y el largo de las cintas es supuesto; el naranja del centro se ve más claro por el brillo (mismo producto).",
-}, () => productosDe({ tipo: "escena", escena: escena947 }, [AMARILLO_MIEL, EUCALIPTO, NARANJA_COBRIZO, ORQUIDEA]));
+}, () => ({ tipo: "escena", escena: escena947() }), () => productosDe({ tipo: "escena", escena: escena947() }, [AMARILLO_MIEL, EUCALIPTO, NARANJA_COBRIZO, ORQUIDEA]));
 
 // ----------------------------------------------------------------------------------------------------------
 // 974 · Vibrant Festival (ramo)
 // ----------------------------------------------------------------------------------------------------------
 
 /** Foto de 1000 × 1000: R-12 de ~165 px (28 cm: 5,9 px/cm); un piso cada ~170 px (29 cm). */
-const escena974 = escenaRamo({
+const escena974 = perezoso(() => escenaRamo({
   pisos: [
     piso(120, DOS_Y_DETRAS_DERECHA, R("R-12", 28, "062")),
     piso(149, tres(0), R("R-12", 28, "037")),
@@ -383,13 +382,13 @@ const escena974 = escenaRamo({
     piso(236, cuatro(45), R("R-12", 28, "021"), 24),
   ],
   cinta: "#ebe3cf", peso: "#c9c9cf",
-});
+}));
 const idea974 = idea({
   id: "idea:vibrant-festival-1", numero: 974, slug: "vibrant-festival-1", nombre: "Ramo Vibrant Festival", ocasiones: ["general"],
   fotoUrl: FOTO("Vibrant_Festival.jpg"),
-  contenido: { tipo: "escena", escena: escena974 },
+  clase: "escena",
   nota: "Igual: 16 R-12 en 5 pisos con los 5 productos que publica la idea, de abajo arriba 3 Naranja Cobrizo (dos de frente y uno que asoma detrás a la derecha), 3 Aguamarina, 3 Orquídea Morada (uno detrás a la derecha), 3 Verde Trébol y 4 Amarillo Miel (dos de frente y dos detrás), con cintas crema al peso. Distinto: la foto mide el turquesa más cerca de Azul Caribe 038 (#0097a4) y el naranja más cerca de Fashion Naranja 061 (#e25301), pero van los códigos publicados (Aguamarina 037 y Naranja Cobrizo 062); el peso no sale en la foto.",
-}, () => productosDe({ tipo: "escena", escena: escena974 }, [
+}, () => ({ tipo: "escena", escena: escena974() }), () => productosDe({ tipo: "escena", escena: escena974() }, [
     AMARILLO_MIEL, P("GLOBO REDONDO FASHION VERDE TREBOL", "/products/globo-latex-redondo-fashion-verde-trebol", "R-12", "029"), ORQUIDEA,
     P("GLOBO LATEX REDONDO FASHION AGUAMARINA", "/products/globo-para-fiesta-latex-redondo-fashion-aguamarina", "R-12", "037"), NARANJA_COBRIZO,
   ]));
@@ -399,7 +398,7 @@ const idea974 = idea({
 // ----------------------------------------------------------------------------------------------------------
 
 /** Foto de 1000 × 1000: R-12 de ~160 px (28 cm: 5,7 px/cm); un piso cada ~160 px (28 cm). */
-const escena979 = escenaRamo({
+const escena979 = perezoso(() => escenaRamo({
   pisos: [
     piso(120, DOS_Y_DETRAS_IZQUIERDA, R("R-12", 28, "009")),
     piso(148, tres(0), R("R-12", 28, "050")),
@@ -408,13 +407,13 @@ const escena979 = escenaRamo({
     piso(232, tres(60), R("R-12", 28, "609")),
   ],
   cinta: "#e9e2d8", peso: "#c9c9cf",
-});
+}));
 const idea979 = idea({
   id: "idea:watercolor-collection", numero: 979, slug: "watercolor-collection", nombre: "Ramo Watercolor Collection", ocasiones: ["general"],
   fotoUrl: FOTO("Watercolor_Collection.png"),
-  contenido: { tipo: "escena", escena: escena979 },
+  clase: "escena",
   nota: "Igual: 14 R-12 en 5 pisos con los 5 productos que publica la idea, de abajo arriba 3 Fashion Rosado (el fucsia de la foto: dos de frente y uno detrás a la izquierda), 3 Fashion Lila (el morado), 2 Reflex Dorado lado a lado, 3 Pastel Mate Lila y 3 Pastel Mate Rosado (el tercero asoma entre los dos de arriba, por detrás), con cintas blancas al peso. Distinto: en la foto el «rosado» de abajo se ve fucsia (#c42d80) y el Fashion Lila, violeta (#9a76c4): van los códigos publicados; el peso no sale en la foto.",
-}, () => productosDe({ tipo: "escena", escena: escena979 }, [
+}, () => ({ tipo: "escena", escena: escena979() }), () => productosDe({ tipo: "escena", escena: escena979() }, [
     P("GLOBO REDONDO PASTEL MATE ROSADO", "/products/globo-para-fiesta-latex-redondo-pastel-mate-rosado", "R-12", "609"),
     P("GLOBO REDONDO PASTEL MATE LILA", "/products/globo-para-fiesta-latex-redondo-pastel-mate-lila", "R-12", "650"),
     REFLEX_DORADO,
@@ -440,7 +439,7 @@ const ARANA_30: Pieza = {
  * 22 direcciones repartidas (espiral de Fibonacci) alrededor del núcleo, en la franja que se ve: ni de frente (la tapa la
  * cabeza) ni del todo hacia atrás (ahí está la pared).
  */
-const RACIMO_30: Vec3[] = (() => {
+const RACIMO_30 = perezoso((): Vec3[] => {
   const franja: Vec3[] = [];
   const n = 120;
   for (let k = 0; k < n; k++) {
@@ -449,20 +448,20 @@ const RACIMO_30: Vec3[] = (() => {
     if (d.z >= -0.3 && d.z <= 0.45) franja.push(redondo(d));
   }
   return Array.from({ length: 22 }, (_, i) => franja[Math.floor((i * franja.length) / 22)]!);
-})();
-const escena30: Escena = {
+});
+const escena30 = perezoso((): Escena => ({
   sala: structuredClone(SALA_CHICA),
   nodos: [
     { id: "arana", nombre: "Araña negra de patas articuladas", pieza: ARANA_30, colocacion: enLaPared(ARANA_30, 125) },
-    ...RACIMO_30.map((d, i) => globoSobre(`racimo-${i + 1}`, `R-5 Fashion Negro del racimo ${i + 1}`, "arana", R("R-5", 12, "080"), por(d, 14 + 6), d)),
+    ...RACIMO_30().map((d, i) => globoSobre(`racimo-${i + 1}`, `R-5 Fashion Negro del racimo ${i + 1}`, "arana", R("R-5", 12, "080"), por(d, 14 + 6), d)),
   ],
-};
+}));
 const idea30 = idea({
   id: "idea:arana-lol", numero: 30, slug: "arana-lol", nombre: "Araña de racimo y patas articuladas", ocasiones: ["halloween"],
   fotoUrl: FOTO("ba8ccfda07f4e6df573f8a6679987c09_0238027f-fa29-4917-997d-3e133d92c967.jpg"),
-  contenido: { tipo: "escena", escena: escena30 },
+  clase: "escena",
   nota: "Igual: cabeza R-18 Fashion Negro (~44 cm) con los ojos verdes impresos (medido #62b83c), un racimo de 22 R-5 negros detrás y debajo de ella y 8 patas articuladas de T-260 negro (3 burbujas cada una, rodilla alta) que abren ~1,9 m, en la pared. La idea no publica productos: negro 080 (medido #1c1d1b). Distinto: la boca roja con colmillos no se modela; el racimo va sobre un R-12 negro de núcleo (no se ve en la foto) y por eso la cabeza queda algo más arriba del centro del racimo que en la foto; «LOL» del título no se ve en la foto (los globitos son redondos).",
-}, () => productosDe({ tipo: "escena", escena: escena30 }));
+}, () => ({ tipo: "escena", escena: escena30() }), () => productosDe({ tipo: "escena", escena: escena30() }));
 
 // ----------------------------------------------------------------------------------------------------------
 // 61 · Arco araña
@@ -476,13 +475,13 @@ const idea30 = idea({
  */
 const PATA_61 = columna("R-12", 25, 6, ["061"]);
 const ARCO_61 = arco("R-12", 25, "redondo", 206, 80, "un_color", ["061"]);
-const BASE_ARCO_61 = r2(centroNivelColumna(PATA_61, 6));
+const BASE_ARCO_61 = perezoso(() => r2(centroNivelColumna(PATA_61, 6)));
 const ARANA_61 = (giro: number): Decoracion => arana({ cuerpo: R("R-12", 25, "080"), cabeza: R("R-9", 18, "080"), ojos: { hexIris: "#56c8dc" }, patas: { formatoId: "T-260", grosorCm: 3.5, codigo: "080", largoCm: 50, estilo: "articuladas" }, giroGrados: giro });
-const NIVELES_61 = nivelesDe(ARCO_61);
-const escena61: Escena = {
+const NIVELES_61 = perezoso(() => nivelesDe(ARCO_61));
+const escena61 = perezoso((): Escena => ({
   sala: structuredClone(SALA_ARCO),
   nodos: [
-    { id: "arco", nombre: "Arco de cuartetos naranja", pieza: ARCO_61, colocacion: { en: "libre", xCm: 0, yCm: BASE_ARCO_61, zCm: 0, giroGrados: 0 } },
+    { id: "arco", nombre: "Arco de cuartetos naranja", pieza: ARCO_61, colocacion: { en: "libre", xCm: 0, yCm: BASE_ARCO_61(), zCm: 0, giroGrados: 0 } },
     { id: "parejas-verdes", nombre: "Globitos verdes de las parejas", pieza: { tipo: "globo", formatoId: "R-5", infladoCm: 11, codigo: "030" }, colocacion: { en: "ancla", padreId: "arco", ancla: 0, cada: 2, giroGrados: 0 } },
     { id: "parejas-moradas", nombre: "Globitos morados de las parejas", pieza: { tipo: "globo", formatoId: "R-5", infladoCm: 11, codigo: "051" }, colocacion: { en: "ancla", padreId: "arco", ancla: 1, cada: 2, giroGrados: 0 } },
     decoSobre("arana-izquierda", "Araña del pie izquierdo", "arco", ARANA_61(15), v(-80, 8, 0), v(0.35, -0.1, 0.93)),
@@ -492,13 +491,13 @@ const escena61: Escena = {
     { id: "pata-derecha-dentro", nombre: "Columna naranja (pata derecha, dentro)", pieza: PATA_61, colocacion: { en: "piso", xCm: 86, zCm: 0, giroGrados: 45 } },
     { id: "pata-derecha-fuera", nombre: "Columna naranja (pata derecha, fuera)", pieza: PATA_61, colocacion: { en: "piso", xCm: 120, zCm: 0, giroGrados: 0 } },
   ],
-};
+}));
 const idea61 = idea({
   id: "idea:arco-arana", numero: 61, slug: "arco-arana", nombre: "Arco araña", ocasiones: ["halloween"],
   fotoUrl: FOTO("e7ad962fd565d000a05ceb7dcc7f7f32_42a4e56c-b49f-4fe5-85e8-3c434ea14fd5.jpg"),
-  contenido: { tipo: "escena", escena: escena61 },
-  nota: `Igual: patas gruesas de dos columnas de cuartetos R-12 Fashion Naranja cada una (6 niveles, 1,26 m), arriba un arco de ${NIVELES_61} cuartetos naranja (eje 2,06 × 0,8 m, sobre las patas) con un globito en cada hueco alternando verde y morado (las «parejas»), y las dos arañas negras del «set araña» (cuerpo R-12, cabeza R-9 con ojos celestes, patas articuladas de T-260) sobre el arco. Colores medidos (no publica productos): naranja #fe7401 → 061, verde #00c898 → Fashion Verde 030, morado #614aca → Violeta 051, negro 080. Distinto: el texto dice «malla con parejas de R-6» para la parte de arriba; aquí es un arco de cuartetos con los globitos en sus huecos (el taller no dobla una malla en arco) y van R-5 (el R-6 no está en la tabla de formatos); las caras pintadas de las arañas solo llevan ojos.`,
-}, () => productosDe({ tipo: "escena", escena: escena61 }));
+  clase: "escena",
+  get nota() { return `Igual: patas gruesas de dos columnas de cuartetos R-12 Fashion Naranja cada una (6 niveles, 1,26 m), arriba un arco de ${NIVELES_61()} cuartetos naranja (eje 2,06 × 0,8 m, sobre las patas) con un globito en cada hueco alternando verde y morado (las «parejas»), y las dos arañas negras del «set araña» (cuerpo R-12, cabeza R-9 con ojos celestes, patas articuladas de T-260) sobre el arco. Colores medidos (no publica productos): naranja #fe7401 → 061, verde #00c898 → Fashion Verde 030, morado #614aca → Violeta 051, negro 080. Distinto: el texto dice «malla con parejas de R-6» para la parte de arriba; aquí es un arco de cuartetos con los globitos en sus huecos (el taller no dobla una malla en arco) y van R-5 (el R-6 no está en la tabla de formatos); las caras pintadas de las arañas solo llevan ojos.`; },
+}, () => ({ tipo: "escena", escena: escena61() }), () => productosDe({ tipo: "escena", escena: escena61() }));
 
 // ----------------------------------------------------------------------------------------------------------
 // 65 · Arco azul
@@ -510,22 +509,22 @@ const idea61 = idea({
  * placa blanca bajo cada pie.
  */
 const ARCO_65 = arco("R-12", 25, "redondo", 209, 160, "espiral", ["040", "041", "044", "044"]);
-const NIVELES_65 = nivelesDe(ARCO_65);
+const NIVELES_65 = perezoso(() => nivelesDe(ARCO_65));
 const RELLENO_65: ReadonlyArray<[number, string, string]> = [[0, "040", "Fashion Azul"], [1, "041", "Fashion Azul Rey"], [2, "044", "Fashion Azul Naval (1)"], [3, "044", "Fashion Azul Naval (2)"]];
-const escena65: Escena = {
+const escena65 = perezoso((): Escena => ({
   sala: structuredClone(SALA_ARCO),
   nodos: [
     { id: "arco", nombre: "Arco espiral de tres azules", pieza: ARCO_65, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } },
     ...RELLENO_65.map(([hueco, codigo, nombre]): NodoEscena => ({ id: `relleno-${hueco + 1}`, nombre: `R-5 ${nombre} en los huecos`, pieza: { tipo: "globo", formatoId: "R-5", infladoCm: 11, codigo }, colocacion: { en: "ancla", padreId: "arco", ancla: hueco, cada: 4, giroGrados: 0 } })),
     ...[-1, 1].map((s): NodoEscena => ({ id: `base-${s < 0 ? "izquierda" : "derecha"}`, nombre: `Placa del pie ${s < 0 ? "izquierdo" : "derecho"}`, pieza: { tipo: "escenografia", elementos: [{ forma: "caja", centro: v(0, 0.5, 0), tamano: v(46, 1, 46), hex: "#dcdcdc", acabado: "satinado" }] }, colocacion: { en: "piso", xCm: s * 104.5, zCm: 0, giroGrados: 0 } })),
   ],
-};
+}));
 const idea65 = idea({
   id: "idea:arco-azul", numero: 65, slug: "arco-azul", nombre: "Arco azul en espiral", ocasiones: ["cumpleaños"],
   fotoUrl: FOTO("e63ea12705edd8a6ca1a0529d7426575_0f8c89ff-a852-4e3f-965b-fb0ac1a684aa.jpg"),
-  contenido: { tipo: "escena", escena: escena65 },
-  nota: `Igual: arco redondo de ${NIVELES_65} cuartetos R-12 (eje 2,09 × 1,6 m) en espiral de tres azules —claro, medio y oscuro, el oscuro de banda doble como en la foto— con un R-5 en cada hueco del color de su banda y una placa blanca bajo cada pie. La idea no publica productos; medidos (la foto está muy saturada): claro #00b4fa → Fashion Azul 040, medio #015cd9 → Fashion Azul Rey 041, oscuro #002f74 → Fashion Azul Naval 044. Distinto: los oscuros de la foto brillan como cristal o metal; van en Fashion (el más cercano de los azules); la espiral de la foto gira más despacio que la del taller (1/8 por nivel).`,
-}, () => productosDe({ tipo: "escena", escena: escena65 }));
+  clase: "escena",
+  get nota() { return `Igual: arco redondo de ${NIVELES_65()} cuartetos R-12 (eje 2,09 × 1,6 m) en espiral de tres azules —claro, medio y oscuro, el oscuro de banda doble como en la foto— con un R-5 en cada hueco del color de su banda y una placa blanca bajo cada pie. La idea no publica productos; medidos (la foto está muy saturada): claro #00b4fa → Fashion Azul 040, medio #015cd9 → Fashion Azul Rey 041, oscuro #002f74 → Fashion Azul Naval 044. Distinto: los oscuros de la foto brillan como cristal o metal; van en Fashion (el más cercano de los azules); la espiral de la foto gira más despacio que la del taller (1/8 por nivel).`; },
+}, () => ({ tipo: "escena", escena: escena65() }), () => productosDe({ tipo: "escena", escena: escena65() }));
 
 // ----------------------------------------------------------------------------------------------------------
 // 87 · Arco espiral
@@ -537,34 +536,34 @@ const idea65 = idea({
  * borde de una banda: un R-5 en un hueco de cada nivel (los huecos giran con la trenza) y otro entre nivel y nivel.
  */
 const ARCO_87 = arco("R-12", 25, "redondo", 238, 211, "espiral", ["915", "806", "030", "806"]);
-const NIVELES_87 = nivelesDe(ARCO_87);
+const NIVELES_87 = perezoso(() => nivelesDe(ARCO_87));
 const HUECO_HILERA_87 = 1;
 const PERLA_87 = R("R-5", 10, "806");
-const ENTRE_NIVELES_87: NodoEscena[] = (() => {
+const ENTRE_NIVELES_87 = perezoso((): NodoEscena[] => {
   const anclas = anclasDe(ARCO_87);
   const salida: NodoEscena[] = [];
-  for (let k = 0; k + 1 < NIVELES_87; k++) {
+  for (let k = 0; k + 1 < NIVELES_87(); k++) {
     const a = anclas[k * 4 + HUECO_HILERA_87]!, b = anclas[(k + 1) * 4 + HUECO_HILERA_87]!;
     const n = unitario(mas(a.normal, b.normal));
     const p = por(mas(a.posicion, b.posicion), 0.5);
     salida.push(globoSobre(`hilera-${k + 1}`, `R-5 Silk Blanco Nácar de la hilera (entre los niveles ${k + 1} y ${k + 2})`, "arco", PERLA_87, mas(p, por(n, PERLA_87.infladoCm / 2)), n));
   }
   return salida;
-})();
-const escena87: Escena = {
+});
+const escena87 = perezoso((): Escena => ({
   sala: structuredClone(SALA_ARCO),
   nodos: [
     { id: "arco", nombre: "Arco espiral vino, perla y verde", pieza: ARCO_87, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } },
     { id: "hilera-huecos", nombre: "R-5 Silk Blanco Nácar de la hilera (en los huecos)", pieza: { tipo: "globo", formatoId: "R-5", infladoCm: 10, codigo: "806" }, colocacion: { en: "ancla", padreId: "arco", ancla: HUECO_HILERA_87, cada: 4, giroGrados: 0 } },
-    ...ENTRE_NIVELES_87,
+    ...ENTRE_NIVELES_87(),
   ],
-};
+}));
 const idea87 = idea({
   id: "idea:arco-espiral", numero: 87, slug: "arco-espiral", nombre: "Arco espiral vino, verde y perla", ocasiones: ["general"],
   fotoUrl: FOTO("9cf6347c9d24db5f5481ff1849c9e521_8716e337-a070-4d8c-8926-dc94fe28c4cc.jpg"),
-  contenido: { tipo: "escena", escena: escena87 },
-  nota: `Igual: arco redondo de ${NIVELES_87} cuartetos R-12 (eje 2,38 × 2,11 m) en espiral de cuatro bandas —vino, perla, verde, perla— y una hilera seguida de R-5 perla en espiral (${NIVELES_87 * 2 - 1} R-5: uno por nivel y otro entre nivel y nivel). La idea no publica productos; medidos: vino #af2244 → Reflex Cristal Rojo 915, perla #c9cfcb → Silk Blanco Nácar 806, verde #00987d → Fashion Verde 030 (los verdes perlados de la foto quedan entre 030 y Reflex Verde Aurora 932). Distinto: en la foto la espiral es algo más abierta y la hilera corre por el borde de la banda perla; aquí sigue un hueco de la trenza (va por el borde perla y verde).`,
-}, () => productosDe({ tipo: "escena", escena: escena87 }));
+  clase: "escena",
+  get nota() { return `Igual: arco redondo de ${NIVELES_87()} cuartetos R-12 (eje 2,38 × 2,11 m) en espiral de cuatro bandas —vino, perla, verde, perla— y una hilera seguida de R-5 perla en espiral (${NIVELES_87() * 2 - 1} R-5: uno por nivel y otro entre nivel y nivel). La idea no publica productos; medidos: vino #af2244 → Reflex Cristal Rojo 915, perla #c9cfcb → Silk Blanco Nácar 806, verde #00987d → Fashion Verde 030 (los verdes perlados de la foto quedan entre 030 y Reflex Verde Aurora 932). Distinto: en la foto la espiral es algo más abierta y la hilera corre por el borde de la banda perla; aquí sigue un hueco de la trenza (va por el borde perla y verde).`; },
+}, () => ({ tipo: "escena", escena: escena87() }), () => productosDe({ tipo: "escena", escena: escena87() }));
 
 // ----------------------------------------------------------------------------------------------------------
 // 94 · Arco floral
@@ -576,26 +575,26 @@ const idea87 = idea({
  * 5 burbujas de T-260 (~15 cm) alternando rojo y amarillo, desde el pie izquierdo.
  */
 const PATA_94 = columna("R-9", 18, 7, ["005"]);
-const BASE_ARCO_94 = r2(centroNivelColumna(PATA_94, 7));
-const ARCO_94 = arco("R-9", 18, "redondo", 266, r2(243 - BASE_ARCO_94), "un_color", ["032"]);
-const NIVELES_94 = nivelesDe(ARCO_94);
+const BASE_ARCO_94 = perezoso(() => r2(centroNivelColumna(PATA_94, 7)));
+const ARCO_94 = perezoso(() => arco("R-9", 18, "redondo", 266, r2(243 - BASE_ARCO_94()), "un_color", ["032"]));
+const NIVELES_94 = perezoso(() => nivelesDe(ARCO_94()));
 const FLOR_94 = (codigo: string) => florTubito({ petalos: burbujas("T-260", 3, [codigo], 5, 6.5, 0, 90) });
-const FLORES_94 = Array.from({ length: 10 }, (_, k) => ({ nivel: Math.round((0.02 + (k * 0.96) / 9) * (NIVELES_94 - 1)), rojo: k % 2 === 0 }));
-const escena94: Escena = {
+const FLORES_94 = perezoso(() => Array.from({ length: 10 }, (_, k) => ({ nivel: Math.round((0.02 + (k * 0.96) / 9) * (NIVELES_94() - 1)), rojo: k % 2 === 0 })));
+const escena94 = perezoso((): Escena => ({
   sala: structuredClone(SALA_ARCO),
   nodos: [
-    { id: "arco", nombre: "Arco de cuartetos verde", pieza: ARCO_94, colocacion: { en: "libre", xCm: 0, yCm: BASE_ARCO_94, zCm: 0, giroGrados: 0 } },
-    ...FLORES_94.map((f, k) => enNivel(`flor-${k + 1}`, `Florecita ${f.rojo ? "roja" : "amarilla"} ${k + 1}`, "arco", ARCO_94, f.nivel, FLOR_94(f.rojo ? "015" : "020"))),
+    { id: "arco", nombre: "Arco de cuartetos verde", pieza: ARCO_94(), colocacion: { en: "libre", xCm: 0, yCm: BASE_ARCO_94(), zCm: 0, giroGrados: 0 } },
+    ...FLORES_94().map((f, k) => enNivel(`flor-${k + 1}`, `Florecita ${f.rojo ? "roja" : "amarilla"} ${k + 1}`, "arco", ARCO_94(), f.nivel, FLOR_94(f.rojo ? "015" : "020"))),
     { id: "pata-izquierda", nombre: "Pata blanca izquierda", pieza: PATA_94, colocacion: { en: "piso", xCm: -133, zCm: 0, giroGrados: 0 } },
     { id: "pata-derecha", nombre: "Pata blanca derecha", pieza: PATA_94, colocacion: { en: "piso", xCm: 133, zCm: 0, giroGrados: 0 } },
   ],
-};
+}));
 const idea94 = idea({
   id: "idea:arco-floral", numero: 94, slug: "arco-floral", nombre: "Arco floral verde y blanco", ocasiones: ["navidad"],
   fotoUrl: FOTO("019e797eb4d9cf6285fcba02dd1ce53d_bb00538b-79db-43f9-b016-d7556b153c42.jpg"),
-  contenido: { tipo: "escena", escena: escena94 },
-  nota: `Igual: patas de 7 cuartetos R-9 blancos (~1 m) y encima un arco de ${NIVELES_94} cuartetos R-9 verdes hasta 2,43 m, con las 10 florecitas de 5 burbujas de T-260 que se ven de frente, alternando roja y amarilla desde el pie izquierdo. La idea no publica productos; medidos: verde #01631f → Fashion Verde Selva 032, blanco 005, rojo #ff3939 → Fashion Rojo 015, amarillo #cce103 → Fashion Amarillo 020 (Neón Amarillo 220 queda a 2 ΔE). Distinto: el texto dice «flores de T 260 Stdo» y la clasificación supone 14; en la foto se ven 10 (las de atrás no se ven y no se ponen); el tamaño sale de contar niveles (no hay otra referencia en la foto).`,
-}, () => productosDe({ tipo: "escena", escena: escena94 }));
+  clase: "escena",
+  get nota() { return `Igual: patas de 7 cuartetos R-9 blancos (~1 m) y encima un arco de ${NIVELES_94()} cuartetos R-9 verdes hasta 2,43 m, con las 10 florecitas de 5 burbujas de T-260 que se ven de frente, alternando roja y amarilla desde el pie izquierdo. La idea no publica productos; medidos: verde #01631f → Fashion Verde Selva 032, blanco 005, rojo #ff3939 → Fashion Rojo 015, amarillo #cce103 → Fashion Amarillo 020 (Neón Amarillo 220 queda a 2 ΔE). Distinto: el texto dice «flores de T 260 Stdo» y la clasificación supone 14; en la foto se ven 10 (las de atrás no se ven y no se ponen); el tamaño sale de contar niveles (no hay otra referencia en la foto).`; },
+}, () => ({ tipo: "escena", escena: escena94() }), () => productosDe({ tipo: "escena", escena: escena94() }));
 
 // ----------------------------------------------------------------------------------------------------------
 // 95 · Arco flores rosadas y amarillas
@@ -607,23 +606,23 @@ const idea94 = idea({
  * alternando rosada (centro amarillo) y amarilla (centro rosado) desde el pie izquierdo.
  */
 const ARCO_95 = arco("R-12", 25, "redondo", 318, 231, "un_color", ["029"]);
-const NIVELES_95 = nivelesDe(ARCO_95);
+const NIVELES_95 = perezoso(() => nivelesDe(ARCO_95));
 const FLOR_ROSADA_95 = flor({ petalos: { ...R("R-5", 11, "012"), cantidad: 5, aperturaGrados: 10, giroGrados: 90 }, centro: { ...R("R-5", 9, "023"), cantidad: 1 } });
 const FLOR_AMARILLA_95 = flor({ petalos: { ...R("R-5", 11, "020"), cantidad: 5, aperturaGrados: 10, giroGrados: 90 }, centro: { ...R("R-5", 9, "012"), cantidad: 1 } });
-const PRIMER_NIVEL_95 = Math.max(0, Math.round((NIVELES_95 - 1 - 28) / 2));
-const escena95: Escena = {
+const PRIMER_NIVEL_95 = perezoso(() => Math.max(0, Math.round((NIVELES_95() - 1 - 28) / 2)));
+const escena95 = perezoso((): Escena => ({
   sala: structuredClone(SALA_ARCO),
   nodos: [
     { id: "arco", nombre: "Arco de cuartetos verde", pieza: ARCO_95, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } },
-    ...Array.from({ length: 15 }, (_, k) => enNivel(`flor-${k + 1}`, `Flor ${k % 2 === 0 ? "rosada" : "amarilla"} ${k + 1}`, "arco", ARCO_95, Math.min(NIVELES_95 - 1, PRIMER_NIVEL_95 + 2 * k), k % 2 === 0 ? FLOR_ROSADA_95 : FLOR_AMARILLA_95)),
+    ...Array.from({ length: 15 }, (_, k) => enNivel(`flor-${k + 1}`, `Flor ${k % 2 === 0 ? "rosada" : "amarilla"} ${k + 1}`, "arco", ARCO_95, Math.min(NIVELES_95() - 1, PRIMER_NIVEL_95() + 2 * k), k % 2 === 0 ? FLOR_ROSADA_95 : FLOR_AMARILLA_95)),
   ],
-};
+}));
 const idea95 = idea({
   id: "idea:arco-flores-rosadas-y-amarillas", numero: 95, slug: "arco-flores-rosadas-y-amarillas", nombre: "Arco verde con flores rosadas y amarillas", ocasiones: ["cumpleaños"],
   fotoUrl: FOTO("f6b5f26ff1a97abf6c314c89fd4ec754_26c8e7ca-6eef-43fb-97a3-f5bb2b15350c.jpg"),
-  contenido: { tipo: "escena", escena: escena95 },
-  nota: `Igual: arco redondo de ${NIVELES_95} cuartetos R-12 verdes (eje 3,18 × 2,31 m) con las 15 flores de 5 R-5 que se ven, una cada dos cuartetos como dice el texto, alternando rosada con centro amarillo (8) y amarilla con centro rosado (7) desde el pie izquierdo. La idea no publica productos; medidos (foto muy saturada): verde #00c800 → Fashion Verde Trébol 029, pétalos rosados #fa4b86 → Fashion Fucsia 012, centro #ed9c02 → Fashion Mostaza 023, pétalos amarillos translúcidos sobre el verde → Fashion Amarillo 020. Distinto: el LOL-12 donde se anuda cada flor no se modela (el arco es todo de R-12) y los centros rosados van en el mismo Fucsia de los pétalos (miden algo más claro).`,
-}, () => productosDe({ tipo: "escena", escena: escena95 }));
+  clase: "escena",
+  get nota() { return `Igual: arco redondo de ${NIVELES_95()} cuartetos R-12 verdes (eje 3,18 × 2,31 m) con las 15 flores de 5 R-5 que se ven, una cada dos cuartetos como dice el texto, alternando rosada con centro amarillo (8) y amarilla con centro rosado (7) desde el pie izquierdo. La idea no publica productos; medidos (foto muy saturada): verde #00c800 → Fashion Verde Trébol 029, pétalos rosados #fa4b86 → Fashion Fucsia 012, centro #ed9c02 → Fashion Mostaza 023, pétalos amarillos translúcidos sobre el verde → Fashion Amarillo 020. Distinto: el LOL-12 donde se anuda cada flor no se modela (el arco es todo de R-12) y los centros rosados van en el mismo Fucsia de los pétalos (miden algo más claro).`; },
+}, () => ({ tipo: "escena", escena: escena95() }), () => productosDe({ tipo: "escena", escena: escena95() }));
 
 // ----------------------------------------------------------------------------------------------------------
 // 97 · Arco girasoles
@@ -635,23 +634,23 @@ const idea95 = idea({
  * donde el texto pone un LOL-12 para anudarlos.
  */
 const ARCO_97 = arco("R-12", 25, "parabolico", 304, 294, "un_color", ["530"]);
-const NIVELES_97 = nivelesDe(ARCO_97);
+const NIVELES_97 = perezoso(() => nivelesDe(ARCO_97));
 const GIRASOL_97 = florTubito({ petalos: lazos("T-260", 3, ["021"], 8, 33, 9, 0, 0), centro: R("R-9", 18, "018") });
 /** Centro de cada girasol en la foto (px) → cm del arco (origen al centro, entre los pies). */
 const GIRASOLES_97: ReadonlyArray<[number, number]> = [[290, 80], [590, 165], [135, 298], [590, 455]];
-const escena97: Escena = {
+const escena97 = perezoso((): Escena => ({
   sala: sala(600, 500, 360),
   nodos: [
     { id: "arco", nombre: "Arco de cuartetos Metal Verde", pieza: ARCO_97, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } },
     ...GIRASOLES_97.map(([px, py], k) => decoSobre(`girasol-${k + 1}`, `Girasol ${k + 1}`, "arco", GIRASOL_97, v(r2((px - 370) / 1.75), r2((545 - py) / 1.75 - 14), 0), AL_FRENTE, k * 11)),
   ],
-};
+}));
 const idea97 = idea({
   id: "idea:arco-girasoles", numero: 97, slug: "arco-girasoles", nombre: "Arco girasoles", ocasiones: ["cumpleaños"],
   fotoUrl: FOTO("6dce277157f9e7de735961972eea30e4_fcf9828e-08a3-4d5e-8449-1154ac7a69dd.jpg"),
-  contenido: { tipo: "escena", escena: escena97 },
-  nota: `Igual: arco de ${NIVELES_97} cuartetos R-12 Metal Verde 530 (el que dice el texto; la foto mide #019a00, más cerca de Verde Trébol 029, pero el texto manda) de patas rectas y arriba redondo (eje 3,04 × 2,94 m) con los 4 girasoles de la foto: 8 lazos de T-260 y un R-9 de centro. La idea no publica productos; medidos: lazos #bf9900 → el más cercano es Fashion Mostaza 023, que la tienda no vende en T-260: va el siguiente, Fashion Amarillo Miel 021 (sobre el verde la medida se corre); centro #5e1201 → Fashion Merlot 018. Distinto: el LOL-12 donde se anuda cada girasol no se modela; los lazos de la foto se ven más finos (T-260 poco inflado: va a 3 cm).`,
-}, () => productosDe({ tipo: "escena", escena: escena97 }));
+  clase: "escena",
+  get nota() { return `Igual: arco de ${NIVELES_97()} cuartetos R-12 Metal Verde 530 (el que dice el texto; la foto mide #019a00, más cerca de Verde Trébol 029, pero el texto manda) de patas rectas y arriba redondo (eje 3,04 × 2,94 m) con los 4 girasoles de la foto: 8 lazos de T-260 y un R-9 de centro. La idea no publica productos; medidos: lazos #bf9900 → el más cercano es Fashion Mostaza 023, que la tienda no vende en T-260: va el siguiente, Fashion Amarillo Miel 021 (sobre el verde la medida se corre); centro #5e1201 → Fashion Merlot 018. Distinto: el LOL-12 donde se anuda cada girasol no se modela; los lazos de la foto se ven más finos (T-260 poco inflado: va a 3 cm).`; },
+}, () => ({ tipo: "escena", escena: escena97() }), () => productosDe({ tipo: "escena", escena: escena97() }));
 
 // ----------------------------------------------------------------------------------------------------------
 // 119 · Arco orgánico amor (sin foto)
@@ -661,15 +660,14 @@ const ARCO_119: Pieza = {
   tipo: "arco_organico",
   arco: { anchoCm: 220, altoCm: 230, radioBaseCm: 32, radioPuntaCm: 22, semilla: 119, densidad: 1, colores: [{ codigo: "970", peso: 1 }, { codigo: "015", peso: 1 }, { codigo: "012", peso: 1 }, { codigo: "009", peso: 1 }], flores: null, huecosFlores: 0 },
 };
-const escena119: Escena = { sala: structuredClone(SALA_ARCO), nodos: [{ id: "arco", nombre: "Arco orgánico dorado, rojo, fucsia y rosado", pieza: ARCO_119, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] };
+const escena119 = perezoso((): Escena => ({ sala: structuredClone(SALA_ARCO), nodos: [{ id: "arco", nombre: "Arco orgánico dorado, rojo, fucsia y rosado", pieza: ARCO_119, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] }));
 const PUBLICADOS_119 = [REFLEX_DORADO, P("GLOBO REDONDO FASHION ROJO", "/products/globo-para-fiesta-latex-redondo-fashion-rojo", "R-12", "015"), FUCSIA, ROSADO];
-const idea119: IdeaDigitalizada = {
+const idea119 = idea({
   id: "idea:arco-organico-amor", numero: 119, slug: "arco-organico-amor", nombre: "Arco orgánico amor", ocasiones: ["amor"],
   fotoUrl: "https://sempertex.com/cdn/shop/files/logosptx_1200x1200_1.png",
-  productos: PUBLICADOS_119.map((p) => ({ ...p, cantidad: null })),
-  contenido: { tipo: "escena", escena: escena119 },
+  clase: "escena",
   nota: "Igual: los 4 productos que publica la idea (Reflex Dorado 970, Fashion Rojo 015, Fashion Fucsia 012 y Fashion Rosado 009) en un arco orgánico de dos patas (2,2 × 2,3 m, grandes abajo y finos arriba, relleno de R-9 y tríos de R-5), en partes iguales. Distinto: la idea no tiene foto (su imagen es el logo de Sempertex): la forma, el tamaño y la mezcla son los de un arco orgánico estándar del taller, no copiados de nada, y por eso los productos quedan sin cantidad.",
-};
+}, () => ({ tipo: "escena", escena: escena119() }), () => PUBLICADOS_119.map((p) => ({ ...p, cantidad: null })));
 
 // ----------------------------------------------------------------------------------------------------------
 // 125 · Arco orgánico satín pastel (rectangular)
@@ -681,21 +679,21 @@ const idea119: IdeaDigitalizada = {
  * iguales, de R-12 a R-5.
  */
 const COLORES_125: ColorOrganico[] = ["450", "440", "409", "826", "870", "806", "663"].map((codigo) => ({ codigo, peso: 1 }));
-const ARCO_125: Pieza = {
+const ARCO_125 = perezoso((): Pieza => ({
   tipo: "organico", flores: null,
   opciones: opcionesArcoRectangular({
     anchoEjeCm: 214, altoEjeCm: 220, radioEsquinaCm: 40, radioBaseCm: 36, radioPataCm: 23, radioArribaCm: 25, hueco: null,
     mezcla: { base: { "R-12": 1, "R-9": 0.6, "R-5": 0.3 }, pata: { "R-12": 1, "R-9": 0.8, "R-5": 0.4 }, arriba: { "R-12": 1, "R-9": 0.9, "R-5": 0.5 } },
     colores: COLORES_125, semilla: 125,
   }),
-};
-const escena125: Escena = { sala: structuredClone(SALA_ARCO), nodos: [{ id: "arco", nombre: "Arco orgánico rectangular perlado pastel", pieza: ARCO_125, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] };
+}));
+const escena125 = perezoso((): Escena => ({ sala: structuredClone(SALA_ARCO), nodos: [{ id: "arco", nombre: "Arco orgánico rectangular perlado pastel", pieza: ARCO_125(), colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] }));
 const idea125 = idea({
   id: "idea:arco-organico-satin-pastel", numero: 125, slug: "arco-organico-satin-pastel", nombre: "Arco orgánico satín pastel", ocasiones: ["cumpleaños"],
   fotoUrl: FOTO("2785371d9264f570b6bc59b6951b896d.jpg"),
-  contenido: { tipo: "escena", escena: escena125 },
+  clase: "escena",
   nota: "Igual: arco orgánico de esquinas redondeadas (eje 2,14 × 2,2 m) más grueso en la base, en siete perlados pastel en partes iguales, de R-12 a R-5 como en la foto. La idea no publica productos; medidos y del acabado perlado (Satín si lo hay en ese color): lila #c7a6e2 → Satín Lila 450, azul #b6daf0 → Satín Azul 440 (Pastel Mate Azul queda a 1 ΔE, pero es mate), rosado #e8b6cc → Satín Rosado 409, verde #7e9e91 → Silk Verde Menta 826, amarillo #b4a882 → Silk Dorado 870, perla #dddbe3 → Silk Blanco Nácar 806, durazno #e6c7b3 → Pastel Mate Melón 663 (no hay durazno perlado). Distinto: las cantidades son las del motor orgánico para ese tamaño, no contadas globo a globo; en la foto hay algunos perlados translúcidos chicos (tipo cristal) que no se distinguen.",
-}, () => productosDe({ tipo: "escena", escena: escena125 }));
+}, () => ({ tipo: "escena", escena: escena125() }), () => productosDe({ tipo: "escena", escena: escena125() }));
 
 // ----------------------------------------------------------------------------------------------------------
 // 126 · Arco orgánico tropical (semiarco en escalón)
@@ -709,32 +707,32 @@ const idea125 = idea({
 const px126 = (x: number, y: number, z = 0): Vec3 => v(r2((x - 165) / 2.65), r2((565 - y) / 2.65), z);
 const COLORES_126: ColorOrganico[] = ["012", "031", "038", "020", "061"].map((codigo) => ({ codigo, peso: 1 }));
 const MEZCLA_126: PuntoMezcla[] = [{ t: 0, pesos: { "R-12": 0.35, "R-9": 0.45, "R-5": 0.2 } }, { t: 1, pesos: { "R-12": 0.35, "R-9": 0.45, "R-5": 0.2 } }];
-const SEMIARCO_126: Pieza = {
+const SEMIARCO_126 = perezoso((): Pieza => ({
   tipo: "organico", flores: null,
   opciones: opcionesRacimosLibres({
     racimos: [{ id: "escalon", nombre: "Escalón", puntos: [px126(208, 388), px126(228, 320), px126(225, 240), px126(250, 175), px126(320, 160), px126(420, 150), px126(520, 150), px126(590, 150)], radioInicioCm: 14, radioFinCm: 18, mezcla: MEZCLA_126, tapas: { inicio: true, fin: true } }],
     colores: COLORES_126, semilla: 126, suelo: true,
   }),
-};
+}));
 const GRANDES_126: ReadonlyArray<{ id: string; nombre: string; g: ParteGlobo; centro: Vec3; hacia: Vec3 }> = [
   { id: "r24-amarillo", nombre: "R-24 Fashion Amarillo (abajo)", g: R("R-24", 56, "020"), centro: px126(158, 452, 4), hacia: v(-0.85, -0.3, 0.3) },
   { id: "r12-verde", nombre: "R-12 Fashion Verde Lima grande (esquina)", g: R("R-12", 30, "031"), centro: px126(230, 115, -4), hacia: v(-0.3, 0.9, -0.2) },
   { id: "r18-fucsia", nombre: "R-18 Fashion Fucsia (punta)", g: R("R-18", 42, "012"), centro: px126(550, 50, -6), hacia: v(0.2, 0.95, -0.2) },
   { id: "r18-amarillo", nombre: "R-18 Fashion Amarillo (punta)", g: R("R-18", 36, "020"), centro: px126(625, 95, -2), hacia: v(0.9, 0.35, 0) },
 ];
-const escena126: Escena = {
+const escena126 = perezoso((): Escena => ({
   sala: structuredClone(SALA_CHICA),
   nodos: [
-    { id: "semiarco", nombre: "Semiarco orgánico tropical en escalón", pieza: SEMIARCO_126, colocacion: { en: "libre", xCm: -95, yCm: 0, zCm: -90, giroGrados: 0 } },
+    { id: "semiarco", nombre: "Semiarco orgánico tropical en escalón", pieza: SEMIARCO_126(), colocacion: { en: "libre", xCm: -95, yCm: 0, zCm: -90, giroGrados: 0 } },
     ...GRANDES_126.map((x) => globoSobre(x.id, x.nombre, "semiarco", x.g, x.centro, x.hacia)),
   ],
-};
+}));
 const idea126 = idea({
   id: "idea:arco-organico-tropical", numero: 126, slug: "arco-organico-tropical", nombre: "Arco orgánico tropical en escalón", ocasiones: ["general"],
   fotoUrl: FOTO("db2857dd0665c63f36c402bc295c67a7_d1b7dd2b-fa90-4e4a-8d9b-9ec00c97b6c1.jpg"),
-  contenido: { tipo: "escena", escena: escena126 },
+  clase: "escena",
   nota: "Igual: semiarco orgánico en escalón (sube ~1,3 m desde el piso, dobla y sigue ~1,5 m en horizontal: 2,1 m de alto) de R-12, R-9 y R-5 en los 5 colores que publica la idea (Fucsia 012, Verde Lima 031, Azul Caribe 038, Amarillo 020 y Naranja 061) en partes iguales, con un R-24 amarillo en el pie, un R-12 verde grande en la esquina y un R-18 fucsia y otro amarillo en la punta, como en la foto. Distinto: la foto se ve casi neón (el fucsia mide #fe6cbe, más cerca de Neón Fucsia): van los códigos publicados; el «surtido tropical» queda sin cantidad (sus colores son los de la lista); las cantidades del cuerpo son las del motor orgánico, no contadas una a una.",
-}, () => productosDe({ tipo: "escena", escena: escena126 }, [P("GLOBO REDONDO FASHION SURTIDO TROPICAL", "/products/globo-para-fiesta-latex-redondo-fashion-surtido-tropical", "R-12", null), NARANJA, FUCSIA, P("GLOBO REDONDO FASHION VERDE LIMA", "/products/globo-para-fiesta-latex-redondo-fashion-verde-lima", "R-12", "031"), P("GLOBO REDONDO FASHION AZUL CARIBE", "/products/globo-para-fiesta-latex-redondo-fashion-azul-caribe", "R-12", "038"), P("GLOBO REDONDO FASHION AMARILLO", "/products/globo-para-fiesta-latex-redondo-fashion-amarillo", "R-12", "020")]));
+}, () => ({ tipo: "escena", escena: escena126() }), () => productosDe({ tipo: "escena", escena: escena126() }, [P("GLOBO REDONDO FASHION SURTIDO TROPICAL", "/products/globo-para-fiesta-latex-redondo-fashion-surtido-tropical", "R-12", null), NARANJA, FUCSIA, P("GLOBO REDONDO FASHION VERDE LIMA", "/products/globo-para-fiesta-latex-redondo-fashion-verde-lima", "R-12", "031"), P("GLOBO REDONDO FASHION AZUL CARIBE", "/products/globo-para-fiesta-latex-redondo-fashion-azul-caribe", "R-12", "038"), P("GLOBO REDONDO FASHION AMARILLO", "/products/globo-para-fiesta-latex-redondo-fashion-amarillo", "R-12", "020")]));
 
 // ----------------------------------------------------------------------------------------------------------
 // 154 · Arreglo de flores (centro de mesa)
@@ -753,7 +751,7 @@ const FLORES_154: ReadonlyArray<{ id: string; nombre: string; centro: Vec3; norm
   { id: "flor-rosada", nombre: "Flor rosada de 5 burbujas", centro: v(13, ALTO_MESA + 47, 0), normal: v(0.45, 0.35, 0.82), deco: florTubito({ petalos: burbujas("T-260", 5, ["009"], 5, 9, 10, 0), centro: R("R-5", 7, "031") }) },
   { id: "flor-violeta", nombre: "Flor violeta de 5 burbujas (detrás)", centro: v(2, ALTO_MESA + 56, -9), normal: v(0, 0.6, 0.8), deco: florTubito({ petalos: burbujas("T-260", 4, ["051"], 5, 6, 15, 0) }) },
 ];
-const escena154: Escena = {
+const escena154 = perezoso((): Escena => ({
   sala: structuredClone(SALA_CHICA),
   nodos: [
     { id: "mesa", nombre: "Mesa", pieza: { tipo: "escenografia", elementos: MESA() }, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } },
@@ -763,13 +761,13 @@ const escena154: Escena = {
     decoSobre("hojas-izquierda", "Hojas en lazo (izquierda)", "mesa", florTubito({ petalos: lazos("T-260", 4.5, ["031"], 2, 10, 7, 15, 30) }), v(-11, ALTO_MESA + 27, 3), v(-0.4, 0.2, 1)),
     decoSobre("hojas-derecha", "Hojas en lazo (derecha)", "mesa", florTubito({ petalos: lazos("T-260", 4.5, ["031"], 2, 10, 7, 15, 200) }), v(6, ALTO_MESA + 30, 3), v(0.4, 0.2, 1)),
   ],
-};
+}));
 const idea154 = idea({
   id: "idea:arreglo-flores", numero: 154, slug: "arreglo-flores", nombre: "Arreglo de flores de tubito", ocasiones: ["general"],
   fotoUrl: FOTO("6cbc6203c4ebb96217d2c111c280d990_c28b3ee4-7cbb-49de-be85-1d06969f8400.jpg"),
-  contenido: { tipo: "escena", escena: escena154 },
+  clase: "escena",
   nota: "Igual: base de 9 burbujas de T-260 amarillo, cuatro tallos de T-260 Verde Lima con dos pares de hojas en lazo y las cuatro flores de burbujas de la foto con los tubitos que publica la idea: azul de 7 pétalos adelante, rosada arriba a la derecha (las dos con botón verde), naranja de lado arriba a la izquierda y violeta chica detrás. Va sobre una mesa redonda. Distinto: la flor naranja no está entre los productos publicados (medida #fe8e3a → T-260 Fashion Naranja 061); los botones verdes son burbujitas de tubito y aquí R-5 Verde Lima al mínimo (7 cm); en la foto los tallos se curvan y aquí son rectos; la mesa no sale en la foto.",
-}, () => productosDe({ tipo: "escena", escena: escena154 }, [
+}, () => ({ tipo: "escena", escena: escena154() }), () => productosDe({ tipo: "escena", escena: escena154() }, [
     P("GLOBO TUBITO FASHION AZUL", "/products/globo-para-fiesta-latex-tubito-fashion-azul", "T-260", "040"),
     P("GLOBO TUBITO FASHION AMARILLO", "/products/globo-para-fiesta-latex-tubito-fashion-amarillo", "T-260", "020"),
     P("GLOBO TUBITO FASHION VERDE LIMA", "/products/globo-para-fiesta-latex-tubito-fashion-verde-lima", "T-260", "031"),
@@ -820,7 +818,7 @@ const torta160: ElementoEscenografia[] = [
   ]),
 ];
 const enMesa160 = (dx: number, dz: number, giro = 0): Colocacion => ({ en: "libre", xCm: MESA_160.x + dx, yCm: MESA_160.alto, zCm: MESA_160.z + dz, giroGrados: giro });
-const escena160: Escena = {
+const escena160 = perezoso((): Escena => ({
   sala: sala(420, 380, 300, { piso: "#d4591c", paredes: "#f2f0ec" }),
   nodos: [
     ...TRAMOS_160.map((t): NodoEscena => ({ id: t.id, nombre: t.nombre, pieza: tramo160(t), colocacion: { en: "libre", xCm: 0, yCm: 0, zCm: PARED_160 + 36, giroGrados: 0 } })),
@@ -833,13 +831,13 @@ const escena160: Escena = {
     { id: "vaso-izquierda", nombre: "Vaso con cubiertos (izquierda)", pieza: vasos({ cantidad: 1, altoCm: 9, diametroCm: 7, hex: "#f6eee6", servilleta: "#e9dcc4", productoId: null, descripcion: "vaso desechable estampado" }), colocacion: enMesa160(-31, 4) },
     { id: "vaso-derecha", nombre: "Vaso con cubiertos (derecha)", pieza: vasos({ cantidad: 1, altoCm: 9, diametroCm: 7, hex: "#f07a1a", servilleta: "#e9dcc4", productoId: "vaso-desechable-deluxe-oxo-pequeno", variante: "naranja" }), colocacion: enMesa160(30, 2) },
   ],
-};
+}));
 const idea160 = idea({
   id: "idea:autumn", numero: 160, slug: "autumn", nombre: "Autumn: arco orgánico de otoño y mesa de torta", ocasiones: ["general"],
   fotoUrl: FOTO("ideas_de_fiesta_t_o_autumn_3d51974a-e4f5-4c10-8a23-7d6f3a4de199.jpg"),
-  contenido: { tipo: "escena", escena: escena160 },
+  clase: "escena",
   nota: "Igual: la guirnalda orgánica pegada a la pared en el orden de la foto —Merlot arriba a la izquierda, Eucalipto, Naranja Cobrizo bajando, Amarillo Miel y Naranja ya en el piso por delante—, cada color un tramo de R-12 con algunos R-18 (los grandes de la foto) y sin relleno de R-5 (la foto no lleva), con los 5 productos que publica la idea; delante, la mesa redonda alta con mantel beige hasta el piso, la torta de tres capas en pedestal amarillo con velas, un plato de pie naranja y otro estampado, platos blancos y dos vasos con cubiertos; piso naranja y pared blanca. Distinto: los R-18 no están entre los productos publicados (van los lisos del mismo color); el tramo Merlot sigue fuera de la foto a la izquierda y aquí acaba donde la foto; las cantidades del cuerpo son las del motor orgánico; el plato de flores va en un liso con lunares (la tienda no tiene ese estampado).",
-}, () => productosDe({ tipo: "escena", escena: escena160 }, [
+}, () => ({ tipo: "escena", escena: escena160() }), () => productosDe({ tipo: "escena", escena: escena160() }, [
     P("GLOBO REDONDO FASHION MERLOT", "/products/globo-latex-redondo-fashion-merlot", "R-12", "018"), EUCALIPTO, NARANJA_COBRIZO, AMARILLO_MIEL, NARANJA,
   ]));
 
@@ -853,7 +851,7 @@ const idea160 = idea({
  * lazos rosados.
  */
 const BASE_176 = v(0, ALTO_MESA, 0);
-const escena176: Escena = {
+const escena176 = perezoso((): Escena => ({
   sala: structuredClone(SALA_CHICA),
   nodos: [
     { id: "mesa", nombre: "Mesa", pieza: { tipo: "escenografia", elementos: MESA() }, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } },
@@ -862,13 +860,13 @@ const escena176: Escena = {
     palito("tallo", "Tallo de T-260 verde", "mesa", { formatoId: "T-260", grosorCm: 5, codigo: "030" }, mas(BASE_176, v(0, 9, 0)), mas(BASE_176, v(2, 30, 1))),
     decoSobre("flor", "Flor amarilla y naranja", "mesa", florTubito({ petalos: lazos("T-260", 5, ["020"], 5, 15, 10, 5, 90), interior: lazos("T-260", 5, ["061"], 5, 8, 6, 15, 126), centro: R("R-5", 12, "012") }), mas(BASE_176, v(2, 48, 0)), v(0.1, 0.15, 1)),
   ],
-};
+}));
 const idea176 = idea({
   id: "idea:base-flor", numero: 176, slug: "base-flor", nombre: "Flor en base (Carolynn Hayman)", ocasiones: ["general"],
   fotoUrl: FOTO("hayman.jpg"),
-  contenido: { tipo: "escena", escena: escena176 },
+  clase: "escena",
   nota: "Igual: flor de 5 lazos de T-260 amarillo con 5 lazos naranja dentro y un R-5 fucsia al centro (~34 cm), tallo de T-260 verde de ~17 cm, dos hojas en lazo y la base de lazos rosados, con los tubitos que publica la idea; va sobre una mesa (en la foto la sostiene la artista). Distinto: el rosado de la base se ve fucsia en la foto (#f22f73) pero va el T-260 Fashion Rosado publicado; el R-5 del centro no está entre los productos (medido #fe3c90 → Fashion Fucsia 012); el Link-O-Loon de la base que dice el texto queda fuera de la foto y no se pone.",
-}, () => productosDe({ tipo: "escena", escena: escena176 }, [
+}, () => ({ tipo: "escena", escena: escena176() }), () => productosDe({ tipo: "escena", escena: escena176() }, [
     P("GLOBO TUBITO FASHION AMARILLO", "/products/globo-para-fiesta-latex-tubito-fashion-amarillo", "T-260", "020"),
     P("GLOBO TUBITO FASHION NARANJA", "/products/globo-para-fiesta-latex-tubito-fashion-naranja", "T-260", "061"),
     P("GLOBO TUBITO FASHION ROSADO", "/products/globo-para-fiesta-latex-tubito-fashion-rosado", "T-260", "009"),
@@ -925,7 +923,7 @@ const torta184: ElementoEscenografia[] = [
   { forma: "cilindro", base: v(0, 35.2, 0), radioCm: 14, altoCm: 16, hex: "#f7f1df", acabado: "mate" },
   { forma: "cilindro", base: v(0, 51.2, 0), radioCm: 14.2, altoCm: 1.5, hex: "#f2c94c", acabado: "satinado" },
 ];
-const escena184: Escena = {
+const escena184 = perezoso((): Escena => ({
   sala: sala(520, 420, 320, { piso: "#cfc3ad" }),
   nodos: [
     ...RAMOS_184.flatMap((r): NodoEscena[] => [
@@ -940,13 +938,13 @@ const escena184: Escena = {
     { id: "botellas", nombre: "Seis botellitas de jugo", pieza: { tipo: "escenografia", elementos: Array.from({ length: 6 }, (_, k): ElementoEscenografia => ({ forma: "cilindro", base: v(-22 + k * 8.8, 0, 0), radioCm: 3, altoCm: 15, hex: "#f2a51c", acabado: "brillante" })) }, colocacion: enMesa184(0, 22) },
     ...[-1, 1].map((s): NodoEscena => ({ id: `ramas-${s < 0 ? "izquierda" : "derecha"}`, nombre: `Ramas secas blancas (${s < 0 ? "izquierda" : "derecha"})`, pieza: { tipo: "escenografia", elementos: [{ forma: "cilindro", base: v(0, 0, 0), radioCm: 5, altoCm: 2, hex: "#f2f2ef", acabado: "satinado" }, { forma: "cilindro", base: v(0, 2, 0), radioCm: 0.8, altoCm: 38, hex: "#f2f2ef", acabado: "mate" }] }, colocacion: enMesa184(s * 60, -10) })),
   ],
-};
+}));
 const idea184 = idea({
   id: "idea:bautizo-unisex", numero: 184, slug: "bautizo-unisex", nombre: "Bautizo unisex: mesa de postres con dos ramos", ocasiones: ["general"],
   fotoUrl: FOTO("449c887d70f14b358bb36c3a5f27ce17.jpg"),
-  contenido: { tipo: "escena", escena: escena184 },
+  clase: "escena",
   nota: "Igual: los dos ramos de helio de la foto, cada globo en su sitio, amarrados con cinta amarilla al remate de una escalera blanca detrás de la mesa: el izquierdo de 7 (3 amarillos arriba y 4 perla) y el derecho de 8 (3 amarillos y 5 perla), de ~1,4 a ~2,25 m; la mesa larga con mantel blanco, la torta blanca con borde amarillo sobre una caja café de lunares, seis botellitas de jugo y dos ramas secas blancas. La idea no publica productos; medidos: amarillo #fac401 → Fashion Amarillo Miel 021, perla #d2cebf → Silk Perla Crema 873. Distinto: el encaje del mantel, los dulces, las galletas, la letra «E» y los frascos no se modelan; las ramas son un palito (sin ramitas); la etiqueta de la tienda no dice bautizo, así que la ocasión queda «general».",
-}, () => productosDe({ tipo: "escena", escena: escena184 }));
+}, () => ({ tipo: "escena", escena: escena184() }), () => productosDe({ tipo: "escena", escena: escena184() }));
 
 // ----------------------------------------------------------------------------------------------------------
 // 229 · Calabaza Reflex (centro de mesa)
@@ -967,7 +965,7 @@ const enMesa229 = (dx: number, dz: number, giro = 0): Colocacion => ({ en: "libr
 const FLOR_5_229 = florTubito({ petalos: burbujas("T-260", 5, ["968"], 5, 12, 5, 90), centro: R("R-5", 8, "970") });
 const CORONA_ORO_229 = florTubito({ petalos: burbujas("T-260", 5, ["970"], 5, 6, 35, 0) });
 const MATA_229 = (n: number, largoCm: number) => florTubito({ petalos: lazos("T-260", 5, ["931"], n, largoCm, 10, 70, 0) });
-const escena229: Escena = {
+const escena229 = perezoso((): Escena => ({
   sala: structuredClone(SALA_CHICA),
   nodos: [
     { id: "mesa", nombre: "Mesa", pieza: { tipo: "escenografia", elementos: mesaConMantel({ anchoCm: MESA_229.ancho, fondoCm: MESA_229.fondo, altoCm: MESA_229.alto, mantel: "#efe9df" }) }, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } },
@@ -990,13 +988,13 @@ const escena229: Escena = {
     decoSobre("flor-frente-izquierda", "Flor de 5 burbujas Reflex Dorado Rosa (frente, izquierda)", "mesa", FLOR_5_229, v(-12, MESA_229.alto + 22, 22), v(0, 0.2, 1)),
     decoSobre("flor-frente-derecha", "Flor de 5 burbujas Reflex Dorado Rosa (frente, derecha)", "mesa", FLOR_5_229, v(13, MESA_229.alto + 20, 22), v(0, 0.2, 1), 18),
   ],
-};
+}));
 const idea229 = idea({
   id: "idea:calabaza-reflex", numero: 229, slug: "calabaza-reflex", nombre: "Calabazas Reflex (centro de mesa)", ocasiones: ["halloween"],
   fotoUrl: FOTO("Calabaza-Reflex_5bef3466-e999-41f5-9fe9-029492d62194.png"),
-  contenido: { tipo: "escena", escena: escena229 },
+  clase: "escena",
   nota: "Igual: con los 5 productos que publica la idea, una calabaza grande Reflex Dorado (R-18, ~42 cm) con su flor de 4 lazos Dorado Rosa encima, dos calabazas chicas Dorado Rosa con corona de burbujas doradas, dos chicas doradas con flor de lazos Dorado Rosa, un R-12 Dorado Rosa asomando detrás, dos flores grandes de 5 burbujas Dorado Rosa al frente con botón dorado y cuatro matas de lazos de T-260 Reflex Verde Lima detrás y a los lados, sobre una mesa. Distinto: los gajos de las calabazas son tiras finas de T-260 dorado en la foto; aquí van dibujados (no se cotizan); el R-18 no está entre los publicados (la tienda lo vende en el mismo producto, otra talla); las matas de la foto son columnas de burbujas apiladas y aquí lazos que se abren hacia arriba; la mesa no sale en la foto.",
-}, () => productosDe({ tipo: "escena", escena: escena229 }, [
+}, () => ({ tipo: "escena", escena: escena229() }), () => productosDe({ tipo: "escena", escena: escena229() }, [
     REFLEX_DORADO,
     P("GLOBO REDONDO REFLEX DORADO ROSA", "/products/globo-para-fiesta-latex-redondo-reflex-dorado-rosa", "R-12", "968"),
     P("GLOBO TUBITO REFLEX VERDE LIMA", "/products/globo-para-fiesta-latex-tubito-reflex-verde-lima", "T-260", "931"),

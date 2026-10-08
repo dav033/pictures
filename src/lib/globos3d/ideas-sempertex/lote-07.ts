@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type ClaseIdea, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { armarEscena, HUNDIMIENTO_SOBRE_CM, SALA_INICIAL, type Colocacion, type Escena, type NodoEscena, type Sala } from "../escena";
 import { armarPieza, type Pieza } from "../piezas";
 import { formatoPorId } from "../formatos";
@@ -319,11 +319,14 @@ function productosDe(contenido: IdeaDigitalizada["contenido"], publicados: reado
 const FOTO = (archivo: string) => `https://sempertex.com/cdn/shop/articles/${archivo}`;
 const ESCENA = (escena: Escena): IdeaDigitalizada["contenido"] => ({ tipo: "escena", escena });
 
-/** Base de una idea: id «idea:<slug>» y productos del 3D (con los publicados primero). */
-type Base = Omit<IdeaDigitalizada, "id" | "productos"> & { publicados?: Publicado[] };
+/**
+ * Base de una idea: id «idea:<slug>» y productos del 3D (con los publicados primero). Perezosa (`ideaPerezosa`): el
+ * contenido es una función que se llama la primera vez que se pide; `clase` es «escena» si no se dice otra.
+ */
+type Base = Omit<IdeaDigitalizada, "id" | "productos" | "contenido" | "clase"> & { contenido: () => IdeaDigitalizada["contenido"]; clase?: ClaseIdea; publicados?: Publicado[] };
 function idea(b: Base): IdeaDigitalizada {
-  const { publicados, ...resto } = b;
-  return { id: `idea:${b.slug}`, ...resto, productos: productosDe(b.contenido, publicados ?? []) };
+  const { publicados, contenido, clase, ...resto } = b;
+  return ideaPerezosa({ id: `idea:${b.slug}`, ...resto, clase: clase ?? "escena" }, contenido, (c) => productosDe(c, publicados ?? []));
 }
 
 /** Los colores de una pieza orgánica (pesos relativos; `formatos` limita en qué globos va cada color). */
@@ -341,7 +344,7 @@ const organico = (opciones: OpcionesOrganico, flores: Extract<Pieza, { tipo: "or
  * 4 R-5 verdes, la calabaza, 4 R-5 verdes, el tallo de 60 cm, 4 R-5 negros, 4 R-12 naranjas impresos, 4 R-9 naranjas
  * y la araña de 8 patas. La raíz es el tallo: todo va `sobre` él, a la altura medida.
  */
-const escena380 = ((): Escena => {
+const escena380 = (): Escena => {
   const Y0 = 45; // el tallo nace dentro de la calabaza y acaba dentro del cuarteto impreso (sus remates no se ven)
   const tallo380: Pieza = { tipo: "letras", letras: { texto: "I", altoCm: 83, grosorCm: 11, disposicion: "fila", tecnica: "tubito", formatoId: "T-260", infladoCm: 5, colores: ["029"], patron: "un_color" } };
   const calabaza: PropiedadesCalabaza = { globo: R("R-18", 41, "061"), cara: { hex: "#1a1a1a" }, tallo: null };
@@ -360,7 +363,8 @@ const escena380 = ((): Escena => {
       sobreCentrada("arana", "Araña negra de 8 patas", "tallo", deco({ tipo: "arana", propiedades: arana }), enTallo(0, 197, -2), AL_FRENTE),
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 392 y 394 · Columnas Mi Primera Comunión y Mis Quince Años (el mismo armado)
@@ -373,55 +377,57 @@ const escena380 = ((): Escena => {
  * de tubito, 4 R-5 dorados, un cuarteto de impresos y el R-24 dorado.
  */
 const COMUNION = "infinity-mi-primera-comunion-palomas-fashion-blanco";
-const pila392 = apilar([
+const pila392 = perezoso(() => apilar([
   { id: "base", nombre: "Cuarteto R-12 perla y Mi Primera Comunión", formatoId: "R-12", infladoCm: 22, colores: ["005", "406", "005", "406"], patron: "espiral", impresos: [{ impresoId: COMUNION, codigo: "005" }] },
   { id: "lila", nombre: "Cuarteto R-12 lila", formatoId: "R-12", infladoCm: 21, colores: ["450"] },
   { id: "dorados-abajo", nombre: "4 R-5 dorados (abajo)", formatoId: "R-5", infladoCm: 12, colores: ["570"] },
   { id: "tallo", nombre: "Tallo de R-5 perla", formatoId: "R-5", infladoCm: 6.6, niveles: 8, colores: ["406"] },
   { id: "dorados-arriba", nombre: "4 R-5 dorados (arriba)", formatoId: "R-5", infladoCm: 12, colores: ["570"] },
   { id: "impresos", nombre: "Cuarteto R-12 Mi Primera Comunión", formatoId: "R-12", infladoCm: 23, colores: ["005"], impresos: [{ impresoId: COMUNION, codigo: "005" }] },
-]);
-const escena392 = ((): Escena => {
+]));
+const escena392 = (): Escena => {
   const cruz392 = deco(florTubito(burbujas("T-260", 2.5, ["050"], 4, 7, 0, 45)));
-  const yTallo = pila392.centros[3]!, gTallo = pila392.giros[3]!;
+  const yTallo = pila392().centros[3]!, gTallo = pila392().giros[3]!;
   return {
     sala: sala(380, 340, 280),
     nodos: [
-      ...pila392.nodos,
+      ...pila392().nodos,
       // Las cruces, de frente, sobre el tallo (en su espacio: el del primer cuarteto del tallo), a la altura medida.
       sobre("cruz-abajo", "Cruz lila de tubito (abajo)", "tallo", cruz392, v(0, r2(57 - yTallo), 0), frenteEn(gTallo)),
       sobre("cruz-arriba", "Cruz lila de tubito (arriba)", "tallo", cruz392, v(0, r2(72.5 - yTallo), 0), frenteEn(gTallo)),
-      remate("remate", "R-24 Metal Dorado (impreso de palomas y «Mi Primera Comunión»)", R("R-24", 58, "570"), pila392),
+      remate("remate", "R-24 Metal Dorado (impreso de palomas y «Mi Primera Comunión»)", R("R-24", 58, "570"), pila392()),
     ],
   };
-})();
+};
+
 
 /**
  * 394. Foto 740 × 570: el R-24 mide 164 px (≈ 55 cm): 2,98 px/cm; alto total 545 px ≈ 1,83 m. De abajo arriba un
  * cuarteto R-12 frambuesa (de lunares blancos), uno verde (de destellos), 4 R-5 rosados, el tallo de 10 niveles de R-5
  * perla con dos cruces verdes de tubito, 4 R-5 rosados, un cuarteto verde y el R-24 fucsia del «15».
  */
-const pila394 = apilar([
+const pila394 = perezoso(() => apilar([
   { id: "base", nombre: "Cuarteto R-12 frambuesa (de lunares)", formatoId: "R-12", infladoCm: 22, colores: ["014"] },
   { id: "verde-abajo", nombre: "Cuarteto R-12 verde (de destellos, abajo)", formatoId: "R-12", infladoCm: 22, colores: ["029"] },
   { id: "rosados-abajo", nombre: "4 R-5 rosados (abajo)", formatoId: "R-5", infladoCm: 10, colores: ["009"] },
   { id: "tallo", nombre: "Tallo de R-5 perla", formatoId: "R-5", infladoCm: 6.9, niveles: 10, colores: ["406"] },
   { id: "rosados-arriba", nombre: "4 R-5 rosados (arriba)", formatoId: "R-5", infladoCm: 10, colores: ["009"] },
   { id: "verde-arriba", nombre: "Cuarteto R-12 verde (de destellos, arriba)", formatoId: "R-12", infladoCm: 23, colores: ["029"] },
-]);
-const escena394 = ((): Escena => {
+]));
+const escena394 = (): Escena => {
   const cruz394 = deco(florTubito(burbujas("T-260", 2.5, ["029"], 4, 7, 0, 45)));
-  const yTallo = pila394.centros[3]!, gTallo = pila394.giros[3]!;
+  const yTallo = pila394().centros[3]!, gTallo = pila394().giros[3]!;
   return {
     sala: sala(380, 340, 280),
     nodos: [
-      ...pila394.nodos,
+      ...pila394().nodos,
       sobre("cruz-abajo", "Cruz verde de tubito (abajo)", "tallo", cruz394, v(0, r2(55.4 - yTallo), 0), frenteEn(gTallo)),
       sobre("cruz-arriba", "Cruz verde de tubito (arriba)", "tallo", cruz394, v(0, r2(75.5 - yTallo), 0), frenteEn(gTallo)),
-      remate("remate", "R-24 Neón Fucsia (impreso «15» y estrellas)", R("R-24", 55, "212"), pila394),
+      remate("remate", "R-24 Neón Fucsia (impreso «15» y estrellas)", R("R-24", 55, "212"), pila394()),
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 399 · Columna orgánica Encanto Dorado
@@ -432,7 +438,7 @@ const escena394 = ((): Escena => {
  * 140 px de ancho (≈ 80 cm), algo torcido; el R-24 dorado (100 px ≈ 58 cm) va arriba a la derecha y de lo alto salen 5
  * R-12 de cristal impresos con helio, el más alto a 1,1 m sobre la columna.
  */
-const escena399 = ((): Escena => {
+const escena399 = (): Escena => {
   const tramo = formaColumna({
     id: "columna", nombre: "Columna", altoCm: 185, radioBaseCm: 31, radioMedioCm: 27, radioPuntaCm: 33, inclinacionCm: 12, serpenteoCm: 10, irregularidad: 0.24,
     mezcla: [{ t: 0, pesos: { "R-12": 3, "R-9": 1 } }, { t: 1, pesos: { "R-12": 3, "R-9": 1 } }],
@@ -457,7 +463,8 @@ const escena399 = ((): Escena => {
       ...helio.map((c, i) => sobreEn(`helio-${i + 1}`, `R-12 Cristal (impreso) con helio ${i + 1}`, "cintas", globo(R12), enCintas(c), enCintas(unitario(c)))),
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 400 · Columna orgánica (reloj de arena)
@@ -468,7 +475,7 @@ const escena399 = ((): Escena => {
  * de unos 30 cm de alto, cintura de 60 px (≈ 20 cm) de R-5 y R-9 hasta 1,25 m, y el R-24 perla con 4 corazoncitos
  * dorados. Unas ramitas de gypsophila en la cintura.
  */
-const escena400 = ((): Escena => {
+const escena400 = (): Escena => {
   const opciones = opcionesTroncoConBase({
     base: { radioAnilloCm: 21, radioCm: 21, mezcla: { "R-12": 3, "R-9": 2 } },
     tronco: { desdeCm: 28, altoCm: 128, radioCm: 11, radioCopaCm: 13, mezcla: { "R-9": 1, "R-5": 3 } },
@@ -493,7 +500,8 @@ const escena400 = ((): Escena => {
       }),
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 404 · Columna romana Bigotes
@@ -506,7 +514,7 @@ const escena400 = ((): Escena => {
  * igual, menta, impresos, naval y el R-24 Silk Azul Ártico del «PAPÁ».
  */
 const BIGOTES = "infinity-bigotes-y-corbatines-fashion-transparente";
-const pila404 = apilar([
+const pila404 = perezoso(() => apilar([
   { id: "naval-abajo", nombre: "Cuarteto R-12 azul naval (abajo)", formatoId: "R-12", infladoCm: 25, colores: ["044"] },
   { id: "bigotes-abajo", nombre: "Cuarteto Bigotes y Corbatines (abajo)", formatoId: "R-12", infladoCm: 23, colores: ["390"], impresos: [{ impresoId: BIGOTES, codigo: "390" }] },
   { id: "menta-abajo", nombre: "Cuarteto R-12 verde menta (abajo)", formatoId: "R-12", infladoCm: 20, colores: ["826"] },
@@ -516,11 +524,11 @@ const pila404 = apilar([
   { id: "menta-arriba", nombre: "Cuarteto R-12 verde menta (arriba)", formatoId: "R-12", infladoCm: 20, colores: ["826"] },
   { id: "bigotes-arriba", nombre: "Cuarteto Bigotes y Corbatines (arriba)", formatoId: "R-12", infladoCm: 23, colores: ["390"], impresos: [{ impresoId: BIGOTES, codigo: "390" }] },
   { id: "naval-arriba", nombre: "Cuarteto R-12 azul naval (arriba)", formatoId: "R-12", infladoCm: 25, colores: ["044"] },
-]);
-const escena404: Escena = {
+]));
+const escena404 = (): Escena => ({
   sala: sala(400, 360, 300),
-  nodos: [...pila404.nodos, remate("remate", "R-24 Silk Azul Ártico (impreso «PAPÁ»)", R("R-24", 55, "839"), pila404)],
-};
+  nodos: [...pila404().nodos, remate("remate", "R-24 Silk Azul Ártico (impreso «PAPÁ»)", R("R-24", 55, "839"), pila404())],
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 409 · Columna tejida
@@ -532,7 +540,7 @@ const escena404: Escena = {
  * racimo de R-5 al medio, cuarteto fucsia de lunares, cuarteto blanco y el R-24 fucsia de lunares grandes. La raíz es
  * el tallo (dos tubitos fucsia y dos rosados trenzados): lo demás va `sobre` él a la altura medida.
  */
-const escena409 = ((): Escena => {
+const escena409 = (): Escena => {
   const Y0 = 46;
   const letras = (codigo: string): Pieza => ({ tipo: "letras", letras: { texto: "I", altoCm: 64, grosorCm: 9, disposicion: "fila", tecnica: "tubito", formatoId: "T-260", infladoCm: 5, colores: [codigo], patron: "un_color" } });
   const en = (y: number) => v(0, y - Y0, 0);
@@ -554,7 +562,8 @@ const escena409 = ((): Escena => {
       sobreCentrada("remate", "R-24 Fashion Fucsia (de lunares grandes)", "tallo", globo(R("R-24", 55, "012")), en(164)),
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 436 · Corazones neón (arco)
@@ -565,7 +574,7 @@ const escena409 = ((): Escena => {
  * el paso entre niveles 36 px (0,8 diámetros): con R-9 a 18 cm, 2,5 px/cm (≈ 2,6 × 1,95 m). Bandas de 4 niveles de
  * cada lado: fucsia, naranja, verde y verde lima, y 4 niveles azules arriba: 36 cuartetos.
  */
-const arco436 = ((): Pieza => {
+const arco436 = (): Pieza => {
   // Media elipse de 300° (de 240° a −60°), escalada para que salgan 36 niveles con el paso de la trenza.
   const elipse = (k: number) => {
     const puntos: Array<{ x: number; y: number }> = [];
@@ -579,7 +588,8 @@ const arco436 = ((): Pieza => {
   const k = (35 * 18 * 0.8) / largoDe(elipse(1));
   const bandas = ["212", "212", "261", "261", "030", "030", "230", "230", "240", "240", "230", "230", "030", "030", "261", "261", "212", "212"];
   return { tipo: "guirnalda", guirnalda: { formatoId: "R-9", infladoCm: 18, patron: "salvavidas", colores: bandas, anchoCm: 0, caidaCm: 0, recorrido: elipse(k) } };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 441 · Corona navideña
@@ -590,7 +600,7 @@ const arco436 = ((): Pieza => {
  * Trébol por fuera y R-9 y R-5 verdes y dorados por dentro, con 3 rizos de tubito dorado y un moño Merlot de 505 px
  * (≈ 1,1 m) con dos colas de ~60 cm.
  */
-const escena441 = ((): Escena => {
+const escena441 = (): Escena => {
   const opciones = opcionesAroOrganico({
     diametroCm: 140, exterior: { formatoId: "R-12", radioCm: 13 }, interior: { pesos: { "R-9": 2, "R-5": 1.6 }, radioCm: 10, adelanteCm: 7 },
     colores: [colorOrg("029", 5), colorOrg("970", 1.1, ["R-5"])], semilla: 441,
@@ -608,7 +618,8 @@ const escena441 = ((): Escena => {
       sobre("rizo-3", "Rizo de tubito dorado (derecha)", "corona", rizo, v(49, 86, 0), AL_FRENTE, 20),
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 443 · Corporativo (escena: supermercado)
@@ -620,7 +631,7 @@ const escena441 = ((): Escena => {
  * con algún blanco) sobre el exhibidor de naranjas. Góndolas, la franja roja de la pared con el cartel de frutas y el
  * exhibidor son escenografía.
  */
-const escena443 = ((): Escena => {
+const escena443 = (): Escena => {
   const colgante = columna("R-12", 25, 6, ["015", "005", "040"], "salvavidas");
   const colgantes: Array<{ id: string; x: number; z: number }> = [
     { id: "colgante-centro", x: -40, z: 120 }, { id: "colgante-izquierda", x: -260, z: -40 }, { id: "colgante-izquierda-fondo", x: -400, z: -200 },
@@ -654,7 +665,8 @@ const escena443 = ((): Escena => {
       { id: "supermercado", nombre: "Góndolas, exhibidor y pared del supermercado", pieza: escenografia(escenario), colocacion: libre(0, 0, 0) },
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 460 · Cumpleaño hawaiano (escena)
@@ -672,7 +684,7 @@ const FLORES_460: ReadonlyArray<{ px: number; py: number; petalos: string; coron
   { px: 618, py: 108, petalos: "212", corona: "061", centro: "021" }, { px: 590, py: 135, petalos: "050", corona: "020", centro: "029" },
   { px: 555, py: 158, petalos: "031", corona: "050", centro: "020" }, { px: 588, py: 188, petalos: "061", corona: "038", centro: "020" },
 ];
-const escena460 = ((): Escena => {
+const escena460 = (): Escena => {
   const malla: Pieza = { tipo: "pared_malla", formatoId: "LOL-12", infladoCm: 20, anchoCm: 300, altoCm: 175, patron: "un_color", colores: ["040"], union: { infladoCm: 10, codigo: "040" } };
   const ALTO_MALLA = 50; // la malla arranca detrás de la mesa
   const flor460 = (f: (typeof FLORES_460)[number]) => deco(flor({ petalos: { ...R("R-5", 12.5, f.petalos), cantidad: 5, aperturaGrados: 0, giroGrados: 18 }, corona: { ...R("R-5", 9, f.corona), cantidad: 5 }, centro: { ...R("R-5", 6, f.centro), cantidad: 1 } }));
@@ -707,7 +719,8 @@ const escena460 = ((): Escena => {
       { id: "palmeras", nombre: "Palmeras en materas negras", pieza: escenografia([...palmera(-215), ...palmera(215)]), colocacion: libre(0, 0, 0) },
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 465 · Cumpleaños violeta y plata (escena: mesa de postres)
@@ -718,7 +731,7 @@ const escena460 = ((): Escena => {
  * la vista; la foto corta la mesa a la izquierda: se completan 11 a lo largo de los 3 m), con cintas lila entre ellos.
  * Estanterías caladas, marco de espejo, torre de macarons, frascos de dulces, cake pops y serpentinas lila y plata.
  */
-const escena465 = ((): Escena => {
+const escena465 = (): Escena => {
   // Una hilera: el contorno es más bajo que un globo, así las celdas dejan una sola fila (11 R-12 a 30 cm).
   const fila: Pieza = { tipo: "forma", forma: { clase: "rellena", contorno: { tipo: "libre", puntos: [{ x: -120, y: 0 }, { x: 120, y: 0 }, { x: 120, y: 12 }, { x: -120, y: 12 }] }, tecnica: { tipo: "celdas", formatoId: "R-12", infladoCm: 30, celda: "cuadrada" }, colores: { codigos: ["971"], patron: "un_color" } } };
   const c = armarPieza(fila).caja;
@@ -753,7 +766,8 @@ const escena465 = ((): Escena => {
       { id: "fondo", nombre: "Estanterías, marco de espejo y serpentinas", pieza: escenografia(fondo), colocacion: libre(0, 0, -100) },
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 467 · Cupcakes 2 (escena)
@@ -765,7 +779,7 @@ const escena465 = ((): Escena => {
  * violeta, amarillo, verde y azul arriba, rosado y fucsia a la derecha—, faroles de papel, el banderín de 14 triángulos
  * pastel, 3 cuadros de cupcakes, la mesa blanca con el pastel y los frascos.
  */
-const escena467 = ((): Escena => {
+const escena467 = (): Escena => {
   const recorrido = [
     { x: -128, y: 160 }, { x: -130, y: 195 }, { x: -128, y: 222 }, { x: -110, y: 240 }, { x: -60, y: 244 }, { x: 0, y: 245 },
     { x: 60, y: 244 }, { x: 110, y: 240 }, { x: 128, y: 222 }, { x: 131, y: 198 }, { x: 130, y: 175 },
@@ -807,7 +821,8 @@ const escena467 = ((): Escena => {
       { id: "faroles", nombre: "Faroles de papel", pieza: escenografia(faroles), colocacion: libre(0, 0, -140) },
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 489 · Decoración pastel melón (aro de mesa)
@@ -818,7 +833,7 @@ const escena467 = ((): Escena => {
  * R-5 Pastel Mate Melón (70–90 px ≈ 9–11 cm) arriba a la izquierda, arriba a la derecha y abajo de lado a lado, 4 flores
  * blancas de papel (≈ 16 cm, van como hortensias blancas) en el racimo de abajo y hojas verdes.
  */
-const escena489 = ((): Escena => {
+const escena489 = (): Escena => {
   const RADIO = 37, CENTRO_Y = 42;
   const arco = (desde: number, hasta: number, pasos = 8) => Array.from({ length: pasos + 1 }, (_, i) => {
     const a = rad(desde + ((hasta - desde) * i) / pasos);
@@ -848,7 +863,8 @@ const escena489 = ((): Escena => {
       { id: "mesa", nombre: "Mesa", pieza: escenografia(mesaConMantel({ anchoCm: 120, fondoCm: 60, altoCm: MESA, mantel: "#f7f5f2" })), colocacion: PISO },
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 495 · Desayuno sorpresa
@@ -860,7 +876,7 @@ const escena489 = ((): Escena => {
  * dos jorobas y baja por la derecha, con 3 flores de 5 R-5 Silk Azul Ártico y centro dorado, y el R-12 rosado de
  * Corazones Brillantes con helio arriba a la derecha.
  */
-const escena495 = ((): Escena => {
+const escena495 = (): Escena => {
   const BASE = 75 + 1.5; // la mesa y el fondo del huacal
   const m = [
     { x: -18.3, y: 25 }, { x: -18.3, y: 45 }, { x: -16, y: 53 }, { x: -11, y: 56 }, { x: -5, y: 55 }, { x: -1, y: 50 }, { x: 2, y: 45.5 },
@@ -891,7 +907,8 @@ const escena495 = ((): Escena => {
       { id: "mesa", nombre: "Mesa", pieza: escenografia(mesaConMantel({ anchoCm: 90, fondoCm: 60, altoCm: 75, mantel: "#f7f5f2" })), colocacion: PISO },
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 519 · Encanto floral (ramo de tallos de tubito)
@@ -902,7 +919,7 @@ const escena495 = ((): Escena => {
  * amarillos (de confeti rosado), 5 R-5 fucsia, 7 tubitos largos (lila, fucsia, naranja, verde lima, amarillo y dos de
  * cristal) amarrados con un moñito verde a 1 m y 5 flores de R-5 en las puntas (rosada, azul, lila, fucsia y amarilla).
  */
-const escena519 = ((): Escena => {
+const escena519 = (): Escena => {
   const MONO = v(-5, 103, 0);
   const tubitos: ReadonlyArray<{ id: string; codigo: string; punta: Vec3; flor?: { petalos: string; centro: string; nombre: string } }> = [
     { id: "lila", codigo: "050", punta: v(-34, 152, 2), flor: { petalos: "040", centro: "031", nombre: "azul" } },
@@ -936,7 +953,8 @@ const escena519 = ((): Escena => {
     }
   }
   return { sala: sala(380, 340, 280), nodos };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 521 · Encanto orgánico (aro)
@@ -947,7 +965,7 @@ const escena519 = ((): Escena => {
  * × 520 px (≈ 2,4 m) de R-18, R-12, R-9 y R-5 blancos, Metal Dorado (el «durazno» perlado), cobre cromado y plata, con
  * el fondo de tablillas de madera en el centro.
  */
-const escena521 = ((): Escena => {
+const escena521 = (): Escena => {
   const opciones = opcionesAroOrganico({
     diametroCm: 235, exterior: { formatoId: "R-12", radioCm: 14 }, interior: { pesos: { "R-18": 0.6, "R-12": 1.4, "R-9": 1.4, "R-5": 1 }, radioCm: 19, adelanteCm: 9 },
     colores: [colorOrg("405", 3, ["R-5", "R-9", "R-12"]), colorOrg("406", 0.5, ["R-18"]), colorOrg("570", 2), colorOrg("968", 1.6, ["R-5", "R-12", "R-18"]), colorOrg("481", 1.4)], semilla: 521,
@@ -961,7 +979,8 @@ const escena521 = ((): Escena => {
       { id: "tablillas", nombre: "Fondo de tablillas de madera", pieza: escenografia(tablillas), colocacion: libre(0, 0, 0) },
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 530 · Estrella del Norte (de techo)
@@ -972,7 +991,7 @@ const escena521 = ((): Escena => {
  * una flor de 5 R-12 Verde Aurora (133 px ≈ 28 cm) con una flor de 5 R-5 rojos y centro verde encima; alrededor, 15
  * Link-O-Loon 6 rojos en cadena (3 entre cada par de R-5 verdes) y 5 R-5 verdes en las uniones, frente a cada pétalo.
  */
-const escena530 = ((): Escena => {
+const escena530 = (): Escena => {
   const RADIO = 53;
   const nodos: NodoEscena[] = [
     { id: "flor-verde", nombre: "Flor de 5 R-12 Verde Aurora", pieza: deco(anillo(R("R-12", 28, "932"), 5, 0, 54), true), colocacion: { en: "techo", xCm: 0, zCm: 0, cuelgaCm: 60, giroGrados: 0, volteada: false } },
@@ -991,7 +1010,8 @@ const escena530 = ((): Escena => {
     }
   }
   return { sala: sala(380, 340, 300), nodos };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 534 · Eterna primavera (jarrón con flores de tubito)
@@ -1003,13 +1023,13 @@ const escena530 = ((): Escena => {
  * cuarteto lila; encima 5 flores de tubito (amarilla, fucsia en copa, lila, fucsia de 5 pétalos y otra fucsia chica)
  * con tallos verde lima y hojas.
  */
-const pila534 = apilar([
+const pila534 = perezoso(() => apilar([
   { id: "lila-abajo", nombre: "Cuarteto R-12 Satín Lila (abajo)", formatoId: "R-12", infladoCm: 23, colores: ["450"] },
   { id: "fucsia", nombre: "3 cuartetos R-12 Fashion Fucsia", formatoId: "R-12", infladoCm: 23, niveles: 3, colores: ["012"] },
   { id: "lila-arriba", nombre: "Cuarteto R-12 Satín Lila (arriba)", formatoId: "R-12", infladoCm: 23, colores: ["450"] },
-]);
-const escena534 = ((): Escena => {
-  const yArriba = pila534.centros[2]!, gArriba = pila534.giros[2]!;
+]));
+const escena534 = (): Escena => {
+  const yArriba = pila534().centros[2]!, gArriba = pila534().giros[2]!;
   const aLocal = inverso(giroY(gArriba));
   const TALLO = { formatoId: "T-260", grosorCm: 3.5, codigo: "031" };
   // Las flores (centro de la cabeza, en cm del piso y del eje) y su forma.
@@ -1022,9 +1042,9 @@ const escena534 = ((): Escena => {
   ];
   const ALTO_TALLOS = yArriba + 9; // los tallos salen de entre los globos del cuarteto de arriba
   const nodos: NodoEscena[] = [
-    ...pila534.nodos,
+    ...pila534().nodos,
     // El amarillo, de frente en el cuarteto del medio de los fucsia (en su espacio: el del primero, girado).
-    sobre("amarillo", "R-12 Fashion Amarillo de frente", "fucsia", globo(R("R-12", 23, "020")), v(0, 18.4, 0), frenteEn(pila534.giros[1]!)),
+    sobre("amarillo", "R-12 Fashion Amarillo de frente", "fucsia", globo(R("R-12", 23, "020")), v(0, 18.4, 0), frenteEn(pila534().giros[1]!)),
     sobreCentrada("hojas", "Hojas de tubito verde lima", "lila-arriba", deco(florTubito(lazos("T-260", 3.5, ["031"], 4, 11, 7, 30, 20))), aLocal(v(0, ALTO_TALLOS - yArriba + 3, 0))),
   ];
   for (const f of flores) {
@@ -1035,7 +1055,8 @@ const escena534 = ((): Escena => {
     nodos.push(sobreCentrada(`flor-${f.id}`, f.nombre, "lila-arriba", deco(f.flor), aLocal(v(f.cabeza.x, f.cabeza.y - yArriba, f.cabeza.z)), aLocal(unitario(v(0, 0.5, 1)))));
   }
   return { sala: sala(360, 320, 260), nodos };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 538 · Fantasía en satín (flor de pared)
@@ -1047,7 +1068,7 @@ const escena534 = ((): Escena => {
  * una tercia de R-5 en la punta de cada pétalo: violeta, azul, naranja, amarilla y rosada delante; durazno, amarillo
  * pálido, fucsia satinado, violeta oscuro y verde detrás.
  */
-const escena538 = ((): Escena => {
+const escena538 = (): Escena => {
   const petalos = (giro: number, d: number) => deco(anillo(R("R-18", d, "873"), 5, 0, giro), true);
   // La capa de delante va `sobre` la de atrás mirando al frente: en su espacio x → x, y → z, z → y.
   const aDelante = inverso(marcoNormal(AL_FRENTE));
@@ -1067,7 +1088,8 @@ const escena538 = ((): Escena => {
       ...atras.map(([g, c], i) => sobre(`tercia-atras-${i + 1}`, `Tercia de R-5 (atrás, ${i + 1})`, "atras", tercia(c), enFlor(g, 36, 0), AL_FRENTE)),
     ],
   };
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // Las 20 ideas
@@ -1078,19 +1100,19 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
   idea({
     numero: 380, slug: "columna-halloween", nombre: "Columna Halloween: araña y calabaza", ocasiones: ["halloween"],
     fotoUrl: FOTO("1768f8eb71fb968f874cd1fb6ee1e423_2a452da6-c30b-415b-abf9-31e2a8e4f503.jpg"),
-    contenido: ESCENA(escena380),
+    contenido: () => ESCENA(escena380()),
     nota: "Igual: de abajo arriba 4 R-5 Verde Trébol 029, la calabaza R-18 Fashion Naranja 061 con cara (41 cm, 113 px a 2,7 px/cm), 4 R-5 verdes, el tallo trenzado de T-260 029 (60 cm a la vista), 4 R-5 negros, 4 R-12 naranjas con el impreso Infinity® Happy Halloween de la tienda (sobre su naranja), 4 R-9 naranjas y la araña de 8 patas articuladas de T-260 negro con cuerpo R-18 y cabeza R-12 con ojos verdes; ~2 m de alto. Colores medidos (no publica productos): naranja #ff7501 → 061, verde #00a125 → 029. Distinto: en la foto el tallo es de tres tubitos torcidos y aquí de dos trenzados; la cabeza de la araña va debajo del cuerpo (en la foto, delante) y las patas suben (en la foto caen a los lados) y la boca roja no se dibuja, así que la columna queda unos 20 cm más alta; el impreso naranja de la foto es otro Halloween (el más parecido de la tienda).",
   }),
   idea({
     numero: 392, slug: "columna-mi-primera-comunion", nombre: "Columna Mi Primera Comunión", ocasiones: ["bautizo y comunión"],
     fotoUrl: FOTO("c3d469550d5115218ab27359389e67b6_5f2169b3-e35e-4f20-836e-e92ae601a9b8.jpg"),
-    contenido: ESCENA(escena392),
+    contenido: () => ESCENA(escena392()),
     nota: "Igual: el armado de la foto con sus tamaños relativos (R-24 de 184 px ≈ 58 cm: 3,17 px/cm; ~1,7 m): cuarteto R-12 de perlas con 2 Infinity® Mi Primera Comunión Palomas alternados, cuarteto Satín Lila 450, 4 R-5 Metal Dorado 570, el tallo de 8 niveles de R-5 Satín Perla (15 cm de ancho), 4 R-5 dorados, un cuarteto de impresos Mi Primera Comunión y el R-24 dorado arriba, con 2 cruces de tubito T-260 Fashion Lila en el tallo. Colores medidos (no publica productos). Distinto: el R-24 de la foto es un cristal dorado impreso con palomas y letras: va liso en Metal Dorado 570 (no hay cristal dorado en la tabla ni ese impreso en R-24); la tienda vende el impreso de comunión sobre blanco (005) y en la foto se ven perlados; faltan los aros de tubito lila de arriba y abajo de cada cruz; el lila medido queda entre Fashion Lila y Satín Lila (se tomó el satinado por el brillo perlado).",
   }),
   idea({
     numero: 394, slug: "columna-mis-quince-anos", nombre: "Columna Mis Quince Años", ocasiones: ["cumpleaños"],
     fotoUrl: FOTO("dab399c343f8343ba5a78ceb7921af75_fb958938-a3db-4213-be14-727feea9ca13.jpg"),
-    contenido: ESCENA(escena394),
+    contenido: () => ESCENA(escena394()),
     nota: "Igual: el mismo armado de la #392 (R-24 de 164 px ≈ 55 cm: 2,98 px/cm; ~1,8 m): cuarteto R-12 Frambuesa 014, cuarteto Verde Trébol 029, 4 R-5 Fashion Rosado 009, tallo de 10 niveles de R-5 Satín Perla con 2 cruces de T-260 verde, 4 R-5 rosados, cuarteto verde y el R-24 Neón Fucsia 212 arriba. Colores medidos (no publica productos): fucsia del R-24 #ff51bd → 212, verde #019a22 → 029, frambuesa #f6325a → 014. Distinto: los impresos de la foto (lunares blancos sobre frambuesa, destellos blancos sobre verde, «15» con estrellas en el R-24) no están en la tienda: van lisos en su fondo; faltan los aros verdes de tubito del tallo; en la foto los anillos rosados parecen de 5–6 R-5 y aquí son cuartetos.",
   }),
   idea({
@@ -1101,7 +1123,7 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO REDONDO SATIN PERLA", url: "/products/globo-para-fiesta-latex-redondo-satin-perla", formato: "R-12", codigo: "406" },
       { nombre: "GLOBO LATEX REDONDO REFLEX DORADO", url: "/products/globo-para-fiesta-latex-redondo-reflex-dorado", formato: "R-12", codigo: "970" },
     ],
-    contenido: ESCENA(escena399),
+    contenido: () => ESCENA(escena399()),
     nota: "Igual: columna orgánica algo torcida de ~1,85 m (las perlas R-12 de 43 px ≈ 25 cm: 1,7 px/cm) en los productos publicados —Satín Blanco 405, Satín Perla 406 y Reflex Dorado 970— con cristales, R-12 y R-9 sobre todo (la foto casi no tiene R-5), el R-24 Reflex Dorado arriba a la derecha y el ramo de 5 R-12 de cristal con helio amarrado en lo alto, con sus cintas. Distinto: el motor orgánico da 63 globos en el cuerpo (la foto muestra ~52 de frente: no se cuentan uno a uno) y la silueta no sigue exactamente la S de la foto; los cristales de la columna se ven color champaña y van en Cristal Transparente 390, y los 5 de helio llevan un impreso dorado que no está en la tienda (van lisos).",
   }),
   idea({
@@ -1113,7 +1135,7 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO REDONDO SATIN PERLA", url: "/products/globo-para-fiesta-latex-redondo-satin-perla", formato: "R-12", codigo: "406" },
       { nombre: "GLOBO REDONDO SATIN BLANCO", url: "/products/globo-para-fiesta-latex-redondo-satin-blanco", formato: "R-12", codigo: "405" },
     ],
-    contenido: ESCENA(escena400),
+    contenido: () => ESCENA(escena400()),
     nota: "Igual: reloj de arena de ~1,85 m (R-24 de 165 px ≈ 55 cm: 3 px/cm): base ancha (77 cm) de R-12 y R-9 de unos 30 cm de alto y cintura de R-5 y R-9 de ~22 cm hasta 1,25 m, en los Satín publicados —Rosado 409, Plata 481, Perla 406 y Blanco 405— con algo de Metal Dorado 570 y cristal, unas ramitas de gypsophila, el R-24 Satín Perla arriba y 4 corazoncitos dorados alrededor de él. Distinto: el motor orgánico da 69 globos (no se cuentan uno a uno); los corazoncitos van como metalizados de 4\" dorado mate sin producto de la tienda (no hay corazón de látex dorado en la tabla) y falta el aro de tubito perla que los sostiene; el dorado y el cristal no están entre los productos publicados (se ven en la foto).",
   }),
   idea({
@@ -1126,19 +1148,19 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO REDONDO SILK VERDE MENTA", url: "/products/globo-latex-redondo-silk-verde-menta", formato: "R-12", codigo: "826" },
       { nombre: "GLOBO REDONDO SILK DORADO", url: "/products/globo-latex-redondo-silk-rocio-de-oro", formato: "R-5", codigo: "870" },
     ],
-    contenido: ESCENA(escena404),
+    contenido: () => ESCENA(escena404()),
     nota: "Igual: por el perfil de ancho (R-24 de 211 px ≈ 55 cm: 3,84 px/cm; ~2,2 m), de abajo arriba cuarteto R-12 Azul Naval 044 a 25 cm, cuarteto Infinity® Bigotes y Corbatines Cristal a 23, cuarteto Silk Verde Menta 826 a 20, cintura de 3 niveles de R-5 en espiral (menta, Silk Dorado 870 y naval) a 10, cuarteto R-9 naval a 16, otra cintura igual, menta, bigotes, naval y el R-24 Silk Azul Ártico 839 arriba: los productos publicados. Distinto: el R-24 lleva impreso «PAPÁ» con sombrero y bigote (no está en la tienda: va liso); el Silk Dorado y el Azul Ártico se publican como R-12 y en la foto son R-5 y R-24; en la cintura no se ve el cuarto globo de cada nivel (va naval).",
   }),
   idea({
     numero: 409, slug: "columna-tejida", nombre: "Columna tejida fucsia y blanca", ocasiones: ["cumpleaños", "infantil"],
     fotoUrl: FOTO("1979811bf8713a7f6709e0372f50b039_cc48d187-22d6-4c68-ae1d-605443395ee7.jpg"),
-    contenido: ESCENA(escena409),
+    contenido: () => ESCENA(escena409()),
     nota: "Igual: de abajo arriba cuarteto R-12 Satín Blanco 405, cuarteto Fashion Fucsia 012, cuarteto blanco, el tallo de tubitos fucsia y rosados trenzados (46 cm a la vista) con su racimo de R-5 al medio (rosados Satín Rosado 409 arriba y abajo y un anillo Neón Fucsia 212), cuarteto fucsia, cuarteto blanco y el R-24 fucsia arriba; ~1,9 m (R-24 de 156 px ≈ 55 cm). Colores medidos (no publica productos). Distinto: los lunares blancos de los cuartetos fucsia y los lunares rosados grandes del R-24 son impresos que la tienda no vende sobre fucsia (Polka solo en rojo y verde lima): van lisos; el tallo son 2 + 2 tubitos trenzados (en la foto se ve una sola trenza de dos colores).",
   }),
   idea({
     numero: 436, slug: "corazones-neon", nombre: "Arco Corazones neón", ocasiones: ["amor", "cumpleaños"],
     fotoUrl: FOTO("ff69d3ea302863c238fce50ed727a1f0_40d1be4b-253a-4bd0-9692-1e05a70e6b83.jpg"),
-    contenido: { tipo: "pieza", pieza: arco436, sugerida: PISO },
+    clase: "estructura", contenido: () => ({ tipo: "pieza", pieza: arco436(), sugerida: PISO }),
     nota: "Igual: arco en herradura de 36 cuartetos de R-9 a 18 cm (~2,6 × 1,95 m: el globo mide 45 px y el paso 36 px), con las puntas curvadas hacia dentro y bandas de 4 niveles de cada lado —Neón Fucsia 212, Neón Naranja 261, Fashion Verde 030 y Neón Verde 230— y 4 niveles Neón Azul 240 arriba (colores medidos; no publica productos). Distinto: en la foto el globo de fuera de cada cuarteto lleva corazoncitos blancos impresos y el de dentro es liso, sin girar; aquí son lisos y la trenza gira 1/8 por nivel; faltan los globitos blancos de relleno entre cuartetos.",
   }),
   idea({
@@ -1150,31 +1172,31 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO REDONDO FASHION MERLOT", url: "/products/globo-latex-redondo-fashion-merlot", formato: "R-12", codigo: "018" },
       { nombre: "GLOBO TUBITO FASHION MERLOT", url: "/products/globo-latex-tubito-fashion-merlot", formato: "T-260", codigo: "018" },
     ],
-    contenido: ESCENA(escena441),
+    contenido: () => ESCENA(escena441()),
     nota: "Igual: corona de ~1,4 m (R-5 dorados de 55 px ≈ 12 cm: 4,6 px/cm) de R-12 Fashion Verde Trébol 029 por fuera y R-9 verdes con R-5 Reflex Dorado 970 por dentro (los publicados), 3 rizos de tubito dorado y el moño de T-260 Fashion Merlot 018 de dos lazos y dos colas de ~60 cm, en la pared. Distinto: el motor orgánico da 44 globos (la foto: ~16 + ~18 + 8 dorados); el dorado de la foto mide como Metal Dorado y va el Reflex Dorado publicado (que la idea mapea a R-12: es R-5); el moño de la foto se ve más grueso que un T-260; el R-12 Merlot publicado no aparece en la foto (va sin cantidad).",
   }),
   idea({
     numero: 443, slug: "corporativo", nombre: "Corporativo: colgantes de supermercado", ocasiones: ["general"],
     fotoUrl: FOTO("58c142520ad7ed61c568cbe716377a1f.jpg"),
-    contenido: ESCENA(escena443),
+    contenido: () => ESCENA(escena443()),
     nota: "Igual: el supermercado con sus 6 colgantes de techo de 6 cuartetos R-12 (2 Fashion Azul 040, 2 blancos y 2 Fashion Rojo 015 de arriba abajo) a distintas distancias y los 2 racimos de 12 R-12 (azul rey con algún blanco y rojo con algún blanco) sobre el exhibidor de naranjas; góndolas, la franja roja con el cartel de frutas, el exhibidor, la nevera y las cajas como escenografía. Colores medidos (no publica productos). Distinto: los blancos (y algunos azules y rojos) llevan el logo de la tienda impreso, que no se modela; en la foto los cuartetos de los colgantes van alineados y aquí giran 1/8 por nivel; las góndolas y productos son bloques.",
   }),
   idea({
     numero: 460, slug: "cumpleano-hawaiano", nombre: "Cumpleaño hawaiano: malla turquesa con flores", ocasiones: ["cumpleaños"],
     fotoUrl: FOTO("749eb5c0cd4c88e5229d4c1897a46100_640c3cae-2d08-40fb-95bc-fb88774499a5.jpg"),
-    contenido: ESCENA(escena460),
+    contenido: () => ESCENA(escena460()),
     nota: "Igual: la malla de eslabones turquesa (300 × 175 cm: 112 eslabones de Link-O-Loon 12 a 20 cm con sus parejas de unión de R-5) en la pared, detrás de la mesa con mantel de yute sobre el blanco, con las 10 flores de dos pisos de R-5 en las esquinas de arriba —5 a cada lado, cada una con 5 pétalos, 5 más chicos encima y un centro, en los colores medidos de la foto—, las palmeras en materas negras, el pastel de 3 pisos y los regalos de colores. Distinto: el turquesa medido es Fashion Azul Caribe 038, que no se fabrica en Link-O-Loon: la malla va en Fashion Azul 040; la malla de la foto se ve en cuadrícula (aquí rombos de la técnica de Sempertex); palmeras, pastel y regalos son escenografía sencilla.",
   }),
   idea({
     numero: 465, slug: "cumpleanos-violeta-y-plata", nombre: "Cumpleaños violeta y plata: mesa de postres", ocasiones: ["bautizo y comunión"],
     fotoUrl: FOTO("4c055bd05c996c70207adfd16dfb5877.jpg"),
-    contenido: ESCENA(escena465),
+    contenido: () => ESCENA(escena465()),
     nota: "Igual: la mesa de postres dorada con la fila de R-12 Reflex Champaña 971 colgados bajo su borde (el color medido entre plata y champaña: #a3998e → 971), las estanterías caladas, el marco de espejo, la torre de macarons, los cake pops, los frascos y las serpentinas lila y plata. Distinto: en la foto se ven 7 globos y la mesa sale cortada a la izquierda: se completan 11 a lo largo; las cintas lila entre los globos, las flores y los postres son escenografía sencilla.",
   }),
   idea({
     numero: 467, slug: "cupcakes-2", nombre: "Cupcakes 2: guirnalda y banderín", ocasiones: ["cumpleaños", "infantil"],
     fotoUrl: FOTO("0b8950981a9aae0cb19e1651a18f2cd2_3be6551d-7faa-4b12-bec5-d648e3db9c5d.jpg"),
-    contenido: ESCENA(escena467),
+    contenido: () => ESCENA(escena467()),
     nota: "Igual: el fondo rosado (2,1 × 2,3 m, a 2,56 px/cm) con la guirnalda de R-9 por arriba y por los lados en bloques de color medidos —Verde Selva 032, Satín Rosado 409, Fashion Violeta 051, Fashion Amarillo 020, Verde Trébol 029, Pastel Dusk Azul 140 y Satín Fucsia 412—, el banderín de 14 triángulos pastel (tres de lunares), los 3 cuadros de cupcakes, los faroles de papel y la mesa blanca con el pastel, la regadera y los frascos. Distinto: la guirnalda de la foto es de globos sueltos en dos filas y aquí es la trenza de cuartetos; el amarillo se midió en sombra (#b4a801) y va el Fashion Amarillo; el banderín no es un producto de la tienda (genérico).",
   }),
   idea({
@@ -1184,7 +1206,7 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO REDONDO PASTEL MATE MELON", url: "/products/globo-para-fiesta-latex-redondo-pastel-mate-melon", formato: "R-5", codigo: "663" },
       { nombre: "GLOBO FELIZ CUMPLEAÑOS DESTELLOS", url: "/products/globo-para-fiesta-latex-redondo-2-caras-feliz-cumpleanos-fiesta-destellos-reflex-surtido", formato: "R-12", codigo: null },
     ],
-    contenido: ESCENA(escena489),
+    contenido: () => ESCENA(escena489()),
     nota: "Igual: aro forrado de 78 cm de centro de mesa (el R-12 impreso mide 250 px ≈ 30 cm: 8,3 px/cm) con 3 racimos de Pastel Mate Melón 663 —arriba a la izquierda, arriba a la derecha y abajo de lado a lado— de R-5 a 10 cm y algunos R-9, el R-12 Reflex Dorado con el impreso Feliz Cumpleaños Destellos de la tienda adentro, a la derecha, y 4 flores blancas de papel en el racimo de abajo. Distinto: el motor orgánico da 60 globos (la foto: ~63); el melón se publica como R-12 y en la foto son R-5 (70–90 px); las flores de papel van como hortensias blancas y faltan las hojas verdes; la mesa no sale en la foto.",
   }),
   idea({
@@ -1195,13 +1217,13 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO REDONDO SILK AZUL ÁRTICO", url: "/products/globo-latex-redondo-silk-azul-artico", formato: "R-5", codigo: "839" },
       { nombre: "GLOBO REDONDO INFINITY® CORAZONES BRILLANTES", url: "/products/globo-para-fiesta-latex-redondo-infinity-corazones-brillantes-fashion-metal-surtido", formato: "R-12", codigo: null },
     ],
-    contenido: ESCENA(escena495),
+    contenido: () => ESCENA(escena495()),
     nota: "Igual: huacal de madera de 50 cm (el R-12 rosado de 275 px ≈ 28 cm: 9,8 px/cm) con la «M» de mamá en trenza de R-5 Silk Dorado 870 diminutos (5,5 cm: 25 niveles, 2 de ancho), 3 flores de 5 R-5 Silk Azul Ártico 839 con centro dorado y el R-12 rosado con el impreso Infinity® Corazones Brillantes de la tienda con helio, los productos publicados; croissants, frutas, miel y vaso. Distinto: el azul de las flores mide como Silk Verde Menta (#8fb6b4) y va el Ártico publicado; la idea mapea el dorado y el ártico a R-12 y en la foto son R-5; el papel de corazones y la comida son escenografía sencilla; la mesa no sale en la foto.",
   }),
   idea({
     numero: 519, slug: "encanto-floral", nombre: "Encanto floral: ramo de tallos de tubito", ocasiones: ["general"],
     fotoUrl: FOTO("0b136c7423b22dde3852dcf94f39bccf_52b6fdb8-96b3-40b7-87dc-4aae3cc79c89.jpg"),
-    contenido: ESCENA(escena519),
+    contenido: () => ESCENA(escena519()),
     nota: "Igual: base de 4 R-12 Fashion Mostaza 023 y 5 R-5 Fashion Fucsia 012, 7 tallos de T-260 (lila, fucsia, naranja, verde lima, amarillo y 2 de cristal) amarrados con un moñito verde a 1 m y las 5 flores de 5 R-5 en las puntas (azul 040 con centro verde lima, rosada 009 con centro violeta, violeta 951 con centro fucsia, amarilla miel 021 con centro naranja y fucsia), ~1,95 m (base de 70 px ≈ 26 cm). Colores medidos (no publica productos). Distinto: los amarillos de la base llevan confeti rosado impreso (no está en la tienda: van lisos); los tallos son rectos de punta a punta pasando por el moño (en la foto se curvan) y los más largos cuentan 2 tubitos.",
   }),
   idea({
@@ -1211,13 +1233,13 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO REDONDO SATIN PLATA", url: "/products/globo-para-fiesta-latex-redondo-satin-plata", formato: "R-12", codigo: "481" },
       { nombre: "GLOBO REDONDO METAL DORADO", url: "/products/globo-para-fiesta-latex-redondo-metal-dorado-cobre", formato: "R-12", codigo: "570" },
     ],
-    contenido: ESCENA(escena521),
+    contenido: () => ESCENA(escena521()),
     nota: "Igual: aro orgánico de ~2,35 m (el fondo de tablillas mide 250 px ≈ 1 m: 2,4 px/cm) de R-18, R-12, R-9 y R-5 en blanco satinado, Metal Dorado 570 (el «durazno» perlado), cobre cromado y Satín Plata 481 (los dos publicados), con el fondo de tablillas de madera en el centro. Distinto: el motor orgánico da 139 globos (no se cuentan uno a uno); el cobre no está entre los productos publicados: medido #ce817a → Reflex Dorado Rosa 968; el blanco va en Satín Blanco 405 y, en R-18 (donde no se fabrica), en Satín Perla 406; la foto es algo ovalada.",
   }),
   idea({
     numero: 530, slug: "estrella-del-norte", nombre: "Estrella del Norte (de techo)", ocasiones: ["navidad"],
     fotoUrl: FOTO("694993c1a89c15b6816f262a840e7055_c8cd0429-0bb3-4abf-9227-4ef8a8a78f87.jpg"),
-    contenido: ESCENA(escena530),
+    contenido: () => ESCENA(escena530()),
     nota: "Igual: estrella de techo de ~1,2 m (los R-5 rojos miden 56 px ≈ 12 cm: 4,75 px/cm): flor de 5 R-12 Reflex Verde Aurora 932 con una flor de 5 R-5 Fashion Rojo 015 y centro verde encima, y el aro de 15 Link-O-Loon 6 rojos en cadena (3 entre cada par) con 5 R-5 verdes en las uniones, frente a cada pétalo. Colores medidos (no publica productos): verde azulado #00a192 → 932, rojo #ff0027 → 015. Distinto: el verde de la foto es mate y el Verde Aurora es Reflex (el Fashion más cercano, Azul Caribe 038, es más claro); los eslabones del aro van uno a uno, sin amarrarse entre sí.",
   }),
   idea({
@@ -1232,13 +1254,13 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
       { nombre: "GLOBO TUBITO FASHION FUCSIA", url: "/products/globo-para-fiesta-latex-tubito-fashion-fucsia", formato: "T-260", codigo: "012" },
       { nombre: "GLOBO TUBITO FASHION LILA", url: "/products/globo-para-fiesta-latex-tubito-fashion-lila", formato: "T-260", codigo: "050" },
     ],
-    contenido: ESCENA(escena534),
+    contenido: () => ESCENA(escena534()),
     nota: "Igual: jarrón de 5 niveles de cuartetos R-12 a 23 cm (92 px de ancho de frente: 3,7 px/cm; ~1,5 m con las flores): Satín Lila 450, 3 de Fashion Fucsia 012 con el R-12 Fashion Amarillo 020 de frente en el del medio, y Satín Lila; encima 5 flores de tubito (amarilla 020, fucsia en copa, lila 050, fucsia de 5 pétalos y una fucsia chica) con tallos y hojas de T-260 Verde Lima 031: los productos publicados. Distinto: los centros de las flores son R-5 verde lima (en la foto, nudos del tallo); el amarillo de la foto mide como Amarillo Miel 021 y va el Amarillo 020 publicado; las flores de la foto son más irregulares.",
   }),
   idea({
     numero: 538, slug: "fantasia-en-satin", nombre: "Fantasía en satín: flor de pared", ocasiones: ["general"],
     fotoUrl: FOTO("6f819750957084531f3f10b2d70ef3a9_6709a2df-9a92-44bb-8346-41f8635ea9d4.jpg"),
-    contenido: ESCENA(escena538),
+    contenido: () => ESCENA(escena538()),
     nota: "Igual: flor de pared de ~85 cm con dos capas de 5 pétalos de Silk Perla Crema 873 (medido #d8d2c6, ΔE 0,7), la de atrás entre los de delante, el centro de 4 R-5 Metal Verde con otro al medio y una tercia de R-5 en la punta de cada pétalo en los colores medidos: violeta, azul, naranja perlado, amarillo y frambuesa delante; durazno, amarillo pálido, fucsia satinado, violeta oscuro y verde detrás. Distinto: los pétalos son R-18 a 32–34 cm (en la foto se ven algo alargados y la flor mide ~1,1 m); falta el globo perla de detrás del centro; los perlados de las tercias van en el código más cercano aunque sea mate.",
   }),
 ];

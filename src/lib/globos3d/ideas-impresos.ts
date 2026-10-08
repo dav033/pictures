@@ -3,7 +3,7 @@ import { SALA_INICIAL, type Colocacion, type Escena, type NodoEscena } from "./e
 import type { ElementoEscenografia } from "./escenografia";
 import { metalizadoDeTienda } from "./metalizados";
 import { armarPieza, type Pieza } from "./piezas";
-import type { IdeaDigitalizada, ProductoDeIdea } from "./ideas-sempertex/tipos";
+import { ideaPerezosa, type IdeaDigitalizada, type ProductoDeIdea } from "./ideas-sempertex/tipos";
 import type { ImpresoEnPieza } from "./impresos-catalogo";
 
 /**
@@ -128,134 +128,132 @@ function centroDeMesaEstrella(): Escena {
   };
 }
 
+/**
+ * Una idea perezosa (patrón obligatorio de `ideas-sempertex/tipos.ts`): lo fijo se lee sin armar nada; su escena o
+ * pieza se arma la primera vez que se pide (algunas miden piezas con `armarPieza`) y queda memorizada.
+ */
+function impresa(fijo: Omit<IdeaImpresos, "contenido" | "productos">, productos: ProductoDeIdea[], contenido: () => IdeaDigitalizada["contenido"]): IdeaImpresos {
+  return ideaPerezosa(fijo, contenido, () => productos) as IdeaImpresos;
+}
+
 export const IDEAS_IMPRESOS: readonly IdeaImpresos[] = [
-  {
+  impresa({
+    clase: "decoracion",
     id: "idea:adivina-nino-o-nina-rosado-azul", numero: 3, slug: "adivina-nino-o-nina-rosado-azul", url: urlIdea("adivina-nino-o-nina-rosado-azul"),
     nombre: "Adivina niño o niña: rosado y azul", ocasiones: ["baby shower"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Rosado-Azul.jpg",
-    productos: [
-      P("GLOBO REDONDO REFLEX ROSADO", "/products/globo-para-fiesta-latex-redondo-reflex-rosado", "R-12", "909", 2),
-      P("GLOBO REDONDO PASTEL MATE ROSADO", "/products/globo-para-fiesta-latex-redondo-pastel-mate-rosado", "R-12", "609", 1),
-      P("GLOBO INFINITY® ES UNA NIÑA ESTRELLA", "/products/globo-para-fiesta-latex-redondo-infinity-es-una-nina-estrella-pastel-mate-rosado", "R-12", "609", 2),
-      P("GLOBO INFINITY® ES UN NIÑO ESTRELLA", "/products/globo-para-fiesta-latex-redondo-infinity-es-un-nino-estrella-pastel-mate-azul", "R-12", "640", 1),
-      P("GLOBO REDONDO PASTEL MATE AZUL", "/products/globo-para-fiesta-latex-redondo-pastel-mate-azul", "R-12", "640", 2),
-      P("GLOBO REDONDO REFLEX AZUL", "/products/globo-para-fiesta-latex-redondo-reflex-azul", "R-12", "940", 1),
-    ],
-    contenido: { tipo: "pieza", pieza: ramo([R("609"), R("909"), R("909"), R("609"), R("640"), R("609"), R("640"), R("940"), R("640")], 165, [
-      { impresoId: "infinity-es-una-nina-estrella-pastel-mate-rosado", globos: [3, 5] }, { impresoId: "infinity-es-un-nino-estrella-pastel-mate-azul", globos: [4] },
-    ]), sugerida: PISO },
     nota: "Se parece: ramo de 9 R-12 por pisos (rosados arriba, los impresos al medio, azules abajo) con los productos de la ficha. No: en la foto los impresos dicen «¿Niña?» y «¿Niño?» con biberones y chupos sobre fondo claro; la ficha lista «Es una niña / Es un niño estrella» (pastel rosado y azul), que es lo que se dibuja. El ramo es una espiral, no pisos planos.",
-  },
-  {
+  }, [
+    P("GLOBO REDONDO REFLEX ROSADO", "/products/globo-para-fiesta-latex-redondo-reflex-rosado", "R-12", "909", 2),
+    P("GLOBO REDONDO PASTEL MATE ROSADO", "/products/globo-para-fiesta-latex-redondo-pastel-mate-rosado", "R-12", "609", 1),
+    P("GLOBO INFINITY® ES UNA NIÑA ESTRELLA", "/products/globo-para-fiesta-latex-redondo-infinity-es-una-nina-estrella-pastel-mate-rosado", "R-12", "609", 2),
+    P("GLOBO INFINITY® ES UN NIÑO ESTRELLA", "/products/globo-para-fiesta-latex-redondo-infinity-es-un-nino-estrella-pastel-mate-azul", "R-12", "640", 1),
+    P("GLOBO REDONDO PASTEL MATE AZUL", "/products/globo-para-fiesta-latex-redondo-pastel-mate-azul", "R-12", "640", 2),
+    P("GLOBO REDONDO REFLEX AZUL", "/products/globo-para-fiesta-latex-redondo-reflex-azul", "R-12", "940", 1),
+  ], () => ({ tipo: "pieza", pieza: ramo([R("609"), R("909"), R("909"), R("609"), R("640"), R("609"), R("640"), R("940"), R("640")], 165, [
+      { impresoId: "infinity-es-una-nina-estrella-pastel-mate-rosado", globos: [3, 5] }, { impresoId: "infinity-es-un-nino-estrella-pastel-mate-azul", globos: [4] },
+    ]), sugerida: PISO })),
+  impresa({
+    clase: "escena",
     id: "idea:caja-sorpresa", numero: 226, slug: "caja-sorpresa", url: urlIdea("caja-sorpresa"),
     nombre: "Caja sorpresa con corazones", ocasiones: ["amor"], fotoUrl: "https://sempertex.com/cdn/shop/articles/DSC_5707_a48da6c0-2181-4ad1-b67b-befc897ec1f4.jpg",
-    productos: [
-      P("GLOBO REDONDO INFINITY® CORAZONES MODERNOS", "/products/globo-para-fiesta-latex-redondo-infinity-corazones-modernos-fashion-surtido", "R-12", null, 3),
-      P("GLOBO METALIZADO CORAZON ROSADO I LOVE YOU", "/products/globo-metalizado-corazon-rosado-i-love-you", null, null, 1),
-    ],
-    contenido: { tipo: "escena", escena: cajaSorpresa() },
     nota: "Se parece: tres R-12 Infinity corazones modernos (fucsia, violeta y rosado) y el corazón metalizado «I Love You» de 18\" más alto, saliendo de una caja kraft con cinta fucsia y la tapa recostada. No: la ficha mapeaba los corazones como C-12; son R-12 redondos. El corazón metalizado va blanco con el letrero (sin las rayas rosadas) y la caja es escenografía sencilla (sin moño).",
-  },
-  {
+  }, [
+    P("GLOBO REDONDO INFINITY® CORAZONES MODERNOS", "/products/globo-para-fiesta-latex-redondo-infinity-corazones-modernos-fashion-surtido", "R-12", null, 3),
+    P("GLOBO METALIZADO CORAZON ROSADO I LOVE YOU", "/products/globo-metalizado-corazon-rosado-i-love-you", null, null, 1),
+  ], () => ({ tipo: "escena", escena: cajaSorpresa() })),
+  impresa({
+    clase: "decoracion",
     id: "idea:violeta-rosado-confetti-dorado", numero: 976, slug: "violeta-rosado-confetti-dorado", url: urlIdea("violeta-rosado-confetti-dorado"),
     nombre: "Violeta, rosado, confeti y dorado", ocasiones: ["cumpleaños", "general"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Violeta-Rosado-Dorado.jpg",
-    productos: [
-      P("GLOBO REDONDO REFLEX VIOLETA", "/products/globo-para-fiesta-latex-redondo-reflex-violeta", "R-12", "951", 3),
-      P("GLOBO REDONDO PASTEL MATE ROSADO", "/products/globo-para-fiesta-latex-redondo-pastel-mate-rosado", "R-12", "609", 2),
-      P("GLOBO INFINITY® CONFETTI DORADO TRANSPARENTE", "/products/globo-para-fiesta-latex-redondo-infinity-confetti-dorado-fashion-transparente", "R-12", "390", 3),
-      P("GLOBO LATEX REDONDO REFLEX DORADO", "/products/globo-para-fiesta-latex-redondo-reflex-dorado", "R-12", "970", 3),
-    ],
-    contenido: { tipo: "pieza", pieza: ramo([R("951"), R("951"), R("951"), R("609"), R("609"), R("390"), R("390"), R("390"), R("970"), R("970"), R("970")], 190, [
-      { impresoId: "infinity-confetti-dorado-fashion-transparente", codigo: "390" },
-    ]), sugerida: PISO },
     nota: "Se parece: 11 R-12 por pisos (3 reflex violeta, 2 pastel rosado, 3 cristal con confeti dorado impreso, 3 reflex dorado). No: el confeti impreso son puntos dorados repartidos (en la foto, más menudos y apretados); espiral en vez de pisos planos.",
-  },
-  {
+  }, [
+    P("GLOBO REDONDO REFLEX VIOLETA", "/products/globo-para-fiesta-latex-redondo-reflex-violeta", "R-12", "951", 3),
+    P("GLOBO REDONDO PASTEL MATE ROSADO", "/products/globo-para-fiesta-latex-redondo-pastel-mate-rosado", "R-12", "609", 2),
+    P("GLOBO INFINITY® CONFETTI DORADO TRANSPARENTE", "/products/globo-para-fiesta-latex-redondo-infinity-confetti-dorado-fashion-transparente", "R-12", "390", 3),
+    P("GLOBO LATEX REDONDO REFLEX DORADO", "/products/globo-para-fiesta-latex-redondo-reflex-dorado", "R-12", "970", 3),
+  ], () => ({ tipo: "pieza", pieza: ramo([R("951"), R("951"), R("951"), R("609"), R("609"), R("390"), R("390"), R("390"), R("970"), R("970"), R("970")], 190, [
+      { impresoId: "infinity-confetti-dorado-fashion-transparente", codigo: "390" },
+    ]), sugerida: PISO })),
+  impresa({
+    clase: "decoracion",
     id: "idea:hojas-dorado-verde-lima", numero: 665, slug: "hojas-dorado-verde-lima", url: urlIdea("hojas-dorado-verde-lima"),
     nombre: "Hojas tropicales: dorado y verde lima", ocasiones: ["cumpleaños", "general"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Dorado-Verde-Lima.jpg",
-    productos: [
-      P("GLOBO LATEX REDONDO REFLEX DORADO", "/products/globo-para-fiesta-latex-redondo-reflex-dorado", "R-12", "970", 3),
-      P("GLOBO REDONDO INFINITY® HOJAS TROPICALES FASHION NEGRO", "/products/globo-para-fiesta-latex-redondo-infinity-hojas-tropicales-fashion-negro", "R-12", "080", 3),
-      P("GLOBO REDONDO REFLEX VERDE LIMA", "/products/globo-para-fiesta-latex-redondo-reflex-verde-lima", "R-12", "931", 3),
-    ],
-    contenido: { tipo: "pieza", pieza: ramo([R("970"), R("970"), R("970"), R("080"), R("080"), R("080"), R("931"), R("931"), R("931")], 165, [
-      { impresoId: "infinity-hojas-tropicales-fashion-negro", codigo: "080" },
-    ]), sugerida: PISO },
     nota: "Se parece: 3 reflex dorado arriba, 3 negros con hojas tropicales doradas impresas al medio y 3 reflex verde lima abajo, con los productos de la ficha. No: las hojas son un dibujo propio (hoja con nervaduras), no la monstera y la palma del producto; espiral en vez de pisos planos.",
-  },
-  {
+  }, [
+    P("GLOBO LATEX REDONDO REFLEX DORADO", "/products/globo-para-fiesta-latex-redondo-reflex-dorado", "R-12", "970", 3),
+    P("GLOBO REDONDO INFINITY® HOJAS TROPICALES FASHION NEGRO", "/products/globo-para-fiesta-latex-redondo-infinity-hojas-tropicales-fashion-negro", "R-12", "080", 3),
+    P("GLOBO REDONDO REFLEX VERDE LIMA", "/products/globo-para-fiesta-latex-redondo-reflex-verde-lima", "R-12", "931", 3),
+  ], () => ({ tipo: "pieza", pieza: ramo([R("970"), R("970"), R("970"), R("080"), R("080"), R("080"), R("931"), R("931"), R("931")], 165, [
+      { impresoId: "infinity-hojas-tropicales-fashion-negro", codigo: "080" },
+    ]), sugerida: PISO })),
+  impresa({
+    clase: "decoracion",
     id: "idea:palomas-eucalipto-chocolate-durazno", numero: 820, slug: "palomas-eucalipto-chocolate-durazno", url: urlIdea("palomas-eucalipto-chocolate-durazno"),
     nombre: "Palomas, eucalipto, chocolate y durazno", ocasiones: ["bautizo y comunión"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Bouquet-Palomas_69c187b6-67c8-4392-a669-157c4b42716f.png",
-    productos: [
-      P("GLOBO REDONDO INFINITY® PALOMAS FASHION TRANSPARENTE", "/products/globo-para-fiesta-latex-redondo-infinity-palomas-fashion-transparente", "R-12", "390", 2),
-      P("GLOBO REDONDO FASHION EUCALIPTO", "/products/globo-para-fiesta-latex-redondo-fashion-eucalipto", "R-12", "027", 3),
-      P("GLOBO REDONDO FASHION CHOCOLATE", "/products/globo-para-fiesta-latex-redondo-fashion-chocolate", "R-12", "076", 3),
-      P("GLOBO REDONDO FASHION DURAZNO", "/products/globo-para-fiesta-latex-redondo-fashion-durazno", "R-12", "060", 3),
-    ],
-    contenido: { tipo: "pieza", pieza: ramo([R("390"), R("390"), R("027"), R("027"), R("027"), R("076"), R("076"), R("076"), R("060"), R("060"), R("060")], 190, [
-      { impresoId: "infinity-palomas-fashion-transparente", codigo: "390" },
-    ]), sugerida: PISO },
     nota: "Se parece: 11 R-12 por pisos: 2 cristal con palomas blancas impresas arriba, 3 eucalipto, 3 chocolate y 3 durazno, los productos de la ficha. No: las palomas son una silueta propia; espiral en vez de pisos planos.",
-  },
-  {
+  }, [
+    P("GLOBO REDONDO INFINITY® PALOMAS FASHION TRANSPARENTE", "/products/globo-para-fiesta-latex-redondo-infinity-palomas-fashion-transparente", "R-12", "390", 2),
+    P("GLOBO REDONDO FASHION EUCALIPTO", "/products/globo-para-fiesta-latex-redondo-fashion-eucalipto", "R-12", "027", 3),
+    P("GLOBO REDONDO FASHION CHOCOLATE", "/products/globo-para-fiesta-latex-redondo-fashion-chocolate", "R-12", "076", 3),
+    P("GLOBO REDONDO FASHION DURAZNO", "/products/globo-para-fiesta-latex-redondo-fashion-durazno", "R-12", "060", 3),
+  ], () => ({ tipo: "pieza", pieza: ramo([R("390"), R("390"), R("027"), R("027"), R("027"), R("076"), R("076"), R("076"), R("060"), R("060"), R("060")], 190, [
+      { impresoId: "infinity-palomas-fashion-transparente", codigo: "390" },
+    ]), sugerida: PISO })),
+  impresa({
+    clase: "decoracion",
     id: "idea:monstruos-plata-violeta-verde-lima", numero: 759, slug: "monstruos-plata-violeta-verde-lima", url: urlIdea("monstruos-plata-violeta-verde-lima"),
     nombre: "Monstruos: plata, violeta y verde lima", ocasiones: ["halloween", "infantil"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Bouquet-Halloween-Monstruos_530ecc83-921d-43aa-8bce-a3dda30db500.png",
-    productos: [
-      P("GLOBO REDONDO 2 CARAS MONSTRUOS FASHION SURTIDO", "/products/globo-para-fiesta-latex-redondo-2-caras-monstruos-fashion-surtido", "R-12", null, 5),
-      P("GLOBO LATEX REDONDO REFLEX PLATA", "/products/globo-para-fiesta-latex-redondo-reflex-plata", "R-12", "981", 2),
-      P("GLOBO REDONDO REFLEX VIOLETA", "/products/globo-para-fiesta-latex-redondo-reflex-violeta", "R-12", "951", 3),
-    ],
-    contenido: { tipo: "pieza", pieza: ramo([R("061"), R("080"), R("051"), R("981"), R("981"), R("951"), R("951"), R("951"), R("031"), R("031")], 175, [
-      { impresoId: "2-caras-monstruos-fashion-surtido", globos: [0, 1, 2, 8, 9] },
-    ]), sugerida: PISO },
     nota: "Se parece: 10 R-12 por pisos (naranja, negro y violeta arriba; 2 reflex plata; 3 reflex violeta; 2 verde lima abajo). Los naranja, negro, violeta y verde lima son del surtido «2 caras monstruos» (la ficha no lista otros lisos de esos colores), con la cara de monstruo en blanco. No: en la foto solo se ve la cara del negro (los otros miran a otro lado); la cara es un dibujo propio, no la del producto.",
-  },
-  {
+  }, [
+    P("GLOBO REDONDO 2 CARAS MONSTRUOS FASHION SURTIDO", "/products/globo-para-fiesta-latex-redondo-2-caras-monstruos-fashion-surtido", "R-12", null, 5),
+    P("GLOBO LATEX REDONDO REFLEX PLATA", "/products/globo-para-fiesta-latex-redondo-reflex-plata", "R-12", "981", 2),
+    P("GLOBO REDONDO REFLEX VIOLETA", "/products/globo-para-fiesta-latex-redondo-reflex-violeta", "R-12", "951", 3),
+  ], () => ({ tipo: "pieza", pieza: ramo([R("061"), R("080"), R("051"), R("981"), R("981"), R("951"), R("951"), R("951"), R("031"), R("031")], 175, [
+      { impresoId: "2-caras-monstruos-fashion-surtido", globos: [0, 1, 2, 8, 9] },
+    ]), sugerida: PISO })),
+  impresa({
+    clase: "escena",
     id: "idea:arco-ano-nuevo", numero: 60, slug: "arco-ano-nuevo", url: urlIdea("arco-ano-nuevo"),
     nombre: "Arco de año nuevo con números dorados", ocasiones: ["año nuevo"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Arco_ano_nuevo_1b60ead0-9e5d-40ba-b28c-4fe60ba01054.jpg",
-    productos: [
-      P("GLOBO REDONDO SILK BLANCO NÁCAR", "/products/globo-latex-redondo-silk-blanco-nacar", "R-12", "806", null),
-      P("GLOBO REDONDO SILK DORADO", "/products/globo-latex-redondo-silk-rocio-de-oro", "R-12", "870", null),
-      P("GLOBO REDONDO SILK VERDE MENTA", "/products/globo-latex-redondo-silk-verde-menta", "R-12", "826", null),
-      P("GLOBO METALIZADO NUMERO 2 DORADO MATE", "/products/globo-metalizado-numero-2-dorado-mate", null, null, 2),
-      P("GLOBO METALIZADO NUMERO 0 DORADO MATE", "/products/globo-metalizado-numero-0-dorado-mate", null, null, 1),
-      P("GLOBO METALIZADO NUMERO 5 DORADO MATE", "/products/globo-metalizado-numero-5-dorado-mate", null, null, 1),
-      P("GLOBO TUBITO FASHION NEGRO", "/products/globo-para-fiesta-latex-tubito-fashion-negro", "T-260", "080", null),
-    ],
-    contenido: { tipo: "escena", escena: arcoAnoNuevo() },
     nota: "Se parece: arco de cuartetos R-12 en espiral (silk verde menta, dorado y blanco nácar) de ~1,7 × 2,35 m, con «2025» en números metalizados dorados de 16\" bajando por la pata derecha. Las cantidades de los R-12 las da el 3D (no se contaron). No: el contorno de T-260 negro de cada número y los R-5 de relleno no se modelan; la espiral repite el dorado (la trenza espiral pide 4 colores).",
-  },
-  {
+  }, [
+    P("GLOBO REDONDO SILK BLANCO NÁCAR", "/products/globo-latex-redondo-silk-blanco-nacar", "R-12", "806", null),
+    P("GLOBO REDONDO SILK DORADO", "/products/globo-latex-redondo-silk-rocio-de-oro", "R-12", "870", null),
+    P("GLOBO REDONDO SILK VERDE MENTA", "/products/globo-latex-redondo-silk-verde-menta", "R-12", "826", null),
+    P("GLOBO METALIZADO NUMERO 2 DORADO MATE", "/products/globo-metalizado-numero-2-dorado-mate", null, null, 2),
+    P("GLOBO METALIZADO NUMERO 0 DORADO MATE", "/products/globo-metalizado-numero-0-dorado-mate", null, null, 1),
+    P("GLOBO METALIZADO NUMERO 5 DORADO MATE", "/products/globo-metalizado-numero-5-dorado-mate", null, null, 1),
+    P("GLOBO TUBITO FASHION NEGRO", "/products/globo-para-fiesta-latex-tubito-fashion-negro", "T-260", "080", null),
+  ], () => ({ tipo: "escena", escena: arcoAnoNuevo() })),
+  impresa({
+    clase: "escena",
     id: "idea:fantasia-de-corazones", numero: 537, slug: "fantasia-de-corazones", url: urlIdea("fantasia-de-corazones"),
     nombre: "Fantasía de corazones", ocasiones: ["amor"], fotoUrl: "https://sempertex.com/cdn/shop/articles/49f7f82cf8697867a964917f64924dde_7469e710-d3f0-464f-bea8-7f1a11d2d780.jpg",
-    productos: [
-      P("GLOBO REDONDO INFINITY® CORAZONES SURTIDOS", "/products/globo-para-fiesta-latex-redondo-infinity-corazones-surtidos-fashion-y-metal-surtido", "R-12", null, 13),
-      P("GLOBO REDONDO FASHION BLANCO", "/products/globo-para-fiesta-latex-redondo-fashion-blanco", "R-12", "005", 22),
-    ],
-    contenido: { tipo: "escena", escena: fantasiaDeCorazones() },
     nota: "Se parece: columna de ~1,6 m con dos globos impresos de corazones por nivel (fucsia, dorado, rosado, rojo, dorado) y dos blancos, base y remate blancos, y tres impresos con helio arriba. No: en la foto el centro de la columna se ve de globitos blancos chicos; aquí son los blancos R-12 de cada cuarteto. La ficha mapeaba los corazones como C-12: son R-12 redondos.",
-  },
-  {
+  }, [
+    P("GLOBO REDONDO INFINITY® CORAZONES SURTIDOS", "/products/globo-para-fiesta-latex-redondo-infinity-corazones-surtidos-fashion-y-metal-surtido", "R-12", null, 13),
+    P("GLOBO REDONDO FASHION BLANCO", "/products/globo-para-fiesta-latex-redondo-fashion-blanco", "R-12", "005", 22),
+  ], () => ({ tipo: "escena", escena: fantasiaDeCorazones() })),
+  impresa({
+    clase: "escena",
     id: "idea:la-pasion-del-futbol", numero: 682, slug: "la-pasion-del-futbol", url: urlIdea("la-pasion-del-futbol"),
     nombre: "La pasión del fútbol", ocasiones: ["general", "infantil"], fotoUrl: "https://sempertex.com/cdn/shop/articles/3eb38ae73979cfdafab27b3a6fa5bbb9_1a5eba79-0899-4da7-882e-542b59c54dfc.jpg",
-    productos: [
-      P("GLOBO REDONDO FASHION SURTIDO TRICOLOR", "/products/globo-para-fiesta-latex-redondo-fashion-surtido-colores-primarios", "R-12", null, 32),
-      P("GLOBO INFINITY® BALÓN DE FUTBOL", "/products/globo-para-fiesta-latex-redondo-infinity-balon-de-futbol-fashion-blanco", "R-24", "005", 1),
-    ],
-    contenido: { tipo: "escena", escena: pasionDelFutbol() },
     nota: "Se parece: balón de fútbol impreso R-24 en el piso y encima la columna con la bandera de Colombia al revés (rojo, azul y amarillo doble, de abajo arriba) en cuartetos R-12 del surtido tricolor. No: el balón es un dibujo propio (pentágonos negros); la tienda vende el balón en R-5 a R-36 y la ficha no dice cuál: por la foto, R-24.",
-  },
-  {
+  }, [
+    P("GLOBO REDONDO FASHION SURTIDO TRICOLOR", "/products/globo-para-fiesta-latex-redondo-fashion-surtido-colores-primarios", "R-12", null, 32),
+    P("GLOBO INFINITY® BALÓN DE FUTBOL", "/products/globo-para-fiesta-latex-redondo-infinity-balon-de-futbol-fashion-blanco", "R-24", "005", 1),
+  ], () => ({ tipo: "escena", escena: pasionDelFutbol() })),
+  impresa({
+    clase: "escena",
     id: "idea:centro-de-mesa-estrella", numero: 283, slug: "centro-de-mesa-estrella", url: urlIdea("centro-de-mesa-estrella"),
     nombre: "Centro de mesa estrella", ocasiones: ["general"], fotoUrl: "https://sempertex.com/cdn/shop/articles/CENTRO_DE_MESA_ESTRELLA.jpg",
-    productos: [
-      P("GLOBO METALIZADO ESTRELLA AZUL", "/products/globo-metalizado-estrella-azul-1", null, null, 1),
-      P("GLOBO LATEX REDONDO REFLEX PLATA", "/products/globo-para-fiesta-latex-redondo-reflex-plata", "R-12", "981", 4),
-      P("GLOBO REDONDO REFLEX AZUL", "/products/globo-para-fiesta-latex-redondo-reflex-azul", "R-12", "940", 4),
-      P("GLOBO TUBITO REFLEX PLATA", "/products/globo-para-fiesta-latex-tubito-reflex-plata", "T-260", "981", null),
-    ],
-    contenido: { tipo: "escena", escena: centroDeMesaEstrella() },
     nota: "Se parece: mini columna de dos cuartetos reflex azul y plata con la estrella metalizada azul de 18\" encima, con «Feliz Día del Padre» impreso. No: los tres arcos de T-260 plata detrás de la estrella no se modelan; el letrero de la estrella va recto y no en cursiva.",
-  },
+  }, [
+    P("GLOBO METALIZADO ESTRELLA AZUL", "/products/globo-metalizado-estrella-azul-1", null, null, 1),
+    P("GLOBO LATEX REDONDO REFLEX PLATA", "/products/globo-para-fiesta-latex-redondo-reflex-plata", "R-12", "981", 4),
+    P("GLOBO REDONDO REFLEX AZUL", "/products/globo-para-fiesta-latex-redondo-reflex-azul", "R-12", "940", 4),
+    P("GLOBO TUBITO REFLEX PLATA", "/products/globo-para-fiesta-latex-tubito-reflex-plata", "T-260", "981", null),
+  ], () => ({ tipo: "escena", escena: centroDeMesaEstrella() })),
 ];
 
 export function ideaImpresosPorSlug(slug: string): IdeaImpresos | undefined {

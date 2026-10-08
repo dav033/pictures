@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, type ClaseIdea, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { fuenteIdea, type FuenteIdea } from "./fuentes";
 import { ocasionesDeEtiquetas } from "./index";
 import { armarEscena, SALA_INICIAL, type Colocacion, type Escena, type Sala } from "../escena";
@@ -72,18 +72,17 @@ function fuente(slug: string): FuenteIdea {
 }
 
 /**
- * La idea con su número, ocasiones y foto de su fuente, y sus productos calculados la primera vez que se piden (salen de
- * armar la pieza o la escena). Las ocasiones salen de las etiquetas con `ocasionesDeEtiquetas`, que vive en `index.ts`
- * (que importa este lote): se calculan al leerlas, como en el lote 06.
+ * La idea perezosa (`ideaPerezosa`) con su número, ocasiones y foto de su fuente: su contenido se arma la primera vez
+ * que se pide y sus productos salen de armar esa pieza o escena. `clase` dice qué es sin armarla. Las ocasiones salen de
+ * las etiquetas con `ocasionesDeEtiquetas`, que vive en `index.ts` (que importa este lote): se calculan al leerlas, como
+ * en el lote 06.
  */
-function idea(slug: string, nombre: string, contenido: IdeaDigitalizada["contenido"], nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
+function idea(slug: string, nombre: string, clase: ClaseIdea, contenido: () => IdeaDigitalizada["contenido"], nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
   const f = fuente(slug);
-  let hechos: ProductoDeIdea[] | null = null;
-  return {
-    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, contenido, nota,
+  return ideaPerezosa({
+    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, clase, nota,
     get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
-    get productos() { return (hechos ??= productosDe(contenido, publicados)); },
-  };
+  }, contenido, (c) => productosDe(c, publicados));
 }
 
 const EN_LA_PARED: Colocacion = { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 0 };
@@ -136,7 +135,7 @@ const BRASIL: OpcionesMural = {
     ],
   },
 };
-const idea770 = idea("mural-bandera-brasil", "Mural bandera de Brasil (malla Link-O-Loon)", { tipo: "pieza", pieza: mural(BRASIL), sugerida: EN_LA_PARED },
+const idea770 = idea("mural-bandera-brasil", "Mural bandera de Brasil (malla Link-O-Loon)", "estructura", () => ({ tipo: "pieza", pieza: mural(BRASIL), sugerida: EN_LA_PARED }),
   "Igual: la malla Link-O-Loon de la foto, celda a celda (27 × 27: eslabones horizontales y verticales entre nudos, con su pareja de unión R-5 del mismo color en cada nudo y el hueco «corbatín» entre cuatro eslabones), fondo Verde Selva, rombo Amarillo Miel y círculo Azul Rey, con los 3 productos que publica la idea. Distinto: la foto es un dibujo sin escala; aquí la medida sale de los globos (LOL-12 inflado a 15 cm para que quepa en una sala de 3,2 m: ~3 × 3 m); el círculo azul de la foto es más hexagonal; las uniones R-5 no están entre los productos publicados (van con el liso de la tienda); falta la franja blanca «Ordem e Progresso» (la foto tampoco la trae).",
   [
     P("GLOBO LINK-O-LOON® FASHION AZUL REY", "/products/globo-para-fiesta-latex-link-o-loon-fashion-azul-rey", "LOL-12", "041"),
@@ -189,7 +188,7 @@ const AUSTRALIA: OpcionesMural = {
     ];
   }),
 };
-const idea158 = idea("australia-flag", "Mural bandera de Australia", { tipo: "pieza", pieza: mural(AUSTRALIA), sugerida: EN_LA_PARED },
+const idea158 = idea("australia-flag", "Mural bandera de Australia", "estructura", () => ({ tipo: "pieza", pieza: mural(AUSTRALIA), sugerida: EN_LA_PARED }),
   "Igual: el tablero de la foto celda a celda (17 × 13, R-12 grande a 26 cm y chico a 18 cm alternados), Azul Rey, con la Union Jack arriba a la izquierda: la cruz roja (columna y fila 4, 9 celdas cada una), las diagonales de globitos rojos amarrados encima (7 por brazo) y 12 T-260 blancos bordeando la cruz y las diagonales, con los 3 productos que publica la idea (~3,4 × 2,6 m). Distinto: las 6 estrellas blancas de la foto son de papel (no son globos) y no van; las diagonales rojas de la foto van un poco corridas de la diagonal (como en la bandera) y aquí van centradas; los globitos rojos son R-12 a 13 cm (la idea no publica R-5).",
   [
     P("GLOBO REDONDO FASHION AZUL REY", "/products/globo-para-fiesta-latex-redondo-fashion-azul-rey", "R-12", "041"),
@@ -242,7 +241,7 @@ const CORAZON: OpcionesMural = {
     ],
   },
 };
-const idea824 = idea("pared-corazon", "Pared corazón arcoíris", { tipo: "pieza", pieza: mural(CORAZON), sugerida: EN_LA_PARED },
+const idea824 = idea("pared-corazon", "Pared corazón arcoíris", "estructura", () => ({ tipo: "pieza", pieza: mural(CORAZON), sugerida: EN_LA_PARED }),
   "Igual: la malla de la foto celda a celda (37 × 27: R-5 en los cruces, R-9 entre ellos y el hueco al medio), en seis franjas de arriba abajo con los 6 productos que publica la idea (Naranja, Amarillo, Verde Lima, Azul Caribe, Frambuesa, Rosado) y el corazón Blanco de 2 a 4 celdas de grueso con el centro vacío (se ve la pared). Distinto: en la foto los globos van más apretados (unos delante de otros); aquí no se pisan y el mural sale más grande (~4 × 3 m); el blanco no está entre los productos publicados (va con el liso de la tienda); los grandes son R-9 y los chicos R-5 (la idea publica los colores, sin talla); el corazón de la foto es un poco más ancho abajo.",
   [
     P("GLOBO REDONDO FASHION NARANJA", "/products/globo-para-fiesta-latex-redondo-fashion-naranja", "R-12", "061"),
@@ -291,7 +290,7 @@ const CANCHA: OpcionesMural = {
     ],
   },
 };
-const idea773 = idea("mural-cancha-de-futbol", "Mural cancha de fútbol", { tipo: "pieza", pieza: mural(CANCHA), sugerida: EN_LA_PARED },
+const idea773 = idea("mural-cancha-de-futbol", "Mural cancha de fútbol", "estructura", () => ({ tipo: "pieza", pieza: mural(CANCHA), sugerida: EN_LA_PARED }),
   "Igual: el tablero de la foto celda a celda (27 × 21, R-9 y R-5 alternados), Verde con las líneas Blancas de la cancha: el borde, la línea del medio, las dos áreas y el círculo central, con los 2 productos que publica la idea (~3,5 × 2,8 m). Distinto: la foto es un dibujo sin escala (la medida sale de los globos); el círculo central es un bloque de 3 × 3 celdas, como en la foto, no un aro; los grandes son R-9 y los chicos R-5 (la idea publica los colores, sin talla).",
   [
     P("GLOBO REDONDO FASHION VERDE", "/products/globo-para-fiesta-latex-redondo-fashion-verde", "R-12", "030"),
@@ -317,14 +316,14 @@ const FESTONES_536: ElementoTecho = {
 const COLGANTES_536: ElementoTecho[] = Array.from({ length: 10 }, (_, k): ElementoTecho => ({
   tipo: "tira", punto: { xCm: -540 + k * 120, zCm: 0 }, hiloCm: 210, globos: [{ formatoId: "R-12", infladoCm: 28, codigo: "080", cantidad: 1 }],
 }));
-const escena536: Escena = {
+const escena536 = (): Escena => ({
   sala: SALA_VENTAS,
   nodos: [
     { id: "festones", nombre: "Festones de techo (guirnalda Mostaza y Negro con R-24 de remate)", pieza: { tipo: "techo", techo: { elementos: [FESTONES_536] } }, colocacion: { en: "techo", xCm: 0, zCm: -120, cuelgaCm: 0, giroGrados: 0, volteada: false } },
     { id: "colgantes", nombre: "R-12 negros colgantes (10)", pieza: { tipo: "techo", techo: { elementos: COLGANTES_536 } }, colocacion: { en: "techo", xCm: 0, zCm: 260, cuelgaCm: 0, giroGrados: 0, volteada: false } },
   ],
-};
-const idea536 = idea("eventos-corporativos", "Festones de techo para evento corporativo", { tipo: "escena", escena: escena536 },
+});
+const idea536 = idea("eventos-corporativos", "Festones de techo para evento corporativo", "escena", () => ({ tipo: "escena", escena: escena536() }),
   "Igual: cinco festones de guirnalda clásica de cuartetos R-9 en espiral de dos colores (Mostaza y Negro) colgando en catenaria de punto a punto del techo, ~2,4 m de luz y ~90 cm de caída, con un R-24 negro de remate en cada uno de los seis puntos, y una fila de 10 R-12 negros colgando de hilos a ~2 m del techo, en una sala de ventas de 14 × 8 m y 4,5 m de alto. Distinto: los globos de la foto llevan el logo impreso (aquí lisos: no hay ese impreso en la tienda); en la foto los festones van en una línea que se aleja en diagonal y aquí en una recta; la punta suelta de la primera guirnalda, que cae hasta abajo, no va; la idea no publica productos y el amarillo se midió en la foto (Mostaza; podría ser Amarillo Miel con poca luz).");
 
 // ----------------------------------------------------------------------------------------------------------
@@ -353,7 +352,7 @@ const LLUVIA: Pieza = {
     }],
   },
 };
-const idea697 = idea("lluvia-de-globos", "Lluvia de globos (colgante de techo)", { tipo: "pieza", pieza: LLUVIA, sugerida: DEL_TECHO },
+const idea697 = idea("lluvia-de-globos", "Lluvia de globos (colgante de techo)", "estructura", () => ({ tipo: "pieza", pieza: LLUVIA, sugerida: DEL_TECHO }),
   "Igual: la tira colgante de la foto de arriba abajo —cuarteto de R-5 Verde Lima, R-9 Naranja, pareja Verde Lima, R-9 Naranja y pareja Verde Lima— y los 4 flecos de T-260 Naranja que bajan abriéndose ~90 cm y terminan cada uno en un racimito de 5 R-5 (Violeta, Azul, Amarillo y Naranja), colgada de un hilo del techo. Distinto: en la foto los flecos se cruzan y se enroscan, aquí bajan en curvas suaves sin cruzarse; los R-9 naranjas de la foto se ven un poco más alargados; la idea no publica productos (colores medidos en la foto).");
 
 // ----------------------------------------------------------------------------------------------------------
@@ -372,7 +371,7 @@ const PALMERA_816: Pieza = {
     copa: { tipo: "palmera", hojas: { formatoId: "T-260", codigos: ["032"], cantidad: 12, largoCm: 62 } },
   },
 };
-const idea816 = idea("palmera-1", "Palmera café con hojas verde selva", { tipo: "pieza", pieza: PALMERA_816, sugerida: EN_EL_PISO },
+const idea816 = idea("palmera-1", "Palmera café con hojas verde selva", "estructura", () => ({ tipo: "pieza", pieza: PALMERA_816, sugerida: EN_EL_PISO }),
   "Igual: con los 2 productos que publica la idea, tronco de cuartetos Café (~10 niveles, R-5 a ~10 cm) apenas torcido sobre una base de 4 globos Café más grandes (R-9 a 14 cm) y una copa de 12 hojas de T-260 Verde Selva de ~60 cm que suben y se arquean hacia abajo, alrededor; ~1,25 m de alto. Distinto: la foto mide ~1,4 m (las hojas suben más); en la foto unas hojas se quiebran en ángulo (aquí se arquean parejo); el tronco de la foto se afina menos; la idea publica el redondo Café sin talla (aquí R-5 y R-9).",
   [
     P("GLOBO TUBITO FASHION VERDE SELVA", "/products/globo-para-fiesta-latex-tubito-fashion-verde-selva", "T-260", "032"),
@@ -395,7 +394,7 @@ const PALMERA_817: Pieza = {
     copa: { tipo: "palmera", hojas: { formatoId: "T-260", codigos: ["029"], cantidad: 7, largoCm: 40 } },
   },
 };
-const idea817 = idea("palmera", "Palmera amarilla de cuartetos", { tipo: "pieza", pieza: PALMERA_817, sugerida: EN_EL_PISO },
+const idea817 = idea("palmera", "Palmera amarilla de cuartetos", "estructura", () => ({ tipo: "pieza", pieza: PALMERA_817, sugerida: EN_EL_PISO }),
   "Igual: tronco recto y delgado de ~14 niveles de cuartetos Amarillo Miel (R-5 a 8 cm), apenas inclinado arriba, y 7 hojas cortas de T-260 Verde Trébol (~40 cm) que se abren y caen alrededor de la punta; ~1 m de alto. Distinto: las hojas de la foto se ven más gruesas (podrían ser T-360, que no viene en Verde Trébol) y más quebradas; la idea no publica productos (colores medidos en la foto).");
 
 // ----------------------------------------------------------------------------------------------------------
@@ -416,7 +415,7 @@ const ARBOL_48: Pieza = {
     copa: { tipo: "racimos", diametroCm: 112, achatado: 0.85, globo: { formatoId: "R-12", infladoCm: 25 }, colores: ["029", "030"], pesos: [2, 1], semilla: 48, frutas: { formatoId: "R-5", infladoCm: 9, codigo: "029", cantidad: 4 } },
   },
 };
-const idea48 = idea("arbol-esfera-lol", "Árbol esfera verde", { tipo: "pieza", pieza: ARBOL_48, sugerida: EN_EL_PISO },
+const idea48 = idea("arbol-esfera-lol", "Árbol esfera verde", "estructura", () => ({ tipo: "pieza", pieza: ARBOL_48, sugerida: EN_EL_PISO }),
   "Igual: tronco de cuartetos Chocolate que se afina de abajo arriba (R-12 de 22 a 15 cm, ~1 m) con globitos Café en los huecos y una copa redonda (~1,1 m) de racimos de R-12 Verde Trébol y Verde con globitos verdes entre ellos. Distinto: la copa de la foto es una esfera de Link-O-Loon (eslabones); aquí son racimos de redondos; el tronco de la foto se ve casi negro (aquí Chocolate); la idea no publica productos (colores medidos en la foto).");
 
 // ----------------------------------------------------------------------------------------------------------
@@ -435,7 +434,7 @@ const ARBOL_53: Pieza = {
     copa: { tipo: "racimos", diametroCm: 128, achatado: 0.7, globo: { formatoId: "R-9", infladoCm: 18 }, colores: ["029"], semilla: 53, frutas: { formatoId: "R-5", infladoCm: 11, codigo: "015", cantidad: 7 } },
   },
 };
-const idea53 = idea("arbol-manzanas", "Árbol de manzanas", { tipo: "pieza", pieza: ARBOL_53, sugerida: EN_EL_PISO },
+const idea53 = idea("arbol-manzanas", "Árbol de manzanas", "estructura", () => ({ tipo: "pieza", pieza: ARBOL_53, sugerida: EN_EL_PISO }),
   "Igual: tronco de cuartetos R-9 (~1,1 m) en degradé de Rojo Imperial abajo a Merlot arriba, metido en una copa achatada (~1,3 m) de racimos de R-9 Verde Trébol con 7 manzanitas R-5 Rojo al frente; ~2 m de alto. Distinto: las manzanas de la foto llevan una hojita verde (aquí no); en la foto el tronco se ve también dentro de la copa, más oscuro; la ficha dice 12 manzanas y la foto deja ver 7; la idea no publica productos (colores medidos en la foto).");
 
 /** Ideas de fiesta de sempertex.com digitalizadas: lote 09. */

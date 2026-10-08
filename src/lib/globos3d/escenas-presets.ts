@@ -1,6 +1,7 @@
 import { decoracionPredefinida } from "./figuras";
 import { SALA_INICIAL, type Colocacion, type Escena, type NodoEscena, type Sala } from "./escena";
 import type { Pieza } from "./piezas";
+import { perezoso } from "./perezoso";
 import type { ParteGlobo } from "./decoraciones";
 import type { DecoracionHalloween, TipoHalloween } from "./halloween";
 import { fondoMarcoOndulado, mesaCilindrica, mesaConMantel, tapete } from "./escenografia";
@@ -12,6 +13,15 @@ import { utileriaArcoConCalabazas, utileriaMarcoConMesas } from "./utileria-esce
  * pieza se mueve, se cambia y se recolorea después.
  */
 export type PresetEscena = { id: string; nombre: string; descripcion: string; escena: Escena };
+
+/**
+ * Una escena de partida perezosa: `escena` se arma la primera vez que se lee y queda memorizada (no al importar: /3d y
+ * la biblioteca importan este módulo al abrir; ver el patrón perezoso de `ideas-sempertex/tipos.ts`).
+ */
+function preset(id: string, nombre: string, descripcion: string, crear: () => Escena): PresetEscena {
+  const escena = perezoso(crear);
+  return { id, nombre, descripcion, get escena() { return escena(); } };
+}
 
 const sala = (cambios: Partial<Sala> = {}): Sala => ({ ...SALA_INICIAL, tonos: { ...SALA_INICIAL.tonos }, mostrar: { ...SALA_INICIAL.mostrar }, ...cambios });
 
@@ -75,11 +85,9 @@ export function piezaNueva(tipo: TipoNuevo): { pieza: Pieza; nombre: string; col
  * columnas de cuartetos (1,8 m, espiralada) a cada lado de sus patas, y la guirnalda en festón (4,8 m, cuelga
  * 35 cm) colgada en la pared del fondo por encima del arco, enmarcándolo.
  */
-const ARCO_CON_COLUMNAS: PresetEscena = {
-  id: "arco_organico_columnas_guirnalda",
-  nombre: "Arco orgánico con dos columnas y guirnalda",
-  descripcion: "Arco orgánico de 3 × 2,4 m, dos columnas clásicas de 1,8 m a los lados y una guirnalda en festón en la pared del fondo.",
-  escena: {
+const ARCO_CON_COLUMNAS: PresetEscena = preset("arco_organico_columnas_guirnalda", "Arco orgánico con dos columnas y guirnalda",
+  "Arco orgánico de 3 × 2,4 m, dos columnas clásicas de 1,8 m a los lados y una guirnalda en festón en la pared del fondo.",
+  () => ({
     sala: sala(),
     nodos: [
       { id: "arco", nombre: "Arco orgánico", pieza: arcoOrganico(300, 240), colocacion: { en: "piso", xCm: 0, zCm: -150, giroGrados: 0 } },
@@ -87,14 +95,11 @@ const ARCO_CON_COLUMNAS: PresetEscena = {
       { id: "columna-der", nombre: "Columna derecha", pieza: columnaClasica(), colocacion: { en: "piso", xCm: 225, zCm: -150, giroGrados: 0 } },
       { id: "guirnalda", nombre: "Guirnalda en festón", pieza: guirnaldaFeston(480, 35), colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 240 } },
     ],
-  },
-};
+  }));
 
-const PARED_Y_COLUMNAS: PresetEscena = {
-  id: "pared_fondo_columnas",
-  nombre: "Pared de globos al fondo y dos columnas",
-  descripcion: "Mural flor de Link-O-Loon (3 × 2,25 m) contra la pared del fondo, flores colgadas de él y dos columnas a los lados.",
-  escena: {
+const PARED_Y_COLUMNAS: PresetEscena = preset("pared_fondo_columnas", "Pared de globos al fondo y dos columnas",
+  "Mural flor de Link-O-Loon (3 × 2,25 m) contra la pared del fondo, flores colgadas de él y dos columnas a los lados.",
+  () => ({
     sala: sala({ mostrar: { piso: true, fondo: true, laterales: true, techo: false } }),
     nodos: [
       { id: "pared", nombre: "Pared de globos", pieza: piezaNueva("pared").pieza, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 0 } },
@@ -102,8 +107,7 @@ const PARED_Y_COLUMNAS: PresetEscena = {
       { id: "columna-izq", nombre: "Columna izquierda", pieza: columnaClasica(200, ["051", "650"]), colocacion: { en: "piso", xCm: -200, zCm: -190, giroGrados: 0 } },
       { id: "columna-der", nombre: "Columna derecha", pieza: columnaClasica(200, ["051", "650"]), colocacion: { en: "piso", xCm: 200, zCm: -190, giroGrados: 0 } },
     ],
-  },
-};
+  }));
 
 /** Tiras de cuartetos y flores colgando del techo a distintas alturas, sobre una mesa imaginaria al centro. */
 function techoConRacimos(): Escena {
@@ -123,12 +127,9 @@ function techoConRacimos(): Escena {
   return { sala: sala({ mostrar: { piso: true, fondo: true, laterales: false, techo: true } }), nodos };
 }
 
-const TECHO_RACIMOS: PresetEscena = {
-  id: "techo_racimos",
-  nombre: "Techo con tiras y flores colgando",
-  descripcion: "Cinco tiras de cuartetos azul y blanco y cinco flores de globos colgadas del techo a distintas alturas.",
-  escena: techoConRacimos(),
-};
+const TECHO_RACIMOS: PresetEscena = preset("techo_racimos", "Techo con tiras y flores colgando",
+  "Cinco tiras de cuartetos azul y blanco y cinco flores de globos colgadas del techo a distintas alturas.",
+  techoConRacimos);
 
 // ----------------------------------------------------------------------------------------------------------
 // Halloween (las 5 fotos del dueño, 2026-10-07)
@@ -402,11 +403,11 @@ function guirnaldaConArana(): Escena {
 }
 
 export const ESCENAS_HALLOWEEN: readonly PresetEscena[] = [
-  { id: "halloween_marco_mesas", nombre: "Halloween: marco orgánico con mesas", descripcion: "Marco verde ondulado de 2,4 m con pared de lentejuelas, cuatro racimos orgánicos, dos mesas cilíndricas negras, tapete naranja, ramo de helio, ojos saltones, manos verdes, arañas, telaraña y fantasmitas, con la utilería de la foto: guirnalda de recortes, banderines «Happy Halloween» en las mesas, platos, vasos y servilletas, cubeta y bolsa de dulces y paquetes al frente.", escena: marcoOrganicoConMesas() },
-  { id: "halloween_arco_calabazas", nombre: "Halloween: arco con calabazas", descripcion: "Arco orgánico rectangular naranja, negro y gris de 2,6 × 2,6 m con dos calabazas en las patas, un R-24 de remate y la calabaza bruja sobre la mesa con mantel, con el banderín de triángulos «Happy Halloween» dentro del arco y platos, vasos, servilletas, cubiertos y bandeja en la mesa.", escena: arcoConCalabazas() },
-  { id: "halloween_aro_ojos", nombre: "Halloween: aro de ojos y arañas", descripcion: "Aro orgánico de 1,6 m en la pared: R-12 verde por fuera y mezcla verde, café, naranja y beige por dentro, 14 ojos con venas y dos arañas.", escena: aroDeOjos() },
-  { id: "halloween_arbol_fantasmas", nombre: "Halloween: árbol con fantasmas", descripcion: "Árbol café de 2,5 m: montículo de R-18 y tronco de R-12 y R-5 chocolate con cobre y crema, cuatro ramas trenzadas, ojos bravos y cuatro fantasmas.", escena: arbolConFantasmas() },
-  { id: "halloween_guirnalda_arana", nombre: "Halloween: guirnalda con araña", descripcion: "Media guirnalda orgánica en curva de 1,2 × 1,9 m en óxido, latte, grafito y tríos dorados, colgada en la pared, con la araña de lazos y una telaraña.", escena: guirnaldaConArana() },
+  preset("halloween_marco_mesas", "Halloween: marco orgánico con mesas", "Marco verde ondulado de 2,4 m con pared de lentejuelas, cuatro racimos orgánicos, dos mesas cilíndricas negras, tapete naranja, ramo de helio, ojos saltones, manos verdes, arañas, telaraña y fantasmitas, con la utilería de la foto: guirnalda de recortes, banderines «Happy Halloween» en las mesas, platos, vasos y servilletas, cubeta y bolsa de dulces y paquetes al frente.", marcoOrganicoConMesas),
+  preset("halloween_arco_calabazas", "Halloween: arco con calabazas", "Arco orgánico rectangular naranja, negro y gris de 2,6 × 2,6 m con dos calabazas en las patas, un R-24 de remate y la calabaza bruja sobre la mesa con mantel, con el banderín de triángulos «Happy Halloween» dentro del arco y platos, vasos, servilletas, cubiertos y bandeja en la mesa.", arcoConCalabazas),
+  preset("halloween_aro_ojos", "Halloween: aro de ojos y arañas", "Aro orgánico de 1,6 m en la pared: R-12 verde por fuera y mezcla verde, café, naranja y beige por dentro, 14 ojos con venas y dos arañas.", aroDeOjos),
+  preset("halloween_arbol_fantasmas", "Halloween: árbol con fantasmas", "Árbol café de 2,5 m: montículo de R-18 y tronco de R-12 y R-5 chocolate con cobre y crema, cuatro ramas trenzadas, ojos bravos y cuatro fantasmas.", arbolConFantasmas),
+  preset("halloween_guirnalda_arana", "Halloween: guirnalda con araña", "Media guirnalda orgánica en curva de 1,2 × 1,9 m en óxido, latte, grafito y tríos dorados, colgada en la pared, con la araña de lazos y una telaraña.", guirnaldaConArana),
 ];
 
 export const ESCENAS_PREDEFINIDAS: readonly PresetEscena[] = [ARCO_CON_COLUMNAS, PARED_Y_COLUMNAS, TECHO_RACIMOS, ...ESCENAS_HALLOWEEN];

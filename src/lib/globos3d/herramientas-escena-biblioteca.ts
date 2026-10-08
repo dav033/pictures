@@ -14,7 +14,8 @@ import { NOMBRE_TIPO } from "./herramientas-escena-estructuras";
 const DERIVADOS = new Map<string, ItemBiblioteca[]>();
 const CACHE_ARMADO = new Map<string, PiezaArmada>();
 const POR_ID = new Map(BIBLIOTECA_FABRICA.map((i) => [i.id, i]));
-const ESCENAS = BIBLIOTECA_FABRICA.filter((i) => i.contenido.tipo === "escena");
+// Por el tipo, no por el contenido: lo de fábrica es perezoso y leer `contenido` armaría todas las escenas al importar.
+const ESCENAS = BIBLIOTECA_FABRICA.filter((i) => i.tipo === "escena");
 /** Escenas que se indexan como mucho en una búsqueda (cada una tarda de 50 a 400 ms la primera vez). */
 const MAX_ESCENAS_POR_BUSQUEDA = 12;
 
@@ -33,7 +34,7 @@ export function itemDeBiblioteca(id: string): ItemBiblioteca | null {
   const directo = POR_ID.get(id);
   if (directo) return directo;
   const escena = POR_ID.get(id.split("~")[0] ?? "");
-  if (!escena || escena.contenido.tipo !== "escena") return null;
+  if (!escena || escena.tipo !== "escena") return null;
   return derivadosDe(escena).find((i) => i.id === id) ?? null;
 }
 
@@ -61,11 +62,20 @@ const tiposDe = (item: ItemBiblioteca): TipoPieza[] => {
   return [...new Set(c.escena.nodos.map((n) => n.pieza.tipo))];
 };
 
-const codigosDe = (item: ItemBiblioteca): string[] => coloresDeDato(item.contenido).map((c) => c.codigo);
+/**
+ * Por id: lo de fábrica y lo derivado no cambian mientras vive el servidor, y `unirBiblioteca` da copias nuevas en cada
+ * búsqueda (por el objeto, cada petición volvería a calcular colores y textos de todo).
+ */
+const CODIGOS = new Map<string, string[]>();
+function codigosDe(item: ItemBiblioteca): string[] {
+  let c = CODIGOS.get(item.id);
+  if (!c) { c = coloresDeDato(item.contenido).map((x) => x.codigo); CODIGOS.set(item.id, c); }
+  return c;
+}
 
-const TEXTOS = new WeakMap<ItemBiblioteca, { nombre: string; todo: string }>();
+const TEXTOS = new Map<string, { nombre: string; todo: string }>();
 function textoDe(item: ItemBiblioteca): { nombre: string; todo: string } {
-  let t = TEXTOS.get(item);
+  let t = TEXTOS.get(item.id);
   if (!t) {
     const nombreTipo = TIPOS_ITEM.find((x) => x.id === item.tipo)?.nombre ?? item.tipo;
     const piezas = item.contenido.tipo === "escena" ? item.contenido.escena.nodos.map((n) => n.nombre) : [];
@@ -73,7 +83,7 @@ function textoDe(item: ItemBiblioteca): { nombre: string; todo: string } {
       nombre: plegar(item.nombre),
       todo: plegar([item.nombre, item.descripcion, item.fuente?.titulo ?? "", nombreTipo, ...item.ocasiones, ...tiposDe(item).map((x) => NOMBRE_TIPO[x]), ...piezas, ...codigosDe(item).slice(0, 10).map(nombreColor)].join(" ")),
     };
-    TEXTOS.set(item, t);
+    TEXTOS.set(item.id, t);
   }
   return t;
 }

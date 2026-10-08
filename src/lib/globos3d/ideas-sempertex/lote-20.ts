@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { fuenteIdea, type FuenteIdea } from "./fuentes";
 import { ocasionesDeEtiquetas } from "./index";
 import { LOTE_17 } from "./lote-17";
@@ -414,15 +414,16 @@ function fuente(slug: string): FuenteIdea {
 function idea(numero: number, slug: string, nombre: string, escena: () => Escena, nota: () => string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
   const f = fuente(slug);
   if (f.numero !== numero) throw new Error(`«${slug}» es la #${f.numero}, no la #${numero}.`);
-  let hecha: Escena | null = null;
-  let hechos: ProductoDeIdea[] | null = null;
-  return {
-    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl,
-    get nota() { return nota(); },
-    get contenido() { return { tipo: "escena" as const, escena: (hecha ??= escena()) }; },
-    get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
-    get productos() { return (hechos ??= productosDe((hecha ??= escena()), publicados)); },
-  };
+  const laEscena = perezoso(escena);
+  return ideaPerezosa(
+    {
+      id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, clase: "escena",
+      get nota() { return nota(); },
+      get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
+    },
+    () => ({ tipo: "escena", escena: laEscena() }),
+    () => productosDe(laEscena(), publicados),
+  );
 }
 
 // Colores de cinta y de varilla.

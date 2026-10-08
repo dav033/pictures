@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { fuenteIdea, type FuenteIdea } from "./fuentes";
 import { ocasionesDeEtiquetas } from "./index";
 import { armarEscena, HUNDIMIENTO_SOBRE_CM, SALA_INICIAL, type Escena, type NodoEscena, type Sala } from "../escena";
@@ -418,14 +418,13 @@ function fuente(slug: string): FuenteIdea {
  * armar la escena). Las ocasiones salen de las etiquetas con `ocasionesDeEtiquetas`, que vive en `index.ts` (que importa
  * este lote): se calculan al leerlas.
  */
-function idea(slug: string, nombre: string, escena: Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
+function idea(slug: string, nombre: string, escena: () => Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
   const f = fuente(slug);
-  let hechos: ProductoDeIdea[] | null = null;
-  return {
-    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, contenido: { tipo: "escena", escena }, nota,
+  // Perezosa (ver «Patrón perezoso» en tipos.ts): la escena se arma la primera vez que se pide.
+  return ideaPerezosa({
+    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, clase: "escena", nota,
     get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
-    get productos() { return (hechos ??= productosDe(escena, publicados)); },
-  };
+  }, () => ({ tipo: "escena", escena: escena() }), () => productosDe(escena(), publicados));
 }
 
 
@@ -533,7 +532,7 @@ const globoEn = (id: string, nombre: string, padre: Padre, pieza: Pieza, centro:
  * cuatro llamas de tubito (naranja, amarilla, amarilla, naranja) que entran en la nube de R-12, R-9 y R-5 blancos
  * (~85 × 115 cm).
  */
-const escena326 = ((): Escena => {
+const escena326 = perezoso((): Escena => {
   const px = foto(2.9, 370, 560, 30);
   const armazon = suelta("armazon", "Armazón del cohete (base y varilla escondida en la nube)", escenografia([cilindro(v(0, 0, 0), 12, 1.2, "#e9e9e9", "satinado"), cilindro(v(0, 0, 0), 1, 128, "#e9e9e9", "satinado")]), v(px(520, 0).x, 0, -16));
   const nodos: NodoEscena[] = [armazon.nodo];
@@ -567,7 +566,7 @@ const escena326 = ((): Escena => {
   });
   nodos.push(nube.nodo);
   return { sala: sala(320, 260, 260, SALA_BLANCA), nodos };
-})();
+});
 const idea326 = idea("cohete", "Cohete de tubitos con nube blanca", escena326,
   "Igual: el cohete de ~93 cm inclinado ~30° como en la foto (2,9 px/cm por los R-12 de la nube), con el cuerpo de T-260 Fashion Rojo, los dos aros de T-260 blanco, cuatro aletas de lazos rojos, la espiral azul de la tobera y las cuatro llamas (naranja, amarilla, amarilla, naranja) entrando en la nube de ~85 × 115 cm de R-12, R-9 y R-5 Fashion Blanco: los tres productos publicados (T-260 rojo y amarillo, R-12 blanco). Distinto: el cuerpo de la foto (~19 cm de grueso) se arma con 7 T-260 juntos (uno al centro y seis alrededor) y su punta queda plana; las aletas son lazos (en la foto, burbujas infladas en forma de corazón) y van cuatro donde se ven tres; las llamas naranjas, los aros blancos y la espiral azul (T-160 Fashion Azul Rey, medido #005378–#1f86dc) no están publicados; la nube la da el motor orgánico para el tamaño medido (no se cuentan uno a uno) y el cohete va sobre una base con varilla escondida en la nube (la foto no muestra el soporte).", [
   P("GLOBO TUBITO FASHION ROJO", "/products/globo-para-fiesta-latex-tubito-fashion-rojo", "T-260", "015"),
@@ -587,7 +586,7 @@ const idea326 = idea("cohete", "Cohete de tubitos con nube blanca", escena326,
  * blanco de ~56 cm con un trébol de 4 lazos rojos al frente; un cuarteto de R-12 rojos de corazones (se ven 3) y cuatro
  * T-260 blancos (las piernas) con un trébol rojo en cada punta: 5 tréboles.
  */
-const escena329 = ((): Escena => {
+const escena329 = perezoso((): Escena => {
   const px = foto(2.5, 380, 560, 60);
   const arriba = px(380, 12).y;
   const cordon = cordonDeTecho(300, arriba);
@@ -609,7 +608,7 @@ const escena329 = ((): Escena => {
     nodos.push(colgar({ id: `trebol-${k + 1}`, nombre: `Trébol de 4 lazos rojos (${lado})`, pieza: trebol(), padre: cordon.padre, origen: px(x1, y1, 8), normal: AL_FRENTE }).nodo);
   });
   return { sala: sala(300, 260, 300, SALA_BLANCA), nodos };
-})();
+});
 const idea329 = idea("colgante-de-amor", "Colgante de amor: flor de corazones y tréboles rojos", escena329,
   "Igual: el colgante de techo de ~2,2 m con sus partes medidas (2,5 px/cm): la flor de 5 R-12 Fashion Rojo con el impreso «Corazones por siempre» de la tienda (corazones blancos sobre rojo) y su R-12 blanco al centro, el R-12 blanco con el aro rojo de T-260 y los lazos rojos de los brazos, el cuerpo R-24 blanco (~56 cm) con su trébol rojo, el cuarteto de R-12 rojos de corazones, las 4 piernas de T-260 blanco y los 5 tréboles contados. Colores medidos (no publica productos): rojo #f31116 → 015, blancos 005. Distinto: las piernas son rectas (en la foto se curvan en S) y los tréboles son 4 lazos de T-260 con un R-5 blanco al centro (en la foto parecen 4 corazoncitos inflados); del cuarteto de abajo se ven 3 globos (el cuarto, detrás, se pone); el lazo derecho de la foto es más largo que el izquierdo y aquí son iguales.");
 
@@ -644,7 +643,7 @@ function colgante(o: { px: (x: number, y: number, z?: number) => Vec3; escala: n
  * de 3 m. Racimo de 8 R-12: 3 rojos, 3 verde neón, 1 azul rey y 1 verde azulado (con manchas turquesa impresas); 5 rizos:
  * verde, naranja, azul, verde azulado y rojo.
  */
-const escena330: Escena = {
+const escena330 = perezoso((): Escena => ({
   sala: sala(300, 260, 300, SALA_BLANCA),
   nodos: colgante({
     px: foto(3.2, 373, 555, 110), escala: 3.2, arribaPx: 20,
@@ -667,7 +666,7 @@ const escena330: Escena = {
       { x: 490, y: 160, z: 6, largoCm: 25, radioCm: 11, vueltas: 2, codigo: "015", nombre: "Fashion Rojo" },
     ],
   }),
-};
+}));
 const idea330 = idea("colgante-nemo", "Colgante Nemo: racimo de colores sobre globo naranja", escena330,
   "Igual: el colgante de techo de ~1,7 m con el racimo de 8 R-12 contados en su sitio (3 Fashion Rojo, 3 Neón Verde, 1 Fashion Azul Rey y 1 Reflex Verde Aurora), el globo naranja grande colgado debajo con el nudo arriba y los 5 rizos de T-260 (verde, naranja, azul, verde azulado y rojo) que salen del racimo. Colores medidos en una foto muy saturada (no publica productos): naranja #ff9501 → 061 (ΔE 25: el más cercano), verde neón #77da07 → 230, verde azulado #007d7b → 932, azul de los rizos #0082fa → 041. Distinto: la clasificación decía R-24, pero por la proporción con los tubitos (5 cm) el de abajo mide ~85 cm: va un R-36; las manchas turquesa impresas de los R-12 (el «Nemo») no están en la tienda: van lisos; los rizos son tirabuzones parejos (en la foto, lazos sueltos de distinta forma).");
 
@@ -677,7 +676,7 @@ const idea330 = idea("colgante-nemo", "Colgante Nemo: racimo de colores sobre gl
  * eje en x = 357, de un techo de 3 m. Racimo de 7 R-12 con estrellas blancas: 1 azul caribe, 2 azules, 2 fucsia y 2
  * verde neón; 4 rizos de T-260 verde.
  */
-const escena356: Escena = {
+const escena356 = perezoso((): Escena => ({
   sala: sala(300, 260, 300, SALA_BLANCA),
   nodos: colgante({
     px: foto(3.3, 357, 553, 110), escala: 3.3, arribaPx: 20,
@@ -698,7 +697,7 @@ const escena356: Escena = {
       { x: 480, y: 230, z: 6, largoCm: 30, radioCm: 8, vueltas: 1.5, codigo: "530", nombre: "Metal Verde" },
     ],
   }),
-};
+}));
 const idea356 = idea("columna-colgante-de-estrellas", "Columna colgante de estrellas", escena356,
   "Igual: el colgante de techo de ~1,6 m con el racimo de 7 R-12 contados en su sitio (1 Fashion Azul Caribe, 2 Fashion Azul, 2 Fashion Fucsia y 2 Neón Amarillo), el globo amarillo grande colgado debajo con el nudo arriba y los 4 rizos de T-260 verde. Colores medidos (no publica productos): amarillo #dfdd00 → 020, «verde lima» de la foto #c5cc08 → Neón Amarillo 220 (ΔE 12; el Fashion Verde Lima queda más lejos), fucsia → 012, azules → 038 y 040, verde de los rizos #00892b → Metal Verde 530. Distinto: la clasificación decía R-24, pero por la proporción con los tubitos el de abajo mide ~75 cm: va un R-36; las estrellas blancas impresas no están en la tienda sobre esos colores (solo sobre cristal): van lisos; los rizos son tirabuzones parejos (en la foto, lazos y curvas de distinta forma).");
 
@@ -714,7 +713,7 @@ const idea356 = idea("columna-colgante-de-estrellas", "Columna colgante de estre
  * de 19; un T-260 blanco en espiral envuelve la parte de abajo (~1¼ vueltas) y otro la de arriba; el «15» metalizado
  * (~73 cm) remata. Alto total ~2,15 m.
  */
-const escena334 = ((): Escena => {
+const escena334 = perezoso((): Escena => {
   const px = foto(2.5, 350, 550);
   const N = (id: string, f: string, d: number, codigo: string, yPx: number, giro: GiroNivel): NivelFoto => ({ id, g: R(f, d, codigo), colores: [codigo, codigo, codigo, codigo], yPx, giro });
   const col = columnaFoto(px, [
@@ -732,7 +731,7 @@ const escena334 = ((): Escena => {
   nodos.push(metalEn("uno", "Número 1 metalizado plata con estrellas (29\")", col.vara.padre, numero(1), px(311, 196, -3)));
   nodos.push(metalEn("cinco", "Número 5 metalizado plata con estrellas (29\")", col.vara.padre, numero(5), px(407, 196, -3)));
   return { sala: sala(280, 240, 260, SALA_BLANCA), nodos };
-})();
+});
 const idea334 = idea("columna-15-anos", "Columna 15 años en reloj de arena con el 15", escena334,
   "Igual: los 14 niveles contados en el ciclo de colores de la foto (amarillo, rojo, azul, verde, violeta, naranja): dos de R-12 (23,5 y 21,5 cm) y tres de R-9 que se afinan, el cuello de 7 niveles de R-5 y arriba un R-9 amarillo y uno rojo, cada nivel a la altura medida de su centro (2,5 px/cm); los dos T-260 blancos en espiral (abajo y arriba) y el «15» metalizado encima: ~2,15 m. Colores medidos (no publica productos): amarillo #edcc0e → Amarillo Miel 021, rojo → 015, azul #004488 → Azul Rey 041, verde #017138 → Verde Selva 032, violeta → Fashion Violeta 051 (medido en sombra, #55478a), naranja → 061. Distinto: el cuello de la foto va mucho más apretado que el paso del taller (~6 cm entre niveles de R-5 de 11 cm, contra 8,8): el 3D respeta la medida y los cuartetos se meten unos en otros; los globos de la foto llevan destellos blancos impresos que la tienda no vende: van lisos; el «15» de la foto es un metalizado multicolor de estrellas que no está en el catálogo: van el 1 y el 5 genéricos en plata con estrellas rojas, de 29\" (~73 cm medidos; la tienda los vende de 16\" y 32\").");
 
@@ -746,7 +745,7 @@ const idea334 = idea("columna-15-anos", "Columna 15 años en reloj de arena con 
  * verde, verde y azul caribe, azul caribe, azul caribe y rojo, rojo, y rojo con la bomba negra; ~19 cm entre niveles
  * (el taller pone 22,4). Encima, la cabeza de Angry Bird metalizada (~56 × 52 cm).
  */
-const escena335 = ((): Escena => {
+const escena335 = perezoso((): Escena => {
   const px = foto(3.07, 368, 538);
   const G = R("R-12", 28, "029");
   const V = "029", A = "038", Rj = "015", N = "080";
@@ -761,7 +760,7 @@ const escena335 = ((): Escena => {
   const nodos = [...col.nodos];
   nodos.push(metalEn("pajaro", "Cabeza de Angry Bird metalizada (redondo rojo de 22\")", col.vara.padre, metal({ tipo: "redondo" }, 22, "rojo"), v(0, 113, -4)));
   return { sala: sala(260, 240, 240, SALA_BLANCA), nodos };
-})();
+});
 const idea335 = idea("columna-angry-birds", "Columna Angry Birds", escena335,
   "Igual: los 6 niveles de R-12 a 28 cm (3,07 px/cm) con la espiral de colores de la foto —verde, verde y azul caribe, azul caribe, azul caribe y rojo, rojo, y el de arriba rojo con la bomba negra a la derecha— cada uno a la altura medida (~19 cm entre niveles; el paso del taller es 22,4: el 3D respeta la foto) y el metalizado del pájaro encima: ~1,65 m. Colores medidos (no publica productos): verde #01c35c → Verde Trébol 029, azul #00b8d8 → Azul Caribe 038, rojo #fe2d42 → 015. Distinto: la cabeza de Angry Bird metalizada no está en el catálogo: va un redondo rojo genérico de 22\" (~51 cm; la foto ~56 × 52 cm) sin la cara, el pico ni el copete; la bomba negra de la foto es un poco más chica que los rojos y aquí es un R-12 igual.");
 
@@ -775,7 +774,7 @@ const idea335 = idea("columna-angry-birds", "Columna Angry Birds", escena335,
  * ~35 cm (R-18) con la cabeza de ojos verdes adelante (R-12 de ~24 cm) y 8 patas de T-260 negro (~55 cm); dos rizos de
  * T-260 violeta: uno a la derecha (de 109 a 61 cm) y uno a la izquierda abajo (de 56 a 26 cm).
  */
-const escena338 = ((): Escena => {
+const escena338 = perezoso((): Escena => {
   const px = foto(3.4, 360, 552);
   const G = R("R-12", 28, "080");
   const O = "061", N = "080";
@@ -793,7 +792,7 @@ const escena338 = ((): Escena => {
   nodos.push(colgar({ id: "rizo-derecha", nombre: "Rizo de T-260 Fashion Violeta (derecha)", pieza: tirabuzon("T-260", 4.5, "051", 1, 11, 11, 48, 90), padre: col.vara.padre, origen: v(px(430, 0).x, px(0, 180).y, 30), normal: AL_FRENTE }).nodo);
   nodos.push(colgar({ id: "rizo-izquierda", nombre: "Rizo de T-260 Fashion Violeta (izquierda)", pieza: tirabuzon("T-260", 4.5, "051", 1, 12, 12, 30, 270), padre: col.vara.padre, origen: v(px(295, 0).x, px(0, 362).y, 30), normal: AL_FRENTE }).nodo);
   return { sala: sala(280, 240, 240, SALA_BLANCA), nodos };
-})();
+});
 const idea338 = idea("columna-arana-2", "Columna araña 2: negra y naranja con araña", escena338,
   "Igual: los 5 niveles de R-12 a 28 cm (3,4 px/cm) con 2 negros y 2 naranjas en espiral, en el orden visto de frente y a la altura medida, la araña encima (cuerpo R-18 negro, cabeza R-12 con ojos verdes adelante y 8 patas articuladas de T-260 negro de ~55 cm) y los dos rizos de T-260 violeta: ~1,5 m. Colores medidos (no publica productos): negro → 080, violeta #6236da → Fashion Violeta 051 (ΔE 41: el violeta de la foto es más azulado que todos los de la tabla). Distinto: los naranjas de la foto llevan un impreso de murciélagos y letras negras que no está en la tienda: va el «Happy Halloween» naranja (2 caras, sobre Fashion Naranja 061), el más parecido del catálogo; el naranja medido #fd9442 queda más cerca del Neón Naranja, pero el impreso solo se vende sobre el 061; la boca roja de la araña no se dibuja y sus patas van en el plano del cuerpo (en la foto caen un poco); los rizos son tirabuzones parejos (en la foto, curvas abiertas).");
 
@@ -833,11 +832,11 @@ function escenaBabyShower(o: { base: Cuatro; lol: string; mariposasPx: readonly 
   return { sala: sala(260, 240, 240, SALA_BLANCA), nodos };
 }
 
-const escena341 = escenaBabyShower({ base: ["009", "038", "071", "009"], lol: "009", mariposasPx: [290, 340, 395, 435] });
+const escena341 = perezoso(() => escenaBabyShower({ base: ["009", "038", "071", "009"], lol: "009", mariposasPx: [290, 340, 395, 435] }));
 const idea341 = idea("columna-baby-shower-nina-luna", "Columna Baby Shower niña con luna", escena341,
   "Igual: la base de R-12 de ~21 cm (rosado a la izquierda, azul caribe al frente, arena a la derecha), los dos Link-O-Loon 660 Fashion Rosado arqueados de 25 a 122 cm (~44 cm de ancho al medio; 2,8 px/cm), las 4 mariposas blancas del hilo del centro, el collar de R-5 blancos y la luna metalizada encima: ~1,9 m. Colores medidos (no publica productos): rosado #e7cae5 → 009, azul caribe #1ac1c0 → 038, arena #d6d1b2 → 071. Distinto: el «Baby Shower» impreso de los globos largos y las estrellas blancas de la base no están en la tienda (ni el visor imprime sobre tubos): van lisos; de la base se ven 3 globos (el cuarto, detrás, se pone rosado); la luna con gorro de colores y su estrellita no están en el catálogo: va una luna dorada genérica de 27\" (~63 cm; la foto ~64 cm); las mariposas son lazos de T-160 (en la foto, figuritas blancas que no se distinguen bien).");
 
-const escena342 = escenaBabyShower({ base: ["037", "126", "038", "037"], lol: "040", mariposasPx: [315, 350, 375, 405] });
+const escena342 = perezoso(() => escenaBabyShower({ base: ["037", "126", "038", "037"], lol: "040", mariposasPx: [315, 350, 375, 405] }));
 const idea342 = idea("columna-baby-shower-nino-luna", "Columna Baby Shower niño con luna", escena342,
   "Igual: el mismo armado de la #341 con sus colores: base de R-12 de ~21 cm (aguamarina a la izquierda, té verde al frente, azul caribe a la derecha), los dos Link-O-Loon 660 Fashion Azul arqueados de 25 a 122 cm, las 4 mariposas blancas del hilo, el collar de R-5 blancos y la luna metalizada: ~1,9 m. Colores medidos (no publica productos): azul #049fda → 040, aguamarina #6bccc0 → 037, crema verdoso #b7ceb1 → Pastel Dusk Té Verde 126, azul caribe #31c5e3 → 038. Distinto: el «Baby Shower» impreso y las estrellas de la base no están en la tienda: van lisos; el cuarto globo de la base (detrás) se pone aguamarina; la luna con gorro no está en el catálogo: va una luna dorada genérica de 27\"; las mariposas son lazos de T-160.");
 
@@ -851,7 +850,7 @@ const idea342 = idea("columna-baby-shower-nino-luna", "Columna Baby Shower niño
  * globos en cada bloque: dos niveles), a solo ~13 cm uno de otro; del amarre de arriba (~1,09 m) sale el ramo de helio:
  * 3 R-12 (azul, y dos azul satinado) y el metalizado redondo azul (~42 cm) arriba.
  */
-const escena344 = ((): Escena => {
+const escena344 = perezoso((): Escena => {
   const px = foto(2.65, 362, 550);
   const N = (id: string, codigo: string, yPx: number, giro: GiroNivel): NivelFoto => ({ id, g: R("R-12", 22, codigo), colores: [codigo, codigo, codigo, codigo], yPx, giro });
   const col = columnaFoto(px, [
@@ -871,7 +870,7 @@ const escena344 = ((): Escena => {
     metalizados: [{ id: "metalizado", nombre: "Metalizado redondo azul de 18\" (bautizo en la foto)", pieza: metal({ tipo: "redondo" }, 18, "azul"), base: px(368, 105, -12) }],
   });
   return { sala: sala(260, 240, 240, SALA_BLANCA), nodos: [...col.nodos, ...helio.nodos] };
-})();
+});
 const idea344 = idea("columna-bautismo", "Columna bautismo azul con ramo", escena344,
   "Igual: los 8 niveles de R-12 a ~22 cm en bloques de dos (azul, cristal, azul satinado y azul; 2,65 px/cm) hasta ~1,1 m y el ramo de helio amarrado arriba con sus 3 R-12 (uno azul y dos azul satinado) y el metalizado redondo azul de 18\" encima: ~1,9 m. Colores medidos (no publica productos): azul #01acdf → Fashion Azul 040, satinado #a0d4e2 → Satín Azul 440. Distinto: los niveles de la foto van a ~13 cm uno de otro (el paso del taller sería 17,6): el 3D respeta la medida y los cuartetos se meten unos en otros; los «cristal» miden #7badaf (Silk Verde Menta 826, ΔE 5) por el fondo que se ve a través: van Cristal Transparente 390; el metalizado de la foto lleva un dibujo de bautizo que no se lee y no está en el catálogo: va un redondo azul genérico; la clasificación habla de 4 R-12 en el ramo y en la foto se ven 3.");
 
@@ -886,7 +885,7 @@ const idea344 = idea("columna-bautismo", "Columna bautismo azul con ramo", escen
  * escarcha plateada y dos negros; 6 corazoncitos fucsia pegados (2 y 1 a la derecha, 1 al frente y 2 a la izquierda) y
  * el penacho de 9 T-260 (negros, blancos y rosados) de ~90 cm.
  */
-const escena353 = ((): Escena => {
+const escena353 = perezoso((): Escena => {
   const px = foto(2.1, 381, 550);
   const G = R("R-12", 22, "080");
   const F = "012", B = "080", S = "390";
@@ -905,7 +904,7 @@ const escena353 = ((): Escena => {
   });
   nodos.push(colgar({ id: "penacho", nombre: "Penacho de 9 T-260 negros, blancos y rosados", pieza: rizo({ forma: "penacho", formatoId: "T-260", grosorCm: 4.5, codigos: ["080", "005", "009"], rizos: 9, vueltas: 1.2, radioInicialCm: 1.5, radioFinalCm: 6, largoCm: 88, inclinacionGrados: 0, aperturaGrados: 28 }), padre: col.vara.padre, origen: v(0, px(0, 205).y, 0), normal: AL_FRENTE }).nodo);
   return { sala: sala(280, 240, 280, SALA_BLANCA), nodos };
-})();
+});
 const idea353 = idea("columna-cebra-fucsia", "Columna cebra fucsia con penacho", escena353,
   "Igual: los 9 niveles de R-12 a ~22 cm (2,1 px/cm por los corazoncitos y los tubitos) en el orden de colores visto de frente —los impares con dos Fashion Fucsia y dos Fashion Negro, los pares con dos cristal de escarcha y dos negros—, cada uno a la altura medida (~18 cm entre niveles), los 6 corazoncitos C-6 fucsia contados en su sitio y el penacho de 9 T-260 (negros, blancos y rosados) de ~90 cm: ~2,5 m. Colores medidos (no publica productos): fucsia #c1256a → 012, rosado de los tubitos #fcbbd2 → 009. Distinto: los cristales de la foto llevan una escarcha plateada (como cebra) que no está en la tienda: va el «Graffiti Invierno» cristal (escarcha blanca en remolinos), el más parecido; los fucsia llevan un dibujo de cebra más oscuro que no se vende: van lisos; la clasificación cuenta 4 corazones y en la foto hay 6; el penacho es un cono parejo (en la foto, tubitos ondulados de distinto largo).");
 
@@ -918,7 +917,7 @@ const idea353 = idea("columna-cebra-fucsia", "Columna cebra fucsia con penacho",
  * a 28 cm, piso en y = 558, eje en x = 369. Seis niveles en espiral de dos negros y dos blancos (~18 cm entre niveles; el
  * taller pondría 22,4) y la cabeza de cebra metalizada (~59 × 39 cm) encima.
  */
-const escena354 = ((): Escena => {
+const escena354 = perezoso((): Escena => {
   const px = foto(3.1, 369, 558);
   const G = R("R-12", 28, "005");
   const W = "005", B = "080";
@@ -934,7 +933,7 @@ const escena354 = ((): Escena => {
   const cebra: Pieza = { tipo: "metalizado", metalizado: { forma: { tipo: "redondo" }, pulgadas: 24, color: "blanco", impreso: { dibujo: "rayas", hex: "#141414" } } };
   nodos.push(metalEn("cebra", "Cabeza de cebra metalizada (redondo blanco de rayas, 24\")", col.vara.padre, cebra, v(0, 108, -4)));
   return { sala: sala(260, 240, 240, SALA_BLANCA), nodos };
-})();
+});
 const idea354 = idea("columna-cebra", "Columna cebra en espiral", escena354,
   "Igual: la columna en espiral de 6 niveles de R-12 a 28 cm (3,1 px/cm) con dos Fashion Negro y dos Fashion Blanco por nivel, en el orden visto de frente y a la altura medida (~18 cm entre niveles, contra 22,4 del paso del taller: el 3D respeta la foto), y el metalizado de la cebra encima, como dice la idea («arma una columna en espiral y en la parte de arriba coloca un globo metalizado en forma de cebra»): ~1,65 m. Distinto: la cabeza de cebra no está en el catálogo: va un redondo blanco genérico de 24\" con rayas negras (~56 cm; la foto mide ~59 × 39 cm: la cabeza es más angosta), sin orejas, ojos ni hocico; los blancos de la foto se ven grisáceos por la sombra (#c0d1d6) y van en Fashion Blanco 005.");
 
@@ -949,7 +948,7 @@ const idea354 = idea("columna-cebra", "Columna cebra en espiral", escena354,
  * aro blanco grueso y burbujitas rosadas), 4 R-5 violeta, un cuarteto de R-12 blancos de confites y el metalizado del
  * cupcake «Happy Birthday!» (~45 cm) con su vela «1» (~33 cm).
  */
-const escena363 = ((): Escena => {
+const escena363 = perezoso((): Escena => {
   const px = foto(2.8, 369, 548);
   const col = columnaFoto(px, [
     { id: "base", nombre: "Base: cuarteto de R-12 de lunares (turquesa, fucsia y amarillo)", g: R("R-12", 28, "040"), colores: ["040", "212", "220", "040"], yPx: 505, giro: 0 },
@@ -971,7 +970,7 @@ const escena363 = ((): Escena => {
   const vela: Pieza = { tipo: "metalizado", metalizado: { forma: { tipo: "numero", valor: 1 }, pulgadas: 13, color: "blanco", impreso: { dibujo: "lunares", hex: "#e0397f" } } };
   nodos.push(metalEn("vela", "Vela «1» metalizada blanca de lunares (13\")", col.vara.padre, vela, v(0, px(0, 125).y, -4)));
   return { sala: sala(260, 240, 240, SALA_BLANCA), nodos };
-})();
+});
 const idea363 = idea("columna-cupcake", "Columna cupcake Happy Birthday con vela 1", escena363,
   "Igual: de abajo arriba y a las alturas medidas (2,8 px/cm): la base de 4 R-12 (Fashion Azul al frente y detrás, Neón Fucsia y Neón Amarillo), 4 R-5 Fashion Violeta, el tallo de 2 T-260 Fashion Amarillo con sus cuatro anillos (burbujitas rosadas, verdes, el aro blanco grueso y burbujitas rosadas), 4 R-5 violeta, el cuarteto de R-12 de confites y el cupcake metalizado «Happy Birthday!» con la vela «1» encima: ~1,9 m. Colores medidos (no publica productos): turquesa #01bae6 → 040, fucsia #fe58c4 → Neón Fucsia 212, amarillo #cecc53 → Neón Amarillo 220, violeta → 051, tallo #dfd700 → 020. Distinto: los lunares blancos de la base no se venden en esos colores (la tienda solo los tiene sobre rojo y verde lima): van lisos; los R-12 blancos de confites de colores van con el «Confetti multicolor pastel» de la tienda, que es cristal (390): el más parecido; el cupcake y su vela no están en el catálogo: van un redondo rojo genérico con «Happy Birthday!» y un «1» blanco de lunares, sin el betún amarillo ni la llama; los anillos de burbujitas son de T-160 (en la foto se ven cuentas de ese tamaño).");
 
@@ -985,7 +984,7 @@ const idea363 = idea("columna-cupcake", "Columna cupcake Happy Birthday con vela
  * niveles de R-5 (fucsia, naranja, azul caribe y verde en espiral, a ~7 cm uno de otro), R-9 naranja (19,5), R-12 azul
  * caribe (22,5), R-12 amarillos de emojis (29) y el R-24 amarillo; 4 emojis «popó» de T-260 café pegados al cuello.
  */
-const escena367 = ((): Escena => {
+const escena367 = perezoso((): Escena => {
   const px = foto(2.5, 370, 556);
   const N = (id: string, f: string, d: number, colores: Cuatro, yPx: number, giro: GiroNivel, nombre?: string): NivelFoto => ({ id, g: R(f, d, colores[0]), colores, yPx, giro, ...(nombre ? { nombre } : {}) });
   const uno = (c: string): Cuatro => [c, c, c, c];
@@ -1002,7 +1001,7 @@ const escena367 = ((): Escena => {
   const POPO: ReadonlyArray<[number, number, number, string]> = [[300, 290, 6, "izquierda arriba"], [300, 372, 6, "izquierda abajo"], [410, 275, 8, "derecha arriba"], [410, 385, 8, "derecha abajo"]];
   POPO.forEach(([x, y, z, lado], k) => nodos.push(colgar({ id: `popo-${k + 1}`, nombre: `Emoji popó de T-260 Fashion Café (${lado})`, pieza: tirabuzon("T-260", 4.5, "074", 2.5, 2, 7.5, 13, 60 * k), padre: col.vara.padre, origen: px(x, y, z), normal: AL_FRENTE }).nodo));
   return { sala: sala(260, 240, 260, SALA_BLANCA), nodos };
-})();
+});
 const idea367 = idea("columna-divertida-emoji", "Columna divertida emoji con popós", escena367,
   "Igual: los 15 niveles contados con sus tamaños medidos (2,5 px/cm por el R-24) —R-12 amarillos, R-12 azul caribe, R-9 naranja, el cuello de 9 niveles de R-5 fucsia, naranja, azul caribe y verde en espiral, R-9 naranja, R-12 azul caribe y R-12 amarillos más grandes— cada uno a la altura de su centro, el R-24 amarillo encima y los 4 emojis «popó» de T-260 café: ~2,2 m. Colores medidos (no publica productos): amarillo #ffd101 → Amarillo Miel 021, azul caribe #02bcdd → 038, naranja → 061, fucsia #fd6094 → 012, verde #2fb602 → Verde Trébol 029, café #72451f → 074. Distinto: los emojis impresos de los R-12 amarillos no están en la tienda: van lisos; el cuello de la foto va más apretado que el paso del taller (~7 cm entre niveles de R-5 de 11 cm) y el 3D respeta la medida; los popós son tirabuzones cónicos sin los ojos blancos.");
 
@@ -1017,7 +1016,7 @@ const idea367 = idea("columna-divertida-emoji", "Columna divertida emoji con pop
  * lunares de arriba (azul rey, verde lima con «Feliz Cumpleaños», violeta y rojo detrás), 4 R-5 verdes y el metalizado
  * «Feliz Cumpleaños» de lunares y franjas.
  */
-const escena374 = ((): Escena => {
+const escena374 = perezoso((): Escena => {
   const px = foto(3.1, 368, 545);
   const R5 = (id: string, yPx: number, giro: GiroNivel): NivelFoto => ({ id, g: R("R-5", 10, "029"), colores: ["029", "029", "029", "029"], yPx, giro });
   const col = columnaFoto(px, [
@@ -1036,7 +1035,7 @@ const escena374 = ((): Escena => {
   VOLUTAS.forEach(([x, y, z, lado], k) => nodos.push(colgar({ id: `voluta-${k + 1}`, nombre: `Voluta de T-260 Fashion Violeta (${lado})`, pieza: voluta(90 * k), padre: col.vara.padre, origen: px(x, y, z), normal: AL_FRENTE }).nodo));
   nodos.push(metalEn("metalizado", "Metalizado «Feliz Cumpleaños» festivo de la tienda (18\")", col.vara.padre, metalTienda(FESTIVO_METALIZADO), v(0, px(0, 128).y, -4)));
   return { sala: sala(260, 240, 240, SALA_BLANCA), nodos };
-})();
+});
 const idea374 = idea("columna-feliz-cumpleanos", "Columna Feliz Cumpleaños: topiario de lunares", escena374,
   "Igual: el topiario con sus medidas (3,1 px/cm): base de 4 R-12 de 28,5 cm (Fashion Verde Lima al frente izquierda, Violeta al frente derecha, Rojo detrás a la derecha y Azul Rey detrás), 4 R-5 Verde Trébol, el tallo de 2 T-360 Fashion Amarillo entorchados de ~69 cm con las 3 volutas de T-260 violeta al pie, 4 R-5 verdes, el cuarteto de R-12 de arriba (azul rey, verde lima al frente, violeta y rojo detrás), 4 R-5 verdes y el metalizado «Feliz Cumpleaños» encima: ~1,75 m. Colores medidos (no publica productos): verde lima #7cc34c → 031, violeta #3e1e80 → 051, rojo → 015, verdes chicos #24b630 → 029, amarillo #ffe303 → 020. Distinto: los lunares de colores y el «Feliz Cumpleaños» impresos de los R-12 no están en la tienda (solo lunares blancos sobre rojo y verde lima): van lisos; el cuarto globo de cada cuarteto de R-12 (detrás) no se ve: se supone del color que falta; el metalizado de la foto (lunares arriba, franjas abajo) va como el «Feliz Cumpleaños Festivo» de la tienda (18\", ~42 cm; en la foto mide ~36 cm), el más parecido; las volutas no llevan la cola que las une al tallo.");
 

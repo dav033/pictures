@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { fuenteIdea, type FuenteIdea } from "./fuentes";
 import { ocasionesDeEtiquetas } from "./index";
 import { armarEscena, HUNDIMIENTO_SOBRE_CM, SALA_INICIAL, type Colocacion, type Escena, type NodoEscena, type Sala } from "../escena";
@@ -328,14 +328,13 @@ function fuente(slug: string): FuenteIdea {
  * `index.ts`, que importa este lote: se calculan al leerlas) y sus productos (salen de armar la escena) se calculan la
  * primera vez que se piden.
  */
-function idea(slug: string, nombre: string, escena: Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
+function idea(slug: string, nombre: string, escena: () => Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
   const f = fuente(slug);
-  let hechos: ProductoDeIdea[] | null = null;
-  return {
-    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, contenido: { tipo: "escena", escena }, nota,
+  // Perezosa (ver «Patrón perezoso» en tipos.ts): la escena se arma la primera vez que se pide.
+  return ideaPerezosa({
+    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, clase: "escena", nota,
     get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
-    get productos() { return (hechos ??= productosDe(escena, publicados)); },
-  };
+  }, () => ({ tipo: "escena", escena: escena() }), () => productosDe(escena(), publicados));
 }
 
 // Impresos de la tienda que usa el lote (ids de `impresos-catalogo.ts`).
@@ -363,7 +362,7 @@ for (const id of [FIESTA_BIGOTES, POLKA_ROJO, TERRAZO_AZUL, GRAFFITI_NEGRO]) if 
  * #b99521 → Fashion Mostaza 023, pero el surtido del impreso (`impresos-catalogo.ts`) es Azul Rey, Amarillo, Café y
  * Azul: va el Amarillo 020 (el único dorado del surtido).
  */
-const escena375 = ((): Escena => {
+const escena375 = perezoso((): Escena => {
   const px = escala(510, 975, 5.53);
   const NEGRO = R("R-12", 22.5, "080"), CAFE = R("R-12", 21.7, "074"), AZUL = R("R-12", 21.7, "041");
   const m = montaje({ id: "base", nombre: "Cuarteto R-12 Fashion Negro de la base", pieza: cuarteto(NEGRO, ["080"]), en: v(0, Math.max(px(0, 900).y, bajoCuarteto(NEGRO)), 0) }, v(0, 0, -45));
@@ -375,7 +374,7 @@ const escena375 = ((): Escena => {
   m.centrada("sombrero-ala", "Ala del sombrero: aro de T-260 Fashion Negro", deco(figura({ queEs: "a black twisted-balloon hat brim", accesorios: [{ en: "base", forma: { tipo: "aro", tubito: { formatoId: "T-260", grosorCm: 4.5, codigo: "080" }, radioCm: 10.5, plano: "horizontal", desdeGrados: 0, hastaGrados: 360 } }] })), px(518, 112), AL_FRENTE);
   m.globo("sombrero-copa", "Copa del sombrero: R-12 Fashion Negro a medio inflar", R("R-12", 16, "080"), px(518, 76), ARRIBA);
   return { sala: sala(240, 220, 220), nodos: m.nodos };
-})();
+});
 const idea375 = idea("columna-feliz-dia-fiesta-bigotes", "Columna Feliz Día Fiesta Bigotes", escena375,
   "Igual: el señor de ~1,70 m: base de 1 cuarteto negro, pantalón de 3 cuartetos café y camisa de 2 azul rey (R-12 de ~22 cm, dos globos al frente en cada nivel, a la altura medida: 18–20 cm por nivel), cuello de moño y corbatín de T-260 arena, cabeza de R-12 «Feliz Día Fiesta Bigotes» de la tienda (lleno, 30 cm) y sombrero de copa negra (R-12 a medio inflar) con ala de T-260 negro en aro, con los productos que publica la idea. Distinto: la cabeza de la foto es mostaza (023) y el surtido del impreso en el catálogo no lo trae: va en Amarillo 020; el ala del sombrero es un T-260 negro que la idea no publica; el cuarteto del taller va más apretado que el de la foto (la columna sale ~20 % más angosta: 36 cm contra 45 de la foto, con globos del mismo tamaño); los cuartetos de la foto se ven de lado sin girar entre niveles (aquí también, a 0°).",
   [
@@ -401,7 +400,7 @@ const idea375 = idea("columna-feliz-dia-fiesta-bigotes", "Columna Feliz Día Fie
  * (no publica productos): morado #5a308e → Fashion Violeta 051 (ΔE 3); rosado #f7a7bb → Satín Rosado 409 (ΔE 4); blanco
  * #f3e5ea → Satín Blanco 405 (perlado; Pastel Dusk Crema 107 queda a 6 pero no es blanco).
  */
-const escena381 = ((): Escena => {
+const escena381 = perezoso((): Escena => {
   const px = escala(368, 540, 2.1);
   const BASE = R("R-12", 30, "051");
   const m = montaje({ id: "base", nombre: "Base de 4 R-12 Fashion Violeta", pieza: cuarteto(BASE, ["051"]), en: v(0, Math.max(19, bajoCuarteto(BASE)), 0) }, v(0, 0, -50));
@@ -417,7 +416,7 @@ const escena381 = ((): Escena => {
   m.globo("par-centro", "R-5 Satín Blanco sobre el corazón", R("R-5", 10, "405"), px(368, 156, 5), enPlano(0, 0.5, 1));
   m.metalizado("corona", "Corona metalizada «Happy Birthday Princess!» (genérica: nube fucsia con letrero)", { forma: { tipo: "nube" }, pulgadas: 26, color: "fucsia", impreso: { dibujo: "texto", texto: "Happy Birthday\nPrincess!", hex: "#ffffff" } }, px(368, 95, -2));
   return { sala: sala(240, 220, 280), nodos: m.nodos };
-})();
+});
 const idea381 = idea("columna-happy-birthday-princess", "Columna Happy Birthday Princess", escena381,
   "Igual: columna de ~2,4 m: base de 4 R-12 violeta, 3 eslabones Link-O-Loon 12 Satín Rosado de nudo a nudo con anillos de 4 R-5 en cada unión (blanco, violeta, blanco, violeta), el corazón metalizado rosado de 18\" de la tienda, una pareja de R-5 violeta con uno blanco encima y la corona arriba. Distinto: la idea no publica productos (colores medidos); la corona «Happy Birthday Princess!» y el corazón con letrero y borde blanco no están en la tienda: el corazón es el CORAZON ROSADO liso y la corona un metalizado genérico (sin producto) en forma de nube fucsia con el letrero, la silueta más parecida (ancha, con lóbulos arriba) —la de la foto tiene puntas y un corazón de joya—; la base de la foto va echada en el piso (aquí un cuarteto); la escala (R-5 y eslabones) da 2,4 m, más de lo que aparenta la foto.");
 
@@ -438,7 +437,7 @@ const idea381 = idea("columna-happy-birthday-princess", "Columna Happy Birthday 
  * #02c3e8 → Fashion Azul Caribe 038; naranja #fd7f17 → Fashion Naranja 061; lila #d3a3cf → Fashion Lila 050; azul
  * #266fb9 → Metal Azul 540.
  */
-const escena382 = ((): Escena => {
+const escena382 = perezoso((): Escena => {
   const px = escala(375, 552, 3);
   const BASE = R("R-12", 25, "051");
   const m = montaje({ id: "base", nombre: "Cuarteto R-12 Fashion Violeta de la base", pieza: cuarteto(BASE, ["051"]), en: v(0, Math.max(14, bajoCuarteto(BASE)), 0) }, v(0, 0, -45));
@@ -450,7 +449,7 @@ const escena382 = ((): Escena => {
   m.pieza("rizo-derecha", "Rizo de T-260 Fashion Violeta (derecha)", tirabuzon(T("T-260", 3.5, "051"), 3, 3.5, 4.5, 18, 180), px(392, 248, 4), enPlano(1, -0.45, 0.25));
   m.metalizado("regalo", "Metalizado «Happy Birthday» (genérico: estallido dorado con letrero)", { forma: { tipo: "estrella" }, pulgadas: 26, color: "oro", impreso: { dibujo: "texto", texto: "HAPPY\nBIRTHDAY!", hex: "#d42032" } }, px(375, 122, -2));
   return { sala: sala(240, 220, 220), nodos: m.nodos };
-})();
+});
 const idea382 = idea("columna-happy-birthday", "Columna Happy Birthday", escena382,
   "Igual: columna de ~1,75 m: base de 4 R-12 violeta, anillo de 4 R-5 verde lima, seis R-5 apilados de colores (amarillo, rosado, azul caribe, naranja, lila y azul, de abajo arriba), otro anillo verde lima con dos rizos de T-260 violeta a los lados y el metalizado de cumpleaños arriba. Distinto: la idea no publica productos (colores medidos); el tubo transparente que encierra los R-5 no es un globo Sempertex (el Link-O-Loon 660 no se fabrica en Cristal): los R-5 van apilados en su sitio sin el tubo; los lunares verde lima de la base no son un impreso de la tienda y el cuarteto no los dibuja: la base va lisa; el metalizado de la foto (estallido amarillo con letrero sobre una caja de regalo de lunares) no está en la tienda: va una estrella dorada genérica (sin producto) con «HAPPY BIRTHDAY!», sin la caja.");
 
@@ -471,7 +470,7 @@ const idea382 = idea("columna-happy-birthday", "Columna Happy Birthday", escena3
  * (lunares blancos sobre Rojo 015); el azul rey, «Terrazo Azul» (salpicado blanco y celeste, su surtido trae el Azul Rey
  * 041); el azul, también «Terrazo Azul», que no trae el Azul 040: va en su azul más claro, Azul Hortensia 042.
  */
-const escena385 = ((): Escena => {
+const escena385 = perezoso((): Escena => {
   const px = escala(367, 573, 3.5);
   const G = (codigo: string) => R("R-12", 25, codigo);
   const NIVELES: ReadonlyArray<readonly [number, string, number, string | null, string]> = [
@@ -488,7 +487,7 @@ const escena385 = ((): Escena => {
   m.recta("hueso-2", "Hueso de T-260 Fashion Blanco (sobre el rojo, a la derecha)", HUESO, [3, 3, 13, 3, 3], px(430, 188, 14), px(465, 225, 10));
   m.recta("hueso-3", "Hueso de T-260 Fashion Blanco (sobre el azul rey)", HUESO, [3, 3, 13, 3, 3], px(345, 350, 25), px(405, 320, 25));
   return { sala: sala(240, 220, 220), nodos: m.nodos };
-})();
+});
 const idea385 = idea("columna-huellita", "Columna Huellita", escena385,
   "Igual: columna de ~1,63 m de 6 cuartetos R-12 por bandas (de abajo arriba: azul impreso, azul, azul rey impreso, azul rey, rojo impreso y rojo), los impresos con dos globos al frente y los lisos con tres, a la altura medida (17,7 cm por nivel, más juntos que el paso del taller); remate de R-24 azul y tres huesos de T-260 blanco, con los productos que publica la idea. Distinto: los impresos de huellas y huesos y el R-24 con «Feliz cumpleaños» y huella no están en la tienda: el rojo va con «Polka Blanco Fashion Rojo» (lunares blancos), el azul rey y el azul con «Terrazo Azul» (salpicado blanco), que no trae el Azul 040: la banda impresa de abajo queda en Azul Hortensia 042; el R-24 va liso; los huesos son una cadena de burbujas en línea (en la foto las puntas se abren en dos); el cuarteto del taller es más angosto que el de la foto.",
   [
@@ -515,7 +514,7 @@ const idea385 = idea("columna-huellita", "Columna Huellita", escena385,
  * (ΔE 7); azul cromado #0b84ac → Reflex Azul 940 (ΔE 11); verde de los tallos #ccdf84 → Fashion Verde Lima 031; los R-5
  * amarillos #feec08 → Fashion Amarillo 020 (ΔE 3); la flor rosada → Fashion Rosado 009.
  */
-const escena390 = ((): Escena => {
+const escena390 = perezoso((): Escena => {
   const px = escala(360, 560, 2.6);
   const G = R("R-12", 27, "014");
   const COLORES = ["014", "061", "021", "940"];
@@ -535,7 +534,7 @@ const escena390 = ((): Escena => {
   for (const [id, petalo, centro, x, y, z, l] of FLORES)
     m.centrada(`flor-${id}`, `Flor de tubito de 5 pétalos (${id})`, deco(florTubito(burbujasTubito("T-260", 3.5, [petalo], 5, l, 0, 0), R("R-5", 6, centro))), px(x, y, z), AL_FRENTE);
   return { sala: sala(240, 220, 240), nodos: m.nodos };
-})();
+});
 const idea390 = idea("columna-mariposa", "Columna Mariposa", escena390,
   "Igual: columna espiral de ~1,15 m de 6 cuartetos R-12 en cuatro colores (frambuesa, naranja, amarillo miel y azul cromado) a la altura medida (18 cm por nivel), dos tallos de T-260 verde lima, la flor de 4 R-5 amarillos con centro verde, dos R-5 frambuesa en el tallo y cuatro flores de tubito de 5 pétalos (rosada, naranja, amarilla con centro azul y una naranja chica): ~2 m. Distinto: la idea no publica productos (colores medidos); la mariposa metalizada no está en la tienda: va la flor metalizada rosada de 27\" (la silueta de pétalos más parecida, ~el mismo tamaño); en la foto los globos de la columna son algo desparejos (más «orgánica») y aquí cuartetos iguales.");
 
@@ -557,7 +556,7 @@ const idea390 = idea("columna-mariposa", "Columna Mariposa", escena390,
  * Azul 240 (ΔE 17), fucsia → Neón Fucsia 212. El impreso negro con salpicado de colores neón no está en la tienda: va el
  * más parecido, «Metalink Plata Graffiti Fashion Negro» (negro con garabatos plateados por todo el globo).
  */
-const escena396 = ((): Escena => {
+const escena396 = perezoso((): Escena => {
   const px = escala(372, 555, 3);
   const NEGRO = R("R-12", 24, "080");
   const GRAFFITI: ImpresoEnPieza[] = [{ impresoId: GRAFFITI_NEGRO, codigo: "080" }];
@@ -579,7 +578,7 @@ const escena396 = ((): Escena => {
   m.nivel("negros-arriba", "Cuarteto R-12 negro impreso Metalink Plata Graffiti (arriba)", NEGRO, ["080"], px(372, 168), 0, "un_color", GRAFFITI);
   m.pieza("cristal", "Globo cristal R-18 con 10 R-5 neón dentro", deco(burbuja(R("R-18", 44, "390"), [{ formatoId: "R-5", infladoCm: 10, codigos: ["212", "261", "220", "212", "220", "212", "261", "220", "212", "212"], cantidad: 10 }], null, 396)), px(372, 142), AL_FRENTE);
   return { sala: sala(240, 220, 220), nodos: m.nodos };
-})();
+});
 const idea396 = idea("columna-neon", "Columna Neón", escena396,
   "Igual: columna de ~1,8 m: base de 4 R-12 negros impresos, racimo de 4 R-9 neón con un R-5 verde, tallo de tres T-260 trenzados (negro, azul y fucsia), otro racimo neón con su R-5 verde, cuarteto de R-12 negros impresos y el globo cristal R-18 con 10 R-5 neón dentro (fucsia, naranja y amarillo) amontonados abajo. Distinto: la idea no publica productos (colores medidos, en la familia Neón); el impreso negro con salpicado de colores neón no está en la tienda: va el «Metalink Plata Graffiti Fashion Negro» (garabatos plateados); el tallo trenzado es de tres resortes iguales que se cruzan.");
 
@@ -598,7 +597,7 @@ const idea396 = idea("columna-neon", "Columna Neón", escena396,
  * Fashion Eucalipto 027 (ΔE 8); azul #a1b7cc → Satín Azul 440 (ΔE 12; Pastel Mate Azul 640 a 11, pero es perlado); perla
  * #dcd4c6 → Silk Perla Crema 873 (ΔE 2).
  */
-const escena397 = ((): Escena => {
+const escena397 = perezoso((): Escena => {
   const px = escala(370, 555, 2.4);
   const G = (codigo: string) => R("R-12", 22.5, codigo);
   const PERLA = R("R-9", 15, "873");
@@ -613,7 +612,7 @@ const escena397 = ((): Escena => {
   NIVELES.slice(1).forEach(([y, g, giro, que], k) => m.nivel(`nivel-${k + 2}`, `${nombreDe(g, que)} (nivel ${k + 2})`, g, [g.codigo], v(0, px(0, y).y, 0), giro));
   m.metalizado("carita", "Carita sonriente metalizada azul (genérica: redondo azul de 18\")", { forma: { tipo: "redondo" }, pulgadas: 18, color: "azul" }, px(370, 63, -2));
   return { sala: sala(240, 220, 260), nodos: m.nodos };
-})();
+});
 const idea397 = idea("columna-nino", "Columna Niño", escena397,
   "Igual: columna de ~2,25 m por bandas perladas: 2 cuartetos amarillos, 3 azules, 2 verdes y 2 amarillos (R-12 de 22,5 cm, tres o dos globos al frente como en la foto) separados por juntas de cuartetos R-9 perla, a la altura medida (14,6 cm por nivel, mucho más juntos que el paso del taller), y el metalizado redondo azul de 18\" arriba. Distinto: la idea no publica productos (colores medidos: el amarillo perlado queda en Metal Dorado 570, el verde en Eucalipto 027, el azul en Satín Azul 440 y la perla en Silk Perla Crema 873); la carita sonriente con corbatín no está en la tienda ni se puede dibujar en el metalizado: va un redondo azul genérico liso (sin producto); los cuartetos del taller van más apretados que los de la foto (columna más angosta).");
 
@@ -635,7 +634,7 @@ const idea397 = idea("columna-nino", "Columna Niño", escena397,
  * publicado). Las estrellas: la dorada mide amarillo brillante y la tienda solo la trae «Dorado Mate»; la azul es azul rey
  * y la tienda la trae en «Azul» (celeste) y «Azul Vibrante»: va la Vibrante, la más oscura.
  */
-const escena401 = ((): Escena => {
+const escena401 = perezoso((): Escena => {
   const px = escala(378, 560, 2.7);
   // El primer nivel (24,1 cm) muestra uno al frente: la columna va girada 45° (el taller empieza con dos al frente).
   const m = montaje({ id: "eje", nombre: "Eje: columna de R-5 Fashion Aguamarina", pieza: { tipo: "columna", formatoId: "R-5", infladoCm: 11.6, alturaCm: r2(10 * 0.8 * 11.6), patron: "un_color", colores: ["037"] }, en: v(0, px(0, 495).y, 0), giroGrados: 45 }, v(0, 0, -45));
@@ -655,7 +654,7 @@ const escena401 = ((): Escena => {
   m.metalizado("estrella-dorada", "Estrella metalizada dorada de 18\" (ramo, izquierda)", metalizadoDeTienda("estrella-dorado-mate"), px(300, 135, 4), 12);
   m.metalizado("estrella-azul", "Estrella metalizada azul de 18\" (ramo, derecha)", metalizadoDeTienda("estrella-azul-vibrante"), px(420, 200, 9), -8);
   return { sala: sala(240, 220, 240), nodos: m.nodos };
-})();
+});
 const idea401 = idea("columna-papa-super-heroe", "Columna Papá Súper Héroe", escena401,
   "Igual: columna de ~1,1 m de seis parejas de R-12 (rojo, naranja, amarillo, rojo, naranja y amarillo, de abajo arriba, a la altura medida) con el eje de R-5 aguamarina por el frente (de frente, uno, dos, uno, dos…), tres rizos en espiral de T-260 (amarillo, naranja y rojo) y el ramo de 5 R-12 de helio (naranja, amarillo, aguamarina, verde claro y rojo) con dos estrellas metalizadas de 18\" de la tienda, ~2,05 m, con los productos que publica la idea. Distinto: los impresos de estrellas, el «WOW» y el rojo de la base no están en la tienda ni hay uno parecido en esos colores: van lisos en los colores publicados (el verde claro, en Pastel Dusk Té Verde 126, no publicado); la estrella dorada de la foto es brillante y la de la tienda dorado mate; la azul de la foto es azul rey y va la Azul Vibrante; las parejas de la foto se ven aplastadas (aquí R-12 a 22 cm de costado); el ramo va sin cintas (en la foto no se ven).");
 
@@ -675,7 +674,7 @@ const idea401 = idea("columna-papa-super-heroe", "Columna Papá Súper Héroe", 
  * verde #61bd0b → Fashion Verde Trébol 029; los rizos: azul #03b7e0 → Fashion Azul 040, amarillo → Amarillo Miel 021,
  * lila #bf7db2 → Fashion Lila 050, verde #6fbd09 → Verde Trébol 029, rosado → Fashion Rosado 009.
  */
-const escena403 = ((): Escena => {
+const escena403 = perezoso((): Escena => {
   const px = escala(380, 555, 3.2);
   const m = montaje({ id: "tubo", nombre: "Fuste: seis R-5 apilados (los del tubo transparente)", pieza: hilera(R("R-5", 11.8, "009"), ["009", "021", "038", "050", "230", "009"], 64), en: v(0, 25.1, 0) }, v(0, 0, -40));
   m.pieza("cristal", "Globo cristal R-18 con confeti blanco", deco(burbuja(R("R-18", 36, "390"), [], { tipo: "confeti", colores: ["#f4f1ea", "#ffffff"], cantidad: 160 }, 403)), px(380, 160), AL_FRENTE);
@@ -693,7 +692,7 @@ const escena403 = ((): Escena => {
   ];
   for (const [id, t, x, y, z, normal, vueltas, r, l] of RIZOS) m.pieza(`rizo-${id}`, `Rizo de T-260 (${id.replace("-", ", ")})`, tirabuzon(t, vueltas, r * 0.8, r, l), px(x, y, z), normal);
   return { sala: sala(240, 220, 220), nodos: m.nodos };
-})();
+});
 const idea403 = idea("columna-rellena", "Columna Rellena", escena403,
   "Igual: columna de ~1,7 m: seis R-5 de colores apilados (rosado, amarillo, azul caribe, lila, verde y rosado, de abajo arriba), cuatro rizos de T-260 en la base (azul, rosado, verde y lila) y cuatro en la cabeza (amarillo, azul, lila y verde), el globo cristal de 36 cm con confeti blanco y tres R-5 en su punta (morado, rosado y verde). Distinto: la idea no publica productos (colores medidos); el tubo transparente que encierra los R-5 no es un globo Sempertex (el Link-O-Loon 660 no se fabrica en Cristal): los R-5 van apilados en su sitio sin el tubo, y no hay una base que se vea (en la foto el tubo se para entre los rizos); el blanco de dentro del cristal (encaje o confeti en la foto) va como confeti; los rizos de la foto se enredan entre sí y aquí son tirabuzones sueltos.");
 
@@ -710,7 +709,7 @@ const idea403 = idea("columna-rellena", "Columna Rellena", escena403,
  * corazón (centro a 200 px: 94 cm): ~1,12 m. Colores: los publicados (Reflex Champaña 971, Reflex Verde Aurora 932, Satín
  * Perla 406, Pastel Dusk Rosa 110 y el corazón metalizado Te Amo rosado).
  */
-const escena407 = ((): Escena => {
+const escena407 = perezoso((): Escena => {
   const px = escala(467, 945, 7.9);
   const BASE = R("R-12", 23, "971");
   const m = montaje({ id: "base", nombre: "Cuarteto R-12 Reflex Champaña de la base", pieza: cuarteto(BASE, ["971"]), en: v(0, Math.max(px(0, 860).y, bajoCuarteto(BASE)), 0) }, v(0, 0, -45));
@@ -725,7 +724,7 @@ const escena407 = ((): Escena => {
   m.nivel("cuarteto-arriba", "Cuarteto R-5 Reflex Champaña (bajo el corazón)", R("R-5", 11, "971"), ["971"], px(467, 385));
   m.metalizado("corazon", "Corazón metalizado «Te Amo» rosado de 16\"", metalizadoDeTienda("corazon-te-amo-rosado"), px(490, 200, 0));
   return { sala: sala(220, 200, 200), nodos: m.nodos };
-})();
+});
 const idea407 = idea("columna-te-amo", "Columna Te Amo", escena407,
   "Igual: columna de ~1,12 m: base de 4 R-12 Reflex Champaña, corona de 12 racimos de 4 R-5 alrededor del pie (verde aurora, perla y champaña, alternados), el R-12 Pastel Dusk Rosa grande, un cuarteto de R-5 champaña y el corazón metalizado «Te Amo» rosado de 16\" de la tienda, con los productos que publica la idea. Distinto: la corona de la foto es más suelta (racimos de 2 a 4 metidos unos en otros) y aquí 12 racimos iguales en un anillo inclinado; de la vuelta se ven 7, los otros 5 se suponen; el globo grande de la foto parece algo alargado (30 × 34 cm): va un R-12 lleno.",
   [
@@ -752,7 +751,7 @@ const idea407 = idea("columna-te-amo", "Columna Te Amo", escena407,
  * 035 (ΔE 6). El impreso de Toy Story no está en la tienda y ninguno del catálogo se le parece en esos colores (el «Happy
  * Birthday Festivo» de colores cambiaría el rojo y el verde): van lisos.
  */
-const escena411 = ((): Escena => {
+const escena411 = perezoso((): Escena => {
   const G = (codigo: string) => R("R-12", 28, codigo);
   const piso = bajoCuarteto(G("014"));
   // El nivel rojo apoya en el piso (en la foto queda ~30 cm arriba, sobre los rizos): los demás, a 82 px (25,2 cm).
@@ -765,7 +764,7 @@ const escena411 = ((): Escena => {
   RIZOS.forEach(([id, codigo, nombre, x, y], k) =>
     m.pieza(`rizo-${id}`, `Rizo de T-260 ${nombre} (base)`, tirabuzon(T("T-260", 4, codigo), 2.5, 3.5, 5, 24, 70 * k), v(r2(16 * x), 13, 18), enPlano(x, y, 1)));
   return { sala: sala(240, 220, 200), nodos: m.nodos };
-})();
+});
 const idea411 = idea("columna-toy-story", "Columna Toy Story", escena411,
   "Igual: columna de 5 cuartetos R-12 (28 cm) por bandas de arcoíris (de abajo arriba: frambuesa, naranja, amarillo, verde selva y azul), con tres globos al frente en cada nivel y a 25 cm por nivel como la foto, y cinco rizos de T-260 en la base (verde, rojo, naranja, amarillo y azul petróleo). Distinto: la idea no publica productos (colores medidos); el impreso de Toy Story no está en la tienda ni hay uno parecido en esos colores: los globos van lisos; en la foto la columna queda alzada ~30 cm sobre los rizos (aquí apoya en el piso y los rizos salen de su base hacia delante); el cuarteto del taller es más angosto que el de la foto.");
 
@@ -780,7 +779,7 @@ const idea411 = idea("columna-toy-story", "Columna Toy Story", escena411,
  * plata (~38 px: 11 cm). El Link-O-Loon 6 del título es la malla que sostiene los R-12 por detrás (no se ve en la foto:
  * no se dibuja). Color: el publicado (Reflex Plata 981).
  */
-const escena423 = ((): Escena => {
+const escena423 = perezoso((): Escena => {
   const px = escala(375, 625, 3.5);
   const forma: OpcionesForma = {
     clase: "rellena", contorno: { tipo: "predefinido", id: "corazon", anchoCm: 189, altoCm: 153 }, tecnica: { tipo: "celdas", formatoId: "R-12", infladoCm: 28, celda: "cuadrada" },
@@ -790,7 +789,7 @@ const escena423 = ((): Escena => {
   const m = montaje({ id: "corazon", nombre: "Corazón de R-12 Reflex Plata en dos capas", pieza: { tipo: "forma", forma }, en: v(0, 20, Z) }, v(0, 0, 40));
   ([[180, 55], [300, 45], [440, 45], [560, 40]] as const).forEach(([x, y], k) => m.globo(`r5-${k + 1}`, `R-5 Reflex Plata en la oreja del corazón (${k + 1})`, R("R-5", 11, "981"), px(x, y, Z - 4), enPlano(0, 1, 0.2)));
   return { sala: sala(300, 220, 220), nodos: m.nodos };
-})();
+});
 const idea423 = idea("corazon-de-link-o-loon-r-6-con-reflex-plata", "Corazón de Link-O-Loon 6 con Reflex Plata", escena423,
   "Igual: corazón de pared de ~1,9 × 1,5 m de R-12 Reflex Plata en dos capas (la de fondo en retícula y la del frente, un globo en cada hueco), con cuatro R-5 plata asomando en las orejas, con el producto que publica la idea. Distinto: la malla de Link-O-Loon 6 que lo sostiene por detrás no se ve en la foto ni se dibuja (ni se cotiza: la idea no la publica); el reparto de los globos lo hace el relleno del taller sobre la silueta del corazón, no globo a globo como en la foto (el borde de la foto es algo más irregular).",
   [P("GLOBO LATEX REDONDO REFLEX PLATA", "/products/globo-para-fiesta-latex-redondo-reflex-plata", "R-12", "981")]);
@@ -806,13 +805,13 @@ const idea423 = idea("corazon-de-link-o-loon-r-6-con-reflex-plata", "Corazón de
  * ellos): 4, 11, 13, 11, 9, 7, 5, 3 y 1 por fila, ~64 globos. Color medido (no publica productos): rojo #fe1c23 →
  * Fashion Rojo 015 (ΔE 15–17, el más cercano: la foto es un render saturado).
  */
-const escena426 = ((): Escena => {
+const escena426 = perezoso((): Escena => {
   const forma: OpcionesForma = {
     clase: "rellena", contorno: { tipo: "predefinido", id: "corazon", anchoCm: 175, altoCm: 140 }, tecnica: { tipo: "celdas", formatoId: "R-12", infladoCm: 25, celda: "cuadrada" },
     colores: { codigos: ["015"], patron: "un_color" }, acento: { formatoId: "R-12", infladoCm: 25, codigos: ["015"], cada: 1 },
   };
   return { sala: sala(280, 220, 220), nodos: [{ id: "corazon", nombre: "Corazón en malla de R-12 Fashion Rojo", pieza: { tipo: "forma", forma }, colocacion: libre(0, 20, -90) }] };
-})();
+});
 const idea426 = idea("corazon-en-malla", "Corazón en malla", escena426,
   "Igual: corazón de pared rojo de ~1,75 × 1,40 m en malla de R-12 en dos capas (la de fondo en retícula y la del frente, un globo en cada hueco), como los nudos de la foto. Distinto: la idea no publica productos ni trae una referencia de tamaño: los globos se toman como R-12 a 25 cm (el color medido es Fashion Rojo 015); el reparto lo hace el relleno del taller sobre la silueta (la foto cuenta ~64 globos en filas de 4, 11, 13, 11, 9, 7, 5, 3 y 1; el taller da los suyos, ver productos).");
 
@@ -829,7 +828,7 @@ const idea426 = idea("corazon-en-malla", "Corazón en malla", escena426,
  * dos más abajo (120,365; 585,360), dos junto a la punta (225,450; 495,455) y uno en la punta (360,530). Colores medidos
  * (no publica productos): rojo #f20b10 → Fashion Rojo 015; rosado → Fashion Rosado 009.
  */
-const escena427 = ((): Escena => {
+const escena427 = perezoso((): Escena => {
   const px = escala(372, 763, 5.2);
   const Z = -90;
   // La mitad derecha del centro de la cuerda, de la muesca a la punta (px de la foto).
@@ -849,7 +848,7 @@ const escena427 = ((): Escena => {
   m.centrada("cuerda-rosada", "Cuerda del corazón: dos T-260 Fashion Rosado trenzados (por dentro)", cuerda("009", 0.955), px(372, 290, Z + 1), AL_FRENTE);
   ROJOS.forEach(([x, y], k) => m.globo(`rojo-${k + 1}`, `R-5 Fashion Rojo del corazón (${k + 1})`, R("R-5", 12, "015"), px(x, y, Z - 3), enPlano((x - 372) / 200, (285 - y) / 200, 0.6)));
   return { sala: sala(240, 220, 200), nodos: m.nodos };
-})();
+});
 const idea427 = idea("corazon-entrelazado", "Corazón entrelazado", escena427,
   "Igual: corazón de pared de ~1,07 × 1,04 m de tubitos trenzados (rojos y rosados) que siguen la silueta, con las puntas rojas colgando en la muesca y diez R-5 rojos asomando por fuera (tres arriba, dos en los costados, dos más abajo, dos junto a la punta y uno en la punta). Distinto: la idea no publica productos (colores medidos); en la foto los cuatro tubitos se entrelazan entre sí (rojo, rosado, rojo, rosado) y aquí son dos cuerdas de dos tubitos trenzados (una roja y una rosada un poco por dentro y por delante, que se cruzan) que siguen el mismo corazón; la curva va en 13 tramos rectos por lado.");
 
@@ -866,7 +865,7 @@ const idea427 = idea("corazon-entrelazado", "Corazón entrelazado", escena427,
  * 056, Silk Amatista 850 —el plata lila—, Fashion Rosado 009 y el cartel); el frambuesa no está publicado: mide #b50038 →
  * Fashion Frambuesa 014 (ΔE 14; Metal Rojo a 12: el Fashion a menos de 6).
  */
-const escena428 = ((): Escena => {
+const escena428 = perezoso((): Escena => {
   const px = escala(500, 967.5, 3.1);
   const Z = -110 + 30;
   // La mitad derecha del corazón (curva clásica), escalada a la foto: x de 155 a 845 px, de las orejas (300 px) a la punta (820 px).
@@ -895,7 +894,7 @@ const escena428 = ((): Escena => {
   m.pieza("orquidea-punta", "Corazón: tramo de Fashion Orquídea Morada (punta)", bloque("056", [...punta, ...espejo(punta).slice(1)].map(zAlReves), 450), ORIGEN, ARRIBA, 90);
   m.pieza("cartel", "Cartel «Feliz Día Corazones Modernos» (dentro del corazón)", letrero({ forma: "rectangulo", anchoCm: 160, altoCm: 100, hex: "#fbf7f8", motivo: { dibujo: "texto", texto: "Feliz\nDía", hex: "#d42032" }, apoyo: "colgado", productoId: "cartel-decorativo-feliz-dia-corazones-modernos" }), v(0, 81, Z - 12), ARRIBA, 90);
   return { sala: sala(340, 220, 280), nodos: m.nodos };
-})();
+});
 const idea428 = idea("corazon-feliz-dia", "Corazón Feliz Día", escena428,
   "Igual: corazón de pared de ~2,8 × 2,1 m de guirnalda orgánica de R-12 (~55 cm de grueso) por bloques de color iguales a cada lado —rosado arriba al centro, frambuesa, plata lila, orquídea, rosado, frambuesa, plata lila y orquídea en la punta— con el cartel «Feliz Día» de la tienda dentro, con los productos que publica la idea. Distinto: los globos de cada bloque los reparte el motor orgánico (no se cuentan uno a uno: la foto tiene ~8–10 por bloque); el frambuesa no está publicado (Fashion Frambuesa 014, medido); el cartel de la foto lleva corazones dibujados y aquí solo el letrero; la curva es la del corazón clásico ajustada a la foto (las orejas de la foto son algo más planas).",
   [

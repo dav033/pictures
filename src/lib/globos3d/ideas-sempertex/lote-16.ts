@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { fuenteIdea, type FuenteIdea } from "./fuentes";
 import { ocasionesDeEtiquetas } from "./index";
 import { armarEscena, HUNDIMIENTO_SOBRE_CM, SALA_INICIAL, type Escena, type NodoEscena, type Sala } from "../escena";
@@ -440,14 +440,18 @@ function fuente(slug: string): FuenteIdea {
  * armar la escena). Las ocasiones salen de las etiquetas con `ocasionesDeEtiquetas`, que vive en `index.ts` (que importa
  * este lote): se calculan al leerlas.
  */
-function idea(slug: string, nombre: string, escena: Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
+function idea(slug: string, nombre: string, escena: () => Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
   const f = fuente(slug);
-  let hechos: ProductoDeIdea[] | null = null;
-  return {
-    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, contenido: { tipo: "escena", escena }, nota,
-    get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
-    get productos() { return (hechos ??= productosDe(escena, publicados)); },
-  };
+  // Perezosa (ver `ideaPerezosa` en tipos.ts): la escena se arma la primera vez que se pide, no al importar el lote.
+  const laEscena = perezoso(escena);
+  return ideaPerezosa(
+    {
+      id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, clase: "escena", nota,
+      get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
+    },
+    () => ({ tipo: "escena", escena: laEscena() }),
+    () => productosDe(laEscena(), publicados),
+  );
 }
 
 // Impresos del catálogo que usa el lote.
@@ -475,7 +479,7 @@ const PAPA_OESTE = "infinity-r-feliz-dia-papa-oeste-fashion-surtido";
  * balde de calabaza de escarcha y, saliendo de él, el ramo de helio de 7 R-12 por pisos: plata arriba, dos negros con
  * telaraña plateada, un cristal con arañas, dos calabazas naranjas y un negro con cara de calabaza amarilla.
  */
-const escena155 = ((): Escena => {
+const escena155 = (): Escena => {
   const px = foto(2.45, 374, 548);
   const armazon = suelta("armazon", "Armazón del arreglo (base y tubo de PVC)", escenografia([cilindro(v(0, 0, 0), 5, 1.5, "#2b2b2b"), cilindro(v(20, 0, -4), 1.2, 62, "#dcdcd6")]), v(0, 0, 0));
   const base = organicoDePiso({
@@ -537,7 +541,7 @@ const escena155 = ((): Escena => {
       { id: "gato", nombre: "Gato negro de escarcha con moño naranja", pieza: escenografia(gato), colocacion: { en: "libre", xCm: 0, yCm: 0, zCm: -2, giroGrados: 0 } },
     ],
   };
-})();
+};
 
 const idea155 = idea("arreglo-organico-con-decoraciones", "Arreglo orgánico Halloween con el 8 plata y ramo de calabazas", escena155,
   "Igual: la base orgánica de ~1 m en dos montículos (R-12 negros, naranjas y durazno, R-9 y tríos de R-5 Reflex Plata), el número 8 metalizado plata de 32\" (~80 cm; en la foto ~72) sobre el montículo derecho con su escarcha naranja y la bruja de papel arriba, el gato negro de escarcha con su moño naranja, el balde de calabaza de escarcha y, saliendo de él, el ramo de 7 R-12 de helio por pisos en sus sitios medidos: plata arriba, dos negros con telaraña, un cristal con arañas (el impreso publicado), dos calabazas naranjas (el producto publicado, con su cara impresa) y un negro con cara de calabaza. Distinto: los negros con telaraña plateada no están publicados: va el «Araña Metalink» negro de la tienda (el más parecido); el negro con cara de calabaza amarilla, el «Happy Halloween Friends» negro (calabaza naranja con letrero); el 8 plata no está en el catálogo de la tienda (va genérico, sin producto); el 8 va derecho (en la foto, apenas inclinado); el gato, la bruja, el balde y la escarcha son escenografía simple; los globos de la base los da el motor para el grosor medido.", [
@@ -561,7 +565,7 @@ const idea155 = idea("arreglo-organico-con-decoraciones", "Arreglo orgánico Hal
  * Colores medidos: azul #01298a → Fashion Azul Rey 041 (el Violeta mide más cerca por el tono de la foto, pero la
  * bandera es azul), rojo → Fashion Rojo 015 (ΔE 10), blanco 005.
  */
-const escena172 = ((): Escena => {
+const escena172 = (): Escena => {
   const filas = Array.from({ length: 9 }, (_, j) => Array.from({ length: 10 }, (_, i) => (j < 4 && i < 4 ? "a" : j % 2 === 0 ? "b" : "c")).join(""));
   const estrellas: Array<[number, number]> = [], rojos: Array<[number, number]> = [], blancos: Array<[number, number]> = [];
   for (let j = 0; j < 8; j++) for (let i = 0; i < 9; i++) {
@@ -583,7 +587,7 @@ const escena172 = ((): Escena => {
     sala: sala(420, 300, 300, { paredes: "#f4f4f2", piso: "#e9e7e3" }),
     nodos: [{ id: "bandera", nombre: "Pared bandera de EE. UU.", pieza: { tipo: "mural", mural, impresos: [{ impresoId: ESTRELLAS_CRISTAL, codigo: "390" }] }, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 0 } }],
   };
-})();
+};
 const idea172 = idea("bandera-usa", "Bandera de EE. UU. en pared de globos", escena172,
   "Igual: la pared de ~2,5 × 2,2 m celda a celda: 10 × 9 R-12 (16 azul rey en el cantón, 42 rojos y 32 blancos en franjas alternas empezando en rojo) y, al frente, en el centro de cada cuadro de cuatro, 72 chicos: 9 con estrellas sobre el cantón y 30 rojos y 33 blancos en las franjas, como en la foto. Distinto: la idea no publica productos (colores medidos); las estrellas de la foto parecen de escarcha plateada sobre azul: va el «Infinity® Estrellas» cristal de la tienda (el más parecido, R-12 a 22 cm, que deja ver el azul de atrás); los chicos rojos y blancos van en R-9 a 21 cm; la retícula del 3D va a 0,9 inflados (la de la foto, casi a uno: la foto es ~10 % más ancha que alta y el 3D casi cuadrado).");
 
@@ -599,7 +603,7 @@ const idea172 = idea("bandera-usa", "Bandera de EE. UU. en pared de globos", esc
  * violeta, amarillo y naranja), de ~40 a 55 cm. Alto total ~1,65 m. Colores medidos (no publica productos): rojo 015,
  * amarillo 020, verde 030, morado Orquídea 056 (ΔE 17), naranja 061.
  */
-const escena174 = ((): Escena => {
+const escena174 = (): Escena => {
   const px = foto(3.1, 361, 548);
   const base = baseCuarteto("base", "Base: cuarteto de R-12 impresos", { ...cuarteto(R("R-12", 19, "015"), ["015", "020", "040", "030"], "espiral"), impresos: [{ impresoId: GRAFFITI_ROJO, codigo: "015" }, { impresoId: FESTIVO, codigo: "020" }, { impresoId: FESTIVO, codigo: "040" }] }, px(0, 505).y, 0);
   const vara = varilla(base.padre, v(0, 1, 0), 112, "#f07a1c");
@@ -619,7 +623,7 @@ const escena174 = ((): Escena => {
     nodos.push(varita(`penacho-${k + 1}`, `T-260 ${color} del penacho ${k + 1}`, vara.padre, { formatoId: "T-260", grosorCm: 4.8, codigo }, desde, px(x, y, z)));
   });
   return { sala: sala(280, 240, 240, { piso: "#efefef", paredes: "#ffffff", techo: "#ffffff" }), nodos };
-})();
+};
 const idea174 = idea("banner-feliz-cumpleanos", "Banner Feliz Cumpleaños: tubo naranja con penacho de tubitos", escena174,
   "Igual: ~1,65 m de alto con las medidas de la foto: la base de cuatro R-12 impresos (~19 cm) con el cuarteto de R-5 morados encima, el tubo de Link-O-Loon 660 naranja de ~74 cm, el cuarteto de R-9 amarillos y el penacho de 16 T-260 contados con su color y su punta medida (3 rojos, 2 rosa, 2 verde lima, 2 verdes, 4 violeta, 2 amarillos y 1 naranja). Distinto: la idea no publica productos (colores medidos); el impreso «Feliz Cumpleaños» del tubo no existe en el catálogo ni el visor pinta impresos en tubitos: va liso; los R-12 de la base llevan remolinos blancos: el rojo va con el «Graffiti Invierno» rojo y el amarillo con el «Happy Birthday Festivo» (los más parecidos de la tienda); el verde va liso y el cuarto, que no se ve, se supone azul (con el mismo Festivo); el rizo rojo del centro del penacho no va; los tubitos del penacho van rectos (en la foto, algo curvos).");
 
@@ -634,7 +638,7 @@ const idea174 = idea("banner-feliz-cumpleanos", "Banner Feliz Cumpleaños: tubo 
  * «U». Las letras plata «I», «Y», «O», «U» (~68 cm: 27") y tres corazones rojos (uno liso arriba a la derecha y dos de
  * filigrana a la izquierda) se sostienen de la varilla.
  */
-const escena177 = ((): Escena => {
+const escena177 = (): Escena => {
   const MESA = 45;
   const px = foto(7.8, 810, 1560, MESA);
   const base = baseCuarteto("base", "Base: cuarteto de R-12 Reflex Dorado Rosa de abajo", cuarteto(R("R-12", 30, "968"), ["968"]), MESA + 16, 45, MESA);
@@ -659,7 +663,7 @@ const escena177 = ((): Escena => {
   const banco: ElementoEscenografia[] = [caja(v(0, MESA - 2, 0), v(100, 4, 55), BLANCO, "satinado"), ...[-46, 46].flatMap((x) => [-24, 24].map((z) => caja(v(x, (MESA - 4) / 2, z), v(4, MESA - 4, 4), MADERA, "madera")))];
   nodos.push({ id: "banco", nombre: "Banco blanco y madera", pieza: escenografia(banco), colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } });
   return { sala: sala(340, 280, 260, { paredes: "#f1eee9", piso: "#d9d3ca" }), nodos };
-})();
+};
 const idea177 = idea("base-i-love-you", "Base I love you: letras plata y corazones rojos sobre cuartetos dorado rosa", escena177,
   "Igual: la base de dos cuartetos de R-12 Reflex Dorado Rosa (el publicado; abajo con un globo al frente y arriba con el hueco), 6 R-5 dorado rosa entre ellos, la flor de 6 burbujas de T-260 dorado rosa con su centro, el aro de T-260 alrededor de la «U» y los lazos de la izquierda; las letras plata «I», «Y», «O», «U» de ~68 cm (27\") en sus alturas medidas, con la «I» atrás y arriba, y los tres corazones rojos de 18\"; todo sobre el banco blanco de ~45 cm. Distinto: las letras plata no están en el catálogo de la tienda (van genéricas, sin producto) y van derechas (en la foto, la «Y» y la «U» van algo inclinadas); los dos corazones de la izquierda son de filigrana (calados) en la foto: va el «Corazón rojo» de 18\" de la tienda, el más parecido, para los tres; los R-5, la flor y el aro son del mismo dorado rosa (en la foto los de la sombra se ven más rojos).", [
   P("GLOBO REDONDO REFLEX DORADO ROSA", "/products/globo-para-fiesta-latex-redondo-reflex-dorado-rosa", "R-12", "968"),
@@ -676,7 +680,7 @@ const idea177 = idea("base-i-love-you", "Base I love you: letras plata y corazon
  * debajo, tres cintas negras con tríos de R-5 plata (~6 cm) colgando (la del centro con dos), y a los pies de las
  * varillas, dos racimitos de R-5 dorado rosa y champaña.
  */
-const escena178 = ((): Escena => {
+const escena178 = (): Escena => {
   const px = foto(4.8, 372, 545);
   const ROSA = "#e2a497", NEGRO = "#151515";
   const CINTAS: ReadonlyArray<[number, number]> = [[290, 370], [355, 470], [430, 360]];
@@ -701,7 +705,7 @@ const escena178 = ((): Escena => {
   ];
   PIES.forEach(([id, x, z, codigo], k) => nodos.push(colgar({ id, nombre: `R-5 ${codigo === "968" ? "Reflex Dorado Rosa" : "Reflex Champaña"} al pie de las varillas ${k + 1}`, pieza: globo(R("R-5", 9, codigo)), padre: armazon.padre, origen: v(x, k % 4 === 3 ? 12 : 8.6, z), normal: unitario(v(x * 0.05, 1, z * 0.05)) }).nodo));
   return { sala: sala(260, 240, 220, { piso: "#efefef", paredes: "#ffffff", techo: "#ffffff" }), nodos };
-})();
+};
 const idea178 = idea("base-organica-feliz-cumpleanos-reflex", "Base orgánica Feliz Cumpleaños reflex con colgantes plata", escena178,
   "Igual: la base cuadrada negra (~28 cm) con sus dos varillas rosadas, la nube orgánica de ~57 cm de R-5 Reflex Champaña con R-5 negros, plata y algún dorado rosa entre 47 y 77 cm, el R-12 Reflex Dorado Rosa impreso «Feliz Cumpleaños» encima (~1,05 m de alto en total), las tres cintas negras con sus 4 tríos de R-5 plata (la del centro con dos) y los 3 tríos plata bajo la nube, y los dos racimitos de R-5 dorado rosa y champaña a los pies, con los colores publicados (champaña, negro y plata). Distinto: el impreso de la foto lleva «Feliz Cumpleaños» manuscrito con destellos: va el «Feliz Cumpleaños Fantasía» reflex de la tienda (el que trae el dorado rosa medido, ΔE 9); el dorado rosa no está publicado; los globos de la nube los da el motor para el tamaño medido; la foto no tiene mesa (va en el piso).", [
   P("GLOBO REDONDO REFLEX CHAMPAÑA", "/products/globo-para-fiesta-latex-redondo-reflex-champana", "R-12", "971"),
@@ -720,7 +724,7 @@ const idea178 = idea("base-organica-feliz-cumpleanos-reflex", "Base orgánica Fe
  * que suben en espiral abierta (~1¼ vueltas, ~14 cm del eje), un cuarteto de R-9 blancos (~14 cm), uno de R-9 rosados
  * (~15 cm, un globo al frente) y el corazón rojo «Te amo» con su marco de perlas doradas (~5 cm).
  */
-const escena179 = ((): Escena => {
+const escena179 = (): Escena => {
   const px = foto(6, 510, 960);
   const base = baseCuarteto("base", "Base: cuarteto de R-12 «Corazones por siempre» rojo", { ...cuarteto(R("R-12", 30, "015"), ["015"]), impresos: [{ impresoId: CORAZONES_ROJO, codigo: "015" }] }, px(0, 830).y, 45);
   const vara = varilla(base.padre, v(0, 1, 0), 112, "#f2a2bd", 1);
@@ -734,7 +738,7 @@ const escena179 = ((): Escena => {
   nodos.push(colgar({ id: "corazon", nombre: "Corazón C-12 Fashion Rojo («Te amo» en la foto)", pieza: globo(R("C-12", 30.5, "015")), padre: vara.padre, origen: v(0, 121, 1), normal: ARRIBA, giroGrados: -90 }).nodo);
   nodos.push(colgar({ id: "perlas", nombre: "Marco de perlas R-5 Reflex Dorado", pieza: marcoCorazon(46, 41, R("R-5", 5.2, "970")), padre: vara.padre, origen: v(0, 100, -2), normal: ARRIBA, giroGrados: -90 }).nodo);
   return { sala: sala(260, 240, 220, { piso: "#efefef", paredes: "#ffffff", techo: "#ffffff" }), nodos };
-})();
+};
 
 /** Un marco de perlas en corazón: solo la hilera del borde de una forma rellena por celdas. */
 function marcoCorazon(anchoCm: number, altoCm: number, g: ParteGlobo): Pieza {
@@ -763,7 +767,7 @@ const idea179 = idea("base-te-amo", "Base Te amo: corazón con perlas y tubitos 
  * rosados (~19 cm) y el «1» metalizado rosado de 32". Alto ~2,6 m. Colores medidos (no publica productos): verde lima
  * 031 (ΔE 8), rosado 009 (ΔE 8), lila 050 (ΔE 6).
  */
-const escena185 = ((): Escena => {
+const escena185 = (): Escena => {
   const px = foto(2.07, 358, 555);
   const base = baseCuarteto("base", "Base: cuarteto de R-12 verde lima con lunares", { ...cuarteto(R("R-12", 27.5, "031"), ["031"]), impresos: [{ impresoId: POLKA_LIMA, codigo: "031" }] }, px(0, 515).y, 45);
   const vara = varilla(base.padre, v(0, 1, 0), 190, "#c8a3d0");
@@ -779,7 +783,7 @@ const escena185 = ((): Escena => {
   nodos.push(nivel("rosados-arriba", "Cuarteto de R-9 Fashion Rosado de arriba", vara.padre, cuarteto(R("R-9", 19.5, "009"), ["009"]), v(0, px(0, 185).y, 0), 45));
   nodos.push(metalEn("uno", "Número 1 metalizado rosado de 32\"", vara.padre, metal({ tipo: "numero", valor: 1 }, 32, "rosado"), v(0, 186, -2)));
   return { sala: sala(300, 260, 300, { piso: "#efefef", paredes: "#ffffff", techo: "#ffffff" }), nodos };
-})();
+};
 const idea185 = idea("bebe-1-ano", "Bebé 1 año: columna lila con el 1 rosado", escena185,
   "Igual: la columna de ~2,6 m con sus medidas: base de cuatro R-12 verde lima con lunares blancos (el «Polka» de la tienda), cuarteto de R-9 rosados, el poste de Link-O-Loon 660 lila con el T-260 rosado en espiral de 2 vueltas y la flor lila de 5 burbujas con centro verde, cuarteto de R-12 lila con sus dos florecitas rosadas, cuarteto de R-9 rosados y el «1» metalizado rosado de 32\". Distinto: la idea no publica productos (colores medidos); el «1» rosado no está en el catálogo de la tienda (va genérico, sin producto); la espiral del 3D es pareja (en la foto se abre más abajo) y gasta dos T-260 por su largo; las florecitas de la foto son más chicas y de pétalos más redondos.");
 
@@ -794,7 +798,7 @@ const idea185 = idea("bebe-1-ano", "Bebé 1 año: columna lila con el 1 rosado",
  * y un cuarteto de R-9 verde agua (~15 cm). El arco: cuartetos de R-5 amarillos (~11,5 cm: ~26 cm de grueso) de pata a
  * pata, ~78 cm de flecha, con 17 R-5 de lunares al frente (azul, rosado, verde agua y lila, en ese orden).
  */
-const escena186 = ((): Escena => {
+const escena186 = (): Escena => {
   const px = foto(2.7, 370, 545);
   const nodos: NodoEscena[] = [];
   for (const [lado, x] of [["izquierda", -85.2], ["derecha", 85.2]] as const) {
@@ -820,7 +824,7 @@ const escena186 = ((): Escena => {
     nodos.push(apoyar(`lunar-${k + 1}`, `R-5 ${NOMBRE[codigo]} de lunares del arco ${k + 1}`, globo(R("R-5", 12.5, codigo)), arco.padre, v(r2(85.2 * Math.cos(t)), r2(ARRANQUE + 78 * Math.sin(t)), -4), AL_FRENTE));
   }
   return { sala: sala(320, 260, 260, { piso: "#efefef", paredes: "#ffffff", techo: "#ffffff" }), nodos };
-})();
+};
 const idea186 = idea("bebe-arco", "Bebé arco: arco amarillo de lunares con patas entorchadas", escena186,
   "Igual: el arco de cuartetos de R-5 amarillos de ~1,7 m entre patas y ~2 m de alto, con sus 17 lunares contados al frente en el orden de la foto (azul, rosado, verde agua y lila), y las dos patas con sus medidas: cuarteto de R-12 amarillos, cuarteto de R-12 verde agua, cuatro T-260 entorchados (verde agua, azul, lila y rosado) y cuarteto de R-9 verde agua arriba. Distinto: la idea no publica productos (colores medidos: amarillo 020, verde agua → Fashion Verde 030 (ΔE 11), azul 040 (ΔE 5), rosado 009, lila → Pastel Mate Lila 650 en los lunares (ΔE 6) y Fashion Lila 050 en los tubitos); los lunares blancos impresos de los globos verde agua, azules, rosados y lilas no están en el catálogo de la tienda en esos colores: van lisos; el arco del 3D es una media elipse pareja (la foto se abre un poco más arriba).");
 
@@ -835,7 +839,7 @@ const idea186 = idea("bebe-arco", "Bebé arco: arco amarillo de lunares con pata
  * corazón metalizado «I love you» apoyado. Arriba, el ramo de helio por pisos: 3 dorado rosa, 2 champaña al frente y un
  * dorado atrás, y el corazón «I love you» de remate; en el amarre, una flor de 6 R-5 dorado rosa con corona dorada.
  */
-const escena198 = ((): Escena => {
+const escena198 = (): Escena => {
   const MESA = 45;
   const px = foto(8.5, 740, 1900, MESA);
   const pedestal = suelta("pedestal", "Pedestal negro con la base orgánica", escenografia([caja(v(0, MESA / 2, 0), v(40, MESA, 40), "#1d1d1f", "satinado")]), v(0, 0, 0));
@@ -871,7 +875,7 @@ const escena198 = ((): Escena => {
   nodos.push(...helio.nodos);
   nodos.push(colgar({ id: "flor-amarre", nombre: "Flor de 6 R-5 dorado rosa con corona dorada (en el amarre)", pieza: flor({ petalos: { ...R("R-5", 9, "968"), cantidad: 6, aperturaGrados: 10, giroGrados: 0 }, corona: { ...R("R-5", 5.2, "970"), cantidad: 8 }, centro: { ...R("R-5", 6, "915"), cantidad: 1 } }), padre: helio.padre, origen: px(705, 1180, 4), normal: AL_FRENTE }).nodo);
   return { sala: sala(300, 260, 300, { paredes: "#c9d3cd", piso: "#8c8c8c" }), nodos };
-})();
+};
 const idea198 = idea("bouquet-amor-dorado-rosa", "Bouquet amor dorado rosa: ramo de helio sobre base con flores de lazos", escena198,
   "Igual: el ramo de helio por pisos en sus sitios medidos (3 R-12 Reflex Dorado Rosa abajo, 2 Reflex Champaña y un Reflex Dorado arriba y el corazón «I love you» de remate) con su flor de 6 R-5 dorado rosa y corona dorada en el amarre; la base orgánica de R-12 dorado rosa, R-5 champaña y R-5 cristal rojo con sus tres flores de 5 lazos de T-260 dorado y dorado rosa alternados con centro rojo, y el corazón «I love you» apoyado; todo sobre el pedestal negro (~2,6 m de alto). Distinto: los corazones de la foto son blancos con rayas rosadas y un corazón dorado con «I love you»: va el «Corazón Rosado I love you» de la tienda (el más parecido); los dorados claros de la foto miden champaña (ΔE 14) y así van; el cristal rojo (ΔE 8) no está publicado; los R-12 de la base miden ~20 cm (inflado chico); el alto del pedestal es supuesto (la foto lo corta).", [
   P("GLOBO REDONDO REFLEX DORADO ROSA", "/products/globo-para-fiesta-latex-redondo-reflex-dorado-rosa", "R-12", "968"),
@@ -891,7 +895,7 @@ const idea198 = idea("bouquet-amor-dorado-rosa", "Bouquet amor dorado rosa: ramo
  * inclinado ~30°). Colores medidos (no publica productos): verde agua → Aguamarina 037, blanco 005, crema → Eucalipto
  * 027 (ΔE 11), azul 040, lila → Pastel Mate Lila 650 (ΔE 2), amarillo → Amarillo Miel 021 (ΔE 8).
  */
-const escena199 = ((): Escena => {
+const escena199 = (): Escena => {
   const px = foto(2.3, 365, 548);
   const base = baseCuarteto("base", "Base: cuarteto de R-12 crema, azul, lila y blanco", cuarteto(R("R-12", 25, "027"), ["027", "040", "650", "005"], "espiral"), px(0, 515).y, 45);
   const vara = varilla(base.padre, v(0, 1, 0), 40, "#e8e8e8");
@@ -924,7 +928,7 @@ const escena199 = ((): Escena => {
   ];
   nodos.push({ id: "tetero", nombre: "Tetero metalizado «It's a boy»", pieza: escenografia(tetero), colocacion: { en: "libre", xCm: 0, yCm: 0, zCm: -4, giroGrados: 0 } });
   return { sala: sala(260, 240, 260, { piso: "#efefef", paredes: "#ffffff", techo: "#ffffff" }), nodos };
-})();
+};
 const idea199 = idea("bouquet-baby-shower", "Bouquet baby shower: tríos de helio con tetero «It's a boy»", escena199,
   "Igual: la base de cuatro R-12 (crema, azul, lila y blanco) con su cadena de burbujas azules y el moño amarillo, y el ramo de helio por pisos con sus medidas: un trío de R-12 verde agua, un trío de R-12 blancos, los tres collares de burbujitas azules, los lazos amarillos y el tetero «It's a boy» de remate inclinado ~30° (~2,3 m de alto). Distinto: la idea no publica productos (colores medidos); los verde agua llevan piecitos y «baby» impresos y los de la base lunares y estrellas: no están en el catálogo de la tienda y van lisos; el tetero metalizado no existe como forma de metalizado: va como paneles de foil (escenografía, sin producto); en la foto las cadenas de la base se enroscan sobre cada globo (aquí un aro alrededor).");
 
@@ -938,7 +942,7 @@ const idea199 = idea("bouquet-baby-shower", "Bouquet baby shower: tríos de heli
  * 7 R-5 Silk Dorado en dos racimitos, cuarteto de R-9 nácar (~17 cm) y el corazón rojo con su marco de perlas doradas
  * (~7 cm).
  */
-const escena200 = ((): Escena => {
+const escena200 = (): Escena => {
   const px = foto(9.7, 627, 1215);
   const base = baseCuarteto("base", "Base: cuarteto de R-12 Fashion Rojo Imperial", cuarteto(R("R-12", 30, "016"), ["016"]), px(0, 1060).y, 45);
   const vara = varilla(base.padre, v(0, 1, 0), 78, "#e8e8e8");
@@ -950,7 +954,7 @@ const escena200 = ((): Escena => {
   nodos.push(colgar({ id: "corazon", nombre: "Corazón C-12 Fashion Rojo", pieza: globo(R("C-12", 30.5, "015")), padre: vara.padre, origen: v(0, 81, 1), normal: ARRIBA, giroGrados: -90 }).nodo);
   nodos.push(colgar({ id: "perlas", nombre: "Marco de perlas R-5 Silk Dorado", pieza: marcoCorazon(46, 41, R("R-5", 6, "870")), padre: vara.padre, origen: v(0, 60, -2), normal: ARRIBA, giroGrados: -90 }).nodo);
   return { sala: sala(260, 240, 220, { piso: "#efefef", paredes: "#ffffff", techo: "#ffffff" }), nodos };
-})();
+};
 const idea200 = idea("bouquet-corazon", "Bouquet corazón: corazón rojo con perlas doradas sobre cuartetos", escena200,
   "Igual: de abajo arriba, el cuarteto de R-12 rojo imperial, el cuarteto de R-12 blush y nácar con sus 7 R-5 Silk Dorado en dos racimitos, el cuarteto de R-9 nácar y el corazón rojo con su marco de perlas doradas, con los productos publicados. Distinto: el corazón de la foto mide ~57 cm de ancho, casi el doble de un C-12 (30 cm, el que publica la idea): el 3D lo deja a su tamaño real, así que el remate queda más chico (alto total ~1 m); las perlas de la foto son burbujas de T-260 Silk Dorado (publicado): van como R-5 Silk Dorado a 6 cm (el taller no arma una cadena de burbujas en contorno de corazón), así que el tubito publicado sale sin cantidad; la «Blush Crema» no está en la tabla oficial: va el Pastel Mate Melón 663 (el más cercano medido, ΔE 6) con el producto publicado; el rojo imperial de la foto mide Merlot (ΔE 10) y va el publicado.", [
   P("GLOBO CORAZON FASHION ROJO", "/products/globo-para-fiesta-latex-corazon-fashion-rojo", "C-12", "015"),
@@ -972,7 +976,7 @@ const idea200 = idea("bouquet-corazon", "Bouquet corazón: corazón rojo con per
  * R-5 (rosados a la izquierda, durazno a la derecha); y abajo cuatro flores de tubito (lazos rosa con centro naranja,
  * burbujas naranjas, rosa y rosado claro), con R-9 blush de relleno y hojitas verdes. Alto ~1,2 m.
  */
-const escena201 = ((): Escena => {
+const escena201 = (): Escena => {
   const px = foto(3.8, 370, 520);
   const BLANCO = "#f6f6f4";
   const maceta = suelta("maceta", "Maceta blanca", escenografia([cilindro(v(0, 0, 0), 13.7, 22.4, BLANCO, "satinado"), cilindro(v(0, 21.6, 0), 12.9, 1, "#4a3a2c")]), v(0, 0, 0));
@@ -998,7 +1002,7 @@ const escena201 = ((): Escena => {
   colgado("flor-rosado", "Flor de 5 burbujas de T-260 rosado", florTubito(burbujas("T-260", 4.5, ["009"], 5, 6.5, 10, 0), R("R-5", 5.5, "009")), px(430, 395, 6), unitario(v(0.3, 0.1, 1)));
   colgado("hojas", "Hojitas en lazo de T-260 verde salvia", florTubito(lazos("T-260", 4.5, ["027"], 2, 12, 6, 15, 0)), px(375, 425, 10));
   return { sala: sala(240, 220, 200, { piso: "#efefef", paredes: "#ffffff", techo: "#ffffff" }), nodos };
-})();
+};
 const idea201 = idea("bouquet-de-flores", "Bouquet de flores de tubito en maceta", escena201,
   "Igual: la maceta blanca con la flor grande de 4 R-9 blush y sus 4 lazos de T-260 naranja, la bola de R-5 frambuesa de remate, las dos ramas verdes con sus R-5 contados (7 rosados a la izquierda y 10 durazno a la derecha), las cuatro flores de tubito de abajo (lazos rosa con centro naranja, 5 burbujas naranjas, 6 rosa y rosado, 5 rosado claro), los 3 R-9 blush de relleno y las hojitas, con los productos publicados (~1,2 m). Distinto: la «Blush Crema» no está en la tabla oficial: va el Pastel Mate Nude 661 (el más cercano medido, ΔE 6) con el producto publicado; la bola de arriba mide Fashion Frambuesa (ΔE 10, no publicado) y la rama derecha Fashion Durazno (ΔE 5, no publicado); los tallos verde salvia miden Eucalipto (no publicado); los tallos van rectos (en la foto, las ramas con hojitas en zigzag).", [
   P("GLOBO TUBITO FASHION ROSA", "/products/globo-latex-tubito-fashion-rosa", "T-260", "011"),
@@ -1020,7 +1024,7 @@ const idea201 = idea("bouquet-de-flores", "Bouquet de flores de tubito en maceta
  * de 8 lazos de T-260 verde lima (~80 cm) con un racimo dorado al centro; y los metalizados plata «1» (34"), «FELIZ» y
  * «DÍA» (16").
  */
-const escena202 = ((): Escena => {
+const escena202 = (): Escena => {
   const px = foto(2.1, 365, 560);
   const armazon = suelta("armazon", "Armazón del ramo (base y tubo de PVC)", escenografia([cilindro(v(0, 0, 0), 20, 1.5, "#2b2b2b"), cilindro(v(-19, 0, -2), 1.5, 205, "#dcdcd6")]), v(0, 0, 0));
   const R12_R5 = ["R-12", "R-5"];
@@ -1049,7 +1053,7 @@ const escena202 = ((): Escena => {
   ];
   for (const [id, valor, palabra, x, y, z] of LETRAS) nodos.push(metalEn(`letra-${id}`, `Letra ${valor} metalizada plata de 16" («${palabra}»)`, armazon.padre, metal({ tipo: "letra", valor }, 16, "plata"), px(x, y, z)));
   return { sala: sala(300, 260, 300, { piso: "#efefef", paredes: "#ffffff", techo: "#ffffff" }), nodos };
-})();
+};
 const idea202 = idea("bouquet-feliz-dia-con-animal-print", "Bouquet Feliz Día con animal print y flor verde lima", escena202,
   "Igual: la base orgánica de ~1,8 m más alta a la izquierda, la columna orgánica hasta ~2,1 m y la guirnalda detrás de «FELIZ», en los colores publicados (latte, arena, Reflex Dorado y Reflex Verde Lima) con el «Infinity® Animal Print» publicado en todos los dorado metal y negros y en uno de cada cinco arena; el R-18 Reflex Dorado; la flor de 8 lazos de T-260 Reflex Verde Lima con su racimo dorado, y los metalizados plata «1» (34\"), «FELIZ» y «DÍA» (16\") en sus sitios. Distinto: las letras y el número plata no están en el catálogo de la tienda (van genéricos, sin producto) y van derechos (en la foto, la «Z» va acostada y la «I» inclinada); la «Í» va sin tilde; el animal print de la tienda es de manchas: no distingue jirafa, cebra, leopardo y tigre; los globos de lo orgánico los da el motor.", [
   P("GLOBO REDONDO INFINITY® ANIMAL PRINT", "/products/globo-para-fiesta-latex-redondo-infinity-animal-print-fashion-y-metal-surtido", "R-12", null),
@@ -1070,7 +1074,7 @@ const idea202 = idea("bouquet-feliz-dia-con-animal-print", "Bouquet Feliz Día c
  * 5 corazones rosados con centro fucsia. El ramo de helio: un R-12 Reflex Dorado Rosa arriba y dos corazones
  * metalizados («Feliz Día Mamá» y «Día de la Madre»).
  */
-const escena204 = ((): Escena => {
+const escena204 = (): Escena => {
   const px = foto(4.3, 490, 890);
   const armazon = suelta("armazon", "Armazón de la base (tubo de PVC)", escenografia([cilindro(v(0, 0, 0), 4, 1.5, "#2b2b2b"), cilindro(v(-6, 0, -4), 1.2, 60, "#dcdcd6")]), v(0, 0, 0));
   const base = organicoDePiso({
@@ -1100,7 +1104,7 @@ const escena204 = ((): Escena => {
   });
   nodos.push(...helio.nodos);
   return { sala: sala(300, 260, 240, { piso: "#efefef", paredes: "#ffffff", techo: "#ffffff" }), nodos };
-})();
+};
 const idea204 = idea("bouquet-flores-feliz-dia-mama", "Bouquet flores Feliz Día Mamá: base fucsia con flores de corazones", escena204,
   "Igual: la base orgánica de R-12 Fashion Fucsia de ~1,3 m × 64 cm, la flor de 4 corazones fucsia con su centro de R-5 dorado rosa al frente, las tres florecitas de 6 lazos de T-260 Reflex Dorado Rosa con centro rosado, la flor de 5 corazones rosados con centro fucsia arriba a la derecha y el ramo de helio: el R-12 Reflex Dorado Rosa arriba y dos corazones metalizados de 18\", con los 4 productos publicados. Distinto: el corazón de la derecha dice «Día de la Madre» en la foto: va el «Feliz Día Mamá» publicado para los dos; los corazones de las flores no se fabrican en fucsia en C-12: la fucsia va en C-6 (15 cm; en la foto ~22 cm) y la rosada en C-12 Fashion Rosado (la foto es cromada); el moño de T-260 que nombra la clasificación no se ve en la foto y no va; el fucsia de la foto es más eléctrico (va el publicado).", [
   P("GLOBO METALIZADO CORAZON FELIZ DIA MAMA", "/products/globo-met-18-c-zon-feliz-dia-mama-x-1", null, null),
@@ -1121,7 +1125,7 @@ const idea204 = idea("bouquet-flores-feliz-dia-mama", "Bouquet flores Feliz Día
  * productos): caribe 038, amarillo miel 021, verde lima 031, azul hortensia 042, naranja 061, rojo 015, negro 080, arena
  * 071.
  */
-const escena208 = ((): Escena => {
+const escena208 = (): Escena => {
   const px = foto(3.2, 370, 555);
   const amarre = px(370, 405, 0);
   const g = (id: string, nombre: string, pieza: Pieza, x: number, y: number, z: number): GloboHelio => ({ id, nombre, pieza, centro: px(x, y, z), direccion: subiendo(amarre, px(x, y, z), 0.35) });
@@ -1143,7 +1147,7 @@ const escena208 = ((): Escena => {
   colgado("ala-arriba", "Ala del sombrero: aro de Link-O-Loon 660 negro (arriba)", aro({ formatoId: "LOL-660", grosorCm: 11, codigo: "080" }, 18), v(0, 16.5, 0), AL_FRENTE);
   colgado("ala-abajo", "Ala del sombrero: aro de Link-O-Loon 660 negro (abajo)", aro({ formatoId: "LOL-660", grosorCm: 14, codigo: "080" }, 22), v(0, 7, 0), AL_FRENTE);
   return { sala: sala(260, 240, 220, { piso: "#efefef", paredes: "#ffffff", techo: "#ffffff" }), nodos };
-})();
+};
 const idea208 = idea("bouquet-sombrero-dia-del-padre", "Bouquet sombrero Día del Padre: ramo de helio sobre sombrero de copa", escena208,
   "Igual: el sombrero de copa negro (R-12 de copa, cinta de T-260 arena y ala de dos aros de Link-O-Loon 660 negro, el de abajo más ancho) y el ramo de 6 R-12 de helio por pisos saliendo de la copa, en sus colores medidos y sitios: azul caribe arriba, amarillo atrás, verde, azul, naranja y rojo (~1,7 m). Distinto: la idea no publica productos; los impresos de la foto (caras con bigote, «WOW» y «Feliz Día Papá» con estrellas) no están en el catálogo de la tienda: el azul va con el «Feliz Día Papá Oeste» (el más parecido; lo trae en Azul Rey, y la foto mide Azul Hortensia) y los demás van lisos; la copa de la foto es más cilíndrica que un R-12.");
 

@@ -1,5 +1,6 @@
 import { IDEAS_SEMPERTEX } from "./ideas-sempertex";
 import { urlDeIdea } from "./ideas-sempertex/tipos";
+import { perezoso } from "./perezoso";
 import type { Vec3 } from "./modulos";
 import {
   SALA_INICIAL, armarEscena, descendientes, idNuevo, puntoALocal, puntoAlMundo,
@@ -187,11 +188,27 @@ export function claveContenido(c: ContenidoItem): string {
 /** Huella corta del contenido (djb2 en base 36): cambia si cambia el contenido. Para guardar la miniatura. */
 export function huellaItem(item: ItemBiblioteca): string {
   let delContenido = HUELLAS.get(item.contenido);
-  if (delContenido === undefined) { delContenido = djb2(claveContenido(item.contenido)); HUELLAS.set(item.contenido, delContenido); }
-  return `${djb2(item.id)}${delContenido}`;
+  if (delContenido === undefined) { delContenido = huellaDeClave(claveContenido(item.contenido)); HUELLAS.set(item.contenido, delContenido); }
+  return huellaConId(item.id, delContenido);
 }
 
 const HUELLAS = new WeakMap<ContenidoItem, string>();
+
+/** La parte de la huella que sale del contenido, a partir de su clave (`claveContenido`). */
+export const huellaDeClave = (clave: string): string => djb2(clave);
+
+/** La huella de un item (lo mismo que `huellaItem`) a partir de su id y de la huella de su contenido. */
+export const huellaConId = (id: string, huellaContenido: string): string => `${djb2(id)}${huellaContenido}`;
+
+/**
+ * Firma corta de una clave, para comparar contenidos sin mandar la clave entera (la de una escena pesa cientos de kB):
+ * djb2 y FNV-1a (dos sumas de 32 bits) más el largo; que dos claves distintas choquen es casi imposible.
+ */
+export function firmaDeClave(clave: string): string {
+  let fnv = 0x811c9dc5;
+  for (let i = 0; i < clave.length; i++) { fnv ^= clave.charCodeAt(i); fnv = Math.imul(fnv, 0x01000193) >>> 0; }
+  return `${djb2(clave)}.${fnv.toString(36)}.${clave.length.toString(36)}`;
+}
 
 function djb2(texto: string): string {
   let h = 5381;
@@ -769,17 +786,24 @@ function nombrarSinRepetir(items: ItemBiblioteca[], escena: Escena, hecha: Escen
  * La biblioteca entera: los items de base y lo que sale de indexar cada escena, sin duplicados. Si algo derivado es igual
  * a un item que ya está (una decoración predefinida usada en una escena), no se repite: ese item suma la escena a
  * `apareceEn`. `indices`: el índice de cada escena ya calculado (id de la escena → derivados), para no rearmarlas.
+ * `clave`: qué es cada item (por defecto `claveContenido`, que arma su contenido); la pestaña Biblioteca pasa las
+ * claves que ya calculó fuera del hilo de la página para no armar nada aquí.
  */
-export function unirBiblioteca(base: readonly ItemBiblioteca[], indices: ReadonlyMap<string, readonly ItemBiblioteca[]>): ItemBiblioteca[] {
+export function unirBiblioteca(
+  base: readonly ItemBiblioteca[],
+  indices: ReadonlyMap<string, readonly ItemBiblioteca[]>,
+  clave: (item: ItemBiblioteca) => string = (item) => claveContenido(item.contenido),
+): ItemBiblioteca[] {
   const salida: ItemBiblioteca[] = [];
   const porClave = new Map<string, ItemBiblioteca>();
   /** Mete un item; si ya hay uno igual, ese suma sus escenas y ocasiones (gana el primero: el de mejor fuente). */
   const meter = (i: ItemBiblioteca) => {
-    const clave = claveContenido(i.contenido);
-    const previo = porClave.get(clave);
+    const k = clave(i);
+    const previo = porClave.get(k);
     if (!previo) {
-      const copia: ItemBiblioteca = { ...i, ocasiones: [...i.ocasiones], ...(i.apareceEn ? { apareceEn: i.apareceEn.map((o) => ({ ...o, nodoIds: [...o.nodoIds] })) } : {}) };
-      porClave.set(clave, copia);
+      // Copia sin evaluar getters: el contenido de lo de fábrica sigue perezoso.
+      const copia = copiarItem(i, { ocasiones: [...i.ocasiones], ...(i.apareceEn ? { apareceEn: i.apareceEn.map((o) => ({ ...o, nodoIds: [...o.nodoIds] })) } : {}) });
+      porClave.set(k, copia);
       salida.push(copia);
       return;
     }
@@ -820,15 +844,49 @@ export function itemDeEscena(o: { id: string; nombre: string; descripcion?: stri
   return { id: o.id, tipo: "escena", nombre: o.nombre, descripcion: o.descripcion ?? "", ocasiones: [...o.ocasiones], ...(o.fuente ? { fuente: { ...o.fuente } } : {}), contenido: { tipo: "escena", escena: structuredClone(o.escena) } };
 }
 
+/** El tipo de item de una pieza sola: estructura (también la escenografía), decoración o utilería. */
+export function tipoDePieza(pieza: Pieza): Exclude<TipoItem, "escena" | "conjunto"> {
+  const clase = clasePieza(pieza);
+  return clase === "utileria" ? "utileria" : clase === "decoracion" ? "decoracion" : "estructura";
+}
+
+/** El contenido de una pieza sola (copiada), con dónde va por defecto si no se dice: la decoración en la pared. */
+function contenidoDePieza(pieza: Pieza, nombre: string, sugerida?: Colocacion): ContenidoItem {
+  const donde: Colocacion = sugerida ?? (tipoDePieza(pieza) === "decoracion" ? { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 120 } : { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 });
+  return { tipo: "pieza", pieza: structuredClone(pieza), nombre, sugerida: donde };
+}
+
 /** Una pieza sola como item: estructura, decoración o utilería según lo que es (la escenografía no es item). */
 export function itemDePieza(o: { id: string; nombre: string; descripcion?: string; ocasiones: string[]; fuente?: FuenteItem; pieza: Pieza; sugerida?: Colocacion }): ItemBiblioteca {
-  const clase = clasePieza(o.pieza);
-  const tipo: TipoItem = clase === "utileria" ? "utileria" : clase === "decoracion" ? "decoracion" : "estructura";
-  const sugerida: Colocacion = o.sugerida ?? (tipo === "decoracion" ? { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 120 } : { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 });
   return {
-    id: o.id, tipo, nombre: o.nombre, descripcion: o.descripcion ?? "", ocasiones: [...o.ocasiones], ...(o.fuente ? { fuente: { ...o.fuente } } : {}),
-    contenido: { tipo: "pieza", pieza: structuredClone(o.pieza), nombre: o.nombre, sugerida },
+    id: o.id, tipo: tipoDePieza(o.pieza), nombre: o.nombre, descripcion: o.descripcion ?? "", ocasiones: [...o.ocasiones], ...(o.fuente ? { fuente: { ...o.fuente } } : {}),
+    contenido: contenidoDePieza(o.pieza, o.nombre, o.sugerida),
   };
+}
+
+/**
+ * Copia un item con algunos campos cambiados SIN evaluar sus getters: los items de fábrica son perezosos (su
+ * contenido se arma al pedirlo) y un `{ ...item }` los armaría todos. Los campos cambiados quedan como datos.
+ */
+export function copiarItem(item: ItemBiblioteca, cambios: Partial<ItemBiblioteca> = {}): ItemBiblioteca {
+  const copia = Object.defineProperties({}, Object.getOwnPropertyDescriptors(item)) as ItemBiblioteca;
+  for (const [campo, valor] of Object.entries(cambios)) Object.defineProperty(copia, campo, { value: valor, writable: true, enumerable: true, configurable: true });
+  return copia;
+}
+
+/**
+ * Un item perezoso (los de fábrica): lo fijo (id, tipo, nombre, ocasiones, fuente) se lee sin armar nada; el
+ * contenido —y la descripción, si es una función— se calcula la primera vez que se pide y queda memorizado. `fijo`
+ * puede llevar getters (se copian sin evaluarlos).
+ */
+export function itemPerezoso(fijo: Omit<ItemBiblioteca, "contenido" | "descripcion">, descripcion: string | (() => string), contenido: () => ContenidoItem): ItemBiblioteca {
+  if (!fuenteValida(fijo.fuente)) throw new Error(`La fuente de «${fijo.nombre}» no es válida: título y solo urls https públicas.`);
+  const item = Object.defineProperties({}, Object.getOwnPropertyDescriptors(fijo)) as ItemBiblioteca;
+  const laDescripcion = typeof descripcion === "string" ? () => descripcion : perezoso(descripcion);
+  return Object.defineProperties(item, {
+    descripcion: { get: laDescripcion, enumerable: true, configurable: true },
+    contenido: { get: perezoso(contenido), enumerable: true, configurable: true },
+  });
 }
 
 /**
@@ -899,51 +957,64 @@ const OCASIONES_CELEBRA: Readonly<Record<string, string[]>> = {
   flor_corazones_c27: ["amor"],
 };
 
+/**
+ * Lo de fábrica, PEREZOSO: nada se arma ni se copia al construir la lista (id, tipo, nombre, ocasiones, fuente y foto
+ * salen de los datos); el contenido de cada item se arma la primera vez que se pide (al abrirlo, al indexarlo o al
+ * resumirlo). Importar la biblioteca no puede tardar (ver `scripts/test/test-carga-3d.ts`).
+ */
 function construirFabrica(): ItemBiblioteca[] {
   const items: ItemBiblioteca[] = [];
   const halloween = new Set(ESCENAS_HALLOWEEN.map((p) => p.id));
   for (const p of ESCENAS_PREDEFINIDAS) {
-    items.push(itemDeEscena({
-      id: `escena:${p.id}`, nombre: p.nombre, descripcion: p.descripcion, escena: p.escena,
-      ocasiones: halloween.has(p.id) ? ["halloween"] : ["general"], fuente: halloween.has(p.id) ? FUENTE_HALLOWEEN : FUENTE_TALLER,
-    }));
+    items.push(itemPerezoso({
+      id: `escena:${p.id}`, tipo: "escena", nombre: p.nombre,
+      ocasiones: halloween.has(p.id) ? ["halloween"] : ["general"], fuente: { ...(halloween.has(p.id) ? FUENTE_HALLOWEEN : FUENTE_TALLER) },
+    }, p.descripcion, () => ({ tipo: "escena", escena: structuredClone(p.escena) })));
   }
   for (const d of CATALOGO_DECORACIONES) {
-    items.push(itemDePieza({
-      id: `celebra:${d.id}`, nombre: d.nombre, descripcion: d.descripcion, pieza: d.pieza, ocasiones: OCASIONES_CELEBRA[d.id] ?? ["general"],
+    const sugerida: Colocacion | undefined = d.pieza.tipo === "pared_malla" || d.pieza.tipo === "pared_trenzas" ? { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 0 } : undefined;
+    items.push(itemPerezoso({
+      id: `celebra:${d.id}`, tipo: tipoDePieza(d.pieza), nombre: d.nombre, ocasiones: [...(OCASIONES_CELEBRA[d.id] ?? ["general"])],
       fuente: { tipo: "celebra", titulo: `${d.fuente} · foto ${d.fotoId}` },
-      ...(d.pieza.tipo === "pared_malla" || d.pieza.tipo === "pared_trenzas" ? { sugerida: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 0 } as Colocacion } : {}),
-    }));
+    }, d.descripcion, () => contenidoDePieza(d.pieza, d.nombre, sugerida)));
   }
   for (const d of DECORACIONES_PREDEFINIDAS) {
     const esDeHalloween = esHalloween(d.decoracion);
-    items.push(itemDePieza({
-      id: `decoracion:${d.id}`, nombre: d.nombre, descripcion: d.descripcion, pieza: { tipo: "decoracion", decoracion: d.decoracion },
+    const pieza: Pieza = { tipo: "decoracion", decoracion: d.decoracion };
+    items.push(itemPerezoso({
+      id: `decoracion:${d.id}`, tipo: tipoDePieza(pieza), nombre: d.nombre,
       ocasiones: esDeHalloween ? ["halloween"] : d.decoracion.tipo === "flor_corazones" ? ["amor"] : ["general"],
-      fuente: esDeHalloween ? FUENTE_HALLOWEEN : { tipo: "propio", titulo: "Decoración predefinida del taller" },
-    }));
+      fuente: esDeHalloween ? { ...FUENTE_HALLOWEEN } : { tipo: "propio", titulo: "Decoración predefinida del taller" },
+    }, d.descripcion, () => contenidoDePieza(pieza, d.nombre)));
   }
   for (const u of UTILERIA_LISTA) {
-    const pieza = u.crear();
-    const tematicas = (pieza.tipo === "escenografia" ? pieza.productos ?? [] : []).map((p) => CATALOGO_UTILERIA.find((c) => c.url === p.url)?.tematica ?? "");
-    const ocasiones = [...new Set(tematicas.flatMap(ocasionesDeTematica))];
+    // La pieza se crea al pedirla (o al leer sus ocasiones, que salen de la temática de sus productos en la tienda).
+    const pieza = perezoso(() => u.crear());
+    const ocasiones = perezoso(() => {
+      const p = pieza();
+      const tematicas = (p.tipo === "escenografia" ? p.productos ?? [] : []).map((x) => CATALOGO_UTILERIA.find((c) => c.url === x.url)?.tematica ?? "");
+      const salida = [...new Set(tematicas.flatMap(ocasionesDeTematica))];
+      return salida.length ? salida : ["general"];
+    });
     const sugerida: Colocacion = u.donde === "colgar" ? { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 180 } : u.donde === "mesa" ? { en: "libre", xCm: 0, yCm: 75, zCm: 0, giroGrados: 0 } : { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 };
-    items.push(itemDePieza({
-      id: `utileria:${u.id}`, nombre: u.nombre, descripcion: u.descripcion, pieza, ocasiones: ocasiones.length ? ocasiones : ["general"],
-      fuente: { tipo: "propio", titulo: "Utilería del taller (producto de la tienda Sempertex)" }, sugerida,
-    }));
+    items.push(itemPerezoso({
+      // Toda la lista es utilería de fiesta (escenografía con producto): `test-biblioteca` comprueba que el tipo casa.
+      id: `utileria:${u.id}`, tipo: "utileria", nombre: u.nombre, get ocasiones() { return ocasiones(); },
+      fuente: { tipo: "propio", titulo: "Utilería del taller (producto de la tienda Sempertex)" },
+    }, u.descripcion, () => contenidoDePieza(pieza(), u.nombre, sugerida)));
   }
   for (const idea of IDEAS_SEMPERTEX) {
     const fuente: FuenteItem = { tipo: "idea-sempertex", titulo: `Sempertex · Ideas de fiesta · ${idea.nombre}`, url: urlDeIdea(idea.slug), fotoUrl: idea.fotoUrl };
-    const descripcion = idea.nota;
-    items.push(idea.contenido.tipo === "escena"
-      ? itemDeEscena({ id: idea.id, nombre: idea.nombre, descripcion, ocasiones: idea.ocasiones, fuente, escena: idea.contenido.escena })
-      : itemDePieza({ id: idea.id, nombre: idea.nombre, descripcion, ocasiones: idea.ocasiones, fuente, pieza: idea.contenido.pieza, ...(idea.contenido.sugerida ? { sugerida: idea.contenido.sugerida } : {}) }));
+    // `clase` dice qué es sin armarla; el contenido (la escena o la pieza de la idea, copiada) se arma al pedirlo.
+    items.push(itemPerezoso({ id: idea.id, tipo: idea.clase, nombre: idea.nombre, ocasiones: [...idea.ocasiones], fuente }, () => idea.nota, () => {
+      const c = idea.contenido;
+      return c.tipo === "escena" ? { tipo: "escena", escena: structuredClone(c.escena) } : contenidoDePieza(c.pieza, idea.nombre, c.sugerida);
+    }));
   }
   return items;
 }
 
-/** Lo de fábrica, sin indexar (no arma nada): escenas, catálogo Celebra, decoraciones predefinidas y utilería. */
+/** Lo de fábrica, sin indexar (no arma nada al importarse): escenas, catálogo Celebra, decoraciones predefinidas, utilería e ideas. */
 export const BIBLIOTECA_FABRICA: readonly ItemBiblioteca[] = construirFabrica();
 
 /** La biblioteca de fábrica con lo indexado de cada escena (arma las escenas: unos segundos). */
