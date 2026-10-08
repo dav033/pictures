@@ -565,7 +565,7 @@ function acentosPlanos(region: Region, centros: readonly Centro[], d: number, a:
   return elegidos.filter((_, i) => i % cada === 0).map((e, i) => {
     // Apoyado contra los globos de alrededor: tan adelante como pide tocarlos (aplastándose un poco).
     const z = profundidadCm + Math.sqrt(Math.max(0, ((e.r + ra) * 0.94) ** 2 - e.dist * e.dist));
-    return globoEn(formato.id, da, pintar({ x: e.x, y: e.y, z }, i), { x: r1(e.x), y: r1(e.y), z: r1(z) });
+    return { ...globoEn(formato.id, da, pintar({ x: e.x, y: e.y, z }, i), { x: r1(e.x), y: r1(e.y), z: r1(z) }), parte: "acento" };
   });
 }
 
@@ -584,7 +584,7 @@ function rellenoMalla(region: Region, t: Extract<TecnicaRelleno, { tipo: "malla"
     const medio = { x: (desde.x + hasta.x) / 2, y: (desde.y + hasta.y) / 2 };
     const l = Math.hypot(hasta.x - desde.x, hasta.y - desde.y) || 1;
     const direccion: Vec3 = { x: (hasta.x - desde.x) / l, y: (hasta.y - desde.y) / l, z: 0 };
-    globos.push(globoEn(formato.id, d, codigo, { x: r1(medio.x), y: r1(medio.y), z: 0 }, direccion));
+    globos.push({ ...globoEn(formato.id, d, codigo, { x: r1(medio.x), y: r1(medio.y), z: 0 }, direccion), parte: esBorde ? "borde" : "malla" });
     centros.push({ x: medio.x, y: medio.y, borde: esBorde, d, formatoId: formato.id });
     for (const q of [desde, hasta]) nudos.set(`${Math.round(q.x)},${Math.round(q.y)}`, q);
   };
@@ -610,7 +610,7 @@ function rellenoMalla(region: Region, t: Extract<TecnicaRelleno, { tipo: "malla"
   // Una pareja de unión (R-5) en cada nudo: una al frente y otra atrás.
   const amarre = Math.max(0.35, t.union.infladoCm * 0.035);
   for (const q of [...nudos.values()].sort((p, s) => p.y - s.y || p.x - s.x)) {
-    for (const z of [1, -1]) globos.push({ formatoId: r5.id, infladoCm: t.union.infladoCm, codigo: t.union.codigo, nudo: { x: r1(q.x), y: r1(q.y), z: z * amarre }, direccion: { x: 0, y: 0, z }, cuelloExtraCm: 0 });
+    for (const z of [1, -1]) globos.push({ formatoId: r5.id, infladoCm: t.union.infladoCm, codigo: t.union.codigo, nudo: { x: r1(q.x), y: r1(q.y), z: z * amarre }, direccion: { x: 0, y: 0, z }, cuelloExtraCm: 0, parte: "union" });
     centros.push({ x: q.x, y: q.y, borde: false, d: t.union.infladoCm, formatoId: r5.id });
   }
   // Lo que el recorte deja al aire (junto al borde, o donde no cupo la malla) se tapa con R-5, del color del borde o
@@ -621,7 +621,7 @@ function rellenoMalla(region: Region, t: Extract<TecnicaRelleno, { tipo: "malla"
   taparConChicos(region, centros, r5.id, r5.infladoDecoracionCm, (x, y) => region.distancia(x, y) < d * 0.9 || !huecoDeMalla(x, y));
   for (const c of centros.slice(antes)) {
     const codigo = borde ?? pintor({ x: c.x, y: c.y, z: 0 }, globos.length);
-    if (coloresDeFormatoTiene(r5.id, codigo)) globos.push(globoEn(r5.id, c.d, codigo, { x: r1(c.x), y: r1(c.y), z: 0 }));
+    if (coloresDeFormatoTiene(r5.id, codigo)) globos.push({ ...globoEn(r5.id, c.d, codigo, { x: r1(c.x), y: r1(c.y), z: 0 }), parte: borde ? "borde" : "relleno" });
   }
   return { globos, centros };
 }
@@ -707,7 +707,7 @@ function armarRellena(o: OpcionesRellena): FormaArmada {
       const codigo = c.borde && o.borde ? o.borde.codigo : pintor({ x: c.x, y: c.y, z: 0 }, i);
       // Un chico de R-5 en un color que no se fabrica en R-5 no se pone (el hueco queda).
       if (!coloresDeFormatoTiene(c.formatoId, codigo)) return;
-      globos.push(globoEn(c.formatoId, c.d, codigo, { x: r1(c.x), y: r1(c.y), z: 0 }));
+      globos.push({ ...globoEn(c.formatoId, c.d, codigo, { x: r1(c.x), y: r1(c.y), z: 0 }), parte: c.borde ? "borde" : "relleno" });
     });
   } else if (o.tecnica.tipo === "malla") {
     for (const codigo of o.colores.codigos) exigirColor(o.tecnica.formatoId, codigo);
@@ -721,7 +721,7 @@ function armarRellena(o: OpcionesRellena): FormaArmada {
     // Lo que el motor deja con el centro fuera del contorno se quita: la silueta manda.
     const dentro = resultado.globos.filter((g) => region.distancia(g.centro.x, g.centro.y) >= 0);
     if (dentro.length < resultado.globos.length) avisos.push(`Se quitaron ${resultado.globos.length - dentro.length} globos de la capa orgánica que se salían del contorno.`);
-    globos = dentro.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.confeti ? { confeti: true } : {}) }));
+    globos = dentro.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.confeti ? { confeti: true } : {}), parte: "relleno" }));
     avisos.push(...resultado.avisos);
     // Lo que aún se ve de frente (las puntas finas, la orilla) se tapa con R-5, como los tríos del motor: vistos de
     // frente no se pisan con nadie, así que en 3D tampoco.
@@ -731,13 +731,15 @@ function armarRellena(o: OpcionesRellena): FormaArmada {
     const mezcla = crearPintor({ ...o.colores, patron: "mezcla" }, cajaPlana(region));
     for (const c of centros.slice(antes)) {
       const codigo = mezcla({ x: c.x, y: c.y, z: 0 }, 0);
-      if (coloresDeFormatoTiene("R-5", codigo)) globos.push(globoEn("R-5", c.d, codigo, { x: r1(c.x), y: r1(c.y), z: 0 }));
+      if (coloresDeFormatoTiene("R-5", codigo)) globos.push({ ...globoEn("R-5", c.d, codigo, { x: r1(c.x), y: r1(c.y), z: 0 }), parte: "relleno" });
     }
   }
   if (o.acento && o.tecnica.tipo !== "organico") {
     for (const codigo of o.acento.codigos) exigirColor(o.acento.formatoId, codigo);
     globos.push(...acentosPlanos(region, centros, d, o.acento, 0));
   }
+  // Con `marcoCm` lo que llena la franja ES el marco (el centro queda hueco).
+  if (o.marcoCm) globos = globos.map((g) => (g.parte === "relleno" ? { ...g, parte: "marco" } : g));
   const frente = globos.filter((g) => g.direccion.z > 0.5 || o.tecnica.tipo === "organico");
   const anclas = frente.filter((_, i) => i % 5 === 2).map((g) => { const c = centroDe(g); return { posicion: { x: r1(c.x), y: r1(c.y), z: r1(c.z + g.infladoCm / 2) }, normal: { x: 0, y: 0, z: 1 } }; });
   return { globos, tubos: [], anclas, materiales: materialesDecoracion(globos, []), avisos };
@@ -801,7 +803,7 @@ export function geodesica(f: number): Geodesica {
  * exterior queda más cerca del pedido con los globos tocándose (separación 0,9 inflados), y los acentos van en los
  * huecos de cada triángulo. `centro`: dónde queda su centro.
  */
-function armarEsfera(o: { diametroCm: number; globo: GloboVolumen; colores: ColoresForma; acento?: AcentoForma | null; achatado?: number }, centro: Vec3): { globos: GloboDeForma[]; anclas: FormaArmada["anclas"]; radioCm: number; altoCm: number } {
+function armarEsfera(o: { diametroCm: number; globo: GloboVolumen; colores: ColoresForma; acento?: AcentoForma | null; achatado?: number }, centro: Vec3, parte = "cuerpo"): { globos: GloboDeForma[]; anclas: FormaArmada["anclas"]; radioCm: number; altoCm: number } {
   const formato = formatoPorId(o.globo.formatoId);
   if (!formato || formato.tipo !== "redondo") throw new Error("La esfera va con globos redondos.");
   for (const codigo of o.colores.codigos) exigirColor(formato.id, codigo);
@@ -830,7 +832,9 @@ function armarEsfera(o: { diametroCm: number; globo: GloboVolumen; colores: Colo
   const local = g.vertices.map((v) => ({ x: v.x * escala, y: v.y * escala * achatado, z: v.z * escala }));
   const normal = (p: Vec3) => normalizar({ x: p.x, y: p.y / (achatado * achatado), z: p.z });
   const orden = local.map((_, i) => i).sort((a, b) => local[a]!.y - local[b]!.y || local[a]!.x - local[b]!.x || local[a]!.z - local[b]!.z);
-  const globos: GloboDeForma[] = orden.map((i, k) => globoEn(formato.id, d, pintor(local[i]!, k), redondo3(sumar(centro, local[i]!)), normal(local[i]!)));
+  const globos: GloboDeForma[] = orden.map((i, k) => ({ ...globoEn(formato.id, d, pintor(local[i]!, k), redondo3(sumar(centro, local[i]!)), normal(local[i]!)), parte }));
+  // Los acentos de la esfera sola son «acento»; los de una parte (la copa), «copa/acento».
+  const parteAcento = parte === "cuerpo" ? "acento" : `${parte}/acento`;
   if (o.acento) {
     const fa = formatoPorId(o.acento.formatoId);
     if (!fa) throw new Error(`Formato desconocido: ${o.acento.formatoId}`);
@@ -855,8 +859,8 @@ function armarEsfera(o: { diametroCm: number; globo: GloboVolumen; colores: Colo
         // El corazón, plano contra la esfera: su cara mira hacia fuera y su punta hacia abajo.
         const arriba = normalizar(restar({ x: 0, y: 1, z: 0 }, por(n, n.y)));
         const eje = largo3(arriba) > 0.1 ? arriba : { x: 1, y: 0, z: 0 };
-        globos.push({ ...globoEn(fa.id, da, codigo, redondo3(sumar(centro, h)), eje), frente: n });
-      } else globos.push(globoEn(fa.id, da, codigo, redondo3(sumar(centro, h)), n));
+        globos.push({ ...globoEn(fa.id, da, codigo, redondo3(sumar(centro, h)), eje), frente: n, parte: parteAcento });
+      } else globos.push({ ...globoEn(fa.id, da, codigo, redondo3(sumar(centro, h)), n), parte: parteAcento });
     });
   }
   const anclas = orden.filter((_, k) => k % 4 === 1).map((i) => { const n = normal(local[i]!); return { posicion: redondo3(sumar(centro, sumar(local[i]!, por(n, r)))), normal: n }; });
@@ -882,8 +886,8 @@ function armarCono(o: OpcionesCono): FormaArmada {
     const relleno = (conR9 ? RELLENO_TUPIDO : RELLENO_TUPIDO.filter((x) => x.formatoId !== "R-9")).map((x) => ({ ...x }));
     for (const formatoId of Object.keys(mezcla[0]!.pesos)) for (const c of paleta) exigirColor(formatoId, c.codigo);
     const resultado = armarOrganico({ semilla: o.semilla ?? 11, tramos: [tramo], inflados: INFLADOS_ORGANICOS, variacionInflado: 0.07, relleno, colores: paleta, suelo: true, huecosFlores: 0, vista: { x: 0, y: 0, z: 1 } });
-    const globos: GloboDeForma[] = resultado.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.confeti ? { confeti: true } : {}) }));
-    if (o.remate) globos.push(globoEn(o.remate.formatoId, o.remate.infladoCm, o.remate.codigo, { x: 0, y: r1(o.altoCm + o.remate.infladoCm * 0.25), z: 0 }, { x: 0, y: 1, z: 0 }));
+    const globos: GloboDeForma[] = resultado.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.confeti ? { confeti: true } : {}), parte: g.tamano === "relleno" ? "cuerpo/relleno" : "cuerpo" }));
+    if (o.remate) globos.push({ ...globoEn(o.remate.formatoId, o.remate.infladoCm, o.remate.codigo, { x: 0, y: r1(o.altoCm + o.remate.infladoCm * 0.25), z: 0 }, { x: 0, y: 1, z: 0 }), parte: "remate" });
     const anclas = resultado.anclas.map((a) => ({ posicion: a.posicion, normal: a.normal }));
     return { globos, tubos: [], anclas, materiales: materialesDecoracion(globos, []), avisos: [...avisos, ...resultado.avisos] };
   }
@@ -909,11 +913,11 @@ function armarCono(o: OpcionesCono): FormaArmada {
   const globos: GloboDeForma[] = [];
   niveles.forEach((nv, k) => nv.centros.forEach((c, i) => {
     const fuera = normalizar({ x: c.x, y: (k % 2 === 0 ? 1 : -1) * 0.12 * Math.hypot(c.x, c.z), z: c.z });
-    globos.push(globoEn(formato.id, r1(nv.d), pintor(c, i, k), redondo3(c), fuera));
+    globos.push({ ...globoEn(formato.id, r1(nv.d), pintor(c, i, k), redondo3(c), fuera), parte: "cuerpo" });
   }));
   if (o.remate) {
     const ultimo = niveles[niveles.length - 1]!;
-    globos.push(globoEn(o.remate.formatoId, o.remate.infladoCm, o.remate.codigo, { x: 0, y: r1(ultimo.y + ultimo.d * 0.55 + o.remate.infladoCm * 0.35), z: 0 }, { x: 0, y: 1, z: 0 }));
+    globos.push({ ...globoEn(o.remate.formatoId, o.remate.infladoCm, o.remate.codigo, { x: 0, y: r1(ultimo.y + ultimo.d * 0.55 + o.remate.infladoCm * 0.35), z: 0 }, { x: 0, y: 1, z: 0 }), parte: "remate" });
   }
   if (o.acento) {
     const fa = formatoPorId(o.acento.formatoId);
@@ -932,7 +936,7 @@ function armarCono(o: OpcionesCono): FormaArmada {
         const g0 = (largo3(restar(c, m)) + largo3(restar(cercanos[0]!, m)) + largo3(restar(cercanos[1]!, m))) / 3;
         const n = normalizar({ x: m.x, y: 0, z: m.z });
         const p = sumar(m, por(n, Math.sqrt(Math.max(0, ((r + ra) * 0.94) ** 2 - g0 * g0))));
-        if (cuenta % cada === 0) globos.push(globoEn(fa.id, da, o.acento.codigos[Math.floor(cuenta / cada) % o.acento.codigos.length]!, redondo3(p), n));
+        if (cuenta % cada === 0) globos.push({ ...globoEn(fa.id, da, o.acento.codigos[Math.floor(cuenta / cada) % o.acento.codigos.length]!, redondo3(p), n), parte: "acento" });
         cuenta++;
       }
     }
@@ -949,12 +953,12 @@ function armarArbol(o: OpcionesArbol): FormaArmada {
   if (!formato) throw new Error(`Formato desconocido: ${o.tronco.formatoId}`);
   exigirColor(formato.id, o.tronco.codigo);
   const columna = armarColumna({ formato, infladoCm: o.tronco.infladoCm, alturaCm: o.tronco.altoCm, patron: "un_color", colores: [o.tronco.codigo] });
-  const tronco: GloboDeForma[] = columna.globos.map((g) => ({ formatoId: formato.id, infladoCm: o.tronco.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
+  const tronco: GloboDeForma[] = columna.globos.map((g) => ({ formatoId: formato.id, infladoCm: o.tronco.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, parte: "tronco" }));
   const achatado = Math.max(0.6, Math.min(1, o.copa.achatado));
   // La copa se apoya en el tronco: su centro, a 0,7 de su medio alto por encima de la punta del tronco.
   const prueba = armarEsfera({ ...o.copa, achatado }, { x: 0, y: 0, z: 0 });
   const centroY = columna.alturaCm + (prueba.altoCm / 2) * 0.7;
-  const copa = armarEsfera({ ...o.copa, achatado }, { x: 0, y: r1(centroY), z: 0 });
+  const copa = armarEsfera({ ...o.copa, achatado }, { x: 0, y: r1(centroY), z: 0 }, "copa");
   const globos = [...tronco, ...copa.globos];
   return { globos, tubos: [], anclas: [...copa.anclas, ...columna.anclas.filter((_, i) => i % 4 === 0).map((a) => ({ posicion: a.posicion, normal: a.normal }))], materiales: materialesDecoracion(globos, []), avisos: [] };
 }
@@ -972,7 +976,7 @@ function armarAerostatico(o: OpcionesAerostatico): FormaArmada {
     const y = dc / 2 + k * dc * 0.8;
     for (let i = 0; i < n; i++) {
       const a = (k * Math.PI) / n + (2 * Math.PI * i) / n;
-      globos.push(globoEn(fc.id, dc, o.canasta.codigo, redondo3({ x: rr * Math.cos(a), y, z: rr * Math.sin(a) }), normalizar({ x: Math.cos(a), y: 0, z: Math.sin(a) })));
+      globos.push({ ...globoEn(fc.id, dc, o.canasta.codigo, redondo3({ x: rr * Math.cos(a), y, z: rr * Math.sin(a) }), normalizar({ x: Math.cos(a), y: 0, z: Math.sin(a) })), parte: "canasta" });
     }
   }
   const arribaCanasta = dc / 2 + (anillos - 1) * dc * 0.8 + dc / 2;

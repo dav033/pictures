@@ -133,7 +133,7 @@ function armarRed(e: Extract<ElementoTecho, { tipo: "red" }>, globos: GloboDecor
         for (let q = 0; q < 4; q++) {
           const a = Math.PI / 4 + (q * Math.PI) / 2;
           const radial = { x: Math.cos(a), y: 0, z: Math.sin(a) };
-          globos.push(globoEn(f.id, d, codigo, v(x + radial.x * rho, -r, z + radial.z * rho), unitario({ x: radial.x, y: -0.6, z: radial.z })));
+          globos.push({ ...globoEn(f.id, d, codigo, v(x + radial.x * rho, -r, z + radial.z * rho), unitario({ x: radial.x, y: -0.6, z: radial.z })), parte: "red" });
         }
         anclas.push({ posicion: v(x, -d * 0.9, z), normal: ABAJO });
       }
@@ -170,7 +170,8 @@ function armarRed(e: Extract<ElementoTecho, { tipo: "red" }>, globos: GloboDecor
   const tumbados = mural.globos.map((g) => ({ ...g, nudo: girarPunto(g.nudo), direccion: girarVector(g.direccion) }));
   let techo = -Infinity;
   for (const g of tumbados) { const c = centroDe(g); techo = Math.max(techo, c.y + g.infladoCm / 2); }
-  for (const g of tumbados) globos.push({ ...g, nudo: v(g.nudo.x + cx, g.nudo.y - techo, g.nudo.z + cz), direccion: g.direccion });
+  // Los eslabones del mural son aquí la malla del techo; las parejas de unión siguen siendo «union».
+  for (const g of tumbados) globos.push({ ...g, nudo: v(g.nudo.x + cx, g.nudo.y - techo, g.nudo.z + cz), direccion: g.direccion, parte: g.parte === "union" ? "union" : "malla" });
   for (const a of mural.anclas) anclas.push({ posicion: v(a.posicion.x + cx, -a.posicion.z - techo, a.posicion.y - medio + cz), normal: ABAJO });
 }
 
@@ -189,7 +190,7 @@ function armarFestones(e: Extract<ElementoTecho, { tipo: "festones" }>, globos: 
     rRemate = dr / 2;
     for (const p of e.puntos) {
       // Colgando de su nudo, pegado al techo.
-      globos.push(colgando(fr.id, dr, e.remate.codigo, v(p.xCm, -0.5, p.zCm)));
+      globos.push({ ...colgando(fr.id, dr, e.remate.codigo, v(p.xCm, -0.5, p.zCm)), parte: "remate" });
       anclas.push({ posicion: v(p.xCm, -dr, p.zCm), normal: ABAJO });
     }
   }
@@ -209,7 +210,7 @@ function armarFestones(e: Extract<ElementoTecho, { tipo: "festones" }>, globos: 
     const mundo = (p: Vec3): Vec3 => ({ x: origen.x + p.x * eU.x + p.z * eW.x, y: origen.y + p.y, z: origen.z + p.x * eU.z + p.z * eW.z });
     const vector = (p: Vec3): Vec3 => ({ x: p.x * eU.x + p.z * eW.x, y: p.y, z: p.x * eU.z + p.z * eW.z });
     const desde = globos.length;
-    for (const g of trenza.globos) globos.push({ formatoId: f.id, infladoCm: d, codigo: g.codigo, nudo: v(mundo(g.nudo).x, mundo(g.nudo).y, mundo(g.nudo).z), direccion: vector(g.direccion), cuelloExtraCm: g.cuelloExtraCm });
+    for (const g of trenza.globos) globos.push({ formatoId: f.id, infladoCm: d, codigo: g.codigo, nudo: v(mundo(g.nudo).x, mundo(g.nudo).y, mundo(g.nudo).z), direccion: vector(g.direccion), cuelloExtraCm: g.cuelloExtraCm, parte: "feston" });
     catenarias.push({ puntos: curva.map((q) => mundo({ x: q.x, y: q.y, z: 0 })), desde, hasta: globos.length });
     trenza.anclas.filter((x) => x.hueco === 0 && x.nivel % 3 === 1).forEach((x) => anclas.push({ posicion: mundo(x.posicion), normal: vector(x.normal) }));
   }
@@ -227,7 +228,7 @@ function armarTira(e: Extract<ElementoTecho, { tipo: "tira" }>, globos: GloboDec
     const d = infladoValido(f, g.infladoCm);
     if (g.cantidad === 1) {
       // Solo: cuelga de su nudo, a lo largo de la tira.
-      globos.push(colgando(f.id, d, g.codigo, v(x, y, z)));
+      globos.push({ ...colgando(f.id, d, g.codigo, v(x, y, z)), parte: "tira" });
       y -= largoGlobo(f.tipo === "link" ? "link" : "redondo", d) * 0.95;
     } else {
       // Pareja, trío o cuarteto: alrededor de la tira, tocándose, con el nudo al centro.
@@ -235,7 +236,7 @@ function armarTira(e: Extract<ElementoTecho, { tipo: "tira" }>, globos: GloboDec
       for (let q = 0; q < g.cantidad; q++) {
         const a = (q * 2 * Math.PI) / g.cantidad;
         const radial = { x: Math.cos(a), y: 0, z: Math.sin(a) };
-        globos.push(globoEn(f.id, d, g.codigo, v(x + radial.x * rho, y - d / 2, z + radial.z * rho), radial));
+        globos.push({ ...globoEn(f.id, d, g.codigo, v(x + radial.x * rho, y - d / 2, z + radial.z * rho), radial), parte: "tira" });
       }
       y -= d * 0.9;
     }
@@ -256,7 +257,7 @@ function armarTira(e: Extract<ElementoTecho, { tipo: "tira" }>, globos: GloboDec
       const fuera = fl.aperturaCm * Math.sin(Math.PI * Math.min(1, t * 0.8 + 0.1)) * (0.6 + 0.4 * t);
       puntos.push(v(x + radial.x * fuera, y - fl.largoCm * t, z + radial.z * fuera));
     }
-    tubos.push({ formatoId: ft.id, grosorCm: grosor, codigo: fl.codigo, puntos, cerrado: false });
+    tubos.push({ formatoId: ft.id, grosorCm: grosor, codigo: fl.codigo, puntos, cerrado: false, parte: "fleco" });
     const fin = puntos[puntos.length - 1]!;
     if (fl.racimo) {
       const fr = formato(fl.racimo.formatoId, "redondo");
@@ -269,7 +270,7 @@ function armarTira(e: Extract<ElementoTecho, { tipo: "tira" }>, globos: GloboDec
         const enAnillo = m < n - 1 || n === 1;
         const b = (m * 2 * Math.PI) / Math.max(1, n - 1) + q;
         const centro = enAnillo && n > 1 ? v(fin.x + Math.cos(b) * dr * 0.55, fin.y - dr * 0.35, fin.z + Math.sin(b) * dr * 0.55) : v(fin.x, fin.y - dr * 0.9, fin.z);
-        globos.push(globoEn(fr.id, dr, codigo, centro, unitario({ x: centro.x - fin.x, y: centro.y - fin.y, z: centro.z - fin.z })));
+        globos.push({ ...globoEn(fr.id, dr, codigo, centro, unitario({ x: centro.x - fin.x, y: centro.y - fin.y, z: centro.z - fin.z })), parte: "fleco/racimo" });
       }
     }
   }
@@ -284,7 +285,7 @@ function armarHelio(e: Extract<ElementoTecho, { tipo: "helio" }>, globos: GloboD
   e.puntos.forEach((p, k) => {
     // Flotando contra el techo: el cuerpo arriba (tocándolo), el nudo abajo y la cinta colgando del nudo.
     const largo = largoGlobo(f.tipo === "link" ? "link" : "redondo", d);
-    const g: GloboDecoracion = { formatoId: f.id, infladoCm: d, codigo: e.codigos[k % e.codigos.length]!, nudo: v(p.xCm, -largo, p.zCm), direccion: { x: 0, y: 1, z: 0 }, cuelloExtraCm: 0 };
+    const g: GloboDecoracion = { formatoId: f.id, infladoCm: d, codigo: e.codigos[k % e.codigos.length]!, nudo: v(p.xCm, -largo, p.zCm), direccion: { x: 0, y: 1, z: 0 }, cuelloExtraCm: 0, parte: "helio" };
     globos.push(g);
     if (e.cintaCm > 0) escenografia.push({ forma: "cilindro", base: v(p.xCm, g.nudo.y - e.cintaCm, p.zCm), radioCm: 0.2, altoCm: r1(e.cintaCm), hex: e.cintaHex, acabado: "satinado" });
   });

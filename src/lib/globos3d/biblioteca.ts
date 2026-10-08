@@ -535,7 +535,8 @@ export type LineaGlobo = {
  * Un globo impreso o un metalizado de la tienda (lo que no es un globo liso): nombre exacto, url de la tienda, cuántos,
  * su sección («impresos» o «metalizados»), qué es (formato y caras, o «foil») y en qué piezas va.
  */
-export type LineaTienda = { seccion: "impresos" | "metalizados"; nombre: string; url: string; cantidad: number; detalle: string; piezas: string[] };
+/** `generico`: no hay uno igual en la tienda (un metalizado genérico): sin url, se compra uno parecido. */
+export type LineaTienda = { seccion: "impresos" | "metalizados"; nombre: string; url: string; cantidad: number; detalle: string; piezas: string[]; generico?: boolean };
 
 /** Lo que va en la foto y no se compra en la tienda como producto: escenografía, papel y follaje. */
 export type LineaEscenografia = { nombre: string; clase: "escenografia" | "papel" | "follaje"; cantidad: number; piezas: string[] };
@@ -597,10 +598,12 @@ export function productosDe(item: ItemBiblioteca, armada?: EscenaArmada, cache?:
     const pieza = cache?.get(JSON.stringify(nodo.pieza)) ?? armarPieza(nodo.pieza);
     const seccion: LineaTienda["seccion"] = nodo.pieza.tipo === "metalizado" ? "metalizados" : "impresos";
     for (const p of pieza.productos ?? []) {
-      const url = urlTienda(p.url);
-      const previo = tienda.get(url);
+      // Los genéricos no tienen url: se juntan por nombre.
+      const url = p.generico ? "" : urlTienda(p.url);
+      const clave = p.generico ? `generico|${p.nombre}` : url;
+      const previo = tienda.get(clave);
       if (previo) { previo.cantidad += p.cantidad * hecho.copias; if (!previo.piezas.includes(nodo.nombre)) previo.piezas.push(nodo.nombre); }
-      else tienda.set(url, { seccion, nombre: p.nombre, url, cantidad: p.cantidad * hecho.copias, detalle: detalleTienda(p.url, seccion), piezas: [nodo.nombre] });
+      else tienda.set(clave, { seccion, nombre: p.nombre, url, cantidad: p.cantidad * hecho.copias, detalle: p.generico ? `${detalleTienda(p.url, seccion)} · genérico: no hay uno igual en la tienda` : detalleTienda(p.url, seccion), piezas: [nodo.nombre], ...(p.generico ? { generico: true } : {}) });
     }
     for (const g of pieza.globos) {
       if (!g.estampado?.impreso) continue;

@@ -251,18 +251,22 @@ for (const item of biblioteca) {
 const enTienda = (url: string) => `https://sempertex.com${url}`;
 const urlImpresos = new Map(IMPRESOS_TIENDA.map((i) => [enTienda(i.url), i]));
 const urlMetalizados = new Map(METALIZADOS_TIENDA.map((m) => [enTienda(m.url), m]));
-let lineasImpresos = 0, lineasMetalizados = 0;
+let lineasImpresos = 0, lineasMetalizados = 0, lineasGenericas = 0;
 for (const item of biblioteca) {
   const productos = productosDe(item);
   const escena = escenaDeItem(item);
   const conImpresos = escena.nodos.some((n) => n.pieza.impresos?.length);
-  const conMetalizados = escena.nodos.some((n) => n.pieza.tipo === "metalizado" && n.pieza.metalizado.producto);
+  // Todo metalizado es un producto: el de la tienda o uno genérico (sin url).
+  const conMetalizados = escena.nodos.some((n) => n.pieza.tipo === "metalizado");
   for (const t of productos.tienda) {
     assert.ok(t.cantidad > 0 && t.piezas.length > 0 && t.detalle, `${item.id}: ${t.nombre}`);
     if (t.seccion === "impresos") {
       const i = urlImpresos.get(t.url);
       assert.ok(i && i.nombre === t.nombre, `${item.id}: impreso ${t.nombre} con su nombre y url exactos del catálogo`);
       lineasImpresos++;
+    } else if (t.generico) {
+      assert.ok(t.url === "" && t.nombre.startsWith("Genérico:"), `${item.id}: metalizado genérico ${t.nombre} sin url y dicho genérico`);
+      lineasGenericas++;
     } else {
       const m = urlMetalizados.get(t.url);
       assert.ok(m && m.nombre === t.nombre, `${item.id}: metalizado ${t.nombre} con su nombre y url exactos del catálogo`);
@@ -277,11 +281,11 @@ for (const item of biblioteca) {
   if (conMetalizados) assert.ok(productos.tienda.some((t) => t.seccion === "metalizados"), `${item.id}: lleva metalizados y salen en productos`);
   if (!conImpresos && !conMetalizados) assert.equal(productos.tienda.length, 0, `${item.id}: sin impresos ni metalizados`);
 }
-assert.ok(lineasImpresos >= 10 && lineasMetalizados >= 5, `líneas de impresos (${lineasImpresos}) y metalizados (${lineasMetalizados})`);
+assert.ok(lineasImpresos >= 10 && lineasMetalizados >= 5 && lineasGenericas >= 5, `líneas de impresos (${lineasImpresos}), metalizados (${lineasMetalizados}) y metalizados genéricos (${lineasGenericas})`);
 // Una idea con los dos: el arco de año nuevo (números metalizados) y la pasión del fútbol (balón impreso).
 const anoNuevo = productosDe(biblioteca.find((i) => i.id === "idea:arco-ano-nuevo")!);
 assert.ok(anoNuevo.tienda.some((t) => t.seccion === "metalizados" && t.url.startsWith(enTienda("/products/globo-metalizado-numero"))), "arco de año nuevo: números metalizados con url");
-console.log(`OK impresos y metalizados en productos: ${lineasImpresos} líneas de impresos y ${lineasMetalizados} de metalizados, con nombre y url exactos`);
+console.log(`OK impresos y metalizados en productos: ${lineasImpresos} líneas de impresos y ${lineasMetalizados} de metalizados, con nombre y url exactos; ${lineasGenericas} de metalizados genéricos`);
 
 const marco = productosDe(biblioteca.find((i) => i.id === "escena:halloween_marco_mesas")!);
 assert.ok(marco.utileria.length >= 5 && marco.escenografia.some((e) => e.nombre.startsWith("Mesa cilíndrica")) && marco.escenografia.some((e) => e.clase === "papel"), "escena con utilería, escenografía y papel por separado");

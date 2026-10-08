@@ -187,21 +187,21 @@ export function armarMural(o: OpcionesMural): MuralArmado {
       case "hueco": break;
       case "grande":
         exigirColor(fG, c.codigo);
-        globos.push(globoEn(fG, dG, c.codigo, c.centro));
+        globos.push({ ...globoEn(fG, dG, c.codigo, c.centro), parte: "mural" });
         break;
       case "chico":
         exigirColor(fP!, c.codigo);
-        globos.push(globoEn(fP!, dP, c.codigo, c.centro));
+        globos.push({ ...globoEn(fP!, dP, c.codigo, c.centro), parte: "mural" });
         break;
       case "eslabon_h":
       case "eslabon_v":
         exigirColor(fG, c.codigo);
-        globos.push(globoEn(fG, dG, c.codigo, c.centro, c.rol === "eslabon_h" ? { x: 1, y: 0, z: 0 } : { x: 0, y: 1, z: 0 }));
+        globos.push({ ...globoEn(fG, dG, c.codigo, c.centro, c.rol === "eslabon_h" ? { x: 1, y: 0, z: 0 } : { x: 0, y: 1, z: 0 }), parte: "mural" });
         break;
       case "union":
         // La pareja de unión: un globito hacia el frente y otro hacia atrás, amarrados en el nudo.
         exigirColor(fP!, c.codigo);
-        for (const z of [1, -1]) globos.push({ formatoId: fP!, infladoCm: dP, codigo: c.codigo, nudo: { x: c.centro.x, y: c.centro.y, z: r1(z * amarre) }, direccion: { x: 0, y: 0, z }, cuelloExtraCm: 0 });
+        for (const z of [1, -1]) globos.push({ formatoId: fP!, infladoCm: dP, codigo: c.codigo, nudo: { x: c.centro.x, y: c.centro.y, z: r1(z * amarre) }, direccion: { x: 0, y: 0, z }, cuelloExtraCm: 0, parte: "union" });
         break;
     }
   }
@@ -215,7 +215,7 @@ export function armarMural(o: OpcionesMural): MuralArmado {
     if (a.puntos.length < 2) throw new Error("Una aplicación del mural necesita al menos dos puntos.");
     const grosor = a.grosorCm ?? f.infladoDecoracionCm;
     tubos.push({
-      formatoId: f.id, grosorCm: grosor, codigo: a.codigo, cerrado: false,
+      formatoId: f.id, grosorCm: grosor, codigo: a.codigo, cerrado: false, parte: "aplicacion",
       puntos: a.puntos.map(([i, j]) => ({ x: r1((i - (columnas - 1) / 2) * pasoCm), y: r1((filas - 1 - j) * pasoCm + abajo), z: r1(dG / 2 + grosor / 2) })),
     });
   }
@@ -225,7 +225,7 @@ export function armarMural(o: OpcionesMural): MuralArmado {
     exigirColor(f.id, e.codigo);
     const d = infladoValido(f, e.infladoCm);
     // Delante del mural, metido a medias entre los globos de debajo (amarrado a ellos).
-    for (const [i, j] of e.puntos) globos.push(globoEn(f.id, d, e.codigo, { x: r1((i - (columnas - 1) / 2) * pasoCm), y: r1((filas - 1 - j) * pasoCm + abajo), z: r1((dG + d) * 0.38) }));
+    for (const [i, j] of e.puntos) globos.push({ ...globoEn(f.id, d, e.codigo, { x: r1((i - (columnas - 1) / 2) * pasoCm), y: r1((filas - 1 - j) * pasoCm + abajo), z: r1((dG + d) * 0.38) }), parte: "acento" });
   }
   // Anclas: una de cada cuatro celdas grandes (o eslabones), al frente.
   const anclas = celdas.filter((c) => c.codigo !== null && c.rol !== "chico" && c.rol !== "union").filter((_, k) => k % 4 === 1)

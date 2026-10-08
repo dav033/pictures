@@ -160,7 +160,7 @@ export function armarParedTrenzas(opciones: OpcionesParedTrenzas): ParedTrenzasA
         globos.push({
           indice: globos.length, formatoId: medidas[tamano].formatoId, infladoCm: medidas[tamano].infladoCm, codigo,
           nudo: { x: nudo.x + x, y: nudo.y + y, z: nudo.z }, direccion: girarY(g.direccion, giro[tamano]), cuelloExtraCm: 0,
-          columna, nivel, tamano,
+          columna, nivel, tamano, parte: tamano === "grande" ? "trenza/grande" : "trenza/chica",
         });
       }
     }

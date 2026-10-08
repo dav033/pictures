@@ -80,6 +80,7 @@ export function armarModulo(modulo: Modulo, formato: FormatoGlobo, diametroCm: n
     nudo: { x: direccion.x * amarre, y: direccion.y * amarre, z: direccion.z * amarre },
     direccion,
     cuelloExtraCm: Math.max(0, distancia - natural - amarre),
+    parte: "modulo",
   }));
   const anclas: Ancla[] = [{ tipo: "centro", posicion: { x: 0, y: diametroCm * 0.35, z: 0 }, normal: { x: 0, y: 1, z: 0 } }];
   if (n >= 3) {

@@ -78,7 +78,7 @@ export function armarPared(opciones: {
         globos.push({
           indice: globos.length, formatoId: formato.id, infladoCm, codigo,
           nudo: { x: medio.x - direccion.x * natural, y: medio.y - direccion.y * natural, z: 0 },
-          direccion, cuelloExtraCm: 0,
+          direccion, cuelloExtraCm: 0, parte: "malla",
         });
         eslabones += 1;
       }
@@ -91,7 +91,7 @@ export function armarPared(opciones: {
     for (let j = 0; j < filas; j++) {
       if (!existe(i, j)) continue;
       for (const z of [1, -1]) {
-        globos.push({ indice: globos.length, formatoId: union.formato.id, infladoCm: union.infladoCm, codigo: union.codigo, nudo: { x: i * a, y: j * a, z: z * amarre }, direccion: { x: 0, y: 0, z }, cuelloExtraCm: 0 });
+        globos.push({ indice: globos.length, formatoId: union.formato.id, infladoCm: union.infladoCm, codigo: union.codigo, nudo: { x: i * a, y: j * a, z: z * amarre }, direccion: { x: 0, y: 0, z }, cuelloExtraCm: 0, parte: "union" });
       }
       uniones += 1;
     }
