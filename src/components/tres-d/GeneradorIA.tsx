@@ -1,39 +1,54 @@
 "use client";
 
-import { useState } from "react";
-import { Sparkles, LoaderCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Sparkles, LoaderCircle, Trash2 } from "lucide-react";
 import { AMBIENTES_RENDER, AMBIENTE_POR_DEFECTO, type AmbienteRender } from "@/lib/globos3d/render-ia";
 import type { AspectoCaptura } from "./escena-globos";
+import { MAXIMO, borrarImagen, guardarImagen, leerImagenes, type ImagenGuardada } from "./imagenes-guardadas";
 
-type Generada = { id: number; imagen: string; ambiente: AmbienteRender };
+const fecha = new Intl.DateTimeFormat("es", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 /**
  * «Generar imagen con IA»: captura lo que se ve en el visor y lo convierte en una foto realista con FLUX (la
- * decoración se conserva: forma, cantidades y colores; FLUX pone el látex real y el salón). Guarda las últimas 4
- * en la página; nada se guarda en el servidor.
+ * decoración se conserva: forma, cantidades y colores; FLUX pone el látex real y el salón). Cada foto queda guardada
+ * en este navegador (`imagenes-guardadas.ts`, las últimas 40) y sigue ahí al volver; nada se guarda en el servidor.
  */
-export function GeneradorIA({ capturar, descripcion }: { capturar: () => { datos: string; aspecto: AspectoCaptura } | null; descripcion: string }) {
+export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: () => { datos: string; aspecto: AspectoCaptura } | null; descripcion: string; escena?: string }) {
   const [ambiente, setAmbiente] = useState<AmbienteRender>(AMBIENTE_POR_DEFECTO);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [generadas, setGeneradas] = useState<Generada[]>([]);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [generadas, setGeneradas] = useState<ImagenGuardada[]>([]);
+
+  useEffect(() => {
+    let vivo = true;
+    void leerImagenes().then((guardadas) => { if (vivo) setGeneradas((actuales) => [...actuales, ...guardadas.filter((g) => !actuales.some((a) => a.id === g.id))]); });
+    return () => { vivo = false; };
+  }, []);
 
   async function generar() {
     const captura = capturar();
     if (!captura) { setError("El visor 3D todavía no está listo."); return; }
     setCargando(true);
     setError(null);
+    setAviso(null);
     try {
       const respuesta = await fetch("/api/render-3d-imagen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ render: captura.datos, descripcion, ambiente, aspecto: captura.aspecto }) });
       const datos = (await respuesta.json().catch(() => ({}))) as { imagen?: string; error?: string };
       if (!respuesta.ok || !datos.imagen) throw new Error(datos.error ?? "No pude generar la foto.");
-      const imagen = datos.imagen;
-      setGeneradas((actuales) => [{ id: Date.now(), imagen, ambiente }, ...actuales].slice(0, 4));
+      const nueva: ImagenGuardada = { id: Date.now(), imagen: datos.imagen, ambiente, escena, creada: new Date().toISOString() };
+      setGeneradas((actuales) => [nueva, ...actuales].slice(0, MAXIMO));
+      if (!(await guardarImagen(nueva))) setAviso("Este navegador no dejó guardar la foto: descárgala para no perderla.");
     } catch (causa) {
       setError(causa instanceof Error ? causa.message : "No pude generar la foto.");
     } finally {
       setCargando(false);
     }
+  }
+
+  function borrar(id: number) {
+    setGeneradas((actuales) => actuales.filter((g) => g.id !== id));
+    void borrarImagen(id);
   }
 
   return (
@@ -53,19 +68,24 @@ export function GeneradorIA({ capturar, descripcion }: { capturar: () => { datos
         <p className="text-xs text-texto-suave">Usa lo que se ve en el visor (gíralo antes para elegir el ángulo).</p>
       </div>
       {error && <p role="alert" className="text-sm text-texto">{error}</p>}
+      {aviso && <p role="status" className="text-sm text-texto-suave">{aviso}</p>}
       {generadas.length > 0 && (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {generadas.map((g) => (
-            <figure key={g.id} className="overflow-hidden rounded-xl ring-1 ring-borde">
-              {/* eslint-disable-next-line @next/next/no-img-element -- imagen generada en data URL, no pasa por next/image */}
-              <img src={g.imagen} alt="Foto generada con IA a partir del modelo 3D" className="block w-full" />
-              <figcaption className="flex items-center justify-between px-2 py-1 text-xs text-texto-suave">
-                {AMBIENTES_RENDER.find((a) => a.id === g.ambiente)?.nombre} · imagen de referencia creada con IA
-                <a href={g.imagen} download={`globos-3d-${g.id}.jpg`} className="text-acento underline-offset-2 hover:underline">Descargar</a>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
+        <>
+          <p className="text-xs text-texto-suave">Tus fotos ({generadas.length}) se guardan en este navegador: siguen aquí al volver. Las últimas {MAXIMO}.</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {generadas.map((g) => (
+              <figure key={g.id} className="overflow-hidden rounded-xl ring-1 ring-borde">
+                {/* eslint-disable-next-line @next/next/no-img-element -- imagen generada en data URL, no pasa por next/image */}
+                <img src={g.imagen} alt={`Foto generada con IA${g.escena ? ` de «${g.escena}»` : ""} a partir del modelo 3D`} className="block w-full" />
+                <figcaption className="flex items-center gap-2 px-2 py-1 text-xs text-texto-suave">
+                  <span className="min-w-0 flex-1 truncate">{g.escena ? `${g.escena} · ` : ""}{AMBIENTES_RENDER.find((a) => a.id === g.ambiente)?.nombre} · {fecha.format(new Date(g.creada))}</span>
+                  <a href={g.imagen} download={`globos-3d-${g.id}.jpg`} className="text-acento underline-offset-2 hover:underline">Descargar</a>
+                  <button type="button" onClick={() => borrar(g.id)} aria-label="Borrar esta foto" className="grid size-8 place-items-center rounded-lg hover:bg-superficie-suave"><Trash2 className="size-3.5" aria-hidden /></button>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </>
       )}
     </section>
   );
