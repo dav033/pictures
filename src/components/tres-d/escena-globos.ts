@@ -741,7 +741,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       grupoDe(c.nodo).add(cilindro);
     }
     // Escenografía (paneles, mesas, tapete): con su pieza, para elegirla y arrastrarla como a las demás.
-    for (const solido of extras.solidos ?? []) grupoDe(solido.nodo).add(solidoEscenografia(solido));
+    // Lo oculto (amarres internos) sostiene y da su caja, pero no se dibuja.
+    for (const solido of extras.solidos ?? []) if (!solido.oculto) grupoDe(solido.nodo).add(solidoEscenografia(solido));
     // Anclas: puntos donde se cuelga una decoración hija (una flor, un moño).
     const materialAncla = new THREE.MeshStandardMaterial({ color: 0x7c3aed, emissive: 0x7c3aed, emissiveIntensity: 0.6 });
     for (const ancla of anclas) {

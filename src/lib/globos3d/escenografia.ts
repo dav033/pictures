@@ -77,14 +77,14 @@ function enMarco(s: SolidoEscenografia, en: MarcoElemento): SolidoEscenografia {
 }
 
 export function armarEscenografia(elementos: readonly ElementoEscenografia[]): SolidoEscenografia[] {
-  return elementos.filter((e) => !e.oculto).map((e): SolidoEscenografia => {
+  return elementos.map((e): SolidoEscenografia => {
     const solido = armarElemento(e);
     return e.en ? enMarco(solido, e.en) : solido;
   });
 }
 
 function armarElemento(e: ElementoEscenografia): SolidoEscenografia {
-  const aspecto: Aspecto = { hex: e.hex, acabado: e.acabado, ...(e.motivo ? { motivo: { ...e.motivo } } : {}) };
+  const aspecto: Aspecto = { hex: e.hex, acabado: e.acabado, ...(e.motivo ? { motivo: { ...e.motivo } } : {}), ...(e.oculto ? { oculto: true } : {}) };
   if (e.forma === "caja") {
     const a = ((e.giroGrados ?? 0) * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
     return { ...aspecto, forma: "caja", tamano: { ...e.tamano }, origen: { ...e.centro }, ejeX: { x: c, y: 0, z: -s }, ejeY: Y, ejeZ: { x: s, y: 0, z: c } };
