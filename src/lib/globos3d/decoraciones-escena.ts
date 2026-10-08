@@ -17,7 +17,7 @@ import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 // Grupos
 // ----------------------------------------------------------------------------------------------------------
 
-export type GrupoDecoracion = "flores" | "flores_tubito" | "monos" | "estrellas" | "corazones" | "racimos" | "halloween";
+export type GrupoDecoracion = "flores" | "flores_tubito" | "monos" | "estrellas" | "corazones" | "racimos" | "halloween" | "figuras";
 
 export const GRUPOS_DECORACION: ReadonlyArray<{ id: GrupoDecoracion; nombre: string }> = [
   { id: "flores", nombre: "Flores" },
@@ -27,6 +27,7 @@ export const GRUPOS_DECORACION: ReadonlyArray<{ id: GrupoDecoracion; nombre: str
   { id: "corazones", nombre: "Corazones" },
   { id: "racimos", nombre: "Racimos" },
   { id: "halloween", nombre: "Halloween" },
+  { id: "figuras", nombre: "Figuras" },
 ];
 
 type Predefinida = (typeof DECORACIONES_PREDEFINIDAS)[number];
@@ -34,6 +35,7 @@ type Predefinida = (typeof DECORACIONES_PREDEFINIDAS)[number];
 /** A qué grupo va una predefinida: por su tipo, salvo los racimos (que se arman como una flor en copa). */
 export function grupoDe(p: Pick<Predefinida, "id" | "decoracion">): GrupoDecoracion {
   if (esHalloween(p.decoracion)) return "halloween";
+  if (p.decoracion.tipo === "figura") return "figuras";
   if (p.id.startsWith("racimo")) return "racimos";
   switch (p.decoracion.tipo) {
     case "flor": return "flores";

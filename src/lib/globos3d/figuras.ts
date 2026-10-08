@@ -2,6 +2,8 @@ import { formatoPorId } from "./formatos";
 import type { Vec3 } from "./modulos";
 import { FLORES_PREDEFINIDAS, anillo, armarFlor, materialesPorFormato, type GloboDecoracion, type ParteGlobo, type PropiedadesFlor, type TuboDecoracion } from "./decoraciones";
 import { HALLOWEEN_PREDEFINIDAS, armarHalloween, halloweenEnIngles, type DecoracionHalloween } from "./halloween";
+import { armarFiguraTubito, figuraEnIngles, type DecoracionFigura } from "./figuras-tubito";
+import { FIGURAS_PREDEFINIDAS } from "./ideas-figuras";
 
 /**
  * Todas las decoraciones aplicadas por propiedades: la flor de globos redondos (`decoraciones.ts`) y las de
@@ -77,7 +79,9 @@ export type Decoracion =
   | { tipo: "estrella"; propiedades: PropiedadesEstrella }
   | { tipo: "flor_corazones"; propiedades: PropiedadesFlorCorazones }
   /** Las de Halloween (ojos, araña, calabazas, mano, ramo de helio, árbol trenzado, fantasma y telaraña): `halloween.ts`. */
-  | DecoracionHalloween;
+  | DecoracionHalloween
+  /** Figuras de globos y tubitos (muñecos, animales, objetos) por partes: `figuras-tubito.ts`. */
+  | DecoracionFigura;
 
 export type TipoDecoracion = Decoracion["tipo"];
 
@@ -300,6 +304,10 @@ export function armarDecoracion(decoracion: Decoracion): DecoracionArmada {
     case "mono": return armarMono(decoracion.propiedades);
     case "estrella": return armarEstrella(decoracion.propiedades);
     case "flor_corazones": return armarFlorCorazones(decoracion.propiedades);
+    case "figura": {
+      const figura = armarFiguraTubito(decoracion.propiedades);
+      return armada(figura.globos, figura.tubos, figura.radioCm, figura.fondoCm);
+    }
     default: {
       const figura = armarHalloween(decoracion);
       return armada(figura.globos, figura.tubos, figura.radioCm, figura.fondoCm);
@@ -313,6 +321,7 @@ export function decoracionEnIngles(decoracion: Decoracion): string {
     case "mono": return "a twisted-balloon bow";
     case "estrella": return "a twisted-balloon star";
     case "flor": case "flor_tubito": case "flor_corazones": return "a small balloon flower";
+    case "figura": return figuraEnIngles(decoracion.propiedades);
     default: return halloweenEnIngles(decoracion);
   }
 }
@@ -370,6 +379,8 @@ export const DECORACIONES_PREDEFINIDAS: ReadonlyArray<{ id: string; nombre: stri
   },
   // Halloween (las 5 fotos del dueño): ojos, arañas, calabazas, mano, ramo de helio, árbol, fantasma y telaraña.
   ...HALLOWEEN_PREDEFINIDAS,
+  // Figuras de globos y tubitos: las plantillas del generador y las ideas de sempertex.com digitalizadas.
+  ...FIGURAS_PREDEFINIDAS,
 ];
 
 export function decoracionPredefinida(id: string): Decoracion {
