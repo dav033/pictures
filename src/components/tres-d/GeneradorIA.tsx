@@ -5,8 +5,12 @@ import { Sparkles, LoaderCircle, Trash2 } from "lucide-react";
 import { AMBIENTES_RENDER, AMBIENTE_POR_DEFECTO, type AmbienteRender } from "@/lib/globos3d/render-ia";
 import type { AspectoCaptura } from "./escena-globos";
 import { MAXIMO, borrarImagen, guardarImagen, leerImagenes, type ImagenGuardada } from "./imagenes-guardadas";
+import { VisorFoto } from "./VisorFoto";
 
 const fecha = new Intl.DateTimeFormat("es", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+/** «Mi escena · Igual al visor · 8 oct, 12:40». */
+const tituloDe = (g: ImagenGuardada) => `${g.escena ? `${g.escena} · ` : ""}${AMBIENTES_RENDER.find((a) => a.id === g.ambiente)?.nombre ?? ""} · ${fecha.format(new Date(g.creada))}`;
 
 /**
  * «Generar imagen con IA»: captura lo que se ve en el visor y lo convierte en una foto realista con FLUX (la
@@ -19,6 +23,8 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [generadas, setGeneradas] = useState<ImagenGuardada[]>([]);
+  /** La foto abierta en grande (índice en `generadas`). */
+  const [abierta, setAbierta] = useState<number | null>(null);
 
   useEffect(() => {
     let vivo = true;
@@ -47,6 +53,7 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
   }
 
   function borrar(id: number) {
+    setAbierta(null);
     setGeneradas((actuales) => actuales.filter((g) => g.id !== id));
     void borrarImagen(id);
   }
@@ -73,12 +80,14 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
         <>
           <p className="text-xs text-texto-suave">Tus fotos ({generadas.length}) se guardan en este navegador: siguen aquí al volver. Las últimas {MAXIMO}.</p>
           <div className="grid gap-2 sm:grid-cols-2">
-            {generadas.map((g) => (
+            {generadas.map((g, i) => (
               <figure key={g.id} className="overflow-hidden rounded-xl ring-1 ring-borde">
-                {/* eslint-disable-next-line @next/next/no-img-element -- imagen generada en data URL, no pasa por next/image */}
-                <img src={g.imagen} alt={`Foto generada con IA${g.escena ? ` de «${g.escena}»` : ""} a partir del modelo 3D`} className="block w-full" />
+                <button type="button" onClick={() => setAbierta(i)} aria-label={`Ver en grande: ${tituloDe(g)}`} className="block w-full cursor-zoom-in">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- imagen generada en data URL, no pasa por next/image */}
+                  <img src={g.imagen} alt={`Foto generada con IA${g.escena ? ` de «${g.escena}»` : ""} a partir del modelo 3D`} className="block w-full" />
+                </button>
                 <figcaption className="flex items-center gap-2 px-2 py-1 text-xs text-texto-suave">
-                  <span className="min-w-0 flex-1 truncate">{g.escena ? `${g.escena} · ` : ""}{AMBIENTES_RENDER.find((a) => a.id === g.ambiente)?.nombre} · {fecha.format(new Date(g.creada))}</span>
+                  <span className="min-w-0 flex-1 truncate">{tituloDe(g)}</span>
                   <a href={g.imagen} download={`globos-3d-${g.id}.jpg`} className="text-acento underline-offset-2 hover:underline">Descargar</a>
                   <button type="button" onClick={() => borrar(g.id)} aria-label="Borrar esta foto" className="grid size-8 place-items-center rounded-lg hover:bg-superficie-suave"><Trash2 className="size-3.5" aria-hidden /></button>
                 </figcaption>
@@ -86,6 +95,9 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
             ))}
           </div>
         </>
+      )}
+      {abierta !== null && generadas[abierta] && (
+        <VisorFoto fotos={generadas.map((g) => ({ id: g.id, imagen: g.imagen, titulo: tituloDe(g) }))} indice={abierta} onCambiar={setAbierta} onCerrar={() => setAbierta(null)} />
       )}
     </section>
   );
