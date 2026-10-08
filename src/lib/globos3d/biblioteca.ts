@@ -1,6 +1,7 @@
 import { IDEAS_SEMPERTEX } from "./ideas-sempertex";
 import { urlDeIdea } from "./ideas-sempertex/tipos";
 import { perezoso } from "./perezoso";
+import { IDS_OCASION, canonicalizarOcasiones, idCelebracionCanonico, nombreOcasion } from "../taller/taxonomia-celebraciones";
 import type { Vec3 } from "./modulos";
 import {
   SALA_INICIAL, armarEscena, descendientes, idNuevo, puntoALocal, puntoAlMundo,
@@ -62,10 +63,12 @@ export const TIPOS_ITEM: ReadonlyArray<{ id: TipoItem; nombre: string; plural: s
   { id: "utileria", nombre: "Utilería", plural: "Utilería" },
 ];
 
-/** Etiquetas de ocasión (un item puede tener varias). Las ideas nuevas usan estas mismas palabras. */
-export const OCASIONES: readonly string[] = [
-  "halloween", "amor", "navidad", "cumpleaños", "infantil", "baby shower", "boda", "grado", "quince años", "bautizo y comunión", "día de la madre", "año nuevo", "general",
-];
+/**
+ * Ocasiones de un item (puede tener varias): ids de la taxonomía de celebraciones (`taller/taxonomia-celebraciones.ts`,
+ * la única fuente de verdad) más el comodín `general`. Lo guardado con ids viejos (`cumpleaños`, `grado`…) se migra
+ * con `canonicalizarOcasiones`.
+ */
+export const OCASIONES: readonly string[] = IDS_OCASION;
 
 /**
  * De dónde viene: una idea de sempertex.com, una revista Celebra, una referencia web (foto de un decorador o fabricante
@@ -666,14 +669,15 @@ const plano = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerC
  */
 export function filtrarBiblioteca(items: readonly ItemBiblioteca[], resumenes: ReadonlyMap<string, ResumenItem>, f: FiltroBiblioteca): ItemBiblioteca[] {
   const palabras = plano(f.texto ?? "").split(/\s+/).filter(Boolean);
+  const ocasionBuscada = f.ocasion ? idCelebracionCanonico(f.ocasion) ?? f.ocasion : null;
   return items.filter((item) => {
     if (f.tipo && item.tipo !== f.tipo) return false;
-    if (f.ocasion && !item.ocasiones.includes(f.ocasion)) return false;
+    if (ocasionBuscada && !item.ocasiones.includes(ocasionBuscada)) return false;
     const r = resumenes.get(item.id);
     if (f.color && !r?.colores.includes(f.color)) return false;
     if (f.producto && !r?.productos.includes(f.producto)) return false;
     if (!palabras.length) return true;
-    const texto = plano([item.nombre, item.descripcion, item.fuente?.titulo ?? "", ...item.ocasiones, ...(r?.productos ?? []).map((p) => {
+    const texto = plano([item.nombre, item.descripcion, item.fuente?.titulo ?? "", ...item.ocasiones.map(nombreOcasion), ...(r?.productos ?? []).map((p) => {
       const [formatoId, codigo] = p.split("|");
       return `${formatoId} ${referenciaPorCodigo(codigo ?? "")?.nombreCompleto ?? ""} ${codigo}`;
     })].join(" "));
@@ -939,13 +943,14 @@ export function validarItem(dato: unknown): ItemBiblioteca | null {
   const x = dato as Partial<ItemBiblioteca>;
   if (typeof x.id !== "string" || !x.id || typeof x.nombre !== "string" || !TIPOS_ITEM.some((t) => t.id === x.tipo)) return null;
   if (!Array.isArray(x.ocasiones) || !x.ocasiones.every((o) => typeof o === "string")) return null;
+  const ocasiones = canonicalizarOcasiones(x.ocasiones);
   const c = x.contenido;
   if (!c || typeof c !== "object") return null;
   const casa = (c.tipo === "escena" && x.tipo === "escena" && Array.isArray(c.escena?.nodos) && typeof c.escena?.sala === "object")
     || (c.tipo === "conjunto" && x.tipo === "conjunto" && typeof c.conjunto?.raiz?.pieza === "object" && Array.isArray(c.conjunto?.hijos))
     || (c.tipo === "pieza" && (x.tipo === "estructura" || x.tipo === "decoracion" || x.tipo === "utileria") && typeof c.pieza === "object" && typeof c.sugerida === "object");
   if (!casa || !fuenteValida(x.fuente)) return null;
-  return { id: x.id, tipo: x.tipo!, nombre: x.nombre, descripcion: typeof x.descripcion === "string" ? x.descripcion : "", ocasiones: [...x.ocasiones], ...(x.fuente ? { fuente: x.fuente } : {}), contenido: c, propio: true };
+  return { id: x.id, tipo: x.tipo!, nombre: x.nombre, descripcion: typeof x.descripcion === "string" ? x.descripcion : "", ocasiones, ...(x.fuente ? { fuente: x.fuente } : {}), contenido: c, propio: true };
 }
 
 // ----------------------------------------------------------------------------------------------------------
@@ -957,11 +962,11 @@ function ocasionesDeTematica(tematica: string): string[] {
   const t = plano(tematica);
   const salida: string[] = [];
   if (t.includes("halloween")) salida.push("halloween");
-  if (t.includes("cumple")) salida.push("cumpleaños");
+  if (t.includes("cumple")) salida.push("cumpleanos");
   if (t.includes("navidad")) salida.push("navidad");
-  if (t.includes("amor")) salida.push("amor");
-  if (t.includes("infantil")) salida.push("infantil");
-  if (t.includes("ano nuevo")) salida.push("año nuevo");
+  if (t.includes("amor")) salida.push("san-valentin");
+  if (t.includes("infantil")) salida.push("fiesta-infantil");
+  if (t.includes("ano nuevo")) salida.push("ano-nuevo");
   return salida.length ? salida : ["general"];
 }
 
@@ -970,8 +975,8 @@ const FUENTE_HALLOWEEN: FuenteItem = { tipo: "propio", titulo: "Foto de Hallowee
 
 /** Ocasiones de las decoraciones del catálogo Celebra (por lo que dice la revista de cada una). */
 const OCASIONES_CELEBRA: Readonly<Record<string, string[]>> = {
-  columna_bloques_pirata: ["infantil", "cumpleaños"],
-  flor_corazones_c27: ["amor"],
+  columna_bloques_pirata: ["fiesta-infantil", "cumpleanos"],
+  flor_corazones_c27: ["san-valentin"],
 };
 
 /**
@@ -1000,7 +1005,7 @@ function construirFabrica(): ItemBiblioteca[] {
     const pieza: Pieza = { tipo: "decoracion", decoracion: d.decoracion };
     items.push(itemPerezoso({
       id: `decoracion:${d.id}`, tipo: tipoDePieza(pieza), nombre: d.nombre,
-      ocasiones: esDeHalloween ? ["halloween"] : d.decoracion.tipo === "flor_corazones" ? ["amor"] : ["general"],
+      ocasiones: esDeHalloween ? ["halloween"] : d.decoracion.tipo === "flor_corazones" ? ["san-valentin"] : ["general"],
       fuente: esDeHalloween ? { ...FUENTE_HALLOWEEN } : { tipo: "propio", titulo: "Decoración predefinida del taller" },
     }, d.descripcion, () => contenidoDePieza(pieza, d.nombre)));
   }
@@ -1023,7 +1028,8 @@ function construirFabrica(): ItemBiblioteca[] {
   for (const idea of IDEAS_SEMPERTEX) {
     const fuente: FuenteItem = { tipo: "idea-sempertex", titulo: `Sempertex · Ideas de fiesta · ${idea.nombre}`, url: urlDeIdea(idea.slug), fotoUrl: idea.fotoUrl };
     // `clase` dice qué es sin armarla; el contenido (la escena o la pieza de la idea, copiada) se arma al pedirlo.
-    items.push(itemPerezoso({ id: idea.id, tipo: idea.clase, nombre: idea.nombre, ocasiones: [...idea.ocasiones], fuente }, () => idea.nota, () => {
+    const ocasiones = perezoso(() => canonicalizarOcasiones(idea.ocasiones));
+    items.push(itemPerezoso({ id: idea.id, tipo: idea.clase, nombre: idea.nombre, get ocasiones() { return ocasiones(); }, fuente }, () => idea.nota, () => {
       const c = idea.contenido;
       return c.tipo === "escena" ? { tipo: "escena", escena: structuredClone(c.escena) } : contenidoDePieza(c.pieza, idea.nombre, c.sugerida);
     }));
@@ -1033,13 +1039,13 @@ function construirFabrica(): ItemBiblioteca[] {
     const fuente: FuenteItem = { tipo: "referencia-web", titulo: tituloFuenteBase(b), url: b.fuente.urlPagina, ...(b.fuente.urlImagen ? { fotoUrl: b.fuente.urlImagen } : {}) };
     const conjunto = conjuntoDeBase(b);
     items.push(conjunto
-      ? { id: b.id, tipo: "conjunto", nombre: b.nombre, descripcion: descripcionBase(b), ocasiones: [...b.ocasiones], fuente, contenido: { tipo: "conjunto", conjunto } }
-      : itemDePieza({ id: b.id, nombre: b.nombre, descripcion: descripcionBase(b), ocasiones: b.ocasiones, fuente, pieza: piezaDeBase(b) }));
+      ? { id: b.id, tipo: "conjunto", nombre: b.nombre, descripcion: descripcionBase(b), ocasiones: canonicalizarOcasiones(b.ocasiones), fuente, contenido: { tipo: "conjunto", conjunto } }
+      : itemDePieza({ id: b.id, nombre: b.nombre, descripcion: descripcionBase(b), ocasiones: canonicalizarOcasiones(b.ocasiones), fuente, pieza: piezaDeBase(b) }));
   }
   // Fotos de referencia del dueño (Pinterest), leídas con el formato de la IA y armadas por el compilador.
   for (const r of REFERENCIAS_DUENO) {
     const fuente: FuenteItem = { tipo: "referencia-dueno", titulo: `Referencias del dueño · foto ${r.numero} del lote 1` };
-    items.push(itemPerezoso({ id: r.id, tipo: "escena", nombre: r.nombre, ocasiones: [...r.ocasiones], fuente }, `${r.nota} Fidelidad a la foto: ${r.fidelidad}/5.`,
+    items.push(itemPerezoso({ id: r.id, tipo: "escena", nombre: r.nombre, ocasiones: canonicalizarOcasiones(r.ocasiones), fuente }, `${r.nota} Fidelidad a la foto: ${r.fidelidad}/5.`,
       () => ({ tipo: "escena", escena: compilarLectura(r.lectura).escena })));
   }
   return items;

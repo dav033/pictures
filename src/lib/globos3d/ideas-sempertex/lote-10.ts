@@ -530,7 +530,7 @@ const escena927 = (): Escena => {
 };
 
 const idea927 = idea({
-  numero: 927, slug: "techo", nombre: "Túnel de dos arcos rojo y blanco", ocasiones: ["amor"],
+  numero: 927, slug: "techo", nombre: "Túnel de dos arcos rojo y blanco", ocasiones: ["san-valentin"],
   fotoUrl: `${CDN}bb517c06260bea15cd6b1d3f40143b23.jpg`, escena: escena927,
   nota: "Igual: los dos arcos de la foto, uno detrás del otro (las cuatro patas que se ven): patas de 5 cuartetos R-12 en espiral doble rojo y blanco (~1 m) y arriba un arco de cuartetos rojo de 2,4 m entre patas con la clave a ~1,9 m, con globitos R-5 blancos asomando en lo alto. La idea no publica productos; medidos: rojo #fe0000 → Fashion Rojo 015 (la foto está saturada), blanco 005 (en la sombra se ve lila). Distinto: los niveles de arriba no se cuentan uno a uno (el motor los da para el ancho y el alto medidos); los globitos blancos de lo alto se reparten parejos (en la foto van algo desordenados); la distancia entre los dos arcos (~1 m) se estima por la perspectiva.",
 });
@@ -761,7 +761,7 @@ const escena286 = (): Escena => {
 };
 
 const idea286 = idea({
-  numero: 286, slug: "centro-de-mesa-feliz-dia-mami", nombre: "Centro de mesa Feliz Día Mami", ocasiones: ["cumpleaños"],
+  numero: 286, slug: "centro-de-mesa-feliz-dia-mami", nombre: "Centro de mesa Feliz Día Mami", ocasiones: ["cumpleanos"],
   fotoUrl: `${CDN}1b852244b45b7c6322f9a4042a5ba08a_17bba687-cf14-4118-a0f2-65f4daa482a6.jpg`, escena: escena286,
   nota: "Igual: el florero de dos cuartetos R-9 rojos con el respaldo de 6 R-9 rojos y 8 R-5 blancos, las 7 flores de 5 burbujas de T-260 que se ven (2 naranja, 2 amarillo miel, 2 fucsia y 1 azul) con botón R-5 verde, sus tallos y dos pares de hojas verde trébol, y el corazón rojo de helio con su cinta; ~82 cm de alto sobre la mesa. La idea no publica productos; medidos: rojo #ee0331 → Fashion Rojo 015, naranja → Fashion Naranja 061 (en sombra mide más rojo), amarillo #ffcb01 → Amarillo Miel 021, fucsia #fd4b8a → Fashion Fucsia 012, azul #00a9d0 → Fashion Azul 040, verde #00aa1c → Verde Trébol 029, blanco 005. Distinto: el corazón lleva impreso «Feliz Día Mami» y la tienda no tiene ese impreso en C-12: va liso (Fashion Rojo); el florero de la foto es más abombado abajo; la foto no tiene mesa (se pone una redonda blanca de 75 cm).",
 });
@@ -848,7 +848,7 @@ function mesaConMantel286(o: { anchoCm: number; fondoCm: number; altoCm: number;
 }
 
 const idea836 = idea({
-  numero: 836, slug: "peppa-pig", nombre: "Peppa Pig: guirnalda rosada y mesa de postres", ocasiones: ["cumpleaños"],
+  numero: 836, slug: "peppa-pig", nombre: "Peppa Pig: guirnalda rosada y mesa de postres", ocasiones: ["cumpleanos"],
   fotoUrl: `${CDN}41b7d0a735f7030e742e3d88eba54640.jpg`, escena: escena836,
   nota: "Igual: la guirnalda de cuartetos R-9 rosado y fucsia en lo alto de la cortina, de pared a pared (~4,5 m, bajando en las esquinas), con los 4 pompones y 4 faroles de papel que cuelgan de ella; la cortina blanca entre paredes rosadas, los cuadros y el letrero «Victoria», la mesa de postres de 2,2 m con falda de tul lila y la torta, la repisa con frascos sobre el mueble de lunares lilas, el perchero de tutús, las mesitas blancas, la mesa de centro con cerditos y el perchero con el peluche de Peppa; piso claro. La idea no publica productos; medidos con el blanco equilibrado: fucsia #ff6895 → Fashion Fucsia 012 y rosado #ffadce → Fashion Rosado 009. Distinto: la foto es pequeña y no deja contar los cuartetos uno a uno (el largo y el globo dan los niveles); las dos tonalidades van en espiral doble (en la foto se mezclan); los pompones y faroles, el peluche, la carriola, el maniquí con tutú y la silla son volúmenes sencillos o no se ponen (carriola, maniquí y silla).",
 });
@@ -962,7 +962,7 @@ const escena260 = (): Escena => {
 };
 
 const idea260 = idea({
-  numero: 260, slug: "celebra-con-mama", nombre: "Celebra con mamá: malla plata y violeta con mesa", ocasiones: ["día de la madre"],
+  numero: 260, slug: "celebra-con-mama", nombre: "Celebra con mamá: malla plata y violeta con mesa", ocasiones: ["dia-de-la-madre"],
   fotoUrl: `${CDN}DSC_7952_538713e4-5c8c-4253-a8a7-03bb77fd5d82.jpg`, escena: escena260,
   publicados: [P_FUCSIA, pub("GLOBO LATEX REDONDO REFLEX PLATA", "/products/globo-para-fiesta-latex-redondo-reflex-plata", "R-12", "981"), pub("GLOBO REDONDO INFINITY® CORAZONES MODERNOS", "/products/globo-para-fiesta-latex-redondo-infinity-corazones-modernos-fashion-surtido", "C-12", null), pub("GLOBO REDONDO REFLEX VIOLETA", "/products/globo-para-fiesta-latex-redondo-reflex-violeta", "R-12", "951")],
   nota: "Igual: la malla de la foto contada globo a globo (32 eslabones R-12 Reflex Plata en diagonal, 11 R-12 Reflex Violeta en los nudos, 10 R-5 Fashion Fucsia en los huecos y 12 parejas de R-5 fucsia que la amarran al marco de T-260 Reflex Violeta), de 2,25 × 1,28 m y de 1,12 a 2,4 m del piso; la cortina de flecos violeta y rosada; los dos racimos de piso de Reflex Violeta y Fucsia con sus ramos de helio (6 y 5 globos, con los impresos Corazones Modernos en fucsia y violeta y Feliz Día Mami rosado, y un corazón metalizado plata); la mesa con mantel «Feliz Día», platos de pie, vasos de corazones con servilleta y platitos violeta. Distinto: la idea mapea Corazones Modernos como C-12, pero en la foto y en la tienda es redondo R-12; el plata «Feliz Día», el corazón rosado «Me encantas» y el rosado translúcido llevan impresos que el catálogo no trae: van lisos (Reflex Plata, C-12 y R-12 Fashion Rosado); el corazón plata va como metalizado (el C-12 no se fabrica en plata); los globos de los racimos los pone el motor orgánico; el mantel lleva el texto pero no los corazones; los platos y vasos son los «Corazones Pop» de la tienda que más se parecen.",

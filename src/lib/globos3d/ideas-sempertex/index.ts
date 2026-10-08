@@ -34,17 +34,20 @@ import { LOTE_29 } from "./lote-29";
 import { LOTE_30 } from "./lote-30";
 import { IDEAS_IMPRESOS } from "../ideas-impresos";
 
-/** Etiqueta de la tienda → ocasión de la biblioteca (las mismas palabras de `OCASIONES`). */
-const OCASION_DE_ETIQUETA: Readonly<Record<string, string>> = {
-  halloween: "halloween", amor: "amor", "amor-y-amistad": "amor", "san-valentin": "amor", "decoracion-con-amor": "amor",
-  navidad: "navidad", cumpleanos: "cumpleaños", "baby-shower": "baby shower", "aniversario-y-boda": "boda", boda: "boda",
-  grados: "grado", grado: "grado", "quince-anos": "quince años", "15-anos": "quince años", bautizo: "bautizo y comunión",
-  "primera-comunion": "bautizo y comunión", comunion: "bautizo y comunión", madres: "día de la madre", "dia-de-la-madre": "día de la madre",
-  "ano-nuevo": "año nuevo", "feliz-ano": "año nuevo", ninas: "infantil", ninos: "infantil", infantil: "infantil", personajes: "infantil",
+/** Etiqueta de la tienda → ocasiones de la biblioteca (ids de la taxonomía de celebraciones: `taller/taxonomia-celebraciones.ts`). */
+const OCASION_DE_ETIQUETA: Readonly<Record<string, readonly string[]>> = {
+  halloween: ["halloween"], amor: ["san-valentin"], "amor-y-amistad": ["san-valentin"], "san-valentin": ["san-valentin"], "decoracion-con-amor": ["san-valentin"],
+  navidad: ["navidad"], cumpleanos: ["cumpleanos"], "1-ano": ["primer-cumpleanos"], "baby-shower": ["baby-shower"],
+  "aniversario-y-boda": ["boda", "aniversario"], boda: ["boda"], "despedida-de-soltera": ["despedida-soltera"],
+  grados: ["graduacion"], grado: ["graduacion"], "quince-anos": ["quince-anos"], "15-anos": ["quince-anos"],
+  bautizo: ["bautizo"], "primera-comunion": ["primera-comunion"], comunion: ["primera-comunion"],
+  madres: ["dia-de-la-madre"], "dia-de-la-madre": ["dia-de-la-madre"], padres: ["dia-del-padre"], padre: ["dia-del-padre"],
+  "ano-nuevo": ["ano-nuevo"], "feliz-ano": ["ano-nuevo"], pascua: ["pascua"], verano: ["fiesta-verano"], mundial: ["mundial-futbol"],
+  ninas: ["fiesta-infantil"], ninos: ["fiesta-infantil"], infantil: ["fiesta-infantil"], personajes: ["fiesta-infantil"],
 };
 
 export function ocasionesDeEtiquetas(etiquetas: readonly string[]): string[] {
-  const salida = [...new Set(etiquetas.map((e) => OCASION_DE_ETIQUETA[e]).filter((o): o is string => Boolean(o)))];
+  const salida = [...new Set(etiquetas.flatMap((e) => OCASION_DE_ETIQUETA[e] ?? []))];
   return salida.length ? salida : ["general"];
 }
 

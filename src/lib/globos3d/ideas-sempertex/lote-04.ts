@@ -520,7 +520,7 @@ const escena65 = perezoso((): Escena => ({
   ],
 }));
 const idea65 = idea({
-  id: "idea:arco-azul", numero: 65, slug: "arco-azul", nombre: "Arco azul en espiral", ocasiones: ["cumpleaños"],
+  id: "idea:arco-azul", numero: 65, slug: "arco-azul", nombre: "Arco azul en espiral", ocasiones: ["cumpleanos"],
   fotoUrl: FOTO("e63ea12705edd8a6ca1a0529d7426575_0f8c89ff-a852-4e3f-965b-fb0ac1a684aa.jpg"),
   clase: "escena",
   get nota() { return `Igual: arco redondo de ${NIVELES_65()} cuartetos R-12 (eje 2,09 × 1,6 m) en espiral de tres azules —claro, medio y oscuro, el oscuro de banda doble como en la foto— con un R-5 en cada hueco del color de su banda y una placa blanca bajo cada pie. La idea no publica productos; medidos (la foto está muy saturada): claro #00b4fa → Fashion Azul 040, medio #015cd9 → Fashion Azul Rey 041, oscuro #002f74 → Fashion Azul Naval 044. Distinto: los oscuros de la foto brillan como cristal o metal; van en Fashion (el más cercano de los azules); la espiral de la foto gira más despacio que la del taller (1/8 por nivel).`; },
@@ -618,7 +618,7 @@ const escena95 = perezoso((): Escena => ({
   ],
 }));
 const idea95 = idea({
-  id: "idea:arco-flores-rosadas-y-amarillas", numero: 95, slug: "arco-flores-rosadas-y-amarillas", nombre: "Arco verde con flores rosadas y amarillas", ocasiones: ["cumpleaños"],
+  id: "idea:arco-flores-rosadas-y-amarillas", numero: 95, slug: "arco-flores-rosadas-y-amarillas", nombre: "Arco verde con flores rosadas y amarillas", ocasiones: ["cumpleanos"],
   fotoUrl: FOTO("f6b5f26ff1a97abf6c314c89fd4ec754_26c8e7ca-6eef-43fb-97a3-f5bb2b15350c.jpg"),
   clase: "escena",
   get nota() { return `Igual: arco redondo de ${NIVELES_95()} cuartetos R-12 verdes (eje 3,18 × 2,31 m) con las 15 flores de 5 R-5 que se ven, una cada dos cuartetos como dice el texto, alternando rosada con centro amarillo (8) y amarilla con centro rosado (7) desde el pie izquierdo. La idea no publica productos; medidos (foto muy saturada): verde #00c800 → Fashion Verde Trébol 029, pétalos rosados #fa4b86 → Fashion Fucsia 012, centro #ed9c02 → Fashion Mostaza 023, pétalos amarillos translúcidos sobre el verde → Fashion Amarillo 020. Distinto: el LOL-12 donde se anuda cada flor no se modela (el arco es todo de R-12) y los centros rosados van en el mismo Fucsia de los pétalos (miden algo más claro).`; },
@@ -646,7 +646,7 @@ const escena97 = perezoso((): Escena => ({
   ],
 }));
 const idea97 = idea({
-  id: "idea:arco-girasoles", numero: 97, slug: "arco-girasoles", nombre: "Arco girasoles", ocasiones: ["cumpleaños"],
+  id: "idea:arco-girasoles", numero: 97, slug: "arco-girasoles", nombre: "Arco girasoles", ocasiones: ["cumpleanos"],
   fotoUrl: FOTO("6dce277157f9e7de735961972eea30e4_fcf9828e-08a3-4d5e-8449-1154ac7a69dd.jpg"),
   clase: "escena",
   get nota() { return `Igual: arco de ${NIVELES_97()} cuartetos R-12 Metal Verde 530 (el que dice el texto; la foto mide #019a00, más cerca de Verde Trébol 029, pero el texto manda) de patas rectas y arriba redondo (eje 3,04 × 2,94 m) con los 4 girasoles de la foto: 8 lazos de T-260 y un R-9 de centro. La idea no publica productos; medidos: lazos #bf9900 → el más cercano es Fashion Mostaza 023, que la tienda no vende en T-260: va el siguiente, Fashion Amarillo Miel 021 (sobre el verde la medida se corre); centro #5e1201 → Fashion Merlot 018. Distinto: el LOL-12 donde se anuda cada girasol no se modela; los lazos de la foto se ven más finos (T-260 poco inflado: va a 3 cm).`; },
@@ -663,7 +663,7 @@ const ARCO_119: Pieza = {
 const escena119 = perezoso((): Escena => ({ sala: structuredClone(SALA_ARCO), nodos: [{ id: "arco", nombre: "Arco orgánico dorado, rojo, fucsia y rosado", pieza: ARCO_119, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] }));
 const PUBLICADOS_119 = [REFLEX_DORADO, P("GLOBO REDONDO FASHION ROJO", "/products/globo-para-fiesta-latex-redondo-fashion-rojo", "R-12", "015"), FUCSIA, ROSADO];
 const idea119 = idea({
-  id: "idea:arco-organico-amor", numero: 119, slug: "arco-organico-amor", nombre: "Arco orgánico amor", ocasiones: ["amor"],
+  id: "idea:arco-organico-amor", numero: 119, slug: "arco-organico-amor", nombre: "Arco orgánico amor", ocasiones: ["san-valentin"],
   fotoUrl: "https://sempertex.com/cdn/shop/files/logosptx_1200x1200_1.png",
   clase: "escena",
   nota: "Igual: los 4 productos que publica la idea (Reflex Dorado 970, Fashion Rojo 015, Fashion Fucsia 012 y Fashion Rosado 009) en un arco orgánico de dos patas (2,2 × 2,3 m, grandes abajo y finos arriba, relleno de R-9 y tríos de R-5), en partes iguales. Distinto: la idea no tiene foto (su imagen es el logo de Sempertex): la forma, el tamaño y la mezcla son los de un arco orgánico estándar del taller, no copiados de nada, y por eso los productos quedan sin cantidad.",
@@ -689,7 +689,7 @@ const ARCO_125 = perezoso((): Pieza => ({
 }));
 const escena125 = perezoso((): Escena => ({ sala: structuredClone(SALA_ARCO), nodos: [{ id: "arco", nombre: "Arco orgánico rectangular perlado pastel", pieza: ARCO_125(), colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] }));
 const idea125 = idea({
-  id: "idea:arco-organico-satin-pastel", numero: 125, slug: "arco-organico-satin-pastel", nombre: "Arco orgánico satín pastel", ocasiones: ["cumpleaños"],
+  id: "idea:arco-organico-satin-pastel", numero: 125, slug: "arco-organico-satin-pastel", nombre: "Arco orgánico satín pastel", ocasiones: ["cumpleanos"],
   fotoUrl: FOTO("2785371d9264f570b6bc59b6951b896d.jpg"),
   clase: "escena",
   nota: "Igual: arco orgánico de esquinas redondeadas (eje 2,14 × 2,2 m) más grueso en la base, en siete perlados pastel en partes iguales, de R-12 a R-5 como en la foto. La idea no publica productos; medidos y del acabado perlado (Satín si lo hay en ese color): lila #c7a6e2 → Satín Lila 450, azul #b6daf0 → Satín Azul 440 (Pastel Mate Azul queda a 1 ΔE, pero es mate), rosado #e8b6cc → Satín Rosado 409, verde #7e9e91 → Silk Verde Menta 826, amarillo #b4a882 → Silk Dorado 870, perla #dddbe3 → Silk Blanco Nácar 806, durazno #e6c7b3 → Pastel Mate Melón 663 (no hay durazno perlado). Distinto: las cantidades son las del motor orgánico para ese tamaño, no contadas globo a globo; en la foto hay algunos perlados translúcidos chicos (tipo cristal) que no se distinguen.",

@@ -1112,7 +1112,7 @@ export const LOTE_05: readonly IdeaDigitalizada[] = [
     nota: "Igual: base de un cuarteto R-12 con un globo al frente, dos cuartetos R-9 sin girar entre sí (como en la foto) con R-5 en los huecos, la copa de 4 R-12 abiertos alrededor del cuello del R-24 negro, un collar de 26 perlas R-5 Satín Perla (medido #dae7e0) y 4 moños de T-260 Fashion Rosado (medido #ffc5db) con centro R-5 en la base (se ven 2; los de atrás, por simetría). El fucsia (medido #fe4d9d) queda más cerca del Neón Fucsia 212; va el Fashion más cercano, Rosa 011. Distinto: el globo de la copa mide ~65 cm (el R-24 llega a 61) y la copa impresa no está en el catálogo: va un R-24 Fashion Negro liso; las perlas de la foto cuelgan algo más hacia el frente; los R-5 de relleno de atrás son supuestos.",
   }),
   idea({
-    numero: 271, slug: "centro-de-mesa-corazon-1", nombre: "Centro de mesa corazón", ocasiones: ["amor", "día de la madre"],
+    numero: 271, slug: "centro-de-mesa-corazon-1", nombre: "Centro de mesa corazón", ocasiones: ["san-valentin", "dia-de-la-madre"],
     fotoUrl: `${CDN}HEARTH_CENTER_PIECE_-_CENTRO_DE_MESA_CORAZON.jpg`,
     escena: escena271,
     publicados: [
@@ -1124,7 +1124,7 @@ export const LOTE_05: readonly IdeaDigitalizada[] = [
     nota: "Igual: base de racimo de R-5 Rojo Imperial (publicado) con plata y blanco, vara roja forrada con un T-260 Rojo Imperial sin inflar (publicado), racimo de arriba de 12 Reflex Plata (publicado) con un trío de R-5 rojo imperial en cada hueco (60), el R-12 rojo impreso «Feliz Día Mami» del catálogo arriba a la derecha y el Corazón 12 «LOVE» publicado abajo a la izquierda. Distinto: la ficha da R-12 para el plata y el rojo; por tamaño, los plata del racimo son de ~17 cm (R-9) y los rojos R-5; el impreso de la foto dice «Feliz día Mamá» con flores y corazones y el del catálogo con flores es «Feliz Día Mami»; la base de la foto es más irregular (aquí va por anillos) y el corazón y el impreso se ven más grandes porque van delante.",
   }),
   idea({
-    numero: 273, slug: "centro-de-mesa-corazon-reflex", nombre: "Centro de mesa corazón reflex", ocasiones: ["amor", "día de la madre"],
+    numero: 273, slug: "centro-de-mesa-corazon-reflex", nombre: "Centro de mesa corazón reflex", ocasiones: ["san-valentin", "dia-de-la-madre"],
     fotoUrl: `${CDN}Centro-de-Mesa-Corazon-Reflex_6a6411e0-59c1-4fc5-8e24-7dc9c1ec1196.jpg`,
     escena: escena273,
     publicados: [
@@ -1135,7 +1135,7 @@ export const LOTE_05: readonly IdeaDigitalizada[] = [
     nota: "Igual: los tres colores publicados (Arena 071, Palo de Rosa 010 y Reflex Rosado 909) en la base y el racimo, vara dorada, R-5 Reflex Dorado con estrellas blancas (el «Infinity® Estrellas» del catálogo), el dorado grande arriba a la izquierda y el corazón cromado a la derecha (metalizado «Corazón rosado» de 18\", ~47 cm como en la foto). Distinto: los cromados magenta miden más cerca de Reflex Fucsia 912 que del 909 publicado (se deja el publicado); el dorado «Feliz día mamá» mide ~45 cm y ese impreso no está en el catálogo: va un R-18 Reflex Dorado liso; los globitos de estrellas miden ~14 cm y el impreso se vende en R-5 (va a 12,5 cm); la base de la foto es más ancha (80 cm) que el cuarteto que la arma y los globos de atrás son supuestos.",
   }),
   idea({
-    numero: 279, slug: "centro-de-mesa-de-amor-en-fucsia-y-lila", nombre: "Centro de mesa de amor en fucsia y lila", ocasiones: ["amor"],
+    numero: 279, slug: "centro-de-mesa-de-amor-en-fucsia-y-lila", nombre: "Centro de mesa de amor en fucsia y lila", ocasiones: ["san-valentin"],
     fotoUrl: `${CDN}IMG_20200814_175418.jpg`,
     escena: escena279,
     publicados: [
@@ -1161,13 +1161,13 @@ export const LOTE_05: readonly IdeaDigitalizada[] = [
     nota: "Igual: base de dos cuartetos R-9 Azul Rey con 8 R-5 en los huecos, columna de 6 niveles de cuartetos R-5 en espiral arena, latte, azul rey y café (los publicados) con la altura real de la foto (6,2 cm por nivel: más juntos que el paso del taller, 8), el R-12 azul «Feliz día papá» del oeste encima y dos con helio (café y mostaza) con cintas doradas. Distinto: el impreso es un surtido (azul rey, café y mostaza): el claro de la foto parece latte y va en Mostaza 023, el color del surtido; los cactus y herraduras del impreso no se dibujan; el Link-O-Loon azul rey que publica la ficha no sale en la foto (sin cantidad); la ficha da R-12 y la columna es de R-5.",
   }),
   idea({
-    numero: 282, slug: "centro-de-mesa-emoji", nombre: "Centro de mesa emoji", ocasiones: ["cumpleaños"],
+    numero: 282, slug: "centro-de-mesa-emoji", nombre: "Centro de mesa emoji", ocasiones: ["cumpleanos"],
     fotoUrl: `${CDN}91e43d760dc32993e23b24603113bc4b.jpg`,
     escena: escena282,
     nota: "Igual: base de tres cuartetos R-9 Amarillo Miel (medido #fdcd00) con 12 R-5 clavados de colores medidos (naranja, azul, verde trébol, frambuesa, azul caribe y rojo; se ven 10), tallo de T-260 negro inflado, corbatín de dos R-5 negros, cintas rizadas de colores y el R-12 Amarillo Miel con cara de emoji arriba. Distinto: el emoji impreso no está en el catálogo: la cara se dibuja (ojos, sonrisa y mejillas, no cotiza) sobre el R-12 liso, y en la foto tiene los ojos cerrados de risa; los dos R-5 de atrás son supuestos.",
   }),
   idea({
-    numero: 284, slug: "centro-de-mesa-feliz-cumpleanos-flor", nombre: "Centro de mesa feliz cumpleaños flor", ocasiones: ["cumpleaños"],
+    numero: 284, slug: "centro-de-mesa-feliz-cumpleanos-flor", nombre: "Centro de mesa feliz cumpleaños flor", ocasiones: ["cumpleanos"],
     fotoUrl: `${CDN}35d0f6131e90edb4a6382ec38fb6bf23_7da3003e-be66-4c8a-ad02-850acc4e1f69.jpg`,
     escena: escena284,
     nota: "Igual: base de un cuarteto R-5 Verde y otro Verde Trébol, dos hojas en lazo y tallo de dos T-260 (Verde y Verde Selva), dos R-5 en el cuello, la flor de 8 lazos de T-260 Amarillo de 36 cm en estrella y el aro amarillo alrededor del metalizado «Feliz cumpleaños» de rayas de colores (el «Festivo» del catálogo). Distinto: el metalizado de la foto es de ~10\" y la tienda lo vende de 18\": se dibuja a 10\"; el aro de la foto son 12 burbujas y aquí es un aro liso de T-260; el tallo de la foto va trenzado y aquí son dos tubitos cruzados; los R-5 del cuello miden entre Neón Fucsia y Fashion Rosa (va Fashion Rosa 011).",
@@ -1184,7 +1184,7 @@ export const LOTE_05: readonly IdeaDigitalizada[] = [
     nota: "Igual: base de dos cuartetos R-9 blancos con R-5 negros en los huecos (un balón), columna de 5 cuartetos R-5 de colores en espiral con la altura medida (~7 cm por nivel), el balón R-12 blanco impreso encima y tres balones de colores con helio (amarillo, verde lima y naranja, del surtido «Balón de fútbol» publicado) con cintas rosadas. Distinto: en la foto el verde es Verde Trébol y el amarillo Amarillo Miel: van en los colores del surtido (031 y 020); la ficha publica el «Fashion Surtido» en R-12 sin color y la columna es de R-5 (queda listado sin cantidad; los R-5 van por color); el orden de colores de la espiral es aproximado.",
   }),
   idea({
-    numero: 302, slug: "centro-de-mesa-para-mama", nombre: "Centro de mesa para mamá", ocasiones: ["amor", "día de la madre"],
+    numero: 302, slug: "centro-de-mesa-para-mama", nombre: "Centro de mesa para mamá", ocasiones: ["san-valentin", "dia-de-la-madre"],
     fotoUrl: `${CDN}Centro-de-mesa-para-mama_f3431fe2-953c-478f-9972-9166f7745ff0.jpg`,
     escena: escena302,
     publicados: [
@@ -1224,13 +1224,13 @@ export const LOTE_05: readonly IdeaDigitalizada[] = [
     nota: "Igual: base de dos cuartetos R-12 fucsia, columna de 13 cuartetos R-5 rosados al paso del taller (en la foto ~24 px por nivel), un cuarteto fucsia arriba y el corazón metalizado de remate. Distinto: los fucsia son impresos de cebra que no están en el catálogo: van lisos en Fashion Rosa 011 (medido entre Neón Fucsia y Fashion Rosa); el corazón de la foto es de cebra: va el «Corazón rosado» del catálogo dibujado a 13\" (~31 cm, el de la foto; la tienda lo vende de 18\"); el rosado mide Fashion Rosado 009 (la clasificación decía pastel).",
   }),
   idea({
-    numero: 355, slug: "columna-chevron", nombre: "Columna chevrón", ocasiones: ["cumpleaños"],
+    numero: 355, slug: "columna-chevron", nombre: "Columna chevrón", ocasiones: ["cumpleanos"],
     fotoUrl: `${CDN}291166fef881f58c094247820f95c010_3b0cec49-f01c-4f72-9bf9-379746c322ef.jpg`,
     escena: escena355,
     nota: "Igual: base de un cuarteto R-9 naranja y uno amarillo, columna de 7 cuartetos R-5 Verde Trébol (medido #02aa23) al paso del taller, un cuarteto R-9 azul y el R-24 blanco de remate con cinco rayas de T-260 de colores que lo rodean (amarillo, verde, naranja, azul y violeta). Distinto: los chevrones blancos de la base y del cuarteto azul son impresos que no están en el catálogo: van lisos en los colores medidos más cercanos (Naranja 061, Amarillo Miel 021, Azul 040); las rayas de la foto son arcos de tubito pegados al globo y aquí son lazos que lo rodean.",
   }),
   idea({
-    numero: 361, slug: "columna-corazones", nombre: "Columna corazones", ocasiones: ["amor", "cumpleaños"],
+    numero: 361, slug: "columna-corazones", nombre: "Columna corazones", ocasiones: ["san-valentin", "cumpleanos"],
     fotoUrl: `${CDN}f9bdc13db5b922aca8de6407df613e99.jpg`,
     escena: escena361,
     nota: "Igual: base de un cuarteto R-9 (verde trébol y amarillo miel al frente), tres cuartetos R-5 en espiral (amarillo, azul, naranja y verde) a la altura medida (~0,75 diámetros por nivel), un R-18 Azul (medido #00aeea) y la flor de cuatro pétalos naranja, amarillo, verde y rojo con un R-5 naranja al centro. Distinto: los pétalos de la foto son corazones de ~41 cm (un Corazón 17\" que el taller no tiene) y el Corazón 12 no se fabrica en naranja, amarillo ni verde: van R-18 redondos de esos colores; el «Happy Birthday» impreso del amarillo no se dibuja; el rojo de atrás es supuesto.",
@@ -1242,13 +1242,13 @@ export const LOTE_05: readonly IdeaDigitalizada[] = [
     nota: "Igual: columna de 6 cuartetos R-12 Silk Blanco Nácar (medido #d3ced2) con la altura de la foto (~0,9 diámetros por nivel: más sueltos que el paso del taller), el R-24 Fashion Rosado (medido #fcc8df) con un moño de 4 R-5 Satín Rosado encima y las seis flores de 4 R-5 satinados con su centro donde las pone la foto: tres lilas (Satín Lila 450), una violeta (Reflex Violeta 951) y dos fucsia (Satín Fucsia 412). Distinto: el R-24 de la foto mide ~66 cm (el R-24 llega a 61) y lleva un impreso blanco que no está en el catálogo (va liso).",
   }),
   idea({
-    numero: 368, slug: "columna-emoji-amor", nombre: "Columna emoji amor", ocasiones: ["amor", "cumpleaños"],
+    numero: 368, slug: "columna-emoji-amor", nombre: "Columna emoji amor", ocasiones: ["san-valentin", "cumpleanos"],
     fotoUrl: `${CDN}14795ab9cf82eaf3ba4732f8f2ee76b0.jpg`,
     escena: escena368,
     nota: "Igual: base de dos cuartetos R-12 negros con un anillo de 4 R-5 amarillos, tallo rojo con dos aros de T-260 negro y un amarillo entre ellos, y la flor de 6 R-12 amarillos con cara de beso al frente, 6 detrás y un R-12 rojo al centro (colores medidos). Distinto: el tallo de la foto es de ~15 cm de grueso (un Link-O-Loon 660) y aquí es un T-360 rojo de 7,6 cm; el corazoncito amarillo va como un R-5 redondo (el Corazón no se fabrica en amarillo); las caras son dibujadas: el impreso de emoji no está en el catálogo.",
   }),
   idea({
-    numero: 369, slug: "columna-espiral-futbol", nombre: "Columna espiral fútbol", ocasiones: ["cumpleaños", "infantil"],
+    numero: 369, slug: "columna-espiral-futbol", nombre: "Columna espiral fútbol", ocasiones: ["cumpleanos", "fiesta-infantil"],
     fotoUrl: `${CDN}abceb412194b6ad7a257d3cdac4ee31b_fc58a956-0936-4679-95f5-5c753c109cab.jpg`,
     escena: escena369,
     publicados: [
@@ -1261,13 +1261,13 @@ export const LOTE_05: readonly IdeaDigitalizada[] = [
     nota: "Igual: columna de 6 cuartetos R-12 al paso del taller (en la foto ~0,81 diámetros por nivel): abajo y arriba balones de colores (el surtido «Balón de fútbol» publicado); en medio un nivel rojo, uno Azul Rey y uno Amarillo (publicados) y uno naranja, cada uno con un balón blanco impreso que sube en espiral de derecha a izquierda; y el balón blanco grande de remate. Distinto: el balón de arriba mide ~80 cm: va en R-36 (la clasificación decía R-24; la tienda lo vende en R-36); el Azul Caribe publicado no se distingue en la foto (sin cantidad); en los niveles de surtido el orden de colores es aproximado.",
   }),
   idea({
-    numero: 373, slug: "columna-feliz-cumpleanos-r-40", nombre: "Columna Feliz Cumpleaños R-40", ocasiones: ["cumpleaños"],
+    numero: 373, slug: "columna-feliz-cumpleanos-r-40", nombre: "Columna Feliz Cumpleaños R-40", ocasiones: ["cumpleanos"],
     fotoUrl: `${CDN}e87e797b850735f590a65311128e8185_ce634d14-7835-4fa1-89ad-44988ac2330a.jpg`,
     escena: escena373,
     nota: "Igual: de abajo arriba un cuarteto naranja, uno amarillo, uno verde trébol, 6 cuartetos R-5 Azul (medido #08a2de) separados por 3 aros de T-260 amarillo y con dos moños en cruz, otro verde, otro amarillo y el globo naranja gigante (~3 m en total). Distinto: el «R-40» no existe en el taller: va un R-36 a su máximo (90 cm); los impresos «Feliz cumpleaños» del naranja y los garabatos del amarillo cristal no están en el catálogo: van lisos en Fashion Naranja 061 y Amarillo Miel 021 (los más cercanos medidos).",
   }),
   idea({
-    numero: 378, slug: "columna-foil-luna", nombre: "Columna foil luna", ocasiones: ["baby shower", "infantil"],
+    numero: 378, slug: "columna-foil-luna", nombre: "Columna foil luna", ocasiones: ["baby-shower", "fiesta-infantil"],
     fotoUrl: `${CDN}4fd8634520f1ed8d36a0539b5cbc5ec1_1932f226-ee8a-4945-9b42-12a8527e4384.jpg`,
     escena: escena378,
     nota: "Igual: tres discos de 24 R-5 Azul Caribe (medido #04c7e7) sobre cuartetos R-9 blancos, la columna de 5 cuartetos R-9 rojos tan apretados como en la foto (~0,52 diámetros por nivel) con un azul que sube en espiral, dos tríos de R-5 rojos, el R-12 azul del medio y el R-24 Azul Caribe de remate. Distinto: los lunares blancos de los azules no están en el catálogo (los polka son verde lima y rojo): van lisos en Azul Caribe 038; la banda verde «Feliz día» del globo del medio no se modela; no hay ningún metalizado pese al título.",

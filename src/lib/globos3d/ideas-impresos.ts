@@ -140,7 +140,7 @@ export const IDEAS_IMPRESOS: readonly IdeaImpresos[] = [
   impresa({
     clase: "decoracion",
     id: "idea:adivina-nino-o-nina-rosado-azul", numero: 3, slug: "adivina-nino-o-nina-rosado-azul", url: urlIdea("adivina-nino-o-nina-rosado-azul"),
-    nombre: "Adivina niño o niña: rosado y azul", ocasiones: ["baby shower"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Rosado-Azul.jpg",
+    nombre: "Adivina niño o niña: rosado y azul", ocasiones: ["baby-shower"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Rosado-Azul.jpg",
     nota: "Se parece: ramo de 9 R-12 por pisos (rosados arriba, los impresos al medio, azules abajo) con los productos de la ficha. No: en la foto los impresos dicen «¿Niña?» y «¿Niño?» con biberones y chupos sobre fondo claro; la ficha lista «Es una niña / Es un niño estrella» (pastel rosado y azul), que es lo que se dibuja. El ramo es una espiral, no pisos planos.",
   }, [
     P("GLOBO REDONDO REFLEX ROSADO", "/products/globo-para-fiesta-latex-redondo-reflex-rosado", "R-12", "909", 2),
@@ -155,7 +155,7 @@ export const IDEAS_IMPRESOS: readonly IdeaImpresos[] = [
   impresa({
     clase: "escena",
     id: "idea:caja-sorpresa", numero: 226, slug: "caja-sorpresa", url: urlIdea("caja-sorpresa"),
-    nombre: "Caja sorpresa con corazones", ocasiones: ["amor"], fotoUrl: "https://sempertex.com/cdn/shop/articles/DSC_5707_a48da6c0-2181-4ad1-b67b-befc897ec1f4.jpg",
+    nombre: "Caja sorpresa con corazones", ocasiones: ["san-valentin"], fotoUrl: "https://sempertex.com/cdn/shop/articles/DSC_5707_a48da6c0-2181-4ad1-b67b-befc897ec1f4.jpg",
     nota: "Se parece: tres R-12 Infinity corazones modernos (fucsia, violeta y rosado) y el corazón metalizado «I Love You» de 18\" más alto, saliendo de una caja kraft con cinta fucsia y la tapa recostada. No: la ficha mapeaba los corazones como C-12; son R-12 redondos. El corazón metalizado va blanco con el letrero (sin las rayas rosadas) y la caja es escenografía sencilla (sin moño).",
   }, [
     P("GLOBO REDONDO INFINITY® CORAZONES MODERNOS", "/products/globo-para-fiesta-latex-redondo-infinity-corazones-modernos-fashion-surtido", "R-12", null, 3),
@@ -164,7 +164,7 @@ export const IDEAS_IMPRESOS: readonly IdeaImpresos[] = [
   impresa({
     clase: "decoracion",
     id: "idea:violeta-rosado-confetti-dorado", numero: 976, slug: "violeta-rosado-confetti-dorado", url: urlIdea("violeta-rosado-confetti-dorado"),
-    nombre: "Violeta, rosado, confeti y dorado", ocasiones: ["cumpleaños", "general"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Violeta-Rosado-Dorado.jpg",
+    nombre: "Violeta, rosado, confeti y dorado", ocasiones: ["cumpleanos", "general"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Violeta-Rosado-Dorado.jpg",
     nota: "Se parece: 11 R-12 por pisos (3 reflex violeta, 2 pastel rosado, 3 cristal con confeti dorado impreso, 3 reflex dorado). No: el confeti impreso son puntos dorados repartidos (en la foto, más menudos y apretados); espiral en vez de pisos planos.",
   }, [
     P("GLOBO REDONDO REFLEX VIOLETA", "/products/globo-para-fiesta-latex-redondo-reflex-violeta", "R-12", "951", 3),
@@ -177,7 +177,7 @@ export const IDEAS_IMPRESOS: readonly IdeaImpresos[] = [
   impresa({
     clase: "decoracion",
     id: "idea:hojas-dorado-verde-lima", numero: 665, slug: "hojas-dorado-verde-lima", url: urlIdea("hojas-dorado-verde-lima"),
-    nombre: "Hojas tropicales: dorado y verde lima", ocasiones: ["cumpleaños", "general"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Dorado-Verde-Lima.jpg",
+    nombre: "Hojas tropicales: dorado y verde lima", ocasiones: ["cumpleanos", "general"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Dorado-Verde-Lima.jpg",
     nota: "Se parece: 3 reflex dorado arriba, 3 negros con hojas tropicales doradas impresas al medio y 3 reflex verde lima abajo, con los productos de la ficha. No: las hojas son un dibujo propio (hoja con nervaduras), no la monstera y la palma del producto; espiral en vez de pisos planos.",
   }, [
     P("GLOBO LATEX REDONDO REFLEX DORADO", "/products/globo-para-fiesta-latex-redondo-reflex-dorado", "R-12", "970", 3),
@@ -189,7 +189,7 @@ export const IDEAS_IMPRESOS: readonly IdeaImpresos[] = [
   impresa({
     clase: "decoracion",
     id: "idea:palomas-eucalipto-chocolate-durazno", numero: 820, slug: "palomas-eucalipto-chocolate-durazno", url: urlIdea("palomas-eucalipto-chocolate-durazno"),
-    nombre: "Palomas, eucalipto, chocolate y durazno", ocasiones: ["bautizo y comunión"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Bouquet-Palomas_69c187b6-67c8-4392-a669-157c4b42716f.png",
+    nombre: "Palomas, eucalipto, chocolate y durazno", ocasiones: ["bautizo", "primera-comunion"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Bouquet-Palomas_69c187b6-67c8-4392-a669-157c4b42716f.png",
     nota: "Se parece: 11 R-12 por pisos: 2 cristal con palomas blancas impresas arriba, 3 eucalipto, 3 chocolate y 3 durazno, los productos de la ficha. No: las palomas son una silueta propia; espiral en vez de pisos planos.",
   }, [
     P("GLOBO REDONDO INFINITY® PALOMAS FASHION TRANSPARENTE", "/products/globo-para-fiesta-latex-redondo-infinity-palomas-fashion-transparente", "R-12", "390", 2),
@@ -202,7 +202,7 @@ export const IDEAS_IMPRESOS: readonly IdeaImpresos[] = [
   impresa({
     clase: "decoracion",
     id: "idea:monstruos-plata-violeta-verde-lima", numero: 759, slug: "monstruos-plata-violeta-verde-lima", url: urlIdea("monstruos-plata-violeta-verde-lima"),
-    nombre: "Monstruos: plata, violeta y verde lima", ocasiones: ["halloween", "infantil"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Bouquet-Halloween-Monstruos_530ecc83-921d-43aa-8bce-a3dda30db500.png",
+    nombre: "Monstruos: plata, violeta y verde lima", ocasiones: ["halloween", "fiesta-infantil"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Bouquet-Halloween-Monstruos_530ecc83-921d-43aa-8bce-a3dda30db500.png",
     nota: "Se parece: 10 R-12 por pisos (naranja, negro y violeta arriba; 2 reflex plata; 3 reflex violeta; 2 verde lima abajo). Los naranja, negro, violeta y verde lima son del surtido «2 caras monstruos» (la ficha no lista otros lisos de esos colores), con la cara de monstruo en blanco. No: en la foto solo se ve la cara del negro (los otros miran a otro lado); la cara es un dibujo propio, no la del producto.",
   }, [
     P("GLOBO REDONDO 2 CARAS MONSTRUOS FASHION SURTIDO", "/products/globo-para-fiesta-latex-redondo-2-caras-monstruos-fashion-surtido", "R-12", null, 5),
@@ -214,7 +214,7 @@ export const IDEAS_IMPRESOS: readonly IdeaImpresos[] = [
   impresa({
     clase: "escena",
     id: "idea:arco-ano-nuevo", numero: 60, slug: "arco-ano-nuevo", url: urlIdea("arco-ano-nuevo"),
-    nombre: "Arco de año nuevo con números dorados", ocasiones: ["año nuevo"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Arco_ano_nuevo_1b60ead0-9e5d-40ba-b28c-4fe60ba01054.jpg",
+    nombre: "Arco de año nuevo con números dorados", ocasiones: ["ano-nuevo"], fotoUrl: "https://sempertex.com/cdn/shop/articles/Arco_ano_nuevo_1b60ead0-9e5d-40ba-b28c-4fe60ba01054.jpg",
     nota: "Se parece: arco de cuartetos R-12 en espiral (silk verde menta, dorado y blanco nácar) de ~1,7 × 2,35 m, con «2025» en números metalizados dorados de 16\" bajando por la pata derecha. Las cantidades de los R-12 las da el 3D (no se contaron). No: el contorno de T-260 negro de cada número y los R-5 de relleno no se modelan; la espiral repite el dorado (la trenza espiral pide 4 colores).",
   }, [
     P("GLOBO REDONDO SILK BLANCO NÁCAR", "/products/globo-latex-redondo-silk-blanco-nacar", "R-12", "806", null),
@@ -228,7 +228,7 @@ export const IDEAS_IMPRESOS: readonly IdeaImpresos[] = [
   impresa({
     clase: "escena",
     id: "idea:fantasia-de-corazones", numero: 537, slug: "fantasia-de-corazones", url: urlIdea("fantasia-de-corazones"),
-    nombre: "Fantasía de corazones", ocasiones: ["amor"], fotoUrl: "https://sempertex.com/cdn/shop/articles/49f7f82cf8697867a964917f64924dde_7469e710-d3f0-464f-bea8-7f1a11d2d780.jpg",
+    nombre: "Fantasía de corazones", ocasiones: ["san-valentin"], fotoUrl: "https://sempertex.com/cdn/shop/articles/49f7f82cf8697867a964917f64924dde_7469e710-d3f0-464f-bea8-7f1a11d2d780.jpg",
     nota: "Se parece: columna de ~1,6 m con dos globos impresos de corazones por nivel (fucsia, dorado, rosado, rojo, dorado) y dos blancos, base y remate blancos, y tres impresos con helio arriba. No: en la foto el centro de la columna se ve de globitos blancos chicos; aquí son los blancos R-12 de cada cuarteto. La ficha mapeaba los corazones como C-12: son R-12 redondos.",
   }, [
     P("GLOBO REDONDO INFINITY® CORAZONES SURTIDOS", "/products/globo-para-fiesta-latex-redondo-infinity-corazones-surtidos-fashion-y-metal-surtido", "R-12", null, 13),
@@ -237,7 +237,7 @@ export const IDEAS_IMPRESOS: readonly IdeaImpresos[] = [
   impresa({
     clase: "escena",
     id: "idea:la-pasion-del-futbol", numero: 682, slug: "la-pasion-del-futbol", url: urlIdea("la-pasion-del-futbol"),
-    nombre: "La pasión del fútbol", ocasiones: ["general", "infantil"], fotoUrl: "https://sempertex.com/cdn/shop/articles/3eb38ae73979cfdafab27b3a6fa5bbb9_1a5eba79-0899-4da7-882e-542b59c54dfc.jpg",
+    nombre: "La pasión del fútbol", ocasiones: ["general", "fiesta-infantil"], fotoUrl: "https://sempertex.com/cdn/shop/articles/3eb38ae73979cfdafab27b3a6fa5bbb9_1a5eba79-0899-4da7-882e-542b59c54dfc.jpg",
     nota: "Se parece: balón de fútbol impreso R-24 en el piso y encima la columna con la bandera de Colombia al revés (rojo, azul y amarillo doble, de abajo arriba) en cuartetos R-12 del surtido tricolor. No: el balón es un dibujo propio (pentágonos negros); la tienda vende el balón en R-5 a R-36 y la ficha no dice cuál: por la foto, R-24.",
   }, [
     P("GLOBO REDONDO FASHION SURTIDO TRICOLOR", "/products/globo-para-fiesta-latex-redondo-fashion-surtido-colores-primarios", "R-12", null, 32),

@@ -2,6 +2,7 @@ import { BIBLIOTECA_FABRICA, TIPOS_ITEM, indexarEscena, unirBiblioteca, type Ite
 import type { Pieza, PiezaArmada, TipoPieza } from "./piezas";
 import { coloresDeDato, nombreColor, plegar } from "./herramientas-escena-colores";
 import { NOMBRE_TIPO } from "./herramientas-escena-estructuras";
+import { idCelebracionCanonico, nombreOcasion } from "../taller/taxonomia-celebraciones";
 
 /**
  * **La biblioteca para la IA del taller 3D**: buscar por texto, tipo, ocasión, colores o tipo de pieza entre lo de
@@ -81,7 +82,7 @@ function textoDe(item: ItemBiblioteca): { nombre: string; todo: string } {
     const piezas = item.contenido.tipo === "escena" ? item.contenido.escena.nodos.map((n) => n.nombre) : [];
     t = {
       nombre: plegar(item.nombre),
-      todo: plegar([item.nombre, item.descripcion, item.fuente?.titulo ?? "", nombreTipo, ...item.ocasiones, ...tiposDe(item).map((x) => NOMBRE_TIPO[x]), ...piezas, ...codigosDe(item).slice(0, 10).map(nombreColor)].join(" ")),
+      todo: plegar([item.nombre, item.descripcion, item.fuente?.titulo ?? "", nombreTipo, ...item.ocasiones.map(nombreOcasion), ...tiposDe(item).map((x) => NOMBRE_TIPO[x]), ...piezas, ...codigosDe(item).slice(0, 10).map(nombreColor)].join(" ")),
     };
     TEXTOS.set(item.id, t);
   }
@@ -121,6 +122,7 @@ function escenasCandidatas(palabras: readonly string[], tipoPieza: TipoPieza | u
 /** Busca en la biblioteca: lo mejor primero (el texto en el nombre pesa más), hasta `limite`. */
 export function buscarEnBiblioteca(f: FiltroIA): ItemBiblioteca[] {
   const palabras = raices(f.texto ?? "");
+  const ocasionBuscada = f.ocasion ? idCelebracionCanonico(f.ocasion) ?? f.ocasion : null;
   const indices = new Map<string, ItemBiblioteca[]>();
   const quiereDerivados = !f.tipo || f.tipo === "conjunto" || f.tipo === "estructura" || f.tipo === "decoracion" || f.tipo === "utileria";
   if (quiereDerivados && (palabras.length || f.tipoPieza || f.colores?.length)) for (const e of escenasCandidatas(palabras, f.tipoPieza)) indices.set(e.id, derivadosDe(e));
@@ -128,7 +130,7 @@ export function buscarEnBiblioteca(f: FiltroIA): ItemBiblioteca[] {
   const necesarias = Math.ceil(palabras.length * 0.6);
   const puntuados = todos.flatMap((item) => {
     if (f.tipo && item.tipo !== f.tipo) return [];
-    if (f.ocasion && !item.ocasiones.includes(f.ocasion)) return [];
+    if (ocasionBuscada && !item.ocasiones.includes(ocasionBuscada)) return [];
     if (f.tipoPieza && !tiposDe(item).includes(f.tipoPieza)) return [];
     if (f.colores?.length) {
       const propios = new Set(codigosDe(item));

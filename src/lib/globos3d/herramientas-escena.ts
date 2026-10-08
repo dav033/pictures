@@ -263,7 +263,7 @@ const ESQUEMAS = {
   buscar_en_biblioteca: z.object({
     texto: z.string().max(80).optional().describe("lo que se busca, en palabras («arco orgánico», «columna con flores», «calabaza halloween»)"),
     tipo: z.enum(TIPOS_ITEM.map((t) => t.id) as [TipoItem, ...TipoItem[]]).optional().describe("escena (completa), conjunto (estructura con sus decoraciones), estructura (sola), decoracion, utileria"),
-    ocasion: z.enum(OCASIONES as [string, ...string[]]).optional(),
+    ocasion: z.enum(OCASIONES as [string, ...string[]]).optional().describe("la celebración, por su id («cumpleanos», «baby-shower», «quince-anos», «graduacion», «halloween»…; «general» = sin celebración concreta)"),
     colores: z.array(z.string().min(1).max(60)).max(4).optional().describe("que lleve estos colores (nombre o código)"),
     tipo_pieza: z.enum(TIPOS_PIEZA).optional().describe("el tipo de su estructura (organico = columnas, arcos, guirnaldas y semiarcos orgánicos de las ideas)"),
     limite: z.number().int().min(1).max(15).optional().describe("cuántos (8 por defecto)"),

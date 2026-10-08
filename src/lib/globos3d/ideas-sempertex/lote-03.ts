@@ -358,7 +358,7 @@ const CDN = "https://sempertex.com/cdn/shop/articles/";
 /** Las 20 ideas del lote 03 (`clasif/lote-03.json`), en orden. */
 export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
   idea({
-    numero: 627, slug: "gender-reveal-1", nombre: "Ramo Gender Reveal", ocasiones: ["baby shower"],
+    numero: 627, slug: "gender-reveal-1", nombre: "Ramo Gender Reveal", ocasiones: ["baby-shower"],
     fotoUrl: `${CDN}Gender_Reveal_46fb8108-4db9-4aa2-a277-b10f9d637c91.jpg`,
     productos: [
       publicado("GLOBO REDONDO PASTEL MATE ROSADO", "/products/globo-para-fiesta-latex-redondo-pastel-mate-rosado", "R-12", "609", 2),
@@ -373,7 +373,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
     nota: "Igual: 13 R-12 en 5 pisos planos de arriba abajo, alternando 2 y 3 como en la foto: 2 Pastel Mate Rosado lado a lado, 3 Fashion Rosado (uno de frente), 2 Pastel Mate Azul, 3 Fashion Azul y 3 Reflex Dorado (dos de frente y el tercero asoma detrás a la izquierda), los 5 productos publicados, con cintas crema al peso. Distinto: el segundo piso de la foto es un rosa fuerte (mide #e9589a, más cerca de Neón Fucsia 212 o Rosa 011) y el de arriba tira a durazno (#e7b2b2); van los códigos publicados (Fashion Rosado 009 y Pastel Mate Rosado 609). El peso y el largo de las cintas no salen en la foto.",
   }),
   idea({
-    numero: 630, slug: "gigante-diversion", nombre: "Gigante diversión", ocasiones: ["cumpleaños"],
+    numero: 630, slug: "gigante-diversion", nombre: "Gigante diversión", ocasiones: ["cumpleanos"],
     fotoUrl: `${CDN}4008221ab4182b7ac481ed539248770c_52844423-5d37-4d52-96f9-0581b7fa679d.jpg`,
     clase: "escena", contenido: () => escena(escena630()),
     nota: "Igual: de abajo arriba un cuarteto de R-9 perla, un cuarteto de R-9 azul rey girado 1/8 (se ven tres), dos R-12 de cristal lado a lado y el gigante azul rey encima (R-36 a 70 cm: 2,5 veces el ancho de un R-12, como en la foto); 1,25 m de alto. Colores medidos (no publica productos): el azul #1e2e8d por ΔE cae en Violeta 051, pero su tono es azul ultramar y va Fashion Azul Rey 041; la base perlada mide #c8b3a6 en sombra y va Satín Perla 406. Distinto: los dos R-12 son impresos de birretes y estrellas sobre cristal y van en Cristal Transparente 390 liso; en la foto se inclinan hacia fuera y aquí van derechos.",
@@ -444,7 +444,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
     nota: "Igual: 9 R-12 en 3 pisos planos de arriba abajo: 3 Reflex Dorado (dos de frente y el tercero asoma detrás, al medio), 3 Infinity® Hojas Tropicales (uno de frente) y 3 Reflex Verde Lima (dos de frente y uno detrás), los productos publicados, con cintas doradas. Los negros llevan el impreso Hojas Tropicales de la tienda sobre Fashion Negro 080. Distinto: las hojas son un dibujo propio (hoja con nervaduras), no la monstera y la palma de la foto; el peso no sale en la foto.",
   }),
   idea({
-    numero: 682, slug: "la-pasion-del-futbol", nombre: "Columna La pasión del fútbol", ocasiones: ["general", "cumpleaños"],
+    numero: 682, slug: "la-pasion-del-futbol", nombre: "Columna La pasión del fútbol", ocasiones: ["general", "cumpleanos"],
     fotoUrl: `${CDN}3eb38ae73979cfdafab27b3a6fa5bbb9_1a5eba79-0899-4da7-882e-542b59c54dfc.jpg`,
     productos: [
       publicado("GLOBO REDONDO FASHION SURTIDO TRICOLOR", "/products/globo-para-fiesta-latex-redondo-fashion-surtido-colores-primarios", "R-9", null, 48),
@@ -468,19 +468,19 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
     nota: "Igual: 11 R-12 en 4 pisos planos de arriba abajo: 3 Verde Trébol (uno de frente), 2 Arena lado a lado, 3 Verde Lima (uno de frente) y 3 Eucalipto (dos de frente y el tercero asoma detrás a la derecha), los productos publicados, con cintas crema. Distinto: el Eucalipto de la foto se ve gris (mide #9fa090): va el código publicado, 027. El peso no sale en la foto.",
   }),
   idea({
-    numero: 708, slug: "malla-flor", nombre: "Malla flor fucsia y verde", ocasiones: ["boda", "infantil"],
+    numero: 708, slug: "malla-flor", nombre: "Malla flor fucsia y verde", ocasiones: ["boda", "fiesta-infantil"],
     fotoUrl: `${CDN}5dcf83808deb8f47dba3eab1ffd646c3_92c4a516-22e8-483f-8564-76cbebd83f7f.jpg`,
     clase: "escena", contenido: () => escena(escena708()),
     nota: "Igual: malla Link-O-Loon de 6 × 6 eslabones LOL-12 fucsia (36) en diagonal, 1,5 × 1,5 m en la pared, con un R-5 verde trébol en cada uno de los 13 nodos de dentro: las flores de 4 pétalos alrededor de cada globito verde, en damero, como en la foto. Colores medidos (no publica productos): fucsia #f6337e → Fashion Fucsia 012; verde #00b134 → Verde Trébol 029 (ΔE 4). Distinto: la malla del taller amarra cada nodo con una pareja de R-5 (aquí fucsia y al mínimo, para que se pierdan): son 50 R-5 fucsia que la foto no deja ver; la foto no da la medida (se tomó el LOL-12 a 24 cm).",
   }),
   idea({
-    numero: 728, slug: "margarita-amarilla", nombre: "Margarita amarilla", ocasiones: ["cumpleaños"],
+    numero: 728, slug: "margarita-amarilla", nombre: "Margarita amarilla", ocasiones: ["cumpleanos"],
     fotoUrl: `${CDN}24cef37dd47c4f89c42a6b31769b727a_af5579a6-bdac-4bc8-abcb-8e7cdd1b3d36.jpg`,
     clase: "decoracion", contenido: () => enPared({ tipo: "decoracion", decoracion: { tipo: "flor", propiedades: flor728 }, deFrente: true }, 120),
     nota: "Igual: flor de pared de 5 R-12 amarillos con dos pétalos arriba y uno abajo, una corona de 5 R-5 azules y un R-5 rojo al centro, ~67 cm. Colores medidos (no publica productos): amarillo #ffe200 → Fashion Amarillo 020; azul #029fd1 → Fashion Azul 040; rojo #d91226 → Fashion Rojo 015. Distinto: en la foto el rojo del centro es apenas más grande que los azules (va a 12,7 cm, el tope del R-5).",
   }),
   idea({
-    numero: 729, slug: "margarita-polka-azul", nombre: "Margarita polka azul", ocasiones: ["cumpleaños"],
+    numero: 729, slug: "margarita-polka-azul", nombre: "Margarita polka azul", ocasiones: ["cumpleanos"],
     fotoUrl: `${CDN}34969d9cfef8408d50611956a689d451_966e94e5-34ec-4ec6-ad28-0af0215bf12c.jpg`,
     clase: "decoracion", contenido: () => enPared({ tipo: "decoracion", decoracion: { tipo: "flor", propiedades: flor729 }, deFrente: true }, 120),
     nota: "Igual: flor de pared de 5 R-12 azules con un pétalo arriba, corona de 5 R-5 fucsia y un R-5 verde al centro, ~67 cm. Colores medidos (no publica productos): azul #00a0d1 → Fashion Azul 040; fucsia #ff3598 → Fashion Fucsia 012 (Neón Fucsia 212 mide 3 ΔE más cerca, pero la foto está saturada: no es neón); verde #00be05 → Verde Trébol 029. Distinto: los pétalos son impresos de lunares blancos y van en Fashion Azul liso (el taller tiene el Polka solo sobre verde lima y rojo); el verde de la foto es más chico que los fucsia (9 cm): aquí va a 11,5 cm y los fucsia a 11, porque con la corona inclinada un centro más chico queda tapado.",
@@ -541,7 +541,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
     nota: "Igual: 12 R-12 en 4 pisos planos de arriba abajo: 3 Palo de Rosa (uno de frente), 2 vinotinto lado a lado, 4 Reflex Rosado (tres de frente y el cuarto asoma detrás, entre los vinotinto) y 3 Arena (dos de frente y uno detrás a la derecha), con los productos publicados y cintas plateadas. El vinotinto no está publicado: mide #4e1f30 (brillante) → Reflex Fucsia 912. Distinto: el Arena de la foto mide más oscuro (#b09883, en sombra); va el código publicado.",
   }),
   idea({
-    numero: 873, slug: "pulsera-de-amor-y-flores", nombre: "Pulsera de amor y flores", ocasiones: ["amor"],
+    numero: 873, slug: "pulsera-de-amor-y-flores", nombre: "Pulsera de amor y flores", ocasiones: ["san-valentin"],
     fotoUrl: `${CDN}pulsera-de-amor-y-flores_fbc07ea8-9592-4408-a10d-3fa20f06df57.jpg`,
     productos: [
       publicado("GLOBO REDONDO FASHION BLANCO", "/products/globo-para-fiesta-latex-redondo-fashion-blanco", "R-12", "005", 1),
