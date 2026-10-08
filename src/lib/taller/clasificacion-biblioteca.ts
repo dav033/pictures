@@ -10,7 +10,13 @@ import type { ClasificacionTaller } from "./fichas-tipos";
 type Etiqueta = [id: string, confianza: number];
 type Clasificado = { c: Etiqueta[]; t: Etiqueta[]; general: boolean; motivo: string };
 
-const ITEMS = (datos as { items: Record<string, Clasificado> }).items;
+/** El JSON trae las etiquetas como arreglos `[id, confianza]`; se leen con su tipo (sin aserciones a ciegas). */
+const etiquetas = (xs: ReadonlyArray<ReadonlyArray<string | number>>): Etiqueta[] =>
+  xs.flatMap((x) => (typeof x[0] === "string" && typeof x[1] === "number" ? [[x[0], x[1]] as Etiqueta] : []));
+const ITEMS: Record<string, Clasificado> = Object.fromEntries(
+  Object.entries(datos.items as Record<string, { c: ReadonlyArray<ReadonlyArray<string | number>>; t: ReadonlyArray<ReadonlyArray<string | number>>; general: boolean; motivo: string }>)
+    .map(([id, v]) => [id, { c: etiquetas(v.c), t: etiquetas(v.t), general: v.general, motivo: v.motivo }]),
+);
 
 /** Etiquetas de un item (o de la escena de la que sale), las de mayor confianza primero; null si no está clasificado. */
 export function clasificacionDe(id: string): ClasificacionTaller | null {
@@ -20,4 +26,4 @@ export function clasificacionDe(id: string): ClasificacionTaller | null {
   return { celebraciones: ids(propio.c), tematicas: ids(propio.t) };
 }
 
-export const VERSION_CLASIFICACION = (datos as { version: number }).version;
+export const VERSION_CLASIFICACION = datos.version;
