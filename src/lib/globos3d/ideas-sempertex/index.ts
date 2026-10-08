@@ -1,6 +1,7 @@
 import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
 import { fuenteIdea } from "./fuentes";
 import { IDEAS_FIGURAS } from "../ideas-figuras";
+import { IDEAS_FORMAS } from "../ideas-formas";
 import { LOTE_01 } from "./lote-01";
 import { LOTE_02 } from "./lote-02";
 import { LOTE_03 } from "./lote-03";
@@ -35,5 +36,18 @@ function deFiguras(): IdeaDigitalizada[] {
   });
 }
 
+/** Las formas y letras digitalizadas (ideas-formas.ts; las básicas con id 0 no son ideas y se quedan fuera). */
+function deFormas(): IdeaDigitalizada[] {
+  return IDEAS_FORMAS.flatMap((f) => {
+    const fuente = f.id > 0 ? fuenteIdea(f.slug) : null;
+    if (!fuente) return [];
+    const productos: ProductoDeIdea[] = f.productos.map((p) => ({
+      nombre: p.nombre, url: fuente.productos.find((q) => q.nombre === p.nombre)?.url ?? "", formato: p.formatoId, codigo: p.codigo, cantidad: null,
+    }));
+    const sugerida = f.lugar === "pared" ? { en: "pared" as const, pared: "fondo" as const, aLoLargoCm: 0, alturaCm: 120 } : { en: "piso" as const, xCm: 0, zCm: 0, giroGrados: 0 };
+    return [{ id: `idea:${f.slug}`, numero: fuente.numero, slug: f.slug, nombre: f.nombre, ocasiones: ocasionesDeEtiquetas(fuente.etiquetas), fotoUrl: fuente.fotoUrl, productos, contenido: { tipo: "pieza", pieza: f.pieza, sugerida }, nota: f.nota }];
+  });
+}
+
 /** Todas las ideas de sempertex.com digitalizadas (cada lote lo llena un encargo distinto, sin pisarse). */
-export const IDEAS_SEMPERTEX: readonly IdeaDigitalizada[] = [...LOTE_01, ...LOTE_02, ...LOTE_03, ...LOTE_04, ...LOTE_05, ...LOTE_06, ...deFiguras(), ...IDEAS_IMPRESOS];
+export const IDEAS_SEMPERTEX: readonly IdeaDigitalizada[] = [...LOTE_01, ...LOTE_02, ...LOTE_03, ...LOTE_04, ...LOTE_05, ...LOTE_06, ...deFiguras(), ...deFormas(), ...IDEAS_IMPRESOS];
