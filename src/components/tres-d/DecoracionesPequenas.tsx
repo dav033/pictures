@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useContext, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { Flower2 } from "lucide-react";
 import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import { agregarDecoracion, decoracionesPorGrupo, miniaturaDecoracion, repartoSugerido, type DecoracionPequena, type DestinoDecoracion, type Miniatura } from "@/lib/globos3d/decoraciones-escena";
@@ -21,7 +21,8 @@ const GRUPOS = perezoso(() => decoracionesPorGrupo().map((g) => ({ ...g, decorac
 const CORAZON = "M0,1 C-0.6,0.55 -1.05,0.1 -1,-0.35 C-0.95,-0.85 -0.35,-1.05 0,-0.55 C0.35,-1.05 0.95,-0.85 1,-0.35 C1.05,0.1 0.6,0.55 0,1 Z";
 
 /** Dibujo de frente de una decoración: globos como elipses (o corazones) y tubitos como trazos gruesos. */
-export function MiniaturaDecoracion({ miniatura, nombre, className }: { miniatura: Miniatura; nombre: string; className?: string }) {
+// Memorizada: las miniaturas no cambian y son muchas (elegir una pieza no debe volver a dibujarlas todas).
+export const MiniaturaDecoracion = memo(function MiniaturaDecoracion({ miniatura, nombre, className }: { miniatura: Miniatura; nombre: string; className?: string }) {
   const { caja, formas } = miniatura;
   return (
     <svg viewBox={`${caja.x} ${caja.y} ${caja.ancho} ${caja.alto}`} role="img" aria-label={`Dibujo de ${nombre}`} className={className}>
@@ -54,7 +55,7 @@ export function MiniaturaDecoracion({ miniatura, nombre, className }: { miniatur
       })}
     </svg>
   );
-}
+});
 
 type Props = {
   escena: Escena;
@@ -64,6 +65,35 @@ type Props = {
   seleccion?: string | null;
   onSeleccion?: (id: string | null) => void;
 };
+
+type DecoracionConMiniatura = ReturnType<typeof GRUPOS>[number]["decoraciones"][number];
+
+/**
+ * Las tarjetas de un grupo. Memorizadas: con cientos de tarjetas, elegir una pieza en la escena (que cambia el texto
+ * de arriba) no debe volver a pintarlas.
+ */
+const TarjetasGrupo = memo(function TarjetasGrupo({ decoraciones, elegida, arrastrable, alApretar, alClic }: {
+  decoraciones: readonly DecoracionConMiniatura[]; elegida: string | null; arrastrable: boolean;
+  alApretar: (e: PointerEvent<HTMLButtonElement>, d: DecoracionConMiniatura) => void; alClic: (e: MouseEvent<HTMLButtonElement>, id: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-1">
+      {decoraciones.map((d) => {
+        const activa = d.id === elegida;
+        return (
+          <button key={d.id} type="button" aria-pressed={activa} aria-expanded={activa} title={arrastrable ? `${d.descripcion} — arrástrala al visor` : d.descripcion}
+            onPointerDown={(e) => alApretar(e, d)}
+            onClick={(e) => alClic(e, d.id)}
+            className={`flex min-h-24 select-none flex-col items-center gap-0.5 rounded-xl p-1.5 text-center ring-1 transition-colors ${arrastrable ? "cursor-grab active:cursor-grabbing" : ""} ${activa ? "bg-superficie-suave ring-2 ring-acento" : "bg-superficie ring-borde hover:bg-superficie-suave"}`}>
+            <MiniaturaDecoracion miniatura={d.miniatura} nombre={d.nombre} className="size-14" />
+            <span className="text-[0.7rem] leading-tight text-texto">{d.nombre}</span>
+            <span className="text-[0.65rem] text-texto-suave">{d.noEsGlobo ? "no es globo" : `${d.globos} globos`}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+});
 
 const copiasEn = (n: number) => `${n} ${n === 1 ? "copia" : "copias"}`;
 
@@ -89,7 +119,20 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
   const reparto = useMemo(() => repartoSugerido(anclas, cada), [anclas, cada]);
   const total = GRUPOS().reduce((s, g) => s + g.decoraciones.length, 0);
 
-  const tocar = (id: string) => { setElegida(elegida === id ? null : id); setAviso(null); };
+  const tocar = useCallback((id: string) => { setElegida((actual) => (actual === id ? null : id)); setAviso(null); }, []);
+  const alApretar = useCallback((e: PointerEvent<HTMLButtonElement>, d: DecoracionConMiniatura) => {
+    apretada.current = { x: e.clientX, y: e.clientY };
+    // Con el dedo se toca y se elige (arrastrar movería la lista); con ratón o lápiz, se arrastra al visor.
+    if (!arrastrar || e.button !== 0 || e.pointerType === "touch") return;
+    e.preventDefault();
+    arrastrar({ decoracion: d.decoracion, nombre: d.nombre, idBase: d.id.replace(/_/g, "-") }, { x: e.clientX, y: e.clientY });
+  }, [arrastrar]);
+  const alClic = useCallback((e: MouseEvent<HTMLButtonElement>, id: string) => {
+    const desde = apretada.current;
+    apretada.current = null;
+    if (desde && e.detail > 0 && Math.hypot(e.clientX - desde.x, e.clientY - desde.y) > 6) return;
+    tocar(id);
+  }, [tocar]);
 
   const poner = (d: DecoracionPequena, destino: DestinoDecoracion) => {
     const { escena: nueva, id } = agregarDecoracion(escena, d.decoracion, destino, { nombre: d.nombre, idBase: d.id.replace(/_/g, "-") });
@@ -117,32 +160,7 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
         return (
           <div key={g.id} className="flex flex-col gap-1">
             <h3 className="text-xs font-semibold text-texto">{g.nombre}</h3>
-            <div className="grid grid-cols-3 gap-1">
-              {g.decoraciones.map((d) => {
-                const activa = d.id === elegida;
-                return (
-                  <button key={d.id} type="button" aria-pressed={activa} aria-expanded={activa} title={arrastrar ? `${d.descripcion} — arrástrala al visor` : d.descripcion}
-                    onPointerDown={(e) => {
-                      apretada.current = { x: e.clientX, y: e.clientY };
-                      // Con el dedo se toca y se elige (arrastrar movería la lista); con ratón o lápiz, se arrastra al visor.
-                      if (!arrastrar || e.button !== 0 || e.pointerType === "touch") return;
-                      e.preventDefault();
-                      arrastrar({ decoracion: d.decoracion, nombre: d.nombre, idBase: d.id.replace(/_/g, "-") }, { x: e.clientX, y: e.clientY });
-                    }}
-                    onClick={(e) => {
-                      const desde = apretada.current;
-                      apretada.current = null;
-                      if (desde && e.detail > 0 && Math.hypot(e.clientX - desde.x, e.clientY - desde.y) > 6) return;
-                      tocar(d.id);
-                    }}
-                    className={`flex min-h-24 select-none flex-col items-center gap-0.5 rounded-xl p-1.5 text-center ring-1 transition-colors ${arrastrar ? "cursor-grab active:cursor-grabbing" : ""} ${activa ? "bg-superficie-suave ring-2 ring-acento" : "bg-superficie ring-borde hover:bg-superficie-suave"}`}>
-                    <MiniaturaDecoracion miniatura={d.miniatura} nombre={d.nombre} className="size-14" />
-                    <span className="text-[0.7rem] leading-tight text-texto">{d.nombre}</span>
-                    <span className="text-[0.65rem] text-texto-suave">{d.noEsGlobo ? "no es globo" : `${d.globos} globos`}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <TarjetasGrupo decoraciones={g.decoraciones} elegida={abierta ? abierta.id : null} arrastrable={Boolean(arrastrar)} alApretar={alApretar} alClic={alClic} />
             {abierta && (
               <div className="flex flex-col gap-2 rounded-xl bg-superficie-suave p-2 ring-1 ring-acento/60" aria-label={`Dónde poner ${abierta.nombre}`}>
                 <p className="text-xs text-texto"><b>{abierta.nombre}</b> · {abierta.noEsGlobo ? "escenografía de papel (no es globo, no se cotiza)" : `${abierta.globos} globos`}. <span className="text-texto-suave">{abierta.descripcion}</span></p>

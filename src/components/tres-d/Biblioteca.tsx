@@ -191,6 +191,8 @@ function useMiniaturas3d(orden: readonly ItemBiblioteca[], huellas: ReadonlyMap<
           if (!pincel) { r(""); return; }
           pincel.fillStyle = "#efedf2";
           pincel.fillRect(0, 0, ANCHO_MINI, ALTO_MINI);
+          // El visor dibuja solo cuando algo cambia: se dibuja aquí mismo para que el lienzo tenga la imagen.
+          visorRef.current?.dibujar();
           pincel.drawImage(lienzo, 0, 0, ANCHO_MINI, ALTO_MINI);
           r(salida.toDataURL("image/jpeg", 0.72));
         }));

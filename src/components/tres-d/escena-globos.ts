@@ -7,6 +7,7 @@ import type { SolidoEscenografia } from "@/lib/globos3d/escenografia";
 import { calcoMotivo } from "./motivos-utileria";
 import type { ImpresoGlobo } from "@/lib/globos3d/estampados";
 import { calcoCorazon, cascaraImpresa, geometriaFoil, materialFoil } from "./impresos-visor";
+import { MEDIR_VISOR, cronometrar, infoDe, registrarVisor, type VisorMedible } from "./medicion-visor";
 
 /**
  * La escena de /3d con three.js, sin React: un globo (o la fila de todos los formatos) sobre un piso con
@@ -70,6 +71,11 @@ export type EscenaGlobos = {
   mostrarModulo: (globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos?: readonly TuboEnEscena[], extras?: ExtrasEscena) => void;
   redimensionar: () => void;
   /**
+   * Dibuja ya, sin esperar al cuadro siguiente: para leer el lienzo justo después (las miniaturas). El visor dibuja
+   * solo cuando algo cambia, así que en reposo el lienzo no se vuelve a pintar.
+   */
+  dibujar: () => void;
+  /**
    * Captura para la foto con IA: JPEG grande (lado mayor 1536 px) desde el ángulo que se ve, con la decoración
    * encuadrada justa, sin cuadrícula y con fondo claro. La proporción sale de la forma (vertical, cuadrada o
    * apaisada) y es la misma que se le pide a FLUX, para que no estire ni recorte.
@@ -129,8 +135,18 @@ const CM = 0.01;
  */
 let entornoMetal: THREE.Texture | null = null;
 
+/**
+ * Calidad del dibujo: «editor» para trabajar (perfiles y vueltas más bajos, cristal sin la pasada de transmisión, que
+ * vuelve a dibujar toda la escena) y «alta» para la captura que va a la IA y la vista de un globo suelto.
+ */
+export type Calidad = "editor" | "alta";
+const CALIDAD: Readonly<Record<Calidad, { pasos: number; vueltas: number; tubo: readonly [number, number]; curva: number; bisel: number }>> = {
+  alta: { pasos: 48, vueltas: 72, tubo: [120, 32], curva: 64, bisel: 10 },
+  editor: { pasos: 24, vueltas: 32, tubo: [60, 16], curva: 24, bisel: 4 },
+};
+
 /** Material de látex según la familia Sempertex. */
-function materialDe(familia: string, hex: string): THREE.MeshPhysicalMaterial {
+function materialDe(familia: string, hex: string, calidad: Calidad = "alta"): THREE.MeshPhysicalMaterial {
   const color = new THREE.Color(hex);
   switch (familia) {
     case "reflex":
@@ -142,6 +158,8 @@ function materialDe(familia: string, hex: string): THREE.MeshPhysicalMaterial {
     case "satin":
       return new THREE.MeshPhysicalMaterial({ color, metalness: 0.15, roughness: 0.32, sheen: 1, sheenColor: new THREE.Color("#ffffff"), sheenRoughness: 0.4, iridescence: 0.35, iridescenceIOR: 1.3, clearcoat: 0.7, clearcoatRoughness: 0.2 });
     case "cristal":
+      // En el editor, transparente con brillo: la transmisión obliga a dibujar la escena dos veces en cada cuadro.
+      if (calidad === "editor") return new THREE.MeshPhysicalMaterial({ color, metalness: 0, roughness: 0.04, transparent: true, opacity: 0.42, depthWrite: false, clearcoat: 1, clearcoatRoughness: 0.02 });
       return new THREE.MeshPhysicalMaterial({ color, metalness: 0, roughness: 0.04, transmission: 0.92, thickness: 0.004, ior: 1.42, transparent: true, clearcoat: 1, clearcoatRoughness: 0.02 });
     case "neon":
       return new THREE.MeshPhysicalMaterial({ color, roughness: 0.5, clearcoat: 0.3, emissive: color, emissiveIntensity: 0.18 });
@@ -163,80 +181,106 @@ function azar(semilla: number): () => number {
   return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return ((x >>> 0) % 100000) / 100000; };
 }
 
-/** Confeti plateado dentro de un globo de cristal: discos finos repartidos en la esfera del cuerpo (coordenadas locales). */
-function confetiDentro(centroY: number, radio: number, semilla: number): THREE.InstancedMesh {
+/** Dónde va cada disco del confeti de un globo de cristal (coordenadas locales del globo). */
+function discosConfeti(centroY: number, radio: number, semilla: number): THREE.Matrix4[] {
   const cantidad = Math.max(18, Math.round(radio / CM * 2.2));
-  const malla = new THREE.InstancedMesh(new THREE.CircleGeometry(0.65 * CM, 10), new THREE.MeshStandardMaterial({ color: 0xd9d9e0, metalness: 1, roughness: 0.25, side: THREE.DoubleSide }), cantidad);
   const r = azar(semilla);
-  const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
+  const uno = new THREE.Vector3(1, 1, 1);
+  const salida: THREE.Matrix4[] = [];
   for (let i = 0; i < cantidad; i++) {
     // Más confeti abajo (se pega por la estática al fondo y a las paredes), pero repartido por todo el globo.
     const u = r() * 2 - 1, t = r() * Math.PI * 2, k = Math.cbrt(0.35 + 0.65 * r()) * radio * 0.86;
     const s = Math.sqrt(1 - u * u);
     q.setFromEuler(new THREE.Euler(r() * Math.PI, r() * Math.PI, r() * Math.PI));
-    m.compose(new THREE.Vector3(s * Math.cos(t) * k, centroY + u * k - radio * 0.08, s * Math.sin(t) * k), q, new THREE.Vector3(1, 1, 1));
-    malla.setMatrixAt(i, m);
+    salida.push(new THREE.Matrix4().compose(new THREE.Vector3(s * Math.cos(t) * k, centroY + u * k - radio * 0.08, s * Math.sin(t) * k), q, uno));
   }
+  return salida;
+}
+
+const geometriaConfeti = () => new THREE.CircleGeometry(0.65 * CM, 10);
+const materialConfeti = () => new THREE.MeshStandardMaterial({ color: 0xd9d9e0, metalness: 1, roughness: 0.25, side: THREE.DoubleSide });
+
+/** Confeti plateado dentro de un globo de cristal: discos finos repartidos en la esfera del cuerpo (coordenadas locales). */
+function confetiDentro(centroY: number, radio: number, semilla: number): THREE.InstancedMesh {
+  const discos = discosConfeti(centroY, radio, semilla);
+  const malla = new THREE.InstancedMesh(geometriaConfeti(), materialConfeti(), discos.length);
+  discos.forEach((m, i) => malla.setMatrixAt(i, m));
   return malla;
 }
 
-/** Flor artificial mirando a +Y: hortensia (bola de florecitas), rosa (capullo en capas) o gypsophila (nube de puntitos). */
-function florArtificial(f: FlorEnEscena, semilla: number): THREE.Group {
-  const grupo = new THREE.Group();
+/** Las partes de una flor artificial (esferas o casquetes escalados): cada una se dibuja por instancias. */
+type ParteFlor = "florecita" | "hoja" | "petalo0" | "petalo1" | "petalo2" | "punto";
+
+/** Geometría de radio 1 de cada parte de flor (la escala de cada instancia le da su tamaño). */
+function geometriaParteFlor(parte: ParteFlor): THREE.BufferGeometry {
+  if (parte === "florecita") return new THREE.SphereGeometry(1, 8, 6);
+  if (parte === "hoja") return new THREE.SphereGeometry(1, 10, 6);
+  if (parte === "punto") return new THREE.SphereGeometry(1, 6, 4);
+  const capa = Number(parte.slice(-1));
+  return new THREE.SphereGeometry(1, 16, 10, 0, Math.PI * 2, 0, Math.PI * (0.55 + capa * 0.1));
+}
+
+/** Material de cada parte: blanco (el color va por instancia; si el material también lo llevara, se multiplicaría) salvo la hoja. */
+function materialParteFlor(parte: ParteFlor): THREE.MeshStandardMaterial {
+  if (parte === "hoja") return new THREE.MeshStandardMaterial({ color: 0x3f6b3a, roughness: 0.7 });
+  return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: parte === "florecita" ? 0.8 : parte === "punto" ? 0.9 : 0.6 });
+}
+
+type PiezaDeFlor = { parte: ParteFlor; local: THREE.Matrix4; color: THREE.Color | null };
+
+/**
+ * Flor artificial mirando a +Y: hortensia (bola de florecitas y tres hojas), rosa (capullo en capas) o gypsophila (nube
+ * de puntitos), como partes con su marco local y su color (`null`: el del material).
+ */
+function partesFlor(f: FlorEnEscena, semilla: number): PiezaDeFlor[] {
+  const salida: PiezaDeFlor[] = [];
   const color = new THREE.Color(f.hex);
   const radio = (f.diametroCm / 2) * CM;
   const r = azar(semilla);
+  const q = new THREE.Quaternion();
+  const vertical = new THREE.Vector3(0, 1, 0);
+  const marco = (x: number, y: number, z: number, giroY: number, sx: number, sy: number, sz: number) =>
+    new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), q.setFromAxisAngle(vertical, giroY), new THREE.Vector3(sx, sy, sz));
   if (f.tipo === "hortensia") {
-    const cantidad = 34;
-    // Material blanco: el color va por instancia (si el material también lo llevara, se multiplicaría y oscurecería).
-    const florecita = new THREE.InstancedMesh(new THREE.SphereGeometry(radio * 0.2, 8, 6), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }), cantidad);
-    const m = new THREE.Matrix4();
-    for (let i = 0; i < cantidad; i++) {
+    const e = radio * 0.2;
+    for (let i = 0; i < 34; i++) {
       const u = r(), t = r() * Math.PI * 2, s = Math.sqrt(1 - u * u);
       const tinte = 0.85 + r() * 0.3;
-      m.makeTranslation(s * Math.cos(t) * radio * 0.8, u * radio * 0.75, s * Math.sin(t) * radio * 0.8);
-      florecita.setMatrixAt(i, m);
-      florecita.setColorAt(i, color.clone().multiplyScalar(tinte));
+      salida.push({ parte: "florecita", local: marco(s * Math.cos(t) * radio * 0.8, u * radio * 0.75, s * Math.sin(t) * radio * 0.8, 0, e, e, e), color: color.clone().multiplyScalar(tinte) });
     }
-    grupo.add(florecita);
+    const h = radio * 0.45;
     for (let i = 0; i < 3; i++) {
-      const hoja = new THREE.Mesh(new THREE.SphereGeometry(radio * 0.45, 10, 6), new THREE.MeshStandardMaterial({ color: 0x3f6b3a, roughness: 0.7 }));
-      hoja.scale.set(1, 0.18, 0.55);
       const a = (i / 3) * Math.PI * 2 + r();
-      hoja.position.set(Math.cos(a) * radio * 0.85, 0, Math.sin(a) * radio * 0.85);
-      hoja.rotation.y = -a;
-      grupo.add(hoja);
+      salida.push({ parte: "hoja", local: marco(Math.cos(a) * radio * 0.85, 0, Math.sin(a) * radio * 0.85, -a, h, h * 0.18, h * 0.55), color: null });
     }
   } else if (f.tipo === "rosa") {
-    const material = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
-    for (let capa = 0; capa < 3; capa++) {
-      const petalo = new THREE.Mesh(new THREE.SphereGeometry(radio * (1 - capa * 0.25), 16, 10, 0, Math.PI * 2, 0, Math.PI * (0.55 + capa * 0.1)), material);
-      petalo.position.y = capa * radio * 0.18;
-      petalo.rotation.y = capa * 0.9;
-      grupo.add(petalo);
-    }
+    const capas: readonly ParteFlor[] = ["petalo0", "petalo1", "petalo2"];
+    capas.forEach((parte, capa) => {
+      const e = radio * (1 - capa * 0.25);
+      salida.push({ parte, local: marco(0, capa * radio * 0.18, 0, capa * 0.9, e, e, e), color });
+    });
   } else {
-    const cantidad = 40;
-    const punto = new THREE.InstancedMesh(new THREE.SphereGeometry(0.45 * CM, 6, 4), new THREE.MeshStandardMaterial({ color, roughness: 0.9 }), cantidad);
-    const m = new THREE.Matrix4();
-    for (let i = 0; i < cantidad; i++) {
+    const e = 0.45 * CM;
+    for (let i = 0; i < 40; i++) {
       const u = r(), t = r() * Math.PI * 2, s = Math.sqrt(1 - u * u), k = radio * (0.4 + r() * 0.6);
-      m.makeTranslation(s * Math.cos(t) * k, u * k, s * Math.sin(t) * k);
-      punto.setMatrixAt(i, m);
+      salida.push({ parte: "punto", local: marco(s * Math.cos(t) * k, u * k, s * Math.sin(t) * k, 0, e, e, e), color });
     }
-    grupo.add(punto);
   }
-  return grupo;
+  return salida;
 }
 
-function torneado(perfil: readonly PuntoPerfil[]): THREE.LatheGeometry {
-  return new THREE.LatheGeometry(perfil.map((p) => new THREE.Vector2(p.r * CM, p.y * CM)), 72);
+function torneado(perfil: readonly PuntoPerfil[], vueltas: number = CALIDAD.alta.vueltas): THREE.LatheGeometry {
+  return new THREE.LatheGeometry(perfil.map((p) => new THREE.Vector2(p.r * CM, p.y * CM)), vueltas);
 }
+
+/** Una parte de un globo: su geometría y dónde va en el marco del globo (nudo en el origen, cuerpo hacia +Y). */
+type ParteGlobo = { geometria: THREE.BufferGeometry; local: THREE.Matrix4 };
+
+const enY = (y: number) => new THREE.Matrix4().makeTranslation(0, y, 0);
 
 /** Tubito o Link-O-Loon 660: cápsula curvada (un arco suave) con la boquilla y el nudo en un extremo. */
-function tubo(grosorCm: number, largoCm: number, material: THREE.Material): THREE.Group {
-  const grupo = new THREE.Group();
+function partesTubo(grosorCm: number, largoCm: number, calidad: Calidad): ParteGlobo[] {
   const radio = (grosorCm / 2) * CM;
   const largo = largoCm * CM;
   const curva = new THREE.CatmullRomCurve3([
@@ -245,37 +289,50 @@ function tubo(grosorCm: number, largoCm: number, material: THREE.Material): THRE
     new THREE.Vector3(largo / 4, largo * 0.06, 0),
     new THREE.Vector3(largo / 2, 0, 0),
   ]);
-  grupo.add(new THREE.Mesh(new THREE.TubeGeometry(curva, 120, radio, 32, false), material));
+  const [tramos, lados] = CALIDAD[calidad].tubo;
+  const partes: ParteGlobo[] = [{ geometria: new THREE.TubeGeometry(curva, tramos, radio, lados, false), local: new THREE.Matrix4() }];
   for (const t of [0, 1]) {
-    const punta = new THREE.Mesh(new THREE.SphereGeometry(radio, 32, 16), material);
-    punta.position.copy(curva.getPoint(t));
-    grupo.add(punta);
+    const p = curva.getPoint(t);
+    partes.push({ geometria: new THREE.SphereGeometry(radio, lados, lados / 2), local: new THREE.Matrix4().makeTranslation(p.x, p.y, p.z) });
   }
   // Nudo en el extremo izquierdo.
-  const nudo = new THREE.Mesh(new THREE.TorusGeometry(radio * 0.45, radio * 0.25, 12, 24), material);
-  nudo.position.copy(curva.getPoint(0)).add(new THREE.Vector3(-radio * 1.1, 0, 0));
-  nudo.rotation.y = Math.PI / 2;
-  grupo.add(nudo);
-  // Apoyado sobre el piso.
-  grupo.position.y = radio;
+  const nudo = curva.getPoint(0).add(new THREE.Vector3(-radio * 1.1, 0, 0));
+  partes.push({ geometria: new THREE.TorusGeometry(radio * 0.45, radio * 0.25, 12, 24), local: new THREE.Matrix4().makeRotationY(Math.PI / 2).setPosition(nudo) });
+  return partes;
+}
+
+/** Un grupo con las partes de un globo, todas con el mismo material. */
+function grupoDePartes(partes: readonly ParteGlobo[], material: THREE.Material): THREE.Group {
+  const grupo = new THREE.Group();
+  for (const parte of partes) {
+    const malla = new THREE.Mesh(parte.geometria, material);
+    parte.local.decompose(malla.position, malla.quaternion, malla.scale);
+    grupo.add(malla);
+  }
   return grupo;
+}
+
+/** La curva (m) de un tramo de tubito; `null` si no tiene con qué. */
+function curvaDeTubo(tramo: TuboEnEscena): THREE.CatmullRomCurve3 | null {
+  const puntos = tramo.puntos.map((p) => new THREE.Vector3(p.x * CM, p.y * CM, p.z * CM));
+  if (puntos.length < 2) return null;
+  // Con 2 puntos la curva es una recta: se añade el punto medio para que Catmull-Rom tenga con qué trabajar.
+  if (puntos.length === 2) puntos.splice(1, 0, puntos[0]!.clone().lerp(puntos[1]!, 0.5));
+  return new THREE.CatmullRomCurve3(puntos, tramo.cerrado, "centripetal");
 }
 
 /**
  * Tubito que sigue una curva cualquiera (un lazo, un ocho, una burbuja, una cola): tubo a lo largo de la curva
  * con las puntas redondeadas; si es cerrado, sin puntas. A diferencia de `tubo`, la curva viene dada (cm).
  */
-function tuboEnCurva(tramo: TuboEnEscena, material: THREE.Material): THREE.Group {
+function tuboEnCurva(tramo: TuboEnEscena, material: THREE.Material, conPuntas = true): THREE.Group {
   const grupo = new THREE.Group();
   const radio = (tramo.grosorCm / 2) * CM;
-  const puntos = tramo.puntos.map((p) => new THREE.Vector3(p.x * CM, p.y * CM, p.z * CM));
-  if (puntos.length < 2) return grupo;
-  // Con 2 puntos la curva es una recta: se añade el punto medio para que Catmull-Rom tenga con qué trabajar.
-  if (puntos.length === 2) puntos.splice(1, 0, puntos[0]!.clone().lerp(puntos[1]!, 0.5));
-  const curva = new THREE.CatmullRomCurve3(puntos, tramo.cerrado, "centripetal");
-  const segmentos = Math.min(160, Math.max(12, puntos.length * 4));
+  const curva = curvaDeTubo(tramo);
+  if (!curva) return grupo;
+  const segmentos = Math.min(160, Math.max(12, curva.points.length * 4));
   grupo.add(new THREE.Mesh(new THREE.TubeGeometry(curva, segmentos, radio, 14, tramo.cerrado), material));
-  if (!tramo.cerrado) {
+  if (!tramo.cerrado && conPuntas) {
     for (const t of [0, 1]) {
       const punta = new THREE.Mesh(new THREE.SphereGeometry(radio, 16, 10), material);
       punta.position.copy(curva.getPoint(t));
@@ -388,22 +445,20 @@ function estampadoSobre(infladoCm: number, cuelloExtraCm: number, estampado: Est
   return grupo;
 }
 
-function corazon(anchoCm: number, material: THREE.Material): THREE.Group {
+/** Corazón: la figura extruida con bisel redondo (la primera parte: ahí va la calcomanía) y el nudo. */
+function partesCorazon(anchoCm: number, calidad: Calidad): ParteGlobo[] {
   const forma = new THREE.Shape(contornoCorazon(anchoCm * CM).map((p) => new THREE.Vector2(p.x, p.y)));
   const ancho = anchoCm * CM;
-  const geometria = new THREE.ExtrudeGeometry(forma, { depth: ancho * 0.22, bevelEnabled: true, bevelThickness: ancho * 0.14, bevelSize: ancho * 0.1, bevelSegments: 10, curveSegments: 64 });
+  const { curva, bisel } = CALIDAD[calidad];
+  const geometria = new THREE.ExtrudeGeometry(forma, { depth: ancho * 0.22, bevelEnabled: true, bevelThickness: ancho * 0.14, bevelSize: ancho * 0.1, bevelSegments: bisel, curveSegments: curva });
   geometria.center();
-  const malla = new THREE.Mesh(geometria, material);
-  const grupo = new THREE.Group();
-  grupo.add(malla);
   geometria.computeBoundingBox();
   const caja = geometria.boundingBox;
   const abajo = caja ? -caja.min.y : ancho / 2;
-  malla.position.y = abajo + ancho * 0.05;
-  const nudo = new THREE.Mesh(new THREE.TorusGeometry(ancho * 0.03, ancho * 0.015, 12, 24), material);
-  nudo.position.y = ancho * 0.03;
-  grupo.add(nudo);
-  return grupo;
+  return [
+    { geometria, local: enY(abajo + ancho * 0.05) },
+    { geometria: new THREE.TorusGeometry(ancho * 0.03, ancho * 0.015, 12, 24), local: enY(ancho * 0.03) },
+  ];
 }
 
 /** Textura de lentejuelas: discos oscuros con brillos al azar (cada uno refleja distinto). Una casilla = 12 cm. */
@@ -488,12 +543,18 @@ function solidoEscenografia(s: SolidoEscenografia): THREE.Object3D {
   return malla;
 }
 
+/** Un globo completo con sus propias geometrías y su material (calidad alta): el globo suelto y lo que no va por instancias. */
 function construir(globo: GloboEnEscena): THREE.Object3D {
   const material = materialDe(globo.familia, globo.hex);
   const { formato, infladoCm } = globo;
-  if (formato.tipo === "tubito") return tubo(infladoCm, formato.largoCm ?? 150, material);
-  if (formato.tipo === "link" && formato.largoCm) return tubo(infladoCm, formato.largoCm, material);
-  if (formato.tipo === "corazon") return corazon(infladoCm, material);
+  const largoTubo = formato.tipo === "tubito" ? formato.largoCm ?? 150 : formato.tipo === "link" ? formato.largoCm : undefined;
+  if (largoTubo) {
+    const grupo = grupoDePartes(partesTubo(infladoCm, largoTubo, "alta"), material);
+    // Apoyado sobre el piso (en un módulo, la posición del nudo lo reemplaza).
+    grupo.position.y = (infladoCm / 2) * CM;
+    return grupo;
+  }
+  if (formato.tipo === "corazon") return grupoDePartes(partesCorazon(infladoCm, "alta"), material);
   const extra = globo.cuelloExtraCm ?? 0;
   const perfil = formato.tipo === "link" ? perfilLink(infladoCm, extra) : perfilRedondo(infladoCm, extra);
   const malla = new THREE.Mesh(torneado(perfil), material);
@@ -509,12 +570,158 @@ function ancho(objeto: THREE.Object3D): number {
   return caja.max.x - caja.min.x;
 }
 
+const ARRIBA = new THREE.Vector3(0, 1, 0);
+const NADA: readonly never[] = [];
+const BLANCO = new THREE.Color(0xffffff);
+/** Diámetro (cm) con que se tornea la geometría de un globo que luego se escala a su tamaño (el perfil es proporcional desde 10 cm). */
+const DIAMETRO_BASE = 30;
+
+/** Hacia dónde mira un globo colocado: su eje (+Y local) y, si es plano, su cara (+Z local). */
+function orientacionDe(globo: GloboColocadoEnEscena, q: THREE.Quaternion): THREE.Quaternion {
+  const eje = new THREE.Vector3(globo.direccion.x, globo.direccion.y, globo.direccion.z).normalize();
+  if (!globo.frente) return q.setFromUnitVectors(ARRIBA, eje);
+  // Globo plano: Y local = dirección del cuerpo, Z local (la cara del corazón) = frente.
+  const z = new THREE.Vector3(globo.frente.x, globo.frente.y, globo.frente.z);
+  z.addScaledVector(eje, -z.dot(eje)).normalize();
+  const x = new THREE.Vector3().crossVectors(eje, z);
+  return q.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, eje, z));
+}
+
+/** El marco de un globo colocado (del espacio del globo, en m, a la escena). */
+function marcoDeGlobo(globo: GloboColocadoEnEscena): THREE.Matrix4 {
+  const q = orientacionDe(globo, new THREE.Quaternion());
+  return new THREE.Matrix4().compose(new THREE.Vector3(globo.nudo.x * CM, globo.nudo.y * CM, globo.nudo.z * CM), q, new THREE.Vector3(1, 1, 1));
+}
+
+/** Lo impreso de un globo redondo (estampado, cáscara impresa) y, si se pide, su confeti: en el marco del globo. */
+function extrasDeGlobo(globo: GloboColocadoEnEscena, indice: number, conConfeti: boolean): THREE.Object3D[] {
+  const salida: THREE.Object3D[] = [];
+  if (globo.formato.tipo !== "redondo") return salida;
+  const extra = globo.cuelloExtraCm ?? 0;
+  if (conConfeti && globo.confeti) salida.push(confetiDentro((centroCuerpo("redondo", globo.infladoCm) + extra) * CM, (globo.infladoCm / 2) * CM, indice + 1));
+  // Lo impreso (iris, cara de calabaza) pegado a la superficie, en el marco del globo.
+  if (globo.estampado) salida.push(estampadoSobre(globo.infladoCm, extra, globo.estampado));
+  // Lo impreso como textura (letrero, patrón, cara): cáscara sobre el redondo.
+  const impreso = globo.estampado?.impreso;
+  if (impreso) {
+    const cascara = cascaraImpresa(perfilRedondo(globo.infladoCm, extra), centroCuerpo("redondo", globo.infladoCm) + extra, impreso, entornoMetal);
+    if (cascara) salida.push(cascara);
+  }
+  return salida;
+}
+
+/** Un globo colocado entero, con sus propias geometrías y material (calidad alta): lo que no va por instancias. */
+function objetoCompleto(globo: GloboColocadoEnEscena, indice: number): THREE.Object3D {
+  const objeto = construir(globo);
+  objeto.add(...extrasDeGlobo(globo, indice, true));
+  const impreso = globo.estampado?.impreso;
+  if (impreso && globo.formato.tipo === "corazon") {
+    // La calcomanía en la cara del corazón.
+    const malla = objeto.children.find((hijo): hijo is THREE.Mesh => hijo instanceof THREE.Mesh && hijo.geometry instanceof THREE.ExtrudeGeometry);
+    const calco = malla ? calcoCorazon(malla, globo.infladoCm, impreso, entornoMetal) : null;
+    if (malla && calco) malla.add(calco);
+  }
+  orientacionDe(globo, objeto.quaternion);
+  objeto.position.set(globo.nudo.x * CM, globo.nudo.y * CM, globo.nudo.z * CM);
+  objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
+  return objeto;
+}
+
+/**
+ * Huella numérica (dos hashes de 32 bits) de lo que dibuja una pieza, con las posiciones relativas a un punto suyo: si
+ * no cambia, la pieza no se rehace (y si solo cambió ese punto, se corre entera).
+ */
+class Huella {
+  private a = 0x811c9dc5;
+  private b = 0x2545f491;
+  entero(k: number) {
+    this.a = Math.imul(this.a ^ k, 16777619);
+    this.b = Math.imul(this.b ^ (k + 0x9e3779b9), 2246822507) ^ (this.b >>> 15);
+  }
+  num(v: number, escala: number) { this.entero(Math.round(v * escala) | 0); }
+  texto(t: string) { for (let i = 0; i < t.length; i++) this.entero(t.charCodeAt(i)); this.entero(-1); }
+  valor(): string { return `${(this.a >>> 0).toString(36)}:${(this.b >>> 0).toString(36)}`; }
+}
+
+/** El JSON de un estampado (los objetos se reutilizan entre armados: se calcula una vez por objeto). */
+const jsonEstampado = new WeakMap<object, string>();
+function jsonDe(objeto: object): string {
+  let texto = jsonEstampado.get(objeto);
+  if (texto === undefined) { texto = JSON.stringify(objeto); jsonEstampado.set(objeto, texto); }
+  return texto;
+}
+
+/** Lo que dibuja una pieza (con el índice de cada globo y flor en su lista: de ahí sale el azar del confeti y la flor). */
+type ContenidoNodo = {
+  globos: Array<{ g: GloboColocadoEnEscena; i: number }>;
+  tubos: TuboEnEscena[];
+  flores: Array<{ f: FlorEnEscena; i: number }>;
+  cilindros: CilindroEnEscena[];
+  solidos: SolidoEnEscena[];
+};
+
+/** Un punto de la pieza (cm) al que se refieren las posiciones de su huella. */
+function referenciaDe(c: ContenidoNodo): THREE.Vector3 {
+  const p = c.globos[0]?.g.nudo ?? c.tubos[0]?.puntos[0] ?? c.flores[0]?.f.posicion ?? c.cilindros[0]?.base ?? c.solidos[0]?.origen;
+  return p ? new THREE.Vector3(p.x, p.y, p.z) : new THREE.Vector3();
+}
+
+function huellaDe(c: ContenidoNodo, ref: THREE.Vector3): string {
+  const h = new Huella();
+  const pos = (p: Punto3) => { h.num(p.x - ref.x, 100); h.num(p.y - ref.y, 100); h.num(p.z - ref.z, 100); };
+  const dir = (p: Punto3) => { h.num(p.x, 1e4); h.num(p.y, 1e4); h.num(p.z, 1e4); };
+  for (const { g, i } of c.globos) {
+    h.texto(g.formato.id); h.num(g.infladoCm, 1000); h.texto(g.hex); h.texto(g.familia); h.num(g.cuelloExtraCm ?? 0, 1000);
+    pos(g.nudo); dir(g.direccion);
+    if (g.frente) dir(g.frente); else h.entero(-3);
+    h.entero(g.confeti ? i + 1 : 0);
+    if (g.estampado) h.texto(jsonDe(g.estampado)); else h.entero(-4);
+  }
+  h.entero(-5);
+  for (const t of c.tubos) {
+    h.entero(t.puntos.length);
+    for (const p of t.puntos) pos(p);
+    h.num(t.grosorCm, 1000); h.texto(t.hex); h.texto(t.familia); h.entero((t.cerrado ? 1 : 0) + (t.relleno ? 2 : 0));
+  }
+  h.entero(-6);
+  for (const { f, i } of c.flores) { h.texto(f.tipo); h.texto(f.hex); h.num(f.diametroCm, 1000); pos(f.posicion); dir(f.normal); h.entero(i + 7); }
+  h.entero(-7);
+  for (const x of c.cilindros) { pos(x.base); h.num(x.radioCm, 1000); h.num(x.altoCm, 1000); h.texto(x.hex); }
+  h.entero(-8);
+  const fuera = new Set(["origen", "ejeX", "ejeY", "ejeZ", "nodo"]);
+  for (const s of c.solidos) {
+    h.texto(JSON.stringify(s, (clave: string, valor: unknown) => (fuera.has(clave) ? undefined : valor)));
+    pos(s.origen); dir(s.ejeX); dir(s.ejeY); dir(s.ejeZ);
+  }
+  return h.valor();
+}
+
+/** Lo dibujado de una pieza: su grupo (lo que no va por instancias) y sus instancias en los lotes. */
+type NodoDibujado = {
+  huella: string;
+  /** El punto de referencia de su huella (cm). */
+  ref: THREE.Vector3;
+  /** Dónde está su grupo (m): se corre si la pieza se movió sin cambiar. */
+  base: THREE.Vector3;
+  grupo: THREE.Group;
+  instancias: Instancia[];
+  caja: THREE.Box3 | null;
+};
+/** Una copia de una geometría compartida: en qué lote va, su marco (en el módulo) y su color (`null`: el del material). */
+type Instancia = { lote: string; matriz: THREE.Matrix4; color: THREE.Color | null };
+/** Cómo es un lote: su geometría y su material en cada calidad, y si cada copia lleva su color. */
+type DefLote = { geometria: (calidad: Calidad) => THREE.BufferGeometry; material: (calidad: Calidad) => THREE.Material; conColor: boolean };
+/** Todas las copias de una geometría con un material: una sola llamada de dibujo. */
+type Lote = { def: DefLote; malla: THREE.InstancedMesh; capacidad: number; nodos: Array<string | null>; bases: Float32Array; ocultos: Set<number> };
+
 export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const renderer = new THREE.WebGLRenderer({ canvas: lienzo, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.toneMapping = THREE.NeutralToneMapping;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
+  // La sombra se rehace solo cuando cambia lo dibujado (girar la cámara no la cambia).
+  renderer.shadowMap.autoUpdate = false;
   renderer.setClearColor(0x000000, 0);
 
   const escena = new THREE.Scene();
@@ -548,6 +755,10 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
 
   const contenido = new THREE.Group();
   escena.add(contenido);
+  // Lo de un módulo o una escena (por piezas y lotes) y la fila de globos sueltos de la pestaña Globos.
+  const modulo = new THREE.Group();
+  const fila = new THREE.Group();
+  contenido.add(modulo, fila);
   // La sala de una escena (piso, paredes y techo) y las ayudas (la caja de la pieza elegida): fuera de `contenido`
   // para que el encuadre y la captura se centren en los globos.
   const sala = new THREE.Group();
@@ -560,20 +771,335 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const marcaEncima = new THREE.Group();
   lienzoAyudas.add(marcasLugares, marcaEncima, fantasma);
   escena.add(sala, ayudas, lienzoAyudas);
-  /** Lo dibujado de cada pieza de una escena, en su propio grupo (para elegirla y arrastrarla). */
-  let gruposPorNodo = new Map<string, THREE.Group>();
   /** La caja de la pieza elegida tal como se armó (al arrastrar se corre desde aquí). */
   let resaltado: { caja: THREE.Box3; ayuda: THREE.Box3Helper } | null = null;
+
+  // ----------------------------------------------------------------------------------------------------------
+  // Dibujar solo cuando algo cambia (la cámara, lo que se ve, el tamaño o las ayudas): en reposo no se dibuja.
+  // ----------------------------------------------------------------------------------------------------------
+  let pendiente = 0;
+  let cuadros = 0;
+  let vivo = true;
+  const dibujar = () => { renderer.render(escena, camara); cuadros++; };
+  const alCuadro = () => {
+    pendiente = 0;
+    // Con inercia, `update` sigue moviendo la cámara (y avisa `change`, que pide el cuadro siguiente) hasta pararse.
+    controles.update();
+    dibujar();
+  };
+  const pedirCuadro = () => { if (!pendiente && vivo) pendiente = requestAnimationFrame(alCuadro); };
+  /** Cambió lo que proyecta sombra: se rehace la sombra en el próximo cuadro. */
+  const cambioConSombra = () => { renderer.shadowMap.needsUpdate = true; pedirCuadro(); };
+  controles.addEventListener("change", pedirCuadro);
+
+  // ----------------------------------------------------------------------------------------------------------
+  // Recursos compartidos: geometrías y materiales que usan muchos globos (nunca se liberan al redibujar).
+  // ----------------------------------------------------------------------------------------------------------
+  const compartido = <T extends THREE.BufferGeometry | THREE.Material>(x: T): T => { x.userData.compartido = true; return x; };
+  /** Las partes de cada plantilla de globo por calidad (`clave|calidad`). */
+  const juegos = new Map<string, ParteGlobo[]>();
+  const constructores = new Map<string, (calidad: Calidad) => ParteGlobo[]>();
+  const juego = (clave: string, calidad: Calidad): ParteGlobo[] => {
+    const k = `${clave}|${calidad}`;
+    let partes = juegos.get(k);
+    if (!partes) {
+      const construirJuego = constructores.get(clave);
+      partes = construirJuego ? construirJuego(calidad) : [];
+      for (const parte of partes) compartido(parte.geometria);
+      juegos.set(k, partes);
+    }
+    return partes;
+  };
+  const materiales = new Map<string, THREE.Material>();
+  const material = (clave: string, crear: () => THREE.Material): THREE.Material => {
+    let m = materiales.get(clave);
+    if (!m) { m = compartido(crear()); materiales.set(clave, m); }
+    return m;
+  };
+  const geometriasSueltas = new Map<string, THREE.BufferGeometry>();
+  const geometria = (clave: string, crear: () => THREE.BufferGeometry): THREE.BufferGeometry => {
+    let g = geometriasSueltas.get(clave);
+    if (!g) { g = compartido(crear()); geometriasSueltas.set(clave, g); }
+    return g;
+  };
+
+  /**
+   * La plantilla de un globo: qué juego de partes usa y con qué escala. Los redondos y los Link-O-Loon se tornean una
+   * vez con 30 cm y se escalan (el perfil es proporcional al diámetro desde 10 cm: el mismo dibujo, exacto). `null`:
+   * va entero aparte (corazón con calcomanía).
+   */
+  function plantillaDe(globo: GloboColocadoEnEscena): { clave: string; escala: number } | null {
+    const { formato, infladoCm } = globo;
+    const largoTubo = formato.tipo === "tubito" ? formato.largoCm ?? 150 : formato.tipo === "link" ? formato.largoCm : undefined;
+    if (largoTubo) {
+      const clave = `tubo|${infladoCm}|${largoTubo}`;
+      if (!constructores.has(clave)) constructores.set(clave, (c) => partesTubo(infladoCm, largoTubo, c));
+      return { clave, escala: 1 };
+    }
+    if (formato.tipo === "corazon") {
+      if (globo.estampado?.impreso) return null;
+      const clave = `corazon|${infladoCm}`;
+      if (!constructores.has(clave)) constructores.set(clave, (c) => partesCorazon(infladoCm, c));
+      return { clave, escala: 1 };
+    }
+    const tipo = formato.tipo === "link" ? "link" : "redondo";
+    const perfil = tipo === "link" ? perfilLink : perfilRedondo;
+    const extra = globo.cuelloExtraCm ?? 0;
+    if (infladoCm >= 10) {
+      // El cuello extra va proporcional al diámetro (redondeado a 0,1 %: menos de medio milímetro en un globo grande).
+      const razon = Math.round((extra / infladoCm) * 1000) / 1000;
+      const clave = `torno|${tipo}|${razon}`;
+      if (!constructores.has(clave)) constructores.set(clave, (c) => [{ geometria: torneado(perfil(DIAMETRO_BASE, razon * DIAMETRO_BASE, CALIDAD[c].pasos), CALIDAD[c].vueltas), local: new THREE.Matrix4() }]);
+      return { clave, escala: infladoCm / DIAMETRO_BASE };
+    }
+    const d = Math.round(infladoCm * 10) / 10, e = Math.round(extra * 20) / 20;
+    const clave = `torno|${tipo}|${d}|${e}`;
+    if (!constructores.has(clave)) constructores.set(clave, (c) => [{ geometria: torneado(perfil(d, e, CALIDAD[c].pasos), CALIDAD[c].vueltas), local: new THREE.Matrix4() }]);
+    return { clave, escala: d > 0 ? infladoCm / d : 1 };
+  }
+
+  /** El material de látex de una familia (blanco: el color va por copia), salvo el neón, que brilla en su propio color. */
+  const materialGlobo = (familia: string, hex: string, calidad: Calidad) => {
+    const propio = familia === "neon";
+    return material(`globo|${familia}|${propio ? hex : ""}|${calidad}`, () => materialDe(familia, propio ? hex : "#ffffff", calidad));
+  };
+
+  // ----------------------------------------------------------------------------------------------------------
+  // Piezas y lotes
+  // ----------------------------------------------------------------------------------------------------------
+  const defs = new Map<string, DefLote>();
+  const lotes = new Map<string, Lote>();
+  const nodos = new Map<string, NodoDibujado>();
+  /** Lo corrido (m) de cada pieza que se arrastra sin rearmar. */
+  const desplazamientos = new Map<string, THREE.Vector3>();
+  let anclasMalla: THREE.InstancedMesh | null = null;
+  /** Lo que se mostró la última vez (si llega lo mismo, no se mira pieza por pieza). */
+  let entrada: { globos: unknown; tubos: unknown; flores: unknown; cilindros: unknown; solidos: unknown } | null = null;
+  let claveSala: string | null = null;
+
+  function asegurarDef(clave: string, crear: () => DefLote) { if (!defs.has(clave)) defs.set(clave, crear()); }
+
+  /** Un globo de una pieza: por instancias en sus lotes (y lo impreso aparte, en su marco). */
+  function agregarGlobo(globo: GloboColocadoEnEscena, indice: number, grupo: THREE.Group, instancias: Instancia[]) {
+    const plantilla = plantillaDe(globo);
+    if (!plantilla) { grupo.add(objetoCompleto(globo, indice)); return; }
+    const marco = marcoDeGlobo(globo);
+    const propio = globo.familia === "neon";
+    const color = propio ? null : new THREE.Color(globo.hex);
+    const escalado = plantilla.escala !== 1 ? marco.clone().scale(new THREE.Vector3(plantilla.escala, plantilla.escala, plantilla.escala)) : marco;
+    juego(plantilla.clave, "editor").forEach((parte, k) => {
+      const lote = `${plantilla.clave}#${k}|${globo.familia}|${propio ? globo.hex : ""}`;
+      asegurarDef(lote, () => ({
+        geometria: (c) => juego(plantilla.clave, c)[k]?.geometria ?? juego(plantilla.clave, "editor")[k]!.geometria,
+        material: (c) => materialGlobo(globo.familia, globo.hex, c),
+        conColor: !propio,
+      }));
+      instancias.push({ lote, matriz: escalado.clone().multiply(parte.local), color });
+    });
+    if (globo.confeti && globo.formato.tipo === "redondo") {
+      asegurarDef("confeti", () => {
+        const g = geometria("confeti", geometriaConfeti), m = material("confeti", materialConfeti);
+        return { geometria: () => g, material: () => m, conColor: false };
+      });
+      const centroY = (centroCuerpo("redondo", globo.infladoCm) + (globo.cuelloExtraCm ?? 0)) * CM;
+      for (const disco of discosConfeti(centroY, (globo.infladoCm / 2) * CM, indice + 1)) instancias.push({ lote: "confeti", matriz: marco.clone().multiply(disco), color: null });
+    }
+    const extras = extrasDeGlobo(globo, indice, false);
+    if (extras.length) {
+      const soporte = new THREE.Group();
+      marco.decompose(soporte.position, soporte.quaternion, soporte.scale);
+      soporte.add(...extras);
+      soporte.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
+      grupo.add(soporte);
+    }
+  }
+
+  /** El material (compartido) del cuerpo de un tubito; el de cristal, sin transmisión (como en el editor). */
+  const materialTubo = (familia: string, hex: string) => material(`tubo|${familia}|${hex}`, () => materialDe(familia, hex, familia === "cristal" ? "editor" : "alta"));
+
+  function agregarTubo(tramo: TuboEnEscena, grupo: THREE.Group, instancias: Instancia[]) {
+    const m = materialTubo(tramo.familia, tramo.hex);
+    const objeto = tuboEnCurva(tramo, m, false);
+    if (tramo.relleno && tramo.cerrado) { const relleno = rellenoPlano(tramo.puntos, m); if (relleno) objeto.add(relleno); }
+    objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
+    grupo.add(objeto);
+    // Las puntas redondeadas, por instancias.
+    const curva = tramo.cerrado ? null : curvaDeTubo(tramo);
+    if (!curva) return;
+    const propio = tramo.familia === "neon";
+    const lote = `punta|${tramo.familia}|${propio ? tramo.hex : ""}`;
+    asegurarDef(lote, () => {
+      const g = geometria("punta", () => new THREE.SphereGeometry(1, 16, 10));
+      return { geometria: () => g, material: (c) => materialGlobo(tramo.familia, tramo.hex, c), conColor: !propio };
+    });
+    const radio = (tramo.grosorCm / 2) * CM;
+    const color = propio ? null : new THREE.Color(tramo.hex);
+    for (const t of [0, 1]) instancias.push({ lote, matriz: new THREE.Matrix4().makeScale(radio, radio, radio).setPosition(curva.getPoint(t)), color });
+  }
+
+  function agregarFlor(flor: FlorEnEscena, indice: number, instancias: Instancia[]) {
+    const q = new THREE.Quaternion().setFromUnitVectors(ARRIBA, new THREE.Vector3(flor.normal.x, flor.normal.y, flor.normal.z).normalize());
+    const marco = new THREE.Matrix4().compose(new THREE.Vector3(flor.posicion.x * CM, flor.posicion.y * CM, flor.posicion.z * CM), q, new THREE.Vector3(1, 1, 1));
+    for (const pieza of partesFlor(flor, indice + 7)) {
+      const lote = `flor|${pieza.parte}`;
+      asegurarDef(lote, () => {
+        const g = geometria(lote, () => geometriaParteFlor(pieza.parte)), m = material(lote, () => materialParteFlor(pieza.parte));
+        return { geometria: () => g, material: () => m, conColor: pieza.parte !== "hoja" };
+      });
+      instancias.push({ lote, matriz: marco.clone().multiply(pieza.local), color: pieza.color });
+    }
+  }
+
+  function construirNodo(id: string, c: ContenidoNodo, ref: THREE.Vector3, huella: string): NodoDibujado {
+    const grupo = new THREE.Group();
+    if (id) grupo.userData.nodo = id;
+    const instancias: Instancia[] = [];
+    for (const { g, i } of c.globos) agregarGlobo(g, i, grupo, instancias);
+    for (const tramo of c.tubos) agregarTubo(tramo, grupo, instancias);
+    // Follaje (no es globo): flores artificiales mirando hacia fuera de su hueco.
+    for (const { f, i } of c.flores) agregarFlor(f, i, instancias);
+    // Volúmenes de la escena (el pedestal, los hilos de lo que cuelga del techo).
+    for (const x of c.cilindros) {
+      const cilindro = new THREE.Mesh(new THREE.CylinderGeometry(x.radioCm * CM, x.radioCm * CM, x.altoCm * CM, 48), new THREE.MeshStandardMaterial({ color: new THREE.Color(x.hex), roughness: 0.55 }));
+      cilindro.position.set(x.base.x * CM, (x.base.y + x.altoCm / 2) * CM, x.base.z * CM);
+      cilindro.castShadow = true;
+      cilindro.receiveShadow = true;
+      grupo.add(cilindro);
+    }
+    // Escenografía (paneles, mesas, tapete): con su pieza, para elegirla y arrastrarla como a las demás.
+    // Lo oculto (amarres internos) sostiene y da su caja, pero no se dibuja.
+    for (const s of c.solidos) if (!s.oculto) grupo.add(solidoEscenografia(s));
+    modulo.add(grupo);
+    return { huella, ref: ref.clone(), base: new THREE.Vector3(), grupo, instancias, caja: null };
+  }
+
+  function quitarNodo(dibujado: NodoDibujado) {
+    modulo.remove(dibujado.grupo);
+    liberar(dibujado.grupo);
+  }
+
+  /** Pieza por pieza: rehace solo las que cambiaron y corre las que solo se movieron. Devuelve si cambió algo. */
+  function actualizarNodos(globos: readonly GloboColocadoEnEscena[], tubos: readonly TuboEnEscena[], flores: readonly FlorEnEscena[], cilindros: readonly CilindroEnEscena[], solidos: readonly SolidoEnEscena[]): boolean {
+    const porNodo = new Map<string, ContenidoNodo>();
+    const de = (nodo: string | undefined): ContenidoNodo => {
+      const id = nodo ?? "";
+      let c = porNodo.get(id);
+      if (!c) { c = { globos: [], tubos: [], flores: [], cilindros: [], solidos: [] }; porNodo.set(id, c); }
+      return c;
+    };
+    globos.forEach((g, i) => de(g.nodo).globos.push({ g, i }));
+    for (const t of tubos) de(t.nodo).tubos.push(t);
+    flores.forEach((f, i) => de(f.nodo).flores.push({ f, i }));
+    for (const x of cilindros) de(x.nodo).cilindros.push(x);
+    for (const s of solidos) de(s.nodo).solidos.push(s);
+    let cambio = false;
+    for (const [id, dibujado] of nodos) if (!porNodo.has(id)) { quitarNodo(dibujado); nodos.delete(id); cambio = true; }
+    for (const [id, c] of porNodo) {
+      const ref = referenciaDe(c);
+      const huella = huellaDe(c, ref);
+      const previo = nodos.get(id);
+      if (previo && previo.huella === huella) {
+        if (!previo.ref.equals(ref)) {
+          // La misma pieza, corrida: se mueve su grupo y sus copias, sin rehacer nada.
+          const d = ref.clone().sub(previo.ref).multiplyScalar(CM);
+          previo.ref.copy(ref);
+          previo.base.add(d);
+          previo.grupo.position.copy(previo.base);
+          for (const inst of previo.instancias) { const e = inst.matriz.elements; e[12] += d.x; e[13] += d.y; e[14] += d.z; }
+          previo.caja = null;
+          cambio = true;
+        }
+        continue;
+      }
+      if (previo) quitarNodo(previo);
+      nodos.set(id, construirNodo(id, c, ref, huella));
+      cambio = true;
+    }
+    return cambio;
+  }
+
+  function quitarLote(lote: Lote) {
+    modulo.remove(lote.malla);
+    lote.malla.dispose();
+  }
+
+  /** Escribe las matrices de un lote: la de cada copia, corrida si su pieza se arrastra; las ocultas, sin tamaño. */
+  function escribirLote(lote: Lote) {
+    const destino = lote.malla.instanceMatrix.array as Float32Array;
+    for (let i = 0; i < lote.malla.count; i++) {
+      const o = i * 16;
+      destino.set(lote.bases.subarray(o, o + 16), o);
+      const nodo = lote.nodos[i];
+      const d = nodo ? desplazamientos.get(nodo) : undefined;
+      if (d) { destino[o + 12]! += d.x; destino[o + 13]! += d.y; destino[o + 14]! += d.z; }
+      if (lote.ocultos.has(i)) for (const k of [0, 1, 2, 4, 5, 6, 8, 9, 10]) destino[o + k] = 0;
+    }
+    lote.malla.instanceMatrix.needsUpdate = true;
+    lote.malla.boundingBox = null;
+    lote.malla.boundingSphere = null;
+  }
+
+  /** Reparte las copias de todas las piezas en sus lotes (una malla por geometría y material). */
+  function armarLotes() {
+    const porLote = new Map<string, Array<{ nodo: string | null; inst: Instancia }>>();
+    for (const [id, dibujado] of nodos) for (const inst of dibujado.instancias) {
+      let lista = porLote.get(inst.lote);
+      if (!lista) { lista = []; porLote.set(inst.lote, lista); }
+      lista.push({ nodo: id || null, inst });
+    }
+    for (const [clave, lote] of lotes) if (!porLote.has(clave)) { quitarLote(lote); lotes.delete(clave); }
+    for (const [clave, lista] of porLote) {
+      const def = defs.get(clave);
+      if (!def) continue;
+      let lote = lotes.get(clave);
+      if (!lote || lote.capacidad < lista.length) {
+        if (lote) quitarLote(lote);
+        const capacidad = Math.ceil(lista.length * 1.25) + 4;
+        const malla = new THREE.InstancedMesh(def.geometria("editor"), def.material("editor"), capacidad);
+        malla.castShadow = true;
+        malla.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        lote = { def, malla, capacidad, nodos: [], bases: new Float32Array(capacidad * 16), ocultos: new Set() };
+        // Con qué pieza va cada copia (para elegirla con un clic).
+        malla.userData.nodos = lote.nodos;
+        lotes.set(clave, lote);
+        modulo.add(malla);
+      }
+      lote.nodos.length = 0;
+      lote.ocultos.clear();
+      lote.malla.count = lista.length;
+      lista.forEach(({ nodo, inst }, i) => {
+        lote.nodos.push(nodo);
+        inst.matriz.toArray(lote.bases, i * 16);
+        if (def.conColor) lote.malla.setColorAt(i, inst.color ?? BLANCO);
+      });
+      if (lote.malla.instanceColor) lote.malla.instanceColor.needsUpdate = true;
+      escribirLote(lote);
+    }
+  }
+
+  /** Lo de la pestaña Globos y lo de un módulo no conviven: al pasar de uno a otro se vacía el otro. */
+  function vaciarModulo() {
+    for (const dibujado of nodos.values()) quitarNodo(dibujado);
+    nodos.clear();
+    for (const lote of lotes.values()) quitarLote(lote);
+    lotes.clear();
+    if (anclasMalla) { modulo.remove(anclasMalla); anclasMalla.dispose(); anclasMalla = null; }
+    desplazamientos.clear();
+    entrada = null;
+    modulo.position.set(0, 0, 0);
+  }
 
   function liberar(objeto: THREE.Object3D) {
     objeto.traverse((hijo) => {
       if (hijo instanceof THREE.Mesh) {
-        hijo.geometry.dispose();
-        const materiales = Array.isArray(hijo.material) ? hijo.material : [hijo.material];
-        for (const m of materiales) {
+        if (!hijo.geometry.userData.compartido) hijo.geometry.dispose();
+        const materialesHijo = Array.isArray(hijo.material) ? hijo.material : [hijo.material];
+        for (const m of materialesHijo) {
+          if (m.userData.compartido) continue;
           if (m instanceof THREE.MeshStandardMaterial) m.map?.dispose();
           m.dispose();
         }
+        if (hijo instanceof THREE.InstancedMesh) hijo.dispose();
       }
     });
   }
@@ -589,15 +1115,17 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   /**
    * Piso, paredes y techo como planos que miran hacia dentro (`FrontSide`): desde fuera no se dibujan, así que al
    * girar la cámara por detrás de una pared o por encima del techo, esa superficie desaparece y se ve el interior.
+   * Solo se rehace si la sala cambió.
    */
-  function dibujarSala(datos: SalaEnEscena | undefined) {
+  function dibujarSala(datos: SalaEnEscena | undefined): boolean {
+    const clave = datos ? JSON.stringify(datos) : "";
+    if (clave === claveSala) return false;
+    claveSala = clave;
     vaciar(sala);
-    vaciar(ayudas);
-    resaltado = null;
     const conPiso = Boolean(datos?.mostrar.piso);
     piso.visible = !conPiso;
     cuadricula.visible = !datos;
-    if (!datos) return;
+    if (!datos) return true;
     const ancho = datos.anchoCm * CM, fondo = datos.fondoCm * CM, alto = datos.altoCm * CM;
     const plano = (w: number, h: number, hex: string, colocar: (m: THREE.Mesh) => void, superficie: SuperficieSalaEnEscena) => {
       const malla = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ color: new THREE.Color(hex), roughness: 0.92, metalness: 0, side: THREE.FrontSide }));
@@ -613,9 +1141,11 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       plano(fondo, alto, datos.tonos.paredes, (m) => { m.rotation.y = -Math.PI / 2; m.position.set(ancho / 2, alto / 2, 0); }, "derecha");
     }
     if (datos.mostrar.techo) plano(ancho, fondo, datos.tonos.techo, (m) => { m.rotation.x = Math.PI / 2; m.position.y = alto; }, "techo");
+    return true;
   }
 
   function resaltar(caja: CajaEnEscena | null | undefined) {
+    vaciar(ayudas);
     resaltado = null;
     if (!caja) return;
     const margen = 3;
@@ -645,9 +1175,10 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   }
 
   function mostrar(globos: readonly GloboEnEscena[]) {
-    for (const hijo of [...contenido.children]) { contenido.remove(hijo); liberar(hijo); }
-    gruposPorNodo = new Map();
+    vaciarModulo();
+    vaciar(fila);
     dibujarSala(undefined);
+    resaltar(null);
     let x = 0;
     const objetos = globos.map((globo) => construir(globo));
     const separacion = 0.06;
@@ -658,109 +1189,76 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       const caja = new THREE.Box3().setFromObject(objeto);
       objeto.position.x += x - caja.min.x;
       objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
-      contenido.add(objeto);
+      fila.add(objeto);
       x += a + separacion;
     }
+    escena.updateMatrixWorld();
     encuadrar();
+    cambioConSombra();
   }
 
-  const ARRIBA = new THREE.Vector3(0, 1, 0);
-  /** Un globo colocado, listo para la escena: su forma, confeti, lo impreso, orientado y en su sitio. */
-  function objetoDeGlobo(globo: GloboColocadoEnEscena, indice: number): THREE.Object3D {
-    const objeto = construir(globo);
-    if (globo.confeti && globo.formato.tipo === "redondo") {
-      const centroY = (centroCuerpo("redondo", globo.infladoCm) + (globo.cuelloExtraCm ?? 0)) * CM;
-      objeto.add(confetiDentro(centroY, (globo.infladoCm / 2) * CM, indice + 1));
+  /** Las anclas a la vista (puntos donde se cuelga una decoración hija): una malla por instancias. */
+  function dibujarAnclas(anclas: readonly Punto3[]): boolean {
+    const antes = anclasMalla;
+    if (!antes && !anclas.length) return false;
+    if (antes) {
+      const iguales = antes.count === anclas.length && anclas.every((a, i) => {
+        const e = antes.instanceMatrix.array;
+        return Math.abs(e[i * 16 + 12]! - a.x * CM) < 1e-9 && Math.abs(e[i * 16 + 13]! - a.y * CM) < 1e-9 && Math.abs(e[i * 16 + 14]! - a.z * CM) < 1e-9;
+      });
+      if (iguales) return false;
+      modulo.remove(antes);
+      antes.dispose();
+      anclasMalla = null;
     }
-    // Lo impreso (iris, cara de calabaza) pegado a la superficie, en el marco del globo.
-    if (globo.estampado && globo.formato.tipo === "redondo") objeto.add(estampadoSobre(globo.infladoCm, globo.cuelloExtraCm ?? 0, globo.estampado));
-    // Lo impreso como textura (letrero, patrón, cara): cáscara sobre el redondo o calcomanía en la cara del corazón.
-    const impreso = globo.estampado?.impreso;
-    if (impreso && globo.formato.tipo === "redondo") {
-      const extra = globo.cuelloExtraCm ?? 0;
-      const cascara = cascaraImpresa(perfilRedondo(globo.infladoCm, extra), centroCuerpo("redondo", globo.infladoCm) + extra, impreso, entornoMetal);
-      if (cascara) objeto.add(cascara);
-    } else if (impreso && globo.formato.tipo === "corazon") {
-      const malla = objeto.children.find((hijo): hijo is THREE.Mesh => hijo instanceof THREE.Mesh && hijo.geometry instanceof THREE.ExtrudeGeometry);
-      const calco = malla ? calcoCorazon(malla, globo.infladoCm, impreso, entornoMetal) : null;
-      if (malla && calco) malla.add(calco);
-    }
-    const eje = new THREE.Vector3(globo.direccion.x, globo.direccion.y, globo.direccion.z).normalize();
-    if (globo.frente) {
-      // Globo plano: Y local = dirección del cuerpo, Z local (la cara del corazón) = frente.
-      const z = new THREE.Vector3(globo.frente.x, globo.frente.y, globo.frente.z);
-      z.addScaledVector(eje, -z.dot(eje)).normalize();
-      const x = new THREE.Vector3().crossVectors(eje, z);
-      objeto.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, eje, z));
-    } else {
-      objeto.quaternion.setFromUnitVectors(ARRIBA, eje);
-    }
-    objeto.position.set(globo.nudo.x * CM, globo.nudo.y * CM, globo.nudo.z * CM);
-    objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
-    return objeto;
+    if (!anclas.length) return true;
+    const malla = new THREE.InstancedMesh(
+      geometria("ancla", () => new THREE.SphereGeometry(1.4 * CM, 20, 12)),
+      material("ancla", () => new THREE.MeshStandardMaterial({ color: 0x7c3aed, emissive: 0x7c3aed, emissiveIntensity: 0.6 })),
+      anclas.length,
+    );
+    const m = new THREE.Matrix4();
+    anclas.forEach((a, i) => malla.setMatrixAt(i, m.makeTranslation(a.x * CM, a.y * CM, a.z * CM)));
+    modulo.add(malla);
+    anclasMalla = malla;
+    return true;
   }
 
-  function mostrarModulo(globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos: readonly TuboEnEscena[] = [], extras: ExtrasEscena = {}) {
-    for (const hijo of [...contenido.children]) { contenido.remove(hijo); liberar(hijo); }
-    dibujarSala(extras.sala);
+  function mostrarModulo(globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos: readonly TuboEnEscena[] = NADA, extras: ExtrasEscena = {}) {
+    vaciar(fila);
+    const flores = extras.flores ?? NADA, cilindros = extras.cilindros ?? NADA, solidos = extras.solidos ?? NADA;
+    // Lo corrido al arrastrar y lo oculto vuelve a su sitio (lo siguiente que se muestra lo dibuja todo en su sitio).
+    let reescribir = desplazamientos.size > 0;
+    if (reescribir) {
+      desplazamientos.clear();
+      for (const dibujado of nodos.values()) { dibujado.grupo.position.copy(dibujado.base); dibujado.caja = null; }
+    }
+    for (const dibujado of nodos.values()) for (const hijo of dibujado.grupo.children) hijo.visible = true;
+    for (const lote of lotes.values()) if (lote.ocultos.size) { lote.ocultos.clear(); reescribir = true; }
+    // Si llega exactamente lo mismo (elegir otra pieza, ver sus anclas) no se mira pieza por pieza.
+    const mismo = entrada !== null && entrada.globos === globos && entrada.tubos === tubos && entrada.flores === flores && entrada.cilindros === cilindros && entrada.solidos === solidos;
+    let cambio = false;
+    if (!mismo) {
+      cambio = actualizarNodos(globos, tubos, flores, cilindros, solidos);
+      entrada = { globos, tubos, flores, cilindros, solidos };
+    }
+    if (cambio) armarLotes();
+    else if (reescribir) for (const lote of lotes.values()) escribirLote(lote);
+    const cambioSala = dibujarSala(extras.sala);
     resaltar(extras.resaltado);
-    const modulo = new THREE.Group();
-    gruposPorNodo = new Map();
-    cajasDeGrupo = new WeakMap();
-    // Lo de cada pieza va en su grupo (marcado con su id); lo que no es de ninguna, directo al módulo.
-    const grupoDe = (nodo: string | undefined): THREE.Group => {
-      if (!nodo) return modulo;
-      let grupo = gruposPorNodo.get(nodo);
-      if (!grupo) {
-        grupo = new THREE.Group();
-        grupo.userData.nodo = nodo;
-        gruposPorNodo.set(nodo, grupo);
-        modulo.add(grupo);
+    const cambioAnclas = dibujarAnclas(anclas);
+    if (cambio || cambioAnclas || cambioSala) {
+      // Apoyado sobre el piso (una escena ya viene en coordenadas del mundo).
+      modulo.position.set(0, 0, 0);
+      if (!extras.sala) {
+        const caja = new THREE.Box3().setFromObject(modulo);
+        if (!caja.isEmpty()) modulo.position.y = -caja.min.y + 0.005;
       }
-      return grupo;
-    };
-    for (const [indice, globo] of globos.entries()) grupoDe(globo.nodo).add(objetoDeGlobo(globo, indice));
-    for (const tramo of tubos) {
-      const material = materialDe(tramo.familia, tramo.hex);
-      const objeto = tuboEnCurva(tramo, material);
-      if (tramo.relleno && tramo.cerrado) { const relleno = rellenoPlano(tramo.puntos, material); if (relleno) objeto.add(relleno); }
-      objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
-      grupoDe(tramo.nodo).add(objeto);
     }
-    // Follaje (no es globo): flores artificiales mirando hacia fuera de su hueco.
-    for (const [indice, flor] of (extras.flores ?? []).entries()) {
-      const objeto = florArtificial(flor, indice + 7);
-      objeto.quaternion.setFromUnitVectors(ARRIBA, new THREE.Vector3(flor.normal.x, flor.normal.y, flor.normal.z).normalize());
-      objeto.position.set(flor.posicion.x * CM, flor.posicion.y * CM, flor.posicion.z * CM);
-      objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
-      grupoDe(flor.nodo).add(objeto);
-    }
-    // Volúmenes de la escena (el pedestal).
-    for (const c of extras.cilindros ?? []) {
-      const cilindro = new THREE.Mesh(new THREE.CylinderGeometry(c.radioCm * CM, c.radioCm * CM, c.altoCm * CM, 48), new THREE.MeshStandardMaterial({ color: new THREE.Color(c.hex), roughness: 0.55 }));
-      cilindro.position.set(c.base.x * CM, (c.base.y + c.altoCm / 2) * CM, c.base.z * CM);
-      cilindro.castShadow = true;
-      cilindro.receiveShadow = true;
-      grupoDe(c.nodo).add(cilindro);
-    }
-    // Escenografía (paneles, mesas, tapete): con su pieza, para elegirla y arrastrarla como a las demás.
-    // Lo oculto (amarres internos) sostiene y da su caja, pero no se dibuja.
-    for (const solido of extras.solidos ?? []) if (!solido.oculto) grupoDe(solido.nodo).add(solidoEscenografia(solido));
-    // Anclas: puntos donde se cuelga una decoración hija (una flor, un moño).
-    const materialAncla = new THREE.MeshStandardMaterial({ color: 0x7c3aed, emissive: 0x7c3aed, emissiveIntensity: 0.6 });
-    for (const ancla of anclas) {
-      const punto = new THREE.Mesh(new THREE.SphereGeometry(1.4 * CM, 20, 12), materialAncla.clone());
-      punto.position.set(ancla.x * CM, ancla.y * CM, ancla.z * CM);
-      modulo.add(punto);
-    }
-    materialAncla.dispose();
-    // Apoyado sobre el piso (una escena ya viene en coordenadas del mundo).
-    if (!extras.sala) {
-      const caja = new THREE.Box3().setFromObject(modulo);
-      modulo.position.y = -caja.min.y + 0.005;
-    }
-    contenido.add(modulo);
+    escena.updateMatrixWorld();
     if (extras.encuadrar !== false) encuadrar();
+    if (cambio || reescribir || cambioAnclas || cambioSala) cambioConSombra();
+    else pedirCuadro();
   }
 
   function redimensionar() {
@@ -774,6 +1272,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     renderer.setSize(clientWidth, clientHeight, false);
     camara.aspect = clientWidth / clientHeight;
     camara.updateProjectionMatrix();
+    // Cambiar el tamaño borra el lienzo: se dibuja ya (no en el cuadro siguiente) para que no parpadee.
+    dibujar();
   }
 
   const rayo = new THREE.Raycaster();
@@ -784,14 +1284,36 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     return true;
   }
 
+  /** La pieza de lo tocado: la de su copia en un lote o la del grupo que lo contiene; `null` si no es de ninguna. */
+  function nodoDeToque(toque: THREE.Intersection): string | null {
+    const o = toque.object;
+    if (o instanceof THREE.InstancedMesh && toque.instanceId !== undefined) {
+      const lista: unknown = o.userData.nodos;
+      if (Array.isArray(lista)) { const nodo: unknown = lista[toque.instanceId]; return typeof nodo === "string" ? nodo : null; }
+    }
+    for (let p: THREE.Object3D | null = o; p; p = p.parent) {
+      const nodo: unknown = p.userData.nodo;
+      if (typeof nodo === "string") return nodo;
+    }
+    return null;
+  }
+
+  /** Lo que se puede tocar de las piezas `ids` (o de todas): sus grupos y los lotes (filtrar luego por pieza). */
+  function objetivos(ids?: Iterable<string>): THREE.Object3D[] {
+    const salida: THREE.Object3D[] = [];
+    if (ids) { for (const id of ids) { const d = id ? nodos.get(id) : undefined; if (d) salida.push(d.grupo); } }
+    else for (const [id, d] of nodos) if (id) salida.push(d.grupo);
+    for (const lote of lotes.values()) salida.push(lote.malla);
+    return salida;
+  }
+
+  const hayPiezas = () => { for (const id of nodos.keys()) if (id) return true; return false; };
+
   function piezaEn(clienteX: number, clienteY: number): { nodo: string; punto: Punto3 } | null {
-    if (!gruposPorNodo.size || !apuntar(clienteX, clienteY)) return null;
-    for (const toque of rayo.intersectObjects([...gruposPorNodo.values()], true)) {
-      // De lo tocado hacia arriba hasta el grupo de su pieza.
-      for (let o: THREE.Object3D | null = toque.object; o; o = o.parent) {
-        const nodo: unknown = o.userData.nodo;
-        if (typeof nodo === "string") return { nodo, punto: { x: toque.point.x / CM, y: toque.point.y / CM, z: toque.point.z / CM } };
-      }
+    if (!hayPiezas() || !apuntar(clienteX, clienteY)) return null;
+    for (const toque of rayo.intersectObjects(objetivos(), true)) {
+      const nodo = nodoDeToque(toque);
+      if (nodo) return { nodo, punto: { x: toque.point.x / CM, y: toque.point.y / CM, z: toque.point.z / CM } };
     }
     return null;
   }
@@ -806,10 +1328,19 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     return corte ? { x: corte.x / CM, y: corte.y / CM, z: corte.z / CM } : null;
   }
 
-  function trasladarPiezas(nodos: readonly string[], delta: Punto3) {
+  function trasladarPiezas(ids: readonly string[], delta: Punto3) {
     const d = new THREE.Vector3(delta.x * CM, delta.y * CM, delta.z * CM);
-    for (const id of nodos) gruposPorNodo.get(id)?.position.copy(d);
+    for (const id of ids) {
+      const dibujado = nodos.get(id);
+      if (!dibujado) continue;
+      if (d.lengthSq() > 0) desplazamientos.set(id, d.clone()); else desplazamientos.delete(id);
+      dibujado.grupo.position.copy(dibujado.base).add(d);
+      dibujado.caja = null;
+    }
+    for (const lote of lotes.values()) if (lote.nodos.some((n) => n !== null && ids.includes(n))) escribirLote(lote);
     if (resaltado) resaltado.ayuda.box.copy(resaltado.caja).translate(d);
+    escena.updateMatrixWorld();
+    cambioConSombra();
   }
 
   function ejesCamara(): { adelante: Punto3; derecha: Punto3 } {
@@ -829,57 +1360,81 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     return new THREE.Box3Helper(box, new THREE.Color(color));
   }
 
+  /** El marco en el mundo de la copia `i` de un lote (con lo corrido u oculto). */
+  function marcoDeCopia(malla: THREE.InstancedMesh, i: number, salida: THREE.Matrix4): THREE.Matrix4 {
+    malla.getMatrixAt(i, salida);
+    return salida.premultiply(malla.matrixWorld);
+  }
+
+  /** La caja (m, en el mundo) de lo dibujado de una pieza: su grupo y sus copias. */
+  function cajaDeNodo(id: string): THREE.Box3 | null {
+    const dibujado = nodos.get(id);
+    if (!dibujado) return null;
+    if (dibujado.caja) return dibujado.caja;
+    const caja = new THREE.Box3().setFromObject(dibujado.grupo);
+    const m = new THREE.Matrix4(), b = new THREE.Box3();
+    for (const lote of lotes.values()) {
+      const g = lote.malla.geometry;
+      if (!g.boundingBox) g.computeBoundingBox();
+      lote.nodos.forEach((n, i) => { if (n === id && g.boundingBox) caja.union(b.copy(g.boundingBox).applyMatrix4(marcoDeCopia(lote.malla, i, m))); });
+    }
+    dibujado.caja = caja;
+    return caja;
+  }
+
   function lugarEn(clienteX: number, clienteY: number, opciones: { nodos: readonly string[]; sala: boolean; preferir?: string | null }): LugarEnEscena | null {
     if (!apuntar(clienteX, clienteY)) return null;
     const deToque = (toque: THREE.Intersection): LugarEnEscena | null => {
       const punto = { x: toque.point.x / CM, y: toque.point.y / CM, z: toque.point.z / CM };
+      const nodo = nodoDeToque(toque);
+      if (nodo) {
+        let n: THREE.Vector3;
+        if (!toque.face) n = rayo.ray.direction.clone().negate();
+        else if (toque.object instanceof THREE.InstancedMesh && toque.instanceId !== undefined) n = toque.face.normal.clone().transformDirection(marcoDeCopia(toque.object, toque.instanceId, new THREE.Matrix4()));
+        else n = toque.face.normal.clone().transformDirection(toque.object.matrixWorld);
+        return { tipo: "nodo", nodo, punto, normal: { x: n.x, y: n.y, z: n.z } };
+      }
       for (let o: THREE.Object3D | null = toque.object; o; o = o.parent) {
-        const nodo: unknown = o.userData.nodo;
-        if (typeof nodo === "string") {
-          const n = toque.face ? toque.face.normal.clone().transformDirection(toque.object.matrixWorld) : rayo.ray.direction.clone().negate();
-          return { tipo: "nodo", nodo, punto, normal: { x: n.x, y: n.y, z: n.z } };
-        }
         const superficie: unknown = o.userData.superficie;
         if (typeof superficie === "string") return { tipo: "sala", superficie: superficie as SuperficieSalaEnEscena, punto };
       }
       return null;
     };
-    const preferido = opciones.preferir ? gruposPorNodo.get(opciones.preferir) : undefined;
-    if (preferido) {
-      const toque = rayo.intersectObject(preferido, true)[0];
+    /** Lo primero que toca el rayo entre esas piezas (y, si se pide, la sala). */
+    const tocar = (permitidas: ReadonlySet<string>, conSala: boolean): THREE.Intersection | null => {
+      const objetos = objetivos(permitidas);
+      if (conSala) objetos.push(...sala.children);
+      for (const toque of rayo.intersectObjects(objetos, true)) {
+        const nodo = nodoDeToque(toque);
+        if (nodo ? permitidas.has(nodo) : conSala && deToque(toque)) return toque;
+      }
+      return null;
+    };
+    const preferir = opciones.preferir;
+    if (preferir && nodos.has(preferir)) {
+      const toque = tocar(new Set([preferir]), false);
       if (toque) return deToque(toque);
     }
-    const grupos = opciones.nodos.flatMap((id) => { const g = gruposPorNodo.get(id); return g ? [g] : []; });
-    const objetos: THREE.Object3D[] = [...grupos];
-    if (opciones.sala) objetos.push(...sala.children);
-    let lugar: LugarEnEscena | null = null;
-    for (const toque of rayo.intersectObjects(objetos, true)) {
-      lugar = deToque(toque);
-      if (lugar) break;
-    }
+    const permitidas = new Set(opciones.nodos.filter((id) => nodos.has(id)));
+    const primero = tocar(permitidas, opciones.sala);
+    const lugar = primero ? deToque(primero) : null;
     if (lugar?.tipo !== "sala") return lugar;
     // El rayo pasó por un hueco de una estructura (los rombos de una malla, entre los globos de un aro) y dio en la
     // pared de detrás: si cruza la caja de una estructura, se busca esa estructura unos píxeles alrededor.
-    const cruzadas = grupos.filter((g) => {
-      let caja = cajasDeGrupo.get(g);
-      if (!caja) { caja = new THREE.Box3().setFromObject(g); cajasDeGrupo.set(g, caja); }
-      return rayo.ray.intersectsBox(caja);
-    });
-    if (!cruzadas.length) return lugar;
+    const cruzadas = new Set([...permitidas].filter((id) => { const caja = cajaDeNodo(id); return caja ? rayo.ray.intersectsBox(caja) : false; }));
+    if (!cruzadas.size) return lugar;
     for (let radio = 4; radio <= 16; radio += 4) {
       let mejor: THREE.Intersection | null = null;
       for (let k = 0; k < 8; k++) {
         const a = (k / 8) * 2 * Math.PI;
         if (!apuntar(clienteX + Math.cos(a) * radio, clienteY + Math.sin(a) * radio)) continue;
-        const toque = rayo.intersectObjects(cruzadas, true)[0];
+        const toque = tocar(cruzadas, false);
         if (toque && (!mejor || toque.distance < mejor.distance)) mejor = toque;
       }
       if (mejor) return deToque(mejor) ?? lugar;
     }
     return lugar;
   }
-  /** La caja de cada pieza dibujada (para saber si un rayo la cruza); se rehace al redibujar. */
-  let cajasDeGrupo = new WeakMap<THREE.Object3D, THREE.Box3>();
 
   function resaltarLugares(cajas: readonly CajaEnEscena[], conSala: boolean) {
     vaciar(marcasLugares);
@@ -890,65 +1445,139 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
         hijo.material.emissiveIntensity = conSala ? 0.16 : 1;
       }
     });
+    pedirCuadro();
   }
 
   function resaltarEncima(caja: CajaEnEscena | null) {
+    if (!caja && !marcaEncima.children.length) return;
     vaciar(marcaEncima);
     if (caja) marcaEncima.add(cajaDeAyuda(caja, 0xf59e0b, 2));
+    pedirCuadro();
+  }
+
+  /** Un globo suelto con las geometrías compartidas del editor y el material que se pida (la vista previa). */
+  function objetoSuelto(globo: GloboColocadoEnEscena, indice: number, materialPara: (familia: string, hex: string) => THREE.Material): THREE.Object3D {
+    const plantilla = plantillaDe(globo);
+    if (!plantilla) return objetoCompleto(globo, indice);
+    const objeto = new THREE.Group();
+    const m = materialPara(globo.familia, globo.hex);
+    const escala = new THREE.Matrix4().makeScale(plantilla.escala, plantilla.escala, plantilla.escala);
+    for (const parte of juego(plantilla.clave, "editor")) {
+      const malla = new THREE.Mesh(parte.geometria, m);
+      escala.clone().multiply(parte.local).decompose(malla.position, malla.quaternion, malla.scale);
+      objeto.add(malla);
+    }
+    const extras = extrasDeGlobo(globo, indice, true);
+    if (extras.length) objeto.add(...extras);
+    orientacionDe(globo, objeto.quaternion);
+    objeto.position.set(globo.nudo.x * CM, globo.nudo.y * CM, globo.nudo.z * CM);
+    return objeto;
   }
 
   function mostrarFantasma(globos: readonly GloboColocadoEnEscena[], tubos: readonly TuboEnEscena[]) {
+    const habia = fantasma.children.length > 0;
     vaciar(fantasma);
+    if (!habia && !globos.length && !tubos.length) return;
     const translucido = (m: THREE.Material) => { m.transparent = true; m.opacity = 0.6; m.depthWrite = false; };
-    for (const [indice, globo] of globos.entries()) {
-      const objeto = objetoDeGlobo(globo, indice);
-      objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) { hijo.castShadow = false; (Array.isArray(hijo.material) ? hijo.material : [hijo.material]).forEach(translucido); } });
-      fantasma.add(objeto);
-    }
-    for (const tramo of tubos) {
-      const material = materialDe(tramo.familia, tramo.hex);
-      translucido(material);
-      fantasma.add(tuboEnCurva(tramo, material));
-    }
+    // Un material translúcido por color (propio de la vista previa: se libera con ella).
+    const propios = new Map<string, THREE.Material>();
+    const materialPara = (familia: string, hex: string) => {
+      const clave = `${familia}|${hex}`;
+      let m = propios.get(clave);
+      if (!m) { m = materialDe(familia, hex, "editor"); translucido(m); propios.set(clave, m); }
+      return m;
+    };
+    for (const [indice, globo] of globos.entries()) fantasma.add(objetoSuelto(globo, indice, materialPara));
+    for (const tramo of tubos) fantasma.add(tuboEnCurva(tramo, materialPara(tramo.familia, tramo.hex)));
+    fantasma.traverse((hijo) => {
+      if (!(hijo instanceof THREE.Mesh)) return;
+      hijo.castShadow = false;
+      (Array.isArray(hijo.material) ? hijo.material : [hijo.material]).forEach((m: THREE.Material) => { if (!m.userData.compartido) translucido(m); });
+    });
+    pedirCuadro();
   }
 
   function ocultarCopia(nodo: string | null, caja?: CajaEnEscena | null) {
-    for (const [id, grupo] of gruposPorNodo) {
-      for (const hijo of grupo.children) {
+    const dentro = (centro: THREE.Vector3) => {
+      if (!caja) return false;
+      const c = centro.divideScalar(CM);
+      const en = (eje: "x" | "y" | "z") => c[eje] >= caja.min[eje] - 3 && c[eje] <= caja.max[eje] + 3;
+      return en("x") && en("y") && en("z");
+    };
+    for (const [id, dibujado] of nodos) {
+      for (const hijo of dibujado.grupo.children) {
         if (id !== nodo || !caja) { hijo.visible = true; continue; }
-        const centro = new THREE.Box3().setFromObject(hijo).getCenter(new THREE.Vector3()).divideScalar(CM);
-        const dentro = (eje: "x" | "y" | "z") => centro[eje] >= caja.min[eje] - 3 && centro[eje] <= caja.max[eje] + 3;
-        hijo.visible = !(dentro("x") && dentro("y") && dentro("z"));
+        hijo.visible = !dentro(new THREE.Box3().setFromObject(hijo).getCenter(new THREE.Vector3()));
       }
     }
+    const m = new THREE.Matrix4(), b = new THREE.Box3();
+    for (const lote of lotes.values()) {
+      const antes = lote.ocultos.size;
+      lote.ocultos.clear();
+      if (nodo && caja) {
+        const g = lote.malla.geometry;
+        if (!g.boundingBox) g.computeBoundingBox();
+        lote.nodos.forEach((n, i) => {
+          if (n !== nodo || !g.boundingBox) return;
+          m.fromArray(lote.bases, i * 16).premultiply(lote.malla.matrixWorld);
+          if (dentro(b.copy(g.boundingBox).applyMatrix4(m).getCenter(new THREE.Vector3()))) lote.ocultos.add(i);
+        });
+      }
+      if (antes || lote.ocultos.size) escribirLote(lote);
+    }
+    const dibujado = nodo ? nodos.get(nodo) : undefined;
+    if (dibujado) dibujado.caja = null;
+    cambioConSombra();
   }
 
-  let cuadro = 0;
-  const animar = () => {
-    cuadro = requestAnimationFrame(animar);
-    controles.update();
-    renderer.render(escena, camara);
-  };
-  redimensionar();
-  animar();
+  /** Cambia la calidad de lo que va por lotes (la captura para la IA se hace en alta). */
+  function usarCalidad(calidad: Calidad) {
+    for (const lote of lotes.values()) {
+      lote.malla.geometry = lote.def.geometria(calidad);
+      lote.malla.material = lote.def.material(calidad);
+      lote.malla.boundingBox = null;
+      lote.malla.boundingSphere = null;
+    }
+    renderer.shadowMap.needsUpdate = true;
+  }
 
-  return {
-    mostrar,
-    mostrarModulo,
+  redimensionar();
+  pedirCuadro();
+
+  const medible: VisorMedible | null = MEDIR_VISOR ? {
+    lienzo, renderer, cuadros: () => cuadros, tiempos: [], piezaEn: (x, y) => piezaEn(x, y),
+    medirRender(n, conSombra) {
+      const gl = renderer.getContext();
+      renderer.render(escena, camara);
+      gl.finish();
+      const t0 = performance.now();
+      for (let i = 0; i < n; i++) { if (conSombra) renderer.shadowMap.needsUpdate = true; renderer.render(escena, camara); }
+      gl.finish();
+      const ms = (performance.now() - t0) / n;
+      return { msPorCuadro: Math.round(ms * 100) / 100, info: infoDe(renderer) };
+    },
+  } : null;
+  const quitarMedicion = medible ? registrarVisor(medible) : () => {};
+
+  const api: EscenaGlobos = {
+    mostrar: (globos) => cronometrar(medible, "mostrar", () => mostrar(globos)),
+    mostrarModulo: (globos, anclas, tubos, extras) => cronometrar(medible, "mostrarModulo", () => mostrarModulo(globos, anclas, tubos, extras)),
     redimensionar,
+    dibujar,
     piezaEn,
     puntoEnPlano,
-    trasladarPiezas,
+    trasladarPiezas: (ids, delta) => cronometrar(medible, "trasladarPiezas", () => trasladarPiezas(ids, delta)),
     orbitar(activo: boolean) { controles.enabled = activo; },
     ejesCamara,
     lugarEn,
     resaltarLugares,
     resaltarEncima,
-    mostrarFantasma,
+    mostrarFantasma: (globos, tubos) => cronometrar(medible, "mostrarFantasma", () => mostrarFantasma(globos, tubos)),
     ocultarCopia,
     capturar() {
       // 1. Render cuadrado grande desde el mismo ángulo, con la decoración entera en cuadro y fondo transparente.
       const L = 2304;
+      usarCalidad("alta");
       const caja = new THREE.Box3().setFromObject(contenido);
       const esfera = caja.getBoundingSphere(new THREE.Sphere());
       const direccion = camara.position.clone().sub(controles.target).normalize();
@@ -985,6 +1614,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       }
 
       // Volver al visor tal como estaba.
+      usarCalidad("editor");
       cuadricula.visible = cuadriculaVisible;
       ayudas.visible = true;
       lienzoAyudas.visible = true;
@@ -996,7 +1626,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       camara.far = antes.far;
       camara.updateProjectionMatrix();
       camara.lookAt(controles.target);
-      renderer.render(escena, camara);
+      dibujar();
 
       // 2. Lo que de verdad se dibujó (píxeles no transparentes, sombra incluida) y su proporción.
       let x0 = L, y0 = L, x1 = 0, y1 = 0;
@@ -1027,15 +1657,38 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       return { datos: salida.toDataURL("image/jpeg", 0.92), aspecto };
     },
     destruir() {
-      cancelAnimationFrame(cuadro);
+      vivo = false;
+      quitarMedicion();
+      cancelAnimationFrame(pendiente);
+      controles.removeEventListener("change", pedirCuadro);
       controles.dispose();
-      liberar(contenido);
+      vaciarModulo();
+      vaciar(fila);
       vaciar(sala);
       vaciar(ayudas);
       for (const g of [marcasLugares, marcaEncima, fantasma]) vaciar(g);
+      for (const partes of juegos.values()) for (const parte of partes) parte.geometria.dispose();
+      for (const g of geometriasSueltas.values()) g.dispose();
+      for (const m of materiales.values()) m.dispose();
       entorno.dispose();
       pmrem.dispose();
       renderer.dispose();
     },
   };
+  if (medible) medible.capturar = () => api.capturar().datos;
+  if (medible) medible.desglose = () => {
+    const cuenta: Record<string, number> = {};
+    escena.traverseVisible((o) => {
+      if (!(o instanceof THREE.Mesh || o instanceof THREE.LineSegments)) return;
+      const clave = `${o instanceof THREE.InstancedMesh ? "lote " : ""}${o.geometry.type}`;
+      cuenta[clave] = (cuenta[clave] ?? 0) + 1;
+    });
+    return cuenta;
+  };
+  if (medible) medible.cuadroPendiente = (correr) => {
+    if (!pendiente) return false;
+    if (correr) { cancelAnimationFrame(pendiente); alCuadro(); }
+    return true;
+  };
+  return api;
 }

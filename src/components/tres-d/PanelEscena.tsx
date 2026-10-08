@@ -445,25 +445,34 @@ function EditorArcoOrganico({ pieza, onPieza }: { pieza: Extract<Pieza, { tipo: 
         <input id="aorg-flores" type="checkbox" checked={Boolean(a.flores)} onChange={(e) => pon(e.target.checked ? { flores: structuredClone(COLUMNA_QUINCE_AZUL.flores), huecosFlores: 14 } : { flores: null, huecosFlores: 0 })} /> Flores artificiales en los huecos
       </label>
       <h3 className="text-xs font-semibold text-texto">Mezcla de colores</h3>
-      {a.colores.map((c, i) => {
-        const ref = coloresDelFormato("R-12").find((x) => x.codigo === c.codigo);
-        return (
-          <details key={i} className="group rounded-xl bg-superficie-suave p-2">
-            <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-texto [&::-webkit-details-marker]:hidden">
-              <ChevronRight className="size-4 shrink-0 text-texto-suave transition-transform group-open:rotate-90" aria-hidden />
-              <span className="size-5 rounded-full ring-1 ring-borde" style={{ background: ref?.hexGlobo }} />
-              {ref?.nombreCompleto ?? c.codigo}
-              <span className="ml-auto font-mono text-xs text-texto-suave">{Math.round((c.peso / totalPeso) * 100)} %</span>
-            </summary>
-            <div className="mt-2 flex flex-col gap-2">
-              <Deslizador id={`aorg-peso-${i}`} etiqueta="Peso" valor={c.peso} min={0} max={80} paso={1} texto={`${c.peso}`} onCambio={(v) => ponColor(i, { peso: v })} />
-              <SelectorColor formatoId="R-12" valor={c.codigo} onCambio={(codigo) => ponColor(i, { codigo })} etiqueta={`Color ${i + 1} del arco`} />
-            </div>
-          </details>
-        );
-      })}
+      {a.colores.map((c, i) => <ColorDelArco key={i} indice={i} color={c} porcentaje={Math.round((c.peso / totalPeso) * 100)} onCambio={(cambio) => ponColor(i, cambio)} />)}
       <p className="text-[0.7rem] text-texto-suave">Cada cambio rearma el arco (tarda medio segundo).</p>
     </>
+  );
+}
+
+/**
+ * Un color de la mezcla del arco orgánico, plegado. Lo de dentro (el peso y los ~70 colores) se pinta solo al abrirlo:
+ * así elegir el arco en la escena no pinta cientos de botones que no se ven.
+ */
+function ColorDelArco({ indice, color, porcentaje, onCambio }: { indice: number; color: ColorOrganico; porcentaje: number; onCambio: (cambio: Partial<ColorOrganico>) => void }) {
+  const [abierto, setAbierto] = useState(false);
+  const ref = coloresDelFormato("R-12").find((x) => x.codigo === color.codigo);
+  return (
+    <details className="group rounded-xl bg-superficie-suave p-2" onToggle={(e) => setAbierto(e.currentTarget.open)}>
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-texto [&::-webkit-details-marker]:hidden">
+        <ChevronRight className="size-4 shrink-0 text-texto-suave transition-transform group-open:rotate-90" aria-hidden />
+        <span className="size-5 rounded-full ring-1 ring-borde" style={{ background: ref?.hexGlobo }} />
+        {ref?.nombreCompleto ?? color.codigo}
+        <span className="ml-auto font-mono text-xs text-texto-suave">{porcentaje} %</span>
+      </summary>
+      {abierto && (
+        <div className="mt-2 flex flex-col gap-2">
+          <Deslizador id={`aorg-peso-${indice}`} etiqueta="Peso" valor={color.peso} min={0} max={80} paso={1} texto={`${color.peso}`} onCambio={(v) => onCambio({ peso: v })} />
+          <SelectorColor formatoId="R-12" valor={color.codigo} onCambio={(codigo) => onCambio({ codigo })} etiqueta={`Color ${indice + 1} del arco`} />
+        </div>
+      )}
+    </details>
   );
 }
 

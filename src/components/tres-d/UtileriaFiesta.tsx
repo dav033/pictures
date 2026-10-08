@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { memo, useMemo, useState, type ReactNode } from "react";
 import type { Colocacion, Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import type { Vec3 } from "@/lib/globos3d/modulos";
 import { agregarUtileria, esMesa, productosDeFiesta, puntosBanderinEn, sobreMesa } from "@/lib/globos3d/utileria";
@@ -9,7 +9,7 @@ import { urlTienda } from "@/lib/globos3d/utileria-catalogo";
 import { ACTIVO, BOTON, INACTIVO } from "./PanelFlor";
 
 /** Miniatura de una pieza de utilería: un dibujo plano de lo que es, en sus colores. */
-function MiniaturaUtileria({ u }: { u: UtileriaLista }) {
+const MiniaturaUtileria = memo(function MiniaturaUtileria({ u }: { u: UtileriaLista }) {
   const [a = "#f07a1a", b = "#1a1414"] = u.colores;
   const id = u.id;
   let dibujo: ReactNode;
@@ -59,7 +59,7 @@ function MiniaturaUtileria({ u }: { u: UtileriaLista }) {
     dibujo = <><rect x={12} y={22} width={36} height={30} fill={a} /><rect x={10} y={18} width={40} height={7} fill={a} /><rect x={27} y={18} width={6} height={34} fill={b} /><path d="M30,18 Q20,6 22,16 Z M30,18 Q40,6 38,16 Z" fill={b} /></>;
   }
   return <svg viewBox="0 0 60 60" role="img" aria-label={`Dibujo de ${u.nombre}`} className="size-14">{dibujo}</svg>;
-}
+});
 
 type Props = {
   escena: Escena;

@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import type { Escena } from "@/lib/globos3d/escena";
 import type { Miniatura } from "@/lib/globos3d/decoraciones-escena";
 import { agregarIdeaForma, formasConMiniatura, type DestinoForma } from "@/lib/globos3d/ideas-formas";
 import { ACTIVO, BOTON, INACTIVO } from "./PanelFlor";
 
 /** Dibujo de frente de una forma: globos como elipses y tubitos como trazos. */
-function MiniaturaForma({ miniatura, nombre }: { miniatura: Miniatura; nombre: string }) {
+const MiniaturaForma = memo(function MiniaturaForma({ miniatura, nombre }: { miniatura: Miniatura; nombre: string }) {
   const { caja, formas } = miniatura;
   return (
     <svg viewBox={`${caja.x} ${caja.y} ${caja.ancho} ${caja.alto}`} role="img" aria-label={`Dibujo de ${nombre}`} className="size-14">
@@ -16,7 +16,7 @@ function MiniaturaForma({ miniatura, nombre }: { miniatura: Miniatura; nombre: s
         : <ellipse key={i} cx={f.cx} cy={f.cy} rx={f.rx} ry={f.ry} transform={`rotate(${f.giroGrados.toFixed(1)} ${f.cx} ${f.cy})`} fill={f.hex} stroke="rgba(0,0,0,.22)" strokeWidth={caja.ancho / 300} />)}
     </svg>
   );
-}
+});
 
 type Props = {
   escena: Escena;
@@ -29,7 +29,7 @@ type Props = {
  * letras (ancla, corazones, cruz, árboles, esfera, globo aerostático, «2012», el 1 orgánico…) y unas formas básicas.
  * Se abre a pedido (armarlas todas cuesta un poco) y cada una se pone de pie en el piso o en la pared del fondo.
  */
-export function FormasYLetras({ escena, onEscena, onSeleccion }: Props) {
+export const FormasYLetras = memo(function FormasYLetras({ escena, onEscena, onSeleccion }: Props) {
   const [abierto, setAbierto] = useState(false);
   const [elegida, setElegida] = useState<number | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -77,4 +77,4 @@ export function FormasYLetras({ escena, onEscena, onSeleccion }: Props) {
       )}
     </details>
   );
-}
+});

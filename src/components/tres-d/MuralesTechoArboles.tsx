@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import type { Escena } from "@/lib/globos3d/escena";
 import type { Miniatura } from "@/lib/globos3d/decoraciones-escena";
 import { agregarMuralTechoArbol, GRUPOS_MURAL_TECHO_ARBOL, muralesTechoArbolesConMiniatura } from "@/lib/globos3d/catalogo-murales-techo-arboles";
 import { ACTIVO, BOTON } from "./PanelFlor";
 
 /** Dibujo de la pieza: globos como elipses y tubitos como trazos. */
-function MiniaturaPiezaSvg({ miniatura, nombre }: { miniatura: Miniatura; nombre: string }) {
+const MiniaturaPiezaSvg = memo(function MiniaturaPiezaSvg({ miniatura, nombre }: { miniatura: Miniatura; nombre: string }) {
   const { caja, formas } = miniatura;
   return (
     <svg viewBox={`${caja.x} ${caja.y} ${caja.ancho} ${caja.alto}`} role="img" aria-label={`Dibujo de ${nombre}`} className="size-14">
@@ -16,7 +16,7 @@ function MiniaturaPiezaSvg({ miniatura, nombre }: { miniatura: Miniatura; nombre
         : <ellipse key={i} cx={f.cx} cy={f.cy} rx={f.rx} ry={f.ry} transform={`rotate(${f.giroGrados.toFixed(1)} ${f.cx} ${f.cy})`} fill={f.hex} stroke="rgba(0,0,0,.22)" strokeWidth={caja.ancho / 300} />)}
     </svg>
   );
-}
+});
 
 type Props = {
   escena: Escena;
@@ -31,7 +31,7 @@ const DONDE: Readonly<Record<string, string>> = { murales: "en la pared del fond
  * en malla de globos), decoraciones de techo (red, festones en catenaria, tiras colgantes, helio) y palmeras y árboles
  * de globos. Cada uno se pone donde va (pared, techo o piso) y queda elegido para moverlo con «Dónde va».
  */
-export function MuralesTechoArboles({ escena, onEscena, onSeleccion }: Props) {
+export const MuralesTechoArboles = memo(function MuralesTechoArboles({ escena, onEscena, onSeleccion }: Props) {
   const [elegida, setElegida] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const piezas = useMemo(() => muralesTechoArbolesConMiniatura(), []);
@@ -78,4 +78,4 @@ export function MuralesTechoArboles({ escena, onEscena, onSeleccion }: Props) {
       })}
     </>
   );
-}
+});

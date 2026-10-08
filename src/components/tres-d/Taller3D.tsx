@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as EventoPuntero } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as EventoPuntero } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ArrowLeft, Rows3, Circle, Anchor, Undo2, Redo2, ChevronUp, ChevronDown } from "lucide-react";
@@ -35,6 +35,7 @@ import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdi
 import { useLienzoDecoraciones, type CopiaElegida } from "./useLienzoDecoraciones";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
 import { ProductosFiesta } from "./UtileriaFiesta";
+import { medirFuera } from "./medicion-visor";
 import type { ItemBiblioteca } from "@/lib/globos3d/biblioteca";
 
 /**
@@ -304,7 +305,16 @@ export function Taller3D() {
     return { resultado, flores };
   }, [ajustesOrganico]);
 
-  const armadaEscena = useMemo(() => (modo === "escena" ? armarEscena(escenaEdit, cacheEscena) : null), [modo, escenaEdit, cacheEscena]);
+  const armadaEscena = useMemo(() => (modo === "escena" ? medirFuera("armarEscena", () => armarEscena(escenaEdit, cacheEscena)) : null), [modo, escenaEdit, cacheEscena]);
+
+  // La escena tal como la dibuja el visor. Cada cosa lleva el id de su pieza: un clic la elige y al arrastrarla se
+  // mueve todo lo suyo junto. Aparte de lo que se ve para que elegir una pieza no rehaga las listas.
+  const dibujoEscena = useMemo(() => (armadaEscena ? {
+    globos: armadaEscena.porNodo.flatMap((n) => n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, formato), ...(g.confeti ? { confeti: true } : {}), nodo: n.id }))),
+    tubos: armadaEscena.porNodo.flatMap((n) => n.tubos.map((t): TuboEnEscena => ({ ...tuboAEscena(t), nodo: n.id }))),
+    flores: armadaEscena.porNodo.flatMap((n) => n.flores.map((f) => ({ ...f, nodo: n.id }))),
+    solidos: armadaEscena.porNodo.flatMap((n) => n.solidos.map((x) => ({ ...x, nodo: n.id }))),
+  } : null), [armadaEscena, formato]);
 
   // Lo que se ve.
   useEffect(() => {
@@ -317,14 +327,14 @@ export function Taller3D() {
       const anclas = padreId ? armadaEscena.porNodo.find((n) => n.id === padreId)?.anclas.map((a) => a.posicion) ?? [] : [];
       const encuadrar = encuadradoRef.current !== vueltaEncuadre;
       encuadradoRef.current = vueltaEncuadre;
-      // Cada cosa lleva el id de su pieza: un clic la elige y al arrastrarla se mueve todo lo suyo junto.
+      // Elegir otra pieza pasa las mismas listas: el visor solo cambia la caja y las anclas, sin rehacer los globos.
+      const { globos, tubos, flores, solidos } = dibujoEscena ?? { globos: [], tubos: [], flores: [], solidos: [] };
       escena.mostrarModulo(
-        armadaEscena.porNodo.flatMap((n) => n.globos.map((g) => ({ ...globoAEscena(g, formato), ...(g.confeti ? { confeti: true } : {}), nodo: n.id }))),
+        globos,
         anclas,
-        armadaEscena.porNodo.flatMap((n) => n.tubos.map((t) => ({ ...tuboAEscena(t), nodo: n.id }))),
+        tubos,
         {
-          flores: armadaEscena.porNodo.flatMap((n) => n.flores.map((f) => ({ ...f, nodo: n.id }))), cilindros: armadaEscena.cilindros, sala: armadaEscena.sala,
-          solidos: armadaEscena.porNodo.flatMap((n) => n.solidos.map((x) => ({ ...x, nodo: n.id }))),
+          flores, cilindros: armadaEscena.cilindros, sala: armadaEscena.sala, solidos,
           // La copia tocada de un reparto se resalta sola; si no, la pieza entera.
           resaltado: (() => {
             const hecho = armadaEscena.porNodo.find((n) => n.id === seleccion);
@@ -370,7 +380,11 @@ export function Taller3D() {
     } else {
       escena.mostrar([{ formato, infladoCm: inflado, hex: color.hexGlobo, familia: color.familia }]);
     }
-  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredActual, verAnclasPared, organico, ajustesOrganico.conPedestal, armadaEscena, escenaEdit, seleccion, vueltaEncuadre, copiaElegida]);
+  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredActual, verAnclasPared, organico, ajustesOrganico.conPedestal, armadaEscena, dibujoEscena, escenaEdit, seleccion, vueltaEncuadre, copiaElegida]);
+
+  // Estables: así los catálogos del panel (cientos de tarjetas con su dibujo) no se vuelven a pintar al elegir una pieza.
+  const cambiarDesdePanel = useCallback((e: Escena) => setEscenaEdit(e, { agrupar: "panel" }), [setEscenaEdit]);
+  const elegirDesdePanel = useCallback((id: string | null) => { setSeleccion(id); setCopiaTocada(null); }, []);
 
   // Escena a mano en el visor: clic elige, arrastrar mueve, teclado (flechas, Q/E, RePág/AvPág, Supr, Ctrl+D/Z/Y, Esc).
   useEdicionEscena({
@@ -781,7 +795,7 @@ export function Taller3D() {
           )}
           <div className={`flex min-w-0 flex-col gap-3 lg:gap-4 ${modo === "escena" ? enHoja("ajustes", "ia") : enHoja("ajustes")}`}>
           {modo === "escena" && armadaEscena ? (
-            <PanelEscena escena={escenaEdit} onEscena={(e) => setEscenaEdit(e, { agrupar: "panel" })} armada={armadaEscena} seleccion={seleccion} onSeleccion={(id) => { setSeleccion(id); setCopiaTocada(null); }} enVivo={enVivo}
+            <PanelEscena escena={escenaEdit} onEscena={cambiarDesdePanel} armada={armadaEscena} seleccion={seleccion} onSeleccion={elegirDesdePanel} enVivo={enVivo}
               enMovil={pestana === "ia" ? "ia" : "piezas"}
               onPreset={(id) => { setEscenaEdit(escenaPredefinida(id)); setSeleccion(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); }}
               accionesPieza={(id) => <AccionesPieza key={`biblioteca-${id}`} escena={escenaEdit} armada={armadaEscena} nodoId={id} onVer={(item) => { setVerEnBiblioteca(item); cambiarModo("biblioteca"); }} />} />
