@@ -109,6 +109,13 @@ export const RAG_USE_TRIGRAM = process.env.RAG_USE_TRIGRAM !== "false";
  */
 export const RAG_RERANK_ENABLED = process.env.RAG_RERANK_ENABLED === "true";
 
+/**
+ * Default: OFF (REQ-002). Enciende la búsqueda de la biblioteca del taller 3D en Postgres (`/api/taller/buscar`,
+ * migración 028). Apagada, o si la base falla, se busca en memoria como hasta hoy. No encenderla antes de aplicar la
+ * migración, indexar la biblioteca y pasar la evaluación contra la búsqueda por palabras.
+ */
+export const TALLER_RAG_ENABLED = process.env.TALLER_RAG_ENABLED === "true";
+
 /** Default: OFF. Routes live RETRIEVAL_QUERY embeddings through Python. */
 export const RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED =
   process.env.RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED === "true";
