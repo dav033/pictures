@@ -10,6 +10,7 @@ import { calcoCorazon, cascaraImpresa, geometriaFoil, materialFoil } from "./imp
 import { colorPropio, geometriaParteFlor, materialParteFlor, partesFlor } from "./flores-visor";
 import type { TipoFlorArtificial } from "@/lib/globos3d/flores-artificiales";
 import { MEDIR_VISOR, cronometrar, infoDe, registrarVisor, type VisorMedible } from "./medicion-visor";
+import { camaraEstandar, type VistaEstandar } from "./camara-estandar";
 
 /**
  * La escena de /3d con three.js, sin React: un globo (o la fila de todos los formatos) sobre un piso con
@@ -84,6 +85,12 @@ export type EscenaGlobos = {
    */
   capturar: () => { datos: string; aspecto: AspectoCaptura };
   /**
+   * Render estándar para las incrustaciones de imagen de la biblioteca (PNG cuadrado de `lado` px): cámara fija por
+   * `vista` con lo que se ve encuadrado al 70 %, calidad alta, sin cuadrícula ni ayudas y sobre un fondo gris claro
+   * opaco. No toca la cámara del visor. Se lee en el mismo instante, así que el lienzo no necesita conservar el búfer.
+   */
+  renderEstandar: (vista: VistaEstandar, lado: number) => string;
+  /**
    * La pieza (su `nodo`) que hay bajo un punto de la pantalla (coordenadas de cliente) y dónde se tocó (cm, en el
    * mundo); `null` si ahí no hay ninguna.
    */
@@ -151,6 +158,8 @@ export type AspectoCaptura = "2:3" | "1:1" | "3:2";
 const TAMANO_CAPTURA: Record<AspectoCaptura, { ancho: number; alto: number }> = { "2:3": { ancho: 1024, alto: 1536 }, "1:1": { ancho: 1024, alto: 1024 }, "3:2": { ancho: 1536, alto: 1024 } };
 
 const CM = 0.01;
+/** Fondo del render estándar (gris claro neutro, como las fotos de decoración sobre pared lisa). */
+const FONDO_ESTANDAR = 0xe6e6e9;
 /** Cuántas piezas que dejaron de verse se guardan dibujadas por si vuelven (ver `aparcados`). */
 const MAX_APARCADOS = 160;
 
@@ -1724,6 +1733,41 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
       destino.drawImage(cuadro, ancho / 2 - cx * escala, alto / 2 - cy * escala, L * escala, L * escala);
       return { datos: salida.toDataURL("image/jpeg", 0.92), aspecto };
+    },
+    renderEstandar(vista, lado) {
+      const caja = new THREE.Box3().setFromObject(contenido);
+      if (caja.isEmpty()) throw new Error("No hay nada que dibujar");
+      // Se dibuja al doble y se reduce: los tubos y los cuellos finos salen sin dientes.
+      const grande = lado * 2;
+      const antes = { ratio: renderer.getPixelRatio(), tamano: renderer.getSize(new THREE.Vector2()) };
+      usarCalidad("alta");
+      const camaraFija = camaraEstandar(caja, vista);
+      renderer.setPixelRatio(1);
+      renderer.setSize(grande, grande, false);
+      const cuadriculaVisible = cuadricula.visible;
+      cuadricula.visible = false;
+      ayudas.visible = false;
+      lienzoAyudas.visible = false;
+      renderer.setClearColor(FONDO_ESTANDAR, 1);
+      renderer.shadowMap.needsUpdate = true;
+      renderer.render(escena, camaraFija);
+      const salida = document.createElement("canvas");
+      salida.width = lado;
+      salida.height = lado;
+      const pincel = salida.getContext("2d");
+      if (!pincel) throw new Error("Sin lienzo 2D");
+      pincel.imageSmoothingQuality = "high";
+      pincel.drawImage(lienzo, 0, 0, lado, lado);
+      const datos = salida.toDataURL("image/png");
+
+      renderer.setClearColor(0x000000, 0);
+      usarCalidad("editor");
+      cuadricula.visible = cuadriculaVisible;
+      ayudas.visible = true;
+      lienzoAyudas.visible = true;
+      renderer.setPixelRatio(antes.ratio);
+      renderer.setSize(antes.tamano.x, antes.tamano.y, false);
+      return datos;
     },
     destruir() {
       vivo = false;
