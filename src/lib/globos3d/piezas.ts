@@ -24,7 +24,11 @@ export type Pieza =
   | { tipo: "pared_malla"; formatoId: string; infladoCm: number; anchoCm: number; altoCm: number; patron: PatronMalla; colores: string[]; union: { infladoCm: number; codigo: string } }
   | { tipo: "pared_trenzas"; opciones: OpcionesParedTrenzas }
   | { tipo: "organico"; opciones: OpcionesOrganico; flores: OpcionesFlores | null }
-  | { tipo: "decoracion"; decoracion: Decoracion }
+  /**
+   * Decoración pequeña (flor, moño, estrella…). Se arma mirando a +y (bien en el piso, del techo o colgada de un
+   * ancla); con `deFrente` mira a +z, al salón, con su arriba hacia +y: así va pegada a una pared.
+   */
+  | { tipo: "decoracion"; decoracion: Decoracion; deFrente?: boolean }
   /** Arco orgánico por medidas: dos semiarcos que se juntan en la clave (ver `formas-escena.ts`). */
   | { tipo: "arco_organico"; arco: OpcionesArcoOrganico }
   /** Guirnalda clásica: trenza de cuartetos en festón, recta o sobre una curva libre. */
@@ -117,7 +121,14 @@ export function armarPieza(pieza: Pieza): PiezaArmada {
     }
     case "decoracion": {
       const armada = armarDecoracion(pieza.decoracion);
-      return conCaja({ globos: armada.globos, tubos: armada.tubos, flores: [], anclas: [], materiales: armada.materiales });
+      if (!pieza.deFrente) return conCaja({ globos: armada.globos, tubos: armada.tubos, flores: [], anclas: [], materiales: armada.materiales });
+      // De frente: un giro (sin espejo) que lleva su cara (+y) al frente (+z) y su arriba (+z) arriba (+y).
+      const deFrente = (v: Vec3): Vec3 => ({ x: -v.x, y: v.z, z: v.y });
+      return conCaja({
+        globos: armada.globos.map((g) => ({ ...g, nudo: deFrente(g.nudo), direccion: deFrente(g.direccion), ...(g.frente ? { frente: deFrente(g.frente) } : {}) })),
+        tubos: armada.tubos.map((t) => ({ ...t, puntos: t.puntos.map(deFrente) })),
+        flores: [], anclas: [], materiales: armada.materiales,
+      });
     }
   }
 }

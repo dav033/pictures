@@ -17,6 +17,7 @@ import {
 } from "@/lib/globos3d/escena";
 import { ESCENAS_PREDEFINIDAS, PIEZAS_NUEVAS, piezaNueva } from "@/lib/globos3d/escenas-presets";
 import { ACTIVO, BOTON, Deslizador, INACTIVO, SelectorColor } from "./PanelFlor";
+import { DecoracionesPequenas } from "./DecoracionesPequenas";
 
 const m = (cm: number) => `${(cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m`;
 const TARJETA = "flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde";
@@ -146,6 +147,8 @@ export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, 
           </>
         )}
       </section>
+
+      <DecoracionesPequenas escena={escena} onEscena={onEscena} armada={armada} seleccion={seleccion} onSeleccion={onSeleccion} />
 
       <EditorSala sala={escena.sala} onSala={(sala) => onEscena({ ...escena, sala })} />
     </>
