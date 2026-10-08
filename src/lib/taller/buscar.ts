@@ -65,6 +65,8 @@ export type DependenciasBuscar = {
   obtenerPool?: () => Promise<Pick<Pool, "query">> | Pick<Pool, "query">;
   memoria?: (filtro: FiltroIA) => ItemBiblioteca[];
   interpretar?: (texto: string) => Interpretacion;
+  /** Embedding de la consulta (por defecto `embeddingOpcional` del RAG, 2,5 s; si falla, la búsqueda sigue solo léxica). */
+  embeberConsulta?: (texto: string) => Promise<number[] | undefined>;
 };
 
 type Fila = Record<string, unknown>;
@@ -219,6 +221,14 @@ function buscarEnMemoria(entrada: EntradaBusqueda, memoria: (f: FiltroIA) => Ite
 // Entrada principal
 // ----------------------------------------------------------------------------------------------------------
 
+/** Plazo del embedding de la consulta: si Gemini tarda más, se busca sin la rama vectorial de texto. */
+const PLAZO_EMBEDDING_MS = 2_500;
+
+async function embeberPorDefecto(texto: string): Promise<number[] | undefined> {
+  const { embeddingOpcional } = await import("@/lib/rag/embeddings");
+  return embeddingOpcional(texto, undefined, Date.now() + PLAZO_EMBEDDING_MS, undefined, { superficie: "taller_biblioteca" });
+}
+
 async function poolPorDefecto(): Promise<Pick<Pool, "query">> {
   const { getRagPool } = await import("@/lib/rag/db");
   return getRagPool();
@@ -232,8 +242,11 @@ export async function buscarEnTaller(entrada: EntradaBusqueda, dependencias: Dep
   const interpretacion = texto ? (dependencias.interpretar ?? interpretarTerminos)(texto) : null;
   const refuerzos = interpretacion ? refuerzosDeInterpretacion(interpretacion) : { formatos: [], partes: [], tiposPieza: [], colores: [] };
 
+  // El vector de la consulta, si quien llama no lo trajo (la rama vectorial de texto); sin él, solo léxica.
+  const vectorTexto = entrada.vectorTexto ?? (texto ? await (dependencias.embeberConsulta ?? embeberPorDefecto)(texto).catch(() => undefined) : undefined);
+  const conVector: EntradaBusqueda = vectorTexto ? { ...entrada, vectorTexto } : entrada;
   // Fuera del try: una entrada inválida (vector de otro tamaño) es error de quien llama, no motivo para caer a memoria.
-  const consulta = construirConsultaBusqueda(entrada, refuerzos);
+  const consulta = construirConsultaBusqueda(conVector, refuerzos);
   try {
     const pool = await (dependencias.obtenerPool ?? poolPorDefecto)();
     const { rows } = await pool.query(consulta.texto, consulta.valores);
