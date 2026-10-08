@@ -171,9 +171,25 @@ const CALIDAD: Readonly<Record<Calidad, { pasos: number; vueltas: number; tubo: 
   editor: { pasos: 24, vueltas: 32, tubo: [60, 16], curva: 24, bisel: 4 },
 };
 
+/**
+ * El color con que se pinta un globo. En el cromado (Reflex) y el metal, el color es lo que el espejo REFLEJA: el hex
+ * de la tabla es el tono promedio de la foto del globo (con sus reflejos oscuros), y multiplicado por el reflejo de la
+ * sala quedaba casi negro (el Reflex Azul 940 #417693 salía negro; el dorado, que es claro, no). Se aclara hasta una
+ * luminosidad mínima conservando el tono y la saturación.
+ */
+export function colorDeLatex(familia: string, hex: string): THREE.Color {
+  const color = new THREE.Color(hex);
+  const minimo = familia === "reflex" ? 0.62 : familia === "metal" ? 0.5 : 0;
+  if (!minimo) return color;
+  const hsl = { h: 0, s: 0, l: 0 };
+  color.getHSL(hsl);
+  if (hsl.l < minimo) color.setHSL(hsl.h, Math.min(1, hsl.s * 1.1), minimo);
+  return color;
+}
+
 /** Material de látex según la familia Sempertex. */
 function materialDe(familia: string, hex: string, calidad: Calidad = "alta"): THREE.MeshPhysicalMaterial {
-  const color = new THREE.Color(hex);
+  const color = colorDeLatex(familia, hex);
   switch (familia) {
     case "reflex":
       // El entorno de la escena va atenuado (el látex mate se lavaba); el cromado necesita reflejar más para verse plateado y no negro.
@@ -858,7 +874,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     if (!plantilla) { grupo.add(objetoCompleto(globo, indice)); return; }
     const marco = marcoDeGlobo(globo);
     const propio = globo.familia === "neon";
-    const color = propio ? null : new THREE.Color(globo.hex);
+    const color = propio ? null : colorDeLatex(globo.familia, globo.hex);
     const escalado = plantilla.escala !== 1 ? marco.clone().scale(new THREE.Vector3(plantilla.escala, plantilla.escala, plantilla.escala)) : marco;
     juego(plantilla.clave, "editor").forEach((parte, k) => {
       const lote = `${plantilla.clave}#${k}|${globo.familia}|${propio ? globo.hex : ""}`;
@@ -906,7 +922,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       return { geometria: () => g, material: (c) => materialGlobo(tramo.familia, tramo.hex, c), conColor: !propio };
     });
     const radio = (tramo.grosorCm / 2) * CM;
-    const color = propio ? null : new THREE.Color(tramo.hex);
+    const color = propio ? null : colorDeLatex(tramo.familia, tramo.hex);
     for (const t of [0, 1]) instancias.push({ lote, matriz: new THREE.Matrix4().makeScale(radio, radio, radio).setPosition(curva.getPoint(t)), color });
   }
 
