@@ -273,6 +273,7 @@ export function Taller3D() {
         armadaEscena.porNodo.flatMap((n) => n.tubos.map((t) => ({ ...tuboAEscena(t), nodo: n.id }))),
         {
           flores: armadaEscena.porNodo.flatMap((n) => n.flores.map((f) => ({ ...f, nodo: n.id }))), cilindros: armadaEscena.cilindros, sala: armadaEscena.sala,
+          solidos: armadaEscena.porNodo.flatMap((n) => n.solidos.map((x) => ({ ...x, nodo: n.id }))),
           resaltado: armadaEscena.porNodo.find((n) => n.id === seleccion)?.caja ?? null, encuadrar,
         },
       );

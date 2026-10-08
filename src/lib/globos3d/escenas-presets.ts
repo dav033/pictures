@@ -1,6 +1,8 @@
 import { decoracionPredefinida } from "./figuras";
 import { SALA_INICIAL, type Colocacion, type Escena, type NodoEscena, type Sala } from "./escena";
 import type { Pieza } from "./piezas";
+import { fondoMarcoOndulado, mesaCilindrica, mesaConMantel, tapete } from "./escenografia";
+import { opcionesArcoRectangular, opcionesAroOrganico, opcionesRacimosLibres, opcionesTroncoConBase } from "./estructuras-organicas";
 
 /**
  * Escenas de partida del taller y las piezas que se pueden añadir a una escena. Todo es un punto de partida: cada
@@ -125,7 +127,172 @@ const TECHO_RACIMOS: PresetEscena = {
   escena: techoConRacimos(),
 };
 
-export const ESCENAS_PREDEFINIDAS: readonly PresetEscena[] = [ARCO_CON_COLUMNAS, PARED_Y_COLUMNAS, TECHO_RACIMOS];
+// ----------------------------------------------------------------------------------------------------------
+// Halloween (las 5 fotos del dueño, 2026-10-07)
+// ----------------------------------------------------------------------------------------------------------
+//
+// Medidas por el tamaño de los globos en cada foto (R-12 ≈ 25–28 cm, R-5 ≈ 12 cm, R-18 ≈ 34–40 cm, R-24 ≈ 48–55 cm)
+// y colores medidos con PIL sobre la foto (mediana de cada globo) y llevados al código Sempertex más parecido que
+// se fabrica en ese formato (`formatos` limita un color a los formatos donde existe). Aquí van las estructuras y la
+// escenografía; las piezas pequeñas (ojos, arañas, calabazas, mano, ramo, ramas trenzadas, fantasmas, telarañas) se
+// cuelgan después en los sitios que anota cada escena.
+
+const R = (x: number, y: number, z = 0) => ({ x, y, z });
+
+/** Foto 1: marco verde ondulado con pared de lentejuelas, cuatro racimos orgánicos, dos mesas negras y tapete naranja. */
+function marcoOrganicoConMesas(): Escena {
+  // Racimos medidos en la foto (1 px ≈ 0,385 cm; x desde el centro del marco, y desde el piso).
+  const arriba = [{ t: 0, pesos: { "R-18": 0.18, "R-12": 0.57, "R-9": 0.25 } }, { t: 1, pesos: { "R-18": 0.12, "R-12": 0.55, "R-9": 0.33 } }];
+  const abajo = [{ t: 0, pesos: { "R-18": 0.22, "R-12": 0.55, "R-9": 0.23 } }, { t: 1, pesos: { "R-18": 0.15, "R-12": 0.55, "R-9": 0.3 } }];
+  const racimos: Pieza = {
+    tipo: "organico", flores: null,
+    opciones: opcionesRacimosLibres({
+      semilla: 41, suelo: true,
+      racimos: [
+        { id: "arriba_izquierda", nombre: "Racimo de arriba a la izquierda", puntos: [R(-110, 185), R(-102, 239), R(-73, 260), R(-50, 250)], radioInicioCm: 34, radioFinCm: 30, mezcla: arriba, tapas: { inicio: true, fin: true } },
+        { id: "arriba_derecha", nombre: "Racimo que baja por la derecha", puntos: [R(38, 227), R(77, 248), R(112, 219), R(127, 181), R(117, 154)], radioInicioCm: 34, radioFinCm: 28, mezcla: arriba, tapas: { inicio: true, fin: true } },
+        { id: "abajo_izquierda", nombre: "Montículo de abajo a la izquierda", puntos: [R(-142, 30, 12), R(-119, 50, 12), R(-85, 62, 12), R(-64, 38, 12)], radioInicioCm: 36, radioFinCm: 30, mezcla: abajo, tapas: { inicio: true, fin: true } },
+        { id: "abajo_derecha", nombre: "Montículo de abajo a la derecha", puntos: [R(73, 30, 12), R(85, 69, 12), R(119, 85, 12), R(140, 58, 12), R(135, 30, 12)], radioInicioCm: 34, radioFinCm: 32, mezcla: abajo, tapas: { inicio: true, fin: true } },
+      ],
+      colores: [
+        { codigo: "031", peso: 20 }, // Fashion Verde Lima
+        { codigo: "061", peso: 22 }, // Fashion Naranja
+        { codigo: "023", peso: 18 }, // Fashion Mostaza (el amarillo anaranjado)
+        { codigo: "060", peso: 16 }, // Fashion Durazno
+        { codigo: "850", peso: 24, formatos: ["R-5", "R-9"] }, // Silk Amatista (los chiquitos lila cromado)
+      ],
+    }),
+  };
+  return {
+    sala: sala({ anchoCm: 520, fondoCm: 420, altoCm: 320, tonos: { piso: "#d9d2ca", paredes: "#ece9ef", techo: "#fbfaf8" }, mostrar: { piso: true, fondo: true, laterales: false, techo: false } }),
+    nodos: [
+      { id: "fondo-marco", nombre: "Marco verde y lentejuelas", pieza: { tipo: "escenografia", elementos: fondoMarcoOndulado({ anchoCm: 240, altoCm: 245, bandaCm: 42, bandaArribaCm: 40, capas: ["#4f9e7b", "#8fcab5"], lentejuelas: "#1d1c21" }) }, colocacion: { en: "piso", xCm: 0, zCm: -205, giroGrados: 0 } },
+      { id: "tapete", nombre: "Tapete naranja", pieza: { tipo: "escenografia", elementos: tapete({ anchoCm: 330, fondoCm: 125, hex: "#e35a40", borde: { hex: "#1a1414", cm: 6 } }) }, colocacion: { en: "piso", xCm: 0, zCm: -128, giroGrados: 0 } },
+      { id: "racimos", nombre: "Marco orgánico (4 racimos)", pieza: racimos, colocacion: { en: "piso", xCm: 0, zCm: -158, giroGrados: 0 } },
+      { id: "mesa-baja", nombre: "Mesa cilíndrica baja", pieza: { tipo: "escenografia", elementos: mesaCilindrica({ diametroCm: 62, altoCm: 62, hex: "#141012" }) }, colocacion: { en: "piso", xCm: -28, zCm: -105, giroGrados: 0 } },
+      { id: "mesa-alta", nombre: "Mesa cilíndrica alta", pieza: { tipo: "escenografia", elementos: mesaCilindrica({ diametroCm: 70, altoCm: 84, hex: "#141012" }) }, colocacion: { en: "piso", xCm: 34, zCm: -150, giroGrados: 0 } },
+    ],
+  };
+}
+
+/** Foto 2: arco orgánico rectangular naranja, negro y gris con huecos para las calabazas, y la mesa con mantel. */
+function arcoConCalabazas(): Escena {
+  const arco: Pieza = {
+    tipo: "organico", flores: null,
+    opciones: opcionesArcoRectangular({
+      anchoEjeCm: 195, altoEjeCm: 232, radioEsquinaCm: 40, radioBaseCm: 34, radioPataCm: 28, radioArribaCm: 30,
+      // La calabaza (R-24) va entre la base y la pata, a 66–118 cm del piso.
+      hueco: { desdeCm: 66, hastaCm: 118 },
+      mezcla: { base: { "R-18": 0.15, "R-12": 0.65, "R-9": 0.2 }, pata: { "R-12": 0.7, "R-9": 0.3 }, arriba: { "R-18": 0.15, "R-12": 0.6, "R-9": 0.25 } },
+      colores: [
+        { codigo: "061", peso: 36 }, // Fashion Naranja
+        { codigo: "080", peso: 32 }, // Fashion Negro
+        { codigo: "806", peso: 32 }, // Silk Blanco Nácar (el gris claro; los impresos de salpicado, lisos)
+      ],
+      semilla: 13,
+    }),
+  };
+  return {
+    sala: sala({ anchoCm: 520, fondoCm: 420, altoCm: 320, tonos: { piso: "#e3b47c", paredes: "#f2f2ef", techo: "#fbfaf8" }, mostrar: { piso: true, fondo: true, laterales: false, techo: false } }),
+    nodos: [
+      { id: "arco", nombre: "Arco orgánico rectangular", pieza: arco, colocacion: { en: "piso", xCm: 0, zCm: -150, giroGrados: 0 } },
+      {
+        id: "mesa", nombre: "Mesa con mantel",
+        pieza: { tipo: "escenografia", elementos: mesaConMantel({ anchoCm: 120, fondoCm: 60, altoCm: 75, mantel: "#e96d3b", camino: { anchoCm: 88, hex: "#251d19", caidaCm: 62 }, tarimas: [{ xCm: -30, anchoCm: 40, fondoCm: 28, altoCm: 8, hex: "#8a5a34" }, { xCm: 30, anchoCm: 40, fondoCm: 28, altoCm: 8, hex: "#8a5a34" }] }) },
+        colocacion: { en: "piso", xCm: 0, zCm: -100, giroGrados: 0 },
+      },
+    ],
+  };
+}
+
+/** Foto 3: aro orgánico de 1,6 m en la pared: fila de R-12 verde por fuera y mezcla verde, café, naranja y beige por dentro. */
+function aroDeOjos(): Escena {
+  const aro: Pieza = {
+    tipo: "organico", flores: null,
+    opciones: opcionesAroOrganico({
+      diametroCm: 152, exterior: { formatoId: "R-12", radioCm: 13 }, interior: { pesos: { "R-9": 0.75, "R-5": 0.25 }, radioCm: 15, adelanteCm: 6 },
+      colores: [
+        // Los R-12 de fuera solo pueden ser Eucalipto; su peso cubre esa fila y unos pocos salvia de dentro.
+        { codigo: "027", peso: 28 }, // Fashion Eucalipto (el R-12 verde moteado de fuera, liso; y el salvia)
+        { codigo: "030", peso: 22, formatos: ["R-9", "R-5"] }, // Fashion Verde
+        { codigo: "071", peso: 12, formatos: ["R-9", "R-5"] }, // Fashion Arena
+        { codigo: "074", peso: 14, formatos: ["R-9", "R-5"] }, // Fashion Café
+        { codigo: "023", peso: 12, formatos: ["R-9", "R-5"] }, // Fashion Mostaza (el naranja ámbar)
+      ],
+      semilla: 31,
+    }),
+  };
+  return {
+    sala: sala({ anchoCm: 400, fondoCm: 320, altoCm: 280, tonos: { piso: "#d8cbbb", paredes: "#efece6", techo: "#fbfaf8" }, mostrar: { piso: true, fondo: true, laterales: false, techo: false } }),
+    nodos: [{ id: "aro", nombre: "Aro orgánico", pieza: aro, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 70 } }],
+  };
+}
+
+/** Foto 4: árbol café de 2,5 m: montículo de R-18 en el piso y tronco fino de R-12 y R-5 (las ramas y fantasmas, aparte). */
+function arbolConFantasmas(): Escena {
+  const arbol: Pieza = {
+    tipo: "organico", flores: null,
+    opciones: opcionesTroncoConBase({
+      base: { radioAnilloCm: 30, radioCm: 36, mezcla: { "R-18": 0.8, "R-12": 0.2 } },
+      tronco: { desdeCm: 55, altoCm: 250, radioCm: 22, radioCopaCm: 27, mezcla: { "R-12": 0.55, "R-5": 0.45 } },
+      // Inflados medidos: el tronco va de R-12 a medio inflar (~21 cm) y R-5 de 11 cm.
+      inflados: { "R-18": 36, "R-12": 21, "R-5": 11 },
+      // El Chocolate no se fabrica en R-9: sin R-9 de relleno, solo tríos de R-5.
+      relleno: [{ formatoId: "R-5", infladoCm: 11, trios: true }],
+      colores: [
+        { codigo: "076", peso: 60, formatos: ["R-5", "R-12"] }, // Fashion Chocolate
+        { codigo: "880", peso: 18, formatos: ["R-18"] }, // Silk Gris Medianoche (el café grisáceo de los grandes; el Chocolate no viene en R-18)
+        { codigo: "968", peso: 9, formatos: ["R-5"] }, // Reflex Dorado Rosa (los cobrizos)
+        { codigo: "071", peso: 8, formatos: ["R-5"] }, // Fashion Arena (los crema de la base)
+        { codigo: "970", peso: 5, formatos: ["R-5"] }, // Reflex Dorado
+      ],
+      semilla: 5,
+    }),
+  };
+  return {
+    sala: sala({ anchoCm: 450, fondoCm: 360, altoCm: 300, tonos: { piso: "#d9d0c5", paredes: "#f4f3f1", techo: "#fbfaf8" }, mostrar: { piso: true, fondo: true, laterales: false, techo: false } }),
+    nodos: [{ id: "arbol", nombre: "Árbol (base y tronco)", pieza: arbol, colocacion: { en: "piso", xCm: 0, zCm: -60, giroGrados: 0 } }],
+  };
+}
+
+/** Foto 5: media guirnalda orgánica en curva (óxido, latte, grafito y dorado chico) colgada en la pared. */
+function guirnaldaConArana(): Escena {
+  // Eje medido en la foto (1 px ≈ 0,125 cm), de abajo a la izquierda hacia arriba a la derecha.
+  const guirnalda: Pieza = {
+    tipo: "organico", flores: null,
+    opciones: opcionesRacimosLibres({
+      semilla: 23, suelo: false,
+      // Guirnalda suelta, no tupida: los huecos se tapan con R-9 y los R-5 dorados van como estructura (sueltos y en
+      // grupitos), no como tríos de relleno por todas partes.
+      relleno: [{ formatoId: "R-9", infladoCm: 17, trios: false }],
+      racimos: [{
+        id: "guirnalda", nombre: "Media guirnalda", puntos: [R(-2, 32), R(-10, 82), R(0, 126), R(22, 165), R(54, 186), R(85, 185), R(105, 157)],
+        radioInicioCm: 34, radioFinCm: 28, tapas: { inicio: true, fin: true },
+        mezcla: [{ t: 0, pesos: { "R-18": 0.25, "R-12": 0.5, "R-9": 0.1, "R-5": 0.35 } }, { t: 0.5, pesos: { "R-18": 0.12, "R-12": 0.58, "R-9": 0.15, "R-5": 0.35 } }, { t: 1, pesos: { "R-18": 0.3, "R-12": 0.45, "R-9": 0.1, "R-5": 0.35 } }],
+      }],
+      colores: [
+        { codigo: "062", peso: 30, formatos: ["R-9", "R-12", "R-18"] }, // Fashion Naranja Cobrizo (el óxido)
+        { codigo: "073", peso: 30, formatos: ["R-9", "R-12", "R-18"] }, // Fashion Latte
+        { codigo: "880", peso: 25, formatos: ["R-9", "R-12", "R-18"] }, // Silk Gris Medianoche (el grafito)
+        { codigo: "971", peso: 15, formatos: ["R-5"] }, // Reflex Champaña (los dorados chicos)
+      ],
+    }),
+  };
+  return {
+    sala: sala({ anchoCm: 400, fondoCm: 320, altoCm: 300, tonos: { piso: "#d8cbbb", paredes: "#f6f5f3", techo: "#fbfaf8" }, mostrar: { piso: true, fondo: true, laterales: false, techo: false } }),
+    nodos: [{ id: "guirnalda", nombre: "Media guirnalda orgánica", pieza: guirnalda, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 45 } }],
+  };
+}
+
+export const ESCENAS_HALLOWEEN: readonly PresetEscena[] = [
+  { id: "halloween_marco_mesas", nombre: "Halloween: marco orgánico con mesas", descripcion: "Marco verde ondulado de 2,4 m con pared de lentejuelas, cuatro racimos orgánicos, dos mesas cilíndricas negras y tapete naranja.", escena: marcoOrganicoConMesas() },
+  { id: "halloween_arco_calabazas", nombre: "Halloween: arco con calabazas", descripcion: "Arco orgánico rectangular naranja, negro y gris de 2,6 × 2,6 m con huecos para dos calabazas, sobre una mesa con mantel.", escena: arcoConCalabazas() },
+  { id: "halloween_aro_ojos", nombre: "Halloween: aro de ojos y arañas", descripcion: "Aro orgánico de 1,6 m en la pared: R-12 verde por fuera y mezcla verde, café, naranja y beige por dentro.", escena: aroDeOjos() },
+  { id: "halloween_arbol_fantasmas", nombre: "Halloween: árbol con fantasmas", descripcion: "Árbol café de 2,5 m: montículo de R-18 y tronco de R-12 y R-5 chocolate con cobre y crema.", escena: arbolConFantasmas() },
+  { id: "halloween_guirnalda_arana", nombre: "Halloween: guirnalda con araña", descripcion: "Media guirnalda orgánica en curva de 1,2 × 1,9 m en óxido, latte, grafito y tríos dorados, colgada en la pared.", escena: guirnaldaConArana() },
+];
+
+export const ESCENAS_PREDEFINIDAS: readonly PresetEscena[] = [ARCO_CON_COLUMNAS, PARED_Y_COLUMNAS, TECHO_RACIMOS, ...ESCENAS_HALLOWEEN];
 
 /** Copia profunda de una escena predefinida (para editarla sin tocar el original). */
 export function escenaPredefinida(id: string): Escena {

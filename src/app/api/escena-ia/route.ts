@@ -20,7 +20,7 @@ const MAX_LLAMADAS = 24;
 const TOPE_POR_HORA = 60;
 let ventana = { desde: Date.now(), usadas: 0 };
 
-const TIPOS: readonly TipoPieza[] = ["columna", "arco", "pared_malla", "pared_trenzas", "organico", "decoracion", "arco_organico", "guirnalda"];
+const TIPOS: readonly TipoPieza[] = ["columna", "arco", "pared_malla", "pared_trenzas", "organico", "decoracion", "arco_organico", "guirnalda", "escenografia"];
 const Hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const Numero = z.number().finite();
 

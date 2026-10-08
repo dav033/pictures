@@ -3,6 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { FormatoGlobo } from "@/lib/globos3d/formatos";
 import { centroCuerpo, contornoCorazon, perfilLink, perfilRedondo, type PuntoPerfil } from "@/lib/globos3d/geometria";
+import type { SolidoEscenografia } from "@/lib/globos3d/escenografia";
 
 /**
  * La escena de /3d con three.js, sin React: un globo (o la fila de todos los formatos) sobre un piso con
@@ -40,6 +41,8 @@ export type TuboEnEscena = DeNodo & { puntos: readonly Punto3[]; grosorCm: numbe
 export type FlorEnEscena = DeNodo & { tipo: "hortensia" | "rosa" | "gypsophila"; hex: string; diametroCm: number; posicion: Punto3; normal: Punto3 };
 /** Un volumen simple de la escena (el pedestal): base, radio y alto en cm. */
 export type CilindroEnEscena = DeNodo & { base: Punto3; radioCm: number; altoCm: number; hex: string };
+/** Escenografía (paneles con contorno, mesas, tapete): no son globos; vienen con su marco en cm (ver `escenografia.ts`). */
+export type SolidoEnEscena = DeNodo & SolidoEscenografia;
 /**
  * La sala de una escena (cm): piso en y = 0, x de −ancho/2 a +ancho/2, z de −fondo/2 a +fondo/2, techo en y = alto;
  * la pared del fondo en z = −fondo/2 y el frente abierto. Mismo formato que `Sala` de `lib/globos3d/escena.ts`.
@@ -55,7 +58,7 @@ export type CajaEnEscena = { min: Punto3; max: Punto3 };
  * la sala. `resaltado` marca con una caja la pieza elegida (no sale en la captura). `encuadrar: false` deja la
  * cámara donde está (al mover una pieza no se pierde el ángulo).
  */
-export type ExtrasEscena = { flores?: readonly FlorEnEscena[]; cilindros?: readonly CilindroEnEscena[]; sala?: SalaEnEscena; resaltado?: CajaEnEscena | null; encuadrar?: boolean };
+export type ExtrasEscena = { flores?: readonly FlorEnEscena[]; cilindros?: readonly CilindroEnEscena[]; solidos?: readonly SolidoEnEscena[]; sala?: SalaEnEscena; resaltado?: CajaEnEscena | null; encuadrar?: boolean };
 
 export type EscenaGlobos = {
   mostrar: (globos: readonly GloboEnEscena[]) => void;
@@ -376,6 +379,76 @@ function corazon(anchoCm: number, material: THREE.Material): THREE.Group {
   return grupo;
 }
 
+/** Textura de lentejuelas: discos oscuros con brillos al azar (cada uno refleja distinto). Una casilla = 12 cm. */
+function texturaLentejuelas(hex: string): THREE.CanvasTexture | null {
+  if (typeof document === "undefined") return null;
+  const lienzo = document.createElement("canvas");
+  lienzo.width = 128;
+  lienzo.height = 128;
+  const pincel = lienzo.getContext("2d");
+  if (!pincel) return null;
+  const base = new THREE.Color(hex);
+  pincel.fillStyle = `#${base.clone().multiplyScalar(0.55).getHexString()}`;
+  pincel.fillRect(0, 0, 128, 128);
+  const r = azar(17);
+  const lado = 128 / 6;
+  for (let fila = 0; fila < 7; fila++) for (let col = 0; col < 7; col++) {
+    const brillo = 0.7 + r() * 1.4;
+    pincel.fillStyle = `#${base.clone().multiplyScalar(brillo).addScalar(r() < 0.12 ? 0.25 : 0).getHexString()}`;
+    pincel.beginPath();
+    pincel.arc(col * lado + (fila % 2) * lado / 2, fila * lado, lado * 0.47, 0, Math.PI * 2);
+    pincel.fill();
+  }
+  const textura = new THREE.CanvasTexture(lienzo);
+  textura.colorSpace = THREE.SRGBColorSpace;
+  textura.wrapS = THREE.RepeatWrapping;
+  textura.wrapT = THREE.RepeatWrapping;
+  return textura;
+}
+
+function materialEscenografia(s: SolidoEscenografia): THREE.Material {
+  const color = new THREE.Color(s.hex);
+  switch (s.acabado) {
+    case "lentejuelas": {
+      const mapa = texturaLentejuelas(s.hex);
+      if (mapa && s.forma === "caja") mapa.repeat.set(Math.max(1, s.tamano.x / 12), Math.max(1, s.tamano.y / 12));
+      return new THREE.MeshStandardMaterial({ color: 0xffffff, map: mapa, metalness: 0.7, roughness: 0.3, envMap: entornoMetal, envMapIntensity: 1.2 });
+    }
+    case "brillante": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.22, clearcoat: 0.9, clearcoatRoughness: 0.15 });
+    case "satinado": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.35 });
+    case "tela": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.95, sheen: 0.6, sheenColor: color.clone().lerp(new THREE.Color(0xffffff), 0.3), sheenRoughness: 0.7 });
+    case "madera": return new THREE.MeshStandardMaterial({ color, roughness: 0.72 });
+    default: return new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
+  }
+}
+
+/** Un sólido de escenografía en su sitio: geometría en su marco (cm → m) y el marco puesto con su base de ejes. */
+function solidoEscenografia(s: SolidoEscenografia): THREE.Object3D {
+  let geometria: THREE.BufferGeometry;
+  if (s.forma === "caja") {
+    geometria = new THREE.BoxGeometry(s.tamano.x * CM, s.tamano.y * CM, s.tamano.z * CM);
+  } else if (s.forma === "cilindro") {
+    geometria = new THREE.CylinderGeometry(s.radioArribaCm * CM, s.radioCm * CM, s.altoCm * CM, 64);
+    geometria.translate(0, (s.altoCm / 2) * CM, 0);
+  } else {
+    const forma = new THREE.Shape(s.contorno.map((p) => new THREE.Vector2(p.x * CM, p.y * CM)));
+    for (const hueco of s.huecos) forma.holes.push(new THREE.Path(hueco.map((p) => new THREE.Vector2(p.x * CM, p.y * CM))));
+    // Un bisel fino redondea el canto: al girar, el panel se ve como un tablero cortado y no como una lámina.
+    const bisel = Math.min(0.5, s.grosorCm / 4) * CM;
+    geometria = new THREE.ExtrudeGeometry(forma, { depth: Math.max(0.1 * CM, s.grosorCm * CM - 2 * bisel), bevelEnabled: true, bevelThickness: bisel, bevelSize: bisel, bevelSegments: 2, curveSegments: 24 });
+    geometria.translate(0, 0, bisel);
+  }
+  const malla = new THREE.Mesh(geometria, materialEscenografia(s));
+  malla.castShadow = true;
+  malla.receiveShadow = true;
+  const ejes = new THREE.Matrix4().makeBasis(
+    new THREE.Vector3(s.ejeX.x, s.ejeX.y, s.ejeX.z), new THREE.Vector3(s.ejeY.x, s.ejeY.y, s.ejeY.z), new THREE.Vector3(s.ejeZ.x, s.ejeZ.y, s.ejeZ.z),
+  );
+  malla.quaternion.setFromRotationMatrix(ejes);
+  malla.position.set(s.origen.x * CM, s.origen.y * CM, s.origen.z * CM);
+  return malla;
+}
+
 function construir(globo: GloboEnEscena): THREE.Object3D {
   const material = materialDe(globo.familia, globo.hex);
   const { formato, infladoCm } = globo;
@@ -448,7 +521,10 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       if (hijo instanceof THREE.Mesh) {
         hijo.geometry.dispose();
         const materiales = Array.isArray(hijo.material) ? hijo.material : [hijo.material];
-        for (const m of materiales) m.dispose();
+        for (const m of materiales) {
+          if (m instanceof THREE.MeshStandardMaterial) m.map?.dispose();
+          m.dispose();
+        }
       }
     });
   }
@@ -602,6 +678,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       cilindro.receiveShadow = true;
       grupoDe(c.nodo).add(cilindro);
     }
+    // Escenografía (paneles, mesas, tapete): con su pieza, para elegirla y arrastrarla como a las demás.
+    for (const solido of extras.solidos ?? []) grupoDe(solido.nodo).add(solidoEscenografia(solido));
     // Anclas: puntos donde se cuelga una decoración hija (una flor, un moño).
     const materialAncla = new THREE.MeshStandardMaterial({ color: 0x7c3aed, emissive: 0x7c3aed, emissiveIntensity: 0.6 });
     for (const ancla of anclas) {

@@ -25,7 +25,7 @@ const TARJETA = "flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-b
 
 const NOMBRE_TIPO: Readonly<Record<Pieza["tipo"], string>> = {
   columna: "Columna", arco: "Arco", pared_malla: "Pared de malla", pared_trenzas: "Pared de trenzas", organico: "Orgánico",
-  decoracion: "Decoración", arco_organico: "Arco orgánico", guirnalda: "Guirnalda",
+  decoracion: "Decoración", arco_organico: "Arco orgánico", guirnalda: "Guirnalda", escenografia: "Escenografía",
 };
 
 const LUGARES: ReadonlyArray<{ id: LugarColocacion; nombre: string }> = [
@@ -384,6 +384,7 @@ function EditorPieza({ pieza, onPieza }: { pieza: Pieza; onPieza: (p: Pieza) => 
         </>
       )}
       {pieza.tipo === "organico" && <p className="text-[0.7rem] text-texto-suave">Pieza orgánica armada: muévela con «Dónde va» y cambia sus colores con «Colores de la escena».</p>}
+      {pieza.tipo === "escenografia" && <p className="text-[0.7rem] text-texto-suave">Escenografía (no son globos ni cuentan en los materiales): muévela con «Dónde va».</p>}
     </section>
   );
 }

@@ -67,7 +67,7 @@ const CATALOGO_IDS = CATALOGO_DECORACIONES.map((d) => d.id) as [string, ...strin
 
 const NOMBRE_TIPO: Readonly<Record<TipoPieza, string>> = {
   columna: "columna", arco: "arco", pared_malla: "pared de malla", pared_trenzas: "pared de trenzas", organico: "pieza orgánica",
-  decoracion: "decoración", arco_organico: "arco orgánico", guirnalda: "guirnalda",
+  decoracion: "decoración", arco_organico: "arco orgánico", guirnalda: "guirnalda", escenografia: "escenografía",
 };
 
 // ----------------------------------------------------------------------------------------------------------
@@ -314,6 +314,7 @@ function medidasDe(p: Pieza): string {
     case "pared_trenzas": return `${r0(p.opciones.anchoCm)}×${r0(p.opciones.altoCm)} cm · ${p.opciones.patron}`;
     case "organico": return "pieza orgánica armada";
     case "decoracion": return `${p.decoracion.tipo}`;
+    case "escenografia": return `escenografía (${p.elementos.length} elementos, sin globos)`;
   }
 }
 
@@ -573,6 +574,9 @@ function aplicarPropiedades(base: Pieza, props: Propiedades, notas: string[]): P
     }
     case "organico":
       return props.colores ? recolorearEnOrden(base, props.colores, notas) : base;
+    case "escenografia":
+      // No es globo: no tiene colores Sempertex que cambiar.
+      return base;
   }
 }
 

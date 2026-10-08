@@ -4,6 +4,7 @@ import type { TuboDecoracion } from "./decoraciones";
 import { decoracionEnIngles, type MaterialDecoracion } from "./figuras";
 import { esDePie } from "./halloween";
 import { sumarMateriales } from "./mezcla";
+import type { SolidoEscenografia } from "./escenografia";
 
 /**
  * Una **escena**: varias piezas del taller colocadas en una sala (el arco orgánico con dos columnas y una
@@ -61,6 +62,8 @@ export type NodoArmado = {
   globos: GloboDePieza[];
   tubos: TuboDecoracion[];
   flores: FlorDePieza[];
+  /** Escenografía (paneles, mesas, tapete) en el mundo. */
+  solidos: SolidoEscenografia[];
   /** Anclas en el mundo (las de todas sus copias): ahí se cuelgan otras piezas. */
   anclas: AnclaDePieza[];
   materiales: MaterialDecoracion[];
@@ -73,6 +76,7 @@ export type EscenaArmada = {
   globos: GloboDePieza[];
   tubos: TuboDecoracion[];
   flores: FlorDePieza[];
+  solidos: SolidoEscenografia[];
   cilindros: CilindroDeEscena[];
   sala: Sala;
   materiales: MaterialDecoracion[];
@@ -195,6 +199,7 @@ function aplicar(armada: PiezaArmada, tr: Transformacion) {
     })),
     tubos: armada.tubos.map((t): TuboDecoracion => ({ ...t, puntos: t.puntos.map((p) => mover(tr, p)) })),
     flores: armada.flores.map((f): FlorDePieza => ({ ...f, posicion: mover(tr, f.posicion), normal: girar(tr.m, f.normal) })),
+    solidos: (armada.solidos ?? []).map((x): SolidoEscenografia => ({ ...x, origen: mover(tr, x.origen), ejeX: girar(tr.m, x.ejeX), ejeY: girar(tr.m, x.ejeY), ejeZ: girar(tr.m, x.ejeZ) })),
     anclas: armada.anclas.map((a): AnclaDePieza => ({ posicion: mover(tr, a.posicion), normal: girar(tr.m, a.normal) })),
     caja: cajaMovida(armada.caja, tr),
   };
@@ -251,7 +256,7 @@ export function armarEscena(escena: Escena, cache?: Map<string, PiezaArmada>): E
   const cilindrosPorNodo = new Map<string, CilindroDeEscena[]>();
 
   const vacio = (nodo: NodoEscena, aviso: string): NodoArmado => ({
-    id: nodo.id, nombre: nodo.nombre, copias: 0, globos: [], tubos: [], flores: [], anclas: [], materiales: [], caja: { min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } }, avisos: [aviso],
+    id: nodo.id, nombre: nodo.nombre, copias: 0, globos: [], tubos: [], flores: [], solidos: [], anclas: [], materiales: [], caja: { min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } }, avisos: [aviso],
   });
 
   const armarNodo = (nodo: NodoEscena): NodoArmado => {
@@ -274,7 +279,7 @@ export function armarEscena(escena: Escena, cache?: Map<string, PiezaArmada>): E
             const copias = indices.map((i) => aplicar(armada, marcoDeAncla(delPadre.anclas[i]!, c.giroGrados)));
             resultado = {
               id: nodo.id, nombre: nodo.nombre, copias: copias.length,
-              globos: copias.flatMap((x) => x.globos), tubos: copias.flatMap((x) => x.tubos), flores: copias.flatMap((x) => x.flores), anclas: copias.flatMap((x) => x.anclas),
+              globos: copias.flatMap((x) => x.globos), tubos: copias.flatMap((x) => x.tubos), flores: copias.flatMap((x) => x.flores), solidos: copias.flatMap((x) => x.solidos), anclas: copias.flatMap((x) => x.anclas),
               materiales: sumarMateriales(...copias.map(() => armada.materiales)),
               caja: cajaDePuntos(copias.flatMap((x) => [x.caja.min, x.caja.max])),
               avisos: [],
@@ -302,6 +307,7 @@ export function armarEscena(escena: Escena, cache?: Map<string, PiezaArmada>): E
     globos: porNodo.flatMap((n) => n.globos),
     tubos: porNodo.flatMap((n) => n.tubos),
     flores: porNodo.flatMap((n) => n.flores),
+    solidos: porNodo.flatMap((n) => n.solidos),
     cilindros: escena.nodos.flatMap((n) => cilindrosPorNodo.get(n.id) ?? []),
     sala: escena.sala,
     materiales: sumarMateriales(...porNodo.map((n) => n.materiales)),
@@ -371,6 +377,7 @@ export function piezaEnIngles(pieza: Pieza, caja: Caja): string {
     case "pared_malla": return `a flat Link-O-Loon balloon wall ${ancho} wide and ${alto} tall`;
     case "pared_trenzas": return `a balloon wall of vertical quartet braids ${ancho} wide and ${alto} tall`;
     case "organico": return `an organic balloon piece of mixed-size balloons ${alto} tall`;
+    case "escenografia": return `party props (backdrop panels, tables or rug) ${ancho} wide`;
     case "decoracion": return decoracionEnIngles(pieza.decoracion);
   }
 }

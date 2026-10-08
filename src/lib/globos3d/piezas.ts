@@ -11,6 +11,7 @@ import { materialesPorFormato, type GloboDecoracion, type TuboDecoracion } from 
 import { sumarMateriales } from "./mezcla";
 import { armarTrenza } from "./trenza";
 import { opcionesArcoOrganico, recorridoGuirnalda, type OpcionesArcoOrganico, type OpcionesGuirnalda } from "./formas-escena";
+import { armarEscenografia, puntosSolido, type ElementoEscenografia, type SolidoEscenografia } from "./escenografia";
 
 /**
  * Una **pieza**: cualquier cosa que sabe armar el taller, descrita solo con datos (JSON) para poder guardarla,
@@ -32,7 +33,9 @@ export type Pieza =
   /** Arco orgánico por medidas: dos semiarcos que se juntan en la clave (ver `formas-escena.ts`). */
   | { tipo: "arco_organico"; arco: OpcionesArcoOrganico }
   /** Guirnalda clásica: trenza de cuartetos en festón, recta o sobre una curva libre. */
-  | { tipo: "guirnalda"; guirnalda: OpcionesGuirnalda };
+  | { tipo: "guirnalda"; guirnalda: OpcionesGuirnalda }
+  /** Escenografía (no es globo ni cotiza): paneles de fondo, pared de lentejuelas, mesas, tapete (ver `escenografia.ts`). */
+  | { tipo: "escenografia"; elementos: ElementoEscenografia[] };
 
 export type TipoPieza = Pieza["tipo"];
 
@@ -49,11 +52,13 @@ export type PiezaArmada = {
   /** Donde se pueden colgar decoraciones hijas. */
   anclas: AnclaDePieza[];
   materiales: MaterialDecoracion[];
+  /** Escenografía (paneles, mesas, tapete): solo la trae la pieza `escenografia`. */
+  solidos?: SolidoEscenografia[];
   /** Caja que ocupa (cm), contando el cuerpo de cada globo. */
   caja: { min: Vec3; max: Vec3 };
 };
 
-function cajaDe(globos: readonly GloboDecoracion[], tubos: readonly TuboDecoracion[]): PiezaArmada["caja"] {
+function cajaDe(globos: readonly GloboDecoracion[], tubos: readonly TuboDecoracion[], solidos: readonly SolidoEscenografia[] = []): PiezaArmada["caja"] {
   const min = { x: Infinity, y: Infinity, z: Infinity }, max = { x: -Infinity, y: -Infinity, z: -Infinity };
   const meter = (p: Vec3, r: number) => {
     min.x = Math.min(min.x, p.x - r); min.y = Math.min(min.y, p.y - r); min.z = Math.min(min.z, p.z - r);
@@ -65,12 +70,13 @@ function cajaDe(globos: readonly GloboDecoracion[], tubos: readonly TuboDecoraci
     meter({ x: g.nudo.x + g.direccion.x * largo, y: g.nudo.y + g.direccion.y * largo, z: g.nudo.z + g.direccion.z * largo }, r);
   }
   for (const t of tubos) for (const p of t.puntos) meter(p, t.grosorCm / 2);
+  for (const s of solidos) for (const p of puntosSolido(s)) meter(p, 0);
   if (!Number.isFinite(min.x)) return { min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } };
   return { min, max };
 }
 
 function conCaja(p: Omit<PiezaArmada, "caja">): PiezaArmada {
-  return { ...p, caja: cajaDe(p.globos, p.tubos) };
+  return { ...p, caja: cajaDe(p.globos, p.tubos, p.solidos) };
 }
 
 export function armarPieza(pieza: Pieza): PiezaArmada {
@@ -119,6 +125,8 @@ export function armarPieza(pieza: Pieza): PiezaArmada {
       const globos: GloboDePieza[] = trenza.globos.map((x) => ({ formatoId: formato.id, infladoCm: g.infladoCm, codigo: x.codigo, nudo: x.nudo, direccion: x.direccion, cuelloExtraCm: x.cuelloExtraCm }));
       return conCaja({ globos, tubos: [], flores: [], anclas: trenza.anclas.map((a) => ({ posicion: a.posicion, normal: a.normal })), materiales: materialesPorFormato(globos) });
     }
+    case "escenografia":
+      return conCaja({ globos: [], tubos: [], flores: [], anclas: [], materiales: [], solidos: armarEscenografia(pieza.elementos) });
     case "decoracion": {
       const armada = armarDecoracion(pieza.decoracion);
       if (!pieza.deFrente) return conCaja({ globos: armada.globos, tubos: armada.tubos, flores: [], anclas: [], materiales: armada.materiales });
