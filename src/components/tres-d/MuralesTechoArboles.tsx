@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useEffect, useMemo, useState } from "react";
+import { useArrastreDesdePanel } from "./arrastre-decoracion";
 import type { Escena } from "@/lib/globos3d/escena";
 import type { Miniatura } from "@/lib/globos3d/decoraciones-escena";
 import { agregarMuralTechoArbol, GRUPOS_MURAL_TECHO_ARBOL, muralesTechoArbolesConMiniatura } from "@/lib/globos3d/catalogo-murales-techo-arboles";
@@ -40,6 +41,7 @@ export const MuralesTechoArboles = memo(function MuralesTechoArboles({ escena, o
   const [elegida, setElegida] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const piezas = useMemo(() => muralesTechoArbolesConMiniatura(), []);
+  const arrastre = useArrastreDesdePanel();
   const cuenta = useMemo(() => piezas.filter((p) => coincide(filtro, p.nombre, p.descripcion, GRUPOS_MURAL_TECHO_ARBOL.find((g) => g.id === p.grupo)?.nombre)).length, [piezas, filtro]);
   useEffect(() => { onCuenta?.(cuenta); }, [cuenta, onCuenta]);
 
@@ -65,8 +67,10 @@ export const MuralesTechoArboles = memo(function MuralesTechoArboles({ escena, o
               {delGrupo.map((p) => {
                 const activa = p.id === elegida;
                 return (
-                  <button key={p.id} type="button" aria-pressed={activa} aria-expanded={activa} title={p.descripcion} onClick={() => { setElegida(activa ? null : p.id); setAviso(null); }}
-                    className={`flex min-h-24 flex-col items-center gap-0.5 rounded-xl p-1.5 text-center ring-1 transition-colors ${activa ? "bg-superficie-suave ring-2 ring-acento" : "bg-superficie ring-borde hover:bg-superficie-suave"}`}>
+                  <button key={p.id} type="button" aria-pressed={activa} aria-expanded={activa} title={`${p.descripcion}${arrastre.arrastrable ? " Arrástrala al visor o tócala." : ""}`}
+                    onPointerDown={(e) => arrastre.apretar(e, () => ({ pieza: p.pieza, nombre: p.nombre, idBase: p.id.replace(/_/g, "-") }))}
+                    onClick={(e) => { if (arrastre.fueArrastre(e)) return; setElegida(activa ? null : p.id); setAviso(null); }}
+                    className={`flex min-h-24 select-none flex-col items-center gap-0.5 rounded-xl p-1.5 text-center ring-1 transition-colors ${activa ? "bg-superficie-suave ring-2 ring-acento" : "bg-superficie ring-borde hover:bg-superficie-suave"}`}>
                     <MiniaturaPiezaSvg miniatura={p.miniatura} nombre={p.nombre} />
                     <span className="text-[0.7rem] leading-tight text-texto">{p.nombre}</span>
                     <span className="text-[0.65rem] text-texto-suave">{p.globos} globos</span>

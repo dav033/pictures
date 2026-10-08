@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { memo, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as EventoPuntero } from "react";
 import { ArrowLeft, BookmarkPlus, Box, ClipboardCopy, ExternalLink, Eye, Plus, Replace, Trash2 } from "lucide-react";
 import {
   BIBLIOTECA_FABRICA, OCASIONES, TIPOS_ITEM, clasePieza, contenidoDeEscena, copiarItem, escenaDeItem, filtrarBiblioteca, huellaConId, itemDeEscena, itemDeNodo, nombreGenerico,
@@ -16,6 +16,7 @@ import { ACTIVO, BOTON, INACTIVO } from "./PanelFlor";
 import { mostrarArmada } from "./armada-visor";
 import type { EscenaGlobos } from "./escena-globos";
 import { armarEnMotor, useMotorBiblioteca, type Armado } from "./biblioteca-cliente";
+import { ArrastreDecoracionContexto, arrastreDeItem } from "./arrastre-decoracion";
 
 /**
  * Pestaña **Biblioteca** de /3d: todo lo reutilizable del taller, cada cosa por separado (escenas, estructuras con sus
@@ -613,10 +614,30 @@ function fuenteCorta(item: ItemBiblioteca): string {
 
 const TarjetaCompacta = memo(function TarjetaCompacta({ item, resumen, mini, onAbrir }: { item: ItemBiblioteca; resumen: ResumenItem | undefined; mini: string | undefined; onAbrir: (item: ItemBiblioteca) => void }) {
   const sub = `${fuenteCorta(item)}${resumen ? ` · ${resumen.globos} globos` : ""}`;
+  const arrastrar = useContext(ArrastreDecoracionContexto);
+  const apretada = useRef<{ x: number; y: number } | null>(null);
+  const arrastrable = Boolean(arrastrar) && item.tipo !== "escena";
+  // Con ratón o lápiz se arrastra al visor (como las tarjetas de «Nuevas»); con el dedo se toca y se abre la ficha.
+  const alApretar = (e: EventoPuntero<HTMLButtonElement>) => {
+    apretada.current = { x: e.clientX, y: e.clientY };
+    if (!arrastrar || !arrastrable || e.button !== 0 || e.pointerType === "touch") return;
+    const arrastre = arrastreDeItem(item);
+    if (!arrastre) return;
+    e.preventDefault();
+    arrastrar(arrastre, { x: e.clientX, y: e.clientY });
+  };
   return (
     <li>
-      <button type="button" onClick={() => onAbrir(item)} title={`${item.nombre}${item.descripcion ? ` — ${item.descripcion}` : ""}. Toca para ver su ficha y añadirla.`}
-        className="flex h-full w-full flex-col gap-1.5 rounded-xl border border-taller-borde bg-taller-tarjeta p-2 text-left text-xs font-medium leading-snug text-taller-texto hover:border-taller-resalte">
+      <button type="button" onPointerDown={alApretar}
+        onClick={(e) => {
+          const desde = apretada.current;
+          apretada.current = null;
+          // Lejos de donde se apretó: fue un arrastre al visor (ya la puso), no abre la ficha.
+          if (desde && e.detail > 0 && Math.hypot(e.clientX - desde.x, e.clientY - desde.y) > 6) return;
+          onAbrir(item);
+        }}
+        title={`${item.nombre}${item.descripcion ? ` — ${item.descripcion}` : ""}. ${arrastrable ? "Arrástrala al visor, o tócala para ver su ficha." : "Toca para ver su ficha y añadirla."}`}
+        className={`flex h-full w-full select-none flex-col gap-1.5 rounded-xl border border-taller-borde bg-taller-tarjeta p-2 text-left text-xs font-medium leading-snug text-taller-texto hover:border-taller-resalte ${arrastrable ? "cursor-grab active:cursor-grabbing" : ""}`}>
         <Miniatura3d item={item} url={mini} className="h-[72px] w-full rounded-lg" />
         <span className="line-clamp-2">{item.nombre}</span>
         <span className="truncate text-[11px] font-normal text-taller-suave">{sub}</span>

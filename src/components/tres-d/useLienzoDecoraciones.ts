@@ -7,6 +7,7 @@ import {
 } from "@/lib/globos3d/escena";
 import { armarPieza, type PiezaArmada, type Pieza } from "@/lib/globos3d/piezas";
 import { agregarDecoracion } from "@/lib/globos3d/decoraciones-escena";
+import { insertarEnEscena } from "@/lib/globos3d/biblioteca";
 import {
   aceptaDecoraciones, colocacionEnSala, colocacionSobre, copiaEn, deslizarSobre, moverCopia, quitarCopia, radioLateral, separarCopia, sitioDeSobre, sitioEnPieza,
   type SuperficieSala,
@@ -178,6 +179,15 @@ export function useLienzoDecoraciones(opciones: Opciones) {
     limpiar();
     if (!s.movido || !d.armada) return;
     if (!destino) { d.onAviso(`Ahí no se puede poner «${s.nombre}»: suéltala sobre ${s.soloSala ? LUGARES_SALA : LUGARES_VALIDOS}.`); return; }
+    if (s.nueva?.item) {
+      // De la biblioteca: el item entero (la estructura y lo que lleva), con su raíz donde se soltó.
+      const hecho = insertarEnEscena(d.escena, s.nueva.item, destino.colocacion, d.cache);
+      d.onCambio(hecho.escena);
+      d.onSeleccion(hecho.raizId);
+      d.onCopia(null);
+      d.onAviso(`Listo: «${s.nombre}» quedó ${destino.donde}${hecho.ids.length > 1 ? ` con sus ${hecho.ids.length - 1} decoraciones` : ""}. Arrástrala para moverla o ábrela con «Editar sola».`);
+      return;
+    }
     if (s.nueva?.pieza) {
       const id = idNuevo(d.escena, s.nueva.idBase);
       d.onCambio({ ...d.escena, nodos: [...d.escena.nodos, { id, nombre: s.nueva.nombre, pieza: structuredClone(s.nueva.pieza), colocacion: destino.colocacion }] });

@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useEffect, useMemo, useState } from "react";
+import { useArrastreDesdePanel } from "./arrastre-decoracion";
 import type { Escena } from "@/lib/globos3d/escena";
 import type { Miniatura } from "@/lib/globos3d/decoraciones-escena";
 import { agregarIdeaForma, formasConMiniatura, type DestinoForma } from "@/lib/globos3d/ideas-formas";
@@ -39,6 +40,7 @@ export const FormasYLetras = memo(function FormasYLetras({ escena, onEscena, onS
   // Buscando algo (3 letras o más), se abre sola para buscar también aquí.
   const abierto = abiertoPedido || filtro.trim().length >= 3;
   const [elegida, setElegida] = useState<number | null>(null);
+  const arrastre = useArrastreDesdePanel();
   const [aviso, setAviso] = useState<string | null>(null);
   const todas = useMemo(() => (abierto ? formasConMiniatura() : []), [abierto]);
   const formas = useMemo(() => todas.filter((f) => coincide(filtro, f.nombre, f.nota, f.id ? `#${f.id}` : "")), [todas, filtro]);
@@ -60,8 +62,10 @@ export const FormasYLetras = memo(function FormasYLetras({ escena, onEscena, onS
         {formas.map((f, i) => {
           const activa = i === elegida;
           return (
-            <button key={`${f.id}-${f.nombre}`} type="button" aria-pressed={activa} aria-expanded={activa} title={f.nota} onClick={() => { setElegida(activa ? null : i); setAviso(null); }}
-              className={`flex min-h-24 flex-col items-center gap-0.5 rounded-xl p-1.5 text-center ring-1 transition-colors ${activa ? "bg-superficie-suave ring-2 ring-acento" : "bg-superficie ring-borde hover:bg-superficie-suave"}`}>
+            <button key={`${f.id}-${f.nombre}`} type="button" aria-pressed={activa} aria-expanded={activa} title={`${f.nota}${arrastre.arrastrable ? " Arrástrala al visor o tócala." : ""}`}
+              onPointerDown={(e) => arrastre.apretar(e, () => ({ pieza: f.pieza, nombre: f.id ? `${f.nombre} (#${f.id})` : f.nombre, idBase: f.slug || "forma" }))}
+              onClick={(e) => { if (arrastre.fueArrastre(e)) return; setElegida(activa ? null : i); setAviso(null); }}
+              className={`flex min-h-24 select-none flex-col items-center gap-0.5 rounded-xl p-1.5 text-center ring-1 transition-colors ${activa ? "bg-superficie-suave ring-2 ring-acento" : "bg-superficie ring-borde hover:bg-superficie-suave"}`}>
               <MiniaturaForma miniatura={f.miniatura} nombre={f.nombre} />
               <span className="text-[0.7rem] leading-tight text-texto">{f.nombre}</span>
               <span className="text-[0.65rem] text-texto-suave">{f.id ? `#${f.id} · ` : ""}{f.globos} globos</span>
