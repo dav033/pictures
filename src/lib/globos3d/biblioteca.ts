@@ -5,7 +5,7 @@ import {
   SALA_INICIAL, armarEscena, descendientes, idNuevo, puntoALocal, puntoAlMundo,
   type Colocacion, type Escena, type EscenaArmada, type MarcoPieza, type NodoArmado, type NodoEscena, type Sala,
 } from "./escena";
-import type { Pieza, PiezaArmada } from "./piezas";
+import { armarPieza, type Pieza, type PiezaArmada } from "./piezas";
 import type { MaterialDecoracion } from "./figuras";
 import { DECORACIONES_PREDEFINIDAS } from "./figuras";
 import { esDePie, esHalloween } from "./halloween";
@@ -15,7 +15,9 @@ import { formatoPorId } from "./formatos";
 import { ESCENAS_HALLOWEEN, ESCENAS_PREDEFINIDAS } from "./escenas-presets";
 import { CATALOGO_DECORACIONES } from "./catalogo-fotos";
 import { UTILERIA_LISTA } from "./utileria-escenas";
-import { CATALOGO_UTILERIA } from "./utileria-catalogo";
+import { CATALOGO_UTILERIA, urlTienda } from "./utileria-catalogo";
+import { impresoPorUrl } from "./impresos-catalogo";
+import { metalizadoPorUrl } from "./metalizados";
 import { productosDeFiesta, type ProductoEnLista } from "./utileria";
 import { productoDeGlobo, type ProductoDeGlobo } from "./productos-tienda";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
@@ -37,7 +39,8 @@ import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
  * biblioteca propia del usuario (lo que guarda desde la pestaña Escena) son items iguales que la página guarda aparte.
  *
  * `productosDe` da la lista exacta de compra de cualquier item: globos (formato, código, nombre oficial, cantidad y
- * el producto de la tienda), utilería (producto de la tienda) y escenografía (no es producto). Todo puro: sin React
+ * el producto de la tienda), globos impresos y metalizados (su producto exacto, por sección), utilería (producto de la
+ * tienda) y escenografía (no es producto). Todo puro: sin React
  * ni three.js; las fotos de las ideas son urls públicas (nada de imágenes en el repo).
  */
 
@@ -493,12 +496,31 @@ export type LineaGlobo = {
   /** Los tubitos se cuentan por largo (~137 cm útiles por T-260). */
   porLargo: boolean;
   producto: ProductoDeGlobo;
+  /** Cuántos de estos globos van impresos: se compran como el impreso de la tienda (ver `tienda`), no como el liso. */
+  impresos?: number;
 };
+
+/**
+ * Un globo impreso o un metalizado de la tienda (lo que no es un globo liso): nombre exacto, url de la tienda, cuántos,
+ * su sección («impresos» o «metalizados»), qué es (formato y caras, o «foil») y en qué piezas va.
+ */
+export type LineaTienda = { seccion: "impresos" | "metalizados"; nombre: string; url: string; cantidad: number; detalle: string; piezas: string[] };
 
 /** Lo que va en la foto y no se compra en la tienda como producto: escenografía, papel y follaje. */
 export type LineaEscenografia = { nombre: string; clase: "escenografia" | "papel" | "follaje"; cantidad: number; piezas: string[] };
 
-export type ProductosDeItem = { globos: LineaGlobo[]; totalGlobos: number; utileria: ProductoEnLista[]; escenografia: LineaEscenografia[] };
+export type ProductosDeItem = { globos: LineaGlobo[]; totalGlobos: number; tienda: LineaTienda[]; utileria: ProductoEnLista[]; escenografia: LineaEscenografia[] };
+
+const CARAS_IMPRESO: Readonly<Record<string, string>> = { infinity: "impreso alrededor (Infinity®)", "2 caras": "impreso por las 2 caras", "1 cara": "impreso por 1 cara" };
+
+/** Qué es un producto de la tienda que no es un globo liso (para la columna «qué es»). */
+function detalleTienda(url: string, seccion: LineaTienda["seccion"]): string {
+  const impreso = impresoPorUrl(url);
+  if (impreso) return `${impreso.formatoId} · ${CARAS_IMPRESO[impreso.caras] ?? impreso.caras}`;
+  const metalizado = metalizadoPorUrl(url);
+  if (metalizado?.metalizado) return `Metalizado (foil) de ${metalizado.metalizado.pulgadas}" · no es látex`;
+  return seccion === "metalizados" ? "Metalizado (foil) · no es látex" : "Globo impreso";
+}
 
 const ORDEN_TIPO: Readonly<Record<string, number>> = { redondo: 0, link: 1, tubito: 2, corazon: 3 };
 
@@ -534,14 +556,44 @@ export function productosDe(item: ItemBiblioteca, armada?: EscenaArmada, cache?:
     if (previo) { previo.cantidad += cantidad; if (!previo.piezas.includes(pieza)) previo.piezas.push(pieza); }
     else escenografia.set(k, { nombre, clase, cantidad, piezas: [pieza] });
   };
+  // Globos impresos y metalizados: el producto exacto de la tienda de cada pieza, por las veces que quedó puesta.
+  const tienda = new Map<string, LineaTienda>();
+  const impresosPorGlobo = new Map<string, number>();
+  for (const nodo of escena.nodos) {
+    const hecho = hecha.porNodo.find((n) => n.id === nodo.id);
+    if (!hecho || hecho.copias === 0) continue;
+    if (nodo.pieza.tipo !== "metalizado" && !nodo.pieza.impresos?.length) continue;
+    const pieza = cache?.get(JSON.stringify(nodo.pieza)) ?? armarPieza(nodo.pieza);
+    const seccion: LineaTienda["seccion"] = nodo.pieza.tipo === "metalizado" ? "metalizados" : "impresos";
+    for (const p of pieza.productos ?? []) {
+      const url = urlTienda(p.url);
+      const previo = tienda.get(url);
+      if (previo) { previo.cantidad += p.cantidad * hecho.copias; if (!previo.piezas.includes(nodo.nombre)) previo.piezas.push(nodo.nombre); }
+      else tienda.set(url, { seccion, nombre: p.nombre, url, cantidad: p.cantidad * hecho.copias, detalle: detalleTienda(p.url, seccion), piezas: [nodo.nombre] });
+    }
+    for (const g of pieza.globos) {
+      if (!g.estampado?.impreso) continue;
+      const k = `${g.formatoId}|${g.codigo}`;
+      impresosPorGlobo.set(k, (impresosPorGlobo.get(k) ?? 0) + hecho.copias);
+    }
+  }
+  for (const linea of globos) {
+    const n = impresosPorGlobo.get(`${linea.formatoId}|${linea.codigo}`);
+    if (n) linea.impresos = Math.min(n, linea.cantidad);
+  }
   for (const nodo of escena.nodos) {
     const hecho = hecha.porNodo.find((n) => n.id === nodo.id);
     if (!hecho || hecho.copias === 0) continue;
     if (nodo.pieza.tipo === "escenografia" && !nodo.pieza.productos?.length) sumar(nodo.nombre.replace(/\s*\(.*\)$/, ""), "escenografia", hecho.copias, nodo.nombre);
     if (nodo.pieza.tipo === "decoracion" && hecho.materiales.length === 0 && hecho.tubos.some((t) => t.papel)) sumar(nombreGenerico(nodo.nombre), "papel", hecho.copias, nodo.nombre);
     if (hecho.flores.length) sumar("Flores artificiales (follaje)", "follaje", hecho.flores.length, nodo.nombre);
+    // El relleno de un globo burbuja (confeti, plumas) es papel: no es producto de la tienda.
+    if (nodo.pieza.tipo === "decoracion" && nodo.pieza.decoracion.tipo === "burbuja" && nodo.pieza.decoracion.propiedades.relleno) {
+      sumar(nodo.pieza.decoracion.propiedades.relleno.tipo === "confeti" ? "Confeti (relleno del globo burbuja)" : "Plumas (relleno del globo burbuja)", "papel", hecho.copias, nodo.nombre);
+    }
   }
-  return { globos, totalGlobos: globos.reduce((s, g) => s + g.cantidad, 0), utileria: productosDeFiesta(escena, hecha), escenografia: [...escenografia.values()] };
+  const ordenTienda = (a: LineaTienda, b: LineaTienda) => a.seccion.localeCompare(b.seccion) || b.cantidad - a.cantidad || a.nombre.localeCompare(b.nombre, "es");
+  return { globos, totalGlobos: globos.reduce((s, g) => s + g.cantidad, 0), tienda: [...tienda.values()].sort(ordenTienda), utileria: productosDeFiesta(escena, hecha), escenografia: [...escenografia.values()] };
 }
 
 // ----------------------------------------------------------------------------------------------------------

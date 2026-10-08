@@ -24,6 +24,8 @@ import type { MaterialDecoracion } from "../../src/lib/globos3d/figuras";
 import { coloresDelFormato, FORMATOS_GLOBO } from "../../src/lib/globos3d/formatos";
 import { TABLA_SEMPERTEX } from "../../src/lib/plan/referencia-sempertex";
 import { GLOBOS_TIENDA, NO_ESTAN_EN_LA_TIENDA, productoDeGlobo } from "../../src/lib/globos3d/productos-tienda";
+import { IMPRESOS_TIENDA } from "../../src/lib/globos3d/impresos-catalogo";
+import { METALIZADOS_TIENDA } from "../../src/lib/globos3d/metalizados";
 import {
   BIBLIOTECA_FABRICA, bibliotecaCompleta, claveContenido, clasePieza, contenidoDeEscena, decoracionesPegadas, escenaDeConjunto, escenaDeItem, extraerConjunto,
   filtrarBiblioteca, huellaItem, insertarEnEscena, itemDeEscena, itemDeNodo, miembrosDeConjunto, productosDe, resumenDe, validarItem,
@@ -228,6 +230,43 @@ for (const item of biblioteca) {
   for (const u of productos.utileria) assert.ok(u.nombre && (u.generico || u.url.startsWith("/products/")), `${item.id}: utilería ${u.nombre} con url`);
   if (item.tipo === "utileria") assert.ok(productos.utileria.length > 0, `${item.id}: la utilería trae su producto`);
 }
+// Globos impresos y metalizados: el producto exacto de su catálogo (nombre y url de la tienda), en su sección, con la
+// cantidad de la pieza por sus copias; los globos impresos se marcan en su línea de globos (se compran como el impreso).
+const enTienda = (url: string) => `https://sempertex.com${url}`;
+const urlImpresos = new Map(IMPRESOS_TIENDA.map((i) => [enTienda(i.url), i]));
+const urlMetalizados = new Map(METALIZADOS_TIENDA.map((m) => [enTienda(m.url), m]));
+let lineasImpresos = 0, lineasMetalizados = 0;
+for (const item of biblioteca) {
+  const productos = productosDe(item);
+  const escena = escenaDeItem(item);
+  const conImpresos = escena.nodos.some((n) => n.pieza.impresos?.length);
+  const conMetalizados = escena.nodos.some((n) => n.pieza.tipo === "metalizado" && n.pieza.metalizado.producto);
+  for (const t of productos.tienda) {
+    assert.ok(t.cantidad > 0 && t.piezas.length > 0 && t.detalle, `${item.id}: ${t.nombre}`);
+    if (t.seccion === "impresos") {
+      const i = urlImpresos.get(t.url);
+      assert.ok(i && i.nombre === t.nombre, `${item.id}: impreso ${t.nombre} con su nombre y url exactos del catálogo`);
+      lineasImpresos++;
+    } else {
+      const m = urlMetalizados.get(t.url);
+      assert.ok(m && m.nombre === t.nombre, `${item.id}: metalizado ${t.nombre} con su nombre y url exactos del catálogo`);
+      lineasMetalizados++;
+    }
+  }
+  if (conImpresos) {
+    assert.ok(productos.tienda.some((t) => t.seccion === "impresos"), `${item.id}: lleva impresos y salen en productos`);
+    const impresos = productos.tienda.filter((t) => t.seccion === "impresos").reduce((s, t) => s + t.cantidad, 0);
+    assert.equal(productos.globos.reduce((s, g) => s + (g.impresos ?? 0), 0), impresos, `${item.id}: los globos impresos se marcan en su línea`);
+  }
+  if (conMetalizados) assert.ok(productos.tienda.some((t) => t.seccion === "metalizados"), `${item.id}: lleva metalizados y salen en productos`);
+  if (!conImpresos && !conMetalizados) assert.equal(productos.tienda.length, 0, `${item.id}: sin impresos ni metalizados`);
+}
+assert.ok(lineasImpresos >= 10 && lineasMetalizados >= 5, `líneas de impresos (${lineasImpresos}) y metalizados (${lineasMetalizados})`);
+// Una idea con los dos: el arco de año nuevo (números metalizados) y la pasión del fútbol (balón impreso).
+const anoNuevo = productosDe(biblioteca.find((i) => i.id === "idea:arco-ano-nuevo")!);
+assert.ok(anoNuevo.tienda.some((t) => t.seccion === "metalizados" && t.url.startsWith(enTienda("/products/globo-metalizado-numero"))), "arco de año nuevo: números metalizados con url");
+console.log(`OK impresos y metalizados en productos: ${lineasImpresos} líneas de impresos y ${lineasMetalizados} de metalizados, con nombre y url exactos`);
+
 const marco = productosDe(biblioteca.find((i) => i.id === "escena:halloween_marco_mesas")!);
 assert.ok(marco.utileria.length >= 5 && marco.escenografia.some((e) => e.nombre.startsWith("Mesa cilíndrica")) && marco.escenografia.some((e) => e.clase === "papel"), "escena con utilería, escenografía y papel por separado");
 console.log(`OK productos: ${verificados} combinaciones formato-color con producto verificado, ${sinVerificar} sin verificar; ${lineas} líneas de globos con producto y url`);

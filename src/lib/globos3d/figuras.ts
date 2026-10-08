@@ -4,6 +4,8 @@ import { FLORES_PREDEFINIDAS, anillo, armarFlor, materialesPorFormato, type Glob
 import { HALLOWEEN_PREDEFINIDAS, armarHalloween, halloweenEnIngles, type DecoracionHalloween } from "./halloween";
 import { armarFiguraTubito, figuraEnIngles, type DecoracionFigura } from "./figuras-tubito";
 import { FIGURAS_PREDEFINIDAS } from "./ideas-figuras";
+import { RIZOS_PREDEFINIDOS, armarRizo, rizoEnIngles, type DecoracionRizo } from "./rizos";
+import { BURBUJAS_PREDEFINIDAS, armarBurbuja, burbujaEnIngles, type DecoracionBurbuja } from "./burbujas";
 
 /**
  * Todas las decoraciones aplicadas por propiedades: la flor de globos redondos (`decoraciones.ts`) y las de
@@ -12,7 +14,8 @@ import { FIGURAS_PREDEFINIDAS } from "./ideas-figuras";
  *   anillo interior opcional, corona de globitos y centro;
  * - moño de T-260: lazos a cada lado, colas y un globito al centro;
  * - estrella de T-260: rayos con su perilla en la punta, o el contorno cerrado;
- * - flor de corazones: Corazón 6 de pétalos, con la cara al frente, anillo interior de lazos y centro.
+ * - flor de corazones: Corazón 6 de pétalos, con la cara al frente, anillo interior de lazos y centro;
+ * - rizos de tubito (`rizos.ts`) y globo burbuja con globos dentro (`burbujas.ts`).
  * Igual que la flor: «qué es» se arma en el espacio de la decoración mirando a +Y (en una pared, +Z local es
  * arriba y +X local la derecha); «dónde va» lo deciden las anclas y `colocarEn` / `colocarTubosEn`.
  * Unidades: cm.
@@ -81,7 +84,11 @@ export type Decoracion =
   /** Las de Halloween (ojos, araña, calabazas, mano, ramo de helio, árbol trenzado, fantasma y telaraña): `halloween.ts`. */
   | DecoracionHalloween
   /** Figuras de globos y tubitos (muñecos, animales, objetos) por partes: `figuras-tubito.ts`. */
-  | DecoracionFigura;
+  | DecoracionFigura
+  /** Rizos de tubito (tirabuzón, resorte, penacho, flecos, voluta, burbujas en cadena): `rizos.ts`. */
+  | DecoracionRizo
+  /** Globo burbuja con globos (y confeti o plumas) dentro, y el globo dentro de globo: `burbujas.ts`. */
+  | DecoracionBurbuja;
 
 export type TipoDecoracion = Decoracion["tipo"];
 
@@ -308,6 +315,15 @@ export function armarDecoracion(decoracion: Decoracion): DecoracionArmada {
       const figura = armarFiguraTubito(decoracion.propiedades);
       return armada(figura.globos, figura.tubos, figura.radioCm, figura.fondoCm);
     }
+    case "rizo": {
+      // Cada rizo es un tubito aparte (no se cuentan por largo como los lazos de una flor): ver `materialesRizo`.
+      const rizo = armarRizo(decoracion.propiedades);
+      return { globos: [], tubos: rizo.tubos, materiales: rizo.materiales, diametroCm: Math.round(2 * rizo.radioCm), fondoCm: rizo.fondoCm };
+    }
+    case "burbuja": {
+      const burbuja = armarBurbuja(decoracion.propiedades);
+      return armada(burbuja.globos, burbuja.tubos, burbuja.radioCm, burbuja.fondoCm);
+    }
     default: {
       const figura = armarHalloween(decoracion);
       return armada(figura.globos, figura.tubos, figura.radioCm, figura.fondoCm);
@@ -322,6 +338,8 @@ export function decoracionEnIngles(decoracion: Decoracion): string {
     case "estrella": return "a twisted-balloon star";
     case "flor": case "flor_tubito": case "flor_corazones": return "a small balloon flower";
     case "figura": return figuraEnIngles(decoracion.propiedades);
+    case "rizo": return rizoEnIngles(decoracion.propiedades);
+    case "burbuja": return burbujaEnIngles(decoracion.propiedades);
     default: return halloweenEnIngles(decoracion);
   }
 }
@@ -381,6 +399,9 @@ export const DECORACIONES_PREDEFINIDAS: ReadonlyArray<{ id: string; nombre: stri
   ...HALLOWEEN_PREDEFINIDAS,
   // Figuras de globos y tubitos: las plantillas del generador y las ideas de sempertex.com digitalizadas.
   ...FIGURAS_PREDEFINIDAS,
+  // Rizos de tubito y globos burbuja (los que más faltan en las ideas de sempertex.com).
+  ...RIZOS_PREDEFINIDOS,
+  ...BURBUJAS_PREDEFINIDAS,
 ];
 
 export function decoracionPredefinida(id: string): Decoracion {

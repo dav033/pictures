@@ -137,9 +137,13 @@ export function esHalloween(d: Decoracion): d is DecoracionHalloween {
   return TIPOS_HALLOWEEN.has(d.tipo);
 }
 
-/** Las que se paran (o cuelgan) derechas: en el piso y del techo van de frente, no acostadas mirando arriba (también las figuras de `figuras-tubito.ts`). */
+/**
+ * Las que se paran (o cuelgan) derechas: en el piso y del techo van de frente, no acostadas mirando arriba (también las
+ * figuras de `figuras-tubito.ts`, los rizos de `rizos.ts` y el globo burbuja de `burbujas.ts`).
+ */
 export function esDePie(d: Decoracion): boolean {
-  return d.tipo === "figura" || d.tipo === "calabaza" || d.tipo === "calabaza_bruja" || d.tipo === "ramo_helio" || d.tipo === "arbol_trenzado" || d.tipo === "fantasma";
+  return d.tipo === "figura" || d.tipo === "calabaza" || d.tipo === "calabaza_bruja" || d.tipo === "ramo_helio" || d.tipo === "arbol_trenzado" || d.tipo === "fantasma"
+    || d.tipo === "rizo" || d.tipo === "burbuja";
 }
 
 // ----------------------------------------------------------------------------------------------------------

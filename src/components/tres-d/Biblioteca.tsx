@@ -289,7 +289,11 @@ function TarjetaItem({ item, resumen, mini, onAbrir }: { item: ItemBiblioteca; r
 /** La lista de compra en texto (para copiarla y pegarla en un pedido). */
 function listaEnTexto(item: ItemBiblioteca, p: ProductosDeItem): string {
   const lineas = [`${item.nombre} — productos`, "", "GLOBOS"];
-  for (const g of p.globos) lineas.push(`${g.cantidad} × ${g.nombreOficial} — ${g.producto.nombre}${g.producto.estado === "verificado" ? ` — ${g.producto.url}` : " (sin verificar)"}`);
+  for (const g of p.globos) lineas.push(`${g.cantidad} × ${g.nombreOficial} — ${g.producto.nombre}${g.producto.estado === "verificado" ? ` — ${g.producto.url}` : " (sin verificar)"}${g.impresos ? ` (${g.impresos} de ellos impresos: ver abajo)` : ""}`);
+  for (const [seccion, titulo] of [["impresos", "GLOBOS IMPRESOS"], ["metalizados", "METALIZADOS"]] as const) {
+    const de = p.tienda.filter((t) => t.seccion === seccion);
+    if (de.length) { lineas.push("", titulo); for (const t of de) lineas.push(`${t.cantidad} × ${t.nombre} (${t.detalle}) — ${t.url}`); }
+  }
   if (p.utileria.length) { lineas.push("", "UTILERÍA"); for (const u of p.utileria) lineas.push(`${u.cantidad} × ${u.nombre}${u.variante ? ` (${u.variante})` : ""}${u.url ? ` — ${urlTienda(u.url)}` : ""}`); }
   if (p.escenografia.length) { lineas.push("", "ESCENOGRAFÍA (no es producto de la tienda)"); for (const e of p.escenografia) lineas.push(`${e.cantidad} × ${e.nombre}`); }
   return lineas.join("\n");
@@ -321,7 +325,7 @@ function TablaProductos({ item, productos }: { item: ItemBiblioteca; productos: 
                     <td className={`${td} font-mono font-semibold text-texto`}>{g.cantidad}{g.porLargo ? <span className="block text-[0.65rem] font-normal text-texto-suave">por largo</span> : null}</td>
                     <td className={td}>
                       <span className="flex items-center gap-2 text-texto"><span className="size-4 shrink-0 rounded-full ring-1 ring-black/15" style={{ background: hexDeCodigo(g.codigo) }} aria-hidden /><b className="font-semibold">{g.nombreOficial}</b></span>
-                      <span className="block text-[0.7rem] text-texto-suave">{g.formato}</span>
+                      <span className="block text-[0.7rem] text-texto-suave">{g.formato}{g.impresos ? ` · ${g.impresos} ${g.impresos === 1 ? "va impreso" : "van impresos"}: se compran como el impreso de abajo` : ""}</span>
                     </td>
                     <td className={td}>
                       <a href={g.producto.url} target="_blank" rel="noreferrer" className="text-texto underline decoration-dotted underline-offset-2 hover:text-acento">{g.producto.nombre}</a>
@@ -339,6 +343,30 @@ function TablaProductos({ item, productos }: { item: ItemBiblioteca; productos: 
         )}
         <p className="mt-1 text-[0.7rem] text-texto-suave">La tienda vende cada color por paquetes; la talla es una variante del producto. Productos cruzados con la tienda el {REVISADO_TIENDA}. Los tubitos se cuentan por largo (~137 cm útiles cada uno).</p>
       </div>
+
+      {productos.tienda.length > 0 && (
+        <div>
+          <h4 className="text-sm font-semibold text-texto">Globos impresos y metalizados <span className="font-normal text-texto-suave">· producto exacto de la tienda</span></h4>
+          <div className="mt-1 overflow-x-auto">
+            <table className="w-full min-w-[520px] border-collapse text-sm">
+              <thead><tr className="border-b border-borde"><th className={th}>Cantidad</th><th className={th}>Producto en la tienda</th><th className={th}>Sección</th><th className={th}>En la escena</th></tr></thead>
+              <tbody>
+                {productos.tienda.map((t) => (
+                  <tr key={t.url} className="border-b border-borde/60">
+                    <td className={`${td} font-mono font-semibold text-texto`}>{t.cantidad}</td>
+                    <td className={td}>
+                      <a href={t.url} target="_blank" rel="noreferrer" className="text-texto underline decoration-dotted underline-offset-2 hover:text-acento">{t.nombre}</a>
+                      <span className="block text-[0.7rem] text-texto-suave">{t.detalle}</span>
+                    </td>
+                    <td className={`${td} text-xs text-texto`}>{t.seccion === "impresos" ? "Globos impresos" : "Metalizados"}</td>
+                    <td className={`${td} text-xs text-texto-suave`}>{t.piezas.join(", ")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div>
         <h4 className="text-sm font-semibold text-texto">Utilería de fiesta</h4>

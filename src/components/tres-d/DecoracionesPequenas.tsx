@@ -39,7 +39,7 @@ export function MiniaturaDecoracion({ miniatura, nombre, className }: { miniatur
             <g transform={`translate(${f.cx.toFixed(2)} ${f.cy.toFixed(2)})`}>
               {f.corazon
                 ? <path d={CORAZON} transform={`rotate(${(f.giroGrados + 90).toFixed(1)}) scale(${f.ry.toFixed(2)} ${f.rx.toFixed(2)})`} fill={f.hex} stroke="rgba(0,0,0,.22)" strokeWidth={0.6 / Math.max(f.rx, f.ry)} />
-                : <ellipse rx={f.rx} ry={f.ry} transform={`rotate(${f.giroGrados.toFixed(1)})`} fill={f.hex} stroke="rgba(0,0,0,.22)" strokeWidth={0.6} />}
+                : <ellipse rx={f.rx} ry={f.ry} transform={`rotate(${f.giroGrados.toFixed(1)})`} fill={f.hex} fillOpacity={f.cristal ? 0.22 : 1} stroke={f.cristal ? "rgba(90,120,140,.55)" : "rgba(0,0,0,.22)"} strokeWidth={0.6} />}
               {!f.estampado && <circle cx={brillo.cx} cy={brillo.cy} r={brillo.r} fill="#fff" opacity={0.35} />}
             </g>
             {/* Lo impreso (iris, cara de calabaza), ya en coordenadas del dibujo. */}

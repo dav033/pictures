@@ -17,7 +17,7 @@ import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 // Grupos
 // ----------------------------------------------------------------------------------------------------------
 
-export type GrupoDecoracion = "flores" | "flores_tubito" | "monos" | "estrellas" | "corazones" | "racimos" | "halloween" | "figuras";
+export type GrupoDecoracion = "flores" | "flores_tubito" | "monos" | "estrellas" | "corazones" | "racimos" | "rizos" | "burbujas" | "halloween" | "figuras";
 
 export const GRUPOS_DECORACION: ReadonlyArray<{ id: GrupoDecoracion; nombre: string }> = [
   { id: "flores", nombre: "Flores" },
@@ -26,6 +26,8 @@ export const GRUPOS_DECORACION: ReadonlyArray<{ id: GrupoDecoracion; nombre: str
   { id: "estrellas", nombre: "Estrellas" },
   { id: "corazones", nombre: "Corazones" },
   { id: "racimos", nombre: "Racimos" },
+  { id: "rizos", nombre: "Rizos y tubitos" },
+  { id: "burbujas", nombre: "Globos burbuja" },
   { id: "halloween", nombre: "Halloween" },
   { id: "figuras", nombre: "Figuras" },
 ];
@@ -36,6 +38,8 @@ type Predefinida = (typeof DECORACIONES_PREDEFINIDAS)[number];
 export function grupoDe(p: Pick<Predefinida, "id" | "decoracion">): GrupoDecoracion {
   if (esHalloween(p.decoracion)) return "halloween";
   if (p.decoracion.tipo === "figura") return "figuras";
+  if (p.decoracion.tipo === "rizo") return "rizos";
+  if (p.decoracion.tipo === "burbuja") return "burbujas";
   if (p.id.startsWith("racimo")) return "racimos";
   switch (p.decoracion.tipo) {
     case "flor": return "flores";
@@ -78,6 +82,8 @@ export type FormaMiniatura =
     tipo: "globo"; cx: number; cy: number; /** Semieje a lo largo del globo (del nudo hacia fuera). */ rx: number; ry: number; giroGrados: number; corazon: boolean; codigo: string; hex: string; profundidad: number;
     /** Lo impreso que se ve de frente (iris, cara de calabaza), en coordenadas del dibujo. */
     estampado?: Array<{ hex: string; puntos: Array<[number, number]> }>;
+    /** Látex cristal (transparente): se pinta encima de todo y casi sin relleno, para que se vea lo de adentro. */
+    cristal?: true;
   }
   | { tipo: "tubito"; puntos: Array<[number, number]>; grosor: number; cerrado: boolean; codigo: string; hex: string; profundidad: number; /** Papel (no es globo): `relleno` pinta la figura. */ papel?: { relleno: boolean } };
 
@@ -112,7 +118,7 @@ export function miniaturaDecoracion(decoracion: Decoracion): Miniatura {
     formas.push({
       tipo: "globo", cx, cy, rx: Math.sqrt(a * a * s * s + r * r * (1 - s * s)), ry: r,
       giroGrados: s > 1e-6 ? (Math.atan2(dy, dx) * 180) / Math.PI : -90, corazon, codigo: g.codigo, hex: hexDeCodigo(g.codigo), profundidad: centro.y,
-      ...(estampado ? { estampado } : {}),
+      ...(estampado ? { estampado } : {}), ...(referenciaPorCodigo(g.codigo)?.familia === "cristal" ? { cristal: true as const } : {}),
     });
   }
   for (const t of armada.tubos) {
@@ -122,7 +128,9 @@ export function miniaturaDecoracion(decoracion: Decoracion): Miniatura {
       ...(t.papel ? { papel: { relleno: Boolean(t.papel.relleno && t.cerrado) } } : {}),
     });
   }
-  formas.sort((a, b) => a.profundidad - b.profundidad);
+  // De la más lejana a la más cercana; los cristales al final (se ve lo que llevan dentro a través de ellos).
+  const esCristal = (f: FormaMiniatura) => (f.tipo === "globo" && f.cristal ? 1 : 0);
+  formas.sort((a, b) => esCristal(a) - esCristal(b) || a.profundidad - b.profundidad);
 
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   const meter = (x: number, y: number, r: number) => { minX = Math.min(minX, x - r); minY = Math.min(minY, y - r); maxX = Math.max(maxX, x + r); maxY = Math.max(maxY, y + r); };
