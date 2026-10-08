@@ -13,6 +13,7 @@ import {
 import { coloresDePieza, recolorearConPaleta, recolorearConPedidos } from "./herramientas-escena-recolor";
 import { IDS_SILUETA, TIPOS_FOLLAJE } from "./herramientas-escena-trazo";
 import { ACCIONES_TAMANO, FORMATOS_AJUSTABLES, ajustarTamanos, esPiezaOrganica, textoConteo } from "./herramientas-escena-tamanos";
+import { DESCRIPCION_EDITAR_GLOBOS, ESQUEMA_EDITAR_GLOBOS, editarGlobos } from "./herramientas-escena-editar";
 import { ZONAS_ORGANICAS } from "./zonas-organicas";
 import { SILUETAS_TRAZO, cajaTrazo } from "./trazo-organico";
 import { buscarEnBiblioteca, describirItem, itemDeBiblioteca } from "./herramientas-escena-biblioteca";
@@ -289,6 +290,7 @@ const ESQUEMAS = {
     racimos_valor: z.number().min(0).max(1).optional().describe("en vez de racimos: 0 = cuerpo parejo, 1 = muy abultado"),
     engrosar: z.boolean().optional().describe("true (por defecto): si un tamaño no cabe en el cuerpo (un R-24 necesita ~60 cm de grosor), se engruesa el cuerpo donde va; false: devuelve error"),
   }),
+  editar_globos: ESQUEMA_EDITAR_GLOBOS,
   insertar_de_biblioteca: z.object({
     id: z.string().min(1).max(160).describe("id del item (los da buscar_en_biblioteca)"),
     donde: DondeSchema.optional().describe("dónde va la pieza principal; si falta, donde estaba en su escena"),
@@ -324,6 +326,7 @@ const DESCRIPCIONES: Readonly<Record<NombreHerramienta, string>> = {
   ajustar_tamanos: "Edición PRECISA de una pieza orgánica: más/menos/quitar/poner un tamaño de globo (R-36…R-5) en toda la pieza o en una zona (abajo, arriba, inicio, medio, fin), con cantidad o porcentaje exactos; colores por tamaño («los R-24 en azul»); más o menos tupida (densidad) y abultada (racimos). Arma la pieza y devuelve cuántos globos de cada tamaño había y cuántos hay. Úsala para «más R-24», «menos globos chicos», «los grandes azules», «más tupida», «más abultada».",
   ver_pieza: DESCRIPCION_VER_PIEZA,
   buscar_en_escena: DESCRIPCION_BUSCAR_EN_ESCENA,
+  editar_globos: DESCRIPCION_EDITAR_GLOBOS,
   insertar_de_biblioteca: "Pone un item de la biblioteca en la escena como piezas normales y editables (una estructura con sus decoraciones, una pieza o una escena entera). Devuelve los ids: después se cambia con cambiar_pieza (más alta, otro color, con flores…).",
 };
 
@@ -996,6 +999,16 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       comprobarAltura(hecho.pieza, nodo.colocacion, escena.sala);
       const nodoNuevo: NodoEscena = { ...nodo, pieza: hecho.pieza };
       return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, hecho.pieza), resumen: conNotas(`Ajusté «${nodo.nombre}» (${nodo.id}): ${hecho.resumen}`, notas) };
+    }
+
+    case "editar_globos": {
+      const hecho = editarGlobos(escena, argumentos);
+      let nueva = hecho.escena;
+      for (const { nodo, nueva: pieza } of hecho.editadas) {
+        comprobarAltura(pieza, nodo.colocacion, escena.sala);
+        nueva = reubicarSobre(nueva, nodo.id, nodo.pieza, pieza);
+      }
+      return { escena: nueva, resumen: hecho.resumen };
     }
 
     case "reemplazar_pieza": {

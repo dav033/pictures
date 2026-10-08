@@ -28,17 +28,17 @@ export const esPiezaOrganica = (p: Pieza): p is PiezaOrganica => p.tipo === "org
 
 export const opcionesDe = (p: PiezaOrganica): OpcionesOrganico => (p.tipo === "organico" ? p.opciones : opcionesArcoOrganico(p.arco));
 
-/** El arco por medidas como pieza orgánica (para cambiarle la mezcla o lo abultado), con sus impresos. */
+/** El arco por medidas como pieza orgánica (para cambiarle la mezcla o lo abultado), con sus impresos y repintes. */
 export function comoOrganico(p: PiezaOrganica): Organico {
   if (p.tipo === "organico") return p;
-  return { tipo: "organico", opciones: opcionesArcoOrganico(p.arco), flores: p.arco.flores, ...(p.impresos ? { impresos: p.impresos } : {}) };
+  return { tipo: "organico", opciones: opcionesArcoOrganico(p.arco), flores: p.arco.flores, ...(p.impresos ? { impresos: p.impresos } : {}), ...(p.repintes ? { repintes: p.repintes } : {}) };
 }
 
 /** Cambia una pieza orgánica por su trazo (si lo tiene: vuelve a sacar sus opciones) o por sus opciones. */
 export function editar(p: Organico, trazo: (t: ParametrosTrazoOrganico) => ParametrosTrazoOrganico, opciones: (o: OpcionesOrganico) => OpcionesOrganico): Organico {
   if (p.generador?.tipo !== "trazo") return { ...p, opciones: opciones(p.opciones) };
   const nueva = piezaDeGenerador({ tipo: "trazo", trazo: trazo(p.generador.trazo) }, p.flores, p.opciones.huecosFlores);
-  return p.impresos ? { ...nueva, impresos: p.impresos } : nueva;
+  return { ...nueva, ...(p.impresos ? { impresos: p.impresos } : {}), ...(p.repintes ? { repintes: p.repintes } : {}) };
 }
 
 // ----------------------------------------------------------------------------------------------------------

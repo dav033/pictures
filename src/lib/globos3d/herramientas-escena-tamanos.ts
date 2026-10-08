@@ -297,6 +297,10 @@ export function ajustarTamanos(pieza: PiezaOrganica, pedido: PedidoTamanos, nota
   }
   if (pedido.colores_por_tamano?.length) {
     actual = coloresPorTamano(actual, pedido.colores_por_tamano, pedido.acabado, notas);
+    // Un repinte (editar_globos) de esos mismos tamaños taparía los colores nuevos: lo nuevo manda, se quita.
+    const tocados = new Set(pedido.colores_por_tamano.flatMap((x) => x.formatos.map((f) => f.trim().toUpperCase())));
+    const quedan = (actual.repintes ?? []).filter((r) => !(r.formatos?.length && !r.partes?.length && r.formatos.every((f) => tocados.has(f.toUpperCase()))));
+    if (actual.repintes && quedan.length !== actual.repintes.length) actual = { ...actual, repintes: quedan };
     lineas.push(`colores por tamaño: ${pedido.colores_por_tamano.map((x) => `${x.formatos.join("/")} en ${x.colores.join(", ")}${x.exclusivo ? " (solo ahí)" : ""}`).join("; ")}`);
   }
   const final = armada(actual);
