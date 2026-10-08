@@ -273,10 +273,13 @@ prueba("una columna orgánica con sus decoraciones de una idea: conjunto → nod
   for (const n of nuevos.slice(1)) if (n.colocacion.en === "ancla" || n.colocacion.en === "sobre") assert.ok(r.escena.nodos.some((x) => x.id === (n.colocacion as { padreId: string }).padreId), `${n.id} cuelga de algo que está`);
   for (const n of base.nodos) assert.deepEqual(nodo(r.escena, n.id), n, `${n.id} no cambia`);
   // Más alta: lo que va SOBRE ella (el R-24 de la punta) sube con ella.
-  const sobre = nuevos.find((n) => n.colocacion.en === "sobre" && n.colocacion.padreId === raiz.id);
-  if (sobre) {
-    const yDe = (e: Escena) => armarEscena(e, cache).porNodo.find((x) => x.id === sobre.id)!.caja.min.y;
-    const altoRaiz = alto(raiz.pieza);
+  // La más alta de las que van sobre ella: un conjunto puede llevar también algo al pie (montículo de una base web).
+  const yDeNodo = (e: Escena, id: string) => armarEscena(e, cache).porNodo.find((x) => x.id === id)!.caja.min.y;
+  const sobre = nuevos.filter((n) => n.colocacion.en === "sobre" && n.colocacion.padreId === raiz.id)
+    .sort((a, b) => yDeNodo(r.escena, b.id) - yDeNodo(r.escena, a.id))[0];
+  const altoRaiz = alto(raiz.pieza);
+  if (sobre && yDeNodo(r.escena, sobre.id) > altoRaiz / 2) {
+    const yDe = (e: Escena) => yDeNodo(e, sobre.id);
     const mas = ok(aplicarHerramienta(r.escena, "cambiar_pieza", { id: raiz.id, alto_cm: Math.round(altoRaiz + 80) }));
     assert.ok(yDe(mas.escena) - yDe(r.escena) > 50, `lo de encima sube: ${Math.round(yDe(r.escena))} → ${Math.round(yDe(mas.escena))}`);
   }

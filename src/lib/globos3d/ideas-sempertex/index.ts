@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { claseDePieza, ideaPerezosa, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { fuenteIdea } from "./fuentes";
 import { IDEAS_FIGURAS } from "../ideas-figuras";
 import { IDEAS_FORMAS } from "../ideas-formas";
@@ -56,7 +56,10 @@ function deFiguras(): IdeaDigitalizada[] {
     const productos: ProductoDeIdea[] = f.productos.map((p) => ({
       nombre: p.nombre, url: fuente.productos.find((q) => q.nombre === p.nombre)?.url ?? "", formato: p.formato, codigo: p.codigo, cantidad: null,
     }));
-    return [{ id: `idea:${f.slug}`, numero: fuente.numero, slug: f.slug, nombre: f.nombre, ocasiones: ocasionesDeEtiquetas(fuente.etiquetas), fotoUrl: fuente.fotoUrl, productos, contenido: { tipo: "pieza", pieza: f.pieza }, nota: f.nota }];
+    return [ideaPerezosa(
+      { id: `idea:${f.slug}`, numero: fuente.numero, slug: f.slug, nombre: f.nombre, ocasiones: ocasionesDeEtiquetas(fuente.etiquetas), fotoUrl: fuente.fotoUrl, clase: claseDePieza(f.pieza), nota: f.nota },
+      () => ({ tipo: "pieza", pieza: f.pieza }), () => productos,
+    )];
   });
 }
 
@@ -69,7 +72,10 @@ function deFormas(): IdeaDigitalizada[] {
       nombre: p.nombre, url: fuente.productos.find((q) => q.nombre === p.nombre)?.url ?? "", formato: p.formatoId, codigo: p.codigo, cantidad: null,
     }));
     const sugerida = f.lugar === "pared" ? { en: "pared" as const, pared: "fondo" as const, aLoLargoCm: 0, alturaCm: 120 } : { en: "piso" as const, xCm: 0, zCm: 0, giroGrados: 0 };
-    return [{ id: `idea:${f.slug}`, numero: fuente.numero, slug: f.slug, nombre: f.nombre, ocasiones: ocasionesDeEtiquetas(fuente.etiquetas), fotoUrl: fuente.fotoUrl, productos, contenido: { tipo: "pieza", pieza: f.pieza, sugerida }, nota: f.nota }];
+    return [ideaPerezosa(
+      { id: `idea:${f.slug}`, numero: fuente.numero, slug: f.slug, nombre: f.nombre, ocasiones: ocasionesDeEtiquetas(fuente.etiquetas), fotoUrl: fuente.fotoUrl, clase: claseDePieza(f.pieza), nota: f.nota },
+      () => ({ tipo: "pieza", pieza: f.pieza, sugerida }), () => productos,
+    )];
   });
 }
 

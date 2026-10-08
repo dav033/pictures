@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { ArrowLeft, BookmarkPlus, Box, ClipboardCopy, ExternalLink, Eye, Library, Plus, Replace, Search, Trash2 } from "lucide-react";
 import {
-  BIBLIOTECA_FABRICA, OCASIONES, TIPOS_ITEM, clasePieza, contenidoDeEscena, escenaDeItem, filtrarBiblioteca, huellaItem, indexarEscena, itemDeEscena, itemDeNodo, nombreGenerico,
-  productosDe, resumenDe, unirBiblioteca, validarItem, type FiltroBiblioteca, type ItemBiblioteca, type ProductosDeItem, type ResumenItem, type TipoItem,
+  BIBLIOTECA_FABRICA, OCASIONES, TIPOS_ITEM, clasePieza, contenidoDeEscena, copiarItem, escenaDeItem, filtrarBiblioteca, huellaConId, itemDeEscena, itemDeNodo, nombreGenerico,
+  unirBiblioteca, validarItem, type FiltroBiblioteca, type ItemBiblioteca, type ProductosDeItem, type ResumenItem, type TipoItem,
 } from "@/lib/globos3d/biblioteca";
-import { armarEscena, type Escena, type EscenaArmada } from "@/lib/globos3d/escena";
-import type { PiezaArmada } from "@/lib/globos3d/piezas";
+import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import { hexDeCodigo, miniaturaDecoracion, type Miniatura } from "@/lib/globos3d/decoraciones-escena";
 import { urlTienda } from "@/lib/globos3d/utileria-catalogo";
 import { REVISADO_TIENDA } from "@/lib/globos3d/productos-tienda";
@@ -16,6 +15,7 @@ import { MiniaturaDecoracion } from "./DecoracionesPequenas";
 import { ACTIVO, BOTON, INACTIVO } from "./PanelFlor";
 import { mostrarArmada } from "./armada-visor";
 import type { EscenaGlobos } from "./escena-globos";
+import { armarEnMotor, useMotorBiblioteca, type Armado } from "./biblioteca-cliente";
 
 /**
  * Pestaña **Biblioteca** de /3d: todo lo reutilizable del taller, cada cosa por separado (escenas, estructuras con sus
@@ -89,50 +89,26 @@ function idPropio(base: string): string {
 // Índice y resúmenes (se calculan de a poco, sin trabar la página)
 // ----------------------------------------------------------------------------------------------------------
 
-/** Lo de fábrica más lo propio, con lo que sale de indexar cada escena (una escena por vuelta). */
-function useBiblioteca(propios: readonly ItemBiblioteca[], cache: Map<string, PiezaArmada>) {
+/**
+ * Lo de fábrica más lo propio, con lo que sale de indexar cada escena, sus resúmenes (globos, colores, productos) y
+ * sus huellas (para las miniaturas). Todo lo que arma lo hace el motor fuera de la página (`biblioteca-cliente.ts`):
+ * aquí no se toca el contenido de nada. La grilla sale enseguida con lo fijo (nombre, tipo, ocasiones, foto) y se
+ * completa (sin repetidos, con lo de cada escena) a medida que el motor avanza.
+ */
+function useBiblioteca(propios: readonly ItemBiblioteca[]) {
+  const motor = useMotorBiblioteca(propios);
   const base = useMemo(() => [...BIBLIOTECA_FABRICA, ...propios], [propios]);
-  const escenas = useMemo(() => base.filter((i) => i.contenido.tipo === "escena"), [base]);
-  const [indices, setIndices] = useState<ReadonlyMap<string, ItemBiblioteca[]>>(() => new Map());
-  const pendiente = escenas.find((e) => !indices.has(e.id));
-  useEffect(() => {
-    if (!pendiente) return;
-    const t = setTimeout(() => {
-      let derivados: ItemBiblioteca[] = [];
-      try { derivados = indexarEscena(pendiente, undefined, cache); } catch (causa) { console.error("[biblioteca] no se pudo indexar", pendiente.id, causa); }
-      setIndices((m) => new Map(m).set(pendiente.id, derivados));
-    }, 20);
-    return () => clearTimeout(t);
-  }, [pendiente, cache]);
-  const items = useMemo(() => unirBiblioteca(base, indices), [base, indices]);
-  return { items, indexadas: escenas.filter((e) => indices.has(e.id)).length, escenas: escenas.length };
-}
-
-/** Globos, colores y productos de cada item (para la tarjeta y los filtros), de a varios por vuelta. */
-function useResumenes(items: readonly ItemBiblioteca[], cache: Map<string, PiezaArmada>) {
-  const [porHuella, setPorHuella] = useState<ReadonlyMap<string, ResumenItem>>(() => new Map());
-  const huellas = useMemo(() => new Map(items.map((i) => [i.id, huellaItem(i)])), [items]);
-  const faltan = useMemo(() => items.filter((i) => !porHuella.has(huellas.get(i.id)!)), [items, porHuella, huellas]);
-  useEffect(() => {
-    if (!faltan.length) return;
-    const t = setTimeout(() => {
-      const nuevos = new Map<string, ResumenItem>();
-      const inicio = performance.now();
-      for (const item of faltan) {
-        try { nuevos.set(huellas.get(item.id)!, resumenDe(item, armarEscena(escenaDeItem(item), cache))); }
-        catch { nuevos.set(huellas.get(item.id)!, { globos: 0, colores: [], productos: [], piezas: 0 }); }
-        if (performance.now() - inicio > 40) break;
-      }
-      setPorHuella((m) => { const salida = new Map(m); for (const [k, v] of nuevos) salida.set(k, v); return salida; });
-    }, 15);
-    return () => clearTimeout(t);
-  }, [faltan, huellas, cache]);
-  const porId = useMemo(() => {
-    const salida = new Map<string, ResumenItem>();
-    for (const i of items) { const r = porHuella.get(huellas.get(i.id)!); if (r) salida.set(i.id, r); }
-    return salida;
-  }, [items, porHuella, huellas]);
-  return { resumenes: porId, listos: porId.size };
+  // Mientras el motor no ha firmado un item, su firma es única (no se junta con nada todavía).
+  const items = useMemo(() => unirBiblioteca(base, motor.indices, (i) => motor.hechos.get(i.id)?.firma ?? `pendiente:${i.id}`), [base, motor.indices, motor.hechos]);
+  const { resumenes, huellas } = useMemo(() => {
+    const r = new Map<string, ResumenItem>(), h = new Map<string, string>();
+    for (const i of items) {
+      const hecho = motor.hechos.get(i.id);
+      if (hecho) { r.set(i.id, hecho.resumen); h.set(i.id, huellaConId(i.id, hecho.huella)); }
+    }
+    return { resumenes: r, huellas: h };
+  }, [items, motor.hechos]);
+  return { items, resumenes, huellas, listos: resumenes.size, indexadas: motor.escenasHechas, escenas: motor.escenas };
 }
 
 // ----------------------------------------------------------------------------------------------------------
@@ -146,8 +122,12 @@ function miniGuardada(huella: string): string | null {
   try { return window.sessionStorage.getItem(CLAVE_MINI + huella); } catch { return null; }
 }
 
-/** Las decoraciones (las de globos) tienen su dibujo SVG; lo demás se renderiza en 3D. */
+/**
+ * Las decoraciones (las de globos) tienen su dibujo SVG; lo demás se renderiza en 3D. Solo se mira el contenido de las
+ * decoraciones (piezas chicas): el de una escena de fábrica es perezoso y armarlo aquí trabaría la página.
+ */
 function miniaturaSvg(item: ItemBiblioteca): Miniatura | null {
+  if (item.tipo !== "decoracion") return null;
   const c = item.contenido;
   if (c.tipo !== "pieza" || c.pieza.tipo !== "decoracion") return null;
   try { return miniaturaDecoracion(c.pieza.decoracion); } catch { return null; }
@@ -157,16 +137,20 @@ const esperarCuadro = () => new Promise<void>((r) => requestAnimationFrame(() =>
 
 /**
  * Renderiza en 3D las miniaturas que faltan, de una en una y en el orden en que se ven, con su propio visor en un lienzo
- * oculto (se cierra al terminar). Cada una se guarda en sessionStorage por la huella de su contenido.
+ * oculto (se cierra al terminar). Cada una se guarda en sessionStorage por la huella de su contenido. Lo arma el motor
+ * (fuera de la página); aquí solo se dibuja. Sin huella todavía (el motor no llegó a ese item), espera.
  */
-function useMiniaturas3d(orden: readonly ItemBiblioteca[], cache: Map<string, PiezaArmada>) {
+function useMiniaturas3d(orden: readonly ItemBiblioteca[], huellas: ReadonlyMap<string, string>) {
   const lienzoRef = useRef<HTMLCanvasElement>(null);
   const visorRef = useRef<EscenaGlobos | null>(null);
   /** Una miniatura a la vez: el visor oculto es uno solo (la siguiente espera a que termine la anterior). */
   const colaRef = useRef<Promise<void>>(Promise.resolve());
   const [minis, setMinis] = useState<ReadonlyMap<string, string>>(() => new Map());
   const [fallidas, setFallidas] = useState<ReadonlySet<string>>(() => new Set());
-  const porHuella = useMemo(() => new Map(orden.filter((i) => !miniaturaSvg(i)).map((i) => [huellaItem(i), i])), [orden]);
+  const porHuella = useMemo(() => new Map(orden.flatMap((i) => {
+    const huella = huellas.get(i.id);
+    return huella && !miniaturaSvg(i) ? [[huella, i] as const] : [];
+  })), [orden, huellas]);
   const porHuellaRef = useRef(porHuella);
   useEffect(() => { porHuellaRef.current = porHuella; }, [porHuella]);
   // Por la huella (texto), no por el objeto: la lista se rehace al indexar y el item sería otro objeto igual.
@@ -192,7 +176,10 @@ function useMiniaturas3d(orden: readonly ItemBiblioteca[], cache: Map<string, Pi
           visorRef.current = crearEscena(lienzo);
         }
         if (!vivo) return;
-        mostrarArmada(visorRef.current, armarEscena(escenaDeItem(item), cache));
+        const hecho = await armarEnMotor(item, false);
+        if ("error" in hecho) throw new Error(hecho.error);
+        if (!vivo || !visorRef.current) return;
+        mostrarArmada(visorRef.current, hecho.armada);
         await esperarCuadro();
         await esperarCuadro();
         // Justo después de que el visor dibuja (mismo cuadro): el lienzo todavía tiene la imagen.
@@ -217,7 +204,7 @@ function useMiniaturas3d(orden: readonly ItemBiblioteca[], cache: Map<string, Pi
     };
     const t = setTimeout(() => { colaRef.current = colaRef.current.then(dibujar); }, 30);
     return () => { vivo = false; clearTimeout(t); };
-  }, [pendiente, cache]);
+  }, [pendiente]);
   useEffect(() => () => { visorRef.current?.destruir(); visorRef.current = null; }, []);
   return { lienzoRef, minis };
 }
@@ -248,6 +235,9 @@ function Miniatura3d({ item, url, className = "" }: { item: ItemBiblioteca; url:
   const svg = useMemo(() => miniaturaSvg(item), [item]);
   if (svg) return <div className={`grid place-items-center bg-[#efedf2] p-3 ${className}`}><MiniaturaDecoracion miniatura={svg} nombre={item.nombre} className="h-full max-h-full w-full" /></div>;
   if (url) return <div role="img" aria-label={`Vista 3D de ${item.nombre}`} className={`bg-[#efedf2] bg-cover bg-center ${className}`} style={{ backgroundImage: `url(${url})` }} />;
+  // Mientras se dibuja la vista 3D, la foto de la idea (url pública de su fuente), si la tiene.
+  // eslint-disable-next-line @next/next/no-img-element -- foto externa del CDN de Sempertex, a tamaño de tarjeta
+  if (item.fuente?.fotoUrl) return <img src={item.fuente.fotoUrl} alt={`Foto de ${item.nombre}`} loading="lazy" decoding="async" className={`bg-[#efedf2] object-cover ${className}`} />;
   return <div className={`grid place-items-center bg-[#efedf2] text-xs text-texto-suave ${className}`}><Box className="size-6 animate-pulse opacity-50" aria-hidden /><span className="sr-only">Dibujando…</span></div>;
 }
 
@@ -264,10 +254,16 @@ function Fuente({ item, corta = false }: { item: ItemBiblioteca; corta?: boolean
   );
 }
 
-function TarjetaItem({ item, resumen, mini, onAbrir }: { item: ItemBiblioteca; resumen: ResumenItem | undefined; mini: string | undefined; onAbrir: () => void }) {
+type PropsTarjeta = { item: ItemBiblioteca; resumen: ResumenItem | undefined; mini: string | undefined; onAbrir: (item: ItemBiblioteca) => void };
+
+/**
+ * Una tarjeta de la grilla. Memorizada: el motor rehace la lista cada ~200 ms (items nuevos, mismos datos) y repintar
+ * cientos de tarjetas cada vez trabaría el teléfono; solo se repinta si cambia lo que muestra.
+ */
+const TarjetaItem = memo(function TarjetaItem({ item, resumen, mini, onAbrir }: PropsTarjeta) {
   return (
     <li>
-      <button type="button" onClick={onAbrir} className={`${TARJETA} flex h-full w-full flex-col overflow-hidden text-left transition hover:ring-2 hover:ring-acento focus-visible:ring-2 focus-visible:ring-acento`}>
+      <button type="button" onClick={() => onAbrir(item)} className={`${TARJETA} flex h-full w-full flex-col overflow-hidden text-left transition hover:ring-2 hover:ring-acento focus-visible:ring-2 focus-visible:ring-acento`}>
         <Miniatura3d item={item} url={mini} className="aspect-[4/3] w-full" />
         <span className="flex min-w-0 flex-1 flex-col gap-1 p-2">
           <span className="line-clamp-2 text-sm font-semibold text-texto">{item.nombre}</span>
@@ -285,7 +281,8 @@ function TarjetaItem({ item, resumen, mini, onAbrir }: { item: ItemBiblioteca; r
       </button>
     </li>
   );
-}
+}, (a, b) => a.resumen === b.resumen && a.mini === b.mini && a.onAbrir === b.onAbrir && a.item.id === b.item.id && a.item.nombre === b.item.nombre
+  && a.item.tipo === b.item.tipo && a.item.propio === b.item.propio && a.item.fuente?.titulo === b.item.fuente?.titulo && a.item.ocasiones.join("|") === b.item.ocasiones.join("|"));
 
 /** La lista de compra en texto (para copiarla y pegarla en un pedido). */
 function listaEnTexto(item: ItemBiblioteca, p: ProductosDeItem): string {
@@ -444,18 +441,34 @@ function Vista3d({ armada }: { armada: EscenaArmada }) {
 
 type Acciones = { onAbrirEnEscena: (item: ItemBiblioteca) => void; onAnadir: (item: ItemBiblioteca) => void };
 
-function Ficha({ item, biblioteca, cache, minis, onVer, onVolver, acciones, puedeVolver }: {
-  item: ItemBiblioteca; biblioteca: readonly ItemBiblioteca[]; cache: Map<string, PiezaArmada>; minis: ReadonlyMap<string, string>;
+/** Lo que el motor armó para la ficha (o por qué no pudo). */
+function useArmadoFicha(item: ItemBiblioteca): Armado | null {
+  const [hecho, setHecho] = useState<{ item: ItemBiblioteca; armado: Armado } | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    void armarEnMotor(item, true).then((armado) => { if (vivo) setHecho({ item, armado }); });
+    return () => { vivo = false; };
+  }, [item]);
+  return hecho?.item === item ? hecho.armado : null;
+}
+
+function Ficha({ item, biblioteca, huellas, minis, onVer, onVolver, acciones, puedeVolver }: {
+  item: ItemBiblioteca; biblioteca: readonly ItemBiblioteca[]; huellas: ReadonlyMap<string, string>; minis: ReadonlyMap<string, string>;
   onVer: (item: ItemBiblioteca) => void; onVolver: () => void; acciones: Acciones; puedeVolver: boolean;
 }) {
-  const armada = useMemo(() => armarEscena(escenaDeItem(item), cache), [item, cache]);
-  const productos = useMemo(() => productosDe(item, armada), [item, armada]);
-  const resumen = useMemo(() => resumenDe(item, armada), [item, armada]);
+  // La vista, los productos y el resumen los arma el motor (fuera de la página): una idea grande tarda segundos.
+  const hecho = useArmadoFicha(item);
+  const listo = hecho && !("error" in hecho) ? hecho : null;
+  const armada = listo?.armada ?? null;
+  const productos = listo?.productos ?? null;
+  const resumen = listo?.resumen ?? null;
+  /** El item con su contenido ya armado (para «Abrir en Escena» y «Añadir» sin armarlo en la página). */
+  const completo = useMemo(() => (listo?.contenido ? copiarItem(item, { contenido: listo.contenido }) : hecho ? item : null), [item, listo, hecho]);
   const contenido = useMemo(() => (item.tipo === "escena" ? contenidoDeEscena(biblioteca, item.id) : []), [item, biblioteca]);
-  /** Las decoraciones de un conjunto, juntas por nombre («14 × Ojo con venas»). */
+  /** Las decoraciones de un conjunto, juntas por nombre («14 × Ojo con venas»). Un conjunto siempre es dato plano. */
   const armado = useMemo(() => {
     const cuenta = new Map<string, number>();
-    if (item.contenido.tipo === "conjunto") for (const h of item.contenido.conjunto.hijos) cuenta.set(nombreGenerico(h.nombre), (cuenta.get(nombreGenerico(h.nombre)) ?? 0) + 1);
+    if (item.tipo === "conjunto" && item.contenido.tipo === "conjunto") for (const h of item.contenido.conjunto.hijos) cuenta.set(nombreGenerico(h.nombre), (cuenta.get(nombreGenerico(h.nombre)) ?? 0) + 1);
     return [...cuenta.entries()];
   }, [item]);
   const escenas = (item.apareceEn ?? []).map((o) => ({ origen: o, escena: biblioteca.find((i) => i.id === o.itemId) })).filter((x) => x.escena);
@@ -469,7 +482,7 @@ function Ficha({ item, biblioteca, cache, minis, onVer, onVolver, acciones, pued
       <ul className="mt-1 flex flex-col gap-1">
         {items.map((i) => (
           <li key={i.id} className="flex items-center gap-2 rounded-xl p-1 ring-1 ring-borde">
-            <Miniatura3d item={i} url={minis.get(huellaItem(i))} className="size-12 shrink-0 rounded-lg" />
+            <Miniatura3d item={i} url={minis.get(huellas.get(i.id) ?? "")} className="size-12 shrink-0 rounded-lg" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm text-texto">{i.nombre}{veces(i) > 1 && <span className="text-texto-suave"> · {veces(i)} veces</span>}</span>
               <span className="block truncate text-[0.7rem] text-texto-suave">{NOMBRE_TIPO.get(i.tipo)}{i.derivado ? "" : " · también en la biblioteca"}</span>
@@ -490,10 +503,14 @@ function Ficha({ item, biblioteca, cache, minis, onVer, onVolver, acciones, pued
       </div>
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-3">
-          <Vista3d armada={armada} />
+          {armada ? <Vista3d armada={armada} /> : (
+            <div className="grid h-[46vh] min-h-[300px] place-items-center rounded-2xl bg-superficie-suave text-sm text-texto-suave ring-1 ring-borde" role="status">
+              {hecho && "error" in hecho ? `No se pudo armar: ${hecho.error}` : "Armando la vista 3D…"}
+            </div>
+          )}
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => acciones.onAbrirEnEscena(item)} title="Reemplaza la escena de la pestaña Escena (allí Ctrl+Z la recupera)" className={`${BOTON} ${ACTIVO} inline-flex items-center gap-1.5 px-4`}><Replace className="size-4" aria-hidden />Abrir en Escena</button>
-            <button type="button" onClick={() => acciones.onAnadir(item)} title="La añade a la escena que tienes, donde estaba en la suya" className={`${BOTON} ${INACTIVO} inline-flex items-center gap-1.5 px-4`}><Plus className="size-4" aria-hidden />Añadir a mi escena</button>
+            <button type="button" disabled={!completo} onClick={() => { if (completo) acciones.onAbrirEnEscena(completo); }} title="Reemplaza la escena de la pestaña Escena (allí Ctrl+Z la recupera)" className={`${BOTON} ${ACTIVO} inline-flex items-center gap-1.5 px-4 disabled:opacity-60`}><Replace className="size-4" aria-hidden />Abrir en Escena</button>
+            <button type="button" disabled={!completo} onClick={() => { if (completo) acciones.onAnadir(completo); }} title="La añade a la escena que tienes, donde estaba en la suya" className={`${BOTON} ${INACTIVO} inline-flex items-center gap-1.5 px-4 disabled:opacity-60`}><Plus className="size-4" aria-hidden />Añadir a mi escena</button>
             {item.propio && (
               <button type="button" onClick={() => { if (quitarPropio(item.id)) { setQuitado(true); onVolver(); } }} disabled={quitado} className={`${BOTON} ${INACTIVO} inline-flex items-center gap-1.5 px-3`}><Trash2 className="size-4" aria-hidden />Quitar de mi biblioteca</button>
             )}
@@ -504,11 +521,13 @@ function Ficha({ item, biblioteca, cache, minis, onVer, onVolver, acciones, pued
           <header>
             <h2 className="text-xl font-semibold text-texto">{item.nombre}</h2>
             {item.descripcion && <p className="mt-1 text-sm text-texto-suave">{item.descripcion}</p>}
-            <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-texto">
-              <span className="font-mono">{resumen.globos} globos</span>
-              {item.tipo !== "decoracion" && item.tipo !== "utileria" && <span className="font-mono">{resumen.piezas} {resumen.piezas === 1 ? "pieza" : "piezas"}</span>}
-              <Chips colores={resumen.colores} max={14} />
-            </p>
+            {resumen ? (
+              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-texto">
+                <span className="font-mono">{resumen.globos} globos</span>
+                {item.tipo !== "decoracion" && item.tipo !== "utileria" && <span className="font-mono">{resumen.piezas} {resumen.piezas === 1 ? "pieza" : "piezas"}</span>}
+                <Chips colores={resumen.colores} max={14} />
+              </p>
+            ) : <p className="mt-2 text-sm text-texto-suave">Contando globos…</p>}
           </header>
           <section className={`${TARJETA} flex flex-col gap-1 p-3`} aria-label="De dónde viene">
             <h3 className="text-sm font-semibold text-texto">De dónde viene</h3>
@@ -539,7 +558,9 @@ function Ficha({ item, biblioteca, cache, minis, onVer, onVolver, acciones, pued
           )}
         </div>
       </div>
-      <TablaProductos item={item} productos={productos} />
+      {productos ? <TablaProductos item={item} productos={productos} /> : (
+        <section className={`${TARJETA} p-3 text-sm text-texto-suave`} aria-label="Productos" role="status">{hecho && "error" in hecho ? "Sin lista de productos: no se pudo armar." : "Calculando la lista de productos…"}</section>
+      )}
     </article>
   );
 }
@@ -560,17 +581,33 @@ type Props = {
 };
 
 const FILTRO_VACIO: FiltroBiblioteca = { tipo: null, ocasion: null, color: null, producto: null, texto: "" };
+/** Tarjetas por página de la grilla. */
+const POR_PAGINA = 48;
 
 export function Biblioteca({ escenaActual, onAbrirEnEscena, onAnadirAEscena, abrir = null }: Props) {
-  const [cache] = useState(() => new Map<string, PiezaArmada>());
   const propios = useBibliotecaPropia();
-  const { items, indexadas, escenas } = useBiblioteca(propios, cache);
-  const { resumenes, listos } = useResumenes(items, cache);
+  const { items, resumenes, huellas, listos, indexadas, escenas } = useBiblioteca(propios);
   const [filtro, setFiltro] = useState<FiltroBiblioteca>(FILTRO_VACIO);
   const [pila, setPila] = useState<ItemBiblioteca[]>(() => (abrir ? [abrir] : []));
   const visibles = useMemo(() => filtrarBiblioteca(items, resumenes, filtro), [items, resumenes, filtro]);
-  const { lienzoRef, minis } = useMiniaturas3d(visibles, cache);
+  // La grilla se pinta de a una página (y crece al llegar al final): cientos de tarjetas de una vez traban el teléfono.
+  const [cuantos, setCuantos] = useState(POR_PAGINA);
+  const mostrados = useMemo(() => visibles.slice(0, cuantos), [visibles, cuantos]);
+  const finRef = useRef<HTMLLIElement>(null);
+  const hayMas = mostrados.length < visibles.length;
+  useEffect(() => {
+    const fin = finRef.current;
+    if (!fin || !hayMas) return;
+    const observador = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) setCuantos((c) => c + POR_PAGINA); }, { rootMargin: "600px" });
+    observador.observe(fin);
+    return () => observador.disconnect();
+  }, [hayMas, mostrados.length]);
+  const { lienzoRef, minis } = useMiniaturas3d(mostrados, huellas);
   const abierto = pila[pila.length - 1] ?? null;
+  // La tarjeta memorizada puede tener un item de una vuelta anterior: se abre el de ahora (con todas sus escenas).
+  const itemsRef = useRef(items);
+  useEffect(() => { itemsRef.current = items; }, [items]);
+  const abrirItem = useCallback((i: ItemBiblioteca) => setPila([itemsRef.current.find((x) => x.id === i.id) ?? i]), []);
 
   const porTipo = useMemo(() => new Map(TIPOS_ITEM.map((t) => [t.id, items.filter((i) => i.tipo === t.id).length])), [items]);
   const ocasiones = useMemo(() => OCASIONES.filter((o) => items.some((i) => i.ocasiones.includes(o))), [items]);
@@ -583,7 +620,7 @@ export function Biblioteca({ escenaActual, onAbrirEnEscena, onAnadirAEscena, abr
       productos: [...p.entries()].sort((a, b) => porNombre(nombreProducto(a[0]), nombreProducto(b[0]))),
     };
   }, [resumenes]);
-  const poner = (cambio: Partial<FiltroBiblioteca>) => setFiltro((f) => ({ ...f, ...cambio }));
+  const poner = (cambio: Partial<FiltroBiblioteca>) => { setFiltro((f) => ({ ...f, ...cambio })); setCuantos(POR_PAGINA); };
   const hayFiltro = Boolean(filtro.tipo || filtro.ocasion || filtro.color || filtro.producto || filtro.texto?.trim());
   const acciones: Acciones = {
     onAbrirEnEscena: (item) => onAbrirEnEscena(escenaDeItem(item)),
@@ -591,7 +628,7 @@ export function Biblioteca({ escenaActual, onAbrirEnEscena, onAnadirAEscena, abr
   };
 
   const contenido: ReactNode = abierto ? (
-    <Ficha key={`${pila.length}:${abierto.id}`} item={abierto} biblioteca={items} cache={cache} minis={minis} acciones={acciones} puedeVolver={pila.length > 1}
+    <Ficha key={`${pila.length}:${abierto.id}`} item={abierto} biblioteca={items} huellas={huellas} minis={minis} acciones={acciones} puedeVolver={pila.length > 1}
       onVer={(i) => setPila((p) => [...p, i])} onVolver={() => setPila((p) => p.slice(0, -1))} />
   ) : (
     <>
@@ -628,14 +665,19 @@ export function Biblioteca({ escenaActual, onAbrirEnEscena, onAnadirAEscena, abr
             {indexadas < escenas ? ` · buscando estructuras y decoraciones dentro de las escenas (${indexadas} de ${escenas})…` : ""}
             {listos < items.length ? ` · contando globos (${listos} de ${items.length})…` : ""}
           </span>
-          {hayFiltro && <button type="button" onClick={() => setFiltro(FILTRO_VACIO)} className="min-h-11 text-acento underline-offset-2 hover:underline sm:min-h-0">Quitar filtros</button>}
+          {hayFiltro && <button type="button" onClick={() => { setFiltro(FILTRO_VACIO); setCuantos(POR_PAGINA); }}className="min-h-11 text-acento underline-offset-2 hover:underline sm:min-h-0">Quitar filtros</button>}
         </p>
       </section>
       {visibles.length === 0 ? (
         <p className="rounded-2xl bg-superficie-suave p-6 text-center text-sm text-texto-suave ring-1 ring-borde">Nada con esos filtros.</p>
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {visibles.map((i) => <TarjetaItem key={i.id} item={i} resumen={resumenes.get(i.id)} mini={minis.get(huellaItem(i))} onAbrir={() => setPila([i])} />)}
+          {mostrados.map((i) => <TarjetaItem key={i.id} item={i} resumen={resumenes.get(i.id)} mini={minis.get(huellas.get(i.id) ?? "")} onAbrir={abrirItem} />)}
+          {hayMas && (
+            <li ref={finRef} className="col-span-full flex justify-center">
+              <button type="button" onClick={() => setCuantos((c) => c + POR_PAGINA)} className={`${BOTON} ${INACTIVO} px-4 text-sm`}>Mostrar más ({visibles.length - mostrados.length})</button>
+            </li>
+          )}
         </ul>
       )}
     </>

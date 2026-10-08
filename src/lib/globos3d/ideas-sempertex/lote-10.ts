@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { armarEscena, HUNDIMIENTO_SOBRE_CM, SALA_INICIAL, type Colocacion, type Escena, type NodoEscena, type Sala } from "../escena";
 import { armarPieza, type Pieza } from "../piezas";
 import { formatoPorId } from "../formatos";
@@ -343,16 +343,15 @@ function productosDe(escena: Escena, publicados: readonly Publicado[] = []): Pro
 
 const CDN = "https://sempertex.com/cdn/shop/articles/";
 
-type Base = Omit<IdeaDigitalizada, "id" | "productos" | "contenido"> & { escena: Escena; publicados?: Publicado[] };
+type Base = Omit<IdeaDigitalizada, "id" | "productos" | "contenido" | "clase"> & { escena: () => Escena; publicados?: Publicado[] };
 
 /**
- * La idea completa: su id «idea:<slug>» y sus productos, que salen de armar la escena (lo contado en la foto) la
- * primera vez que se piden: los orgánicos tardan unas décimas y la biblioteca carga todas las ideas al abrir el taller.
+ * La idea perezosa (`ideaPerezosa`): su id «idea:<slug>»; su escena se arma la primera vez que se pide y sus productos
+ * salen de armar esa escena (lo contado en la foto; los orgánicos tardan unas décimas). Importar el lote no arma nada.
  */
 function idea(b: Base): IdeaDigitalizada {
   const { escena, publicados, ...resto } = b;
-  let hechos: ProductoDeIdea[] | null = null;
-  return { id: `idea:${b.slug}`, ...resto, contenido: { tipo: "escena", escena }, get productos() { return (hechos ??= productosDe(escena, publicados)); } };
+  return ideaPerezosa({ id: `idea:${b.slug}`, ...resto, clase: "escena" }, () => ({ tipo: "escena", escena: escena() }), (c) => (c.tipo === "escena" ? productosDe(c.escena, publicados) : []));
 }
 
 // Productos que publican varias ideas (nombre y url tal cual de la tienda).
@@ -381,7 +380,7 @@ const PARED_796 = -150;
 const SEPARA = 2;
 const INFLADOS_796: Inflados = { "R-18": 36, "R-12": 21, "R-5": 10 };
 const UVA_CHAMPANA = R("R-5", 5.5, "971"), UVA_CHOCOLATE = R("R-5", 5.5, "076");
-const escena796 = ((): Escena => {
+const escena796 = (): Escena => {
   const zEje = PARED_796 + 30;
   // El armazón: un tubo de PVC por el eje de la guirnalda (escondido entre los globos); su origen, al pie.
   const eje = [px796(40, 900, zEje + 25), px796(220, 700, zEje + 6), px796(480, 560, zEje), px796(700, 420, zEje), px796(800, 300, zEje)];
@@ -441,7 +440,7 @@ const escena796 = ((): Escena => {
     { id: "tapete", nombre: "Tapete negro", pieza: { tipo: "escenografia", elementos: tapete({ anchoCm: 232, fondoCm: 110, hex: "#141312" }) }, colocacion: { en: "piso", xCm: 8, zCm: PARED_796 + 60, giroGrados: 0 } },
   );
   return { sala: sala(340, 300, 270, { paredes: "#e8e7e3", piso: "#e3e0da" }), nodos };
-})();
+};
 
 const idea796 = idea({
   numero: 796, slug: "ocasiones-especiales-trufa-y-champana", nombre: "Guirnalda Trufa y Champaña con ramo de helio", ocasiones: ["general"],
@@ -464,7 +463,7 @@ const idea796 = idea({
 const px904 = (x: number, y: number, z = 0): Vec3 => v(r2((x - 500) / 2.8), r2((878 - y) / 2.8), z);
 const PARED_904 = -150;
 const INFLADOS_904: Inflados = { "R-24": 55, "R-18": 40, "R-12": 28, "R-5": 10.5 };
-const escena904 = ((): Escena => {
+const escena904 = (): Escena => {
   const ejePx: ReadonlyArray<[number, number]> = [[70, 800], [270, 700], [330, 430], [520, 300], [650, 300], [850, 250]];
   const z = PARED_904 + 25;
   const eje = ejePx.map(([x, y]) => px904(x, y, z));
@@ -492,7 +491,7 @@ const escena904 = ((): Escena => {
   // El R-24 crema de abajo, delante del bloque champaña (el más grande de la foto).
   nodos.push(colgar({ id: "r24-crema", nombre: "R-24 Pastel Dusk Crema", pieza: globo(R("R-24", 55, "107")), padre: armazon.padre, origen: px904(400, 675, PARED_904 + 50), normal: v(0.3, 0.2, 1), giroGrados: 0 }).nodo);
   return { sala: sala(400, 300, 300, { paredes: "#f4f3f1", piso: "#e6e3de" }), nodos };
-})();
+};
 
 const idea904 = idea({
   numero: 904, slug: "semiarco-color-destacado", nombre: "Semiarco orgánico de color destacado", ocasiones: ["general"],
@@ -512,23 +511,23 @@ const idea904 = idea({
  * en lo alto asoman globitos R-5 blancos sueltos (cuatro por arco). El de atrás va ~1 m detrás.
  */
 const PATA_927: Pieza = { tipo: "columna", formatoId: "R-12", infladoCm: 25, alturaCm: 100, patron: "dos_colores", colores: ["015", "005"] };
-const BASE_ARCO_927 = r2(-armarPieza(PATA_927).caja.min.y + 5 * 25 * 0.8);
-const ARCO_927: Pieza = { tipo: "arco", formatoId: "R-12", infladoCm: 25, forma: "redondo", anchoCm: 240, altoCm: r2(176 - BASE_ARCO_927), patron: "un_color", colores: ["015"] };
-const ANCLAS_927 = armarPieza(ARCO_927).anclas.length;
-const escena927 = ((): Escena => {
+const BASE_ARCO_927 = perezoso(() => r2(-armarPieza(PATA_927).caja.min.y + 5 * 25 * 0.8));
+const ARCO_927 = perezoso((): Pieza => ({ tipo: "arco", formatoId: "R-12", infladoCm: 25, forma: "redondo", anchoCm: 240, altoCm: r2(176 - BASE_ARCO_927()), patron: "un_color", colores: ["015"] }));
+const ANCLAS_927 = perezoso(() => armarPieza(ARCO_927()).anclas.length);
+const escena927 = (): Escena => {
   const nodos: NodoEscena[] = [];
   for (const [lado, z] of [["delantero", 20], ["trasero", -85]] as const) {
     const arcoId = `arco-${lado}`;
     nodos.push(
-      { id: arcoId, nombre: `Arco ${lado} de cuartetos rojo`, pieza: ARCO_927, colocacion: { en: "libre", xCm: 0, yCm: BASE_ARCO_927, zCm: z, giroGrados: 0 } },
+      { id: arcoId, nombre: `Arco ${lado} de cuartetos rojo`, pieza: ARCO_927(), colocacion: { en: "libre", xCm: 0, yCm: BASE_ARCO_927(), zCm: z, giroGrados: 0 } },
       // Cuatro globitos blancos en lo alto (cada cuarto del arco, desde la primera cuarta parte).
-      { id: `blancos-${lado}`, nombre: `Globitos R-5 blancos del arco ${lado}`, pieza: globo(R("R-5", 11, "005")), colocacion: { en: "ancla", padreId: arcoId, ancla: Math.round(ANCLAS_927 * 0.18), cada: Math.round(ANCLAS_927 * 0.21), giroGrados: 0 } },
+      { id: `blancos-${lado}`, nombre: `Globitos R-5 blancos del arco ${lado}`, pieza: globo(R("R-5", 11, "005")), colocacion: { en: "ancla", padreId: arcoId, ancla: Math.round(ANCLAS_927() * 0.18), cada: Math.round(ANCLAS_927() * 0.21), giroGrados: 0 } },
       { id: `pata-${lado}-izquierda`, nombre: `Pata izquierda del arco ${lado} (espiral rojo y blanco)`, pieza: PATA_927, colocacion: { en: "piso", xCm: -120, zCm: z, giroGrados: 0 } },
       { id: `pata-${lado}-derecha`, nombre: `Pata derecha del arco ${lado} (espiral rojo y blanco)`, pieza: PATA_927, colocacion: { en: "piso", xCm: 120, zCm: z, giroGrados: 0 } },
     );
   }
   return { sala: sala(420, 380, 280, { paredes: "#f7f7f7", piso: "#efefef" }), nodos };
-})();
+};
 
 const idea927 = idea({
   numero: 927, slug: "techo", nombre: "Túnel de dos arcos rojo y blanco", ocasiones: ["amor"],
@@ -555,10 +554,10 @@ const RADIO_980 = r2(335 / 2.9);
 const enAro = (grados: number, z = Z_ARO, radio = RADIO_980): Vec3 => v(r2(CENTRO_980.x + radio * Math.cos(rad(grados))), r2(CENTRO_980.y + radio * Math.sin(rad(grados))), z);
 const CUERDA_980: Pieza = { tipo: "decoracion", decoracion: figura({ accesorios: [{ en: "base", forma: { tipo: "bufanda", formatoId: "T-260", grosorCm: 5, codigos: ["970", "970", "970"], radioCm: RADIO_980 } }], queEs: "a hoop of three twisted gold balloon tubes" }) };
 /** El centro de la cuerda en su espacio propio (la figura se apoya en su base): para poner el aro donde va. */
-const CENTRO_CUERDA_980 = (() => {
+const CENTRO_CUERDA_980 = perezoso(() => {
   const pts = armarPieza(CUERDA_980).tubos.flatMap((t) => t.puntos);
   return v(pts.reduce((a, p) => a + p.x, 0) / pts.length, pts.reduce((a, p) => a + p.y, 0) / pts.length, pts.reduce((a, p) => a + p.z, 0) / pts.length);
-})();
+});
 const MARIPOSA_MERLOT: Pieza = {
   tipo: "decoracion", decoracion: figura({
     cuerpo: [{ tipo: "tubito", tubito: { formatoId: "T-260", grosorCm: 4, codigo: "005" }, largoCm: 34 }],
@@ -582,13 +581,13 @@ const MARIPOSA_DORADA: Pieza = {
   }),
 };
 const INFLADOS_980: Inflados = { "R-24": 48, "R-18": 41, "R-12": 27, "R-5": 12 };
-const escena980 = ((): Escena => {
+const escena980 = (): Escena => {
   // El aro metálico de dentro (escenografía, escondido en la cuerda): la raíz; su origen en el centro del aro.
   const circulo = (r: number) => Array.from({ length: 48 }, (_, k) => ({ x: r2(r * Math.cos((2 * Math.PI * k) / 48)), y: r2(r * Math.sin((2 * Math.PI * k) / 48)) }));
   const aro = suelta("aro", "Aro orgánico Merlot, Coral y Arena", { tipo: "escenografia", elementos: [{ forma: "panel", contorno: circulo(RADIO_980 + 1.2), huecos: [circulo(RADIO_980 - 1.2).reverse()], zCm: -1, grosorCm: 2, hex: "#c9a24a", acabado: "metal" }] }, CENTRO_980);
   // La cuerda de tubitos: su centro en el del aro (normal arriba, −90°: su plano queda de frente).
   const m = giroSobre(ARRIBA, -90);
-  const cuerda = colgar({ id: "cuerda", nombre: "Cuerda de T-260 Reflex Dorado trenzados", pieza: CUERDA_980, padre: aro.padre, origen: menos(CENTRO_980, aplicar(m, CENTRO_CUERDA_980)), normal: ARRIBA, giroGrados: -90 });
+  const cuerda = colgar({ id: "cuerda", nombre: "Cuerda de T-260 Reflex Dorado trenzados", pieza: CUERDA_980, padre: aro.padre, origen: menos(CENTRO_980, aplicar(m, CENTRO_CUERDA_980())), normal: ARRIBA, giroGrados: -90 });
   // Los tramos: contra un plano a 22 cm detrás del aro (los de arriba) o en el piso (los de abajo).
   const detras = v(0, 0, Z_ARO - 22);
   const arco = (desde: number, hasta: number, n: number) => Array.from({ length: n }, (_, k) => desde + ((hasta - desde) * k) / (n - 1));
@@ -609,7 +608,7 @@ const escena980 = ((): Escena => {
     apoyar("mariposa-dorada", "Mariposa dorada", MARIPOSA_DORADA, merlotAbajo.padre, px980(310, 700, Z_ARO + 10), AL_FRENTE, -10),
   ];
   return { sala: sala(380, 300, 330, { paredes: "#f6f5f3", piso: "#eceae6" }), nodos };
-})();
+};
 
 const idea980 = idea({
   numero: 980, slug: "webinar-aro-organico-merlot-coral-arena", nombre: "Aro orgánico Merlot, Coral y Arena con mariposas", ocasiones: ["general"],
@@ -635,7 +634,7 @@ const Z_ARBOL = -100;
 const OJO_51 = (lado: "izquierdo" | "derecho"): Pieza => ({ tipo: "decoracion", decoracion: { tipo: "ojo", propiedades: { globo: R("R-5", 11, "062"), estilo: { iris: null, pupila: { hex: "#1b120d", proporcion: 0.34 }, brillo: true, venas: null }, miradaGrados: lado === "izquierdo" ? -20 : 200, ceja: { hex: "#1b120d", lado } } } });
 const fantasma51 = (altoCm: number, vueltas: number, largoCm: number): Pieza => ({ tipo: "decoracion", decoracion: { tipo: "fantasma", propiedades: { altoCm, hex: "#f5f3ee", hexCara: "#1a1a1a", cola: { vueltas, largoCm } } } });
 const resorte51 = (codigo: string, radioCm: number, vueltas: number, largoCm: number): Pieza => ({ tipo: "decoracion", decoracion: { tipo: "rizo", propiedades: { forma: "resorte", tubito: { formatoId: "T-260", grosorCm: 4.5, codigo }, vueltas, radioCm, largoCm, eje: "abajo" } } });
-const escena51 = ((): Escena => {
+const escena51 = (): Escena => {
   const pie = v(0, 0, Z_ARBOL);
   // El armazón: la varilla del centro del tronco (escondida), del piso a la copa.
   const armazon = suelta("armazon", "Árbol de Halloween", { tipo: "escenografia", elementos: [{ forma: "cilindro", base: v(0, 0, 0), radioCm: 1.6, altoCm: 215, hex: "#d6d0c4", acabado: "mate" }] }, pie);
@@ -687,7 +686,7 @@ const escena51 = ((): Escena => {
     enArmazon("fantasma-base", "Fantasma (base)", fantasma51(30, 2, 22), px51(372, 445, Z_ARBOL + 32)),
   ];
   return { sala: sala(320, 300, 280, { paredes: "#f5f4f2", piso: "#e9e6e1" }), nodos };
-})();
+};
 
 const idea51 = idea({
   numero: 51, slug: "arbol-halloween", nombre: "Árbol de Halloween con fantasmas", ocasiones: ["halloween"],
@@ -719,7 +718,7 @@ const px286 = (x: number, y: number, z = 0): Vec3 => v(r2((x - 365) / 6), r2(MES
 const FLORERO_286: Pieza = { tipo: "columna", formatoId: "R-9", infladoCm: 15, alturaCm: 24, patron: "un_color", colores: ["015"] };
 const flor286 = (codigo: string): Pieza => ({ tipo: "decoracion", decoracion: { tipo: "flor_tubito", propiedades: { petalos: { formatoId: "T-260", grosorCm: 4, codigos: [codigo], cantidad: 5, estilo: "burbuja", largoCm: 6.5, anchoCm: 4, aperturaGrados: 10, giroGrados: 0 }, interior: null, corona: null, centro: R("R-5", 5.5, "029") } } });
 const TALLO_286 = { formatoId: "T-260", grosorCm: 4.5, codigo: "029" };
-const escena286 = ((): Escena => {
+const escena286 = (): Escena => {
   const z = 0;
   const bajoFlorero = bajoDe(FLORERO_286);
   const florero = suelta("florero", "Florero de cuartetos R-9 rojo (centro de mesa Feliz Día Mami)", FLORERO_286, v(0, r2(MESA_286 + 0.5 + bajoFlorero), z));
@@ -759,7 +758,7 @@ const escena286 = ((): Escena => {
   const amarre = px286(352, 330, z - 4);
   deVarilla("cinta", "Cinta del corazón", { tipo: "escenografia", elementos: [cinta(v(0, 0, 0), trasladar(m, menos(v(corazon.x, corazon.y - 15, corazon.z), amarre)), "#e8222e", 0.15)] }, amarre, ARRIBA, -90);
   return { sala: sala(300, 260, 260, { paredes: "#f7f7f6", piso: "#ece9e4" }), nodos };
-})();
+};
 
 const idea286 = idea({
   numero: 286, slug: "centro-de-mesa-feliz-dia-mami", nombre: "Centro de mesa Feliz Día Mami", ocasiones: ["cumpleaños"],
@@ -790,7 +789,7 @@ const caja = (centro: Vec3, tamano: Vec3, hex: string, acabado: "mate" | "madera
  */
 const px836 = (x: number, y: number, z: number): Vec3 => v(r2((x - 390) / 1.3), r2((425 - y) / 1.3), z);
 const PARED_836 = -200;
-const escena836 = ((): Escena => {
+const escena836 = (): Escena => {
   const zG = PARED_836 + 18;
   // La guirnalda: recta a lo largo de la cortina, bajando en las esquinas (en su plano XY, de frente).
   const alto = px836(390, 103, 0).y;
@@ -838,7 +837,7 @@ const escena836 = ((): Escena => {
     enPiso("repisa-derecha", "Repisa blanca baja con cerditos", [caja(v(0, 25, 0), v(55, 50, 32), blanco, "madera"), ...[-14, 0, 14].flatMap((x) => bola(v(x, 56, 0), 6, "#ee6c95", "satinado"))], xDe(645), PARED_836 + 150),
   );
   return { sala: sala(460, 400, 285, { paredes: "#f17f9e", piso: "#ebd4c6", techo: "#f6e3e4" }), nodos };
-})();
+};
 
 /** Mesa rectangular con mantel hasta el piso (la de `escenografia.ts`, con la falda de tul de la foto). */
 function mesaConMantel286(o: { anchoCm: number; fondoCm: number; altoCm: number; mantel: string }): ElementoEscenografia[] {
@@ -872,7 +871,7 @@ const px260 = (x: number, y: number, z: number): Vec3 => v(r2((x - 860) / 4.1), 
 const PARED_260 = -150;
 const IMP_CORAZONES = "infinity-corazones-modernos-fashion-surtido";
 const IMP_FELIZ_DIA_MAMI = "infinity-feliz-dia-mami-flores-fashion-surtido-rosa-silvestre";
-const escena260 = ((): Escena => {
+const escena260 = (): Escena => {
   const zM = PARED_260 + 18;
   // La retícula: nudos (i, j) en x = 355 + 115·i, y = 278 + 116,75·j px (i 0…8, j 0…4); los eslabones en el centro de cada celda.
   const nudo = (i: number, j: number, dz = 0) => px260(355 + 115 * i, 278 + 116.75 * j, zM + dz);
@@ -960,7 +959,7 @@ const escena260 = ((): Escena => {
     { id: "platitos", nombre: "Platitos violeta", pieza: platos({ cantidad: 3, diametroCm: 15, hex: "#5b3fc0", productoId: "plato-desechable-deluxe-oxo-pequeno", variante: "lila" }), colocacion: enMesa(-2, 8) },
   );
   return { sala: sala(420, 300, 300, { paredes: "#f3f3f1", piso: "#efeeeb" }), nodos };
-})();
+};
 
 const idea260 = idea({
   numero: 260, slug: "celebra-con-mama", nombre: "Celebra con mamá: malla plata y violeta con mesa", ocasiones: ["día de la madre"],
@@ -993,7 +992,7 @@ const cristalConfeti = (colores: string[]): Pieza => ({ tipo: "decoracion", deco
 const px319 = (x: number, y: number, z = 0): Vec3 => v(r2((x - 500) / 2.5), r2((750 - y) / 2.5), z);
 const PARED_319 = -150;
 const INFLADOS_319: Inflados = { "R-36": 70, "R-18": 40, "R-12": 27, "R-5": 12 };
-const escena319 = ((): Escena => {
+const escena319 = (): Escena => {
   const zE = PARED_319 + 25;
   const eje = [px319(130, 720, zE + 20), px319(380, 600, zE), px319(400, 300, zE), px319(500, 130, zE), px319(760, 120, zE), px319(790, 400, zE), px319(770, 735, zE + 15)];
   const armazon = suelta("armazon", "Arco orgánico asimétrico navideño", { tipo: "escenografia", elementos: tuboPvc(eje, eje[0]!) }, eje[0]!);
@@ -1049,7 +1048,7 @@ const escena319 = ((): Escena => {
     { id: "nochebuena", nombre: "Nochebuena en maceta roja", pieza: { tipo: "escenografia", elementos: [{ forma: "cilindro", base: v(0, 0, 0), radioCm: 6, radioArribaCm: 8, altoCm: 12, hex: "#b5121b", acabado: "satinado" }, ...bola(v(0, 18, 0), 9, "#c11622", "tela"), ...bola(v(0, 14, 0), 8, "#2d5a2e", "tela")] }, colocacion: { en: "libre", xCm: px319(470, 0).x, yCm: 66.2, zCm: PARED_319 + 110, giroGrados: 0 } },
   );
   return { sala: sala(420, 300, 310, { paredes: "#d9d5cf", piso: "#b88e66" }), nodos };
-})();
+};
 
 const idea319 = idea({
   numero: 319, slug: "christmas", nombre: "Christmas: arco orgánico Merlot, coral y crema", ocasiones: ["navidad"],
@@ -1073,7 +1072,7 @@ const idea319 = idea({
 const px333 = (x: number, y: number, z = 0): Vec3 => v(r2((x - 510) / 2.4), r2((960 - y) / 2.4), z);
 const PARED_333 = -150;
 const INFLADOS_333: Inflados = { "R-24": 54, "R-18": 40, "R-12": 22, "R-5": 11 };
-const escena333 = ((): Escena => {
+const escena333 = (): Escena => {
   const nodos: NodoEscena[] = [];
   type Zona = { id: string; nombre: string; plano: "pared" | "piso"; puntos: Array<[number, number]>; radio: [number, number]; pesos: Readonly<Record<string, number>>; colores: ColorOrganico[]; inflados?: Inflados };
   const lado = (s: -1 | 1, nombre: string, zonas: readonly Zona[], semilla: number) => {
@@ -1130,7 +1129,7 @@ const escena333 = ((): Escena => {
     ] }, colocacion: { en: "piso", xCm: r2(px333(790, 0).x), zCm: PARED_333 + 175, giroGrados: -10 } },
   );
   return { sala: sala(440, 340, 330, { paredes: "#f3f2f0", piso: "#5f8f45" }), nodos };
-})();
+};
 
 const idea333 = idea({
   numero: 333, slug: "colorful-vibes-nacional-2025", nombre: "Colorful Vibes: orgánico multicolor con panel Happy Birthday", ocasiones: ["general"],

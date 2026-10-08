@@ -6,6 +6,29 @@ El seguimiento anterior completo (LoRA, fidelidad foto → imagen, vista guiada,
 
 ---
 
+## ⏸ Pausa del 2026-10-08 (08:45): todo detenido, foco en rendimiento
+
+El dueño pausó el resto («centrémonos en el rendimiento»). Dónde quedó cada frente:
+
+**Ideas de fiesta de Sempertex (loop de digitalización, latido 52)**
+- 987 ideas raspadas y clasificadas. Datos fuera del repo en `../ideas-fiesta-sempertex/`: `ideas-v3.json`, `productos.json`,
+  `fotos/`, `clasif/todas.json`, `clasif/parcial-cubiertas.json` (334, la cola), `clasif/lote-NN.json` (qué lleva cada lote).
+  Scripts `raspar.py`, `extraer.py`, `productos.py`, `fotos-y-hojas.py` y el encargo modelo `clasif/plantilla-encargo-lote.txt`.
+- En main: lotes 01–24 (393 ideas). En la rama local, verificados pero **sin subir**: lote 25 (`5eab2576`), lote 26 (`7ee1533a`)
+  y las 20 bases orgánicas de fotos web (`401d4284`, `5ff31e47`; fotos en `../ideas-fiesta-sempertex/web-organicos/`).
+  Se unen con el arreglo de rendimiento (`perf/carga-3d`) en un commit de unión; a lotes 25/26 se les agregó `clase: "escena"`.
+- Cola: 110 de «parcial-cubiertas» después del lote 26; luego ~289 parciales y 184 sin cubrir, que piden generadores nuevos
+  (flores naturales, cartón, aros espiral, caras de tubito…). Lotes nuevos: patrón perezoso obligatorio (`ideas-sempertex/tipos.ts`).
+- Otros: SendMessage no sirve para cambiar encargos en curso; máx. 3 agentes (RAM); verificar cada commit en un worktree limpio.
+
+**Rendimiento (el frente activo)**
+- Hallazgo: /3d armaba las 393 ideas al importar `biblioteca.ts` → 18,6 s de ejecución pura (lote-11 solo, 9,1 s). En producción la
+  pestaña quedaba congelada ~20 s; en local el servidor de desarrollo se iba a 85 % de CPU con cada cambio en un lote.
+- Arreglado en `ef70eb7e` (main): ideas perezosas, Biblioteca con `next/dynamic` y su índice en un Web Worker. Taller3D importa en
+  118 ms (antes 14,5 s); `scripts/test/test-carga-3d.ts` falla si algo pasa de 500 ms.
+- Pendiente de medir: el Worker en un navegador real, la apertura de ideas pesadas (#471 tarda ~6 s), el primer `buscar_en_biblioteca`
+  de `/api/escena-ia` (~20 s en frío), el armado orgánico (~1 s por base), los FPS del visor con escenas grandes y el peso del bundle.
+
 ## ⏯ Qué estamos haciendo
 
 Un **taller 3D paramétrico** de decoraciones con globos Sempertex en `/3d` (producción y local). Lo armamos por niveles: globo → módulo →

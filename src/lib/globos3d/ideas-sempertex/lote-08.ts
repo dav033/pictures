@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { armarEscena, HUNDIMIENTO_SOBRE_CM, SALA_INICIAL, type Colocacion, type Escena, type NodoEscena, type Sala } from "../escena";
 import { armarPieza, type Pieza } from "../piezas";
 import { centroCuerpo } from "../geometria";
@@ -274,13 +274,12 @@ function productosDe(escena: Escena, publicados: readonly Publicado[] = []): Pro
 }
 
 /**
- * La idea con sus productos calculados la primera vez que se piden: salen de armar la escena (los orgánicos tardan
- * unas décimas) y la biblioteca carga todas las ideas al abrir el taller.
+ * La idea perezosa (`ideaPerezosa`): su escena se arma la primera vez que se pide y sus productos salen de armar esa
+ * escena (los orgánicos tardan unas décimas); importar el lote no arma nada.
  */
-function idea(base: Omit<IdeaDigitalizada, "productos" | "contenido"> & { escena: Escena }, publicados: readonly Publicado[] = []): IdeaDigitalizada {
-  let hechos: ProductoDeIdea[] | null = null;
+function idea(base: Omit<IdeaDigitalizada, "productos" | "contenido" | "clase"> & { escena: () => Escena }, publicados: readonly Publicado[] = []): IdeaDigitalizada {
   const { escena, ...resto } = base;
-  return { ...resto, contenido: { tipo: "escena", escena }, get productos() { return (hechos ??= productosDe(escena, publicados)); } };
+  return ideaPerezosa({ ...resto, clase: "escena" }, () => ({ tipo: "escena", escena: escena() }), (c) => (c.tipo === "escena" ? productosDe(c.escena, publicados) : []));
 }
 
 const P = (nombre: string, url: string, formato: string | null, codigo: string | null): Publicado => ({ nombre, url, formato, codigo });
@@ -342,7 +341,7 @@ const mono581 = (colaCm: number) => mono({ formatoId: "T-260", grosorCm: 3.8, co
 const CEREZA_581 = R("C-12", 16, "015");
 /** La punta de cada cola del moño (`armarMono`: bajan a 28° de la vertical), en el espacio del moño (x, frente, arriba). */
 const puntaCola581 = (colaCm: number, lado: number): Vec3 => { const phi = -Math.PI / 2 + lado * rad(28); return v(r2(Math.cos(phi) * colaCm), -0.8, r2(Math.sin(phi) * colaCm)); };
-const escena581: Escena = {
+const escena581 = (): Escena => ({
   sala: sala(420, 300, 300, { paredes: "#f4f2ef" }),
   nodos: [
     { id: "soporte", nombre: "Soporte de la guirnalda (no se ve)", pieza: soporte(4, 1.5, "#efefef"), colocacion: { en: "libre", xCm: 0, yCm: ALTO_581, zCm: PARED_581 + 10, giroGrados: 0 } },
@@ -361,7 +360,7 @@ const escena581: Escena = {
       ];
     }),
   ],
-};
+});
 const idea581 = idea({
   id: "idea:figura-de-amor-y-amistad-1", numero: 581, slug: "figura-de-amor-y-amistad-1", nombre: "Guirnalda de amor y amistad con cerezas", ocasiones: ["amor"],
   fotoUrl: FOTO("Figura_Amor_y_amistad.jpg"), escena: escena581,
@@ -389,7 +388,7 @@ const idea581 = idea({
 const px582 = (x: number, y: number, z = 0): Vec3 => v(r2((x - 505) / 6.4), r2((960 - y) / 6.4), z);
 const TALLO_582: Tubito = { formatoId: "T-260", grosorCm: 4.5, codigo: "126" };
 const RAMITA_582: PropiedadesRizo = { forma: "burbujas", formatoId: "T-260", grosorCm: 4.2, codigos: ["126", "809", "809"], largosCm: [3.5, 4.5, 4.5], recorrido: "recta", cantidad: 6 };
-const escena582: Escena = {
+const escena582 = (): Escena => ({
   sala: sala(320, 280, 280),
   nodos: [
     { id: "base", nombre: "Base de la figura (no se ve en la foto)", pieza: soporte(10, 1.5, "#e9e4da"), colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } },
@@ -401,7 +400,7 @@ const escena582: Escena = {
     decoSobre("ramita-izquierda", "Ramita de burbujas rosadas y verdes (izquierda)", "base", rizo(RAMITA_582), px582(440, 600, 0), AL_FRENTE, -90),
     decoSobre("mono", "Moño Silk Dorado (las patas de la figura)", "base", mono({ formatoId: "T-260", grosorCm: 5, codigo: "870", lazosPorLado: 2, largoLazoCm: 21, anchoLazoCm: 15, aberturaGrados: 85, colas: false, largoColaCm: 0, centro: R("R-5", 6.2, "870") }), px582(505, 775, 6), AL_FRENTE),
   ],
-};
+});
 const idea582 = idea({
   id: "idea:figura-de-amor-y-amistad", numero: 582, slug: "figura-de-amor-y-amistad", nombre: "Figura de amor y amistad: dos flores con moño", ocasiones: ["amor"],
   fotoUrl: FOTO("Figura_amor_y_amistad_2.jpg"), escena: escena582,
@@ -429,7 +428,7 @@ const px595 = (x: number, y: number, z = 0): Vec3 => v(r2((x - 360) / 5.6), r2((
 const BLANCOS_595: ReadonlyArray<[number, number]> = [[275, 85], [385, 70], [530, 140], [590, 235], [565, 395], [490, 465], [325, 490], [230, 455], [150, 310], [155, 195]];
 const ROJOS_595: ReadonlyArray<[number, number]> = [[210, 130], [460, 95], [595, 315], [175, 385], [405, 500]];
 const radial595 = (x: number, y: number): Vec3 => unitario(px595(x, y, 0));
-const escena595: Escena = {
+const escena595 = (): Escena => ({
   sala: sala(320, 280, 280),
   nodos: [
     { id: "soporte", nombre: "Soporte de pared (no se ve)", pieza: soporte(3, 1.5, "#efefef"), colocacion: { en: "libre", xCm: 0, yCm: 150, zCm: -138, giroGrados: 0 } },
@@ -438,7 +437,7 @@ const escena595: Escena = {
     ...BLANCOS_595.map(([x, y], k) => globoSobre(`aro-blanco-${k + 1}`, `R-9 Silk Blanco Nácar del aro (${k + 1})`, "soporte", R("R-9", 20.5, "806"), px595(x, y, 10), radial595(x, y))),
     ...ROJOS_595.map(([x, y], k) => globoSobre(`aro-rojo-${k + 1}`, `R-5 Fashion Rojo del aro (${k + 1})`, "soporte", R("R-5", 8, "015"), px595(x, y, 12), radial595(x, y))),
   ],
-};
+});
 const idea595 = idea({
   id: "idea:flor-corazones-dobles", numero: 595, slug: "flor-corazones-dobles", nombre: "Flor de corazones dobles", ocasiones: ["amor"],
   fotoUrl: FOTO("27c854ad26216d2c684c05b370b3d15a.jpg"), escena: escena595,
@@ -462,10 +461,10 @@ const COLUMNA_596: Pieza = {
   tipo: "forma",
   forma: { clase: "cono", altoCm: 105, tecnica: "anillos", formatoId: "R-12", infladoBaseCm: 24, infladoPuntaCm: 24, globosBase: 4, globosPunta: 4, colores: { codigos: ["570"], patron: "un_color" }, acento: { formatoId: "R-5", infladoCm: 9, codigos: ["015"], cada: 1 } },
 };
-const TOPE_596 = topeDe(COLUMNA_596);
-const AMARRE_596 = ALZA_596 + TOPE_596 - 2;
+const TOPE_596 = perezoso(() => topeDe(COLUMNA_596));
+const AMARRE_596 = perezoso(() => ALZA_596 + TOPE_596() - 2);
 /** Un punto de la foto relativo al amarre (en el mundo). */
-const rel596 = (x: number, y: number, z = 0): Vec3 => menos(px596(x, y, z), v(0, AMARRE_596, 0));
+const rel596 = (x: number, y: number, z = 0): Vec3 => menos(px596(x, y, z), v(0, AMARRE_596(), 0));
 const CORAZONES_SURTIDOS = "infinity-corazones-surtidos-fashion-y-metal-surtido";
 const HELIO_596: ReadonlyArray<{ id: string; nombre: string; g: ParteGlobo; xy: [number, number]; z: number; impreso?: string }> = [
   { id: "helio-arriba", nombre: "R-12 rojo de corazones (helio, arriba)", g: R("R-12", 28, "015"), xy: [350, 45], z: -4, impreso: CORAZONES_SURTIDOS },
@@ -473,25 +472,25 @@ const HELIO_596: ReadonlyArray<{ id: string; nombre: string; g: ParteGlobo; xy: 
   { id: "helio-abajo", nombre: "R-12 rojo de corazones (helio, abajo)", g: R("R-12", 28, "015"), xy: [355, 130], z: 2, impreso: CORAZONES_SURTIDOS },
 ];
 /** Las cintas de los globos de helio salen del centro de la flor. */
-const NUDO_CINTAS_596 = rel596(365, 205, 6);
-const HELIO_PUESTO_596 = HELIO_596.map((h) => {
+const NUDO_CINTAS_596 = perezoso(() => rel596(365, 205, 6));
+const HELIO_PUESTO_596 = perezoso(() => HELIO_596.map((h) => {
   const centro = rel596(h.xy[0], h.xy[1], h.z);
-  const direccion = unitario(mas(por(unitario(menos(centro, NUDO_CINTAS_596)), 0.5), ARRIBA));
+  const direccion = unitario(mas(por(unitario(menos(centro, NUDO_CINTAS_596())), 0.5), ARRIBA));
   return { ...h, centro, direccion, nudo: menos(centro, por(direccion, centroCuerpo("redondo", h.g.infladoCm))) };
-});
-const escena596: Escena = {
+}));
+const escena596 = (): Escena => ({
   sala: sala(320, 280, 300),
   nodos: [
     { id: "columna", nombre: "Columna de cuartetos Metal Dorado con R-5 rojos", pieza: COLUMNA_596, colocacion: { en: "libre", xCm: 0, yCm: ALZA_596, zCm: 0, giroGrados: 0 } },
     ...Array.from({ length: 10 }, (_, k) => { const a = rad(k * 36); return globoSobre(`aro-bajo-${k + 1}`, `R-5 Fashion Rojo del aro de abajo (${k + 1})`, "columna", R("R-5", 9, "015"), v(r2(20 * Math.cos(a)), -4.5, r2(20 * Math.sin(a))), v(Math.cos(a), 0, Math.sin(a))); }),
-    ...Array.from({ length: 10 }, (_, k) => { const a = rad(18 + k * 36); return globoSobre(`aro-alto-${k + 1}`, `R-5 Fashion Rojo del aro de arriba (${k + 1})`, "columna", R("R-5", 9, "015"), v(r2(15 * Math.cos(a)), r2(TOPE_596 - 3), r2(15 * Math.sin(a))), v(Math.cos(a), 0.7, Math.sin(a))); }),
-    amarre("amarre", "Amarre de la flor", "columna", v(0, r2(TOPE_596 - 2), 0), "#d9b04a"),
+    ...Array.from({ length: 10 }, (_, k) => { const a = rad(18 + k * 36); return globoSobre(`aro-alto-${k + 1}`, `R-5 Fashion Rojo del aro de arriba (${k + 1})`, "columna", R("R-5", 9, "015"), v(r2(15 * Math.cos(a)), r2(TOPE_596() - 3), r2(15 * Math.sin(a))), v(Math.cos(a), 0.7, Math.sin(a))); }),
+    amarre("amarre", "Amarre de la flor", "columna", v(0, r2(TOPE_596() - 2), 0), "#d9b04a"),
     decoSobre("flor-negra", "Flor de 5 R-12 negros", "amarre", flor({ petalos: { ...R("R-12", 24, "080"), cantidad: 5, aperturaGrados: 0, giroGrados: 90 }, centro: null }), enAmarre(rel596(365, 232, -2)), enAmarre(AL_FRENTE)),
     decoSobre("flor-roja", "Flor de 5 Link-O-Loon rojos con racimo dorado", "amarre", flor({ petalos: { ...R("LOL-12", 22, "015"), cantidad: 5, aperturaGrados: 0, giroGrados: 54 }, corona: { ...R("R-5", 7, "570"), cantidad: 6 }, centro: { ...R("R-5", 7, "570"), cantidad: 3 } }), enAmarre(rel596(365, 232, 10)), enAmarre(AL_FRENTE)),
-    piezaSobre("cintas", "Cintas de los globos de helio", "amarre", { tipo: "escenografia", elementos: HELIO_PUESTO_596.map((h) => cinta(v(0, 0, 0), menos(h.nudo, NUDO_CINTAS_596), "#f1efe9")) }, enAmarre(NUDO_CINTAS_596), ARRIBA, 90),
-    ...HELIO_PUESTO_596.map((h) => globoSobre(h.id, h.nombre, "amarre", h.g, enAmarre(h.centro), enAmarre(h.direccion), h.impreso)),
+    piezaSobre("cintas", "Cintas de los globos de helio", "amarre", { tipo: "escenografia", elementos: HELIO_PUESTO_596().map((h) => cinta(v(0, 0, 0), menos(h.nudo, NUDO_CINTAS_596()), "#f1efe9")) }, enAmarre(NUDO_CINTAS_596()), ARRIBA, 90),
+    ...HELIO_PUESTO_596().map((h) => globoSobre(h.id, h.nombre, "amarre", h.g, enAmarre(h.centro), enAmarre(h.direccion), h.impreso)),
   ],
-};
+});
 const idea596 = idea({
   id: "idea:flor-de-corazones-dorados", numero: 596, slug: "flor-de-corazones-dorados", nombre: "Flor de corazones dorados (columna con flor y helio)", ocasiones: ["amor", "cumpleaños", "infantil"],
   fotoUrl: FOTO("6ede545660cd3d75e0b457fd50cab165_178e66d4-468e-4e1c-9cd0-4ec8e079325c.jpg"), escena: escena596,
@@ -520,7 +519,7 @@ const NEGRO_601 = R("R-5", 10.7, "580");
 /** Lo de arriba del jarrón, relativo al amarre del cuello (px 375, 200). */
 const rel601 = (x: number, y: number, z = 0): Vec3 => v(r2((x - 375) / 2.8), r2((200 - y) / 2.8), z);
 const TALLO_601: Tubito = { formatoId: "T-260", grosorCm: 5, codigo: "031" };
-const escena601: Escena = {
+const escena601 = (): Escena => ({
   sala: sala(320, 280, 280),
   nodos: [
     ...JARRON_601.map((c, k): NodoEscena => (k === 0
@@ -534,7 +533,7 @@ const escena601: Escena = {
     decoSobre("flor-fucsia", "Flor fucsia de 5 burbujas", "amarre", florTubito({ petalos: burbujas("T-260", 5, ["012"], 5, 30, 0, 18), interior: burbujas("T-260", 4.5, ["020"], 6, 4.5, 25, 0) }), enAmarre(rel601(340, 70, 2)), enAmarre(v(0, 0.35, 1))),
     decoSobre("flor-blanca", "Flor de 5 lazos Satín Perla", "amarre", florTubito({ petalos: lazos("T-260", 5, ["406"], 5, 19, 12, 5, 10), interior: burbujas("T-260", 4, ["020"], 8, 3.5, 30, 0) }), enAmarre(rel601(435, 132, 6)), enAmarre(v(0.3, 0.25, 1))),
   ],
-};
+});
 const idea601 = idea({
   id: "idea:flor-en-pote", numero: 601, slug: "flor-en-pote", nombre: "Jarrón de flores", ocasiones: ["general"],
   fotoUrl: FOTO("2e4b39f89b3296871500cc25402938dd_1fe42884-3025-4677-8ebe-7a2bbcd9004e.jpg"), escena: escena601,
@@ -559,24 +558,24 @@ const idea601 = idea({
  * de diámetro) con un racimo de R-5 dorados. Origen: el piso bajo la base (px 360, 560).
  */
 const BASE_605 = columna("R-12", 28, 2, ["981"]);
-const TOPE_605 = topeDe(BASE_605);
-const AMARRE_605 = TOPE_605 - 3;
+const TOPE_605 = perezoso(() => topeDe(BASE_605));
+const AMARRE_605 = perezoso(() => TOPE_605() - 3);
 /** El centro de la flor, relativo al amarre (en el mundo). */
-const FLOR_605 = v(0, r2((560 - 150) / 2.6 - AMARRE_605), 4);
-const escena605: Escena = {
+const FLOR_605 = perezoso(() => v(0, r2((560 - 150) / 2.6 - AMARRE_605()), 4));
+const escena605 = (): Escena => ({
   sala: sala(320, 280, 300),
   nodos: [
     { id: "base", nombre: "Base de dos cuartetos Reflex Plata", pieza: BASE_605, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } },
-    decoSobre("aro-dorado", "Aro de 8 R-5 Reflex Dorado", "base", flor({ petalos: { ...R("R-5", 11, "970"), cantidad: 8, aperturaGrados: 20, giroGrados: 0 }, centro: null }), v(0, r2(TOPE_605), 0), ARRIBA),
-    amarre("amarre", "Amarre del tallo", "base", v(0, r2(AMARRE_605), 0), "#a08344"),
-    ...[-1.6, 1.6].map((dx, k) => palito(`tallo-${k + 1}`, `Tallo trenzado de T-260 Reflex Dorado (${k + 1})`, "amarre", { formatoId: "T-260", grosorCm: 5, codigo: "970" }, v(dx, 0, 0), v(dx, FLOR_605.y, 0), enAmarre)),
+    decoSobre("aro-dorado", "Aro de 8 R-5 Reflex Dorado", "base", flor({ petalos: { ...R("R-5", 11, "970"), cantidad: 8, aperturaGrados: 20, giroGrados: 0 }, centro: null }), v(0, r2(TOPE_605()), 0), ARRIBA),
+    amarre("amarre", "Amarre del tallo", "base", v(0, r2(AMARRE_605()), 0), "#a08344"),
+    ...[-1.6, 1.6].map((dx, k) => palito(`tallo-${k + 1}`, `Tallo trenzado de T-260 Reflex Dorado (${k + 1})`, "amarre", { formatoId: "T-260", grosorCm: 5, codigo: "970" }, v(dx, 0, 0), v(dx, FLOR_605().y, 0), enAmarre)),
     ...Array.from({ length: 9 }, (_, k) => {
       const a = rad(90 + k * 40);
-      return globoSobre(`petalo-${k + 1}`, `Pétalo R-12 Reflex Plata (${k + 1})`, "amarre", R("R-12", 21, "981"), enAmarre(mas(FLOR_605, v(r2(24 * Math.cos(a)), r2(24 * Math.sin(a)), 0))), enAmarre(v(Math.cos(a), Math.sin(a), 0.15)));
+      return globoSobre(`petalo-${k + 1}`, `Pétalo R-12 Reflex Plata (${k + 1})`, "amarre", R("R-12", 21, "981"), enAmarre(mas(FLOR_605(), v(r2(24 * Math.cos(a)), r2(24 * Math.sin(a)), 0))), enAmarre(v(Math.cos(a), Math.sin(a), 0.15)));
     }),
-    decoSobre("centro-dorado", "Centro de R-5 Reflex Dorado", "amarre", flor({ petalos: { ...R("R-5", 9.6, "970"), cantidad: 6, aperturaGrados: 35, giroGrados: 0 }, centro: { ...R("R-5", 9, "970"), cantidad: 3 } }), enAmarre(mas(FLOR_605, v(0, 0, 8))), enAmarre(AL_FRENTE)),
+    decoSobre("centro-dorado", "Centro de R-5 Reflex Dorado", "amarre", flor({ petalos: { ...R("R-5", 9.6, "970"), cantidad: 6, aperturaGrados: 35, giroGrados: 0 }, centro: { ...R("R-5", 9, "970"), cantidad: 3 } }), enAmarre(mas(FLOR_605(), v(0, 0, 8))), enAmarre(AL_FRENTE)),
   ],
-};
+});
 const idea605 = idea({
   id: "idea:flor-reflex", numero: 605, slug: "flor-reflex", nombre: "Flor Reflex plateada y dorada", ocasiones: ["general"],
   fotoUrl: FOTO("Flor-Reflex_a9a28552-336f-4721-b86e-449b243250d1.jpg"), escena: escena605,
@@ -606,7 +605,7 @@ const TUBO_608: Tubito = { formatoId: "T-260", grosorCm: 4.5, codigo: "015" };
  * la flor de su lado a la del medio; cada uno es un T-260.
  */
 const resorte608 = (largoCm: number): Decoracion => rizo({ forma: "resorte", tubito: TUBO_608, vueltas: 1.5, radioCm: 7, largoCm, eje: "abajo" });
-const escena608: Escena = {
+const escena608 = (): Escena => ({
   sala: sala(320, 280, 280),
   nodos: [
     { id: "soporte", nombre: "Soporte de pared (no se ve)", pieza: soporte(3, 1.5, "#efefef"), colocacion: { en: "libre", xCm: 0, yCm: 150, zCm: -138, giroGrados: 0 } },
@@ -618,7 +617,7 @@ const escena608: Escena = {
     decoSobre("tubo-izquierda", "Tubito rojo ondulado (izquierda)", "soporte", resorte608(r2((330 - 150) / 3.8)), px608(150, 290, 2), AL_FRENTE, 90),
     decoSobre("tubo-derecha", "Tubito rojo ondulado (derecha)", "soporte", resorte608(r2((575 - 400) / 3.8)), px608(400, 280, 2), AL_FRENTE, 90),
   ],
-};
+});
 const idea608 = idea({
   id: "idea:flores-navidenas", numero: 608, slug: "flores-navidenas", nombre: "Flores navideñas unidas por un tubito", ocasiones: ["navidad"],
   fotoUrl: FOTO("f343894d563ce02347c9344600d5a2e5_e85cef89-307b-46f1-a1a4-c0b0d77b2dd9.jpg"), escena: escena608,
@@ -642,29 +641,29 @@ const ANILLOS_617: ReadonlyArray<{ n: number; radio: number; y: number; inclinac
   { n: 4, radio: 15.6, y: -34, inclinacion: -50, giro: 0, codigo: "020", nombre: "cuarteto amarillo de abajo" },
 ];
 const ESLABON_617 = R("R-5", 12, "041");
-const CC_ESLABON = centroCuerpo("redondo", ESLABON_617.infladoCm);
+const CC_ESLABON = perezoso(() => centroCuerpo("redondo", ESLABON_617.infladoCm));
 /** Los nudos del tallo, del trío y del balón (relativos al centro de la bola): cada uno cuelga del de arriba. */
-const NUDOS_617 = (() => {
+const NUDOS_617 = perezoso(() => {
   const eslabones = [-40];
-  for (let k = 1; k < 3; k++) eslabones.push(r2(eslabones[k - 1]! - CC_ESLABON - ESLABON_617.infladoCm / 2 + 1.5));
-  const trio = r2(eslabones[2]! - CC_ESLABON - ESLABON_617.infladoCm / 2 + 1.5);
+  for (let k = 1; k < 3; k++) eslabones.push(r2(eslabones[k - 1]! - CC_ESLABON() - ESLABON_617.infladoCm / 2 + 1.5));
+  const trio = r2(eslabones[2]! - CC_ESLABON() - ESLABON_617.infladoCm / 2 + 1.5);
   const balon = r2(trio - centroCuerpo("redondo", 10) - 10 + 2);
   return { eslabones, trio, balon, pie: r2(balon - centroCuerpo("redondo", 28) - 14) };
-})();
-const escena617: Escena = {
+});
+const escena617 = (): Escena => ({
   sala: sala(320, 280, 280),
   nodos: [
-    { id: "nucleo", nombre: "Núcleo de la bola (no se ve)", pieza: soporte(4, 4, "#c9c9cf"), colocacion: { en: "libre", xCm: 0, yCm: r2(-NUDOS_617.pie), zCm: 0, giroGrados: 0 } },
+    { id: "nucleo", nombre: "Núcleo de la bola (no se ve)", pieza: soporte(4, 4, "#c9c9cf"), colocacion: { en: "libre", xCm: 0, yCm: r2(-NUDOS_617().pie), zCm: 0, giroGrados: 0 } },
     ...ANILLOS_617.flatMap((an) => Array.from({ length: an.n }, (_, k) => {
       const a = rad(an.giro + (360 * k) / an.n), t = rad(an.inclinacion);
       return globoSobre(`bola-${an.codigo}-${an.y > 0 ? "a" : "b"}${Math.abs(an.y) > 20 ? "1" : "2"}-${k + 1}`, `${nombreGlobo(R("R-12", 25, an.codigo))} del ${an.nombre} (${k + 1})`, "nucleo", R("R-12", 25, an.codigo),
         v(r2(an.radio * Math.cos(a)), an.y, r2(an.radio * Math.sin(a))), v(Math.cos(a) * Math.cos(t), Math.sin(t), Math.sin(a) * Math.cos(t)));
     })),
-    ...NUDOS_617.eslabones.map((y, k) => globoDesdeNudo(`tallo-${k + 1}`, `R-5 Fashion Azul Rey del tallo (${k + 1})`, "nucleo", ESLABON_617, v(0, y, 0), ABAJO)),
-    decoSobre("trio", "Tres R-5 negros y uno blanco", "nucleo", flor({ petalos: { ...R("R-5", 9.5, "080"), cantidad: 3, aperturaGrados: -25, giroGrados: 90 }, centro: { ...R("R-5", 10, "005"), cantidad: 1 } }), v(0, NUDOS_617.trio, 0), ABAJO),
-    globoDesdeNudo("balon", "R-12 Infinity® Balón de Fútbol", "nucleo", R("R-12", 28, "005"), v(0, NUDOS_617.balon, 0), ABAJO, BALON),
+    ...NUDOS_617().eslabones.map((y, k) => globoDesdeNudo(`tallo-${k + 1}`, `R-5 Fashion Azul Rey del tallo (${k + 1})`, "nucleo", ESLABON_617, v(0, y, 0), ABAJO)),
+    decoSobre("trio", "Tres R-5 negros y uno blanco", "nucleo", flor({ petalos: { ...R("R-5", 9.5, "080"), cantidad: 3, aperturaGrados: -25, giroGrados: 90 }, centro: { ...R("R-5", 10, "005"), cantidad: 1 } }), v(0, NUDOS_617().trio, 0), ABAJO),
+    globoDesdeNudo("balon", "R-12 Infinity® Balón de Fútbol", "nucleo", R("R-12", 28, "005"), v(0, NUDOS_617().balon, 0), ABAJO, BALON),
   ],
-};
+});
 const idea617 = idea({
   id: "idea:futbolmania", numero: 617, slug: "futbolmania", nombre: "Futbolmanía: topiario de fútbol", ocasiones: ["general"],
   fotoUrl: FOTO("e6fe49d0556062f68eb4ce3c166f4325_dd1b9668-c105-45f6-a384-9a8f037180f9.jpg"), escena: escena617,
@@ -724,7 +723,7 @@ function cintaRizada(arriba: Vec3, largoCm: number): ElementoEscenografia[] {
   return puntos.slice(1).map((q, i) => cinta(puntos[i]!, q, "#c9a54a", 0.3, "metal"));
 }
 const CINTAS_623: ReadonlyArray<[number, number, number]> = [[145, 520, 140], [285, 530, 130], [665, 560, 190], [750, 560, 100], [840, 550, 90]];
-const escena623: Escena = {
+const escena623 = (): Escena => ({
   sala: sala(420, 300, 300),
   nodos: [
     { id: "guirnalda", nombre: "Guirnalda orgánica blanca, plata y azul", pieza: GUIRNALDA_623, colocacion: { en: "libre", xCm: 0, yCm: ALTO_623, zCm: PARED_623 + 40, giroGrados: 0 } },
@@ -736,7 +735,7 @@ const escena623: Escena = {
     { id: "cortina", nombre: "Cortina metálica plata y azul", pieza: CORTINA_623, colocacion: { en: "libre", xCm: 3, yCm: r2(ALTO_623 + (390 - 465) / 4.6), zCm: PARED_623 + 5, giroGrados: 0 } },
     { id: "cintas", nombre: "Cintas doradas rizadas", pieza: { tipo: "escenografia", elementos: CINTAS_623.flatMap(([x, y, alto]) => cintaRizada(px623(x, y, 30), alto / 4.6)) }, colocacion: { en: "libre", xCm: 0, yCm: ALTO_623, zCm: PARED_623 + 40, giroGrados: 0 } },
   ],
-};
+});
 const idea623 = idea({
   id: "idea:garland-grado", numero: 623, slug: "garland-grado", nombre: "Garland de grado con cortina", ocasiones: ["grado"],
   fotoUrl: FOTO("Garland_Grado.jpg"), escena: escena623,
@@ -777,7 +776,7 @@ function escenaCorona(c: Corona): Escena {
     ],
   };
 }
-const escena644 = escenaCorona({
+const escena644 = (): Escena => escenaCorona({
   eslabon: R("LOL-12", 29, "031"), pareja: R("R-5", 10, "515"),
   mono: { formatoId: "T-260", grosorCm: 4.5, codigo: "570", lazosPorLado: 1, largoLazoCm: 20, anchoLazoCm: 16, aberturaGrados: 0, colas: false, largoColaCm: 0, centro: R("R-5", 8, "570") },
   rizos: [-1, 1].map((s) => ({ desde: v(s * 7, -3, 0), giro: 0, p: { forma: "tirabuzon", tubito: { formatoId: "T-260", grosorCm: 4.5, codigo: "570" }, vueltas: 2, radioInicialCm: 7, radioFinalCm: 4, largoCm: 30, eje: "abajo", giroGrados: s > 0 ? 180 : 0 } })),
@@ -790,7 +789,7 @@ const idea644 = idea({
   P("GLOBO REDONDO METAL DORADO", "/products/globo-para-fiesta-latex-redondo-metal-dorado-cobre", "R-12", "570"),
   P("GLOBO REDONDO METAL ROJO", "/products/globo-para-fiesta-latex-redondo-metal-rojo", "R-12", "515"),
 ]);
-const escena646 = escenaCorona({
+const escena646 = (): Escena => escenaCorona({
   eslabon: R("LOL-12", 29, "015"), pareja: R("R-5", 10, "032"),
   mono: { formatoId: "T-260", grosorCm: 4, codigo: "021", lazosPorLado: 2, largoLazoCm: 22, anchoLazoCm: 9, aberturaGrados: 45, colas: false, largoColaCm: 0, centro: null },
   rizos: [-10, 0, 10].map((x, k) => ({ desde: v(x, k === 1 ? -6 : -4, 0), giro: 0, p: { forma: "resorte", tubito: { formatoId: "T-260", grosorCm: 4, codigo: "021" }, vueltas: 1.6, radioCm: 6, largoCm: 18, eje: "abajo", giroGrados: k * 120 } })),
@@ -837,7 +836,7 @@ const PISO_668: ReadonlyArray<{ codigo: string; x: number; z: number }> = [
   { codigo: "021", x: 175, z: 34 }, { codigo: "029", x: 220, z: 46 }, { codigo: "450", x: 335, z: 44 },
   { codigo: "261", x: 450, z: 50 }, { codigo: "040", x: 505, z: 36 }, { codigo: "012", x: 565, z: 44 },
 ];
-const escena668: Escena = {
+const escena668 = (): Escena => ({
   sala: sala(320, 280, 280, { piso: "#f1eee8" }),
   nodos: [
     ...ramo668({
@@ -860,7 +859,7 @@ const escena668: Escena = {
     }),
     ...PISO_668.map((p, k): NodoEscena => ({ id: `piso-${k + 1}`, nombre: `R-9 ${referenciaPorCodigo(p.codigo)?.nombreCompleto ?? p.codigo} de lunares en el piso (${k + 1})`, pieza: piezaGlobo(R("R-9", 20, p.codigo)), colocacion: { en: "piso", xCm: r2((p.x - 365) / 2.8), zCm: p.z, giroGrados: k * 40 } })),
   ],
-};
+});
 const idea668 = idea({
   id: "idea:huevos-de-pascua-polka", numero: 668, slug: "huevos-de-pascua-polka", nombre: "Huevos de Pascua polka con ramos de helio", ocasiones: ["general"],
   fotoUrl: FOTO("2cbffc311b9229423c92f96a17232e29_ec4119a8-aa11-4cb8-bd1c-83a26d4aa80f.jpg"), escena: escena668,
@@ -885,7 +884,7 @@ const cupcake695: ElementoEscenografia[] = [
   { forma: "cilindro", base: v(0, 0.6, 0), radioCm: 3, radioArribaCm: 3.6, altoCm: 4, hex: "#f2eee4", acabado: "papel" },
   { forma: "cilindro", base: v(0, 4.6, 0), radioCm: 3.4, radioArribaCm: 0.6, altoCm: 4, hex: "#efd9c4", acabado: "mate" },
 ];
-const escena695: Escena = {
+const escena695 = (): Escena => ({
   sala: sala(420, 400, 300, { piso: "#1d8a45", paredes: "#f1f0ec" }),
   nodos: [
     { id: "pared", nombre: "Pared de trenzas en franjas verdes, gris y arena", pieza: PARED_695, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 0 } },
@@ -895,7 +894,7 @@ const escena695: Escena = {
     { id: "vaso-derecha", nombre: "Vaso con servilleta verde lima (derecha)", pieza: vasos({ cantidad: 1, altoCm: 9, diametroCm: 7, hex: "#9fd65a", servilleta: "#c8dc3c", productoId: null, descripcion: "vaso desechable verde lima" }), colocacion: sobrePedestal695(19, -2) },
     ...[-12, 0, 12].map((dx, k): NodoEscena => ({ id: `cupcake-${k + 1}`, nombre: `Cupcake en platito (${k + 1})`, pieza: { tipo: "escenografia", elementos: cupcake695 }, colocacion: sobrePedestal695(dx, 10 - Math.abs(dx) * 0.4) })),
   ],
-};
+});
 const idea695 = idea({
   id: "idea:lime-citrus", numero: 695, slug: "lime-citrus", nombre: "Lime Citrus: pared de trenzas y pedestal", ocasiones: ["general"],
   fotoUrl: FOTO("ideas_de_fiesta_t_o_lime_citrus_3e3a82cb-6648-4d23-b088-0d07f3bd1ef5.jpg"), escena: escena695,
@@ -926,13 +925,13 @@ const ENCIMA_709: ReadonlyArray<{ g: ParteGlobo; nombre: string; puntos: Readonl
   { g: R("R-12", 22, "080"), nombre: "R-12 Fashion Negro", puntos: [[230, 165], [330, 280], [487, 112]] },
   { g: R("R-9", 17, "080"), nombre: "R-9 Fashion Negro", puntos: [[175, 227], [132, 427], [280, 472], [432, 172], [430, 280], [642, 282], [582, 387], [477, 427], [680, 417]] },
 ];
-const escena709: Escena = {
+const escena709 = (): Escena => ({
   sala: sala(420, 320, 280),
   nodos: [
     { id: "pared", nombre: "Pared de trenzas Fashion Verde", pieza: PARED_709, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 30 } },
     ...ENCIMA_709.flatMap((e, j) => e.puntos.map(([x, y], k) => globoSobre(`encima-${j + 1}-${k + 1}`, `${e.nombre} encima (${k + 1})`, "pared", e.g, px709(x, y), AL_FRENTE, e.impreso))),
   ],
-};
+});
 const idea709 = idea({
   id: "idea:malla-futbol", numero: 709, slug: "malla-futbol", nombre: "Malla fútbol: pared verde con balones", ocasiones: ["cumpleaños", "infantil"],
   fotoUrl: FOTO("a1d3e8359e951cd6ce43c7d988bbd198.jpg"), escena: escena709,
@@ -964,7 +963,7 @@ const TIPOS_710: Readonly<Record<string, { g: ParteGlobo; nombre: string; impres
   C: { g: R("R-12", 25, "390"), nombre: "R-12 Infinity® Graffiti Rosa transparente", impreso: GRAFFITI_ROSA },
   S: { g: R("R-12", 25, "981"), nombre: "R-12 Reflex Plata" },
 };
-const escena710: Escena = {
+const escena710 = (): Escena => ({
   sala: sala(320, 280, 280),
   nodos: [
     { id: "malla", nombre: "Malla Link-O-Loon Satín Plata", pieza: MALLA_710, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 40 } },
@@ -973,7 +972,7 @@ const escena710: Escena = {
       return globoSobre(`encima-${r + 1}-${c + 1}`, `${t.nombre} (fila ${r + 1}, ${c + 1})`, "malla", t.g, v(r2((c + 0.5) * PASO_710), r2((6.5 - r) * PASO_710), 30), AL_FRENTE, t.impreso);
     })),
   ],
-};
+});
 const idea710 = idea({
   id: "idea:malla-link-o-loon-r-amor-en-fucsia-y-lila", numero: 710, slug: "malla-link-o-loon-r-amor-en-fucsia-y-lila", nombre: "Malla Link-O-Loon amor en fucsia", ocasiones: ["amor"],
   fotoUrl: FOTO("IMG_20200814_175713_59b3aa7e-e5f5-452a-87c3-7743835a140b.jpg"), escena: escena710,
@@ -1033,12 +1032,12 @@ function indicesCercanos(pieza: Pieza, puntos: ReadonlyArray<{ x: number; y: num
     return mejor.i;
   });
 }
-const PIEZAS_712 = FRANJAS_712.map((f, k) => {
+const PIEZAS_712 = perezoso(() => FRANJAS_712.map((f, k) => {
   const sinImpresos = piezaFranja712(f);
   const espejo = k % 2 === 1 ? -1 : 1;
   const puntos = f.marmol.map(([x, y]) => ({ x: espejo * ((x - 357) / 2.2), y: -6 + (f.alto + 12) * (1 - (y - f.arriba) / (f.altoFoto * 2.2)) }));
   return piezaFranja712(f, [{ impresoId: GRAFFITI_INVIERNO, globos: indicesCercanos(sinImpresos, puntos) }]);
-});
+}));
 type Ramo712 = { id: string; nombre: string; basePx: number; z: number; globos: ReadonlyArray<{ impreso: string; xy: [number, number]; z: number }> };
 const NOMBRE_GRAFFITI_712: Readonly<Record<string, string>> = { [GRAFFITI_INVIERNO]: "Graffiti Invierno", [GRAFFITI_CIELO]: "Graffiti Cielo", [GRAFFITI_ROSA]: "Graffiti Rosa" };
 function ramo712(r: Ramo712): NodoEscena[] {
@@ -1052,12 +1051,12 @@ function ramo712(r: Ramo712): NodoEscena[] {
     ...globos.map((h) => globoSobre(`${r.id}-globo-${h.k + 1}`, `R-12 Infinity® ${NOMBRE_GRAFFITI_712[h.impreso]} (${r.nombre}, ${h.k + 1})`, r.id, R("R-12", 28, "390"), h.centro, h.direccion, h.impreso)),
   ];
 }
-const escena712: Escena = {
+const escena712 = (): Escena => ({
   sala: sala(420, 320, 300),
   nodos: [
     ...FRANJAS_712.map((f, k): NodoEscena => (k === 0
-      ? { id: f.id, nombre: f.nombre, pieza: PIEZAS_712[0]!, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 0 } }
-      : piezaSobre(f.id, f.nombre, FRANJAS_712[k - 1]!.id, PIEZAS_712[k]!, v(0, r2(topeDe(PIEZAS_712[k - 1]!) - 6), 0), ARRIBA, -90))),
+      ? { id: f.id, nombre: f.nombre, pieza: PIEZAS_712()[0]!, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 0 } }
+      : piezaSobre(f.id, f.nombre, FRANJAS_712[k - 1]!.id, PIEZAS_712()[k]!, v(0, r2(topeDe(PIEZAS_712()[k - 1]!) - 6), 0), ARRIBA, -90))),
     ...ramo712({ id: "ramo-izquierdo", nombre: "ramo izquierdo", basePx: 127, z: -95, globos: [
       { impreso: GRAFFITI_INVIERNO, xy: [132, 197], z: -4 }, { impreso: GRAFFITI_CIELO, xy: [97, 257], z: 0 }, { impreso: GRAFFITI_CIELO, xy: [152, 247], z: 4 },
       { impreso: GRAFFITI_INVIERNO, xy: [155, 282], z: -6 }, { impreso: GRAFFITI_ROSA, xy: [120, 337], z: 4 },
@@ -1067,7 +1066,7 @@ const escena712: Escena = {
       { impreso: GRAFFITI_INVIERNO, xy: [622, 275], z: 0 }, { impreso: GRAFFITI_ROSA, xy: [572, 312], z: 6 }, { impreso: GRAFFITI_CIELO, xy: [637, 327], z: 4 },
     ] }),
   ],
-};
+});
 const idea712 = idea({
   id: "idea:malla-marina", numero: 712, slug: "malla-marina", nombre: "Malla marina en franjas con ramos de mármol", ocasiones: ["cumpleaños"],
   fotoUrl: FOTO("malla-Marina_d8c14a3b-9709-46b1-a5d2-7ef31d4d5552.jpg"), escena: escena712,
@@ -1098,10 +1097,10 @@ const MALLA_713: Pieza = {
     colores: { codigos: ["044", "015", "005"], patron: "mezcla", pesos: [0.4, 0.32, 0.28], semilla: 713 },
   },
 };
-const escena713: Escena = {
+const escena713 = (): Escena => ({
   sala: sala(420, 300, 300),
   nodos: [{ id: "malla", nombre: "Malla orgánica azul naval, roja y blanca", pieza: MALLA_713, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 15 } }],
-};
+});
 const idea713 = idea({
   id: "idea:malla-organica-naval", numero: 713, slug: "malla-organica-naval", nombre: "Malla orgánica naval", ocasiones: ["cumpleaños"],
   fotoUrl: FOTO("49e234b8402f01cf61dde963073e12bf.jpg"), escena: escena713,
@@ -1133,7 +1132,7 @@ const FLORES_716: ReadonlyArray<[number, number]> = [
 const FLORECITAS_716: ReadonlyArray<[number, number]> = [[401, 249], [578, 301], [561, 361], [724, 362], [863, 467], [165, 537], [246, 480], [403, 637], [423, 836]];
 const flor716 = (giro: number): Decoracion => flor({ petalos: { ...R("R-12", 24, "663"), cantidad: 4, aperturaGrados: 0, giroGrados: giro }, corona: { ...R("R-5", 8.8, "107"), cantidad: 6 }, centro: { ...R("R-5", 8, "663"), cantidad: 1 } });
 const FLORECITA_716 = flor({ petalos: { ...R("R-5", 8, "663"), cantidad: 5, aperturaGrados: 0, giroGrados: 18 }, corona: { ...R("R-5", 5.2, "107"), cantidad: 6 }, centro: { ...R("R-5", 5.2, "663"), cantidad: 1 } });
-const escena716: Escena = {
+const escena716 = (): Escena => ({
   sala: sala(420, 300, 300),
   nodos: [
     { id: "fondo", nombre: "Fondo de R-12 Pastel Dusk Crema", pieza: FONDO_716, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 10 } },
@@ -1141,7 +1140,7 @@ const escena716: Escena = {
     ...FLORECITAS_716.map(([x, y], k) => decoSobre(`florecita-${k + 1}`, `Florecita de R-5 melón (${k + 1})`, "fondo", FLORECITA_716, px716(x, y, 30), AL_FRENTE)),
     globoSobre("melon-grande", "R-18 Pastel Mate Melón (borde derecho)", "fondo", R("R-18", 34, "663"), px716(900, 690, 30), AL_FRENTE),
   ],
-};
+});
 const idea716 = idea({
   id: "idea:malla-pastel-mate-melon", numero: 716, slug: "malla-pastel-mate-melon", nombre: "Malla Pastel Mate Melón de flores", ocasiones: ["general"],
   fotoUrl: FOTO("Lanzamiento_PM_Melon_Decoracion.jpg"), escena: escena716,
@@ -1165,16 +1164,16 @@ const COLUMNA_751: Pieza = {
   forma: { clase: "cono", altoCm: 112, tecnica: "anillos", formatoId: "R-12", infladoBaseCm: 22, infladoPuntaCm: 22, globosBase: 4, globosPunta: 4, colores: { codigos: ["061", "080"], patron: "franjas", franjaNiveles: 1 } },
   impresos: [{ impresoId: "2-caras-happy-halloween-fashion-surtido-negro-naranja", codigo: "080" }],
 };
-const TOPE_751 = topeDe(COLUMNA_751);
+const TOPE_751 = perezoso(() => topeDe(COLUMNA_751));
 const CALABAZA_751: PropiedadesCalabaza = { globo: R("R-24", 60, "061"), cara: { hex: "#151515" }, tallo: { formatoId: "T-260", grosorCm: 4.5, codigo: "029", lazos: 4, largoLazoCm: 13, zarcillos: true } };
-const escena751: Escena = {
+const escena751 = (): Escena => ({
   sala: sala(320, 280, 280),
   nodos: [
     { id: "columna", nombre: "Columna naranja y negra de Halloween", pieza: COLUMNA_751, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } },
-    amarre("amarre", "Amarre de la calabaza", "columna", v(0, r2(TOPE_751 - 8), 0), "#e75d1d"),
+    amarre("amarre", "Amarre de la calabaza", "columna", v(0, r2(TOPE_751() - 8), 0), "#e75d1d"),
     decoSobre("calabaza", "Calabaza R-24 con cara (remate)", "amarre", { tipo: "calabaza", propiedades: CALABAZA_751 }, enAmarre(v(0, 32, -30)), enAmarre(AL_FRENTE)),
   ],
-};
+});
 const idea751 = idea({
   id: "idea:mister-halloween", numero: 751, slug: "mister-halloween", nombre: "Mister Halloween: columna con calabaza", ocasiones: ["halloween"],
   fotoUrl: FOTO("106c4ba7d919252fb84055ad40c0a2d0_85bf869e-1dfa-4773-9674-aadba8036c42.jpg"), escena: escena751,
@@ -1194,7 +1193,7 @@ const idea751 = idea({
 const PASO_779 = (24 * 1.47) / Math.SQRT2;
 const MALLA_779: Pieza = { tipo: "pared_malla", formatoId: "LOL-12", infladoCm: 24, anchoCm: r2(12 * PASO_779), altoCm: r2(8 * PASO_779), patron: "un_color", colores: ["080"], union: { infladoCm: 8, codigo: "080" } };
 const NEON_779 = ["030", "261", "212"];
-const escena779: Escena = {
+const escena779 = (): Escena => ({
   sala: sala(480, 320, 300),
   nodos: [
     { id: "malla", nombre: "Malla Link-O-Loon Fashion Negro", pieza: MALLA_779, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 30 } },
@@ -1206,7 +1205,7 @@ const escena779: Escena = {
       return globoSobre(`neon-${i + 1}-${j + 1}`, `${nombreGlobo(g)} (columna ${i + 1}, fila ${9 - j})`, "malla", g, v(r2(i * PASO_779), r2(j * PASO_779), 30), AL_FRENTE);
     }),
   ],
-};
+});
 const idea779 = idea({
   id: "idea:mural-neon", numero: 779, slug: "mural-neon", nombre: "Mural neón", ocasiones: ["cumpleaños"],
   fotoUrl: FOTO("b8e14c7a69386be4b3b5801b59a9eb42_6e49e98c-63cc-4166-889a-ac7a477fedd4.jpg"), escena: escena779,

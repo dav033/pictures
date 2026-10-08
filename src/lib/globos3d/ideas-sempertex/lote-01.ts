@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { armarEscena, SALA_INICIAL, type Colocacion, type Escena, type NodoEscena } from "../escena";
 import { armarPieza, type Pieza } from "../piezas";
 import { formatoPorId } from "../formatos";
@@ -192,7 +192,7 @@ const arco141 = arco("R-9", 18, "parabolico", 263, 244, "dos_colores", ["015", "
 
 // 137 · ARCO REGALITOS FUCSIA: ~30 niveles fucsia, 12 moños morados de frente y 4 R-5 al pie de cada pata.
 const arco137 = arco("R-12", 25, "redondo", 280, 222, "un_color", ["012"]);
-const escena137 = ((): Escena => {
+const escena137 = (): Escena => {
   const niveles = Math.max(2, armarPieza(arco137).anclas.length / 4);
   // 12 moños repartidos a lo largo del arco, cada uno en el nivel par más cercano (los pares tienen un ancla de frente).
   const nivelesMono = Array.from({ length: 12 }, (_, k) => { const ideal = 2 + (k * (niveles - 5)) / 11; return Math.min(niveles - 2, 2 * Math.round(ideal / 2)); });
@@ -214,10 +214,10 @@ const escena137 = ((): Escena => {
       { id: "pies", nombre: "R-5 fucsia del pie", pieza: { tipo: "globo", formatoId: "R-5", infladoCm: 12, codigo: "012" }, colocacion: { en: "ancla", padreId: "arco", ancla: 0, cada: 1, giroGrados: 0, omitir: omitirSalvo(niveles * 4, pies) } },
     ],
   };
-})();
+};
 
 // 288 · CENTRO DE MESA FILIGREE: 3 R-12 con helio (1 dorado y 2 perla impresos), botella dorada de peso y 2 flores rosadas.
-const escena288 = ((): Escena => {
+const escena288 = (): Escena => {
   const flor: PropiedadesFlorTubito = {
     petalos: { formatoId: "T-260", grosorCm: 3, codigos: ["409"], cantidad: 5, estilo: "lazo", largoCm: 9, anchoCm: 5.5, aperturaGrados: 25, giroGrados: 0 },
     interior: null, corona: null, centro: R("R-5", 6, "570"),
@@ -237,10 +237,10 @@ const escena288 = ((): Escena => {
       { id: "flor-2", nombre: "Flor de lazos rosada", pieza: { tipo: "decoracion", decoracion: { tipo: "flor_tubito", propiedades: { ...flor, petalos: { ...flor.petalos, giroGrados: 36 } } } }, colocacion: { en: "libre", xCm: 7, yCm: 23, zCm: 2, giroGrados: 0 } },
     ],
   };
-})();
+};
 
 // 308 · CENTRO DE MESA SAN VALENTÍN: ramo de 2 corazones y 3 redondos sobre una base de globos con un corazón encima.
-const escena308 = ((): Escena => {
+const escena308 = (): Escena => {
   const base: PropiedadesFlor = { petalos: { formatoId: "R-5", infladoCm: 9, codigo: "450", cantidad: 4, aperturaGrados: 0, giroGrados: 45 }, centro: null };
   const anillo: PropiedadesFlor = { petalos: { formatoId: "R-5", infladoCm: 6, codigo: "015", cantidad: 8, aperturaGrados: 0, giroGrados: 0 }, centro: null };
   const ARRIBA = { x: 0, y: 1, z: 0 };
@@ -254,10 +254,10 @@ const escena308 = ((): Escena => {
       { id: "corazon", nombre: "Corazón rosado de la base", pieza: { tipo: "globo", formatoId: "C-12", infladoCm: 26, codigo: "009" }, colocacion: { en: "sobre", padreId: "anillo", puntoCm: { x: 0, y: 0, z: 0 }, normal: ARRIBA, giroGrados: 0 } },
     ],
   };
-})();
+};
 
 // 372 · COLUMNA FELIZ CUMPLEAÑOS R 36: bandas arcoíris (anchas abajo y arriba, angostas al medio) con R-5 de relleno y un R-36 rojo impreso.
-const escena372 = ((): Escena => {
+const escena372 = (): Escena => {
   const pila = apilar([
     { id: "rojo", nombre: "Banda roja", formatoId: "R-12", infladoCm: 25, niveles: 2, patron: "un_color", colores: ["015"], acento: R("R-5", 11, "015") },
     { id: "naranja", nombre: "Banda naranja", formatoId: "R-12", infladoCm: 25, niveles: 2, patron: "un_color", colores: ["061"], acento: R("R-5", 11, "061") },
@@ -268,21 +268,21 @@ const escena372 = ((): Escena => {
     { id: "fucsia", nombre: "Banda fucsia", formatoId: "R-12", infladoCm: 25, niveles: 2, patron: "un_color", colores: ["212"], acento: R("R-5", 11, "212") },
   ]);
   return { sala: sala(), nodos: [...pila.nodos, remate("r36", "R-36 rojo (impreso «Feliz Cumpleaños»)", R("R-36", 62, "015"), pila)] };
-})();
+};
 
 // 432 · CORAZON POLKA: negro, fucsia liso, fucsia de lunares (impreso), negro que se angosta y un corazón rosado arriba.
-const escena432 = ((): Escena => {
+const escena432 = (): Escena => {
   const pila = apilar([
     { id: "columna", nombre: "Columna negro y fucsia", formatoId: "R-12", infladoCm: 25, niveles: 8, patron: "salvavidas", colores: ["080", "012", "012", "080"] },
     { id: "cuello", nombre: "Cuello R-9 negro", formatoId: "R-9", infladoCm: 18, niveles: 1, patron: "un_color", colores: ["080"] },
     { id: "punta", nombre: "Punta R-5 negro", formatoId: "R-5", infladoCm: 11, niveles: 1, patron: "un_color", colores: ["080"] },
   ]);
   return { sala: sala(), nodos: [...pila.nodos, remate("corazon", "Corazón rosado", R("C-12", 28, "009"), pila)] };
-})();
+};
 
 // 501 · DIRECTO AL CORAZON: 6 niveles (rojo, impreso blanco de corazones, rojo, impreso rojo de labios, rojo, impreso
 // blanco), corona de R-5 rojo y corazón rojo C-12 arriba.
-const escena501 = ((): Escena => {
+const escena501 = (): Escena => {
   const nivel = (id: string, nombre: string, codigo: string): Banda => ({ id, nombre, formatoId: "R-12", infladoCm: 25, niveles: 1, patron: "un_color", colores: [codigo] });
   const pila = apilar([
     nivel("nivel-1", "Cuarteto rojo", "015"), nivel("nivel-2", "Cuarteto blanco (impreso de corazones)", "005"), nivel("nivel-3", "Cuarteto rojo", "015"),
@@ -291,15 +291,19 @@ const escena501 = ((): Escena => {
   ]);
   const centro = remate("centro-corona", "R-5 rojo de la corona", R("R-5", 12, "015"), { ultimoCm: pila.ultimoCm - 4, ultimoInfladoCm: pila.ultimoInfladoCm });
   return { sala: sala(), nodos: [...pila.nodos, centro, remate("corazon", "Corazón rojo", R("C-12", 30, "015"), { ultimoCm: pila.ultimoCm + 6, ultimoInfladoCm: pila.ultimoInfladoCm })] };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 
-type Base = Omit<IdeaDigitalizada, "id" | "productos"> & { productos?: ProductoDeIdea[] };
+type Base = Omit<IdeaDigitalizada, "id" | "productos" | "contenido"> & { productos?: ProductoDeIdea[]; contenido: () => IdeaDigitalizada["contenido"] };
 
-/** La idea completa: su id «idea:<slug>» y, si no publica productos, los lisos de lo armado (contados en la foto). */
+/**
+ * La idea completa (perezosa, ver `ideaPerezosa`): su id «idea:<slug>»; el contenido se arma al pedirlo y, si no publica
+ * productos, los lisos de lo armado (contados en la foto) se calculan al pedirlos.
+ */
 function idea(b: Base): IdeaDigitalizada {
-  return { id: `idea:${b.slug}`, ...b, productos: b.productos ?? productosDe(b.contenido) };
+  const { productos, contenido, ...fijo } = b;
+  return ideaPerezosa({ id: `idea:${b.slug}`, ...fijo }, contenido, (c) => productos ?? productosDe(c));
 }
 
 const pieza = (p: Pieza): IdeaDigitalizada["contenido"] => ({ tipo: "pieza", pieza: p, sugerida: PISO });
@@ -316,37 +320,37 @@ export const LOTE_01: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION EUCALIPTO", "/products/globo-para-fiesta-latex-redondo-fashion-eucalipto", "R-12", "027", 3),
       publicado("GLOBO REDONDO FASHION ARENA", "/products/globo-para-fiesta-latex-redondo-fashion-arena", "R-12", "071", 2),
     ],
-    contenido: pieza(ramo6),
+    clase: "decoracion", contenido: () => pieza(ramo6),
     nota: "Igual: los 10 R-12 de la foto con los 4 productos publicados, de arriba abajo 3 Pastel Mate Amarillo, 2 Reflex Verde Lima, 3 Eucalipto y 2 Arena, con cintas plateadas. Distinto: en la foto cada color es un piso plano; en el 3D el ramo es una espiral que baja piso por piso (mismo orden y alto). El peso no se ve en la foto: va uno gris neutro.",
   }),
   idea({
     numero: 64, slug: "arco-azul-y-rojo", nombre: "Arco azul y rojo", ocasiones: ["cumpleaños"],
     fotoUrl: `${CDN}bede532cf38b5a519d30005953e179d3_c4995634-4ebc-45f4-8d09-6fedd05f97ce.jpg`,
-    contenido: pieza(arco64),
+    clase: "estructura", contenido: () => pieza(arco64),
     nota: "Igual: arco de cuartetos R-12 en salvavidas, 11 bloques de 2 cuartetos alternando rojo y azul caribe (empieza y termina en rojo): 22 niveles, 88 globos. Colores medidos en la foto (no publica productos): rojo #cf010e → Fashion Rojo 015; azul #02869f → Fashion Azul Caribe 038 (el Reflex Azul 940 mide un poco más cerca, pero la foto no es cromada). Distinto: en la foto los cuartetos van sueltos (un diámetro entre niveles) y el taller los aprieta a 0,8: el arco queda algo más bajo (eje 168 × 168 cm, parabólico).",
   }),
   idea({
     numero: 84, slug: "arco-dos-colores", nombre: "Arco dos colores", ocasiones: ["general"],
     fotoUrl: `${CDN}f51807b8fb5c28baec153a5f25da1207_a0d5d005-5c31-4cf2-a832-e28c70896cf6.jpg`,
-    contenido: pieza(arco84),
+    clase: "estructura", contenido: () => pieza(arco84),
     nota: "Igual: arco de 24 cuartetos R-12 de 2 + 2 (2 amarillos y 2 fucsia por cuarteto: 48 y 48), forma redonda de la foto (eje 230 × 173 cm). Distinto: en la foto los cuartetos no giran (amarillo por fuera, fucsia por dentro); la trenza del taller gira 1/8 por nivel y el 2 + 2 sale como espiral de dos bandas. El «cristal amarillo» no existe en la tabla: va el Fashion Amarillo 020 (la foto mide #c0ab02, oscurecido por la transparencia; el más cercano por ΔE sería Mostaza 023, más naranja). Fucsia perlado medido #fe4e6f → Frambuesa 014.",
   }),
   idea({
     numero: 110, slug: "arco-mis-15-anos", nombre: "Arco Mis 15 años", ocasiones: ["quince años", "cumpleaños"],
     fotoUrl: `${CDN}96e809188327ed377532ffba59fd7113_a164772b-5353-457e-b25b-0bce40a5e6b8.jpg`,
-    contenido: pieza(arco110),
+    clase: "estructura", contenido: () => pieza(arco110),
     nota: "Igual: arco parabólico de ~52 cuartetos de R-9 Violeta 051 (medido #6e3992) con una espiral de un globo fucsia por cuarteto (el impreso «15», medido #f23770 → Frambuesa 014), eje 350 × 273 cm. Distinto: los impresos «15» son R-12 más grandes que el morado y en la foto la espiral da la vuelta más despacio; aquí son R-9 lisos del mismo tamaño y el giro es el de la trenza (1/8 por nivel).",
   }),
   idea({
     numero: 137, slug: "arco-regalitos-fucsia", nombre: "Arco regalitos fucsia", ocasiones: ["cumpleaños", "infantil"],
     fotoUrl: `${CDN}42c99b12b747f5f12d28991cc8a1c812_aa036102-4033-4a8a-a759-5321ec6dc2cd.jpg`,
-    contenido: escena(escena137),
+    clase: "escena", contenido: () => escena(escena137()),
     nota: "Igual: arco redondo de 30 cuartetos R-12 Fashion Fucsia 012 (medido #e21d6e), los 12 moños de T-260 Violeta 051 que se ven en la foto (medido #381354), todos de frente y repartidos a lo largo del arco, y el pie de cada pata con 4 R-5 fucsia. Distinto: los moños de la foto llevan 2 lazos y colas cortas sin globito al centro (así quedan); el pie de la foto es un poco más ancho.",
   }),
   idea({
     numero: 141, slug: "arco-trenza-dos-colores", nombre: "Arco trenza dos colores", ocasiones: ["general"],
     fotoUrl: `${CDN}8b890aa4259ff2c4871339d448c066cd_c9985a82-cd47-49d6-8570-4c58e1f0391e.jpg`,
-    contenido: pieza(arco141),
+    clase: "estructura", contenido: () => pieza(arco141),
     nota: "Igual: la espiral doble del patrón «dos colores» (una pareja de cada color por cuarteto), ~44 cuartetos de R-9 (en la foto el paso entre niveles es 0,8 diámetros, como el del taller), eje 263 × 244 cm parabólico. Colores medidos (no publica productos): rojo anaranjado #fc2e06 → Fashion Rojo 015 (empata con Naranja 061; la foto tira a cálido, como su amarillo); amarillo #f5bb02 → Amarillo Miel 021.",
   }),
   idea({
@@ -359,7 +363,7 @@ export const LOTE_01: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION NARANJA", "/products/globo-para-fiesta-latex-redondo-fashion-naranja", "R-12", "061", 3),
       publicado("GLOBO REDONDO FASHION MERLOT", "/products/globo-latex-redondo-fashion-merlot", "R-12", "018", 3),
     ],
-    contenido: pieza(ramo159),
+    clase: "decoracion", contenido: () => pieza(ramo159),
     nota: "Igual: 15 R-12 en 5 pisos de 3 (contando los que asoman por detrás), de arriba abajo Naranja Cobrizo, Amarillo Miel, Eucalipto, Naranja y Merlot, con los productos publicados y cintas crema. Distinto: pisos planos en la foto, espiral en el 3D; el peso no se ve.",
   }),
   idea({
@@ -371,7 +375,7 @@ export const LOTE_01: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION ARENA", "/products/globo-para-fiesta-latex-redondo-fashion-arena", "R-12", "071", 3),
       publicado("GLOBO LATEX REDONDO REFLEX DORADO", "/products/globo-para-fiesta-latex-redondo-reflex-dorado", "R-12", "970", 3),
     ],
-    contenido: pieza(ramo163),
+    clase: "decoracion", contenido: () => pieza(ramo163),
     nota: "Igual: 12 R-12 en 4 pisos de 3 (el tercero del Azul Naval y del Reflex Dorado asoma por detrás), de arriba abajo Azul, Azul Naval, Arena y Reflex Dorado, los productos publicados, con cintas plateadas. Distinto: espiral en vez de pisos planos; el peso no se ve.",
   }),
   idea({
@@ -383,7 +387,7 @@ export const LOTE_01: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION AZUL REY", "/products/globo-para-fiesta-latex-redondo-fashion-azul-rey", "R-12", "041", 3),
       publicado("GLOBO LATEX REDONDO REFLEX PLATA", "/products/globo-para-fiesta-latex-redondo-reflex-plata", "R-12", "981", 3),
     ],
-    contenido: pieza(ramo164),
+    clase: "decoracion", contenido: () => pieza(ramo164),
     nota: "Igual: 12 R-12 en 4 pisos de 3, degradé de arriba abajo; los dos de abajo son los publicados (Azul Rey 041 y Reflex Plata 981). Los dos de arriba no están en la lista de la idea y se midieron: el de arriba es un cristal azulado (el Cristal Azul no está en la tabla: va el Cristal Transparente 390) y el segundo un perlado celeste (#6c8aa2 → Silk Azul Ártico 839, el perlado más cercano). Distinto: espiral en vez de pisos.",
   }),
   idea({
@@ -395,19 +399,19 @@ export const LOTE_01: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION CORAL TROPICAL", "/products/globo-para-fiesta-latex-redondo-fashion-coral-tropical", "R-12", "059", 3),
       publicado("GLOBO REDONDO PASTEL MATE ROSADO", "/products/globo-para-fiesta-latex-redondo-pastel-mate-rosado", "R-12", "609", 3),
     ],
-    contenido: pieza(ramo212),
+    clase: "decoracion", contenido: () => pieza(ramo212),
     nota: "Igual: 11 R-12 de arriba abajo 3 Rojo Imperial, 2 Merlot, 3 Coral Tropical y 3 Pastel Mate Rosado (el tercero asoma por detrás), los productos publicados, con cintas rojas rizadas. Distinto: espiral en vez de pisos; el peso no se ve (va rojo como las cintas).",
   }),
   idea({
     numero: 288, slug: "centro-de-mesa-filigree", nombre: "Centro de mesa Filigree", ocasiones: ["boda"],
     fotoUrl: `${CDN}e2a5aaef03199b2cf72a0c45f0f1129f_4dadf347-10c5-4aa5-9610-5544328bf3ba.jpg`,
-    contenido: escena(escena288),
+    clase: "escena", contenido: () => escena(escena288()),
     nota: "Igual: 3 R-12 con helio (1 arriba, 2 abajo a los lados), cintas blancas, botella dorada de peso (escenografía, no se cotiza) y 2 flores de lazos de T-260 Satín Rosado 409 (medido #e79eb0) con centro R-5 Metal Dorado 570 en el cuello. Distinto: los globos son impresos de filigrana y van lisos: el dorado en Metal Dorado 570 (medido #efc85f) y los perlados en Satín Perla 406; la idea no publica productos.",
   }),
   idea({
     numero: 308, slug: "centro-de-mesa-san-valentin", nombre: "Centro de mesa San Valentín", ocasiones: ["amor"],
     fotoUrl: `${CDN}0d0a2d4f6120774c06b673c207efaddb_b559e546-60f2-4fec-9e53-360be38e66c5.jpg`,
-    contenido: escena(escena308),
+    clase: "escena", contenido: () => escena(escena308()),
     nota: "Igual: de arriba abajo corazón rojo, corazón fucsia, redondo rosado, redondo rojo y redondo blanco con helio, sobre una base de globos: 4 R-5 Satín Lila 450 (medido #ac74b2), cuerpo fucsia, anillo de R-5 rojo y un corazón rosado encima. Distinto: los «Te amo» y «Happy Valentine's Day» son impresos y van lisos; el corazón fucsia va en Corazón Rosado 009 (el Corazón 12 no se fabrica en fucsia), el redondo rosado en Palo de Rosa 010 (medido #f5a3a7) y el blanco en Fashion Blanco 005 (mide #ebdbd4 en sombra); el cuerpo de la base es un tubo en la foto y aquí un R-9 Fucsia redondo.",
   }),
   idea({
@@ -420,13 +424,13 @@ export const LOTE_01: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION ROJO", "/products/globo-para-fiesta-latex-redondo-fashion-rojo", "R-12", "015", 3),
       publicado("GLOBO REDONDO FASHION ROJO IMPERIAL", "/products/globo-latex-redondo-fashion-rojo-imperial", "R-12", "016", 3),
     ],
-    contenido: pieza(ramo316),
+    clase: "decoracion", contenido: () => pieza(ramo316),
     nota: "Igual: 16 R-12 en degradé de arriba abajo (4 Pastel Dusk Crema, 3 Coral Tropical, 3 Pastel Mate Rosado, 3 Rojo y 3 Rojo Imperial, contando los que asoman por detrás), los productos publicados, con cintas rojas. Distinto: espiral en vez de pisos; el peso no se ve.",
   }),
   idea({
     numero: 372, slug: "columna-feliz-cumpleanos-r-36", nombre: "Columna Feliz Cumpleaños R-36", ocasiones: ["cumpleaños"],
     fotoUrl: `${CDN}4b4a6e9e2c34841b06ed9efca3bed398_09b945c1-38f3-488b-9fec-dda62d26bafc.jpg`,
-    contenido: escena(escena372),
+    clase: "escena", contenido: () => escena(escena372()),
     nota: "Igual: columna arcoíris en bandas de abajo arriba: rojo 015 y naranja 061 (2 niveles R-12 cada una), amarillo miel 021, verde trébol 029 y azul 040 (1 nivel R-9: la cintura angosta de la foto), violeta 051 (2 niveles R-9 a 21 cm) y neón fucsia 212 (2 niveles R-12), cada banda con R-5 de su color en los huecos, y un R-36 rojo arriba (a 62 cm: en la foto es casi tan ancho como la columna). Colores medidos (no publica productos). Distinto: el R-36 es un impreso «Feliz Cumpleaños» y va liso (Fashion Rojo 015); los globos grandes de la foto parecen Link-O-Loon y aquí son redondos; la foto lleva más relleno entre niveles.",
   }),
   idea({
@@ -438,13 +442,13 @@ export const LOTE_01: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION PALO DE ROSA", "/products/globo-para-fiesta-latex-redondo-fashion-palo-de-rosa", "R-12", "010", 3),
       publicado("GLOBO REDONDO FASHION ARENA", "/products/globo-para-fiesta-latex-redondo-fashion-arena", "R-12", "071", 3),
     ],
-    contenido: pieza(ramo417),
+    clase: "decoracion", contenido: () => pieza(ramo417),
     nota: "Igual: 12 R-12 en 4 pisos de 3, de arriba abajo los Infinity® Confetti Dorado, Blanco, Palo de Rosa y Arena (los publicados), con cintas rosadas. Distinto: el confeti dorado es impreso y va en Cristal Transparente 390 sin los puntos; espiral en vez de pisos.",
   }),
   idea({
     numero: 432, slug: "corazon-polka", nombre: "Columna Corazón Polka", ocasiones: ["amor", "cumpleaños"],
     fotoUrl: `${CDN}96fb609ca5cdf5a90fd2f2f86a8047e2.jpg`,
-    contenido: escena(escena432),
+    clase: "escena", contenido: () => escena(escena432()),
     nota: "Igual: columna de 8 niveles R-12 de abajo arriba 2 negro, 2 fucsia, 2 fucsia de lunares y 2 negro, rematada con un nivel R-9 y uno R-5 negros que la angostan y un corazón rosado arriba. Colores medidos (no publica productos): fucsia #fd4690 → Fashion Fucsia 012, negro 080. Distinto: los de lunares blancos son impresos y van en Fucsia liso; el corazón de la foto es de brillo satinado y va en Corazón Rosado 009 (el Corazón 12 no se fabrica en fucsia).",
   }),
   idea({
@@ -455,7 +459,7 @@ export const LOTE_01: readonly IdeaDigitalizada[] = [
       publicado("GLOBO LATEX REDONDO REFLEX PLATA", "/products/globo-para-fiesta-latex-redondo-reflex-plata", "R-12", "981", 3),
       publicado("GLOBO REDONDO INFINITY® GRAFFITI ROSA FASHION TRANSPARENTE", "/products/globo-para-fiesta-latex-redondo-infinity-graffiti-rosa-fashion-transparente", "R-12", null, 3),
     ],
-    contenido: pieza(ramo434),
+    clase: "decoracion", contenido: () => pieza(ramo434),
     nota: "Igual: 10 R-12 en 3 pisos: 4 Infinity® Corazones Modernos arriba (fucsia, violeta, rojo y rosado, el surtido), 3 Reflex Plata y 3 Graffiti Rosa abajo. La foto muestra globos redondos: el «C-12» del mapeo de la tienda era un error y el formato es R-12. Distinto: los impresos van en el liso de su fondo (Fucsia 012, Violeta 051, Rojo 015, Rosado 009; el graffiti en Rosado 009), sin los corazones blancos ni el marmoleado; espiral en vez de pisos.",
   }),
   idea({
@@ -466,7 +470,7 @@ export const LOTE_01: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO REFLEX ROSADO", "/products/globo-para-fiesta-latex-redondo-reflex-rosado", "R-12", "909", 4),
       publicado("GLOBO REDONDO REFLEX VIOLETA", "/products/globo-para-fiesta-latex-redondo-reflex-violeta", "R-12", "951", 4),
     ],
-    contenido: pieza(ramo435),
+    clase: "decoracion", contenido: () => pieza(ramo435),
     nota: "Igual: 12 R-12 en 3 pisos: 4 Infinity® Corazones Modernos arriba (violeta, rojo, fucsia y uno rosado detrás), 4 Reflex Rosado y 4 Reflex Violeta, contando los que asoman por detrás. La foto muestra redondos: el formato es R-12 (el mapeo decía C-12). Distinto: los impresos van en el liso de su fondo (Violeta 051, Rojo 015, Fucsia 012, Rosado 009) sin los corazones blancos; espiral en vez de pisos.",
   }),
   idea({
@@ -479,7 +483,7 @@ export const LOTE_01: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO PASTEL DUSK AZUL", "/products/globo-para-fiesta-latex-redondo-pastel-dusk-azul", "R-12", "140", 3),
       publicado("GLOBO REDONDO FASHION PALO DE ROSA", "/products/globo-para-fiesta-latex-redondo-fashion-palo-de-rosa", "R-12", "010", 3),
     ],
-    contenido: pieza(ramo446),
+    clase: "decoracion", contenido: () => pieza(ramo446),
     nota: "Igual: 14 R-12 de arriba abajo 3 Reflex Dorado, 3 Durazno, 2 Eucalipto, 3 Pastel Dusk Azul y 3 Palo de Rosa (los publicados, contando los que asoman por detrás), con cintas rosadas. Distinto: espiral en vez de pisos; el peso no se ve.",
   }),
   idea({
@@ -491,7 +495,7 @@ export const LOTE_01: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION ROJO", "/products/globo-para-fiesta-latex-redondo-fashion-rojo", "R-12", "015", 12),
       publicado("GLOBO REDONDO FASHION ROJO", "/products/globo-para-fiesta-latex-redondo-fashion-rojo", "R-5", "015", 5),
     ],
-    contenido: escena(escena501),
+    clase: "escena", contenido: () => escena(escena501()),
     nota: "Igual: 6 cuartetos R-12 de abajo arriba rojo, impreso blanco de corazones, rojo, impreso rojo de labios, rojo e impreso blanco (12 Fashion Rojo y 12 Infinity® Corazones por Siempre), una corona de 5 R-5 rojo (el mismo producto, talla R-5) y el Corazón 12 Rojo arriba. Distinto: los impresos van lisos (los blancos en Blanco 005, los de labios en Rojo 015), sin los corazones ni los labios; el mapeo decía C-12 para el impreso y la foto muestra redondos (R-12).",
   }),
 ];

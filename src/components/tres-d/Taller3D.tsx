@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as EventoPuntero } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ArrowLeft, Rows3, Circle, Anchor, Undo2, Redo2, ChevronUp, ChevronDown } from "lucide-react";
 import { ControlesPieza, DeshacerTactil } from "./ControlesTactiles";
 import { FORMATOS_GLOBO, NOMBRE_FAMILIA, coloresDelFormato, formatoPorId, infladoValido, type FormatoGlobo } from "@/lib/globos3d/formatos";
@@ -34,8 +35,16 @@ import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdi
 import { useLienzoDecoraciones, type CopiaElegida } from "./useLienzoDecoraciones";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
 import { ProductosFiesta } from "./UtileriaFiesta";
-import { AccionesPieza, Biblioteca } from "./Biblioteca";
-import { insertarEnEscena, type ItemBiblioteca } from "@/lib/globos3d/biblioteca";
+import type { ItemBiblioteca } from "@/lib/globos3d/biblioteca";
+
+/**
+ * La Biblioteca (todas las ideas de Sempertex, su índice y sus fichas) se carga aparte, al entrar a su pestaña o al
+ * elegir una pieza en Escena: importarla con la página la hacía pesada (y, cuando los lotes armaban al importarse,
+ * congelaba /3d ~20 s). El visor y los paneles quedan usables enseguida.
+ */
+const CARGANDO_BIBLIOTECA = () => <p className="rounded-2xl bg-superficie-suave p-6 text-center text-sm text-texto-suave ring-1 ring-borde" role="status">Cargando la biblioteca…</p>;
+const Biblioteca = dynamic(() => import("./Biblioteca").then((m) => m.Biblioteca), { ssr: false, loading: CARGANDO_BIBLIOTECA });
+const AccionesPieza = dynamic(() => import("./Biblioteca").then((m) => m.AccionesPieza), { ssr: false });
 
 const formatoCm = (valor: number) => `${valor.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
 const metros = (cm: number) => (cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 });
@@ -728,7 +737,10 @@ export function Taller3D() {
       {modo === "biblioteca" && (
         <Biblioteca escenaActual={escenaEdit} abrir={verEnBiblioteca}
           onAbrirEnEscena={(e) => { setEscenaEdit(e); setSeleccion(null); setCopiaTocada(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); cambiarModo("escena"); }}
-          onAnadirAEscena={(item) => { const r = insertarEnEscena(escenaEdit, item); setEscenaEdit(r.escena); setSeleccion(r.raizId); setCopiaTocada(null); cambiarModo("escena"); }} />
+          onAnadirAEscena={(item) => {
+            // La biblioteca ya está cargada (de ahí viene el item): este import no trae nada nuevo.
+            void import("@/lib/globos3d/biblioteca").then(({ insertarEnEscena }) => { const r = insertarEnEscena(escenaEdit, item); setEscenaEdit(r.escena); setSeleccion(r.raizId); setCopiaTocada(null); cambiarModo("escena"); });
+          }} />
       )}
       {/* El visor queda montado (oculto) en la Biblioteca: al volver, la escena sigue ahí. */}
       <div className={`min-h-0 flex-1 flex-col gap-2 apaisado:flex-row lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-4 ${modo === "biblioteca" ? "hidden" : "flex lg:grid"}`}>

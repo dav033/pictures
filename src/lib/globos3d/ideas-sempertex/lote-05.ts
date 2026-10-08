@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { armarEscena, SALA_INICIAL, type Escena, type NodoEscena, type Sala } from "../escena";
 import { armarPieza, type Pieza } from "../piezas";
 import { formatoPorId } from "../formatos";
@@ -68,22 +68,24 @@ const haciaFuera = (grados: number, elevacion: number): Vec3 => unitario(mas(por
 const enAnillo = (grados: number, radio: number, y: number): Vec3 => mas(por(fuera(grados), radio), v(0, y, 0));
 
 /** Los 12 vértices del icosaedro (unitarios), con uno arriba y uno abajo: el racimo redondo de 12 globos. */
-const ICOSAEDRO: readonly Vec3[] = (() => {
+const ICOSAEDRO = perezoso((): readonly Vec3[] => {
   const salida: Vec3[] = [ARRIBA, v(0, -1, 0)];
   const y = 1 / Math.sqrt(5), r = 2 / Math.sqrt(5);
   for (let k = 0; k < 5; k++) { salida.push(v(r * Math.sin(rad(72 * k)), y, r * Math.cos(rad(72 * k)))); salida.push(v(r * Math.sin(rad(72 * k + 36)), -y, r * Math.cos(rad(72 * k + 36)))); }
   return salida;
-})();
+});
+
 /** Los centros de las 20 caras del icosaedro (unitarios): los huecos entre sus 12 globos. */
-const CARAS_ICOSAEDRO: readonly Vec3[] = (() => {
+const CARAS_ICOSAEDRO = perezoso((): readonly Vec3[] => {
   const salida: Vec3[] = [];
-  const n = ICOSAEDRO.length;
+  const n = ICOSAEDRO().length;
   for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) for (let c = b + 1; c < n; c++) {
-    const [p, q, w] = [ICOSAEDRO[a]!, ICOSAEDRO[b]!, ICOSAEDRO[c]!];
+    const [p, q, w] = [ICOSAEDRO()[a]!, ICOSAEDRO()[b]!, ICOSAEDRO()[c]!];
     if (largo(menos(p, q)) < 1.2 && largo(menos(q, w)) < 1.2 && largo(menos(p, w)) < 1.2) salida.push(unitario(mas(mas(p, q), w)));
   }
   return salida;
-})();
+});
+
 
 const R = (formatoId: string, infladoCm: number, codigo: string): ParteGlobo => ({ formatoId, infladoCm, codigo });
 const sala = (anchoCm = 360, fondoCm = 320, altoCm = 300): Sala => ({ ...structuredClone(SALA_INICIAL), anchoCm, fondoCm, altoCm });
@@ -334,12 +336,16 @@ function productosDe(escena: Escena, publicados: readonly Publicado[] = []): Pro
 
 const CDN = "https://sempertex.com/cdn/shop/articles/";
 
-type Base = Omit<IdeaDigitalizada, "id" | "productos" | "contenido"> & { escena: Escena; publicados?: Publicado[] };
+type Base = Omit<IdeaDigitalizada, "id" | "productos" | "contenido" | "clase"> & { escena: () => Escena; publicados?: Publicado[] };
 
-/** La idea completa: su id «idea:<slug>» y sus productos (los de lo armado, que es lo contado en la foto). */
+/**
+ * La idea completa: su id «idea:<slug>» y sus productos (los de lo armado, que es lo contado en la foto). Perezosa
+ * (`ideaPerezosa`): la escena se arma la primera vez que se pide su contenido o sus productos, y una sola vez.
+ */
 function idea(b: Base): IdeaDigitalizada {
   const { escena, publicados, ...resto } = b;
-  return { id: `idea:${b.slug}`, ...resto, productos: productosDe(escena, publicados), contenido: { tipo: "escena", escena } };
+  const hecha = perezoso(escena);
+  return ideaPerezosa({ id: `idea:${b.slug}`, ...resto, clase: "escena" }, () => ({ tipo: "escena", escena: hecha() }), () => productosDe(hecha(), publicados));
 }
 
 // ----------------------------------------------------------------------------------------------------------
@@ -355,7 +361,7 @@ function idea(b: Base): IdeaDigitalizada {
  * a 112 cm.
  */
 const MONO_270: Decoracion = { tipo: "mono", propiedades: { formatoId: "T-260", grosorCm: 3.5, codigo: "009", lazosPorLado: 1, largoLazoCm: 13, anchoLazoCm: 9, aberturaGrados: 40, colas: true, largoColaCm: 16, centro: R("R-5", 9, "011") } };
-const escena270 = ((): Escena => {
+const escena270 = (): Escena => {
   const FUCSIA = "011", PERLA = "406";
   const m = montaje(
     { id: "columna", nombre: "Columna fucsia de la copa", pieza: cuarteto(R("R-9", 20, FUCSIA), [FUCSIA]), origen: v(0, 33, 0) },
@@ -373,7 +379,8 @@ const escena270 = ((): Escena => {
   // Los moños, en los huecos de la base (los dos de delante se ven; los de atrás, por simetría).
   [-50, 50, 130, -130].forEach((a, k) => m.deco(`mono-${k + 1}`, `Moño rosado ${k + 1}`, MONO_270, enAnillo(a, 30, 15), fuera(a)));
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 271 · Centro de mesa corazón
@@ -390,7 +397,7 @@ const trio = (g: ParteGlobo, giroGrados = 0): Decoracion => ({ tipo: "flor", pro
  * arriba. Vara roja forrada con un T-260 sin inflar hasta el racimo de arriba (centro a 70 cm, 43 cm de ancho): 12
  * plata de ~17 cm (R-9) en racimo redondo con tríos de R-5 rojo imperial de ~6 cm en sus huecos.
  */
-const escena271 = ((): Escena => {
+const escena271 = (): Escena => {
   const ROJO = "016", PLATA = "981", BLANCO = "005";
   const m = montaje(
     { id: "base", nombre: "Base de racimo rojo imperial, plata y blanco", pieza: cuarteto(R("R-5", 11, ROJO), [ROJO]), origen: v(0, 15, 0) },
@@ -410,12 +417,13 @@ const escena271 = ((): Escena => {
   m.palito("forro", "T-260 rojo imperial que forra la vara", { formatoId: "T-260", grosorCm: 1.1, codigo: ROJO }, v(0, 33, 0), v(0, 62, 0));
   // Racimo de arriba: 12 plata en los vértices de un icosaedro y un trío rojo en cada una de sus 20 caras.
   const C = v(0, 70, 0);
-  ICOSAEDRO.forEach((d, k) => m.globo(`plata-${k + 1}`, `R-9 plata del racimo ${k + 1}`, R("R-9", 17, PLATA), mas(C, por(d, 14)), d));
-  CARAS_ICOSAEDRO.forEach((d, k) => m.deco(`trio-${k + 1}`, `Trío R-5 rojo imperial del racimo ${k + 1}`, trio(R("R-5", 6, ROJO), 20 * k), mas(C, por(d, 17.5)), d));
+  ICOSAEDRO().forEach((d, k) => m.globo(`plata-${k + 1}`, `R-9 plata del racimo ${k + 1}`, R("R-9", 17, PLATA), mas(C, por(d, 14)), d));
+  CARAS_ICOSAEDRO().forEach((d, k) => m.deco(`trio-${k + 1}`, `Trío R-5 rojo imperial del racimo ${k + 1}`, trio(R("R-5", 6, ROJO), 20 * k), mas(C, por(d, 17.5)), d));
   m.globo("feliz-mama", "R-12 rojo impreso «Feliz día Mami»", R("R-12", 28, "015"), v(19.6, 90.5, 6), haciaFuera(70, 60), "infinity-feliz-dia-mami-flores-fashion-surtido-rojo-blanco");
   m.globo("corazon", "Corazón 12 rojo «LOVE»", R("C-12", 30, "015"), v(-19.6, 36.7, 10), haciaFuera(-70, 45), "corazon-2-caras-love-fashion-rojo");
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 273 · Centro de mesa corazón reflex
@@ -428,7 +436,7 @@ const escena271 = ((): Escena => {
  * cm de ancho con el dorado): R-12 arena, palo de rosa y reflex rosado, un R-18 dorado «Feliz día mamá» arriba a la
  * izquierda (~225 px: 45 cm) y R-5 entre ellos. El corazón cromado (~240 px: 47 cm) es el metalizado de 18".
  */
-const escena273 = ((): Escena => {
+const escena273 = (): Escena => {
   const ARENA = "071", PALO = "010", REFLEX = "909", DORADO = "970";
   const ESTRELLAS = "infinity-estrellas-reflex-dorado";
   const m = montaje(
@@ -483,7 +491,8 @@ const escena273 = ((): Escena => {
   t("arriba-arena-5", "R-5 arena de arriba 1", R("R-5", 10, ARENA), -20, 117, 14, haciaFuera(-40, 30));
   t("arriba-arena-6", "R-5 arena de arriba 2", R("R-5", 10, ARENA), 38, 106, 2, haciaFuera(90, 10));
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 279 · Centro de mesa de amor en fucsia y lila
@@ -500,7 +509,7 @@ const florBurbujas = (codigo: string, centro: ParteGlobo, largoCm = 8): Decoraci
  * publicados), con tres flores de burbujas blancas de centro plata. Encima, de pie, el corazón fucsia «Te amo» de
  * ~335 px (67 cm) de ancho.
  */
-const escena279 = ((): Escena => {
+const escena279 = (): Escena => {
   const LILA = "050", ROSADO = "609", FUCSIA = "012", PLATA = "981";
   const corazon: Pieza = { tipo: "metalizado", metalizado: { ...metalizadoDeTienda("corazon-lavanda"), impreso: { dibujo: "texto", texto: "TE ♥\nAMO", hex: "#ffffff" } } };
   const m = montaje(
@@ -529,7 +538,8 @@ const escena279 = ((): Escena => {
   m.deco("flor-2", "Flor de burbujas blancas (derecha)", florBurbujas("005", R("R-5", 7, PLATA)), v(44, 37, 6), unitario(v(0.2, 0.6, 1)));
   m.deco("flor-3", "Flor de burbujas blancas (abajo)", florBurbujas("005", R("R-5", 7, PLATA)), v(12, 11, 17), AL_FRENTE);
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 280 · Centro de mesa del oeste
@@ -544,7 +554,7 @@ const PAPA_OESTE = "infinity-r-feliz-dia-papa-oeste-fashion-surtido";
  * café), de 42 cm de alto: los niveles van a 6,2 cm (0,62 diámetros), no a los 8 del paso del taller. Encima, el R-12
  * «Feliz día papá» azul; con helio, el café a 151 cm y el mostaza a 122 cm, con cintas doradas.
  */
-const escena280 = ((): Escena => {
+const escena280 = (): Escena => {
   const ARENA = "071", LATTE = "073", CAFE = "074", AZUL = "041";
   const ESPIRAL = [ARENA, LATTE, AZUL, CAFE];
   const R5 = R("R-5", 10, ARENA);
@@ -562,7 +572,8 @@ const escena280 = ((): Escena => {
   const amarre = v(0, 68, -4);
   m.escenografia("cintas", "Cintas doradas", [cinta(amarre, v(-9.5, 135, -6), "#c9a14a"), cinta(amarre, v(4, 106, -10), "#c9a14a")]);
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 282 · Centro de mesa emoji
@@ -586,7 +597,7 @@ const emoji = (g: ParteGlobo, cara: { ojos: "puntos" | "ovalos"; boca: "sonrisa"
  * (10 se ven). Tallo de T-260 negro inflado (~30 px: 5 cm) de 24 a 62 cm, corbatín de dos R-5 negros y cintas rizadas;
  * el emoji, con su centro a 78 cm.
  */
-const escena282 = ((): Escena => {
+const escena282 = (): Escena => {
   const AMARILLO = "021";
   const g = R("R-9", 14, AMARILLO);
   const m = montaje(
@@ -616,7 +627,8 @@ const escena282 = ((): Escena => {
   ]);
   m.deco("emoji", "R-12 amarillo miel con cara de emoji", emoji(R("R-12", 28, AMARILLO), { ojos: "ovalos", boca: "sonrisa", mejillas: "#f0605d" }, "a yellow smiley-face emoji balloon"), v(0, 66, 0), AL_FRENTE);
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 284 · Centro de mesa feliz cumpleaños flor
@@ -629,7 +641,7 @@ const escena282 = ((): Escena => {
  * cm, 72 cm de punta a punta): 8 lazos de T-260 amarillo de 36 cm en estrella, un aro de 12 burbujas amarillas
  * alrededor del metalizado «Feliz cumpleaños» de rayas (~133 px: 27 cm, ~10").
  */
-const escena284 = ((): Escena => {
+const escena284 = (): Escena => {
   const AMARILLO = "020", VERDE = "030", TREBOL = "029", SELVA = "032";
   const foil = { ...metalizadoDeTienda("festivo"), pulgadas: 10 };
   const altoFoil = armarPieza({ tipo: "metalizado", metalizado: foil }).caja;
@@ -650,7 +662,8 @@ const escena284 = ((): Escena => {
   // El aro de burbujas alrededor del metalizado: un aro de T-260 de 16 cm de radio, de pie.
   m.deco("aro", "Aro de T-260 amarillo alrededor del metalizado", aro({ formatoId: "T-260", grosorCm: 5, codigo: AMARILLO }, 16, "frente"), mas(C, v(0, -18.5, -1)), AL_FRENTE);
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 290 · Centro de mesa fútbol
@@ -664,7 +677,7 @@ const BALON_BLANCO = "infinity-balon-de-futbol-fashion-blanco", BALON_SURTIDO = 
  * de 5 niveles de cuartetos R-5 de colores de ~8 cm (35 cm de alto, ~7 cm por nivel) en espiral; encima el balón
  * blanco impreso; con helio, tres balones de colores (amarillo a 155, verde a 127 y naranja a 120 cm) con cintas rosadas.
  */
-const escena290 = ((): Escena => {
+const escena290 = (): Escena => {
   const VERDE = "029", NARANJA = "061", AZUL = "040", ROJO = "015", AMARILLO = "021";
   const SERIE = [VERDE, NARANJA, AZUL, ROJO, AMARILLO];
   const colores = (k: number) => [0, 1, 2, 3].map((i) => SERIE[(k + i) % SERIE.length]!);
@@ -686,7 +699,8 @@ const escena290 = ((): Escena => {
   const amarre = v(-1, 86, -4);
   m.escenografia("cintas", "Cintas rosadas", [cinta(amarre, v(-10, 140, -6), "#f2a7c3"), cinta(amarre, v(-23, 112, -4), "#f2a7c3"), cinta(amarre, v(0, 104, 2), "#f2a7c3")]);
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 302 · Centro de mesa para mamá
@@ -704,7 +718,7 @@ const florGlobos = (g: ParteGlobo, cantidad: number, aperturaGrados: number, cen
  * corazones rojos «Feliz día» (~225 px), una flor de R-5 dorados a 113 cm y el corazón plata de arriba (centro a 135
  * cm).
  */
-const escena302 = ((): Escena => {
+const escena302 = (): Escena => {
   const CRISTAL_ROJO = "915", PLATA = "981", DORADO = "970";
   const CORAZONES = "infinity-feliz-dia-corazones-brillantes-metal-surtido";
   const plata = (): Pieza => ({ tipo: "metalizado", metalizado: metalizadoDeTienda("corazones-plata") });
@@ -731,7 +745,8 @@ const escena302 = ((): Escena => {
   m.deco("flor-dorada", "Flor de R-5 dorados", florGlobos(R("R-5", 8, DORADO), 7, 10, R("R-5", 7, DORADO)), v(0, 112.7, 3), AL_FRENTE);
   m.pieza("corazon-arriba", "Corazón metalizado plata de arriba", plata(), v(0, 118, -1), ARRIBA, giroAlFrente(ARRIBA));
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 337 · Columna araña (orgánica de otoño)
@@ -744,7 +759,7 @@ const escena302 = ((): Escena => {
  * trepa por la izquierda a 109 cm: cuerpo R-12 negro con telarañas impresas (~23 cm), cabeza R-12 negra (~23 cm) con
  * cara de calabaza impresa y patas de T-260 negro de ~60 cm.
  */
-const escena337 = ((): Escena => {
+const escena337 = (): Escena => {
   const EUCALIPTO = "027", CORAL = "059", ARENA = "071", NARANJA = "061";
   const columna: Pieza = { tipo: "columna", formatoId: "R-12", infladoCm: 28, alturaCm: r2(6 * 0.8 * 28), patron: "espiral", colores: [EUCALIPTO, CORAL, ARENA, NARANJA] };
   const m = montaje(
@@ -759,7 +774,8 @@ const escena337 = ((): Escena => {
   const hacia = unitario(v(-0.65, 0.15, 0.75));
   m.pieza("arana", "Araña negra con telarañas impresas", arana, v(-36, 109, 16), hacia, 0);
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 339 · Columna araña (negra con calabazas)
@@ -771,7 +787,7 @@ const escena337 = ((): Escena => {
  * verde selva; tallo de escarcha roja (no es globo) hasta el remate: dos cuartetos R-12 negros (a 113 y 129 cm) con
  * gasa blanca de telaraña, y la araña encima: cabeza con ojos verdes a ~180 cm y patas de T-260 negro de ~55 cm.
  */
-const escena339 = ((): Escena => {
+const escena339 = (): Escena => {
   const NEGRO = "080";
   const m = montaje(
     { id: "base", nombre: "Columna araña: cuarteto negro de la base", pieza: cuarteto(R("R-12", 28, NEGRO), [NEGRO]), origen: v(0, 15, 0) },
@@ -788,7 +804,8 @@ const escena339 = ((): Escena => {
     propiedades: { cuerpo: R("R-12", 26, NEGRO), cabeza: R("R-12", 26, NEGRO), ojos: { hexIris: "#2fae6a" }, patas: { formatoId: "T-260", grosorCm: 3.5, codigo: NEGRO, largoCm: 55, estilo: "articuladas" }, giroGrados: 0 },
   }, v(5, 156, -2), AL_FRENTE);
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 346 · Columna bosque silvestre
@@ -812,7 +829,7 @@ function enColumna(x: number, y: number, radio: number, atras = false): { punto:
  * taller): 2,06 m. Nueve flores de 5 R-5 (~10 cm) trepando: lilas con botón verde amarillento y verde amarillentas
  * con botón lila.
  */
-const escena346 = ((): Escena => {
+const escena346 = (): Escena => {
   const VERDE = "030", LILA = "050", PALIDO = "027";
   const columna: Pieza = { tipo: "columna", formatoId: "R-12", infladoCm: 25, alturaCm: 200, patron: "un_color", colores: [VERDE] };
   const m = montaje(
@@ -831,7 +848,8 @@ const escena346 = ((): Escena => {
     m.deco(`flor-${k + 1}`, `Flor ${esLila ? "lila" : "verde pálida"} ${k + 1}`, esLila ? lila : palida, punto, normal, 18 * k);
   });
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 352 · Columna cebra fashion girl
@@ -843,7 +861,7 @@ const escena346 = ((): Escena => {
  * ~29 px (11,5 cm) a ~24 px por nivel (0,8 diámetros: el paso del taller), de 44 a 165 cm; un cuarteto R-12 fucsia de
  * cebra arriba (177 cm) y el corazón metalizado de cebra rosado (~80 px: 31 cm).
  */
-const escena352 = ((): Escena => {
+const escena352 = (): Escena => {
   const FUCSIA = "011", ROSADO = "009";
   const columna: Pieza = { tipo: "columna", formatoId: "R-5", infladoCm: 11.5, alturaCm: r2(13 * 0.8 * 11.5), patron: "un_color", colores: [ROSADO] };
   const m = montaje(
@@ -856,7 +874,8 @@ const escena352 = ((): Escena => {
   m.nivel("remate", "Remate: cuarteto R-12 fucsia (impreso de cebra)", cebra, [FUCSIA], v(0, 177, 0), 0);
   m.pieza("corazon", "Corazón metalizado rosado (de cebra en la foto)", { tipo: "metalizado", metalizado: { ...metalizadoDeTienda("corazon-lavanda"), pulgadas: 13 } }, v(0, 186, 2), ARRIBA, giroAlFrente(ARRIBA));
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 355 · Columna chevrón
@@ -869,7 +888,7 @@ const escena352 = ((): Escena => {
  * cm; un cuarteto R-9 azul de chevrón y el remate: un R-24 blanco (~160 px: 51 cm) con cinco rayas de colores de
  * T-260 que le dan la vuelta (amarillo, verde, naranja, azul y morado).
  */
-const escena355 = ((): Escena => {
+const escena355 = (): Escena => {
   const VERDE = "029";
   const columna: Pieza = { tipo: "columna", formatoId: "R-5", infladoCm: 12.5, alturaCm: 70, patron: "un_color", colores: [VERDE] };
   const m = montaje(
@@ -885,7 +904,8 @@ const escena355 = ((): Escena => {
     propiedades: { petalos: { formatoId: "T-260", grosorCm: 2.5, codigos: ["020", "029", "061", "040", "051"], cantidad: 5, estilo: "lazo", largoCm: 64, anchoCm: 66, aperturaGrados: 90, giroGrados: 18 }, interior: null, corona: null, centro: null },
   }, v(0, 116, 0), ARRIBA);
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 361 · Columna corazones
@@ -898,7 +918,7 @@ const escena355 = ((): Escena => {
  * y la flor de cuatro corazones de ~165 px (41 cm: Corazón 17") naranja, amarillo, verde y rojo (detrás), con un R-5
  * naranja al centro a 90 cm.
  */
-const escena361 = ((): Escena => {
+const escena361 = (): Escena => {
   const VERDE = "029", AMARILLO = "021", NARANJA = "061", AZUL = "040", ROJO = "015";
   const ESPIRAL = [AMARILLO, AZUL, NARANJA, VERDE];
   const m = montaje(
@@ -916,7 +936,8 @@ const escena361 = ((): Escena => {
   petalo("petalo-rojo", "Pétalo rojo (corazón en la foto, detrás)", ROJO, v(0, 70, -16));
   m.globo("centro", "R-5 naranja del centro de la flor", R("R-5", 12, NARANJA), v(0, 90, 12), AL_FRENTE);
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 366 · Columna de flores
@@ -928,7 +949,7 @@ const escena361 = ((): Escena => {
  * de 17 a 127 cm; el R-24 rosado impreso (~160 px: 66 cm; el R-24 llega a 61) con un moño de 4 R-5 satín rosado
  * encima, y seis flores de 4 R-5 satinados (~10 cm) con su centro: cuatro lilas (una violeta) y dos fucsia.
  */
-const escena366 = ((): Escena => {
+const escena366 = (): Escena => {
   const PERLA = "806";
   const g = R("R-12", 25, PERLA);
   const alturas = [16.7, 37.5, 58, 81, 104, 127];
@@ -948,7 +969,8 @@ const escena366 = ((): Escena => {
     m.deco(`flor-${k + 1}`, `Flor ${nombre} ${k + 1}`, flor(c), punto, normal);
   });
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 368 · Columna emoji amor
@@ -961,7 +983,7 @@ const escena366 = ((): Escena => {
  * amarillo entre ellos; la flor (85 cm de ancho, centro a 165 cm): 6 R-12 amarillos con cara de beso al frente, 6
  * detrás y un R-12 rojo al centro.
  */
-const escena368 = ((): Escena => {
+const escena368 = (): Escena => {
   const NEGRO = "080", AMARILLO = "021", ROJO = "015";
   const m = montaje(
     { id: "base", nombre: "Columna emoji amor", pieza: cuarteto(R("R-12", 26, NEGRO), [NEGRO]), origen: v(0, 14.5, 0) },
@@ -983,7 +1005,8 @@ const escena368 = ((): Escena => {
   }
   m.globo("centro", "R-12 rojo del centro de la flor", R("R-12", 27, ROJO), mas(C, v(0, 0, 14)), AL_FRENTE);
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 369 · Columna espiral fútbol
@@ -996,7 +1019,7 @@ const escena368 = ((): Escena => {
  * uno con un balón blanco que sube en espiral (de la derecha a la izquierda). Remate: el balón blanco grande (~200 px:
  * 80 cm, un R-36).
  */
-const escena369 = ((): Escena => {
+const escena369 = (): Escena => {
   const ROJO = "015", AZUL_REY = "041", NARANJA = "061", AMARILLO = "020", BLANCO = "005";
   const g = R("R-12", 28, ROJO);
   const surtido = (c: string[]): ImpresoEnPieza[] => [{ impresoId: BALON_SURTIDO, globos: c.map((_, k) => k) }];
@@ -1012,7 +1035,8 @@ const escena369 = ((): Escena => {
   m.nivel("nivel-6", "Cuarteto de balones de colores de arriba", g, arriba, v(0, 131.5, 0), 0, "espiral", surtido(arriba));
   m.globo("remate", "Balón R-36 blanco", R("R-36", 80, BLANCO), v(0, 181.5, 0), ARRIBA, BALON_BLANCO);
   return m.escena();
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 373 · Columna Feliz Cumpleaños R-40
@@ -1026,7 +1050,7 @@ const escena369 = ((): Escena => {
  * amarillo, y dos niveles llevan un moño amarillo en cruz); arriba otro verde, otro amarillo y el R-36 naranja impreso
  * «Feliz cumpleaños» (centro a 257 cm).
  */
-const escena373 = ((): Escena => {
+const escena373 = (): Escena => {
   const NARANJA = "061", AMARILLO = "021", VERDE = "029", AZUL = "040", T_AMARILLO = { formatoId: "T-260", grosorCm: 3, codigo: "020" };
   const m = montaje(
     { id: "base", nombre: "Columna Feliz Cumpleaños", pieza: cuarteto(R("R-12", 30, NARANJA), [NARANJA]), origen: v(0, 19, 0), giroGrados: 45 },
@@ -1043,7 +1067,8 @@ const escena373 = ((): Escena => {
   m.nivel("amarillo-arriba", "Cuarteto R-12 amarillo cristal (impreso en la foto) de arriba", R("R-12", 30, AMARILLO), [AMARILLO], v(0, 197, 0), 0);
   m.globo("remate", "R-36 naranja (impreso «Feliz cumpleaños» en la foto)", R("R-36", 90, NARANJA), v(0, 257, 0));
   return m.escena(sala(380, 340, 340));
-})();
+};
+
 
 // ----------------------------------------------------------------------------------------------------------
 // 378 · Columna foil luna
@@ -1056,7 +1081,7 @@ const escena373 = ((): Escena => {
  * px por nivel: 0,52 diámetros); otro cuarteto blanco con su disco azul, tres R-5 rojos y un R-12 azul de lunares
  * (~70 px) con una banda verde; arriba otro cuarteto blanco con disco, tres R-5 rojos y el R-24 azul caribe de lunares.
  */
-const escena378 = ((): Escena => {
+const escena378 = (): Escena => {
   const BLANCO = "005", CARIBE = "038", ROJO = "015";
   const blanco = R("R-9", 20, BLANCO);
   const m = montaje(
@@ -1075,7 +1100,8 @@ const escena378 = ((): Escena => {
   m.deco("trio-alto", "Tres R-5 rojos de arriba", trio(R("R-5", 7, ROJO)), v(0, 154, 0), ARRIBA);
   m.globo("remate", "R-24 azul caribe de lunares", R("R-24", 55, CARIBE), v(0, 188, 0));
   return m.escena();
-})();
+};
+
 
 /** Ideas de fiesta de sempertex.com digitalizadas: lote 05. */
 export const LOTE_05: readonly IdeaDigitalizada[] = [

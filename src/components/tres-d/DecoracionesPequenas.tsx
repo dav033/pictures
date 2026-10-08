@@ -6,12 +6,16 @@ import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import { agregarDecoracion, decoracionesPorGrupo, miniaturaDecoracion, repartoSugerido, type DecoracionPequena, type DestinoDecoracion, type Miniatura } from "@/lib/globos3d/decoraciones-escena";
 import { ACTIVO, BOTON, Deslizador, INACTIVO } from "./PanelFlor";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
+import { perezoso } from "@/lib/globos3d/perezoso";
 import { UtileriaFiesta } from "./UtileriaFiesta";
 import { FormasYLetras } from "./FormasYLetras";
 import { MuralesTechoArboles } from "./MuralesTechoArboles";
 
-/** Las predefinidas por grupo, con su miniatura: no cambian, se calculan una vez. */
-const GRUPOS = decoracionesPorGrupo().map((g) => ({ ...g, decoraciones: g.decoraciones.map((d) => ({ ...d, miniatura: miniaturaDecoracion(d.decoracion) })) }));
+/**
+ * Las predefinidas por grupo, con su miniatura: no cambian, se calculan una vez, la primera vez que se pintan (no al
+ * importar: armar todas cuesta ~150 ms y /3d importa este módulo al abrir).
+ */
+const GRUPOS = perezoso(() => decoracionesPorGrupo().map((g) => ({ ...g, decoraciones: g.decoraciones.map((d) => ({ ...d, miniatura: miniaturaDecoracion(d.decoracion) })) })));
 
 /** Corazón de lado 2 con la punta abajo (y = 1) y los lóbulos arriba (y = −1). */
 const CORAZON = "M0,1 C-0.6,0.55 -1.05,0.1 -1,-0.35 C-0.95,-0.85 -0.35,-1.05 0,-0.55 C0.35,-1.05 0.95,-0.85 1,-0.35 C1.05,0.1 0.6,0.55 0,1 Z";
@@ -83,7 +87,7 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
   const puedeColgar = nodo !== null && anclas.length > 0;
   const cada = cadaPedido && nodo && cadaPedido.nodo === nodo.id ? cadaPedido.cada : undefined;
   const reparto = useMemo(() => repartoSugerido(anclas, cada), [anclas, cada]);
-  const total = GRUPOS.reduce((s, g) => s + g.decoraciones.length, 0);
+  const total = GRUPOS().reduce((s, g) => s + g.decoraciones.length, 0);
 
   const tocar = (id: string) => { setElegida(elegida === id ? null : id); setAviso(null); };
 
@@ -108,7 +112,7 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
           ? <>Puedes colgarla de <b className="text-texto">«{nodo.nombre}»</b> (la pieza elegida) o ponerla suelta en la sala.</>
           : <>Para colgarla de una columna, un arco o una pared de globos, primero toca esa pieza en la lista de arriba.</>}
       </p>
-      {GRUPOS.map((g) => {
+      {GRUPOS().map((g) => {
         const abierta = g.decoraciones.find((d) => d.id === elegida);
         return (
           <div key={g.id} className="flex flex-col gap-1">

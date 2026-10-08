@@ -465,7 +465,7 @@ function idea(numero: number, slug: string, nombre: string, escena: () => Escena
   let hecha: Escena | null = null;
   let hechos: ProductoDeIdea[] | null = null;
   return {
-    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, nota,
+    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, clase: "escena", nota,
     get contenido() { return { tipo: "escena" as const, escena: (hecha ??= escena()) }; },
     get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
     get productos() { return (hechos ??= productosDe((hecha ??= escena()), publicados)); },

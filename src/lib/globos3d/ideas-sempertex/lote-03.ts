@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { armarEscena, HUNDIMIENTO_SOBRE_CM, SALA_INICIAL, type Colocacion, type Escena, type NodoEscena } from "../escena";
 import { armarPieza, type Pieza } from "../piezas";
 import { altoPerfil, centroCuerpo, perfilRedondo } from "../geometria";
@@ -226,7 +226,7 @@ function apilar(bandas: readonly Banda[], baseCm = 0): { nodos: NodoEscena[]; ul
  * impresos (birretes y estrellas) lado a lado y un gigante azul rey de 300 px (≈ 70 cm: R-36) con su centro a ~60 cm
  * del cuarteto azul (en la foto, 62; algo menos para que su nudo quede escondido entre los dos de cristal).
  */
-const escena630 = ((): Escena => {
+const escena630 = (): Escena => {
   const pila = apilar([
     { id: "base", nombre: "Cuarteto R-9 perla", formatoId: "R-9", infladoCm: 15, niveles: 1, patron: "un_color", colores: ["406"] },
     { id: "cuarteto-azul", nombre: "Cuarteto R-9 azul rey", formatoId: "R-9", infladoCm: 18, niveles: 1, patron: "un_color", colores: ["041"] },
@@ -241,7 +241,7 @@ const escena630 = ((): Escena => {
       { id: "gigante", nombre: "R-36 Fashion Azul Rey", pieza: globo(R("R-36", 70, "041")), colocacion: libre(0, pila.ultimoCm + 59, -2) },
     ],
   };
-})();
+};
 
 /**
  * 632 · Globo navideño. Escala: los R-12 verdes miden 123 px (≈ 25 cm: 4,9 px/cm). Dos cuartetos verde selva ALINEADOS
@@ -249,7 +249,7 @@ const escena630 = ((): Escena => {
  * delante entre los dos niveles, una flor de 5 R-5 rojos (40 px ≈ 8 cm) a cada lado y el R-24 rojo de estrellas
  * blancas (285 px ≈ 58 cm) encima, con su centro a 77 cm del piso.
  */
-const escena632 = ((): Escena => {
+const escena632 = (): Escena => {
   const nivel: Pieza = { tipo: "columna", formatoId: "R-12", infladoCm: 25, alturaCm: 20, patron: "un_color", colores: ["032"] };
   const centro1 = -armarPieza(nivel).caja.min.y;
   const centro2 = centro1 + 24;
@@ -266,7 +266,7 @@ const escena632 = ((): Escena => {
       { id: "gigante", nombre: "R-24 Fashion Rojo (impreso de estrellas)", pieza: globo(R("R-24", 58, "015")), colocacion: libre(0, 77, 0) },
     ],
   };
-})();
+};
 
 /**
  * 682 · La pasión del fútbol. El balón mide 170 px y cada globo de la columna 43 px (×3,95) y la columna sube 33 px por
@@ -275,7 +275,7 @@ const escena632 = ((): Escena => {
  * 3 azules y 6 amarillos (la bandera de Colombia: el amarillo es el doble), 12 cuartetos sobre el balón.
  */
 const BALON_682 = R("R-24", 61, "005");
-const escena682 = ((): Escena => {
+const escena682 = (): Escena => {
   const tope = altoPerfil(perfilRedondo(BALON_682.infladoCm));
   const pila = apilar([
     { id: "rojo", nombre: "Banda roja", formatoId: "R-9", infladoCm: 17, niveles: 3, patron: "un_color", colores: ["015"] },
@@ -283,7 +283,7 @@ const escena682 = ((): Escena => {
     { id: "amarillo", nombre: "Banda amarilla", formatoId: "R-9", infladoCm: 17, niveles: 6, patron: "un_color", colores: ["021"] },
   ], tope - 4);
   return { sala: sala(), nodos: [{ id: "balon", nombre: "R-24 blanco (impreso de balón de fútbol)", pieza: globo(BALON_682, "infinity-balon-de-futbol-fashion-blanco"), colocacion: PISO }, ...pila.nodos] };
-})();
+};
 
 /**
  * 708 · Malla flor. 6 × 6 eslabones LOL-12 fucsia (cada uno ~85 px, la malla 515 px: 150 cm con LOL-12 a 24 cm) en la
@@ -292,7 +292,7 @@ const escena682 = ((): Escena => {
  * que se pierdan entre los eslabones como en la foto.
  */
 const MALLA_708: Pieza = { tipo: "pared_malla", formatoId: "LOL-12", infladoCm: 24, anchoCm: 150, altoCm: 150, patron: "un_color", colores: ["012"], union: { infladoCm: 5.2, codigo: "012" } };
-const escena708 = ((): Escena => {
+const escena708 = (): Escena => {
   const a = (24 * LARGO_ESLABON_POR_DIAMETRO) / Math.SQRT2;
   const verdes: NodoEscena[] = [];
   for (let i = 1; i <= 5; i++) for (let j = 1; j <= 5; j++) {
@@ -300,7 +300,7 @@ const escena708 = ((): Escena => {
     verdes.push({ id: `verde-${i}-${j}`, nombre: "R-5 verde trébol del nodo", pieza: globo(R("R-5", 12.7, "029")), colocacion: { en: "sobre", padreId: "malla", puntoCm: v(r2(i * a), r2(j * a), 0), normal: AL_FRENTE, giroGrados: 0 } });
   }
   return { sala: sala(), nodos: [{ id: "malla", nombre: "Malla Link-O-Loon fucsia", pieza: MALLA_708, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 40 } }, ...verdes] };
-})();
+};
 
 /** 728 · Margarita amarilla: 5 R-12 amarillos (200 px ≈ 25 cm), corona de 5 R-5 azules (95 px ≈ 12 cm) y un R-5 rojo al centro. */
 const flor728: PropiedadesFlor = {
@@ -322,7 +322,7 @@ const flor729: PropiedadesFlor = {
  * ~23 cm. El taller no tuerce un redondo en burbujas: los pétalos son 5 R-12 blancos al mínimo (12 cm), y el T-260 va
  * en un lazo hacia atrás (la pulsera) y una burbuja hacia delante (el centro).
  */
-const escena873 = ((): Escena => {
+const escena873 = (): Escena => {
   const flor: PropiedadesFlor = { petalos: { formatoId: "R-12", infladoCm: 12.2, codigo: "005", cantidad: 5, aperturaGrados: 0, giroGrados: 0 }, centro: null };
   const pulsera: PropiedadesFlorTubito = {
     // Un anillo de tubito lleva al menos 2: los dos lazos (hacia atrás) y las dos burbujas (hacia delante) quedan
@@ -338,15 +338,16 @@ const escena873 = ((): Escena => {
       { id: "pulsera", nombre: "Pulsera de T-260 rosado con la burbuja del centro", pieza: { tipo: "decoracion", decoracion: { tipo: "flor_tubito", propiedades: pulsera } }, colocacion: libre(0, 100, 2) },
     ],
   };
-})();
+};
 
 // ----------------------------------------------------------------------------------------------------------
 
-type Base = Omit<IdeaDigitalizada, "id" | "productos"> & { productos?: ProductoDeIdea[] };
+type Base = Omit<IdeaDigitalizada, "id" | "productos" | "contenido"> & { productos?: ProductoDeIdea[]; contenido: () => IdeaDigitalizada["contenido"] };
 
-/** La idea completa: su id «idea:<slug>» y, si no publica productos, los lisos de lo armado (contados en la foto). */
+/** La idea completa (perezosa: ver `ideaPerezosa`): su id «idea:<slug>» y, si no publica productos, los lisos de lo armado (contados en la foto). */
 function idea(b: Base): IdeaDigitalizada {
-  return { id: `idea:${b.slug}`, ...b, productos: b.productos ?? productosDe(b.contenido) };
+  const { productos, contenido, ...fijo } = b;
+  return ideaPerezosa({ id: `idea:${b.slug}`, ...fijo }, contenido, (c) => productos ?? productosDe(c));
 }
 
 const escena = (e: Escena): IdeaDigitalizada["contenido"] => ({ tipo: "escena", escena: e });
@@ -366,7 +367,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION AZUL", "/products/globo-para-fiesta-latex-redondo-fashion-azul", "R-12", "040", 3),
       P.reflexDorado(3),
     ],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "609", cantidad: 2 }, { codigo: "009", cantidad: 3 }, { codigo: "640", cantidad: 2 }, { codigo: "040", cantidad: 3 }, { codigo: "970", cantidad: 3, vista: "par" },
     ], { cinta: "#ece0c4" })),
     nota: "Igual: 13 R-12 en 5 pisos planos de arriba abajo, alternando 2 y 3 como en la foto: 2 Pastel Mate Rosado lado a lado, 3 Fashion Rosado (uno de frente), 2 Pastel Mate Azul, 3 Fashion Azul y 3 Reflex Dorado (dos de frente y el tercero asoma detrás a la izquierda), los 5 productos publicados, con cintas crema al peso. Distinto: el segundo piso de la foto es un rosa fuerte (mide #e9589a, más cerca de Neón Fucsia 212 o Rosa 011) y el de arriba tira a durazno (#e7b2b2); van los códigos publicados (Fashion Rosado 009 y Pastel Mate Rosado 609). El peso y el largo de las cintas no salen en la foto.",
@@ -374,13 +375,13 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
   idea({
     numero: 630, slug: "gigante-diversion", nombre: "Gigante diversión", ocasiones: ["cumpleaños"],
     fotoUrl: `${CDN}4008221ab4182b7ac481ed539248770c_52844423-5d37-4d52-96f9-0581b7fa679d.jpg`,
-    contenido: escena(escena630),
+    clase: "escena", contenido: () => escena(escena630()),
     nota: "Igual: de abajo arriba un cuarteto de R-9 perla, un cuarteto de R-9 azul rey girado 1/8 (se ven tres), dos R-12 de cristal lado a lado y el gigante azul rey encima (R-36 a 70 cm: 2,5 veces el ancho de un R-12, como en la foto); 1,25 m de alto. Colores medidos (no publica productos): el azul #1e2e8d por ΔE cae en Violeta 051, pero su tono es azul ultramar y va Fashion Azul Rey 041; la base perlada mide #c8b3a6 en sombra y va Satín Perla 406. Distinto: los dos R-12 son impresos de birretes y estrellas sobre cristal y van en Cristal Transparente 390 liso; en la foto se inclinan hacia fuera y aquí van derechos.",
   }),
   idea({
     numero: 632, slug: "globo-navideno", nombre: "Globo navideño", ocasiones: ["navidad"],
     fotoUrl: `${CDN}42f90d9bb29cbede797be21e82d633a6_eab8b98c-995d-44a1-8d7b-4fdc9eab9200.jpg`,
-    contenido: escena(escena632),
+    clase: "escena", contenido: () => escena(escena632()),
     nota: "Igual: dos cuartetos R-12 verde selva alineados (dos globos de frente por nivel, uno sobre otro, como en la foto), un R-9 rojo en el hueco de delante, una flor de 5 R-5 rojos a cada lado entre los dos niveles y el R-24 rojo a 58 cm encima (1,07 m en total). Colores medidos (no publica productos): verde #006c47–#008360 → Fashion Verde Selva 032; rojo #d91226 → Fashion Rojo 015 (el del hueco mide #890d05 porque está en sombra: es el mismo rojo). Distinto: el R-24 es un impreso de estrellas blancas y va liso; el cordón que asoma arriba no se dibuja.",
   }),
   idea({
@@ -393,7 +394,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
       P.graffitiMarmolTransparente(3),
       liso("R-12", "061", 3),
     ],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "031", cantidad: 3, impreso: "dentro de un Graffiti Invierno" },
       { codigo: "051", cantidad: 3, vista: "par", impreso: "impreso «Happy Halloween»", impresoId: "infinity-happy-halloween-noche-fashion-surtido" },
       { codigo: "061", cantidad: 3, impreso: "dentro de un Graffiti Mármol" },
@@ -409,7 +410,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
       liso("R-12", "609", 3),
       publicado("GLOBO REDONDO REFLEX CRISTAL ROJO", "/products/globo-para-fiesta-latex-redondo-reflex-cristal-rojo", "R-12", "915", 3),
     ],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "015", cantidad: 4, impreso: "Graffiti Invierno", impresoId: "infinity-graffiti-invierno-fashion-rojo" }, { codigo: "032", cantidad: 3, vista: "par" }, { codigo: "609", cantidad: 3 }, { codigo: "915", cantidad: 3, vista: "par" },
     ], { cinta: "#d8344a", pasoCm: 30 })),
     nota: "Igual: 13 R-12 en 4 pisos planos de arriba abajo: 4 Graffiti Invierno rojos (tres de frente y el cuarto asoma liso detrás, entre los verdes), 3 verdes (dos de frente y uno detrás a la izquierda), 3 Pastel Mate Rosado (uno de frente) y 3 Reflex Cristal Rojo (dos de frente y uno detrás), con cintas rojas rizadas. Colores: la idea no enlaza productos; el título nombra el Graffiti Invierno y el Cristal Rojo (915, el de la tienda) y lo demás se midió: verde #047650 → Fashion Verde Selva 032 (el «verde lima» del título no es lo que muestra la foto: es un verde oscuro brillante), rosado #e0cdd3 → Pastel Mate Rosado 609 (ΔE 1,9). Los rojos llevan el impreso Graffiti Invierno de la tienda sobre Fashion Rojo 015. Distinto: el remolino del graffiti es un dibujo propio (escarcha blanca), más parejo que el de la foto.",
@@ -424,7 +425,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
       P.graffitiMarmolTransparente(3),
       liso("R-12", "061", 3),
     ],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "951", cantidad: 3 }, { codigo: "390", cantidad: 3, vista: "par", impreso: "impreso «Happy Halloween Fiesta»" }, { codigo: "931", cantidad: 3 }, { codigo: "061", cantidad: 3, vista: "par", impreso: "dentro de un Graffiti Mármol" },
     ], { cinta: "#ececf0" })),
     nota: "Igual: 12 R-12 en 4 pisos planos con los códigos que da la idea: 3 Reflex Violeta 951 (uno de frente), 3 Cristal 390 impresos «Happy Halloween Fiesta» (dos de frente; el tercero se ve detrás por la transparencia), 3 Reflex Verde Lima 931 y 3 Graffiti Mármol con Fashion Naranja 061 dentro (dos de frente y uno detrás), con cintas blancas. Distinto: el impreso de gato y araña no está en la tienda: va el Cristal Transparente 390 liso (el código que da la idea); los graffiti se ven como el naranja liso de dentro, sin las manchas negras y blancas.",
@@ -437,7 +438,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO INFINITY® HOJAS TROPICALES FASHION NEGRO", "/products/globo-para-fiesta-latex-redondo-infinity-hojas-tropicales-fashion-negro", "R-12", null, 3),
       P.reflexVerdeLima(3),
     ],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "970", cantidad: 3, vista: "par" }, { codigo: "080", cantidad: 3, impreso: "Infinity® Hojas Tropicales", impresoId: "infinity-hojas-tropicales-fashion-negro" }, { codigo: "931", cantidad: 3, vista: "par" },
     ], { cinta: "#c8a04a", pasoCm: 30 })),
     nota: "Igual: 9 R-12 en 3 pisos planos de arriba abajo: 3 Reflex Dorado (dos de frente y el tercero asoma detrás, al medio), 3 Infinity® Hojas Tropicales (uno de frente) y 3 Reflex Verde Lima (dos de frente y uno detrás), los productos publicados, con cintas doradas. Los negros llevan el impreso Hojas Tropicales de la tienda sobre Fashion Negro 080. Distinto: las hojas son un dibujo propio (hoja con nervaduras), no la monstera y la palma de la foto; el peso no sale en la foto.",
@@ -449,7 +450,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION SURTIDO TRICOLOR", "/products/globo-para-fiesta-latex-redondo-fashion-surtido-colores-primarios", "R-9", null, 48),
       publicado("GLOBO INFINITY® BALÓN DE FUTBOL", "/products/globo-para-fiesta-latex-redondo-infinity-balon-de-futbol-fashion-blanco", "R-24", null, 1),
     ],
-    contenido: escena(escena682),
+    clase: "escena", contenido: () => escena(escena682()),
     nota: "Igual: columna de 12 cuartetos (48 globos) en la trenza de Sempertex, de abajo arriba 3 niveles rojos, 3 azules y 6 amarillos (la bandera de Colombia), sobre un balón gigante, ~2,2 m. Los dos productos publicados: el surtido tricolor (los colores medidos: amarillo #fecf00 → Amarillo Miel 021, azul #003fb9 → Azul Rey 041 por tono, rojo → Fashion Rojo 015) y el Infinity® Balón de fútbol. Distinto: la tienda mapea el surtido a R-12, pero en la foto el balón mide 3,95 globos de la columna: con R-12 el balón sería de 1 m y el conjunto pasaría de 3 m; va en R-9 a 17 cm con el balón como R-24 a tope (61 cm). El balón lleva el impreso de la tienda (pentágonos negros, dibujo propio) sobre Fashion Blanco 005; la tienda lo vende de R-5 a R-36.",
   }),
   idea({
@@ -461,7 +462,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION VERDE LIMA", "/products/globo-para-fiesta-latex-redondo-fashion-verde-lima", "R-12", "031", 3),
       P.eucalipto(3),
     ],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "029", cantidad: 3 }, { codigo: "071", cantidad: 2 }, { codigo: "031", cantidad: 3 }, { codigo: "027", cantidad: 3, vista: "par" },
     ], { cinta: "#efe6cf" })),
     nota: "Igual: 11 R-12 en 4 pisos planos de arriba abajo: 3 Verde Trébol (uno de frente), 2 Arena lado a lado, 3 Verde Lima (uno de frente) y 3 Eucalipto (dos de frente y el tercero asoma detrás a la derecha), los productos publicados, con cintas crema. Distinto: el Eucalipto de la foto se ve gris (mide #9fa090): va el código publicado, 027. El peso no sale en la foto.",
@@ -469,19 +470,19 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
   idea({
     numero: 708, slug: "malla-flor", nombre: "Malla flor fucsia y verde", ocasiones: ["boda", "infantil"],
     fotoUrl: `${CDN}5dcf83808deb8f47dba3eab1ffd646c3_92c4a516-22e8-483f-8564-76cbebd83f7f.jpg`,
-    contenido: escena(escena708),
+    clase: "escena", contenido: () => escena(escena708()),
     nota: "Igual: malla Link-O-Loon de 6 × 6 eslabones LOL-12 fucsia (36) en diagonal, 1,5 × 1,5 m en la pared, con un R-5 verde trébol en cada uno de los 13 nodos de dentro: las flores de 4 pétalos alrededor de cada globito verde, en damero, como en la foto. Colores medidos (no publica productos): fucsia #f6337e → Fashion Fucsia 012; verde #00b134 → Verde Trébol 029 (ΔE 4). Distinto: la malla del taller amarra cada nodo con una pareja de R-5 (aquí fucsia y al mínimo, para que se pierdan): son 50 R-5 fucsia que la foto no deja ver; la foto no da la medida (se tomó el LOL-12 a 24 cm).",
   }),
   idea({
     numero: 728, slug: "margarita-amarilla", nombre: "Margarita amarilla", ocasiones: ["cumpleaños"],
     fotoUrl: `${CDN}24cef37dd47c4f89c42a6b31769b727a_af5579a6-bdac-4bc8-abcb-8e7cdd1b3d36.jpg`,
-    contenido: enPared({ tipo: "decoracion", decoracion: { tipo: "flor", propiedades: flor728 }, deFrente: true }, 120),
+    clase: "decoracion", contenido: () => enPared({ tipo: "decoracion", decoracion: { tipo: "flor", propiedades: flor728 }, deFrente: true }, 120),
     nota: "Igual: flor de pared de 5 R-12 amarillos con dos pétalos arriba y uno abajo, una corona de 5 R-5 azules y un R-5 rojo al centro, ~67 cm. Colores medidos (no publica productos): amarillo #ffe200 → Fashion Amarillo 020; azul #029fd1 → Fashion Azul 040; rojo #d91226 → Fashion Rojo 015. Distinto: en la foto el rojo del centro es apenas más grande que los azules (va a 12,7 cm, el tope del R-5).",
   }),
   idea({
     numero: 729, slug: "margarita-polka-azul", nombre: "Margarita polka azul", ocasiones: ["cumpleaños"],
     fotoUrl: `${CDN}34969d9cfef8408d50611956a689d451_966e94e5-34ec-4ec6-ad28-0af0215bf12c.jpg`,
-    contenido: enPared({ tipo: "decoracion", decoracion: { tipo: "flor", propiedades: flor729 }, deFrente: true }, 120),
+    clase: "decoracion", contenido: () => enPared({ tipo: "decoracion", decoracion: { tipo: "flor", propiedades: flor729 }, deFrente: true }, 120),
     nota: "Igual: flor de pared de 5 R-12 azules con un pétalo arriba, corona de 5 R-5 fucsia y un R-5 verde al centro, ~67 cm. Colores medidos (no publica productos): azul #00a0d1 → Fashion Azul 040; fucsia #ff3598 → Fashion Fucsia 012 (Neón Fucsia 212 mide 3 ΔE más cerca, pero la foto está saturada: no es neón); verde #00be05 → Verde Trébol 029. Distinto: los pétalos son impresos de lunares blancos y van en Fashion Azul liso (el taller tiene el Polka solo sobre verde lima y rojo); el verde de la foto es más chico que los fucsia (9 cm): aquí va a 11,5 cm y los fucsia a 11, porque con la corona inclinada un centro más chico queda tapado.",
   }),
   idea({
@@ -493,7 +494,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO NEON AZUL", "/products/globo-para-fiesta-latex-redondo-neon-azul", "R-12", "240", 2),
       publicado("GLOBO REDONDO NEON FUCSIA", "/products/globo-para-fiesta-latex-redondo-neon-fucsia", "R-12", "212", 3),
     ],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "080", cantidad: 3, impreso: "Máscaras Neón" }, { codigo: "240", cantidad: 2 }, { codigo: "212", cantidad: 3 }, { codigo: "230", cantidad: 3, vista: "par" },
     ], { cinta: "#e2553a", pasoCm: 30 })),
     nota: "Igual: 11 R-12 en 4 pisos planos de arriba abajo: 3 Máscaras Neón (uno de frente), 2 Neón Azul lado a lado, 3 Neón Fucsia (uno de frente) y 3 Neón Verde (dos de frente y el tercero asoma detrás a la derecha), los productos publicados, con cintas de colores. Distinto: las máscaras son impresas y van en Fashion Negro 080 liso; con luz de día la foto muestra los neón pálidos (el fucsia se ve lila, #e6c9eb): van los códigos publicados.",
@@ -502,7 +503,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
     numero: 740, slug: "mi-boda-dorado-arena-eucalipto", nombre: "Ramo Mi Boda, dorado, arena y eucalipto", ocasiones: ["boda"],
     fotoUrl: `${CDN}Dorado-Arena-Eucalipto.jpg`,
     productos: [liso("R-12", "406", 3), P.reflexDorado(3), P.arena(3), P.eucalipto(3)],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "406", cantidad: 3, impreso: "impreso «Mi Boda»" }, { codigo: "970", cantidad: 3, vista: "par" }, { codigo: "071", cantidad: 3 }, { codigo: "027", cantidad: 3, vista: "par" },
     ], { cinta: "#d0d1d6" })),
     nota: "Igual: 12 R-12 en 4 pisos planos con los códigos que da la idea: 3 Satín Perla 406 «Mi Boda» (uno de frente), 3 Reflex Dorado 970 (dos de frente y el tercero asoma detrás a la derecha), 3 Arena 071 (uno de frente) y 3 Eucalipto 027 (dos de frente y uno detrás), con cintas plateadas. Distinto: el impreso «Mi Boda» (corazón y anillos dorados) no está en la tienda: va el Satín Perla 406 liso.",
@@ -516,7 +517,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION TURQUESA PROFUNDO", "/products/globo-latex-redondo-fashion-turquesa-profundo", "R-12", "035", 4),
       publicado("GLOBO REDONDO REFLEX AZUL", "/products/globo-para-fiesta-latex-redondo-reflex-azul", "R-12", "940", 3),
     ],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "971", cantidad: 4 }, { codigo: "037", cantidad: 3, vista: "par" }, { codigo: "035", cantidad: 4 }, { codigo: "940", cantidad: 3, vista: "par" },
     ], { cinta: "#2aa3b5", pasoCm: 30 })),
     nota: "Igual: 14 R-12 en 4 pisos planos de arriba abajo: 4 cromados claros (tres de frente y el cuarto asoma detrás, a la izquierda del de en medio), 3 Aguamarina (dos de frente y uno detrás), 4 Turquesa Profundo (tres de frente y uno detrás) y 3 Reflex Azul (dos de frente y uno detrás), los productos publicados, con cintas turquesa. Distinto: los de arriba se ven plateados (la idea publica Reflex Champaña 971 y va ese); los que asoman detrás se contaron por su franja de color y pueden faltar o sobrar uno por piso.",
@@ -525,7 +526,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
     numero: 818, slug: "palo-de-rosa-lila-frambuesa-vinotinto", nombre: "Ramo palo de rosa, lila, frambuesa y vinotinto", ocasiones: ["general"],
     fotoUrl: `${CDN}Palo-de-Rosa-Lila-Frambuesa-Vinotinto.jpg`,
     productos: [P.paloDeRosa(3), publicado("GLOBO REDONDO FASHION LILA", "/products/globo-para-fiesta-latex-redondo-fashion-lila", "R-12", "050", 3), publicado("GLOBO REDONDO FASHION FRAMBUESA", "/products/globo-para-fiesta-latex-redondo-fashion-frambuesa", "R-12", "014", 3), liso("R-12", "912", 3)],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "010", cantidad: 3, vista: "par" }, { codigo: "050", cantidad: 3 }, { codigo: "014", cantidad: 3, vista: "par" }, { codigo: "912", cantidad: 3 },
     ], { cinta: "#f0eeec" })),
     nota: "Igual: 12 R-12 en 4 pisos planos de arriba abajo: 3 Palo de Rosa (dos de frente y el tercero asoma detrás), 3 Lila (uno de frente), 3 Frambuesa (dos de frente y uno detrás) y 3 vinotinto (uno de frente), con los productos publicados y cintas blancas. El vinotinto no está publicado ni en la tabla: mide #6f3551 → Reflex Fucsia 912 (ΔE 7,7; el Merlot 018 queda a 28). Distinto: en la foto el vinotinto es mate y el 912 es cromado.",
@@ -534,7 +535,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
     numero: 819, slug: "palo-de-rosa-vinotinto-rosado-arena", nombre: "Ramo palo de rosa, vinotinto, rosado y arena", ocasiones: ["general"],
     fotoUrl: `${CDN}Palo-de-Rosa-Vinotinto-Rosado-Arena.jpg`,
     productos: [P.paloDeRosa(3), liso("R-12", "912", 2), P.reflexRosado(4), P.arena(3)],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "010", cantidad: 3 }, { codigo: "912", cantidad: 2 }, { codigo: "909", cantidad: 4 }, { codigo: "071", cantidad: 3, vista: "par" },
     ], { cinta: "#d0d1d6", pasoCm: 30 })),
     nota: "Igual: 12 R-12 en 4 pisos planos de arriba abajo: 3 Palo de Rosa (uno de frente), 2 vinotinto lado a lado, 4 Reflex Rosado (tres de frente y el cuarto asoma detrás, entre los vinotinto) y 3 Arena (dos de frente y uno detrás a la derecha), con los productos publicados y cintas plateadas. El vinotinto no está publicado: mide #4e1f30 (brillante) → Reflex Fucsia 912. Distinto: el Arena de la foto mide más oscuro (#b09883, en sombra); va el código publicado.",
@@ -546,7 +547,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION BLANCO", "/products/globo-para-fiesta-latex-redondo-fashion-blanco", "R-12", "005", 1),
       publicado("GLOBO TUBITO FASHION ROSADO", "/products/globo-para-fiesta-latex-tubito-fashion-rosado", "T-260", "009", 1),
     ],
-    contenido: escena(escena873),
+    clase: "escena", contenido: () => escena(escena873()),
     nota: "Igual: flor de 5 pétalos blancos con la burbuja rosada al centro y la pulsera de T-260 rosado, con los dos productos publicados (Fashion Blanco 005 y el tubito Fashion Rosado 009). Distinto: en la foto los 5 pétalos son UN solo R-12 torcido en burbujas; el taller no tuerce redondos y dibuja 5 R-12 al mínimo (12 cm: la flor sale de ~30 cm y no de ~23); se compra 1. La pulsera es un lazo de tubito hacia atrás (no da la vuelta a una muñeca, que no está) y la escena no lleva la mano.",
   }),
   idea({
@@ -557,7 +558,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
       publicado("GLOBO REDONDO FASHION FUCSIA", "/products/globo-para-fiesta-latex-redondo-fashion-fucsia", "R-12", "012", 3),
       publicado("GLOBO LATEX REDONDO REFLEX PLATA", "/products/globo-para-fiesta-latex-redondo-reflex-plata", "R-12", "981", 3),
     ],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "609", cantidad: 3 }, { codigo: "009", cantidad: 2 }, { codigo: "012", cantidad: 3 }, { codigo: "981", cantidad: 3, vista: "par" },
     ], { cinta: "#f3e6ea" })),
     nota: "Igual: 11 R-12 en 4 pisos planos de arriba abajo: 3 Cristal Pastel Rosado (uno de frente), 2 Fashion Rosado lado a lado, 3 Fashion Fucsia (uno de frente) y 3 Reflex Plata (dos de frente y el tercero asoma detrás, al medio), los productos publicados, con cintas blancas. Distinto: el Cristal Pastel Rosado no está en la tabla oficial y la tienda lo mapea al Pastel Mate Rosado 609 (opaco en el 3D, translúcido en la foto); el fucsia de la foto es más oscuro (#9f293e, casi frambuesa) y va el publicado, 012; el segundo piso mide #d3a7ac, más palo de rosa que el Rosado 009 publicado.",
@@ -566,7 +567,7 @@ export const LOTE_03_COMPLETO: readonly IdeaDigitalizada[] = [
     numero: 895, slug: "rosado-vinotinto", nombre: "Ramo rosado y vinotinto", ocasiones: ["general"],
     fotoUrl: `${CDN}Rosado-Rosado-Vinotinto_874eda84-42a9-479b-9e83-870c341a34fa.jpg`,
     productos: [P.reflexRosado(3), P.cristalPastelRosado(2), liso("R-12", "912", 4)],
-    contenido: escena(escenaRamo([
+    clase: "escena", contenido: () => escena(escenaRamo([
       { codigo: "909", cantidad: 3 }, { codigo: "609", cantidad: 2 }, { codigo: "912", cantidad: 4 },
     ], { cinta: "#f2f2f2", pasoCm: 30 })),
     nota: "Igual: 9 R-12 en 3 pisos planos de arriba abajo: 3 Reflex Rosado (uno de frente), 2 Cristal Pastel Rosado lado a lado y 4 vinotinto (tres de frente y el cuarto asoma detrás, al medio), con los productos publicados y cintas blancas. El vinotinto no está publicado: mide #6a2f43 → Reflex Fucsia 912 (ΔE 9,4). Distinto: el Cristal Pastel Rosado va en el Pastel Mate Rosado 609 al que lo mapea la tienda (opaco en el 3D, translúcido en la foto).",

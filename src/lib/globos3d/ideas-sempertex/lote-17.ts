@@ -1,4 +1,4 @@
-import type { IdeaDigitalizada, ProductoDeIdea } from "./tipos";
+import { ideaPerezosa, perezoso, type IdeaDigitalizada, type ProductoDeIdea } from "./tipos";
 import { fuenteIdea, type FuenteIdea } from "./fuentes";
 import { ocasionesDeEtiquetas } from "./index";
 import { armarEscena, SALA_INICIAL, type Escena, type NodoEscena, type Sala } from "../escena";
@@ -395,15 +395,14 @@ function fuente(slug: string): FuenteIdea {
  * armar la escena). Las ocasiones salen de las etiquetas con `ocasionesDeEtiquetas`, que vive en `index.ts` (que importa
  * este lote): se calculan al leerlas, como en los lotes 06, 09 y 12.
  */
-function idea(numero: number, slug: string, nombre: string, escena: Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
+function idea(numero: number, slug: string, nombre: string, escena: () => Escena, nota: string, publicados: readonly Publicado[] = []): IdeaDigitalizada {
   const f = fuente(slug);
   if (f.numero !== numero) throw new Error(`«${slug}» es la #${f.numero}, no la #${numero}.`);
-  let hechos: ProductoDeIdea[] | null = null;
-  return {
-    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, contenido: { tipo: "escena", escena }, nota,
+  // Perezosa (ver «Patrón perezoso» en tipos.ts): la escena se arma la primera vez que se pide.
+  return ideaPerezosa({
+    id: `idea:${slug}`, numero: f.numero, slug, nombre, fotoUrl: f.fotoUrl, clase: "escena", nota,
     get ocasiones() { return ocasionesDeEtiquetas(f.etiquetas); },
-    get productos() { return (hechos ??= productosDe(escena, publicados)); },
-  };
+  }, () => ({ tipo: "escena", escena: escena() }), () => productosDe(escena(), publicados));
 }
 
 // Colores de cinta.
@@ -421,7 +420,7 @@ const CINTA_BLANCA = "#ececec";
  * con lunares fucsia (169). Medidos: amarillo #efd204 → Amarillo Miel 021 (ΔE 9); fucsia #ff247f → Fucsia 012 (el
  * Fashion a 2 del Metal); verde #00bf01 → Verde Trébol 029; aro #f182ba → T-260 Rosa 011; patas y pico #fd1400 → Rojo 015.
  */
-const escena219 = ((): Escena => {
+const escena219 = perezoso((): Escena => {
   const f = foto(370, 555, 2.93);
   const VERDE = "029", AMARILLO = "021", FUCSIA = "012", ROSA = "011", ROJO = "015";
   const m = montaje(
@@ -448,7 +447,7 @@ const escena219 = ((): Escena => {
   m.helioConLunares("helio-amarillo", "R-12 amarillo miel con lunares fucsia (piso 3)", R("R-12", 28, AMARILLO), f(345, 60), { estilo: "puntos", hex: "#f2207c", cantidad: 11 }, "a yellow balloon with fuchsia polka dots");
   m.cintas(f(370, 380, -2), CINTA_BLANCA);
   return m.escena();
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 232 · Calabaza
@@ -462,7 +461,7 @@ const escena219 = ((): Escena => {
  * diagonal a la derecha; un trío de R-5 verde selva arriba. Medidos: naranja #ff7b23 → Naranja 061; negro → 080; verde
  * de los tubitos #009140 → Metal Verde 530 (el Fashion Verde Selva queda a 11 ΔE); R-5 verde #00762f → Verde Selva 032.
  */
-const escena232 = ((): Escena => {
+const escena232 = perezoso((): Escena => {
   const f = foto(362, 552, 5.8);
   const NARANJA = "061", NEGRO = "080", VERDE_T = "530", VERDE_R5 = "032";
   const C = f(362, 385);
@@ -490,7 +489,7 @@ const escena232 = ((): Escena => {
   ], P0, "a green twisted-balloon pumpkin stem with curly tendrils");
   m.deco("hojas", "Trío de R-5 verde selva del tallo", { tipo: "flor", propiedades: { petalos: { ...R("R-5", 9, VERDE_R5), cantidad: 3, aperturaGrados: 35, giroGrados: 90 }, centro: null } }, f(375, 200, -2), ARRIBA);
   return m.escena(sala(300, 260, 220));
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 233 · Calabazas apiladas
@@ -504,7 +503,7 @@ const escena232 = ((): Escena => {
  * y 2 negros impresos (131 y 150), con cintas lila. Medidos: violeta #312565 → Violeta 051; verde #83b65b → Verde Lima
  * 031; naranja #eb7b36 → Naranja 061; negro → 080.
  */
-const escena233 = ((): Escena => {
+const escena233 = perezoso((): Escena => {
   const f = foto(372, 555, 3.2);
   const VIOLETA = "051", LIMA = "031", NARANJA = "061", NEGRO = "080";
   const HALLOWEEN = "2-caras-happy-halloween-fashion-surtido-negro-naranja";
@@ -522,7 +521,7 @@ const escena233 = ((): Escena => {
   m.helio("helio-negro-2", "R-12 negro «Happy Halloween» con helio (piso 4)", R("R-12", 28, NEGRO), f(300, 75, -2), HALLOWEEN, unitario(v(-0.15, 1, 0)));
   m.cintas(f(375, 430, -3), "#9b7fc8", "Cintas lila del helio");
   return m.escena();
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 237 · Canasta de amor
@@ -536,7 +535,7 @@ const escena233 = ((): Escena => {
  * blancas. Medidos: rojo #dd3036 → Rojo 015; rosa #e94086 → Rosa 011 (el Fashion más cercano); rosado #f1cbdc → Rosado
  * 009; centro #71da82 → Verde Lima 031; el de arriba es Cristal 390 con letras blancas.
  */
-const escena237 = ((): Escena => {
+const escena237 = perezoso((): Escena => {
   const f = foto(360, 555, 3.57);
   const BLANCO = "005", ROJO = "015", ROSA = "011", ROSADO = "009", LIMA = "031";
   const florero: Pieza = { tipo: "forma", forma: { clase: "cono", altoCm: 39, tecnica: "anillos", formatoId: "R-5", infladoBaseCm: 7, infladoPuntaCm: 7, globosBase: 10, globosPunta: 10, colores: { codigos: [BLANCO], patron: "un_color" } } };
@@ -557,7 +556,7 @@ const escena237 = ((): Escena => {
   m.helio("helio-cristal", "R-12 cristal con helio (piso 3)", R("R-12", 28, "390"), f(370, 60, -2));
   m.cintas(f(360, 300, -2), CINTA_BLANCA);
   return m.escena();
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 264 · Celebrando a papá (y 303 · Centro de mesa para papá: la misma pieza)
@@ -573,7 +572,7 @@ const escena237 = ((): Escena => {
  * «Feliz Día» (146), con cintas azules. Colores: los publicados (Mostaza 023, Azul Rey 041, Negro 080, Cristal 390; el
  * impreso de bigotes en Reflex Azul 940 y Plata 981).
  */
-const escena264 = ((): Escena => {
+const escena264 = perezoso((): Escena => {
   const f = foto(462, 965, 5.7);
   const MOSTAZA = "023", AZUL = "940", PLATA = "981", AZUL_REY = "041", NEGRO = "080";
   const BIGOTES = "2-caras-feliz-dia-bigotes-reflex-surtido";
@@ -614,7 +613,7 @@ const escena264 = ((): Escena => {
   m.helio("helio-plata", "R-12 Reflex Plata «Feliz Día» de bigote con helio (piso 2)", R("R-12", 28, PLATA), f(485, 135, -6), BIGOTES);
   m.cintas(v(0, 86, -2), "#3fa3d8", "Cintas azules del helio");
   return m.escena();
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 274 · Centro de mesa corazón
@@ -627,7 +626,7 @@ const escena264 = ((): Escena => {
  * Helio: 2 blancos «Feliz Día Mamá» (111 y 117 cm) y el rojo «Te amo» arriba (147, ~73 px: 23 cm). Medidos: rojo
  * #fd0201 → Rojo 015; los blancos, en sombra #dad0cf, son Fashion Blanco 005 (en la luz #ffffff).
  */
-const escena274 = ((): Escena => {
+const escena274 = perezoso((): Escena => {
   const f = foto(370, 555, 3.2);
   const ROJO = "015", BLANCO = "005";
   const corazon: Pieza = { tipo: "forma", forma: { clase: "rellena", contorno: { tipo: "predefinido", id: "corazon", anchoCm: 66, altoCm: 52 }, tecnica: { tipo: "celdas", formatoId: "R-5", infladoCm: 7.6, celda: "tresbolillo" }, colores: { codigos: [ROJO], patron: "un_color" } } };
@@ -642,7 +641,7 @@ const escena274 = ((): Escena => {
   m.helio("helio-te-amo", "R-12 rojo de amor con helio (piso 3; «Te amo» en la foto)", R("R-12", 23, ROJO), f(380, 85, -4), "infinity-i-love-you-moderno-fashion-rojo");
   m.cintas(f(370, 345, -6), CINTA_BLANCA);
   return m.escena();
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 277 · Centro de mesa cristal
@@ -655,7 +654,7 @@ const escena274 = ((): Escena => {
  * (68 × 38 cm, la punta a 16 cm). Helio: blanco (86 cm), rojo con corazones (122) y rojo «Feliz Día» (153), cintas
  * rosadas. Medidos: rojos #f6090f → Rojo 015; blanco en sombra #e0d5d4 → Blanco 005.
  */
-const escena277 = ((): Escena => {
+const escena277 = perezoso((): Escena => {
   const f = foto(372, 555, 3.2);
   const BLANCO = "005", ROJO = "015";
   const m = montaje(
@@ -673,7 +672,7 @@ const escena277 = ((): Escena => {
   m.helio("helio-feliz-dia", "R-12 rojo «Feliz Día» con helio (piso 3)", R("R-12", 28, ROJO), f(375, 65, -4), "infinity-feliz-dia-corazones-brillantes-metal-surtido");
   m.cintas(f(372, 425, -2), "#f2a7c3", "Cintas rosadas del helio");
   return m.escena();
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 285 · Centro de mesa feliz cumpleaños
@@ -688,7 +687,7 @@ const escena277 = ((): Escena => {
  * violeta #553e99 → Violeta 051; verde #99ce63 → Verde Lima 031; naranja #ff7c00 → Naranja 061; amarillo #f8dd05 →
  * Amarillo 020; flor rosa #ed6bab → Rosa 011; flor azul #0bc0e4 → Azul Caribe 038, que la tienda no vende en tubito: Azul 040 (a 3 ΔE).
  */
-const escena285 = ((): Escena => {
+const escena285 = perezoso((): Escena => {
   const f = foto(365, 555, 3.3);
   const VIOLETA = "051", AMARILLO = "020", NARANJA = "061", LIMA = "031", ROSA = "011", AZUL = "040";
   const m = montaje(
@@ -715,7 +714,7 @@ const escena285 = ((): Escena => {
   m.foil("foil", "Metalizado «Feliz cumpleaños» redondo (piso 4)", { ...metalizadoDeTienda("festivo"), pulgadas: 14 }, f(373, 55, -6));
   m.cintas(v(0, 41, 0), CINTA_BLANCA);
   return m.escena();
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 292 · Centro de mesa mis quince
@@ -729,7 +728,7 @@ const escena285 = ((): Escena => {
  * mariposa de papel con una flor de tul. Medidos: rosa #ff64a8 → Rosa 011 (el Fashion más cercano: el mejor es Neón
  * Fucsia, 3 ΔE más cerca); la estrella, rosada vibrante.
  */
-const escena292 = ((): Escena => {
+const escena292 = perezoso((): Escena => {
   const f = foto(365, 555, 4.8);
   const CRISTAL = "390", ROSA = "011";
   const ESTRELLAS = "infinity-estrellas-fashion-transparente";
@@ -753,7 +752,7 @@ const escena292 = ((): Escena => {
     { forma: "cilindro", base: f(440, 290, 0), radioCm: 5, altoCm: 5, hex: "#ff4fa0", acabado: "tela", radioArribaCm: 2 },
   ]);
   return m.escena();
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 293 · Centro de mesa momento inolvidable
@@ -768,7 +767,7 @@ const escena292 = ((): Escena => {
  * otra «C» detrás. Colores: los publicados (Fucsia 012, Orquídea Morada 056, Pastel Dusk Lavanda 150, Rosado 009 y T-260
  * Rosado 009); la foto mide fucsia #f176b4 (más cerca del Rosa 011) y se deja el publicado.
  */
-const escena293 = ((): Escena => {
+const escena293 = perezoso((): Escena => {
   const f = foto(500, 850, 9.6);
   const FUCSIA = "012", ORQUIDEA = "056", LAVANDA = "150", ROSADO = "009";
   const mezcla: PuntoMezcla[] = [{ t: 0, pesos: { "R-5": 1 } }, { t: 1, pesos: { "R-5": 1 } }];
@@ -795,7 +794,7 @@ const escena293 = ((): Escena => {
   rizo("rizo-izquierda", "Rizo de T-260 rosado (la «C» con rulo de la izquierda)", [{ tipo: "arco", centro: [0, 0], radioCm: 9.5, desdeGrados: 20, hastaGrados: 260 }, { tipo: "linea", puntos: [[8.9, 3.2], [13, 6]] }], f(180, 285, -14), "a pink twisted-balloon C curl");
   rizo("rizo-detras", "Rizo de T-260 rosado (la «C» de detrás)", [{ tipo: "arco", centro: [0, 0], radioCm: 8, desdeGrados: 80, hastaGrados: 280 }], f(205, 400, -18), "a pink twisted-balloon C curl");
   return { sala: sala(), nodos };
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 295 · Centro de mesa navidad (Jacob Megram)
@@ -810,7 +809,7 @@ const escena293 = ((): Escena => {
  * R-12 perla (94 y 114) y el copo holográfico (centro a 136 cm), con cintas blancas; copos de escarcha (papel) alrededor.
  * Colores: los publicados (Satín Perla 406, Reflex Plata 981, Graffiti Invierno sobre Cristal 390).
  */
-const escena295 = ((): Escena => {
+const escena295 = perezoso((): Escena => {
   const f = foto(545, 935, 5.4);
   const PERLA = "406", PLATA = "981", CRISTAL = "390";
   const INVIERNO = "infinity-graffiti-invierno-fashion-transparente";
@@ -846,7 +845,7 @@ const escena295 = ((): Escena => {
   const copo = (c: Vec3, r: number): ElementoEscenografia => ({ forma: "panel", contorno: Array.from({ length: 12 }, (_, i) => { const a = (Math.PI * i) / 6, q = i % 2 ? r * 0.35 : r; return { x: r2(q * Math.cos(a)), y: r2(q * Math.sin(a)) }; }), zCm: 0, grosorCm: 0.2, hex: "#d6dbe2", acabado: "brillante", en: { origen: c, ejeX: v(1, 0, 0), ejeY: v(0, 1, 0) } });
   m.escenografia("copos", "Copos de escarcha (picks de papel)", [copo(f(300, 805, 10), 5), copo(f(650, 760, 6), 6), copo(f(690, 860, 8), 6), copo(f(345, 485, 6), 3.5), copo(f(395, 470, 4), 3)]);
   return m.escena(sala(360, 300, 280));
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 298 · Centro de mesa niño
@@ -859,7 +858,7 @@ const escena295 = ((): Escena => {
  * blancos. Helio: «Es un niño» (92 cm), blanco (119) y «Es un niño» arriba (147). Medidos: azul #38bee8 → Azul 040 (el
  * impreso de la tienda es Pastel Mate Azul 640); blanco #e0edf3 → Blanco 005 (a 6 del Cristal, que no es: es opaco).
  */
-const escena298 = ((): Escena => {
+const escena298 = perezoso((): Escena => {
   const f = foto(368, 553, 3.4);
   const AZUL_IMPRESO = "640", BLANCO = "005", AZUL = "040";
   const NINO = "infinity-es-un-nino-estrella-pastel-mate-azul";
@@ -890,7 +889,7 @@ const escena298 = ((): Escena => {
   m.helio("helio-nino-2", "R-12 «Es un niño» con helio (piso 3)", R("R-12", 28, AZUL_IMPRESO), f(310, 55, -4), NINO, unitario(v(-0.12, 1, 0)));
   m.cintas(v(0, 44, -2), CINTA_BLANCA);
   return m.escena();
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 299 · Centro de mesa orgánica feliz cumpleaños terra
@@ -906,7 +905,7 @@ const escena298 = ((): Escena => {
  * del surtido del impreso que más se le parece; mostaza, arena y Reflex Dorado, los publicados; blancos #d9dad8 → Silk
  * Blanco Nácar 806.
  */
-const escena299 = ((): Escena => {
+const escena299 = perezoso((): Escena => {
   const f = foto(510, 950, 6.6);
   const TERRA = "074", MOSTAZA = "023", ARENA = "071", DORADO = "970", BLANCO = "806";
   const TERRA_IMPRESO = "infinity-feliz-cumpleanos-terra-fashion-surtido";
@@ -954,7 +953,7 @@ const escena299 = ((): Escena => {
     hoja(f(440, 180, 10), 30), hoja(f(580, 170, 6), -30), hoja(f(660, 310, 10), -70), hoja(f(420, 250, 12), 50), hoja(f(375, 230, 6), 80), hoja(f(620, 360, 12), -20), hoja(f(470, 470, 10), 40),
   ]);
   return m.escena();
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // 306 · Centro de mesa primera comunión
@@ -968,7 +967,7 @@ const escena299 = ((): Escena => {
  * tambor al globo, con un racimito de burbujas plata en cada punta. Arriba, el R-12 Reflex Dorado con ángeles y palomas
  * blancos (centro a 72 cm). Colores: los publicados (Satín Blanco 405, T-260 Reflex Plata 981, Reflex Dorado 970).
  */
-const escena306 = ((): Escena => {
+const escena306 = perezoso((): Escena => {
   const BLANCO = "405", PLATA = "981", DORADO = "970";
   const tambor: Pieza = { tipo: "forma", forma: { clase: "cono", altoCm: 19, tecnica: "anillos", formatoId: "R-5", infladoBaseCm: 10.5, infladoPuntaCm: 10.5, globosBase: 10, globosPunta: 10, colores: { codigos: [BLANCO], patron: "un_color" } } };
   const m = montaje(
@@ -992,7 +991,7 @@ const escena306 = ((): Escena => {
   m.deco("tirabuzon", "Tirabuzón de T-260 Reflex Plata", { tipo: "rizo", propiedades: { forma: "tirabuzon", tubito: T("T-260", 5, PLATA), vueltas: 1.6, radioInicialCm: 3, radioFinalCm: 11, largoCm: 26, eje: "abajo" } }, v(0, 52, 0), AL_FRENTE);
   m.globo("globo", "R-12 Reflex Dorado (con ángeles y palomas en la foto; impreso de estrellas)", R("R-12", 28, DORADO), v(0, 72, 0), ARRIBA, "infinity-estrellas-reflex-dorado");
   return m.escena();
-})();
+});
 
 // ----------------------------------------------------------------------------------------------------------
 // Las 15 ideas
@@ -1002,7 +1001,7 @@ const escena306 = ((): Escena => {
  * #303 es la misma foto de producto que #264 (en su versión sin recortar: pared gris claro y pedestal blanco): reusa sus
  * mismos nodos y solo cambia los tonos de la sala (así la biblioteca no la funde con #264 por tener el mismo contenido).
  */
-const escena303: Escena = { ...escena264, sala: { ...escena264.sala, tonos: { piso: "#e9e7e2", paredes: "#e2dfd8", techo: "#f6f5f2" } } };
+const escena303 = perezoso((): Escena => ({ ...escena264(), sala: { ...escena264().sala, tonos: { piso: "#e9e7e2", paredes: "#e2dfd8", techo: "#f6f5f2" } } }));
 
 const P_MOSTAZA = pub("GLOBO REDONDO FASHION MOSTAZA", "/products/globo-para-fiesta-latex-redondo-fashion-mostaza", "R-12", "023");
 const P_DORADO = pub("GLOBO LATEX REDONDO REFLEX DORADO", "/products/globo-para-fiesta-latex-redondo-reflex-dorado", "R-12", "970");
