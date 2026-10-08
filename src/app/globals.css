@@ -46,6 +46,35 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-rebote: cubic-bezier(0.34, 1.4, 0.64, 1);
 
+  /* Taller 3D (/3d): editor de escenas. Barras, paneles, visor, tarjetas, botones y la fila elegida; el morado de
+     los botones primarios (con texto blanco) va aparte del acento de texto. Ver `.taller-3d` más abajo. */
+  --taller-barra: #ffffff;
+  --taller-panel: #faf9fc;
+  --taller-visor: #ebe7f1;
+  --taller-tarjeta: #ffffff;
+  --taller-boton: #ffffff;
+  --taller-encima: #f3eefb;
+  --taller-elegido: #ece3fb;
+  --taller-linea: #ebe5f3;
+  --taller-borde: #ddd3ea;
+  --taller-texto: #1c1425;
+  --taller-texto-2: #3a3146;
+  --taller-suave: #675e74;
+  --taller-medio: #5a5168;
+  --taller-primario: #6d3fe0;
+  --taller-primario-hover: #5530b8;
+  --taller-sobre-primario: #ffffff;
+  --taller-resalte: #6d3fe0;
+  --taller-acento: #5530b8;
+  --taller-peligro: #a8323d;
+  --taller-valido: #1a6a4a;
+  --taller-solitario: #f1ebfc;
+  --taller-solitario-borde: #d9cdf3;
+  --taller-sobre-acento: #ffffff;
+  --taller-deco: #a3245f;
+  --taller-valido-fondo: #1a6a4a;
+  --taller-sobre-valido: #ffffff;
+
   /* Alias para los componentes estilo shadcn/Radix: mismos tokens de marca. */
   --background: var(--fondo);
   --foreground: var(--texto);
@@ -102,6 +131,33 @@
     --sombra-acento: rgb(139 108 255 / 0.25);
     --overlay: rgb(0 0 0 / 0.6);
     --destructive-foreground: #3a0f13;
+
+    --taller-barra: #121018;
+    --taller-panel: #16131d;
+    --taller-visor: #1a1722;
+    --taller-tarjeta: #1d1926;
+    --taller-boton: #1b1724;
+    --taller-encima: #231e2e;
+    --taller-elegido: #2a2140;
+    --taller-linea: #221e2b;
+    --taller-borde: #2d2838;
+    --taller-texto: #f2eff7;
+    --taller-texto-2: #ddd8e6;
+    --taller-suave: #8d85a0;
+    --taller-medio: #a59db5;
+    --taller-primario: #7a55ec;
+    --taller-primario-hover: #6a46dc;
+    --taller-sobre-primario: #ffffff;
+    --taller-resalte: #8f6ef5;
+    --taller-acento: #b9a4ff;
+    --taller-peligro: #f08a94;
+    --taller-valido: #5fd3a0;
+    --taller-solitario: #1a1528;
+    --taller-solitario-borde: #3a2f5a;
+    --taller-sobre-acento: #120b24;
+    --taller-deco: #f59fc1;
+    --taller-valido-fondo: #1f7a55;
+    --taller-sobre-valido: #ffffff;
   }
 }
 
@@ -135,6 +191,33 @@
   --sombra-acento: rgb(139 108 255 / 0.25);
   --overlay: rgb(0 0 0 / 0.6);
   --destructive-foreground: #3a0f13;
+
+  --taller-barra: #121018;
+  --taller-panel: #16131d;
+  --taller-visor: #1a1722;
+  --taller-tarjeta: #1d1926;
+  --taller-boton: #1b1724;
+  --taller-encima: #231e2e;
+  --taller-elegido: #2a2140;
+  --taller-linea: #221e2b;
+  --taller-borde: #2d2838;
+  --taller-texto: #f2eff7;
+  --taller-texto-2: #ddd8e6;
+  --taller-suave: #8d85a0;
+  --taller-medio: #a59db5;
+  --taller-primario: #7a55ec;
+  --taller-primario-hover: #6a46dc;
+  --taller-sobre-primario: #ffffff;
+  --taller-resalte: #8f6ef5;
+  --taller-acento: #b9a4ff;
+  --taller-peligro: #f08a94;
+  --taller-valido: #5fd3a0;
+  --taller-solitario: #1a1528;
+  --taller-solitario-borde: #3a2f5a;
+  --taller-sobre-acento: #120b24;
+  --taller-deco: #f59fc1;
+  --taller-valido-fondo: #1f7a55;
+  --taller-sobre-valido: #ffffff;
 }
 
 @theme inline {
@@ -161,6 +244,31 @@
   --color-aviso: var(--aviso);
   --color-aviso-suave: var(--aviso-suave);
   --color-overlay: var(--overlay);
+  --color-taller-barra: var(--taller-barra);
+  --color-taller-panel: var(--taller-panel);
+  --color-taller-visor: var(--taller-visor);
+  --color-taller-tarjeta: var(--taller-tarjeta);
+  --color-taller-boton: var(--taller-boton);
+  --color-taller-encima: var(--taller-encima);
+  --color-taller-elegido: var(--taller-elegido);
+  --color-taller-linea: var(--taller-linea);
+  --color-taller-borde: var(--taller-borde);
+  --color-taller-texto: var(--taller-texto);
+  --color-taller-texto-2: var(--taller-texto-2);
+  --color-taller-suave: var(--taller-suave);
+  --color-taller-medio: var(--taller-medio);
+  --color-taller-primario: var(--taller-primario);
+  --color-taller-primario-hover: var(--taller-primario-hover);
+  --color-taller-sobre-primario: var(--taller-sobre-primario);
+  --color-taller-resalte: var(--taller-resalte);
+  --color-taller-acento: var(--taller-acento);
+  --color-taller-peligro: var(--taller-peligro);
+  --color-taller-valido: var(--taller-valido);
+  --color-taller-solitario: var(--taller-solitario);
+  --color-taller-solitario-borde: var(--taller-solitario-borde);
+  --color-taller-deco: var(--taller-deco);
+  --color-taller-valido-fondo: var(--taller-valido-fondo);
+  --color-taller-sobre-valido: var(--taller-sobre-valido);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
@@ -1534,4 +1642,59 @@ body {
     animation-duration: 2.4s !important;
     animation-iteration-count: infinite !important;
   }
+}
+
+/* ==========================================================================
+   TALLER 3D (/3d): dentro del editor, los tokens generales toman los del
+   taller. Así los editores que reusa (deslizadores, selectores de color,
+   paneles de cada estructura) se ven con su paleta sin tocar cada uno.
+   ========================================================================== */
+.taller-3d {
+  --fondo: var(--taller-panel);
+  --superficie: var(--taller-tarjeta);
+  --superficie-suave: var(--taller-encima);
+  --superficie-2: var(--taller-elegido);
+  --borde: var(--taller-borde);
+  --borde-suave: var(--taller-linea);
+  --texto: var(--taller-texto);
+  --texto-suave: var(--taller-suave);
+  --texto-tenue: var(--taller-suave);
+  --acento: var(--taller-acento);
+  --acento-hover: var(--taller-acento);
+  --acento-suave: var(--taller-elegido);
+  --sobre-acento: var(--taller-sobre-acento);
+  background: var(--taller-panel);
+  color: var(--taller-texto);
+}
+
+/* Paneles por secciones (inspector, parámetros del editor solitario): las tarjetas de los editores que se reusan se
+   vuelven secciones planas separadas por una línea, como en la maqueta. */
+.taller-seccionado > section,
+.taller-seccionado > details {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  border-top: 1px solid var(--taller-linea);
+  padding: 14px 16px;
+}
+
+.taller-seccionado > section:first-child,
+.taller-seccionado > details:first-child {
+  border-top: 0;
+}
+
+/* Rótulo de sección del taller (MEDIDAS, COLORES DE LA PIEZA…). */
+.taller-rotulo {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--taller-suave);
+}
+
+/* Barras de desplazamiento discretas en los paneles del taller. */
+.taller-3d :where(aside, nav, section, div) {
+  scrollbar-width: thin;
+  scrollbar-color: var(--taller-borde) transparent;
 }

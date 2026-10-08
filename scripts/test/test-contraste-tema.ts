@@ -62,6 +62,14 @@ const PARES: ReadonlyArray<readonly [texto: string, fondo: string]> = [
   // Texto secundario dentro de avisos y chips suaves (D9: lista de alertas de /configuracion-lora en oscuro, 4,41).
   ["texto-suave", "aviso-suave"], ["texto-suave", "error-suave"], ["texto-suave", "exito-suave"], ["texto-suave", "acento-suave"],
   ["texto", "aviso-suave"], ["texto", "error-suave"], ["texto", "exito-suave"], ["texto", "acento-suave"],
+  // Taller 3D (/3d): barras, paneles, visor, tarjetas, fila elegida, botón primario y el editor solitario.
+  ...([
+    ["texto", "panel"], ["texto", "tarjeta"], ["texto", "barra"], ["texto", "elegido"], ["texto", "visor"], ["texto", "boton"], ["texto", "encima"], ["texto", "solitario"],
+    ["texto-2", "panel"], ["suave", "panel"], ["suave", "tarjeta"], ["suave", "barra"], ["suave", "boton"], ["suave", "visor"], ["suave", "encima"],
+    ["medio", "barra"], ["medio", "panel"], ["medio", "solitario"], ["sobre-primario", "primario"], ["sobre-primario", "primario-hover"],
+    ["acento", "panel"], ["acento", "tarjeta"], ["acento", "elegido"], ["acento", "barra"], ["acento", "visor"], ["acento", "solitario"], ["sobre-acento", "acento"],
+    ["peligro", "panel"], ["peligro", "tarjeta"], ["peligro", "boton"], ["valido", "visor"], ["valido", "tarjeta"], ["sobre-valido", "valido-fondo"], ["deco", "panel"], ["deco", "elegido"],
+  ] as const).map(([texto, fondo]) => [`taller-${texto}`, `taller-${fondo}`] as const),
 ];
 
 for (const [nombre, tema] of [["claro", claro], ["oscuro", oscuroElegido]] as const) {

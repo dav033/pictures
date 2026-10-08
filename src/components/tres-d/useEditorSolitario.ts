@@ -39,12 +39,15 @@ export function useEditorSolitario({ escena, cambiarEscena, cache, visorRef }: O
   const datos = useRef({ escena, cache, cambiarEscena, abierto, aislada: historial.escena });
   useEffect(() => { datos.current = { escena, cache, cambiarEscena, abierto, aislada: historial.escena }; });
 
-  /** Abre el editor de la pieza `id` de la escena de verdad (`armada`: esa escena ya armada). Devuelve si se abrió. */
-  const entrar = useCallback(async (id: string, armada: EscenaArmada): Promise<boolean> => {
+  /**
+   * Abre el editor de la pieza `id` de la escena de verdad (`armada`: esa escena ya armada). `escena`: la escena de
+   * verdad si acaba de cambiar (una pieza nueva que se abre enseguida) y aún no se volvió a pintar. Devuelve si se abrió.
+   */
+  const entrar = useCallback(async (id: string, armada: EscenaArmada, escena?: Escena): Promise<boolean> => {
     const m = resuelto.current ?? (resuelto.current = await cargarSolitario());
     const d = datos.current;
     if (d.abierto) return false;
-    const solitario = m.abrirSolitario(d.escena, id, armada, d.cache);
+    const solitario = m.abrirSolitario(escena ?? d.escena, id, armada, d.cache);
     if (!solitario) return false;
     reiniciar(solitario.escena);
     setAbierto({ solitario, vista: visorRef.current?.vistaCamara() ?? null });

@@ -116,8 +116,21 @@ export type EscenaGlobos = {
   ponerVistaCamara: (vista: VistaCamara) => void;
   /** Dónde cae en la pantalla (coordenadas de cliente) un punto del mundo (cm); `null` si queda detrás de la cámara. */
   aPantalla: (punto: Punto3) => { x: number; y: number } | null;
+  /**
+   * La cámara de frente, de lado, desde arriba o en el ángulo de siempre («3d»), con todo lo que se ve en cuadro (sin
+   * la sala). No rearma nada: solo mueve la cámara.
+   */
+  verDesde: (vista: VistaFija) => void;
+  /**
+   * Avisa cada vez que el visor dibuja un cuadro (giró la cámara, cambió lo que se ve o el tamaño): para lo que va pegado
+   * a una pieza en la pantalla (su etiqueta, la regla de alturas). Devuelve cómo dejar de escuchar. En reposo no avisa.
+   */
+  alDibujar: (oyente: () => void) => () => void;
   destruir: () => void;
 };
+
+/** Las vistas fijas de la barra del visor. */
+export type VistaFija = "frente" | "lado" | "arriba" | "3d";
 
 /** Una vista de la cámara (m): posición, a dónde mira y sus límites de acercar. */
 export type VistaCamara = { posicion: Punto3; objetivo: Punto3; near: number; far: number; minDistancia: number; maxDistancia: number };
@@ -797,8 +810,11 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     // Con inercia, `update` sigue moviendo la cámara (y avisa `change`, que pide el cuadro siguiente) hasta pararse.
     controles.update();
     dibujar();
+    for (const oyente of oyentesCuadro) oyente();
   };
   const pedirCuadro = () => { if (!pendiente && vivo) pendiente = requestAnimationFrame(alCuadro); };
+  /** Quien sigue lo dibujado en la pantalla (etiquetas pegadas a una pieza): se avisa después de cada cuadro. */
+  const oyentesCuadro = new Set<() => void>();
   /** Cambió lo que proyecta sombra: se rehace la sombra en el próximo cuadro. */
   const cambioConSombra = () => { renderer.shadowMap.needsUpdate = true; pedirCuadro(); };
   controles.addEventListener("change", pedirCuadro);
@@ -1201,7 +1217,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       new THREE.Vector3((caja.min.x - margen) * CM, (caja.min.y - margen) * CM, (caja.min.z - margen) * CM),
       new THREE.Vector3((caja.max.x + margen) * CM, (caja.max.y + margen) * CM, (caja.max.z + margen) * CM),
     );
-    const ayuda = new THREE.Box3Helper(box.clone(), new THREE.Color(0x7c3aed));
+    const ayuda = new THREE.Box3Helper(box.clone(), new THREE.Color(0x8f6ef5));
     ayudas.add(ayuda);
     resaltado = { caja: box, ayuda };
   }
@@ -1220,6 +1236,31 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     controles.minDistance = distancia * 0.25;
     controles.maxDistance = distancia * 4;
     controles.update();
+  }
+
+  /** La cámara mirando a lo que se ve desde una dirección fija, con todo en cuadro (`3d`: el ángulo de siempre). */
+  function verDesde(vista: VistaFija) {
+    if (vista === "3d") { encuadrar(); pedirCuadro(); return; }
+    const caja = new THREE.Box3().setFromObject(contenido);
+    if (caja.isEmpty()) return;
+    const centro = caja.getCenter(new THREE.Vector3());
+    const tamano = caja.getSize(new THREE.Vector3());
+    // Ancho y alto de lo que se ve en pantalla, y lo hondo (la cámara se aleja además media profundidad).
+    const [ancho, alto, hondo, direccion] = vista === "frente" ? [tamano.x, tamano.y, tamano.z, new THREE.Vector3(0, 0, 1)]
+      : vista === "lado" ? [tamano.z, tamano.y, tamano.x, new THREE.Vector3(1, 0, 0)]
+        // Desde arriba, apenas inclinada (justo encima, los controles de órbita no saben hacia dónde es «arriba»).
+        : [tamano.x, tamano.z, tamano.y, new THREE.Vector3(0, 1, 0.002).normalize()];
+    const medioFov = THREE.MathUtils.degToRad(camara.fov / 2);
+    const lejos = Math.max(alto / 2 / Math.tan(medioFov), ancho / 2 / (Math.tan(medioFov) * Math.max(camara.aspect, 0.1)), 0.05) * 1.12 + hondo / 2;
+    camara.position.copy(centro).addScaledVector(direccion, lejos);
+    camara.near = lejos / 100;
+    camara.far = lejos * 20;
+    camara.updateProjectionMatrix();
+    controles.target.copy(centro);
+    controles.minDistance = lejos * 0.25;
+    controles.maxDistance = lejos * 4;
+    controles.update();
+    pedirCuadro();
   }
 
   function mostrar(globos: readonly GloboEnEscena[]) {
@@ -1637,6 +1678,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       controles.update();
       pedirCuadro();
     },
+    verDesde,
+    alDibujar(oyente) { oyentesCuadro.add(oyente); return () => { oyentesCuadro.delete(oyente); }; },
     aPantalla(p) {
       const v = new THREE.Vector3(p.x * CM, p.y * CM, p.z * CM).project(camara);
       if (v.z > 1) return null;
@@ -1727,6 +1770,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     },
     destruir() {
       vivo = false;
+      oyentesCuadro.clear();
       quitarMedicion();
       cancelAnimationFrame(pendiente);
       controles.removeEventListener("change", pedirCuadro);

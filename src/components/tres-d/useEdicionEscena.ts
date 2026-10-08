@@ -42,8 +42,13 @@ type Opciones = {
   armada: EscenaArmada | null;
   seleccion: string | null;
   onSeleccion: (id: string | null) => void;
-  /** Un cambio hecho a mano (guarda un paso en el historial). */
-  onCambio: (escena: Escena) => void;
+  /** Un cambio hecho a mano (guarda un paso en el historial; con `agrupar`, los seguidos de lo mismo son uno). */
+  onCambio: (escena: Escena, opciones?: { agrupar?: string }) => void;
+  /**
+   * Qué hace arrastrar la pieza elegida: moverla por su superficie (lo de siempre), girarla (arrastrar de lado, en
+   * pasos de 15°; con Alt, de 5°) o subirla y bajarla (en la pared, del techo o suelta).
+   */
+  herramienta?: "mover" | "girar" | "altura";
   /** Dónde va la pieza mientras se arrastra (para ver sus coordenadas en vivo); `null` al soltar. */
   onEnVivo: (pieza: PiezaEnVivo | null) => void;
   onDeshacer: () => void;
@@ -157,6 +162,8 @@ export function useEdicionEscena(opciones: Opciones) {
     type Arrastre = {
       id: string; ids: string[]; inicio: Escena; armada: EscenaArmada | null; colocacion: Colocacion;
       punto: Punto3; normal: Punto3; ultima: Escena | null; puntero: number;
+      /** Girar: dónde empezó (px) y el último giro puesto (grados); subir o bajar: solo en altura. */
+      modo: "mover" | "girar" | "altura"; inicioX: number; giro: number; marca: string;
     };
     let arrastre: Arrastre | null = null;
     let presion: { x: number; y: number } | null = null;
@@ -173,8 +180,10 @@ export function useEdicionEscena(opciones: Opciones) {
       if (lienzo.hasPointerCapture(a.puntero)) lienzo.releasePointerCapture(a.puntero);
       const d = datos.current;
       d.onEnVivo(null);
-      if (guardar && a.ultima && a.ultima !== a.inicio) d.onCambio(a.ultima);
+      if (a.modo === "girar") { /* cada paso ya se guardó (agrupado en uno) */ }
+      else if (guardar && a.ultima && a.ultima !== a.inicio) d.onCambio(a.ultima);
       else visor?.trasladarPiezas(a.ids, CERO);
+      if (!guardar && a.modo === "girar" && a.giro !== 0) d.onCambio(a.inicio, { agrupar: a.marca });
       cursor("grab");
     };
 
@@ -188,10 +197,18 @@ export function useEdicionEscena(opciones: Opciones) {
       if (!visor || !nodo || nodo.colocacion.en === "ancla" || nodo.colocacion.en === "sobre") return;
       const toque = visor.piezaEn(e.clientX, e.clientY);
       if (!toque || toque.nodo !== nodo.id) return;
+      const modo = d.herramienta ?? "mover";
+      // Lo del piso no sube ni baja (para eso, suelta o en una pared): con «Subir o bajar» se mueve como siempre.
+      const enAltura = modo === "altura" && nodo.colocacion.en !== "piso";
       // Se arrastra en el plano de su superficie que pasa por donde se tocó: la pieza sigue al puntero.
-      // Suelta: en el plano de frente (x, y), como en la pared del fondo.
-      const normal = nodo.colocacion.en === "pared" ? marcoDePared(d.escena.sala, nodo.colocacion.pared).normal : nodo.colocacion.en === "libre" ? { x: 0, y: 0, z: 1 } : ARRIBA;
-      arrastre = { id: nodo.id, ids: [...descendientes(d.escena, nodo.id)], inicio: d.escena, armada: d.armada, colocacion: nodo.colocacion, punto: toque.punto, normal, ultima: null, puntero: e.pointerId };
+      // Suelta: en el plano de frente (x, y), como en la pared del fondo. Subir o bajar: en el plano vertical que mira a la cámara.
+      const { adelante } = visor.ejesCamara();
+      const normal = enAltura ? { x: -adelante.x, y: 0, z: -adelante.z }
+        : nodo.colocacion.en === "pared" ? marcoDePared(d.escena.sala, nodo.colocacion.pared).normal : nodo.colocacion.en === "libre" ? { x: 0, y: 0, z: 1 } : ARRIBA;
+      arrastre = {
+        id: nodo.id, ids: [...descendientes(d.escena, nodo.id)], inicio: d.escena, armada: d.armada, colocacion: nodo.colocacion, punto: toque.punto, normal, ultima: null, puntero: e.pointerId,
+        modo: modo === "girar" ? "girar" : enAltura ? "altura" : "mover", inicioX: e.clientX, giro: 0, marca: `girar-${nodo.id}-${Date.now()}`,
+      };
       // Antes que la cámara (este oyente va en captura): así no gira mientras se arrastra.
       visor.orbitar(false);
       lienzo.setPointerCapture(e.pointerId);
@@ -202,11 +219,20 @@ export function useEdicionEscena(opciones: Opciones) {
       const visor = visorRef.current;
       if (!visor) return;
       const a = arrastre;
+      if (a?.modo === "girar") {
+        // De lado: 15° por cada ~25 px (con Alt, de 5° en 5°). Cada paso nuevo rearma solo esa pieza.
+        const paso = e.altKey ? 5 : 15;
+        const giro = Math.round(((e.clientX - a.inicioX) * 0.6) / paso) * paso;
+        if (giro === a.giro) return;
+        a.giro = giro;
+        datos.current.onCambio(giro === 0 ? a.inicio : girarNodo(a.inicio, a.id, -giro), { agrupar: a.marca });
+        return;
+      }
       if (a) {
         const p = visor.puntoEnPlano(e.clientX, e.clientY, a.punto, a.normal);
         if (!p) return;
         const plano = a.colocacion.en === "piso" || a.colocacion.en === "techo";
-        const delta = { x: p.x - a.punto.x, y: plano ? 0 : p.y - a.punto.y, z: p.z - a.punto.z };
+        const delta = a.modo === "altura" ? { x: 0, y: p.y - a.punto.y, z: 0 } : { x: p.x - a.punto.x, y: plano ? 0 : p.y - a.punto.y, z: p.z - a.punto.z };
         const nueva = moverNodo(a.inicio, a.id, delta, { armada: a.armada ?? undefined, iman: !e.altKey });
         const colocacion = nueva.nodos.find((n) => n.id === a.id)?.colocacion ?? a.colocacion;
         visor.trasladarPiezas(a.ids, desplazamientoEntre(a.inicio.sala, a.colocacion, colocacion) ?? CERO);

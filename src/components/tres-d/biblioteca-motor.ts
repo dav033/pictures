@@ -126,6 +126,8 @@ export function crearMotor(enviar: (aviso: AvisoMotor) => void, ceder: (paso: ()
     programado = false;
     const pedido = cola.shift();
     if (pedido) atender(pedido);
+    // Sin «empezar» (nadie abrió la biblioteca) solo se atienden los pedidos de armar (la lista de compra, una ficha).
+    else if (!empezado) return;
     else {
       while (cursor < base.length && recorridos.has(base[cursor]!.id)) cursor++;
       const item = base[cursor];
@@ -138,7 +140,7 @@ export function crearMotor(enviar: (aviso: AvisoMotor) => void, ceder: (paso: ()
   }
 
   function programar(): void {
-    if (programado || !empezado) return;
+    if (programado || (!empezado && cola.length === 0)) return;
     programado = true;
     ceder(paso);
   }

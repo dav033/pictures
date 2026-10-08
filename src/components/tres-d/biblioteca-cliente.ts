@@ -29,6 +29,7 @@ let estado: EstadoMotor = { hechos: new Map(), indices: new Map(), hechas: 0, to
 const oyentes = new Set<() => void>();
 let enviar: ((p: PedidoMotor) => void) | null = null;
 let ultimoEmpezar: PedidoMotor | null = null;
+let ultimosPropios: readonly ItemBiblioteca[] | null = null;
 let siguiente = 1;
 const esperando = new Map<number, { pedido: PedidoMotor; listo: (r: Armado) => void }>();
 
@@ -79,6 +80,9 @@ function conectar(): (p: PedidoMotor) => void {
 
 /** (Re)arranca el recorrido con lo propio: lo propio anterior se olvida (pudo cambiar con el mismo id). */
 function empezar(propios: readonly ItemBiblioteca[]): void {
+  // Varias partes del taller usan el motor a la vez (Añadir, Plantillas, la ficha): con lo mismo propio no se reinicia.
+  if (ultimosPropios === propios) return;
+  ultimosPropios = propios;
   const hechos = new Map([...estado.hechos].filter(([id]) => !esPropio(id)));
   const indices = new Map([...estado.indices].filter(([id]) => !esPropio(id)));
   estado = { ...estado, hechos, indices };

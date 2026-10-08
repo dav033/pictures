@@ -1,61 +1,62 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as EventoPuntero } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { ArrowLeft, Rows3, Circle, Anchor, Undo2, Redo2, ChevronUp, ChevronDown } from "lucide-react";
-import { ControlesPieza, DeshacerTactil } from "./ControlesTactiles";
-import { FORMATOS_GLOBO, NOMBRE_FAMILIA, coloresDelFormato, formatoPorId, infladoValido, type FormatoGlobo } from "@/lib/globos3d/formatos";
-import { MODULOS, armarModulo, materialesModulo, moduloPorId, type TipoModulo } from "@/lib/globos3d/modulos";
-import { PATRONES_COLUMNA, armarColumna, type PatronColumna } from "@/lib/globos3d/columnas";
-import { FORMAS_ARCO, armarArco, type FormaArco } from "@/lib/globos3d/arcos";
-import { colocarEn, colocarTubosEn, elegirAnclas, materialesPorFormato, type GloboDecoracion, type ReglaDecoracion, type TuboDecoracion } from "@/lib/globos3d/decoraciones";
-import { armarDecoracion, decoracionPredefinida, type Decoracion, type MaterialDecoracion } from "@/lib/globos3d/figuras";
-import { CELEBRA_27, decorarPared, sumarMateriales, type MezclaDecoraciones } from "@/lib/globos3d/mezcla";
-import { PARED_TRENZAS_INICIAL, armarParedTrenzas, superficieFrontal, type OpcionesParedTrenzas } from "@/lib/globos3d/pared-trenzas";
-import type { DondeDecoracion } from "./PanelFlor";
-import { PanelDecoracion, nombreDecoracion } from "./PanelDecoracion";
-import { PanelPared, PARED_INICIAL, type OpcionesPared, type TipoPared } from "./PanelPared";
-import { armarPared } from "@/lib/globos3d/paredes";
-import { armarOrganico } from "@/lib/globos3d/organico";
-import { repartirFlores } from "@/lib/globos3d/flores-artificiales";
-import { COLUMNA_QUINCE_AZUL } from "@/lib/globos3d/organico-presets";
-import { AJUSTES_QUINCE_AZUL, PanelOrganico, opcionesDeAjustes, type AjustesOrganico } from "./PanelOrganico";
-import { referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
-import type { EscenaGlobos, FlorEnEscena, GloboColocadoEnEscena, GloboEnEscena, SolidoEnEscena, TuboEnEscena } from "./escena-globos";
+import {
+  ArrowLeft, Check, ChevronDown, CircleHelp, House, Layers, LayoutGrid, MoveVertical, Plus, Redo2, RotateCw, Scan, ShoppingCart, Sparkles, Undo2, WandSparkles, X,
+} from "lucide-react";
+import { ControlesPieza } from "./ControlesTactiles";
+import { formatoPorId, FORMATOS_GLOBO } from "@/lib/globos3d/formatos";
+import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
+import type { GloboDecoracion, TuboDecoracion } from "@/lib/globos3d/decoraciones";
+import type { EscenaGlobos, FlorEnEscena, GloboColocadoEnEscena, GloboEnEscena, SolidoEnEscena, TuboEnEscena, VistaFija } from "./escena-globos";
 import { descripcionRender3d, formatoEnIngles } from "@/lib/globos3d/render-ia";
 import { GeneradorIA } from "./GeneradorIA";
-import { PaletaEscena, type GrupoColor } from "./PaletaEscena";
+import { PaletaEscena } from "./PaletaEscena";
 import { reemplazarColor } from "@/lib/globos3d/recolorear";
-import { armarEscena, escenaEnIngles, type Escena, type EscenaArmada } from "@/lib/globos3d/escena";
-import { escenaPredefinida } from "@/lib/globos3d/escenas-presets";
+import { armarEscena, escenaEnIngles, idNuevo, type Escena, type EscenaArmada, type NodoEscena } from "@/lib/globos3d/escena";
+import { ESCENAS_PREDEFINIDAS, escenaPredefinida } from "@/lib/globos3d/escenas-presets";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
-import { PanelEscena } from "./PanelEscena";
 import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdicionEscena";
 import { useLienzoDecoraciones, type CopiaElegida } from "./useLienzoDecoraciones";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
-import { ProductosFiesta } from "./UtileriaFiesta";
 import { medirFuera } from "./medicion-visor";
 import { MenuContextual, type AccionMenu } from "./MenuContextual";
 import { useMenuContextual } from "./useMenuContextual";
 import { cargarSolitario, useEditorSolitario } from "./useEditorSolitario";
 import type { InfoMenuPieza } from "@/lib/globos3d/editor-solitario";
 import type { ItemBiblioteca } from "@/lib/globos3d/biblioteca";
+import { AsistenteEscena } from "./AsistenteEscena";
+import { DialogoTaller } from "./DialogoTaller";
+import { Inspector } from "./Inspector";
+import { PanelPiezas } from "./PanelPiezas";
+import { PartesSolitario } from "./PartesSolitario";
+import { EditorSala } from "./PanelEscena";
+import { ListaCompra } from "./ListaCompra";
+import { BarraHerramientas, EtiquetaElegida, ReglaAlturas, type Herramienta } from "./SobreVisor";
+import { medidaPrincipal, NOMBRE_TIPO } from "./tipos-pieza";
+import { leerGuardada, guardarEscena } from "./guardado-escena";
+import type { PestanaAnadir } from "./PanelAnadir";
+import type { PiezaParaAnadir } from "./nuevas-taller";
+import type { VistaSolitario } from "./ParametrosPieza";
+import { BTN, BTN_ICO, BTN_PRI, FLOTANTE, RIEL, RIEL_ON } from "./ui-taller";
 
 /**
- * La Biblioteca (todas las ideas de Sempertex, su índice y sus fichas) se carga aparte, al entrar a su pestaña o al
- * elegir una pieza en Escena: importarla con la página la hacía pesada (y, cuando los lotes armaban al importarse,
- * congelaba /3d ~20 s). El visor y los paneles quedan usables enseguida.
+ * Lo pesado se carga aparte, al abrirlo: el panel «Añadir» (con la Biblioteca: todas las ideas de Sempertex, su índice
+ * y sus fichas), las plantillas con miniatura, los productos exactos de la tienda y los parámetros del editor solitario.
+ * Importarlos con la página la hacía pesada (y, cuando los lotes armaban al importarse, congelaba /3d ~20 s).
  */
-const CARGANDO_BIBLIOTECA = () => <p className="rounded-2xl bg-superficie-suave p-6 text-center text-sm text-texto-suave ring-1 ring-borde" role="status">Cargando la biblioteca…</p>;
-const Biblioteca = dynamic(() => import("./Biblioteca").then((m) => m.Biblioteca), { ssr: false, loading: CARGANDO_BIBLIOTECA });
+const Cargando = () => <p className="p-4 text-sm text-taller-suave" role="status">Cargando…</p>;
+const PanelAnadir = dynamic(() => import("./PanelAnadir").then((m) => m.PanelAnadir), { ssr: false, loading: Cargando });
+const FichaDialogo = dynamic(() => import("./Biblioteca").then((m) => m.FichaDialogo), { ssr: false, loading: Cargando });
+const TarjetasPlantillas = dynamic(() => import("./Biblioteca").then((m) => m.TarjetasPlantillas), { ssr: false, loading: Cargando });
+const ProductosEscena = dynamic(() => import("./Biblioteca").then((m) => m.ProductosEscena), { ssr: false, loading: Cargando });
 const AccionesPieza = dynamic(() => import("./Biblioteca").then((m) => m.AccionesPieza), { ssr: false });
+const ParametrosPieza = dynamic(() => import("./ParametrosPieza").then((m) => m.ParametrosPieza), { ssr: false, loading: Cargando });
 
-const formatoCm = (valor: number) => `${valor.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
-const metros = (cm: number) => (cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 });
-
-/** Un globo de decoración (o de pared) tal como lo dibuja el visor: formato, color oficial y orientación. */
-function globoAEscena(g: GloboDecoracion, porDefecto: FormatoGlobo): GloboColocadoEnEscena {
+/** Un globo de la escena tal como lo dibuja el visor: formato, color oficial y orientación. */
+function globoAEscena(g: GloboDecoracion, porDefecto: NonNullable<ReturnType<typeof formatoPorId>>): GloboColocadoEnEscena {
   const ref = referenciaPorCodigo(g.codigo);
   return {
     formato: formatoPorId(g.formatoId) ?? porDefecto, infladoCm: g.infladoCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion",
@@ -70,54 +71,19 @@ function tuboAEscena(t: TuboDecoracion): TuboEnEscena {
   return { puntos: t.puntos, grosorCm: t.grosorCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion", cerrado: t.cerrado };
 }
 
-/** La lista de materiales de la tarjeta del visor: cantidad × formato, nombre del color y código. */
-function ListaMateriales({ materiales }: { materiales: ReadonlyArray<MaterialDecoracion> }) {
-  return (
-    <ul className={`mt-1 text-xs text-texto ${materiales.length > 6 ? "gap-x-4 sm:columns-2" : ""}`}>
-      {materiales.map((m) => {
-        const ref = referenciaPorCodigo(m.codigo);
-        return <li key={`${m.formatoId}|${m.codigo}`} className="break-inside-avoid">{m.cantidad} × {m.formatoId} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
-      })}
-    </ul>
-  );
-}
-
 /** Materiales con el nombre del color en inglés, para la descripción que acompaña la captura a FLUX. */
 function materialesEnIngles(materiales: ReadonlyArray<{ formatoId: string; codigo: string; cantidad: number }>) {
   return materiales.map((m) => ({ cantidad: m.cantidad, formatoId: m.formatoId, colorEn: referenciaPorCodigo(m.codigo)?.nombreEn ?? m.codigo }));
 }
 
-const PATRON_EN: Record<PatronColumna, string> = { un_color: "single-color", dos_colores: "two-color", espiral: "spiral", salvavidas: "life-ring", zigzag: "zig-zag" };
-const FORMA_EN: Record<FormaArco, string> = { redondo: "round", parabolico: "parabolic", rectangular: "rectangular" };
-const MODULO_EN: Record<TipoModulo, string> = { pareja: "duplet", trio: "triplet", cuarteto: "quartet", quinteto: "quintet", sexteto: "sextet" };
-
 /** Lo que el visor dibuja de una escena armada (cada cosa con el id de su pieza). */
 type DibujoEscena = { globos: GloboColocadoEnEscena[]; tubos: TuboEnEscena[]; flores: FlorEnEscena[]; solidos: SolidoEnEscena[] };
+const DIBUJO_VACIO: DibujoEscena = { globos: [], tubos: [], flores: [], solidos: [] };
 
-/** Lo que se guarda antes de cambiar un color con la paleta, para «Deshacer». */
-type FotoColores = {
-  pared: OpcionesPared; paredTrenzas: OpcionesParedTrenzas; mezcla: MezclaDecoraciones; decoracion: Decoracion;
-  coloresColumna: string[]; coloresModulo: string[]; ajustesOrganico: AjustesOrganico; codigo: string; escena: Escena;
-};
+/** El formato por defecto de un globo que no trae el suyo. */
+const R12 = formatoPorId("R-12") ?? FORMATOS_GLOBO[2]!;
 
-/** Formatos de la columna de cuartetos: redondos de 5" a 18". */
-const FORMATOS_COLUMNA = ["R-5", "R-9", "R-12", "R-18"] as const;
-
-/** Formatos con los que se arman módulos: redondos de 5" a 24" y Link-O-Loon 6 y 12. */
-const FORMATOS_MODULO = ["R-5", "R-9", "R-12", "R-18", "R-24", "LOL-6", "LOL-12"] as const;
-
-type Modo = "globo" | "modulo" | "columna" | "arco" | "pared" | "decoracion" | "organico" | "escena" | "biblioteca";
-
-const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
-const ACTIVO = "bg-acento text-sobre-acento ring-acento";
-const INACTIVO = "bg-superficie text-texto ring-borde hover:bg-superficie-suave";
-
-// ----------------------------------------------------------------------------------------------------------
-// Teléfono y tablet: el visor ocupa la pantalla y los paneles van en una hoja inferior con pestañas.
-// Desde 1024 px (lg) vuelve la página de siempre: paneles a la izquierda y visor fijo a la derecha.
-// ----------------------------------------------------------------------------------------------------------
-
-/** El mismo corte que `lg:` de Tailwind. */
+/** El mismo corte que `lg:` de Tailwind: desde 1024 px, riel + paneles + inspector; menos, visor a pantalla y hoja. */
 const CONSULTA_ANCHO = "(min-width: 1024px)";
 function suscribirAncho(aviso: () => void) {
   const consulta = window.matchMedia(CONSULTA_ANCHO);
@@ -129,67 +95,70 @@ function useEsAncho() {
   return useSyncExternalStore(suscribirAncho, () => window.matchMedia(CONSULTA_ANCHO).matches, () => true);
 }
 
+type Panel = "anadir" | "piezas" | "plantillas" | "sala";
 type AlturaHoja = "cerrada" | "media" | "alta";
-type PestanaHoja = "ajustes" | "colores" | "ia" | "detalle";
+type PestanaHoja = "anadir" | "piezas" | "pieza" | "ia" | "parametros" | "partes";
 const ALTURAS: readonly AlturaHoja[] = ["cerrada", "media", "alta"];
-/** Alto de la hoja en dvh (el visor se queda con el resto y se redimensiona solo). */
-const ALTURA_HOJA: Readonly<Record<AlturaHoja, string>> = { cerrada: "h-auto", media: "h-[44dvh]", alta: "h-[72dvh]" };
+/** Alto de la hoja del teléfono (el visor sigue a pantalla completa debajo). */
+const ALTURA_HOJA: Readonly<Record<AlturaHoja, string>> = { cerrada: "h-auto", media: "h-[44dvh]", alta: "h-[78dvh]" };
+
+const PANELES: ReadonlyArray<{ id: Panel; nombre: string; icono: ReactNode }> = [
+  { id: "anadir", nombre: "Añadir", icono: <Plus className="size-5" aria-hidden /> },
+  { id: "piezas", nombre: "Piezas", icono: <Layers className="size-5" aria-hidden /> },
+  { id: "plantillas", nombre: "Plantillas", icono: <LayoutGrid className="size-5" aria-hidden /> },
+  { id: "sala", nombre: "Sala", icono: <House className="size-5" aria-hidden /> },
+];
+
+/** Una tecla del taller, como si se pulsara (los botones táctiles usan la misma lógica del teclado). */
+function pulsar(key: string, opciones: { shiftKey?: boolean } = {}) {
+  window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...opciones }));
+}
 
 /**
- * Página /3d. Dos pestañas:
- * - Globo: cada globo Sempertex a su tamaño real (formato, color oficial, inflado), o todos los redondos lado a lado.
- * - Módulos: pareja, trío, cuarteto, quinteto y sexteto armados como enseña Sempertex, con color por globo,
- *   sus anclas (donde se cuelgan las decoraciones) y su lista de materiales.
+ * Una función estable que siempre llama a la última versión de `f`: así los paneles memorizados (y los ocultos) no se
+ * vuelven a pintar porque cambió una función.
+ */
+function useEstable<A extends unknown[], R>(f: (...args: A) => R): (...args: A) => R {
+  const ref = useRef(f);
+  useLayoutEffect(() => { ref.current = f; });
+  return useCallback((...args: A) => ref.current(...args), []);
+}
+
+/** Para saber si ya se hidrató (en el servidor, `false`). */
+const sinSuscripcion = () => () => {};
+
+function escribiendo(objetivo: EventTarget | null): boolean {
+  return objetivo instanceof HTMLElement && (objetivo.isContentEditable || Boolean(objetivo.closest("input, textarea, select, [contenteditable='true'], [role='menu'], dialog")));
+}
+
+/**
+ * Página /3d: el Taller 3D. Barra superior (escena, deshacer, imagen con IA, lista de compra), riel de paneles (Añadir,
+ * Piezas, Plantillas, Sala), el visor a todo lo que queda (herramientas flotantes, etiqueta de la pieza elegida,
+ * contador y la IA al pie) e inspector de la pieza elegida. «Editar sola» abre el editor solitario de una pieza con
+ * los parámetros completos de su tipo. En teléfono y tablet: visor a pantalla completa y hoja inferior con pestañas.
  */
 export function Taller3D() {
   const lienzoRef = useRef<HTMLCanvasElement>(null);
   const escenaRef = useRef<EscenaGlobos | null>(null);
-  const [listo, setListo] = useState(false);
+  const visorCajaRef = useRef<HTMLElement>(null);
+  const [visor, setVisor] = useState<EscenaGlobos | null>(null);
+  const listo = visor !== null;
   const [error, setError] = useState<string | null>(null);
-  const [modo, setModo] = useState<Modo>("globo");
-  const [formatoId, setFormatoId] = useState("R-12");
-  const formato = formatoPorId(formatoId) ?? FORMATOS_GLOBO[2]!;
-  const colores = useMemo(() => coloresDelFormato(formato.id), [formato.id]);
-  const [codigo, setCodigo] = useState("009");
-  const color = colores.find((c) => c.codigo === codigo) ?? colores[0];
-  const [infladoCm, setInfladoCm] = useState(formato.infladoDecoracionCm);
-  const [vista, setVista] = useState<"uno" | "todos">("uno");
-  // Módulos
-  const [moduloId, setModuloId] = useState<TipoModulo>("cuarteto");
-  const modulo = moduloPorId(moduloId) ?? MODULOS[2]!;
-  const [coloresModulo, setColoresModulo] = useState<string[]>(["009", "009", "009", "009", "009", "009"]);
-  const [ranura, setRanura] = useState<number | null>(null);
-  const [verAnclas, setVerAnclas] = useState(true);
-  // Columna (los colores de la espiralada de Sempertex: Amarillo y Fucsia opuestos, Azul Caribe y Verde Lima opuestos)
-  const [patron, setPatron] = useState<PatronColumna>("espiral");
-  const [alturaCm, setAlturaCm] = useState(180);
-  const [coloresColumna, setColoresColumna] = useState<string[]>(["020", "038", "012", "031"]);
-  // Arco (comparte patrón y colores con la columna: es la misma trenza sobre una curva)
-  const [forma, setForma] = useState<FormaArco>("redondo");
-  const [anchoArcoCm, setAnchoArcoCm] = useState(300);
-  const [altoArcoCm, setAltoArcoCm] = useState(240);
-  // Decoración: una decoración por propiedades (flor, flor de tubito, moño, estrella, flor de corazones), sola o
-  // colgada de las anclas de la columna, del arco o de la pared; en la pared, también una mezcla de varias.
-  const [decoracion, setDecoracion] = useState<Decoracion>(() => decoracionPredefinida("flor5"));
-  const [donde, setDonde] = useState<DondeDecoracion>("columna");
-  const [regla, setRegla] = useState<ReglaDecoracion>({ cadaNiveles: 2, caras: 2 });
-  const [mezcla, setMezcla] = useState<MezclaDecoraciones>(CELEBRA_27.mezcla);
-  const [usarMezcla, setUsarMezcla] = useState(false);
-  const [editando, setEditando] = useState<number | null>(null);
-  // Pared: malla Link-O-Loon tipo flor o trenzas alternando tamaños.
-  const [pared, setPared] = useState<OpcionesPared>(PARED_INICIAL);
-  const [tipoPared, setTipoPared] = useState<TipoPared>("malla");
-  const [paredTrenzas, setParedTrenzas] = useState<OpcionesParedTrenzas>(PARED_TRENZAS_INICIAL);
-  const [verAnclasPared, setVerAnclasPared] = useState(false);
-  // Escena: varias piezas (arco orgánico, columnas, guirnalda, pared…) colocadas en una sala.
-  // Con deshacer y rehacer (Ctrl+Z / Ctrl+Y): cada cambio de la escena guarda un paso.
-  const historialEscena = useHistorialEscena(() => escenaPredefinida("arco_organico_columnas_guirnalda"));
+
+  // Escena (con deshacer y rehacer: Ctrl+Z / Ctrl+Y) y su nombre; se guarda sola en el navegador.
+  // La última escena guardada en este navegador (si hay) en vez de la de partida. En el servidor no hay navegador: hasta
+  // hidratar (`cargada`) no se pinta nada que dependa de la escena, así lo del servidor y lo del navegador coinciden.
+  const [guardadaAlAbrir] = useState(() => (typeof window === "undefined" ? null : leerGuardada()));
+  const historialEscena = useHistorialEscena(() => guardadaAlAbrir?.escena ?? escenaPredefinida("arco_organico_columnas_guirnalda"));
   const escenaEdit = historialEscena.escena;
   const setEscenaEdit = historialEscena.cambiar;
+  const [nombreEscena, setNombreEscena] = useState(() => guardadaAlAbrir?.nombre ?? ESCENAS_PREDEFINIDAS.find((p) => p.id === "arco_organico_columnas_guirnalda")?.nombre ?? "Mi escena");
+  const cargada = useSyncExternalStore(sinSuscripcion, () => true, () => false);
+  const [ultimoGuardado, setUltimoGuardado] = useState<{ escena: Escena; nombre: string; ok: boolean } | null>(null);
+  const guardado = !ultimoGuardado ? (guardadaAlAbrir ? "guardado" : "guardando") : ultimoGuardado.escena !== escenaEdit || ultimoGuardado.nombre !== nombreEscena ? "guardando" : ultimoGuardado.ok ? "guardado" : "sin-guardar";
   // Piezas ya armadas por su JSON: mover una pieza no rehace el arco orgánico (medio segundo).
   const [cacheEscena] = useState(() => new Map<string, PiezaArmada>());
-  // Editor solitario (menú contextual → «Editar sola»): mientras está abierto, lo que se ve y se edita es la estructura
-  // aislada con su propio deshacer; «Listo» la devuelve a la escena en un solo paso.
+  // Editor solitario: lo que se ve y se edita es la estructura aislada con su propio deshacer; «Listo» la devuelve.
   const solitario = useEditorSolitario({ escena: escenaEdit, cambiarEscena: setEscenaEdit, cache: cacheEscena, visorRef: escenaRef });
   const escenaVista = solitario.escena;
   const cambiarVista = solitario.activo ? solitario.cambiar : setEscenaEdit;
@@ -197,37 +166,55 @@ export function Taller3D() {
   const rehacerVista = solitario.activo ? solitario.rehacer : historialEscena.rehacer;
   const puedeDeshacerVista = solitario.activo ? solitario.puedeDeshacer : historialEscena.puedeDeshacer;
   const puedeRehacerVista = solitario.activo ? solitario.puedeRehacer : historialEscena.puedeRehacer;
+  /** Una pieza recién creada desde «Añadir → Nuevas» y abierta en el editor: «Cancelar» la quita. */
+  const nuevaRef = useRef<string | null>(null);
+  const [vistaSolitario, setVistaSolitario] = useState<VistaSolitario>({ verAnclas: false, todosLosGlobos: false });
+
   const [seleccionElegida, setSeleccion] = useState<string | null>(null);
-  // Si la pieza elegida ya no está (se quitó o se deshizo su llegada), no hay elegida.
   const seleccion = seleccionElegida && escenaVista.nodos.some((n) => n.id === seleccionElegida) ? seleccionElegida : null;
-  /** La pieza que se está arrastrando y dónde va (sus coordenadas en vivo en el panel). */
   const [enVivo, setEnVivo] = useState<PiezaEnVivo | null>(null);
-  /** La copia de un reparto en anclas que se tocó en el visor (las flechas, Q/E y Supr van solo a esa). */
   const [copiaTocada, setCopiaTocada] = useState<CopiaElegida | null>(null);
   const copiaElegida = copiaTocada && copiaTocada.id === seleccion ? copiaTocada : null;
-  /** Lo que pasó al soltar una decoración en el visor (o por qué no se puso). */
   const [avisoLienzo, setAvisoLienzo] = useState<string | null>(null);
-  /** Sube al cargar una escena predefinida: el visor reencuadra; al mover una pieza, la cámara se queda quieta. */
   const [vueltaEncuadre, setVueltaEncuadre] = useState(0);
   const encuadradoRef = useRef<number | null>(null);
-  /** Lo armado y lo dibujado de cada escena ya vista: entrar y salir del editor solitario no rearma la escena. */
   const [armadas] = useState(() => new WeakMap<Escena, EscenaArmada>());
-  const [dibujos] = useState(() => new WeakMap<EscenaArmada, { formatoId: string; dibujo: DibujoEscena }>());
-  /** El menú contextual abierto (de qué pieza y dónde) y lo que dice (decoraciones, quién la sostiene). */
+  const [dibujos] = useState(() => new WeakMap<EscenaArmada, DibujoEscena>());
   const [menu, setMenu] = useState<{ id: string; x: number; y: number; tactil: boolean } | null>(null);
   const [infoMenu, setInfoMenu] = useState<{ id: string; info: InfoMenuPieza } | null>(null);
-  /** «Quitaste…» con su botón Deshacer. */
   const [avisoQuitar, setAvisoQuitar] = useState<string | null>(null);
-  /** Lo que se pidió ver desde la pestaña Escena: la Biblioteca abre su ficha al entrar. */
-  const [verEnBiblioteca, setVerEnBiblioteca] = useState<ItemBiblioteca | null>(null);
-  // Hoja inferior (teléfono y tablet): qué tan alta y qué pestaña se ve.
+  const [confirmarEliminar, setConfirmarEliminar] = useState<{ id: string; decoraciones: number } | null>(null);
+  /** Piezas ocultas en el visor (siguen en la escena y en la lista de compra). */
+  const [ocultos, setOcultos] = useState<ReadonlySet<string>>(() => new Set());
+  // Interfaz: panel abierto, pestaña de «Añadir», herramienta del visor, vista fija, diálogos.
   const esAncho = useEsAncho();
+  const [panel, setPanelElegido] = useState<Panel | null>("piezas");
+  /** Los paneles que ya se abrieron alguna vez (quedan montados). */
+  const [panelesVistos, setPanelesVistos] = useState<ReadonlySet<Panel>>(() => new Set<Panel>(["piezas"]));
+  const setPanel = useCallback((p: Panel | null | ((actual: Panel | null) => Panel | null)) => {
+    setPanelElegido((actual) => {
+      const nuevo = typeof p === "function" ? p(actual) : p;
+      if (nuevo) setPanelesVistos((v) => (v.has(nuevo) ? v : new Set(v).add(nuevo)));
+      return nuevo;
+    });
+  }, []);
+  const [pestanaAnadir, setPestanaAnadir] = useState<PestanaAnadir>("estructuras");
+  const [herramienta, setHerramienta] = useState<Herramienta>("mover");
+  const [vistaFija, setVistaFija] = useState<VistaFija | null>("3d");
+  const [dialogo, setDialogo] = useState<"lista" | "imagen" | "ayuda" | null>(null);
+  const [ficha, setFicha] = useState<ItemBiblioteca | null>(null);
+  const [pedirGuardar, setPedirGuardar] = useState(0);
+  const [renombrando, setRenombrando] = useState(false);
+  const [menuMas, setMenuMas] = useState(false);
+  const [colgarEnSolitario, setColgarEnSolitario] = useState(false);
+  // Teléfono y tablet: la hoja inferior.
   const [hoja, setHoja] = useState<AlturaHoja>("media");
-  const [pestanaElegida, setPestana] = useState<PestanaHoja>("ajustes");
-  const pestanasRef = useRef<HTMLDivElement>(null);
+  const [pestanaHoja, setPestanaHoja] = useState<PestanaHoja>("piezas");
+  const [hojasVistas, setHojasVistas] = useState<ReadonlySet<PestanaHoja>>(() => new Set<PestanaHoja>());
   const deslizarHoja = useRef<number | null>(null);
+  const [alturaMovil, setAlturaMovil] = useState(false);
 
-  // La escena se crea una vez (three.js se carga solo en el navegador).
+  // El visor se crea una vez (three.js se carga solo en el navegador).
   useEffect(() => {
     let vivo = true;
     let observador: ResizeObserver | null = null;
@@ -238,7 +225,7 @@ export function Taller3D() {
         escenaRef.current = escena;
         observador = new ResizeObserver(() => escena.redimensionar());
         observador.observe(lienzoRef.current);
-        setListo(true);
+        setVisor(escena);
       } catch (causa) {
         setError("Tu navegador no pudo abrir el visor 3D (WebGL). Prueba con Chrome o Edge actualizados.");
         console.error("[3d]", causa);
@@ -252,195 +239,107 @@ export function Taller3D() {
     };
   }, []);
 
-  const inflado = infladoValido(formato, infladoCm);
-  const armado = useMemo(() => armarModulo(modulo, formato, inflado), [modulo, formato, inflado]);
-  const datosPatron = PATRONES_COLUMNA.find((p) => p.id === patron) ?? PATRONES_COLUMNA[1]!;
-  const arco = useMemo(() => armarArco({ formato, infladoCm: inflado, forma, anchoCm: anchoArcoCm, altoCm: altoArcoCm, patron, colores: coloresColumna.slice(0, datosPatron.colores) }), [formato, inflado, forma, anchoArcoCm, altoArcoCm, patron, coloresColumna, datosPatron.colores]);
-  const elementoEditado = editando !== null ? mezcla.elementos[editando] : undefined;
-  const decoracionEnEditor = elementoEditado?.decoracion ?? decoracion;
-  const decoracionArmada = useMemo(() => armarDecoracion(decoracionEnEditor), [decoracionEnEditor]);
-  const cambiarDecoracion = (nueva: Decoracion) => {
-    if (editando === null || !elementoEditado) { setDecoracion(nueva); return; }
-    const nombre = nombreDecoracion(nueva);
-    setMezcla({ ...mezcla, elementos: mezcla.elementos.map((e, i) => (i === editando ? { ...e, decoracion: nueva, nombre } : e)) });
-  };
-  const paredTrenzasArmada = useMemo(() => armarParedTrenzas(paredTrenzas), [paredTrenzas]);
-  const paredArmada = useMemo(() => armarPared({
-    formato: formatoPorId(pared.formatoId)!, infladoCm: pared.infladoCm, anchoCm: pared.anchoCm, altoCm: pared.altoCm, patron: pared.patron, colores: pared.colores,
-    union: { formato: formatoPorId("R-5")!, infladoCm: pared.union.infladoCm, codigo: pared.union.codigo },
-  }), [pared]);
-  const columna = useMemo(() => armarColumna({ formato, infladoCm: inflado, alturaCm, patron, colores: coloresColumna.slice(0, datosPatron.colores) }), [formato, inflado, alturaCm, patron, coloresColumna, datosPatron.colores]);
-  const refModulo = (i: number): ReferenciaSempertex | undefined => {
-    const c = coloresModulo[i] ?? codigo;
-    return colores.find((x) => x.codigo === c) ?? color;
-  };
-
-  // Decoración: la estructura elegida (o nada) y la decoración en cada ancla que cumple la regla; en la pared,
-  // apoyada sobre la superficie y, si se pide, una mezcla de varias repartida en las anclas.
-  const paredActual = tipoPared === "trenzas" ? paredTrenzasArmada : paredArmada;
-  const superficie = useMemo(() => superficieFrontal(paredActual.globos), [paredActual]);
-  const escenaDecoracion = useMemo((): { globos: GloboDecoracion[]; tubos: TuboDecoracion[]; materiales: MaterialDecoracion[]; soloDecoraciones: MaterialDecoracion[]; puestas: number; porElemento: number[] } => {
-    const armada = decoracionArmada;
-    if (donde === "sola") return { globos: armada.globos, tubos: armada.tubos, materiales: armada.materiales, soloDecoraciones: armada.materiales, puestas: 1, porElemento: [] };
-    if (donde === "pared") {
-      const base: GloboDecoracion[] = paredActual.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
-      const cada = Math.max(1, regla.cadaNiveles);
-      // Una sola decoración: en la malla, 1 de cada N centros de flor; en las trenzas, 1 de cada N cuartetos sobre
-      // el eje de cada trenza, corriendo media vuelta en las trenzas impares para que queden en tresbolillo.
-      const decorada = usarMezcla
-        ? decorarPared({ anclas: paredActual.anclas, mezcla, superficie, limites: { minX: 0, maxX: paredActual.anchoCm, minY: 0, maxY: paredActual.altoCm } })
-        : decorarPared({
-          anclas: tipoPared === "malla"
-            ? paredArmada.anclas.filter((a) => a.fila % cada === 0 && a.columna % cada === 0)
-            : paredTrenzasArmada.anclas.filter((a) => a.tipo === "trenza" && (a.nivel + (a.columna % 2) * Math.ceil(cada / 2)) % cada === 0),
-          mezcla: { elementos: [{ nombre: nombreDecoracion(decoracionEnEditor), decoracion: decoracionEnEditor, peso: 1 }], modo: "ciclico", semilla: 0, total: 10000, separacionCm: -1e6, giroAleatorio: false },
-          superficie,
-        });
-      return { globos: [...base, ...decorada.globos], tubos: decorada.tubos, materiales: sumarMateriales(paredActual.materiales, decorada.materiales), soloDecoraciones: decorada.materiales, puestas: decorada.colocaciones.length, porElemento: decorada.porElemento };
-    }
-    const estructura = donde === "arco" ? arco : columna;
-    const base: GloboDecoracion[] = estructura.globos.map((g) => ({ formatoId: formato.id, infladoCm: inflado, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
-    const anclas = elegirAnclas(estructura.anclas, regla);
-    return {
-      globos: [...base, ...anclas.flatMap((ancla) => colocarEn(armada.globos, ancla))],
-      tubos: anclas.flatMap((ancla) => colocarTubosEn(armada.tubos, ancla)),
-      materiales: sumarMateriales(materialesPorFormato(base), ...anclas.map(() => armada.materiales)),
-      soloDecoraciones: sumarMateriales(...anclas.map(() => armada.materiales)),
-      puestas: anclas.length, porElemento: [],
-    };
-  }, [donde, arco, columna, paredActual, paredArmada, paredTrenzasArmada, tipoPared, superficie, regla, usarMezcla, mezcla, decoracionArmada, decoracionEnEditor, formato.id, inflado]);
-
-  /** «Pared de Celebra ed. 27»: la malla de trenzas, la mezcla de la foto y la vista de decoración en la pared. */
-  function aplicarCelebra() {
-    setTipoPared("trenzas");
-    setParedTrenzas(CELEBRA_27.pared);
-    setMezcla(CELEBRA_27.mezcla);
-    setUsarMezcla(true);
-    setEditando(null);
-    setDonde("pared");
-    cambiarModo("decoracion");
-  }
-
-  // Orgánico: la columna azul de XV (motor orgánico + flores artificiales en los huecos + pedestal).
-  const [ajustesOrganico, setAjustesOrganico] = useState<AjustesOrganico>(AJUSTES_QUINCE_AZUL);
-  const organico = useMemo(() => {
-    const resultado = armarOrganico(opcionesDeAjustes(ajustesOrganico));
-    const flores = ajustesOrganico.conFlores ? repartirFlores(resultado.anclas, COLUMNA_QUINCE_AZUL.flores) : { racimos: [], materiales: [], avisos: [] };
-    return { resultado, flores };
-  }, [ajustesOrganico]);
+  // Guardar solo (medio segundo después del último cambio).
+  useEffect(() => {
+    if (!cargada) return;
+    const t = setTimeout(() => setUltimoGuardado({ escena: escenaEdit, nombre: nombreEscena, ok: guardarEscena({ nombre: nombreEscena, escena: escenaEdit }) }), 500);
+    return () => clearTimeout(t);
+  }, [cargada, escenaEdit, nombreEscena]);
 
   const armadaEscena = useMemo(() => {
-    if (modo !== "escena") return null;
+    if (!cargada) return null;
     const hecha = armadas.get(escenaVista);
     if (hecha) return hecha;
     const nueva = medirFuera("armarEscena", () => armarEscena(escenaVista, cacheEscena));
     armadas.set(escenaVista, nueva);
     return nueva;
-  }, [modo, escenaVista, cacheEscena, armadas]);
+  }, [cargada, escenaVista, cacheEscena, armadas]);
 
-  // La escena tal como la dibuja el visor. Cada cosa lleva el id de su pieza: un clic la elige y al arrastrarla se
-  // mueve todo lo suyo junto. Aparte de lo que se ve para que elegir una pieza no rehaga las listas.
+  // Lo que dibuja el visor. Cada cosa lleva el id de su pieza: un clic la elige y al arrastrarla se mueve todo lo suyo.
   const dibujoEscena = useMemo((): DibujoEscena | null => {
     if (!armadaEscena) return null;
     const hecho = dibujos.get(armadaEscena);
-    if (hecho && hecho.formatoId === formato.id) return hecho.dibujo;
+    if (hecho) return hecho;
     const dibujo: DibujoEscena = {
-      globos: armadaEscena.porNodo.flatMap((n) => n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, formato), ...(g.confeti ? { confeti: true } : {}), nodo: n.id }))),
+      globos: armadaEscena.porNodo.flatMap((n) => n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true } : {}), nodo: n.id }))),
       tubos: armadaEscena.porNodo.flatMap((n) => n.tubos.map((t): TuboEnEscena => ({ ...tuboAEscena(t), nodo: n.id }))),
       flores: armadaEscena.porNodo.flatMap((n) => n.flores.map((f) => ({ ...f, nodo: n.id }))),
       solidos: armadaEscena.porNodo.flatMap((n) => n.solidos.map((x) => ({ ...x, nodo: n.id }))),
     };
-    dibujos.set(armadaEscena, { formatoId: formato.id, dibujo });
+    dibujos.set(armadaEscena, dibujo);
     return dibujo;
-  }, [armadaEscena, formato, dibujos]);
+  }, [armadaEscena, dibujos]);
+  // Sin lo oculto (las listas nuevas solo cuando hay algo oculto: elegir una pieza no rehace nada).
+  const dibujoVisible = useMemo(() => {
+    if (!dibujoEscena || ocultos.size === 0) return dibujoEscena;
+    const ve = (x: { nodo?: string }) => !x.nodo || !ocultos.has(x.nodo);
+    return { globos: dibujoEscena.globos.filter(ve), tubos: dibujoEscena.tubos.filter(ve), flores: dibujoEscena.flores.filter(ve), solidos: dibujoEscena.solidos.filter(ve) };
+  }, [dibujoEscena, ocultos]);
+
+  const raizSolitario = solitario.solitario ? escenaVista.nodos.find((n) => n.id === solitario.solitario?.raizId) ?? null : null;
+  const todosLosGlobos = solitario.activo && vistaSolitario.todosLosGlobos && raizSolitario?.pieza.tipo === "globo" ? raizSolitario.pieza : null;
 
   // Lo que se ve.
   useEffect(() => {
-    const escena = escenaRef.current;
-    if (!listo || !escena || !color || modo === "biblioteca") return;
-    if (modo === "escena" && armadaEscena) {
-      // Ya viene en coordenadas del mundo, con su sala. Si la pieza elegida cuelga de otra, se ven las anclas de esa otra.
-      const elegido = escenaVista.nodos.find((n) => n.id === seleccion);
-      const padreId = elegido?.colocacion.en === "ancla" || elegido?.colocacion.en === "sobre" ? elegido.colocacion.padreId : null;
-      const anclas = padreId ? armadaEscena.porNodo.find((n) => n.id === padreId)?.anclas.map((a) => a.posicion) ?? [] : [];
-      // Al salir del editor solitario la cámara vuelve a donde estaba (no se reencuadra).
-      const vistaVuelta = solitario.activo ? null : solitario.tomarVista();
-      const encuadrar = !vistaVuelta && encuadradoRef.current !== vueltaEncuadre;
-      encuadradoRef.current = vueltaEncuadre;
-      // Elegir otra pieza pasa las mismas listas: el visor solo cambia la caja y las anclas, sin rehacer los globos.
-      const { globos, tubos, flores, solidos } = dibujoEscena ?? { globos: [], tubos: [], flores: [], solidos: [] };
-      escena.mostrarModulo(
-        globos,
-        anclas,
-        tubos,
-        {
-          flores, cilindros: armadaEscena.cilindros, sala: armadaEscena.sala, solidos,
-          // La copia tocada de un reparto se resalta sola; si no, la pieza entera.
-          resaltado: (() => {
-            const hecho = armadaEscena.porNodo.find((n) => n.id === seleccion);
-            return (copiaElegida ? hecho?.puestas[copiaElegida.copia]?.caja : undefined) ?? hecho?.caja ?? null;
-          })(), encuadrar,
-        },
-      );
-      if (vistaVuelta) escena.ponerVistaCamara(vistaVuelta);
+    if (!visor || !armadaEscena) return;
+    if (todosLosGlobos) {
+      // Globo suelto: todos los redondos de su color lado a lado, a su tamaño real (la vieja vista de la pestaña Globos).
+      const ref = referenciaPorCodigo(todosLosGlobos.codigo);
+      const fila: GloboEnEscena[] = FORMATOS_GLOBO.filter((f) => f.tipo === "redondo" && (ref?.formatos.includes(f.id) ?? true))
+        .map((f) => ({ formato: f, infladoCm: f.infladoDecoracionCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion" }));
+      visor.mostrar(fila);
+      encuadradoRef.current = null;
       return;
     }
-    encuadradoRef.current = null;
-    if (modo === "organico") {
-      const { resultado, flores } = organico;
-      const pedestal = COLUMNA_QUINCE_AZUL.escena.pedestal;
-      escena.mostrarModulo(
-        resultado.globos.map((g) => ({ ...globoAEscena(g, formato), confeti: g.confeti })),
-        [],
-        [],
-        {
-          flores: flores.racimos.flatMap((r) => r.flores.map((f) => ({ tipo: f.tipo, hex: f.hex, diametroCm: f.diametroCm, posicion: f.posicion, normal: f.normal }))),
-          cilindros: ajustesOrganico.conPedestal ? [{ base: pedestal.base, radioCm: pedestal.radioCm, altoCm: pedestal.altoCm, hex: "#f4f2ee" }] : [],
-        },
-      );
-    } else if (modo === "pared") {
-      escena.mostrarModulo(paredActual.globos.map((g) => globoAEscena(g, formato)), verAnclasPared ? paredActual.anclas.map((a) => a.posicion) : []);
-    } else if (modo === "decoracion") {
-      escena.mostrarModulo(escenaDecoracion.globos.map((g) => globoAEscena(g, formato)), [], escenaDecoracion.tubos.map(tuboAEscena));
-    } else if (modo === "columna" || modo === "arco") {
-      const globos: GloboColocadoEnEscena[] = (modo === "arco" ? arco.globos : columna.globos).map((g) => {
-        const ref = colores.find((x) => x.codigo === g.codigo) ?? color;
-        return { formato, infladoCm: inflado, hex: ref.hexGlobo, familia: ref.familia, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm };
-      });
-      escena.mostrarModulo(globos, []);
-    } else if (modo === "modulo") {
-      const globos: GloboColocadoEnEscena[] = armado.globos.map((g) => {
-        const ref = colores.find((x) => x.codigo === coloresModulo[g.indice]) ?? color;
-        return { formato, infladoCm: inflado, hex: ref.hexGlobo, familia: ref.familia, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm };
-      });
-      escena.mostrarModulo(globos, verAnclas ? armado.anclas.map((a) => a.posicion) : []);
-    } else if (vista === "todos") {
-      const fila: GloboEnEscena[] = FORMATOS_GLOBO.filter((f) => f.tipo === "redondo" && color.formatos.includes(f.id))
-        .map((f) => ({ formato: f, infladoCm: f.infladoDecoracionCm, hex: color.hexGlobo, familia: color.familia }));
-      escena.mostrar(fila);
-    } else {
-      escena.mostrar([{ formato, infladoCm: inflado, hex: color.hexGlobo, familia: color.familia }]);
-    }
-  }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredActual, verAnclasPared, organico, ajustesOrganico.conPedestal, armadaEscena, dibujoEscena, escenaVista, seleccion, vueltaEncuadre, copiaElegida, solitario]);
+    // Si la pieza elegida cuelga de otra, se ven las anclas de esa otra; en el editor solitario, las de la raíz si se piden.
+    const elegido = escenaVista.nodos.find((n) => n.id === seleccion);
+    const padreId = elegido?.colocacion.en === "ancla" || elegido?.colocacion.en === "sobre" ? elegido.colocacion.padreId : null;
+    const deQuien = solitario.activo && vistaSolitario.verAnclas ? solitario.solitario?.raizId ?? null : padreId;
+    const anclas = deQuien ? armadaEscena.porNodo.find((n) => n.id === deQuien)?.anclas.map((a) => a.posicion) ?? [] : [];
+    // Al salir del editor solitario la cámara vuelve a donde estaba (no se reencuadra).
+    const vistaVuelta = solitario.activo ? null : solitario.tomarVista();
+    const encuadrar = !vistaVuelta && encuadradoRef.current !== vueltaEncuadre;
+    encuadradoRef.current = vueltaEncuadre;
+    // Elegir otra pieza pasa las mismas listas: el visor solo cambia la caja y las anclas, sin rehacer los globos.
+    const { globos, tubos, flores, solidos } = dibujoVisible ?? DIBUJO_VACIO;
+    const hecho = armadaEscena.porNodo.find((n) => n.id === seleccion);
+    visor.mostrarModulo(globos, anclas, tubos, {
+      flores, cilindros: armadaEscena.cilindros, sala: armadaEscena.sala, solidos,
+      // La copia tocada de un reparto se resalta sola; si no, la pieza entera.
+      // En el editor solitario la estructura está sola: no se encierra en su caja (sí sus decoraciones al elegirlas).
+      resaltado: solitario.activo && seleccion === solitario.solitario?.raizId ? null : (copiaElegida ? hecho?.puestas[copiaElegida.copia]?.caja : undefined) ?? hecho?.caja ?? null, encuadrar,
+    });
+    if (encuadrar) setVistaFija("3d");
+    if (vistaVuelta) visor.ponerVistaCamara(vistaVuelta);
+  }, [visor, armadaEscena, dibujoVisible, escenaVista, seleccion, vueltaEncuadre, copiaElegida, solitario, vistaSolitario.verAnclas, todosLosGlobos]);
 
-  // Estables: así los catálogos del panel (cientos de tarjetas con su dibujo) no se vuelven a pintar al elegir una pieza.
+  // Estables: así los catálogos (cientos de tarjetas con su dibujo) no se vuelven a pintar al elegir una pieza.
   const cambiarDesdePanel = useCallback((e: Escena) => cambiarVista(e, { agrupar: "panel" }), [cambiarVista]);
-  const elegirDesdePanel = useCallback((id: string | null) => { setSeleccion(id); setCopiaTocada(null); }, []);
+  const elegir = useCallback((id: string | null) => { setSeleccion(id); setCopiaTocada(null); setConfirmarEliminar(null); }, []);
+  /** Elegir en el visor: en el teléfono, la hoja pasa a «Pieza» (sus medidas, colores y botones). */
+  const elegirEnVisor = useCallback((id: string | null) => {
+    elegir(id);
+    if (id && !window.matchMedia(CONSULTA_ANCHO).matches) setPestanaHoja((p) => (p === "piezas" || p === "ia" ? "pieza" : p));
+  }, [elegir]);
+  const ponNodo = useCallback((id: string, cambio: Partial<NodoEscena>, agrupar?: string) => {
+    cambiarVista({ ...escenaVista, nodos: escenaVista.nodos.map((n) => (n.id === id ? { ...n, ...cambio } : n)) }, agrupar ? { agrupar } : undefined);
+  }, [cambiarVista, escenaVista]);
 
-  // Escena a mano en el visor: clic elige, arrastrar mueve, teclado (flechas, Q/E, RePág/AvPág, Supr, Ctrl+D/Z/Y, Esc).
+  // Escena a mano en el visor: clic elige, arrastrar mueve/gira/sube, teclado (flechas, Q/E, RePág/AvPág, Supr, Ctrl+D/Z/Y, Esc).
+  const editable = listo && armadaEscena !== null && !todosLosGlobos;
   useEdicionEscena({
-    lienzoRef, visorRef: escenaRef, activo: listo && modo === "escena", escena: escenaVista, armada: armadaEscena, seleccion,
-    onSeleccion: setSeleccion, onCambio: cambiarVista, onEnVivo: setEnVivo, onDeshacer: deshacerVista, onRehacer: rehacerVista,
+    lienzoRef, visorRef: escenaRef, activo: editable, escena: escenaVista, armada: armadaEscena, seleccion, herramienta: solitario.activo ? "mover" : herramienta,
+    onSeleccion: elegirEnVisor, onCambio: cambiarVista, onEnVivo: setEnVivo, onDeshacer: deshacerVista, onRehacer: rehacerVista,
+  });
+  // La estructura como lienzo: arrastrar decoraciones (y piezas de «Añadir») al visor, coger una copia colgada y moverla.
+  const lienzoDecoraciones = useLienzoDecoraciones({
+    lienzoRef, visorRef: escenaRef, activo: editable, escena: escenaVista, armada: armadaEscena, seleccion, copia: copiaElegida,
+    onCopia: setCopiaTocada, onSeleccion: elegir, onCambio: cambiarVista, onAviso: setAvisoLienzo, cache: cacheEscena,
+    aEscena: (n) => ({ globos: n.globos.map((g) => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true } : {}) })), tubos: n.tubos.map(tuboAEscena) }),
   });
 
-  // La estructura como lienzo: arrastrar decoraciones del panel al visor, coger una copia colgada y moverla.
-  const lienzoDecoraciones = useLienzoDecoraciones({
-    lienzoRef, visorRef: escenaRef, activo: listo && modo === "escena", escena: escenaVista, armada: armadaEscena, seleccion, copia: copiaElegida,
-    onCopia: setCopiaTocada, onSeleccion: setSeleccion, onCambio: cambiarVista, onAviso: setAvisoLienzo, cache: cacheEscena,
-    aEscena: (n) => ({ globos: n.globos.map((g) => ({ ...globoAEscena(g, formato), ...(g.confeti ? { confeti: true } : {}) })), tubos: n.tubos.map(tuboAEscena) }),
-  });
   // ----------------------------------------------------------------------------------------------------------
-  // Menú contextual de una pieza (clic derecho, mantener el dedo, tecla Menú/Shift+F10) y editor solitario
+  // Menú contextual, editor solitario y acciones de la pieza
   // ----------------------------------------------------------------------------------------------------------
   const abrirMenu = useCallback((id: string, x: number, y: number, tactil: boolean) => {
     setSeleccion(id);
@@ -448,7 +347,6 @@ export function Taller3D() {
     setMenu({ id, x, y, tactil });
     setInfoMenu(null);
   }, []);
-  // Lo que dice el menú (decoraciones, quién sostiene a una decoración) se calcula con la biblioteca, que se carga aparte.
   useEffect(() => {
     if (!menu || !armadaEscena) return;
     let vivo = true;
@@ -456,7 +354,7 @@ export function Taller3D() {
     return () => { vivo = false; };
   }, [menu, escenaVista, armadaEscena]);
   useMenuContextual({
-    lienzoRef, visorRef: escenaRef, activo: listo && modo === "escena", onAbrir: abrirMenu,
+    lienzoRef, visorRef: escenaRef, activo: editable, onAbrir: abrirMenu,
     elegida: () => {
       const caja = seleccion ? armadaEscena?.porNodo.find((n) => n.id === seleccion)?.caja : undefined;
       return seleccion && caja ? { id: seleccion, centro: { x: (caja.min.x + caja.max.x) / 2, y: (caja.min.y + caja.max.y) / 2, z: (caja.min.z + caja.max.z) / 2 } } : null;
@@ -464,22 +362,107 @@ export function Taller3D() {
   });
   const cerrarMenu = useCallback(() => setMenu(null), []);
 
-  async function entrarSolitario(id: string) {
-    if (!armadaEscena || solitario.activo) return;
-    if (await solitario.entrar(id, armadaEscena)) {
+  const [historialColor, setHistorialColor] = useState<Escena[]>([]);
+  const [avisoColor, setAvisoColor] = useState<string | null>(null);
+
+  async function entrarSolitario(id: string, escena?: Escena, armada?: EscenaArmada) {
+    const a = armada ?? armadaEscena;
+    if (!a || solitario.activo) return false;
+    if (await solitario.entrar(id, a, escena)) {
       setSeleccion(id);
       setCopiaTocada(null);
       setVueltaEncuadre((v) => v + 1);
       setHistorialColor([]);
       setAvisoColor(null);
+      setVistaSolitario({ verAnclas: false, todosLosGlobos: false });
+      setColgarEnSolitario(false);
+      setPestanaHoja("parametros");
+      return true;
     }
+    return false;
   }
   function salirSolitario(aplicar: boolean) {
     const id = aplicar ? solitario.aplicar() : solitario.cancelar();
     if (id === null) return;
-    setSeleccion(id);
+    const nueva = nuevaRef.current;
+    nuevaRef.current = null;
+    // Cancelar una pieza recién creada en «Nuevas»: se quita (deshace su llegada).
+    if (!aplicar && nueva === id) { historialEscena.deshacer(); setSeleccion(null); }
+    else setSeleccion(id);
     setCopiaTocada(null);
     setHistorialColor([]);
+    setColgarEnSolitario(false);
+    setPestanaHoja("pieza");
+  }
+
+  /** «Añadir → Nuevas»: la pieza entra a la escena (con lo que la acompaña) y se abre su editor solitario. */
+  function crearYEditar(p: PiezaParaAnadir) {
+    if (solitario.activo) {
+      // Dentro del editor solitario se suma a la escena aislada (y vuelve con «Listo»).
+      const id = idNuevo(escenaVista, p.idBase);
+      cambiarVista({ ...escenaVista, nodos: [...escenaVista.nodos, { id, nombre: p.nombre, pieza: structuredClone(p.pieza), colocacion: p.colocacion }] });
+      setSeleccion(id);
+      return;
+    }
+    let escena = escenaEdit;
+    const id = idNuevo(escena, p.idBase);
+    // Lo que va al piso entra un poco delante para no quedar dentro de lo que ya hay.
+    const delante = (c: PiezaParaAnadir["colocacion"]) => (c.en === "piso" ? { ...c, zCm: c.zCm + Math.round(escena.sala.fondoCm * 0.15) } : c);
+    escena = { ...escena, nodos: [...escena.nodos, { id, nombre: p.nombre, pieza: structuredClone(p.pieza), colocacion: delante(p.colocacion) }] };
+    for (const extra of p.extras ?? []) {
+      const otro = idNuevo(escena, extra.idBase);
+      escena = { ...escena, nodos: [...escena.nodos, { id: otro, nombre: extra.nombre, pieza: structuredClone(extra.pieza), colocacion: delante(extra.colocacion) }] };
+    }
+    setEscenaEdit(escena);
+    const armada = medirFuera("armarEscena", () => armarEscena(escena, cacheEscena));
+    armadas.set(escena, armada);
+    nuevaRef.current = id;
+    void entrarSolitario(id, escena, armada).then((ok) => { if (!ok) { nuevaRef.current = null; setSeleccion(id); } });
+  }
+
+  const crearYEditarEstable = useEstable(crearYEditar);
+
+  async function duplicar(id: string) {
+    if (!armadaEscena) return;
+    const m = await cargarSolitario();
+    const r = m.duplicarPieza(escenaVista, id, armadaEscena, cacheEscena);
+    cambiarVista(r.escena);
+    if (r.id) setSeleccion(r.id);
+  }
+  async function eliminar(id: string, conDecoraciones: boolean) {
+    if (!armadaEscena) return;
+    const m = await cargarSolitario();
+    const nombre = escenaVista.nodos.find((n) => n.id === id)?.nombre ?? id;
+    const cuantas = conDecoraciones ? m.decoracionesDe(escenaVista, id, armadaEscena).length : 0;
+    cambiarVista(m.eliminarPieza(escenaVista, id, { conDecoraciones, armada: armadaEscena }));
+    setSeleccion(null);
+    setConfirmarEliminar(null);
+    setAvisoQuitar(`Quitaste «${nombre}»${conDecoraciones && cuantas ? ` con sus ${cuantas} decoraciones` : ""}.`);
+  }
+  /** «Eliminar» del inspector: si lleva decoraciones, pregunta si con ellas. */
+  async function pedirEliminar(id: string) {
+    if (!armadaEscena) return;
+    const m = await cargarSolitario();
+    const n = m.decoracionesDe(escenaVista, id, armadaEscena).length;
+    if (n > 0 && !(solitario.activo && solitario.solitario?.raizId === id)) setConfirmarEliminar({ id, decoraciones: n });
+    else await eliminar(id, false);
+  }
+  /** «Colgar otra»: el panel Añadir en Decoraciones, con la pieza elegida (sus tarjetas ofrecen colgarla de ella). */
+  function colgarEn(id: string) {
+    setSeleccion(id);
+    setPestanaAnadir("decoraciones");
+    if (solitario.activo) { setColgarEnSolitario(true); return; }
+    setPanel("anadir");
+    setPestanaHoja("anadir");
+    if (hoja === "cerrada") setHoja("media");
+    const nombre = escenaVista.nodos.find((n) => n.id === id)?.nombre ?? "la pieza";
+    setAvisoLienzo(`Arrastra una decoración hasta «${nombre}» (se marca en verde donde se puede) o tócala y elige «Colgar en «${nombre}»».`);
+  }
+  async function editarSostiene(id: string) {
+    if (!armadaEscena) return;
+    const m = await cargarSolitario();
+    const sostiene = m.infoMenuPieza(escenaVista, id, armadaEscena).sostiene;
+    if (sostiene) await entrarSolitario(sostiene.id);
   }
 
   async function accionMenu(accion: AccionMenu) {
@@ -487,665 +470,553 @@ export function Taller3D() {
     setMenu(null);
     if (!abierto || !armadaEscena) return;
     const { id } = abierto;
-    const nombre = escenaVista.nodos.find((n) => n.id === id)?.nombre ?? id;
-    if (accion === "editar") {
-      // Dentro del editor solitario, «Editar» una decoración solo la elige (su editor está en el panel).
-      if (solitario.activo) setSeleccion(id); else await entrarSolitario(id);
-      return;
-    }
-    if (accion === "editar-sostiene") {
-      const sostiene = infoMenu?.id === id ? infoMenu.info.sostiene : null;
-      if (sostiene) await entrarSolitario(sostiene.id);
-      return;
-    }
-    if (accion === "colores") { setSeleccion(id); elegirPestana("colores"); return; }
-    if (accion === "colgar") {
+    if (accion === "editar") { if (solitario.activo) setSeleccion(id); else await entrarSolitario(id); return; }
+    if (accion === "editar-sostiene") { const s = infoMenu?.id === id ? infoMenu.info.sostiene : null; if (s) await entrarSolitario(s.id); return; }
+    if (accion === "colores") {
       setSeleccion(id);
-      setAvisoLienzo(`Arrastra una decoración de «Decoraciones pequeñas» del panel hasta «${nombre}» (se marca en verde donde se puede).`);
+      if (!esAncho) { setPestanaHoja("pieza"); if (hoja === "cerrada") setHoja("media"); }
+      requestAnimationFrame(() => document.querySelector<HTMLElement>("[aria-label='Colores de la pieza'] button")?.focus());
       return;
     }
-    const m = await cargarSolitario();
-    if (accion === "duplicar") {
-      const r = m.duplicarPieza(escenaVista, id, armadaEscena, cacheEscena);
-      cambiarVista(r.escena);
-      if (r.id) setSeleccion(r.id);
-      return;
-    }
-    const conDecoraciones = accion === "eliminar-con";
-    const cuantas = infoMenu?.id === id ? infoMenu.info.decoraciones.length : 0;
-    cambiarVista(m.eliminarPieza(escenaVista, id, { conDecoraciones, armada: armadaEscena }));
-    setSeleccion(null);
-    setAvisoQuitar(`Quitaste «${nombre}»${conDecoraciones && cuantas ? ` con sus ${cuantas} decoraciones` : ""}.`);
-  }
-  useEffect(() => {
-    if (!avisoQuitar) return;
-    const t = setTimeout(() => setAvisoQuitar(null), 7000);
-    return () => clearTimeout(t);
-  }, [avisoQuitar]);
-
-  // El aviso del visor se va solo.
-  useEffect(() => {
-    if (!avisoLienzo) return;
-    const t = setTimeout(() => setAvisoLienzo(null), 7000);
-    return () => clearTimeout(t);
-  }, [avisoLienzo]);
-
-  function elegirFormato(f: FormatoGlobo) {
-    setFormatoId(f.id);
-    setInfladoCm(f.infladoDecoracionCm);
-    const disponibles = coloresDelFormato(f.id);
-    if (!disponibles.some((c) => c.codigo === codigo)) setCodigo(disponibles[0]?.codigo ?? codigo);
-    setColoresModulo((actual) => actual.map((c) => (disponibles.some((d) => d.codigo === c) ? c : disponibles[0]?.codigo ?? c)));
-    setColoresColumna((actual) => actual.map((c) => (disponibles.some((d) => d.codigo === c) ? c : disponibles[0]?.codigo ?? c)));
-    setVista("uno");
+    if (accion === "colgar") { colgarEn(id); return; }
+    if (accion === "guardar") { setSeleccion(id); setPedirGuardar((n) => n + 1); if (!esAncho) setPestanaHoja("pieza"); return; }
+    if (accion === "duplicar") { await duplicar(id); return; }
+    await eliminar(id, accion === "eliminar-con");
   }
 
-  function cambiarModo(nuevo: Modo) {
-    setModo(nuevo);
-    setAvisoColor(null);
-    if (nuevo === "modulo" && !FORMATOS_MODULO.includes(formato.id as (typeof FORMATOS_MODULO)[number])) elegirFormato(formatoPorId("R-12")!);
-    if ((nuevo === "columna" || nuevo === "arco" || nuevo === "decoracion") && !FORMATOS_COLUMNA.includes(formato.id as (typeof FORMATOS_COLUMNA)[number])) elegirFormato(formatoPorId("R-12")!);
-    setRanura(null);
-  }
+  // Los avisos sobre el visor se van solos.
+  useEffect(() => { if (!avisoQuitar) return; const t = setTimeout(() => setAvisoQuitar(null), 7000); return () => clearTimeout(t); }, [avisoQuitar]);
+  useEffect(() => { if (!avisoLienzo) return; const t = setTimeout(() => setAvisoLienzo(null), 7000); return () => clearTimeout(t); }, [avisoLienzo]);
 
-  function elegirColor(nuevo: string) {
-    setCodigo(nuevo);
-    if (modo === "columna" || modo === "arco") {
-      setColoresColumna((actual) => (ranura === null ? actual.map(() => nuevo) : actual.map((c, i) => (i === ranura ? nuevo : c))));
-      return;
-    }
-    if (modo !== "modulo") return;
-    // Con una ranura elegida cambia solo ese globo; sin ranura, todo el módulo queda de ese color.
-    setColoresModulo((actual) => (ranura === null ? actual.map(() => nuevo) : actual.map((c, i) => (i === ranura ? nuevo : c))));
-  }
-
-  const porFamilia = useMemo(() => {
-    const grupos = new Map<string, typeof colores>();
-    for (const c of colores) grupos.set(c.familia, [...(grupos.get(c.familia) ?? []), c]);
-    return [...grupos.entries()];
-  }, [colores]);
-
-  const materiales = materialesModulo(coloresModulo.slice(0, modulo.globos));
-  const formatosVisibles = modo === "modulo"
-    ? FORMATOS_GLOBO.filter((f) => FORMATOS_MODULO.includes(f.id as (typeof FORMATOS_MODULO)[number]))
-    : modo === "columna" || modo === "arco" ? FORMATOS_GLOBO.filter((f) => FORMATOS_COLUMNA.includes(f.id as (typeof FORMATOS_COLUMNA)[number])) : FORMATOS_GLOBO;
-  const seleccionado = (i: number) => (modo === "modulo" ? coloresModulo[i] : codigo);
-
-  // Colores de la escena: los que usa lo que se ve, y cambiar uno en todo el montaje de una vez.
-  const [avisoColor, setAvisoColor] = useState<string | null>(null);
-  const [historialColor, setHistorialColor] = useState<FotoColores[]>([]);
-  // En Decoración, la base (pared, columna o arco) y las decoraciones se cambian por separado.
-  const gruposColor = useMemo((): GrupoColor[] => {
-    if (modo !== "decoracion" || donde === "sola") return [];
-    const deBase = donde === "pared" ? paredActual.materiales : (donde === "arco" ? arco : columna).materiales.map((m) => ({ formatoId: formato.id, codigo: m.codigo, cantidad: m.cantidad }));
-    return [
-      { id: "base", nombre: donde === "pared" ? "Pared" : donde === "arco" ? "Arco" : "Columna", materiales: deBase },
-      { id: "decoraciones", nombre: "Decoraciones", materiales: escenaDecoracion.soloDecoraciones },
-    ];
-  }, [modo, donde, paredActual, escenaDecoracion, arco, columna, formato.id]);
-  const materialesEscena = useMemo(() => {
-    const conFormato = (lista: ReadonlyArray<{ codigo: string; cantidad: number }>) => lista.map((m) => ({ formatoId: formato.id, codigo: m.codigo, cantidad: m.cantidad }));
-    if (modo === "escena") return armadaEscena?.materiales ?? [];
-    if (modo === "organico") return organico.resultado.materiales;
-    if (modo === "pared") return paredActual.materiales;
-    if (modo === "decoracion") return escenaDecoracion.materiales;
-    if (modo === "columna") return conFormato(columna.materiales);
-    if (modo === "arco") return conFormato(arco.materiales);
-    if (modo === "modulo") return conFormato(materiales);
-    return [];
-  }, [modo, organico, paredActual, escenaDecoracion, columna, arco, materiales, formato.id, armadaEscena]);
-
-  function reemplazarEnEscena(de: string, a: string, grupo: GrupoColor["id"] | "todo" = "todo") {
-    setHistorialColor((h) => [...h.slice(-19), { pared, paredTrenzas, mezcla, decoracion, coloresColumna, coloresModulo, ajustesOrganico, codigo, escena: escenaVista }]);
-    const enBase = grupo !== "decoraciones";
-    const enDecoraciones = grupo !== "base";
-    const omitidos = new Set<string>();
-    let cambios = 0;
-    const cambiar = <T,>(valor: T): T => {
-      const r = reemplazarColor(valor, de, a);
-      r.omitidos.forEach((f) => omitidos.add(f));
-      cambios += r.cambios;
-      return r.valor;
-    };
-    const enLista = (lista: string[]) => {
-      if (!lista.includes(de)) return lista;
-      if (!colores.some((c) => c.codigo === a)) { omitidos.add(formato.id); return lista; }
-      cambios += 1;
-      return lista.map((c) => (c === de ? a : c));
-    };
-    if (modo === "organico") setAjustesOrganico(cambiar(ajustesOrganico));
-    // En la escena, el color cambia en todas sus piezas a la vez (la sala no: sus tonos no son globos).
-    if (modo === "escena") cambiarVista(cambiar(escenaVista));
-    if (modo === "pared" || (modo === "decoracion" && donde === "pared" && enBase)) {
-      // Solo la pared que se ve (malla o trenzas): la otra no está en la escena.
-      if (tipoPared === "malla") setPared(cambiar(pared)); else setParedTrenzas(cambiar(paredTrenzas));
-    }
-    if (modo === "decoracion" && enDecoraciones) {
-      // Con el color cambia también el nombre («Moño fucsia» ya no es fucsia).
-      const nueva = cambiar(mezcla);
-      setMezcla({ ...nueva, elementos: nueva.elementos.map((e, i) => (JSON.stringify(e.decoracion) === JSON.stringify(mezcla.elementos[i]?.decoracion) ? e : { ...e, nombre: nombreDecoracion(e.decoracion) })) });
-      setDecoracion(cambiar(decoracion));
-    }
-    if (modo === "columna" || modo === "arco" || (modo === "decoracion" && (donde === "columna" || donde === "arco") && enBase)) setColoresColumna(enLista(coloresColumna));
-    if (modo === "modulo") setColoresModulo(enLista(coloresModulo));
-    if (codigo === de && colores.some((c) => c.codigo === a)) setCodigo(a);
+  // Colores de la escena (o de la estructura aislada en el editor solitario): cambiar uno en todo, con su deshacer.
+  function reemplazarEnEscena(de: string, a: string) {
+    setHistorialColor((h) => [...h.slice(-19), escenaVista]);
+    const r = reemplazarColor(escenaVista, de, a);
+    cambiarVista(r.valor);
     const nombre = referenciaPorCodigo(a)?.nombreCompleto ?? a;
-    setAvisoColor(omitidos.size
-      ? `${nombre} no se fabrica en ${[...omitidos].join(", ")}: esas piezas quedan como estaban.`
-      : cambios ? null : "No había nada de ese color para cambiar.");
+    setAvisoColor(r.omitidos.length ? `${nombre} no se fabrica en ${r.omitidos.join(", ")}: esas piezas quedan como estaban.` : r.cambios ? null : "No había nada de ese color para cambiar.");
   }
-
   function deshacerColor() {
     const ultima = historialColor[historialColor.length - 1];
     if (!ultima) return;
-    setPared(ultima.pared); setParedTrenzas(ultima.paredTrenzas); setMezcla(ultima.mezcla); setDecoracion(ultima.decoracion);
-    setColoresColumna(ultima.coloresColumna); setColoresModulo(ultima.coloresModulo); setAjustesOrganico(ultima.ajustesOrganico); setCodigo(ultima.codigo); cambiarVista(ultima.escena);
+    cambiarVista(ultima);
     setHistorialColor(historialColor.slice(0, -1));
     setAvisoColor(null);
   }
 
-  // Lo que se le cuenta a FLUX junto con la captura: la estructura y sus globos (en inglés, sin marcas).
+  // Lo que se le cuenta a FLUX junto con la captura: la escena y sus globos (en inglés, sin marcas).
   const descripcionIA = useMemo(() => {
-    const m = (cm: number) => `${(cm / 100).toFixed(2).replace(/\.?0+$/, "")} m`;
-    if (modo === "escena" && armadaEscena) {
-      return descripcionRender3d(escenaEnIngles(escenaVista, armadaEscena), materialesEnIngles(armadaEscena.materiales), armadaEscena.flores.length ? "Artificial hydrangeas and roses tucked between the balloons" : "");
+    if (todosLosGlobos) {
+      const ref = referenciaPorCodigo(todosLosGlobos.codigo);
+      return descripcionRender3d(`A row of round latex balloons of every size side by side, all ${ref?.nombreEn ?? ""}`, []);
     }
-    if (modo === "organico") {
-      const r = organico.resultado;
-      return descripcionRender3d(
-        `An organic balloon column ${m(r.medidas.altoCm)} tall made of mixed-size balloons, with a balloon garland wrapping around ${ajustesOrganico.conPedestal ? "a white round pedestal" : "its base"}`,
-        materialesEnIngles(r.materiales),
-        organico.flores.racimos.length ? `${organico.flores.racimos.length} clusters of artificial hydrangea and rose flowers tucked between the balloons; clear balloons have silver confetti inside` : "",
-      );
+    if (!armadaEscena) return "";
+    if (solitario.activo && raizSolitario?.pieza.tipo === "globo" && escenaVista.nodos.length === 1) {
+      const ref = referenciaPorCodigo(raizSolitario.pieza.codigo);
+      return descripcionRender3d(`A single ${formatoEnIngles(raizSolitario.pieza.formatoId)} latex balloon, ${ref?.nombreEn ?? ""}`, []);
     }
-    if (modo === "pared") return descripcionRender3d(`A flat balloon wall ${m(paredActual.anchoCm)} wide and ${m(paredActual.altoCm)} tall, ${tipoPared === "malla" ? "a Link-O-Loon flower mesh" : "vertical braids of quartets alternating balloon sizes"}`, materialesEnIngles(paredActual.materiales));
-    if (modo === "decoracion") {
-      const base = donde === "sola" ? "A small balloon decoration piece" : donde === "pared" ? `A balloon wall ${m(paredActual.anchoCm)} wide and ${m(paredActual.altoCm)} tall` : donde === "arco" ? `A ${FORMA_EN[forma]} balloon arch ${m(anchoArcoCm)} wide` : `A balloon column ${m(columna.alturaCm)} tall`;
-      return descripcionRender3d(`${base}${donde === "sola" ? "" : ` decorated with ${escenaDecoracion.puestas} small balloon flowers and bows attached on its surface`}`, materialesEnIngles(escenaDecoracion.materiales));
-    }
-    if (modo === "columna") return descripcionRender3d(`A ${PATRON_EN[patron]} balloon column ${m(columna.alturaCm)} tall made of ${columna.niveles} stacked quartets`, materialesEnIngles(columna.materiales.map((x) => ({ ...x, formatoId: formato.id }))));
-    if (modo === "arco") return descripcionRender3d(`A ${FORMA_EN[forma]} ${PATRON_EN[patron]} balloon arch ${m(anchoArcoCm)} wide and ${m(altoArcoCm)} tall made of ${arco.niveles} quartets`, materialesEnIngles(arco.materiales.map((x) => ({ ...x, formatoId: formato.id }))));
-    if (modo === "modulo") return descripcionRender3d(`A single ${MODULO_EN[moduloId]} balloon cluster (${modulo.globos} balloons tied together at the center)`, materialesEnIngles(materiales.map((x) => ({ ...x, formatoId: formato.id }))));
-    if (vista === "todos") return descripcionRender3d(`A row of round latex balloons of every size side by side, all ${color?.nombreEn ?? ""}`, []);
-    return descripcionRender3d(`A single ${formatoEnIngles(formato.id)} latex balloon, ${color?.nombreEn ?? ""}`, []);
-  }, [modo, organico, ajustesOrganico.conPedestal, paredActual, tipoPared, donde, forma, anchoArcoCm, altoArcoCm, columna, escenaDecoracion, patron, arco, formato.id, moduloId, modulo.globos, materiales, vista, color, armadaEscena, escenaVista]);
+    return descripcionRender3d(escenaEnIngles(escenaVista, armadaEscena), materialesEnIngles(armadaEscena.materiales), armadaEscena.flores.length ? "Artificial hydrangeas and roses tucked between the balloons" : "");
+  }, [armadaEscena, escenaVista, solitario.activo, raizSolitario, todosLosGlobos]);
 
-  // Ficha del visor: compacta encima del lienzo (sin listas) y completa debajo (con materiales y notas).
-  const elegidaEscena = armadaEscena?.porNodo.find((n) => n.id === seleccion);
-  const fichaVisor = color ? (
-    <>
-                {modo === "escena" && armadaEscena ? (
-                  <>
-                    <p className="font-semibold text-texto">Escena · {escenaVista.nodos.length} {escenaVista.nodos.length === 1 ? "pieza" : "piezas"} · {armadaEscena.globos.length} globos{armadaEscena.flores.length ? ` · ${armadaEscena.flores.length} flores` : ""}</p>
-                    <p className="font-mono text-xs text-texto-suave">Sala {metros(escenaVista.sala.anchoCm)} × {metros(escenaVista.sala.fondoCm)} × {metros(escenaVista.sala.altoCm)} m{elegidaEscena ? ` · elegida: ${elegidaEscena.nombre} (${elegidaEscena.globos.length} globos)` : ""}</p>
-                    <ul className="mt-1 text-xs text-texto-suave">
-                      {armadaEscena.porNodo.map((n) => <li key={n.id}>{n.nombre}: {n.globos.length} globos{n.copias > 1 ? ` en ${n.copias} copias` : ""}</li>)}
-                    </ul>
-                    <ListaMateriales materiales={armadaEscena.materiales} />
-                    <ProductosFiesta escena={escenaVista} armada={armadaEscena} />
-                    {armadaEscena.avisos.length > 0 && <p className="mt-1 text-[0.7rem] text-texto">{armadaEscena.avisos.join(" ")}</p>}
-                  </>
-                ) : modo === "organico" ? (
-                  <>
-                    <p className="font-semibold text-texto">Columna orgánica · {metros(organico.resultado.medidas.altoCm)} m · {organico.resultado.conteo.total} globos{organico.flores.racimos.length ? ` · ${organico.flores.racimos.length} racimos de flores` : ""}</p>
-                    <p className="font-mono text-xs text-texto-suave">{organico.resultado.conteo.porTamano.grande} grandes · {organico.resultado.conteo.porTamano.mediano} medianos · {organico.resultado.conteo.porTamano.relleno} de relleno · {organico.resultado.medidas.tramos.map((t) => `${t.nombre ?? t.id}`).join(" + ")}</p>
-                    <ListaMateriales materiales={organico.resultado.materiales.map((m) => ({ formatoId: m.formatoId, codigo: m.codigo, cantidad: m.cantidad }))} />
-                    {organico.resultado.materiales.some((m) => m.confeti) && <p className="detalle-ficha mt-1 text-[0.7rem] text-texto-suave">Los cristales llevan confeti plateado por dentro.</p>}
-                    {organico.flores.materiales.length > 0 && (
-                      <ul className="mt-2 text-xs text-texto-suave">
-                        {organico.flores.materiales.map((m) => <li key={`${m.tipo}|${m.colorId}`}>{m.cantidad} × {m.nombre} <span className="font-mono">(follaje, no cotiza como globo)</span></li>)}
-                      </ul>
-                    )}
-                    {organico.resultado.avisos.length > 0 && <p className="detalle-ficha mt-1 text-[0.7rem] text-texto-suave">{organico.resultado.avisos.join(" ")}</p>}
-                  </>
-                ) : modo === "pared" ? (
-                  tipoPared === "trenzas" ? (
-                    <>
-                      <p className="font-semibold text-texto">Trenzas alternando {paredTrenzas.grande.formatoId} a {formatoCm(paredTrenzas.grande.infladoCm)} y {paredTrenzas.chico.formatoId} a {formatoCm(paredTrenzas.chico.infladoCm)} · {metros(paredTrenzasArmada.anchoCm)} × {metros(paredTrenzasArmada.altoCm)} m</p>
-                      <p className="font-mono text-xs text-texto-suave">{paredTrenzasArmada.columnas} trenzas × {paredTrenzasArmada.niveles} cuartetos ({paredTrenzasArmada.cuartetos.grande} grandes + {paredTrenzasArmada.cuartetos.chico} chicos) · {(100 / paredTrenzasArmada.pasoCm).toLocaleString("es-CO", { maximumFractionDigits: 1 })} por metro · {formatoCm(paredTrenzasArmada.anchoTrenzaCm)} por trenza</p>
-                      <ListaMateriales materiales={paredTrenzasArmada.materiales} />
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-semibold text-texto">Malla {pared.formatoId} tipo flor · {metros(paredArmada.anchoCm)} × {metros(paredArmada.altoCm)} m</p>
-                      <p className="font-mono text-xs text-texto-suave">{paredArmada.eslabones} eslabones · {paredArmada.uniones} parejas de unión ({paredArmada.uniones * 2} R-5)</p>
-                      <ListaMateriales materiales={paredArmada.materiales} />
-                    </>
-                  )
-                ) : modo === "decoracion" ? (
-                  <>
-                    <p className="font-semibold text-texto">
-                      {donde === "sola" ? `${nombreDecoracion(decoracionEnEditor)} · ${formatoCm(decoracionArmada.diametroCm)} de ancho`
-                        : donde === "pared" ? `${tipoPared === "trenzas" ? "Pared de trenzas" : `Malla ${pared.formatoId}`} ${metros(paredActual.anchoCm)} × ${metros(paredActual.altoCm)} m · ${escenaDecoracion.puestas} ${usarMezcla ? "decoraciones" : `× ${nombreDecoracion(decoracionEnEditor)}`}`
-                          : `${escenaDecoracion.puestas} × ${nombreDecoracion(decoracionEnEditor)} en ${donde === "arco" ? "el arco" : "la columna"}`}
-                    </p>
-                    {donde === "pared" && usarMezcla && (
-                      <p className="detalle-ficha text-xs text-texto-suave">{mezcla.elementos.map((e, i) => `${escenaDecoracion.porElemento[i] ?? 0} ${e.nombre}`).join(" · ")}</p>
-                    )}
-                    <p className="font-mono text-xs text-texto-suave">{escenaDecoracion.globos.length} globos{escenaDecoracion.tubos.length ? ` · ${escenaDecoracion.tubos.length} tramos de tubito` : ""}</p>
-                    <ListaMateriales materiales={escenaDecoracion.materiales} />
-                    {escenaDecoracion.materiales.some((m) => m.formatoId.startsWith("T-")) && <p className="detalle-ficha mt-1 text-[0.7rem] text-texto-suave">Tubitos contados por largo (~137 cm útiles cada uno).</p>}
-                    {escenaDecoracion.materiales.some((m) => m.formatoId === "C-6") && <p className="detalle-ficha text-[0.7rem] text-texto-suave">Corazón 6: color de Celebra ed. 27 (no está en la tabla oficial).</p>}
-                  </>
-                ) : modo === "arco" ? (
-                  <>
-                    <p className="font-semibold text-texto">Arco {FORMAS_ARCO.find((f) => f.id === forma)?.nombre.toLowerCase()} {datosPatron.nombre.toLowerCase()} de {formato.id} a {formatoCm(inflado)}</p>
-                    <p className="font-mono text-xs text-texto-suave">{(anchoArcoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} × {(altoArcoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {(arco.longitudCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 1 })} m de recorrido · {arco.niveles} cuartetos · {arco.globos.length} globos</p>
-                    <ul className="mt-1 text-xs text-texto">
-                      {arco.materiales.map((m) => {
-                        const ref = referenciaPorCodigo(m.codigo);
-                        return <li key={m.codigo}>{m.cantidad} × {formato.id} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
-                      })}
-                    </ul>
-                  </>
-                ) : modo === "columna" ? (
-                  <>
-                    <p className="font-semibold text-texto">Columna {datosPatron.nombre.toLowerCase()} de {formato.id} a {formatoCm(inflado)}</p>
-                    <p className="font-mono text-xs text-texto-suave">{(columna.alturaCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {columna.niveles} cuartetos · {columna.globos.length} globos</p>
-                    <ul className="mt-1 text-xs text-texto">
-                      {columna.materiales.map((m) => {
-                        const ref = referenciaPorCodigo(m.codigo);
-                        return <li key={m.codigo}>{m.cantidad} × {formato.id} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
-                      })}
-                    </ul>
-                  </>
-                ) : modo === "modulo" ? (
-                  <>
-                    <p className="font-semibold text-texto">{modulo.nombre} de {formato.id} a {formatoCm(inflado)}</p>
-                    <p className="font-mono text-xs text-texto-suave">{modulo.globos} globos · {formatoCm(armado.anchoCm)} de ancho</p>
-                    <ul className="mt-1 text-xs text-texto">
-                      {materiales.map((m) => {
-                        const ref = referenciaPorCodigo(m.codigo);
-                        return <li key={m.codigo}>{m.cantidad} × {formato.id} {ref?.nombreCompleto ?? m.codigo} <span className="font-mono text-texto-suave">{m.codigo}</span></li>;
-                      })}
-                    </ul>
-                  </>
-                ) : (
-                  <>
-                    <p className="font-semibold text-texto">{vista === "todos" ? "Redondos de 5\" a 36\"" : formato.nombre} · {color.nombreCompleto} <span className="font-mono text-xs text-texto-suave">{color.codigo}</span></p>
-                    <p className="font-mono text-xs text-texto-suave">
-                      {vista === "todos"
-                        ? "Inflado de decoración de cada tamaño"
-                        : formato.largoCm
-                          ? `${formatoCm(inflado)} de grosor × ${formatoCm(formato.largoCm)} de largo`
-                          : `${formatoCm(inflado)} de diámetro`}
-                      {" · "}{color.acabado}
-                    </p>
-                  </>
-                )}
-    </>
+  // Teclado del taller: Enter abre la pieza elegida en el editor solitario; Esc cierra el panel donde está el foco.
+  useEffect(() => {
+    const alTeclado = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || escribiendo(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === "Enter" && seleccion && !solitario.activo && !menu && !dialogo && !ficha) {
+        const enBoton = e.target instanceof HTMLElement && e.target.closest("button, a, summary");
+        if (enBoton) return;
+        e.preventDefault();
+        void entrarSolitario(seleccion);
+      }
+    };
+    window.addEventListener("keydown", alTeclado);
+    return () => window.removeEventListener("keydown", alTeclado);
+  });
+
+  const nodoElegido = escenaVista.nodos.find((n) => n.id === seleccion) ?? null;
+  const nodoEnVivo = nodoElegido && enVivo?.id === nodoElegido.id ? { ...nodoElegido, colocacion: enVivo.colocacion } : nodoElegido;
+  const hechoElegido = nodoElegido ? armadaEscena?.porNodo.find((n) => n.id === nodoElegido.id) : undefined;
+  const totalGlobos = armadaEscena?.globos.length ?? 0;
+  const medida = nodoElegido ? medidaPrincipal(nodoElegido.pieza, hechoElegido?.caja) : null;
+  const elegirPanel = (p: Panel) => setPanel((actual) => (actual === p ? null : p));
+  const cambiarAltura = (paso: 1 | -1) => setHoja((h) => ALTURAS[Math.max(0, Math.min(ALTURAS.length - 1, ALTURAS.indexOf(h) + paso))] ?? h);
+  const elegirPestanaHoja = (p: PestanaHoja) => { setPestanaHoja(p); if (hoja === "cerrada") setHoja("media"); };
+  const plantilla = (id: string) => {
+    if (solitario.activo) salirSolitario(false);
+    setEscenaEdit(escenaPredefinida(id));
+    setNombreEscena(ESCENAS_PREDEFINIDAS.find((p) => p.id === id)?.nombre ?? "Mi escena");
+    setSeleccion(null); setOcultos(new Set()); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); setHistorialColor([]);
+  };
+  const salaVacia = () => {
+    if (solitario.activo) salirSolitario(false);
+    setEscenaEdit({ ...escenaEdit, nodos: [] });
+    setNombreEscena("Escena nueva");
+    setSeleccion(null); setOcultos(new Set());
+  };
+  const abrirEnEscena = (escena: Escena, item: ItemBiblioteca) => {
+    if (solitario.activo) salirSolitario(false);
+    setEscenaEdit(escena);
+    setNombreEscena(item.nombre);
+    setSeleccion(null); setCopiaTocada(null); setOcultos(new Set()); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); setFicha(null);
+  };
+  const anadirItem = (item: ItemBiblioteca) => {
+    // La biblioteca ya está cargada (de ahí viene el item): este import no trae nada nuevo.
+    void import("@/lib/globos3d/biblioteca").then(({ insertarEnEscena }) => {
+      const r = insertarEnEscena(escenaVista, item, undefined, cacheEscena);
+      cambiarVista(r.escena);
+      setSeleccion(r.raizId); setCopiaTocada(null); setFicha(null);
+    });
+  };
+  const alternarOculto = useCallback((id: string) => setOcultos((o) => { const s = new Set(o); if (s.has(id)) s.delete(id); else s.add(id); return s; }), []);
+  const renombrarPieza = useCallback((id: string, nombre: string) => ponNodo(id, { nombre }), [ponNodo]);
+
+  // ----------------------------------------------------------------------------------------------------------
+  // Piezas de la interfaz
+  // ----------------------------------------------------------------------------------------------------------
+  const reemplazarEstable = useEstable((de: string, a: string) => reemplazarEnEscena(de, a));
+  const deshacerColorEstable = useEstable(deshacerColor);
+  const puedeDeshacerColor = historialColor.length > 0;
+  const enSolitario = solitario.activo;
+  const materialesVista = armadaEscena?.materiales;
+  // Memorizada: la lista de piezas (y su paleta) no se vuelve a pintar al elegir una pieza.
+  const paleta = useMemo(() => materialesVista ? (
+    <PaletaEscena variante="lista" grupos={[{ id: "todo", nombre: "", materiales: materialesVista }]} onReemplazar={reemplazarEstable}
+      aviso={avisoColor} puedeDeshacer={puedeDeshacerColor} onDeshacer={deshacerColorEstable}
+      titulo={enSolitario ? "Colores de la pieza" : "Colores de la escena"} ayuda={enSolitario ? "Toca un color para cambiarlo en toda la pieza y sus decoraciones." : "Toca un color para cambiarlo en toda la escena."} />
+  ) : null, [materialesVista, avisoColor, puedeDeshacerColor, enSolitario, reemplazarEstable, deshacerColorEstable]);
+
+  const biblioteca = armadaEscena ? <AccionesPieza escena={escenaVista} armada={armadaEscena} nodoId={nodoElegido && !solitario.activo ? nodoElegido.id : null} onVer={setFicha} pedirGuardar={pedirGuardar} /> : null;
+
+  const inspector = armadaEscena ? (
+    <Inspector escena={escenaVista} armada={armadaEscena} nodo={nodoEnVivo} copia={copiaElegida?.copia ?? null}
+      onNodo={ponNodo} onSeleccion={elegir} onEditarSola={(id) => { if (solitario.activo) setSeleccion(id); else void entrarSolitario(id); }}
+      onDuplicar={(id) => void duplicar(id)} onEliminar={(id) => void pedirEliminar(id)} confirmarEliminar={confirmarEliminar}
+      onConfirmarEliminar={(con) => { const c = confirmarEliminar; if (!c || con === null) { setConfirmarEliminar(null); return; } void eliminar(c.id, con); }}
+      onColgarOtra={colgarEn} onEditarSostiene={(id) => void editarSostiene(id)} paletaEscena={paleta} biblioteca={biblioteca} nombreEscena={nombreEscena}
+      onSala={() => { setPanel("sala"); }} onPlantillas={() => setPanel("plantillas")} enHoja={!esAncho}
+      onMas={esAncho ? undefined : (id) => setMenu({ id, x: window.innerWidth / 2, y: window.innerHeight * 0.45, tactil: false })} />
   ) : null;
 
-  // Pestañas de la hoja según lo que se modela: «Colores» no está en Globos (allí el color es parte de los ajustes)
-  // y «IA» solo en la Escena. Si la elegida no existe aquí, se ve la primera.
-  const pestanas: ReadonlyArray<{ id: PestanaHoja; nombre: string }> = [
-    { id: "ajustes", nombre: modo === "escena" ? "Piezas" : "Ajustes" },
-    ...(modo !== "globo" ? [{ id: "colores" as const, nombre: "Colores" }] : []),
-    ...(modo === "escena" ? [{ id: "ia" as const, nombre: "IA" }] : []),
-    { id: "detalle", nombre: "Detalle" },
-  ];
-  const pestana = pestanas.some((p) => p.id === pestanaElegida) ? pestanaElegida : "ajustes";
-  /** En la hoja (menos de 1024 px) solo se ve lo de la pestaña elegida; en escritorio, todo. */
-  const enHoja = (...ids: PestanaHoja[]) => (ids.includes(pestana) ? "" : "max-lg:hidden");
-  const elegirPestana = (id: PestanaHoja) => { setPestana(id); if (hoja === "cerrada") setHoja("media"); };
-  const cambiarAltura = (paso: 1 | -1) => setHoja((h) => ALTURAS[Math.max(0, Math.min(ALTURAS.length - 1, ALTURAS.indexOf(h) + paso))] ?? h);
-  // Deslizar el asa de la hoja hacia arriba la agranda; hacia abajo, la achica.
-  const alApretarAsa = (e: EventoPuntero<HTMLDivElement>) => { deslizarHoja.current = e.clientY; };
-  const alSoltarAsa = (e: EventoPuntero<HTMLDivElement>) => {
-    const inicio = deslizarHoja.current;
-    deslizarHoja.current = null;
-    if (inicio === null) return;
-    const dy = e.clientY - inicio;
-    if (Math.abs(dy) < 8) cambiarAltura(hoja === "alta" ? -1 : 1);
-    else cambiarAltura(dy < 0 ? 1 : -1);
-  };
+  // Oculto, el panel no sigue la pieza elegida (elegir no lo vuelve a pintar); al mostrarse, la toma.
+  const anadirVisible = esAncho ? (panel === "anadir" && !solitario.activo) || (solitario.activo && colgarEnSolitario) : pestanaHoja === "anadir";
+  const panelAnadir = armadaEscena ? (
+    <PanelAnadir escena={escenaVista} armada={armadaEscena} onEscena={cambiarDesdePanel} seleccion={anadirVisible ? seleccion : null} onSeleccion={elegir}
+      pestana={pestanaAnadir} onPestana={setPestanaAnadir} onNueva={crearYEditarEstable} onFicha={setFicha} enHoja={!esAncho} />
+  ) : <Cargando />;
 
-  // La pestaña del modo elegido siempre a la vista en la tira (en el teléfono no caben las nueve).
-  useEffect(() => {
-    const tira = pestanasRef.current;
-    const activa = tira?.querySelector<HTMLElement>("[aria-selected='true']");
-    if (!tira || !activa) return;
-    const izquierda = activa.offsetLeft - tira.offsetLeft;
-    if (izquierda < tira.scrollLeft || izquierda + activa.offsetWidth > tira.scrollLeft + tira.clientWidth) {
-      tira.scrollTo({ left: Math.max(0, izquierda - 16), behavior: "smooth" });
-    }
-  }, [modo]);
+  const abrirAnadir = useEstable(() => { setPanel("anadir"); setPestanaHoja("anadir"); });
+  const abrirSala = useEstable(() => setPanel("sala"));
+  const panelPiezas = !cargada ? <Cargando /> : (
+    <PanelPiezas escena={escenaVista} armada={armadaEscena} seleccion={seleccion} onSeleccion={elegir} onRenombrar={renombrarPieza}
+      ocultos={ocultos} onOcultar={alternarOculto} onAnadir={abrirAnadir} paleta={paleta} onSala={abrirSala} enHoja={!esAncho} />
+  );
 
-  const nodoElegido = modo === "escena" ? escenaVista.nodos.find((n) => n.id === seleccion) ?? null : null;
-  const piezaEnVivo = nodoElegido && enVivo?.id === nodoElegido.id ? enVivo.colocacion : nodoElegido?.colocacion;
+  const panelPlantillas = (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="px-4 pb-3 pt-4">
+        {esAncho && <h2 className="text-[15px] font-semibold">Plantillas</h2>}
+        <p className="mt-1 text-xs text-taller-suave">Empieza de una escena armada (reemplaza la que tienes; Ctrl+Z la recupera).</p>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+        <TarjetasPlantillas plantillas={ESCENAS_PREDEFINIDAS.map((p) => ({ id: p.id, nombre: p.nombre, descripcion: p.descripcion }))} onElegir={plantilla} onVacia={salaVacia} />
+      </div>
+    </div>
+  );
 
-  /** Materiales, imagen con IA y ayuda: debajo del visor en escritorio; en la pestaña «Detalle» de la hoja. */
-  const detalle = (
-    <>
-      {color && (
-        <details className="rounded-2xl bg-superficie p-3 text-sm ring-1 ring-borde" open>
-          <summary className="cursor-pointer font-semibold text-texto max-lg:min-h-11 max-lg:content-center">Materiales y detalle</summary>
-          <div className="mt-2 min-w-0 break-words">{fichaVisor}</div>
-        </details>
-      )}
-      {listo && <GeneradorIA capturar={() => escenaRef.current?.capturar() ?? null} descripcion={descripcionIA} />}
-      {!esAncho ? (
-        <p className="text-xs text-texto-suave">
-          {modo === "escena"
-            ? <><b className="font-semibold text-texto">Toca una pieza para elegirla</b> y arrástrala con el dedo, o muévela con los botones del visor. Lo colgado de otra pieza pasa de ancla con ← →. Un dedo en el vacío gira la cámara; dos dedos acercan.</>
-            : "Un dedo gira la cámara · dos dedos acercan o alejan · medidas nominales del catálogo Sempertex; el color es el del globo inflado."}
-        </p>
-      ) : modo === "escena" ? (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-texto-suave">
-          <p className="min-w-0 flex-1">
-            <b className="font-semibold text-texto">Clic en una pieza para elegirla</b> · arrástrala para moverla (imán 5 cm; Alt lo quita) · flechas 5 cm (Shift 25) · Q/E girar · RePág/AvPág altura · Supr quitar · Ctrl+D duplicar · Ctrl+Z deshacer · Esc soltar.
-            Lo colgado de otra pieza no se arrastra: las flechas lo pasan de ancla. Arrastra el vacío para girar la cámara.
-          </p>
-          <div className="flex gap-1">
-            <button type="button" onClick={deshacerVista} disabled={!puedeDeshacerVista} title="Deshacer (Ctrl+Z)" aria-label="Deshacer" className="grid size-9 place-items-center rounded-lg text-texto ring-1 ring-borde hover:bg-superficie-suave disabled:opacity-40"><Undo2 className="size-4" aria-hidden /></button>
-            <button type="button" onClick={rehacerVista} disabled={!puedeRehacerVista} title="Rehacer (Ctrl+Y)" aria-label="Rehacer" className="grid size-9 place-items-center rounded-lg text-texto ring-1 ring-borde hover:bg-superficie-suave disabled:opacity-40"><Redo2 className="size-4" aria-hidden /></button>
-          </div>
+  const panelSala = (
+    <div className="flex min-h-0 flex-1 flex-col">
+      {esAncho && <h2 className="px-4 pb-3 pt-4 text-[15px] font-semibold">Sala</h2>}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4"><EditorSala sala={escenaVista.sala} onSala={(sala) => cambiarVista({ ...escenaVista, sala }, { agrupar: "sala" })} plegable={false} /></div>
+    </div>
+  );
+
+  const parametros = solitario.solitario && raizSolitario ? (() => {
+    const parte = nodoElegido ?? raizSolitario;
+    return (
+      <ParametrosPieza escena={escenaVista} raizId={raizSolitario.id} nodo={parte}
+        onPieza={(pieza, agrupar) => ponNodo(parte.id, { pieza }, agrupar ? `${agrupar}-${parte.id}` : undefined)} onEscena={(e) => cambiarVista(e)} vista={vistaSolitario} onVista={setVistaSolitario} />
+    );
+  })() : null;
+
+  const listaParte = armadaEscena ? (
+    <div className="border-t border-taller-linea bg-taller-barra px-4 py-3">
+      <div className="flex justify-between text-[13px]"><span className="font-medium">Lista de esta pieza</span><span><span className="font-mono">{totalGlobos}</span> globos</span></div>
+      <ul className="mt-1.5 max-h-28 overflow-y-auto font-mono text-[11px] leading-relaxed text-taller-suave">
+        {[...armadaEscena.materiales].sort((a, b) => b.cantidad - a.cantidad).map((x) => <li key={`${x.formatoId}|${x.codigo}`}>{x.cantidad} × {x.formatoId} {referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} {x.codigo}</li>)}
+      </ul>
+    </div>
+  ) : null;
+
+  const nombreRaiz = raizSolitario?.nombre ?? solitario.solitario?.nombre ?? "";
+  const inicialSolitario = solitario.solitario ? { escena: solitario.solitario.escena, armada: armadas.get(solitario.solitario.escena) ?? null } : null;
+
+  // --- Barra superior (escritorio) -------------------------------------------------------------------------------
+  const barraEscena = (
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-taller-linea bg-taller-barra pl-4 pr-3">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-taller-primario text-taller-sobre-primario" aria-hidden>
+          <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx="12" cy="10" r="6" /><path d="M12 16v5" /></svg>
+        </span>
+        <span className="shrink-0 text-sm font-semibold">Taller 3D</span>
+        <span className="text-taller-borde" aria-hidden>/</span>
+        {!cargada ? <span className="h-9" /> : renombrando ? (
+          <input autoFocus defaultValue={nombreEscena} aria-label="Nombre de la escena" maxLength={120}
+            onBlur={(e) => { const v = e.currentTarget.value.trim(); if (v) setNombreEscena(v); setRenombrando(false); }}
+            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") { e.preventDefault(); setRenombrando(false); } }}
+            className="h-9 w-[min(28rem,40vw)] rounded-[10px] border border-taller-resalte bg-taller-tarjeta px-2 text-[13px] font-medium text-taller-texto outline-none" />
+        ) : (
+          <button type="button" onClick={() => setRenombrando(true)} title="Cambiar el nombre de la escena" className="h-9 min-w-0 truncate rounded-[10px] px-1.5 text-[13px] font-medium hover:bg-taller-encima">{nombreEscena}</button>
+        )}
+        <div className="relative">
+          <button type="button" onClick={() => setMenuMas(!menuMas)} aria-expanded={menuMas} aria-haspopup="menu" aria-label="Más opciones de la escena" title="Más opciones" className="grid size-7 place-items-center rounded-md text-taller-suave hover:bg-taller-encima hover:text-taller-texto">
+            <ChevronDown className="size-3.5" aria-hidden />
+          </button>
+          {menuMas && <MenuMas onCerrar={() => setMenuMas(false)} onRenombrar={() => setRenombrando(true)} onPlantillas={() => setPanel("plantillas")} onAyuda={() => setDialogo("ayuda")}
+            onGuardar={() => { setSeleccion(null); setPedirGuardar((n) => n + 1); }} />}
         </div>
-      ) : (
-        <p className="text-xs text-texto-suave">Arrastra para girar · rueda o pellizca para acercar · medidas nominales del catálogo Sempertex; el color es el del globo inflado.</p>
+        <span className="shrink-0 text-xs text-taller-suave" role="status" aria-live="polite">{!cargada ? "" : guardado === "guardado" ? "Guardado" : guardado === "guardando" ? "Guardando…" : "Sin guardar (el navegador no deja)"}</span>
+      </div>
+      <div className="ml-3 flex gap-1">
+        <button type="button" onClick={deshacerVista} disabled={!puedeDeshacerVista} aria-label="Deshacer" title="Deshacer (Ctrl+Z)" className={BTN_ICO}><Undo2 className="size-[18px]" aria-hidden /></button>
+        <button type="button" onClick={rehacerVista} disabled={!puedeRehacerVista} aria-label="Rehacer" title="Rehacer (Ctrl+Y)" className={BTN_ICO}><Redo2 className="size-[18px]" aria-hidden /></button>
+      </div>
+      <div className="flex-1" />
+      <button type="button" onClick={() => setDialogo("imagen")} disabled={!listo} className={BTN}><WandSparkles className="size-[18px]" aria-hidden />Imagen con IA</button>
+      <button type="button" onClick={() => setDialogo("lista")} disabled={!armadaEscena} className={BTN_PRI}><ShoppingCart className="size-[18px]" aria-hidden />Lista de compra · <span className="font-mono">{totalGlobos}</span> globos</button>
+    </header>
+  );
+
+  const barraSolitario = (
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-taller-solitario-borde bg-taller-solitario pl-4 pr-3">
+      <nav aria-label="Ruta" className="flex min-w-0 items-center gap-2 text-sm">
+        <button type="button" onClick={() => salirSolitario(true)} className="shrink-0 text-taller-acento hover:underline" title="Volver a la escena (aplica los cambios)">Escena</button>
+        <span className="text-taller-suave" aria-hidden>›</span>
+        <span className="truncate font-semibold" aria-current="page">{nombreRaiz}</span>
+        <span className="ml-1.5 shrink-0 rounded-md bg-taller-elegido px-2 py-[3px] text-[11px] font-semibold uppercase tracking-[0.06em] text-taller-acento">Editando sola</span>
+      </nav>
+      <div className="ml-2 flex gap-1">
+        <button type="button" onClick={deshacerVista} disabled={!puedeDeshacerVista} aria-label="Deshacer en el editor" title="Deshacer (Ctrl+Z)" className={BTN_ICO}><Undo2 className="size-[18px]" aria-hidden /></button>
+        <button type="button" onClick={rehacerVista} disabled={!puedeRehacerVista} aria-label="Rehacer en el editor" title="Rehacer (Ctrl+Y)" className={BTN_ICO}><Redo2 className="size-[18px]" aria-hidden /></button>
+      </div>
+      <div className="flex-1" />
+      <span className="text-xs text-taller-medio max-xl:hidden">Los cambios se aplican a la escena al pulsar Listo</span>
+      <button type="button" onClick={() => setDialogo("imagen")} disabled={!listo} className={BTN} title="Foto con IA de esta pieza sola"><WandSparkles className="size-[18px]" aria-hidden /><span className="max-xl:sr-only">Imagen con IA</span></button>
+      <button type="button" onClick={() => salirSolitario(false)} className={BTN}>Cancelar</button>
+      <button type="button" onClick={() => salirSolitario(true)} className={BTN_PRI}><Check className="size-[18px]" aria-hidden />Listo</button>
+    </header>
+  );
+
+  // --- El visor y lo que flota sobre él ---------------------------------------------------------------------------
+  const sobreVisor = (
+    <>
+      {!listo && !error && <p className="absolute inset-0 grid place-items-center text-sm text-taller-suave">Cargando el visor 3D…</p>}
+      {error && <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-sm">{error}</p>}
+      {esAncho && (
+        <div className="pointer-events-none absolute inset-x-0 top-3.5 z-10 flex justify-center px-3">
+          <BarraHerramientas solitario={solitario.activo} herramienta={herramienta} onHerramienta={setHerramienta} vista={vistaFija}
+            onVista={(v) => { setVistaFija(v); visor?.verDesde(v); }} onEncuadrar={() => { setVistaFija("3d"); visor?.verDesde("3d"); }} />
+        </div>
+      )}
+      {nodoElegido && hechoElegido && !todosLosGlobos && !(solitario.activo && nodoElegido.id === solitario.solitario?.raizId) && (
+        <EtiquetaElegida visor={visor} caja={(copiaElegida ? hechoElegido.puestas[copiaElegida.copia]?.caja : undefined) ?? hechoElegido.caja} contenedor={visorCajaRef}
+          texto={`${nodoElegido.nombre}${medida ? ` · ${medida}` : ""}`} />
+      )}
+      {solitario.activo && raizSolitario && !todosLosGlobos && (
+        <ReglaAlturas visor={visor} caja={armadaEscena?.porNodo.find((n) => n.id === raizSolitario.id)?.caja ?? null} contenedor={visorCajaRef} />
+      )}
+      {esAncho && herramienta === "altura" && nodoElegido?.colocacion.en === "piso" && !solitario.activo && (
+        <p role="status" className={`pointer-events-none absolute left-1/2 top-16 z-10 -translate-x-1/2 rounded-lg px-3 py-1.5 text-xs ${FLOTANTE}`}>Lo del piso no sube ni baja: ponlo «suelto» o en una pared (Lugar → Cambiar dónde va).</p>
+      )}
+      {menu && (() => {
+        const nodoMenu = escenaVista.nodos.find((n) => n.id === menu.id);
+        if (!nodoMenu) return null;
+        const info = infoMenu?.id === menu.id ? infoMenu.info : null;
+        const esRaiz = solitario.solitario?.raizId === menu.id;
+        return (
+          <MenuContextual x={menu.x} y={menu.y} tactil={menu.tactil} nombre={nodoMenu.nombre} globos={armadaEscena?.porNodo.find((n) => n.id === menu.id)?.globos.length ?? null}
+            decoraciones={info ? info.decoraciones.length : null} sostiene={solitario.activo || !info?.sostiene ? null : info.sostiene}
+            ocultar={esRaiz ? ["editar", "duplicar", "eliminar-con", "eliminar-sin", "guardar"] : solitario.activo ? ["guardar"] : []}
+            onAccion={(a) => { void accionMenu(a); }} onCerrar={cerrarMenu} />
+        );
+      })()}
+      {avisoQuitar && (
+        <div role="status" className={`absolute bottom-24 left-1/2 z-20 flex w-[min(28rem,calc(100%-24px))] -translate-x-1/2 items-center gap-2 rounded-xl px-3 py-2 text-sm ${FLOTANTE}`}>
+          <span className="min-w-0 flex-1">{avisoQuitar}</span>
+          <button type="button" onClick={() => { deshacerVista(); setAvisoQuitar(null); }} className="min-h-9 rounded-lg px-2 font-medium text-taller-acento hover:bg-taller-encima">Deshacer</button>
+        </div>
+      )}
+      {avisoLienzo && (
+        <p role="status" className={`pointer-events-none absolute left-1/2 z-20 w-[min(36rem,calc(100%-24px))] -translate-x-1/2 rounded-xl px-3 py-2 text-center text-sm ${FLOTANTE} ${esAncho ? "bottom-24" : "top-20"}`}>{avisoLienzo}</p>
+      )}
+      {esAncho && armadaEscena && (
+        <div className={`pointer-events-none absolute bottom-[18px] left-3.5 z-10 rounded-lg px-2.5 py-1.5 text-xs text-taller-texto-2 ${FLOTANTE}`}>
+          <span className="font-mono">{escenaVista.nodos.length}</span> {escenaVista.nodos.length === 1 ? "pieza" : "piezas"} · <span className="font-mono">{totalGlobos}</span> globos{ocultos.size ? ` · ${ocultos.size} oculta${ocultos.size === 1 ? "" : "s"}` : ""}
+        </div>
+      )}
+      {esAncho && armadaEscena && (
+        <div className="absolute bottom-[18px] left-1/2 z-20 w-[min(560px,calc(100%-300px))] min-w-[300px] -translate-x-1/2">
+          <AsistenteEscena escena={escenaVista} onEscena={cambiarDesdePanel} compacta />
+        </div>
       )}
     </>
   );
 
-  // En el teléfono la página no se desplaza (visor + hoja llenan la pantalla); la Biblioteca sí, como una página.
-  const fija = modo !== "biblioteca";
-  return (
-    <main className={`mx-auto flex w-full max-w-7xl flex-col gap-2 px-3 pt-2 lg:gap-4 lg:px-4 lg:py-5 ${fija ? "h-dvh overflow-hidden apaisado:pb-2 lg:h-auto lg:min-h-dvh lg:overflow-visible" : "min-h-dvh pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
-      <header className="flex shrink-0 items-center justify-between gap-2 lg:flex-wrap lg:gap-3">
-        <div className="min-w-0">
-          <p className="font-mono text-xs uppercase tracking-wider text-acento max-md:hidden apaisado:hidden">Taller 3D</p>
-          <h1 className="truncate text-lg font-semibold text-texto apaisado:text-base lg:text-2xl">Globos Sempertex en 3D</h1>
-          <p className="text-sm text-texto-suave max-md:hidden apaisado:hidden">Cada formato a su tamaño real. La cuadrícula del piso es de 10 cm.</p>
-        </div>
-        <Link href="/asistente" aria-label="Volver al asistente" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-full px-3 text-sm text-texto ring-1 ring-borde hover:bg-superficie-suave sm:px-4">
-          <ArrowLeft className="size-4" aria-hidden /> <span className="max-sm:hidden">Volver al asistente</span>
-        </Link>
-      </header>
-
-      {/* Nueve pestañas: en el teléfono la tira se desliza de lado (nunca ensancha la página). */}
-      <div ref={pestanasRef} role="tablist" aria-label="Qué modelar"
-        className="flex w-fit max-w-full shrink-0 gap-1 overflow-x-auto overscroll-x-contain rounded-full bg-superficie p-1 ring-1 ring-borde [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {([["globo", "Globos"], ["modulo", "Módulos"], ["columna", "Columna"], ["arco", "Arco"], ["pared", "Pared"], ["decoracion", "Decoración"], ["organico", "Orgánico"], ["escena", "Escena"], ["biblioteca", "Biblioteca"]] as const).map(([valor, etiqueta]) => (
-          <button key={valor} type="button" role="tab" aria-selected={modo === valor} onClick={() => { setVerEnBiblioteca(null); if (valor !== "escena" && solitario.activo) salirSolitario(true); cambiarModo(valor); }}
-            className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-medium apaisado:min-h-10 lg:min-h-10 lg:px-5 ${modo === valor ? "bg-acento text-sobre-acento" : "text-texto hover:bg-superficie-suave"}`}>
-            {etiqueta}
-          </button>
-        ))}
-      </div>
-
-      {modo === "biblioteca" && (
-        <Biblioteca escenaActual={escenaEdit} abrir={verEnBiblioteca}
-          onAbrirEnEscena={(e) => { salirSolitario(false); setEscenaEdit(e); setSeleccion(null); setCopiaTocada(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); cambiarModo("escena"); }}
-          onAnadirAEscena={(item) => {
-            // La biblioteca ya está cargada (de ahí viene el item): este import no trae nada nuevo.
-            void import("@/lib/globos3d/biblioteca").then(({ insertarEnEscena }) => { const r = insertarEnEscena(escenaEdit, item); setEscenaEdit(r.escena); setSeleccion(r.raizId); setCopiaTocada(null); cambiarModo("escena"); });
-          }} />
-      )}
-      {/* El visor queda montado (oculto) en la Biblioteca: al volver, la escena sigue ahí. */}
-      <div className={`min-h-0 flex-1 flex-col gap-2 apaisado:flex-row lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-4 ${modo === "biblioteca" ? "hidden" : "flex lg:grid"}`}>
-        <ArrastreDecoracionContexto.Provider value={modo === "escena" && listo ? lienzoDecoraciones.empezarArrastre : null}>
-        {/* Teléfono y tablet: hoja inferior con pestañas (acostado, panel a la derecha). Escritorio: columna izquierda. */}
-        <aside aria-label="Ajustes del taller"
-          onFocusCapture={(e) => { if (!esAncho && e.target instanceof HTMLTextAreaElement) setHoja("alta"); }}
-          className={`order-2 flex min-h-0 min-w-0 shrink-0 flex-col overflow-hidden rounded-t-2xl bg-fondo shadow-[0_-6px_24px_var(--sombra)] ring-1 ring-borde ${ALTURA_HOJA[hoja]} apaisado:h-auto apaisado:w-[46%] apaisado:rounded-2xl lg:order-1 lg:h-auto lg:w-auto lg:overflow-visible lg:rounded-none lg:bg-transparent lg:shadow-none lg:ring-0`}>
-          <div className="flex shrink-0 flex-col border-b border-borde-suave px-2 pb-1.5 lg:hidden">
-            <div aria-hidden onPointerDown={alApretarAsa} onPointerUp={alSoltarAsa} onPointerCancel={() => { deslizarHoja.current = null; }}
-              className="flex h-5 cursor-row-resize touch-none items-center justify-center apaisado:hidden">
-              <span className="h-1 w-10 rounded-full bg-borde" />
-            </div>
-            <div className="flex items-center gap-1 apaisado:pt-1.5">
-              <div role="tablist" aria-label="Paneles del taller" className="flex min-w-0 flex-1 gap-1">
-                {pestanas.map((p) => (
-                  <button key={p.id} type="button" role="tab" aria-selected={pestana === p.id} onClick={() => elegirPestana(p.id)}
-                    className={`min-h-11 min-w-0 flex-1 truncate rounded-xl px-1 text-sm font-medium ${pestana === p.id ? "bg-acento text-sobre-acento" : "text-texto ring-1 ring-borde"}`}>
-                    {p.nombre}
-                  </button>
-                ))}
-              </div>
-              <button type="button" onClick={() => cambiarAltura(-1)} disabled={hoja === "cerrada"} aria-label="Achicar el panel" title="Achicar el panel"
-                className="grid size-11 shrink-0 place-items-center rounded-xl text-texto ring-1 ring-borde disabled:opacity-40 apaisado:hidden"><ChevronDown className="size-5" aria-hidden /></button>
-              <button type="button" onClick={() => cambiarAltura(1)} disabled={hoja === "alta"} aria-label="Agrandar el panel" title="Agrandar el panel"
-                className="grid size-11 shrink-0 place-items-center rounded-xl text-texto ring-1 ring-borde disabled:opacity-40 apaisado:hidden"><ChevronUp className="size-5" aria-hidden /></button>
-            </div>
+  // --- Teléfono y tablet: barra compacta, botones de la pieza y hoja inferior ----------------------------------
+  const pestanasHoja: ReadonlyArray<{ id: PestanaHoja; nombre: string; icono: ReactNode }> = solitario.activo
+    ? [
+      { id: "parametros", nombre: "Parámetros", icono: <LayoutGrid className="size-5" aria-hidden /> },
+      { id: "partes", nombre: "Partes", icono: <Layers className="size-5" aria-hidden /> },
+      { id: "anadir", nombre: "Colgar", icono: <Plus className="size-5" aria-hidden /> },
+      { id: "ia", nombre: "IA", icono: <Sparkles className="size-5" aria-hidden /> },
+    ]
+    : [
+      { id: "anadir", nombre: "Añadir", icono: <Plus className="size-5" aria-hidden /> },
+      { id: "piezas", nombre: "Piezas", icono: <Layers className="size-5" aria-hidden /> },
+      { id: "pieza", nombre: "Pieza", icono: <WandSparkles className="size-5" aria-hidden /> },
+      { id: "ia", nombre: "IA", icono: <Sparkles className="size-5" aria-hidden /> },
+    ];
+  const pestanaVista = pestanasHoja.some((p) => p.id === pestanaHoja) ? pestanaHoja : pestanasHoja[0]!.id;
+  const contenidoDe = (pestana: PestanaHoja): ReactNode => {
+    switch (pestana) {
+      case "anadir": return panelAnadir;
+      case "piezas": return (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex gap-2 px-4 pt-3">
+            <button type="button" onClick={() => setPanel("plantillas")} className={`${BTN} h-11 flex-1 justify-center`}><LayoutGrid className="size-4" aria-hidden />Plantillas</button>
+            <button type="button" onClick={() => setPanel("sala")} className={`${BTN} h-11 flex-1 justify-center`}><House className="size-4" aria-hidden />Sala</button>
           </div>
-          {/* Los controles nativos de los paneles (deslizadores, casillas, colores, desplegables) con 44 px para el dedo. */}
-          <div className={`min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:flex lg:gap-4 lg:overflow-visible lg:p-0 ${hoja === "cerrada" ? "hidden apaisado:flex" : "flex"}
-            max-lg:[&_input[type=range]]:min-h-11 max-lg:[&_input[type=checkbox]]:size-5 max-lg:[&_input[type=checkbox]]:shrink-0 max-lg:[&_label:has(>input[type=checkbox])]:min-h-11
-            max-lg:[&_input[type=color]]:h-11 max-lg:[&_summary]:min-h-11 max-lg:[&_summary]:py-2.5`}>
-          {modo !== "globo" && (
-            <div className={`empty:hidden ${enHoja("colores")}`}>
-              <PaletaEscena grupos={gruposColor.length ? gruposColor : [{ id: "todo", nombre: "", materiales: materialesEscena }]} onReemplazar={reemplazarEnEscena}
-                aviso={avisoColor} puedeDeshacer={historialColor.length > 0} onDeshacer={deshacerColor} />
+          {panelPiezas}
+        </div>
+      );
+      case "pieza": return (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {inspector}
+          {nodoEnVivo && <div className="border-t border-taller-linea px-4 py-3"><h3 className="taller-rotulo mb-2">Mover con botones</h3><ControlesPieza nombre={nodoEnVivo.nombre} colocacion={nodoEnVivo.colocacion} enLinea /></div>}
+        </div>
+      );
+      case "ia": return <div className="min-h-0 flex-1 overflow-y-auto p-3">{armadaEscena && <AsistenteEscena escena={escenaVista} onEscena={cambiarDesdePanel} />}</div>;
+      case "parametros": return <div className="taller-seccionado min-h-0 flex-1 overflow-y-auto">{parametros}{listaParte}</div>;
+      case "partes": return armadaEscena && inicialSolitario && raizSolitario ? (
+        <PartesSolitario escena={escenaVista} armada={armadaEscena} inicial={inicialSolitario} raizId={raizSolitario.id} seleccion={seleccion ?? raizSolitario.id}
+          onSeleccion={(id) => { setSeleccion(id); setPestanaHoja("parametros"); }} onColgar={() => { setPestanaAnadir("decoraciones"); setPestanaHoja("anadir"); }} />
+      ) : null;
+    }
+  };
+  if (!esAncho && !hojasVistas.has(pestanaVista)) setHojasVistas(new Set(hojasVistas).add(pestanaVista));
+  const contenidoHoja = pestanasHoja.filter((p) => hojasVistas.has(p.id) || p.id === pestanaVista).map((p) => (
+    <div key={p.id} hidden={p.id !== pestanaVista} className={`min-h-0 flex-1 flex-col ${p.id === pestanaVista ? "flex" : "hidden"}`}>{contenidoDe(p.id)}</div>
+  ));
+
+  const movil = !esAncho && (
+    <>
+      {/* Barra compacta flotante arriba. */}
+      <div className="absolute inset-x-3 top-3 z-20 flex items-center gap-2" style={{ top: "max(12px, env(safe-area-inset-top))" }}>
+        {solitario.activo ? (
+          <>
+            <button type="button" onClick={() => salirSolitario(false)} aria-label="Cancelar y volver a la escena" className={`grid size-11 shrink-0 place-items-center rounded-xl ${FLOTANTE}`}><X className="size-5" aria-hidden /></button>
+            <div className="flex h-11 min-w-0 flex-1 flex-col justify-center rounded-xl border border-taller-solitario-borde bg-taller-solitario/95 px-3">
+              <div className="truncate text-[13px] font-semibold">{nombreRaiz}</div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-taller-acento">Editando sola</div>
+            </div>
+            <button type="button" onClick={deshacerVista} disabled={!puedeDeshacerVista} aria-label="Deshacer" className={`grid size-11 shrink-0 place-items-center rounded-xl disabled:opacity-45 ${FLOTANTE}`}><Undo2 className="size-5" aria-hidden /></button>
+            <button type="button" onClick={() => salirSolitario(true)} className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-xl bg-taller-primario px-3 text-sm font-medium text-taller-sobre-primario"><Check className="size-5" aria-hidden />Listo</button>
+          </>
+        ) : (
+          <>
+            <Link href="/asistente" aria-label="Volver al asistente" className={`grid size-11 shrink-0 place-items-center rounded-xl ${FLOTANTE}`}><ArrowLeft className="size-5" aria-hidden /></Link>
+            <button type="button" onClick={() => setRenombrando(true)} className={`flex h-11 min-w-0 flex-1 flex-col justify-center rounded-xl px-3 text-left ${FLOTANTE}`} aria-label={`Escena: ${nombreEscena}. Cambiar el nombre`}>
+              {renombrando || !cargada ? null : <span className="truncate text-[13px] font-semibold">{nombreEscena}</span>}
+              <span className="text-[11px] text-taller-medio"><span className="font-mono">{totalGlobos}</span> globos · {escenaVista.nodos.length} piezas</span>
+            </button>
+            <button type="button" onClick={deshacerVista} disabled={!puedeDeshacerVista} aria-label="Deshacer" className={`grid size-11 shrink-0 place-items-center rounded-xl disabled:opacity-45 ${FLOTANTE}`}><Undo2 className="size-5" aria-hidden /></button>
+            {puedeRehacerVista && <button type="button" onClick={rehacerVista} aria-label="Rehacer" className={`grid size-11 shrink-0 place-items-center rounded-xl ${FLOTANTE}`}><Redo2 className="size-5" aria-hidden /></button>}
+            <button type="button" onClick={() => setDialogo("lista")} aria-label={`Lista de compra: ${totalGlobos} globos`} className="grid size-11 shrink-0 place-items-center rounded-xl border border-taller-primario bg-taller-primario text-taller-sobre-primario"><ShoppingCart className="size-5" aria-hidden /></button>
+          </>
+        )}
+      </div>
+      {renombrando && !esAncho && (
+        <div className="absolute inset-x-3 top-16 z-30">
+          <input autoFocus defaultValue={nombreEscena} aria-label="Nombre de la escena" maxLength={120}
+            onBlur={(e) => { const v = e.currentTarget.value.trim(); if (v) setNombreEscena(v); setRenombrando(false); }}
+            onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") setRenombrando(false); }}
+            className="h-11 w-full rounded-xl border border-taller-resalte bg-taller-tarjeta px-3 text-base text-taller-texto outline-none" />
+        </div>
+      )}
+      {/* Botones de la pieza elegida, flotando a la derecha. */}
+      {nodoEnVivo && hoja !== "alta" && (
+        <div className="absolute right-3 top-[120px] z-20 flex flex-col gap-2">
+          <button type="button" onClick={() => pulsar("e")} aria-label="Girar la pieza" title="Girar 15°" className={`grid size-11 place-items-center rounded-xl ${FLOTANTE}`}><RotateCw className="size-5" aria-hidden /></button>
+          <button type="button" onClick={() => setAlturaMovil(!alturaMovil)} aria-expanded={alturaMovil} aria-label="Subir o bajar" className={`grid size-11 place-items-center rounded-xl ${FLOTANTE} ${alturaMovil ? "border-taller-resalte" : ""}`}><MoveVertical className="size-5" aria-hidden /></button>
+          {alturaMovil && (
+            <div className="flex flex-col gap-1 rounded-xl p-1" role="group" aria-label="Subir o bajar">
+              <button type="button" onClick={() => pulsar(nodoEnVivo.colocacion.en === "techo" ? "PageUp" : "ArrowUp")} className={`grid size-11 place-items-center rounded-xl text-sm ${FLOTANTE}`} aria-label="Subir">▲</button>
+              <button type="button" onClick={() => pulsar(nodoEnVivo.colocacion.en === "techo" ? "PageDown" : "ArrowDown")} className={`grid size-11 place-items-center rounded-xl text-sm ${FLOTANTE}`} aria-label="Bajar">▼</button>
             </div>
           )}
-          <div className={`flex min-w-0 flex-col gap-3 lg:gap-4 ${modo === "escena" ? enHoja("ajustes", "ia") : enHoja("ajustes")}`}>
-          {modo === "escena" && armadaEscena ? (
-            <PanelEscena escena={escenaVista} onEscena={cambiarDesdePanel} armada={armadaEscena} seleccion={seleccion} onSeleccion={elegirDesdePanel} enVivo={enVivo}
-              enMovil={pestana === "ia" ? "ia" : "piezas"}
-              onPreset={(id) => { setEscenaEdit(escenaPredefinida(id)); setSeleccion(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); }}
-              accionesPieza={(id) => <AccionesPieza key={`biblioteca-${id}`} escena={escenaVista} armada={armadaEscena} nodoId={id} onVer={(item) => { setVerEnBiblioteca(item); cambiarModo("biblioteca"); }} />} />
-          ) : modo === "organico" ? (
-            <PanelOrganico valor={ajustesOrganico} onCambio={setAjustesOrganico} />
-          ) : modo === "pared" ? (
-            <PanelPared tipo={tipoPared} onTipo={setTipoPared} valor={pared} onCambio={setPared} trenzas={paredTrenzas} onTrenzas={setParedTrenzas}
-              verAnclas={verAnclasPared} onVerAnclas={setVerAnclasPared} anclas={paredActual.anclas.length} onCelebra={aplicarCelebra} />
-          ) : modo === "decoracion" ? (
-            <PanelDecoracion decoracion={decoracionEnEditor} onDecoracion={cambiarDecoracion} editando={elementoEditado ? editando : null} onEditando={setEditando}
-              donde={donde} onDonde={setDonde} regla={regla} onRegla={setRegla} usarMezcla={usarMezcla} onUsarMezcla={setUsarMezcla}
-              mezcla={mezcla} onMezcla={setMezcla} tipoPared={tipoPared} puestas={escenaDecoracion.porElemento} onCelebra={aplicarCelebra} />
-          ) : (<>
-          {modo === "modulo" && (
-            <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-              <h2 className="mb-2 text-sm font-semibold text-texto">Módulo</h2>
-              <div className="grid grid-cols-2 gap-1.5">
-                {MODULOS.map((m) => (
-                  <button key={m.id} type="button" onClick={() => { setModuloId(m.id); setRanura(null); }} aria-pressed={m.id === modulo.id}
-                    className={`${BOTON} ${m.id === modulo.id ? ACTIVO : INACTIVO}`}>
-                    {m.nombre} <span className="font-mono text-xs opacity-75">×{m.globos}</span>
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-xs text-texto-suave">{modulo.armado}</p>
-            </section>
-          )}
+          <button type="button" onClick={() => visor?.verDesde("3d")} aria-label="Encuadrar todo" className={`grid size-11 place-items-center rounded-xl ${FLOTANTE}`}><Scan className="size-5" aria-hidden /></button>
+        </div>
+      )}
+      {/* Hoja inferior con asa y pestañas. */}
+      <section aria-label="Paneles del taller"
+        onFocusCapture={(e) => { if (e.target instanceof HTMLTextAreaElement || (e.target instanceof HTMLInputElement && e.target.type !== "range" && e.target.type !== "checkbox")) setHoja("alta"); }}
+        className={`absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-[20px] border-t border-taller-borde bg-taller-panel shadow-[0_-10px_30px_var(--sombra)] ${ALTURA_HOJA[hoja]}`}>
+        <div onPointerDown={(e) => { deslizarHoja.current = e.clientY; }} onPointerCancel={() => { deslizarHoja.current = null; }}
+          onPointerUp={(e) => { const inicio = deslizarHoja.current; deslizarHoja.current = null; if (inicio === null) return; const dy = e.clientY - inicio; if (Math.abs(dy) < 8) cambiarAltura(hoja === "alta" ? -1 : 1); else cambiarAltura(dy < 0 ? 1 : -1); }}
+          className="flex h-6 shrink-0 cursor-row-resize touch-none items-center justify-center" role="button" tabIndex={0} aria-label={hoja === "alta" ? "Achicar el panel" : "Agrandar el panel"}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); cambiarAltura(hoja === "alta" ? -1 : 1); } if (e.key === "ArrowUp") cambiarAltura(1); if (e.key === "ArrowDown") cambiarAltura(-1); }}>
+          <span className="h-1 w-10 rounded-full bg-taller-borde" aria-hidden />
+        </div>
+        {hoja !== "cerrada" && (
+          <div className={`flex min-h-0 flex-1 flex-col overflow-hidden max-lg:[&_input[type=range]]:min-h-11 max-lg:[&_input[type=checkbox]]:size-5 max-lg:[&_summary]:min-h-11`}>{contenidoHoja}</div>
+        )}
+        <nav aria-label="Secciones" className="flex shrink-0 border-t border-taller-linea pb-[max(6px,env(safe-area-inset-bottom))]">
+          {pestanasHoja.map((p) => (
+            <button key={p.id} type="button" onClick={() => elegirPestanaHoja(p.id)} aria-current={pestanaVista === p.id ? "page" : undefined}
+              className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium ${pestanaVista === p.id ? "text-taller-acento" : "text-taller-medio"}`}>
+              {p.icono}{p.nombre}
+            </button>
+          ))}
+        </nav>
+      </section>
+    </>
+  );
 
-          {modo === "arco" && (
-            <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-              <h2 className="mb-2 text-sm font-semibold text-texto">Forma del arco</h2>
-              <div className="grid grid-cols-3 gap-1.5">
-                {FORMAS_ARCO.map((f) => (
-                  <button key={f.id} type="button" onClick={() => setForma(f.id)} aria-pressed={f.id === forma}
-                    className={`${BOTON} ${f.id === forma ? ACTIVO : INACTIVO}`}>{f.nombre}</button>
-                ))}
-              </div>
-              <p className="mt-2 text-xs text-texto-suave">{FORMAS_ARCO.find((f) => f.id === forma)?.descripcion}</p>
-            </section>
-          )}
+  // Paneles que en el teléfono se abren como diálogos (Plantillas y Sala no tienen pestaña propia).
+  const panelEnDialogo = !esAncho && (panel === "plantillas" || panel === "sala");
 
-          {(modo === "columna" || modo === "arco") && (
-            <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-              <h2 className="mb-2 text-sm font-semibold text-texto">Trenza de cuartetos</h2>
-              <div className="grid grid-cols-3 gap-1.5">
-                {PATRONES_COLUMNA.map((p) => (
-                  <button key={p.id} type="button" onClick={() => { setPatron(p.id); setRanura(null); }} aria-pressed={p.id === patron}
-                    className={`${BOTON} ${p.id === patron ? ACTIVO : INACTIVO}`}>{p.nombre}</button>
-                ))}
-              </div>
-              <p className="mt-2 text-xs text-texto-suave">{datosPatron.descripcion}</p>
-              {modo === "columna" ? (
-                <>
-                  <label htmlFor="altura" className="mt-3 flex items-baseline justify-between text-sm font-semibold text-texto">
-                    Altura <span className="font-mono text-xs font-normal text-texto-suave">{(alturaCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {columna.niveles} cuartetos</span>
-                  </label>
-                  <input id="altura" type="range" min={40} max={260} step={5} value={alturaCm} onChange={(e) => setAlturaCm(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-acento,#7c3aed)]" />
-                </>
-              ) : (
-                <>
-                  <label htmlFor="ancho-arco" className="mt-3 flex items-baseline justify-between text-sm font-semibold text-texto">
-                    Ancho <span className="font-mono text-xs font-normal text-texto-suave">{(anchoArcoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m</span>
-                  </label>
-                  <input id="ancho-arco" type="range" min={100} max={500} step={10} value={anchoArcoCm} onChange={(e) => setAnchoArcoCm(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-acento,#7c3aed)]" />
-                  <label htmlFor="alto-arco" className="mt-3 flex items-baseline justify-between text-sm font-semibold text-texto">
-                    Alto <span className="font-mono text-xs font-normal text-texto-suave">{(altoArcoCm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m · {arco.niveles} cuartetos</span>
-                  </label>
-                  <input id="alto-arco" type="range" min={100} max={350} step={10} value={altoArcoCm} onChange={(e) => setAltoArcoCm(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-acento,#7c3aed)]" />
-                </>
-              )}
-              {datosPatron.colores > 1 && (
-                <>
-                  <p className="mb-2 mt-3 text-xs text-texto-suave">{ranura === null ? "Toca un color de abajo para toda la columna, o elige un puesto para cambiar solo ese." : `Elige el color ${ranura + 1}.`}</p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {Array.from({ length: datosPatron.colores }, (_, i) => {
-                      const ref = colores.find((x) => x.codigo === coloresColumna[i]);
-                      return (
-                        <button key={i} type="button" onClick={() => setRanura(ranura === i ? null : i)} aria-pressed={ranura === i}
-                          aria-label={`Color ${i + 1}: ${ref?.nombreCompleto ?? ""}`} title={`Color ${i + 1}: ${ref?.nombreCompleto ?? ""}`}
-                          className={`grid size-11 place-items-center rounded-full font-mono lg:size-10 text-xs ring-2 ring-offset-2 ring-offset-superficie ${ranura === i ? "ring-acento" : "ring-borde"}`}
-                          style={{ background: ref?.hexGlobo, color: "rgba(0,0,0,.55)" }}>{i + 1}</button>
-                      );
-                    })}
-                    {ranura !== null && <button type="button" onClick={() => setRanura(null)} className={`${BOTON} ${INACTIVO}`}>Toda la {modo === "arco" ? "estructura" : "columna"}</button>}
-                  </div>
-                </>
-              )}
-            </section>
-          )}
-
-          <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-            <h2 className="mb-2 text-sm font-semibold text-texto">{modo === "modulo" ? "Globo del módulo" : modo === "columna" || modo === "arco" ? "Globo de los cuartetos" : "Formato"}</h2>
-            <div className="grid grid-cols-3 gap-1.5">
-              {formatosVisibles.map((f) => (
-                <button key={f.id} type="button" onClick={() => elegirFormato(f)} aria-pressed={(modo !== "globo" || vista === "uno") && f.id === formato.id}
-                  className={`${BOTON} ${(modo !== "globo" || vista === "uno") && f.id === formato.id ? ACTIVO : INACTIVO}`}>
-                  {f.id}
-                </button>
+  return (
+    <div className="taller-3d fixed inset-0 flex flex-col overflow-hidden font-sans">
+      {esAncho && (solitario.activo ? barraSolitario : barraEscena)}
+      <ArrastreDecoracionContexto.Provider value={editable ? lienzoDecoraciones.empezarArrastre : null}>
+        <div className="flex min-h-0 flex-1">
+          {esAncho && !solitario.activo && (
+            <nav aria-label="Paneles" className="flex w-[60px] shrink-0 flex-col items-center gap-1.5 border-r border-taller-linea bg-taller-barra pt-2.5">
+              {PANELES.map((p) => (
+                <button key={p.id} type="button" onClick={() => elegirPanel(p.id)} aria-pressed={panel === p.id} aria-label={p.nombre} title={p.nombre} className={`${RIEL} ${panel === p.id ? RIEL_ON : ""}`}>{p.icono}</button>
               ))}
-            </div>
-            {modo === "globo" && (
-              <button type="button" onClick={() => setVista(vista === "todos" ? "uno" : "todos")} aria-pressed={vista === "todos"}
-                className={`mt-2 inline-flex w-full items-center justify-center gap-2 ${BOTON} ${vista === "todos" ? ACTIVO : INACTIVO}`}>
-                {vista === "todos" ? <Circle className="size-4" aria-hidden /> : <Rows3 className="size-4" aria-hidden />}
-                {vista === "todos" ? "Ver un solo globo" : "Todos los tamaños lado a lado"}
-              </button>
-            )}
-          </section>
-
-          {(modo !== "globo" || vista === "uno") && (
-            <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-              <label htmlFor="inflado" className="flex items-baseline justify-between text-sm font-semibold text-texto">
-                Inflado <span className="font-mono text-xs font-normal text-texto-suave">{formatoCm(inflado)} de {formatoCm(formato.diametroMaxCm)} máx.</span>
-              </label>
-              <input id="inflado" type="range" min={Math.round(formato.diametroMaxCm * 0.4 * 10) / 10} max={formato.diametroMaxCm} step={0.5}
-                value={inflado} onChange={(e) => setInfladoCm(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-acento,#7c3aed)]" />
-              <button type="button" onClick={() => setInfladoCm(formato.infladoDecoracionCm)} className="mt-1 text-xs text-acento underline-offset-2 hover:underline max-lg:min-h-11">
-                Inflado de decoración ({formatoCm(formato.infladoDecoracionCm)})
-              </button>
-              {modo === "globo" && <p className="mt-2 text-xs text-texto-suave">{formato.descripcion}</p>}
-            </section>
+              <div className="flex-1" />
+              <Link href="/asistente" aria-label="Volver al asistente" title="Volver al asistente" className={RIEL}><ArrowLeft className="size-5" aria-hidden /></Link>
+              <button type="button" onClick={() => setDialogo("ayuda")} aria-label="Ayuda y atajos de teclado" title="Ayuda y atajos" className={`${RIEL} mb-2.5`}><CircleHelp className="size-5" aria-hidden /></button>
+            </nav>
           )}
-
-          {modo === "modulo" && (
-            <section className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-              <h2 className="text-sm font-semibold text-texto">Color de cada globo</h2>
-              <p className="mb-2 text-xs text-texto-suave">{ranura === null ? "Elige un color para todo el módulo, o toca un globo para cambiar solo ese." : `Elige el color del globo ${ranura + 1}.`}</p>
-              <div className="flex flex-wrap items-center gap-2">
-                {Array.from({ length: modulo.globos }, (_, i) => {
-                  const ref = refModulo(i);
-                  return (
-                    <button key={i} type="button" onClick={() => setRanura(ranura === i ? null : i)} aria-pressed={ranura === i}
-                      aria-label={`Globo ${i + 1}: ${ref?.nombreCompleto ?? ""}`} title={`Globo ${i + 1}: ${ref?.nombreCompleto ?? ""}`}
-                      className={`grid size-11 place-items-center rounded-full font-mono lg:size-10 text-xs ring-2 ring-offset-2 ring-offset-superficie ${ranura === i ? "ring-acento" : "ring-borde"}`}
-                      style={{ background: ref?.hexGlobo, color: "rgba(0,0,0,.55)" }}>{i + 1}</button>
-                  );
-                })}
-                {ranura !== null && <button type="button" onClick={() => setRanura(null)} className="text-xs text-acento underline-offset-2 hover:underline max-lg:min-h-11">Todo el módulo</button>}
-              </div>
-              <label className="mt-3 flex items-center gap-2 text-sm text-texto max-lg:min-h-11" htmlFor="ver-anclas">
-                <input id="ver-anclas" type="checkbox" checked={verAnclas} onChange={(e) => setVerAnclas(e.target.checked)} />
-                <Anchor className="size-4 text-acento" aria-hidden /> Ver anclas ({armado.anclas.length})
-              </label>
-              <p className="mt-1 text-xs text-texto-suave">Las anclas son los puntos donde se cuelga una decoración: el centro y los huecos entre globos.</p>
-            </section>
-          )}
-
-          <section className="min-h-0 rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-            <h2 className="mb-1 text-sm font-semibold text-texto">Color <span className="font-normal text-texto-suave">· {colores.length} en {formato.id}</span></h2>
-            <div className="flex flex-col gap-3 lg:max-h-[42vh] lg:overflow-y-auto lg:pr-1">
-              {porFamilia.map(([familia, lista]) => (
-                <div key={familia}>
-                  <p className="mb-1 font-mono text-[0.7rem] uppercase tracking-wider text-texto-suave">{NOMBRE_FAMILIA[familia] ?? familia}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {lista.map((c) => {
-                      const marcado = modo === "columna" || modo === "arco"
-                        ? (ranura === null ? coloresColumna.slice(0, datosPatron.colores).every((x) => x === c.codigo) : coloresColumna[ranura] === c.codigo)
-                        : modo === "modulo" ? (ranura === null ? coloresModulo.slice(0, modulo.globos).every((x) => x === c.codigo) : seleccionado(ranura) === c.codigo) : c.codigo === color?.codigo;
-                      return (
-                        <button key={c.codigo} type="button" onClick={() => elegirColor(c.codigo)} aria-pressed={marcado}
-                          title={`${c.nombreCompleto} ${c.codigo}`} aria-label={`${c.nombreCompleto} ${c.codigo}`}
-                          className={`size-9 rounded-full ring-2 ring-offset-2 max-lg:size-11 ring-offset-superficie ${marcado ? "ring-acento" : "ring-transparent hover:ring-borde"}`}
-                          style={{ background: c.hexGlobo, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.12)" }} />
-                      );
-                    })}
-                  </div>
+          {esAncho && (
+            // Los paneles ya abiertos quedan montados y ocultos: volver a abrirlos no los pinta de nuevo (ni rehace la
+            // biblioteca, que sigue al día por debajo).
+            <aside aria-label={PANELES.find((p) => p.id === panel)?.nombre} hidden={solitario.activo || !panel}
+              onKeyDown={(e) => { if (e.key === "Escape" && !e.defaultPrevented && !escribiendo(e.target)) { e.preventDefault(); setPanel(null); } }}
+              className={`min-h-0 shrink-0 flex-col border-r border-taller-linea bg-taller-panel ${solitario.activo || !panel ? "hidden" : "flex"} ${panel === "anadir" ? "w-[340px]" : panel === "plantillas" ? "w-[320px]" : "w-[272px]"}`}>
+              {PANELES.filter((p) => panelesVistos.has(p.id)).map((p) => (
+                <div key={p.id} hidden={panel !== p.id} className={`min-h-0 flex-1 flex-col ${panel === p.id ? "flex" : "hidden"}`}>
+                  {p.id === "anadir" ? panelAnadir : p.id === "piezas" ? panelPiezas : p.id === "plantillas" ? panelPlantillas : panelSala}
                 </div>
               ))}
-            </div>
-          </section>
-          </>)}
-          </div>
-          {!esAncho && <div className={`flex min-w-0 flex-col gap-3 ${enHoja("detalle")}`}>{detalle}</div>}
-          </div>
-        </aside>
-        </ArrastreDecoracionContexto.Provider>
+            </aside>
+          )}
+          {esAncho && solitario.activo && armadaEscena && inicialSolitario && raizSolitario && (
+            <aside aria-label="Partes de la pieza" className="flex w-60 shrink-0 flex-col border-r border-taller-linea bg-taller-panel">
+              <PartesSolitario escena={escenaVista} armada={armadaEscena} inicial={inicialSolitario} raizId={raizSolitario.id} seleccion={seleccion ?? raizSolitario.id}
+                onSeleccion={elegir} onColgar={() => colgarEn(raizSolitario.id)} />
+            </aside>
+          )}
+          <main ref={visorCajaRef} aria-label="Visor 3D" className={`relative min-w-0 flex-1 overflow-hidden ${solitario.activo ? "bg-[radial-gradient(circle_at_50%_40%,var(--taller-encima)_0,var(--taller-visor)_70%)]" : "bg-taller-visor"}`}>
+            {/* En el teléfono el lienzo termina donde empieza la hoja (al encuadrar, la escena queda a la vista). */}
+            <canvas ref={lienzoRef} className={`absolute inset-x-0 top-0 block w-full touch-none ${esAncho ? "h-full" : hoja === "cerrada" ? "h-[calc(100%-84px)]" : "h-[56%]"}`} aria-label="Escena en 3D: arrastra con un dedo o el ratón para girar; pellizca o usa la rueda para acercar. Clic en una pieza para elegirla." />
+            {sobreVisor}
+            {esAncho && solitario.activo && colgarEnSolitario && (
+              <aside aria-label="Colgar decoración" onKeyDown={(e) => { if (e.key === "Escape" && !e.defaultPrevented) { e.preventDefault(); setColgarEnSolitario(false); } }}
+                className="absolute inset-y-0 left-0 z-30 flex w-[340px] flex-col border-r border-taller-linea bg-taller-panel shadow-[8px_0_24px_var(--sombra)]">
+                <button type="button" onClick={() => setColgarEnSolitario(false)} aria-label="Cerrar" title="Cerrar (Esc)" className={`${BTN_ICO} absolute right-3 top-3 z-10`}><X className="size-4" aria-hidden /></button>
+                {panelAnadir}
+              </aside>
+            )}
+            {movil}
+          </main>
+          {esAncho && (
+            <aside aria-label={solitario.activo ? "Parámetros de la pieza" : nodoElegido ? "Pieza elegida" : "Escena"}
+              className={`flex min-h-0 shrink-0 flex-col overflow-y-auto border-l border-taller-linea bg-taller-panel ${solitario.activo ? "w-[340px]" : "w-80"}`}>
+              {solitario.activo ? (
+                <>
+                  <div className="px-4 pt-4"><div className="taller-rotulo text-taller-acento">{nodoElegido ? NOMBRE_TIPO[nodoElegido.pieza.tipo] : ""}</div>{nodoElegido && nodoElegido.id !== raizSolitario?.id && <p className="mt-1 text-sm font-semibold">{nodoElegido.nombre}</p>}</div>
+                  <div className="taller-seccionado flex flex-col">{parametros}</div>
+                  <div className="flex-1" />
+                  {listaParte}
+                </>
+              ) : inspector}
+            </aside>
+          )}
+        </div>
+      </ArrastreDecoracionContexto.Provider>
 
-        <section className="order-1 flex min-h-0 min-w-0 flex-1 flex-col gap-2 lg:sticky lg:top-4 lg:order-2 lg:flex-none lg:self-start" aria-label="Visor 3D">
-          <div className="relative min-h-[140px] flex-1 overflow-hidden rounded-2xl bg-superficie-suave ring-1 ring-borde lg:h-[calc(100dvh-220px)] lg:min-h-[320px] lg:flex-none">
-            <canvas ref={lienzoRef} className="block h-full w-full touch-none" aria-label="Modelo en 3D: arrastra con un dedo o el ratón para girar; pellizca o usa la rueda para acercar" />
-            {!listo && !error && <p className="absolute inset-0 grid place-items-center text-sm text-texto-suave">Cargando el visor 3D…</p>}
-            {error && <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-texto">{error}</p>}
-            {modo === "escena" && solitario.solitario && (
-              <div role="region" aria-label="Editor solitario" className="absolute left-2 top-2 z-10 flex max-w-[calc(100%-7.5rem)] flex-wrap items-center gap-2 rounded-xl bg-superficie/95 px-2 py-1 text-sm shadow-sm ring-1 ring-acento lg:left-3 lg:top-3 lg:max-w-[calc(100%-1.5rem)]">
-                <nav aria-label="Dónde estás" className="min-w-0 truncate text-texto-suave">
-                  Escena <span aria-hidden>›</span> <b className="font-semibold text-texto" aria-current="page">{escenaVista.nodos.find((n) => n.id === solitario.solitario?.raizId)?.nombre ?? solitario.solitario.nombre}</b>
-                </nav>
-                <button type="button" onClick={() => salirSolitario(false)} className="min-h-9 rounded-lg px-2 text-texto ring-1 ring-borde hover:bg-superficie-suave">Cancelar</button>
-                <button type="button" onClick={() => salirSolitario(true)} className="min-h-9 rounded-lg bg-acento px-3 font-medium text-sobre-acento">Listo</button>
-              </div>
-            )}
-            {menu && (() => {
-              const nodoMenu = escenaVista.nodos.find((n) => n.id === menu.id);
-              if (!nodoMenu) return null;
-              const info = infoMenu?.id === menu.id ? infoMenu.info : null;
-              const esRaiz = solitario.solitario?.raizId === menu.id;
-              return (
-                <MenuContextual x={menu.x} y={menu.y} tactil={menu.tactil} nombre={nodoMenu.nombre} decoraciones={info ? info.decoraciones.length : null}
-                  sostiene={solitario.activo || !info?.sostiene ? null : info.sostiene} ocultar={esRaiz ? ["editar", "duplicar", "eliminar-con", "eliminar-sin"] : []}
-                  onAccion={(a) => { void accionMenu(a); }} onCerrar={cerrarMenu} />
-              );
-            })()}
-            {modo === "escena" && avisoQuitar && (
-              <div role="status" className="absolute bottom-16 left-3 right-3 z-10 mx-auto flex max-w-md items-center gap-2 rounded-xl bg-superficie/95 px-3 py-2 text-sm text-texto shadow-sm ring-1 ring-borde lg:bottom-3">
-                <span className="min-w-0 flex-1">{avisoQuitar}</span>
-                <button type="button" onClick={() => { deshacerVista(); setAvisoQuitar(null); }} className="min-h-9 rounded-lg px-2 font-medium text-acento ring-1 ring-borde hover:bg-superficie-suave">Deshacer</button>
-              </div>
-            )}
-            {color && !(modo === "escena" && solitario.activo) && (
-              <div className="pointer-events-none absolute left-2 top-2 max-w-[calc(100%-7.5rem)] apaisado:hidden rounded-xl bg-superficie/90 px-2 py-1 text-xs shadow-sm ring-1 ring-borde backdrop-blur lg:left-3 lg:top-3 lg:max-w-[min(80%,34rem)] lg:px-3 lg:py-2 lg:text-sm [&_.detalle-ficha]:hidden [&_ul]:hidden">
-                {fichaVisor}
-              </div>
-            )}
-            {modo === "escena" && listo && (
-              <DeshacerTactil onDeshacer={deshacerVista} onRehacer={rehacerVista} puedeDeshacer={puedeDeshacerVista} puedeRehacer={puedeRehacerVista} />
-            )}
-            {/* Con la hoja alta el visor queda bajito: los botones de mover vuelven al bajar la hoja. */}
-            {nodoElegido && piezaEnVivo && listo && (esAncho || hoja !== "alta") && <ControlesPieza key={nodoElegido.id} nombre={nodoElegido.nombre} colocacion={piezaEnVivo} />}
-            {modo === "escena" && avisoLienzo && (
-              <p role="status" className={`pointer-events-none absolute left-3 right-3 mx-auto max-w-xl rounded-xl bg-superficie/95 px-3 py-2 text-center text-sm text-texto shadow-sm ring-1 ring-borde ${nodoElegido ? "top-16 lg:top-auto lg:bottom-3 lg:pointer-coarse:top-16 lg:pointer-coarse:bottom-auto" : "bottom-3"}`}>{avisoLienzo}</p>
-            )}
-          </div>
-          {esAncho && detalle}
-        </section>
-      </div>
-    </main>
+      <DialogoTaller abierto={dialogo === "lista"} onCerrar={() => setDialogo(null)} titulo={`Lista de compra · ${totalGlobos} globos`} forma="cajon">
+        {armadaEscena && dialogo === "lista" && <ListaCompra nombre={nombreEscena} escena={escenaVista} armada={armadaEscena} productosExactos={<ProductosEscena escena={escenaVista} nombre={nombreEscena} />} />}
+      </DialogoTaller>
+      <DialogoTaller abierto={dialogo === "imagen"} onCerrar={() => setDialogo(null)} titulo="Imagen con IA">
+        <div className="p-4">
+          <p className="mb-3 text-sm text-taller-suave">Convierte lo que se ve en el visor en una foto realista (gíralo antes para elegir el ángulo). {solitario.activo ? "Solo la pieza que estás editando." : "La escena entera, como la ves."}</p>
+          {listo && <GeneradorIA capturar={() => escenaRef.current?.capturar() ?? null} descripcion={descripcionIA} />}
+        </div>
+      </DialogoTaller>
+      <DialogoTaller abierto={dialogo === "ayuda"} onCerrar={() => setDialogo(null)} titulo="Ayuda y atajos">
+        <Ayuda />
+      </DialogoTaller>
+      <DialogoTaller abierto={ficha !== null} onCerrar={() => setFicha(null)} titulo={ficha?.nombre ?? "Ficha"} forma="grande">
+        {ficha && <FichaDialogo key={ficha.id} item={ficha} onAbrirEnEscena={abrirEnEscena} onAnadir={anadirItem} onCerrar={() => setFicha(null)} />}
+      </DialogoTaller>
+      <DialogoTaller abierto={panelEnDialogo} onCerrar={() => setPanel(null)} titulo={panel === "sala" ? "Sala" : "Plantillas"}>
+        {panelEnDialogo && (panel === "sala" ? panelSala : panelPlantillas)}
+      </DialogoTaller>
+    </div>
+  );
+}
+
+/** El menú de la escena (junto a su nombre): renombrar, plantillas, guardar en la biblioteca, ayuda y volver al asistente. */
+function MenuMas({ onCerrar, onRenombrar, onPlantillas, onAyuda, onGuardar }: { onCerrar: () => void; onRenombrar: () => void; onPlantillas: () => void; onAyuda: () => void; onGuardar: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    ref.current?.querySelector<HTMLElement>("[role='menuitem']")?.focus();
+    const fuera = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) onCerrar(); };
+    window.addEventListener("pointerdown", fuera, true);
+    return () => window.removeEventListener("pointerdown", fuera, true);
+  }, [onCerrar]);
+  const item = "flex min-h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-[13px] text-taller-texto outline-none hover:bg-taller-elegido focus-visible:bg-taller-elegido";
+  const hacer = (f: () => void) => () => { onCerrar(); f(); };
+  return (
+    <div ref={ref} role="menu" aria-label="Opciones de la escena"
+      onKeyDown={(e) => {
+        const items = [...(ref.current?.querySelectorAll<HTMLElement>("[role='menuitem']") ?? [])];
+        const i = items.indexOf(document.activeElement as HTMLElement);
+        if (e.key === "Escape" || e.key === "Tab") { e.preventDefault(); onCerrar(); }
+        else if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length]?.focus(); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length]?.focus(); }
+      }}
+      className="absolute left-0 top-9 z-50 flex w-64 flex-col gap-0.5 rounded-xl border border-taller-solitario-borde bg-taller-boton p-1.5 shadow-[0_18px_40px_var(--sombra)]">
+      <button type="button" role="menuitem" onClick={hacer(onRenombrar)} className={item}>Cambiar el nombre</button>
+      <button type="button" role="menuitem" onClick={hacer(onPlantillas)} className={item}>Empezar de una plantilla…</button>
+      <button type="button" role="menuitem" onClick={hacer(onGuardar)} className={item}>Guardar la escena en mi biblioteca…</button>
+      <button type="button" role="menuitem" onClick={hacer(onAyuda)} className={item}>Ayuda y atajos de teclado</button>
+      <div aria-hidden className="mx-1 my-1 h-px bg-taller-borde" />
+      <Link href="/asistente" role="menuitem" onClick={onCerrar} className={item}><ArrowLeft className="size-4" aria-hidden />Volver al asistente</Link>
+    </div>
+  );
+}
+
+/** La ayuda del taller: qué hace cada cosa y los atajos de teclado. */
+function Ayuda() {
+  const atajos: ReadonlyArray<[string, string]> = [
+    ["Clic en una pieza", "Elegirla (clic en el vacío la suelta)"], ["Arrastrar la pieza elegida", "Moverla (imán de 5 cm; Alt lo quita). Con «Girar» o «Subir o bajar» de la barra del visor, girarla o subirla"],
+    ["Clic derecho / mantener el dedo / Menú o Shift+F10", "Menú de la pieza: Editar sola, Duplicar, Colgar decoración, Colores, Guardar, Eliminar"],
+    ["Enter", "Abrir la pieza elegida en el editor solitario"], ["Flechas", "Mover 5 cm (Shift: 25 cm); lo colgado pasa de ancla"], ["Q / E", "Girar 15° (Shift: 45°)"],
+    ["RePág / AvPág", "Subir y bajar (pared, techo); suelta: al frente y al fondo"], ["Supr", "Quitar la pieza (o la copia elegida de un reparto)"], ["Ctrl+D", "Duplicar"],
+    ["Ctrl+Z / Ctrl+Y", "Deshacer / rehacer"], ["Esc", "Soltar la pieza, cerrar un panel o un menú, cancelar un arrastre"],
+    ["Arrastrar el vacío", "Girar la cámara (rueda o pellizco: acercar)"], ["F2 o doble clic en «Piezas»", "Cambiar el nombre de una pieza"],
+  ];
+  return (
+    <div className="flex flex-col gap-4 p-4 text-sm">
+      <p className="text-taller-texto-2">Añade estructuras, decoraciones, utilería o ideas desde <b>Añadir</b> (arrástralas al visor: se marca en verde dónde pueden ir). Elige una pieza para ver sus medidas, colores y lugar en el inspector; <b>Editar sola</b> la abre con todos sus parámetros. La <b>lista de compra</b> trae los globos y los productos exactos de la tienda. La escena se guarda sola en este navegador.</p>
+      <dl className="grid grid-cols-[minmax(0,14rem)_minmax(0,1fr)] gap-x-4 gap-y-2">
+        {atajos.map(([k, v]) => <div key={k} className="contents"><dt className="font-mono text-xs text-taller-acento">{k}</dt><dd className="text-taller-texto-2">{v}</dd></div>)}
+      </dl>
+      <p className="text-xs text-taller-suave">Medidas nominales del catálogo Sempertex; el color es el del globo inflado. La cuadrícula del piso es de 10 cm.</p>
+    </div>
   );
 }

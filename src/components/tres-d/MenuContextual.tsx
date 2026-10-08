@@ -2,16 +2,18 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as EventoTeclado, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Copy, Flower2, Palette, Pencil, Trash2, Wrench } from "lucide-react";
+import { BookmarkPlus, Copy, Flower2, Palette, Pencil, Trash2, Wrench } from "lucide-react";
 
 /** Lo que se puede pedir desde el menú de una pieza. */
-export type AccionMenu = "editar" | "duplicar" | "colgar" | "colores" | "eliminar-con" | "eliminar-sin" | "editar-sostiene";
+export type AccionMenu = "editar" | "duplicar" | "colgar" | "colores" | "guardar" | "eliminar-con" | "eliminar-sin" | "editar-sostiene";
 
 type Props = {
   /** Dónde se abre (coordenadas de cliente: junto al puntero, al dedo o a la pieza). */
   x: number;
   y: number;
   nombre: string;
+  /** Cuántos globos lleva (en la cabecera del menú). */
+  globos?: number | null;
   /** Cuántas decoraciones lleva la pieza (`null` mientras se calcula): con alguna, «Eliminar» pregunta si con ellas. */
   decoraciones: number | null;
   /** Si es una decoración colgada: la estructura que la sostiene («Editar la estructura que la sostiene»). */
@@ -25,9 +27,9 @@ type Props = {
 };
 
 const BLOQUEO_TACTIL_MS = 350;
-const ITEM = "flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm text-texto outline-none hover:bg-superficie-suave focus-visible:bg-superficie-suave focus-visible:ring-2 focus-visible:ring-acento lg:min-h-9";
+const ITEM = "flex min-h-11 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-[13px] text-taller-texto outline-none hover:bg-taller-elegido focus-visible:bg-taller-elegido focus-visible:ring-2 focus-visible:ring-taller-acento lg:min-h-9";
 
-type Opcion = { accion: AccionMenu | "eliminar" | "volver"; texto: string; icono?: ReactNode; peligro?: boolean };
+type Opcion = { accion: AccionMenu | "eliminar" | "volver"; texto: string; icono?: ReactNode; peligro?: boolean; tecla?: string };
 
 /**
  * Menú contextual de una pieza de la escena (clic derecho, mantener presionado, tecla Menú/Shift+F10 o el botón «⋯»):
@@ -36,7 +38,7 @@ type Opcion = { accion: AccionMenu | "eliminar" | "volver"; texto: string; icono
  * Accesible: `role="menu"`, foco en la primera opción, flechas/Inicio/Fin para moverse, Esc o Tab lo cierran y el foco
  * vuelve a donde estaba. Va en un portal (el visor recorta lo que se sale).
  */
-export function MenuContextual({ x, y, nombre, decoraciones, sostiene, ocultar = [], tactil = false, onAccion, onCerrar }: Props) {
+export function MenuContextual({ x, y, nombre, globos = null, decoraciones, sostiene, ocultar = [], tactil = false, onAccion, onCerrar }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [paso, setPaso] = useState<"acciones" | "confirmar">("acciones");
   const [pos, setPos] = useState({ left: x, top: y });
@@ -56,12 +58,13 @@ export function MenuContextual({ x, y, nombre, decoraciones, sostiene, ocultar =
       { accion: "volver", texto: "Cancelar" },
     ]
     : ([
-      { accion: "editar", texto: "Editar sola", icono: <Pencil className="size-4" aria-hidden /> },
+      { accion: "editar", texto: "Editar sola", icono: <Pencil className="size-4" aria-hidden />, tecla: "Enter" },
       ...(sostiene ? [{ accion: "editar-sostiene", texto: `Editar la estructura que la sostiene (${sostiene.nombre})`, icono: <Wrench className="size-4" aria-hidden /> } as const] : []),
-      { accion: "duplicar", texto: decoraciones ? "Duplicar (con sus decoraciones)" : "Duplicar", icono: <Copy className="size-4" aria-hidden /> },
-      { accion: "colgar", texto: "Colgar decoración", icono: <Flower2 className="size-4" aria-hidden /> },
-      { accion: "colores", texto: "Cambiar colores", icono: <Palette className="size-4" aria-hidden /> },
-      { accion: "eliminar", texto: decoraciones ? `Eliminar… (lleva ${decoraciones} decoraciones)` : "Eliminar", icono: <Trash2 className="size-4" aria-hidden />, peligro: true },
+      { accion: "duplicar", texto: decoraciones ? "Duplicar (con sus decoraciones)" : "Duplicar", icono: <Copy className="size-4" aria-hidden />, tecla: "Ctrl D" },
+      { accion: "colgar", texto: "Colgar decoración…", icono: <Flower2 className="size-4" aria-hidden /> },
+      { accion: "colores", texto: "Cambiar colores…", icono: <Palette className="size-4" aria-hidden /> },
+      { accion: "guardar", texto: "Guardar en mi biblioteca", icono: <BookmarkPlus className="size-4" aria-hidden /> },
+      { accion: "eliminar", texto: decoraciones ? `Eliminar con sus ${decoraciones} decoraciones…` : "Eliminar", icono: <Trash2 className="size-4" aria-hidden />, peligro: true, tecla: "Supr" },
     ] satisfies Opcion[]).filter((o) => !(ocultar as readonly string[]).includes(o.accion) && !(o.accion === "eliminar" && ocultar.includes("eliminar-sin")));
 
   // Dentro de la pantalla (con el dedo, por encima de él para que no lo tape ni lo pulse al soltar).
@@ -124,14 +127,17 @@ export function MenuContextual({ x, y, nombre, decoraciones, sostiene, ocultar =
   return createPortal(
     <div ref={menuRef} role="menu" aria-label={paso === "confirmar" ? `¿Quitar «${nombre}» con sus decoraciones?` : `Acciones de «${nombre}»`} onKeyDown={alTeclado}
       onContextMenu={(e) => e.preventDefault()} style={{ left: pos.left, top: pos.top }}
-      className="fixed z-[70] flex w-max min-w-52 max-w-[min(22rem,calc(100vw-16px))] flex-col gap-0.5 rounded-xl bg-superficie p-1 shadow-lg ring-1 ring-borde">
-      <p className="truncate px-3 pb-1 pt-1.5 text-xs font-semibold text-texto-suave" aria-hidden>
-        {paso === "confirmar" ? `«${nombre}» lleva ${decoraciones} decoraciones. ¿Quitarla con ellas?` : nombre}
+      className="taller-3d fixed z-[70] flex w-max min-w-[248px] max-w-[min(22rem,calc(100vw-16px))] flex-col gap-0.5 rounded-xl border border-taller-solitario-borde bg-taller-boton p-1.5 shadow-[0_18px_40px_var(--sombra)]">
+      <p className="truncate px-2.5 pb-1.5 pt-2 text-xs text-taller-suave" aria-hidden>
+        {paso === "confirmar" ? `«${nombre}» lleva ${decoraciones} decoraciones. ¿Quitarla con ellas?` : <>{nombre}{globos !== null ? <> · <span className="font-mono">{globos}</span> globos</> : null}</>}
       </p>
       {opciones.map((o) => (
-        <button key={o.accion} type="button" role="menuitem" tabIndex={-1} onClick={() => elegir(o)} className={`${ITEM} ${o.peligro ? "text-red-700 dark:text-red-300" : ""}`}>
-          {o.icono}{o.texto}
-        </button>
+        <div key={o.accion} className="contents">
+          {o.peligro && paso === "acciones" && <div aria-hidden className="mx-1 my-1.5 h-px bg-taller-borde" />}
+          <button type="button" role="menuitem" tabIndex={-1} onClick={() => elegir(o)} className={`${ITEM} ${o.peligro ? "text-taller-peligro" : ""}`}>
+            {o.icono}<span className="min-w-0 flex-1">{o.texto}</span>{o.tecla && <span className="ml-auto pl-3 font-mono text-[11px] text-taller-suave" aria-hidden>{o.tecla}</span>}
+          </button>
+        </div>
       ))}
     </div>,
     document.body,
