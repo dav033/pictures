@@ -18,6 +18,7 @@
 import assert from "node:assert/strict";
 import { armarEscena, type Escena, type EscenaArmada, type NodoEscena } from "../../src/lib/globos3d/escena";
 import { ESCENAS_PREDEFINIDAS, escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
+import { IDEAS_SEMPERTEX } from "../../src/lib/globos3d/ideas-sempertex";
 import { sumarMateriales } from "../../src/lib/globos3d/mezcla";
 import type { MaterialDecoracion } from "../../src/lib/globos3d/figuras";
 import { coloresDelFormato, FORMATOS_GLOBO } from "../../src/lib/globos3d/formatos";
@@ -154,7 +155,7 @@ const claves = biblioteca.map((i) => claveContenido(i.contenido));
 assert.equal(new Set(claves).size, claves.length, "contenidos sin duplicados");
 const porTipo = new Map<string, number>();
 for (const i of biblioteca) porTipo.set(i.tipo, (porTipo.get(i.tipo) ?? 0) + 1);
-assert.equal(porTipo.get("escena"), ESCENAS_PREDEFINIDAS.length, "todas las escenas predefinidas");
+assert.equal(porTipo.get("escena"), ESCENAS_PREDEFINIDAS.length + IDEAS_SEMPERTEX.filter((i) => i.contenido.tipo === "escena").length, "todas las escenas predefinidas y las de ideas de Sempertex");
 for (const t of ["conjunto", "estructura", "decoracion", "utileria"]) assert.ok((porTipo.get(t) ?? 0) > 0, `hay items de tipo ${t}`);
 for (const i of biblioteca) {
   assert.equal(i.tipo === "escena", i.contenido.tipo === "escena", `${i.id}: tipo y contenido casan`);
