@@ -3,6 +3,7 @@ import { centroCuerpo } from "./geometria";
 import type { Vec3 } from "./modulos";
 import type { CapaEstampado, EstampadoGlobo, GloboDecoracion, ParteGlobo, TuboDecoracion } from "./decoraciones";
 import { capasCaraCalabaza, capasOjo, type EstiloOjo, type ParteTubito } from "./halloween";
+import { marcarParte } from "./partes-decoraciones";
 
 /**
  * **Figuras de globos y tubitos** (muñecos, animales, objetos): un generador por partes, todo por propiedades.
@@ -24,6 +25,10 @@ import { capasCaraCalabaza, capasOjo, type EstiloOjo, type ParteTubito } from ".
  * Ángulos: en el plano de frente, 0° = hacia fuera (hacia el lado de esa extremidad o accesorio; para uno solo, la
  * derecha de quien mira), 90° = arriba, −90° = abajo, 180° = hacia el otro lado. «adelante» lo saca hacia quien mira.
  * En una figura de lado, 0° de las patas es hacia la cabeza.
+ *
+ * **Partes** (`parte` de cada globo y tubito, ver `partes-decoraciones.ts`): «base», «cuerpo», «cuello», «cabeza»,
+ * «brazos» (y «brazos/manos»), «piernas» (y «piernas/pies»), de lado «patas/delantera», «patas/media» y
+ * «patas/trasera» (con sus «…/pies»), «ruedas» y la de cada accesorio (`Accesorio.parte` o la de su forma).
  */
 
 // ----------------------------------------------------------------------------------------------------------
@@ -107,6 +112,12 @@ export type FormaAccesorio =
 
 export type Accesorio = {
   en: PuntoFigura;
+  /**
+   * La parte de sus globos y tubitos (del vocabulario de `partes-decoraciones.ts`: «alas», «ojos», «aguijon»…). Sin
+   * ella sale de la forma: «sombrero/ala», «mono/lazos», «orejas», «antenas/puntas», «ojos» (un globo con ojo
+   * impreso), «adornos» (un globo pegado sin impreso), «burbujas», «aros»…
+   */
+  parte?: string;
   /** Corrimiento desde el punto: [a la derecha de quien mira, hacia quien mira, arriba] (cm). En par, la derecha se refleja. */
   corrimientoCm?: [number, number, number];
   /** Uno a cada lado, en espejo (orejas, ojos, alas); sin él, uno solo, del lado derecho de quien mira. */
@@ -196,6 +207,15 @@ function globoEn(parte: ParteGlobo, centro: Vec3, direccion: Vec3, estampado?: E
 
 function tubito(parte: ParteTubito, puntos: Vec3[], cerrado = false): TuboDecoracion {
   return { formatoId: parte.formatoId, grosorCm: parte.grosorCm, codigo: parte.codigo, puntos: puntos.map(redondo), cerrado };
+}
+
+/** Arma algo y pone `parte` a los globos y tubitos que agregó a la salida sin parte (lo de una subparte ya marcada queda). */
+function enParte<T>(salida: Salida, parte: string, armar: () => T): T {
+  const g = salida.globos.length, t = salida.tubos.length;
+  const r = armar();
+  marcarParte(salida.globos, g, parte);
+  marcarParte(salida.tubos, t, parte);
+  return r;
 }
 
 /** Lazo: sale de `desde`, se aleja `l` hacia `radial` abriéndose `ancho` hacia `lateral` y vuelve. */
@@ -429,11 +449,18 @@ function cadena(raiz: Vec3, e: Pick<Extremidad, "burbujasCm">, angulos: number[]
   return { tramos, punta: p, direccion };
 }
 
-/** Dibuja una extremidad ya calculada y su mano o pie. Devuelve dónde quedó la mano (su centro). */
-function dibujarExtremidad(e: Extremidad, c: CadenaArmada, lateral: Vec3, salida: Salida): Vec3 {
-  burbujasDe(e, c.tramos, Boolean(e.trenzado), salida);
+/**
+ * Dibuja una extremidad ya calculada (con la parte `parte`: «brazos», «piernas», «patas/delantera»…) y su mano o pie
+ * («brazos/manos» o «…/pies»). Devuelve dónde quedó la mano (su centro).
+ */
+function dibujarExtremidad(e: Extremidad, c: CadenaArmada, lateral: Vec3, salida: Salida, parte: string): Vec3 {
+  enParte(salida, parte, () => burbujasDe(e, c.tramos, Boolean(e.trenzado), salida));
   const p = e.punta;
   if (!p) return c.punta;
+  return enParte(salida, `${parte}/${parte === "brazos" ? "manos" : "pies"}`, () => dibujarPunta(e, p, c, lateral, salida));
+}
+
+function dibujarPunta(e: Extremidad, p: PuntaExtremidad, c: CadenaArmada, lateral: Vec3, salida: Salida): Vec3 {
   if (p.tipo === "burbuja") {
     const fin = mas(c.punta, por(c.direccion, p.largoCm));
     burbujasDe(e, [[c.punta, fin]], false, salida);
@@ -524,7 +551,7 @@ export function armarFiguraTubito(p: PropiedadesFigura): FiguraArmada {
   const uniones: FiguraArmada["uniones"] = [];
   const extremidades: ExtremidadArmada[] = [];
   const puntos: Record<string, Vec3> = {};
-  const base = armarBase(p.base, salida, uniones);
+  const base = enParte(salida, "base", () => armarBase(p.base, salida, uniones));
   const de_lado = p.postura === "horizontal";
 
   // Las piernas (de pie y sentado) o las patas (de lado), calculadas antes de saber dónde va el cuerpo.
@@ -557,7 +584,7 @@ export function armarFiguraTubito(p: PropiedadesFigura): FiguraArmada {
       const m = medidasSegmento(s);
       const z: number = anterior ? anterior.z + (anterior.medio + m.medio) * (s.tipo === "tubito" || segmentos[i - 1]?.tipo === "tubito" ? 0.97 : 0.9) : centroZ;
       if (anterior) uniones.push({ nombre: `cuerpo ${i} sobre cuerpo ${i - 1}`, holguraCm: r2(z - m.medio - (anterior.z + anterior.medio)) });
-      dibujarSegmento(s, P(0, 0, z), ARRIBA, salida);
+      enParte(salida, "cuerpo", () => dibujarSegmento(s, P(0, 0, z), ARRIBA, salida));
       torsos.push({ centro: P(0, 0, z), radio: m.ancho, alto: m.medio });
       anterior = { z, medio: m.medio };
     }
@@ -579,7 +606,7 @@ export function armarFiguraTubito(p: PropiedadesFigura): FiguraArmada {
       const m = medidas[i]!;
       if (i) x -= 2 * medidas[i - 1]!.medio * 0.1;
       const centro = P(x + m.medio, 0, alturaCentro);
-      dibujarSegmento(s, centro, P(1, 0, 0), salida);
+      enParte(salida, "cuerpo", () => dibujarSegmento(s, centro, P(1, 0, 0), salida));
       torsos.push({ centro, radio: m.ancho, alto: m.ancho });
       x += 2 * m.medio;
     }
@@ -598,7 +625,7 @@ export function armarFiguraTubito(p: PropiedadesFigura): FiguraArmada {
           const u = unitario({ x: 0, y: 0.45, z: -0.9 });
           const raiz = P(-torso.centro.x + a, s * seccion * u.y, torso.centro.z + seccion * u.z);
           const c = cadena(raiz, p.piernas, p.piernas.angulosGrados, p.piernas.adelanteGrados ?? [], marcoLado(s));
-          const pie = dibujarExtremidad(p.piernas, c, P(0, s, 0), salida);
+          const pie = dibujarExtremidad(p.piernas, c, P(0, s, 0), salida, `patas/${pares === 1 ? "media" : k === 0 ? "trasera" : k === pares - 1 ? "delantera" : "media"}`);
           extremidades.push({ nombre: `pata ${k + 1} ${s > 0 ? "delante" : "detrás"}`, raiz, tramos: c.tramos });
           if (k === 0) puntos[`pie_${s > 0 ? "derecho" : "izquierdo"}`] = redondo(pie);
         }
@@ -611,7 +638,7 @@ export function armarFiguraTubito(p: PropiedadesFigura): FiguraArmada {
         const xk = ejes === 1 ? 0 : -largoTotal / 2 + rw * 1.1 + ((largoTotal - 2.2 * rw) * k) / (ejes - 1);
         for (const s of [1, -1]) {
           const centro = P(xk, s * anchoMax * 0.72, rw);
-          salida.globos.push(globoEn(p.ruedas, centro, P(0, s, 0), { en: "punta", capas: estampadoAccesorio("rin", rw, s).capas }, ARRIBA));
+          salida.globos.push({ ...globoEn(p.ruedas, centro, P(0, s, 0), { en: "punta", capas: estampadoAccesorio("rin", rw, s).capas }, ARRIBA), parte: "ruedas" });
         }
       }
       uniones.push({ nombre: "cuerpo sobre las ruedas", holguraCm: r2(alturaCentro - anchoMax - (2 * rw)) });
@@ -633,7 +660,7 @@ export function armarFiguraTubito(p: PropiedadesFigura): FiguraArmada {
       for (let i = 0; i < n; i++) {
         const ang = Math.PI / 2 + Math.PI / n + (2 * Math.PI * i) / n;
         const fuera = n === 2 ? P(i === 0 ? 1 : -1, 0.15, 0) : P(Math.cos(ang), Math.sin(ang), 0);
-        salida.globos.push(globoEn(p.cuello, mas(P(0, 0, z), por(unitario(fuera), rho)), n === 1 ? ARRIBA : fuera));
+        salida.globos.push({ ...globoEn(p.cuello, mas(P(0, 0, z), por(unitario(fuera), rho)), n === 1 ? ARRIBA : fuera), parte: "cuello" });
       }
       cuelloZ = z + r * 0.55;
       uniones.push({ nombre: "cuello sobre el cuerpo", holguraCm: r2(z - r - tope) });
@@ -642,7 +669,7 @@ export function armarFiguraTubito(p: PropiedadesFigura): FiguraArmada {
       const h = medioLargo(p.cabeza), r = p.cabeza.infladoCm / 2;
       const centro = P(0, 0, cuelloZ + h * 0.92);
       const capas = p.cabeza.cara && !esLink(p.cabeza.formatoId) ? capasCara(r, p.cabeza.cara) : [];
-      salida.globos.push(globoEn(p.cabeza, centro, ARRIBA, capas.length ? { en: "cara", capas } : undefined, AL_FRENTE));
+      salida.globos.push({ ...globoEn(p.cabeza, centro, ARRIBA, capas.length ? { en: "cara", capas } : undefined, AL_FRENTE), parte: "cabeza" });
       cabeza = { centro, radio: r, alto: h };
       uniones.push({ nombre: "cabeza sobre el cuello", holguraCm: r2(centro.z - h - cuelloZ) });
     }
@@ -656,7 +683,7 @@ export function armarFiguraTubito(p: PropiedadesFigura): FiguraArmada {
     const radioBorde = (medioFrente * frente.radio) / Math.max(1e-6, Math.hypot(frente.radio * dir.x, medioFrente * dir.z));
     const centro = mas(frente.centro, por(dir, (radioBorde + r) * 0.9));
     const capas = p.cabeza.cara && !esLink(p.cabeza.formatoId) ? capasCara(r, p.cabeza.cara) : [];
-    salida.globos.push(globoEn(p.cabeza, centro, ARRIBA, capas.length ? { en: "cara", capas } : undefined, AL_FRENTE));
+    salida.globos.push({ ...globoEn(p.cabeza, centro, ARRIBA, capas.length ? { en: "cara", capas } : undefined, AL_FRENTE), parte: "cabeza" });
     cabeza = { centro, radio: r, alto: h };
     uniones.push({ nombre: "cabeza junto al cuerpo", holguraCm: r2(largo(menos(centro, frente.centro)) - radioBorde - r) });
   }
@@ -669,7 +696,7 @@ export function armarFiguraTubito(p: PropiedadesFigura): FiguraArmada {
         ? mas(torsoArriba.centro, P(s * torsoArriba.radio, 0, torsoArriba.alto * 0.62))
         : sobre(torsoArriba, s * Math.cos(rad(32)), 0, Math.sin(rad(32)));
       const c = cadena(raiz, p.brazos, angulosDe(p.brazos, s), adelanteDe(p.brazos, s), marcoFrente(s));
-      const mano = dibujarExtremidad(p.brazos, c, AL_FRENTE, salida);
+      const mano = dibujarExtremidad(p.brazos, c, AL_FRENTE, salida, "brazos");
       const lado = s > 0 ? "derecho" : "izquierdo";
       extremidades.push({ nombre: `brazo ${lado}`, raiz, tramos: c.tramos });
       puntos[`hombro_${lado}`] = redondo(raiz);
@@ -686,7 +713,7 @@ export function armarFiguraTubito(p: PropiedadesFigura): FiguraArmada {
           ? sobre(torsoAbajo, s * 0.45, 0.55, -0.7)
           : sobre(torsoAbajo, s * Math.sin(rad(28)), 0, -Math.cos(rad(28)));
       const c = cadena(raiz, p.piernas, angulosDe(p.piernas, s), adelanteDe(p.piernas, s), marcoFrente(s));
-      const pie = dibujarExtremidad(p.piernas, c, AL_FRENTE, salida);
+      const pie = dibujarExtremidad(p.piernas, c, AL_FRENTE, salida, "piernas");
       const lado = s > 0 ? "derecho" : "izquierdo";
       extremidades.push({ nombre: `pierna ${lado}`, raiz, tramos: c.tramos });
       puntos[`cadera_${lado}`] = redondo(raiz);
@@ -735,15 +762,30 @@ export function armarFiguraTubito(p: PropiedadesFigura): FiguraArmada {
       const origen = mas(base0, P(s * cd, cf, ca));
       const fuera0 = fueraDe[acc.en];
       const fuera = conLado(acc.en) ? unitario(P(s * -fuera0.x, fuera0.y, fuera0.z)) : fuera0;
-      accesorio(acc.forma, origen, s, fuera, salida);
+      enParte(salida, acc.parte ?? parteDeAccesorio(acc.forma), () => accesorio(acc.forma, origen, s, fuera, salida, acc.parte ?? null));
     }
   }
 
   return cerrar(salida, extremidades, uniones, puntos);
 }
 
-/** Un accesorio en `origen`, del lado `s`, con `fuera` la normal de la superficie en ese punto. */
-function accesorio(f: FormaAccesorio, origen: Vec3, s: number, fuera: Vec3, salida: Salida) {
+/** La parte de un accesorio sin `parte` propia, por su forma (las subpartes las pone `accesorio`). */
+function parteDeAccesorio(f: FormaAccesorio): string {
+  switch (f.tipo) {
+    case "globo": return f.estampado === "ojo" ? "ojos" : f.estampado === "nariz_cerdo" ? "nariz" : f.estampado === "ventana" ? "cabina" : f.estampado === "rin" ? "ruedas" : "adornos";
+    case "burbujas": return "burbujas";
+    case "aro": return "aros";
+    default: return f.tipo;
+  }
+}
+
+/**
+ * Un accesorio en `origen`, del lado `s`, con `fuera` la normal de la superficie en ese punto. Marca las subpartes del
+ * sombrero, el moño y las antenas («sombrero/ala», «mono/centro», «antenas/puntas»…), salvo que el accesorio traiga su
+ * propia parte (`fija`): entonces todo lleva esa.
+ */
+function accesorio(f: FormaAccesorio, origen: Vec3, s: number, fuera: Vec3, salida: Salida, fija: string | null) {
+  const sub = (parte: string) => fija ?? parte;
   switch (f.tipo) {
     case "sombrero": {
       const giro = rad(f.inclinacionGrados) * s;
@@ -760,13 +802,13 @@ function accesorio(f: FormaAccesorio, origen: Vec3, s: number, fuera: Vec3, sali
         const g = f.ala.grosorCm;
         if (f.ala.estilo === "aro") {
           const aro = Array.from({ length: 28 }, (_, i) => inc(mas(origen, P(f.ala!.radioCm * Math.cos((2 * Math.PI * i) / 28), f.ala!.radioCm * 0.9 * Math.sin((2 * Math.PI * i) / 28), g * 0.3))));
-          salida.tubos.push(tubito(f.ala, aro, true));
+          salida.tubos.push({ ...tubito(f.ala, aro, true), parte: sub("sombrero/ala") });
         } else {
           const n = Math.max(4, Math.min(16, Math.round(f.ala.cantidad ?? 10)));
           for (let i = 0; i < n; i++) {
             const a = (2 * Math.PI * (i + 0.5)) / n;
             const fuera2 = P(Math.cos(a), Math.sin(a) * 0.9, -0.12);
-            salida.tubos.push(tubito(f.ala, [inc(mas(origen, mas(por(fuera2, f.ala.radioCm * 0.35), P(0, 0, g * 0.4)))), inc(mas(origen, por(fuera2, f.ala.radioCm * (0.9 + 0.1 * Math.cos(i * 1.7)))))]));
+            salida.tubos.push({ ...tubito(f.ala, [inc(mas(origen, mas(por(fuera2, f.ala.radioCm * 0.35), P(0, 0, g * 0.4)))), inc(mas(origen, por(fuera2, f.ala.radioCm * (0.9 + 0.1 * Math.cos(i * 1.7)))))]), parte: sub("sombrero/ala") });
           }
         }
         alto = g * 0.5;
@@ -775,10 +817,10 @@ function accesorio(f: FormaAccesorio, origen: Vec3, s: number, fuera: Vec3, sali
       if (f.copa) {
         if ("globo" in f.copa) {
           const h = medioLargo(f.copa.globo);
-          salida.globos.push(globoEn(f.copa.globo, mas(origen, por(eje, alto + h * 0.75)), eje));
+          salida.globos.push({ ...globoEn(f.copa.globo, mas(origen, por(eje, alto + h * 0.75)), eje), parte: sub("sombrero/copa") });
           tope = mas(origen, por(eje, alto + h * 1.6));
         } else {
-          salida.tubos.push(tubito(f.copa.tubito, [mas(origen, por(eje, alto)), mas(origen, por(eje, alto + f.copa.largoCm))]));
+          salida.tubos.push({ ...tubito(f.copa.tubito, [mas(origen, por(eje, alto)), mas(origen, por(eje, alto + f.copa.largoCm))]), parte: sub("sombrero/copa") });
           tope = mas(origen, por(eje, alto + f.copa.largoCm));
         }
       }
@@ -787,9 +829,9 @@ function accesorio(f: FormaAccesorio, origen: Vec3, s: number, fuera: Vec3, sali
         const radio = !f.copa ? (f.ala?.radioCm ?? 10) * 0.6 : "globo" in f.copa ? f.copa.globo.infladoCm * 0.42 : f.copa.tubito.grosorCm * 0.5 + f.cinta.grosorCm * 0.4;
         const h = !f.copa ? alto + f.cinta.grosorCm * 0.6 : "globo" in f.copa ? alto + medioLargo(f.copa.globo) * 0.25 : alto + f.copa.largoCm * 0.3;
         const aro = Array.from({ length: 24 }, (_, i) => inc(mas(origen, P(radio * Math.cos((2 * Math.PI * i) / 24), radio * Math.sin((2 * Math.PI * i) / 24), h))));
-        salida.tubos.push(tubito(f.cinta, aro, true));
+        salida.tubos.push({ ...tubito(f.cinta, aro, true), parte: sub("sombrero/cinta") });
       }
-      if (f.pompon) salida.globos.push(globoEn(f.pompon, mas(tope, por(eje, f.pompon.infladoCm * 0.3)), eje));
+      if (f.pompon) salida.globos.push({ ...globoEn(f.pompon, mas(tope, por(eje, f.pompon.infladoCm * 0.3)), eje), parte: sub("sombrero/pompon") });
       return;
     }
     case "mono": {
@@ -797,12 +839,12 @@ function accesorio(f: FormaAccesorio, origen: Vec3, s: number, fuera: Vec3, sali
         for (const lado of [1, -1]) {
           for (const b of [16, -16]) {
             const radial = enPlano(b, 8, lado);
-            salida.tubos.push(tubito(f.lazos, lazo(origen, radial, enPlano(b + 90, 0, lado), f.lazos.largoCm, f.lazos.anchoCm)));
+            salida.tubos.push({ ...tubito(f.lazos, lazo(origen, radial, enPlano(b + 90, 0, lado), f.lazos.largoCm, f.lazos.anchoCm)), parte: sub("mono/lazos") });
           }
         }
       }
-      if (f.globos) for (const lado of [1, -1]) salida.globos.push(globoEn(f.globos, mas(origen, P(lado * medioLargo(f.globos) * 0.85, 1, 0)), P(lado, 0.2, 0)));
-      if (f.centro) salida.globos.push(globoEn(f.centro, mas(origen, P(0, f.centro.infladoCm * 0.35, 0)), AL_FRENTE));
+      if (f.globos) for (const lado of [1, -1]) salida.globos.push({ ...globoEn(f.globos, mas(origen, P(lado * medioLargo(f.globos) * 0.85, 1, 0)), P(lado, 0.2, 0)), parte: sub("mono/globos") });
+      if (f.centro) salida.globos.push({ ...globoEn(f.centro, mas(origen, P(0, f.centro.infladoCm * 0.35, 0)), AL_FRENTE), parte: sub("mono/centro") });
       return;
     }
     case "orejas": {
@@ -818,7 +860,7 @@ function accesorio(f: FormaAccesorio, origen: Vec3, s: number, fuera: Vec3, sali
       // Una antena levemente curva: el punto del medio se abre hacia fuera.
       const medio = mas(mas(origen, por(dir, f.largoCm / 2)), por(enPlano(f.anguloGrados - 90, 0, s), f.largoCm * 0.08));
       salida.tubos.push(tubito(f.tubito, [origen, medio, fin]));
-      if (f.punta) salida.globos.push(globoEn(f.punta, mas(fin, por(dir, medioLargo(f.punta) * 0.8)), dir));
+      if (f.punta) salida.globos.push({ ...globoEn(f.punta, mas(fin, por(dir, medioLargo(f.punta) * 0.8)), dir), parte: sub("antenas/puntas") });
       return;
     }
     case "alas": {
@@ -1048,7 +1090,7 @@ export const PLANTILLAS_FIGURA: readonly PlantillaFigura[] = [
         accesorios: [
           { en: "lomo", par: true, corrimientoCm: [3, -2, -2], forma: { tipo: "alas", abanico: { ...T("T-260", 4, "390"), estilo: "lazos", cantidad: 2, largoCm: 16, anchoCm: 9, aberturaGrados: 30 }, anguloGrados: 72, adelanteGrados: -25 } },
           { en: "coronilla", par: true, corrimientoCm: [3, 0, -1], forma: { tipo: "antenas", tubito: T("T-160", 2, "080"), largoCm: 10, anguloGrados: 62, punta: G("R-5", 5.5, "080") } },
-          { en: "cola", forma: { tipo: "burbujas", tubito: T("T-260", 3.5, "080"), largosCm: [6], angulosGrados: [182] } },
+          { en: "cola", parte: "aguijon", forma: { tipo: "burbujas", tubito: T("T-260", 3.5, "080"), largosCm: [6], angulosGrados: [182] } },
         ],
       },
     },

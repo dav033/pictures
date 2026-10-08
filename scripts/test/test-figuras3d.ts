@@ -24,13 +24,15 @@ const existe = (formatoId: string, codigo: string) => coloresDelFormato(formatoI
 for (const d of DECORACIONES_PREDEFINIDAS.filter((x) => !esHalloween(x.decoracion) && x.decoracion.tipo !== "figura")) {
   const a = armarDecoracion(d.decoracion);
   for (const g of a.globos) assert.ok(existe(g.formatoId, g.codigo), `${d.id}: ${g.codigo} no existe en ${g.formatoId}`);
-  for (const t of a.tubos) {
+  // Lo de papel (el confeti de una burbuja) no es globo: no tiene formato ni color Sempertex.
+  for (const t of a.tubos.filter((x) => !x.papel)) {
     assert.ok(existe(t.formatoId, t.codigo), `${d.id}: ${t.codigo} no existe en ${t.formatoId}`);
     assert.equal(formatoPorId(t.formatoId)?.tipo, "tubito", `${d.id}: los tramos son de tubito`);
     assert.ok(t.grosorCm <= formatoPorId(t.formatoId)!.diametroMaxCm, `${d.id}: tubito más grueso que su máximo`);
     assert.ok(t.puntos.length >= 2);
   }
-  assert.ok(a.diametroCm > 5 && a.diametroCm < 80, `${d.id}: ${a.diametroCm} cm`);
+  // Las pequeñas caben en 80 cm; los rizos (flecos, la estrella de burbujas de 84 cm) son más grandes (`test-rizos-burbujas.ts`).
+  assert.ok(a.diametroCm > 5 && a.diametroCm < (d.decoracion.tipo === "rizo" ? 120 : 80), `${d.id}: ${a.diametroCm} cm`);
   assert.ok(a.materiales.length > 0);
 }
 

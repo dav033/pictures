@@ -2,6 +2,7 @@ import { altoPerfil, centroCuerpo, perfilRedondo } from "./geometria";
 import type { Vec3 } from "./modulos";
 import type { CapaEstampado, GloboDecoracion, ParteGlobo, TuboDecoracion } from "./decoraciones";
 import type { Decoracion } from "./figuras";
+import { conParte, marcarParte } from "./partes-decoraciones";
 
 /**
  * Las piezas de Halloween de las 5 fotos del dueño, por propiedades (como las flores y los moños de `figuras.ts`):
@@ -163,7 +164,7 @@ const ARRIBA = P(0, 0, 1);
 const AL_FRENTE = P(0, 1, 0);
 
 /** Un globo redondo con el centro de su cuerpo en `centro` y el cuerpo hacia `direccion` (el nudo queda detrás). */
-function globoEn(parte: ParteGlobo, centro: Vec3, direccion: Vec3, extra: Pick<GloboDecoracion, "frente" | "estampado"> = {}): GloboDecoracion {
+function globoEn(parte: ParteGlobo, centro: Vec3, direccion: Vec3, extra: Pick<GloboDecoracion, "frente" | "estampado" | "parte"> = {}): GloboDecoracion {
   const d = unitario(direccion);
   const c = centroCuerpo("redondo", parte.infladoCm);
   return { formatoId: parte.formatoId, infladoCm: parte.infladoCm, codigo: parte.codigo, nudo: redondo(mas(centro, por(d, -c))), direccion: d, cuelloExtraCm: 0, ...extra };
@@ -318,7 +319,7 @@ function unOjo(parte: ParteGlobo, estilo: EstiloOjo, centro: Vec3, miradaGrados:
 }
 
 export function armarOjo(p: PropiedadesOjo): FiguraHalloween {
-  return figura([unOjo(p.globo, p.estilo, P(0, 0, 0), p.miradaGrados, AL_FRENTE, p.ceja)], []);
+  return figura(conParte([unOjo(p.globo, p.estilo, P(0, 0, 0), p.miradaGrados, AL_FRENTE, p.ceja)], "ojos"), []);
 }
 
 /**
@@ -337,12 +338,12 @@ export function armarRacimoOjos(p: PropiedadesRacimoOjos): FiguraHalloween {
     const fuera = P(Math.cos(a), 0, Math.sin(a));
     return unOjo(o, p.estilo, P(d * Math.cos(a), i % 2 === 0 ? -1.5 : 1, d * Math.sin(a)), 60 + i * 97, mas(AL_FRENTE, por(fuera, 0.25)));
   });
-  return figura(globos, []);
+  return figura(conParte(globos, "ojos"), []);
 }
 
 export function armarArana(p: PropiedadesArana): FiguraHalloween {
   const rc = p.cuerpo.infladoCm / 2, rh = p.cabeza.infladoCm / 2;
-  const globos: GloboDecoracion[] = [globoEn(p.cuerpo, P(0, 0, 0), AL_FRENTE)];
+  const globos: GloboDecoracion[] = [globoEn(p.cuerpo, P(0, 0, 0), AL_FRENTE, { parte: "cuerpo" })];
   const ojos: CapaEstampado[] = p.ojos
     ? [-1, 1].flatMap((s) => [
       { hex: "#f4f3ee", puntos: circulo(s * 0.3 * rh, 0.02 * rh, 0.22 * rh, 0.26 * rh) },
@@ -350,7 +351,7 @@ export function armarArana(p: PropiedadesArana): FiguraHalloween {
       { hex: "#111111", puntos: circulo(s * 0.3 * rh - s * 0.05 * rh, 0, 0.07 * rh, 0.09 * rh) },
     ])
     : [];
-  globos.push(globoEn(p.cabeza, P(0, rc * 0.3, rc + rh * 0.6), mas(AL_FRENTE, por(ARRIBA, 0.45)), p.ojos ? { frente: ARRIBA, estampado: { en: "punta", capas: ojos } } : {}));
+  globos.push(globoEn(p.cabeza, P(0, rc * 0.3, rc + rh * 0.6), mas(AL_FRENTE, por(ARRIBA, 0.45)), p.ojos ? { frente: ARRIBA, estampado: { en: "punta", capas: ojos }, parte: "cabeza" } : { parte: "cabeza" }));
 
   const L = p.patas.largoCm, tubos: TuboDecoracion[] = [];
   // En el plano de la pared: `r` desde el centro, a un ángulo (0° = hacia fuera, +90° = arriba) y a la altura `y`.
@@ -374,7 +375,7 @@ export function armarArana(p: PropiedadesArana): FiguraHalloween {
       }
     }
   }
-  return girarEnPlano(figura(globos, tubos), p.giroGrados);
+  return girarEnPlano(figura(globos, conParte(tubos, "patas")), p.giroGrados);
 }
 
 /** Lo alto de un globo redondo (del nudo a la punta). */
@@ -383,13 +384,13 @@ const altoGlobo = (d: number) => altoPerfil(perfilRedondo(d));
 export function armarCalabaza(p: PropiedadesCalabaza): FiguraHalloween {
   const d = p.globo.infladoCm, r = d / 2;
   const centro = P(0, 0, 0);
-  const globo = globoEn(p.globo, centro, ARRIBA, p.cara ? { frente: AL_FRENTE, estampado: { en: "cara", capas: capasCaraCalabaza(r, p.cara.hex) } } : {});
+  const globo = globoEn(p.globo, centro, ARRIBA, p.cara ? { frente: AL_FRENTE, estampado: { en: "cara", capas: capasCaraCalabaza(r, p.cara.hex) }, parte: "calabaza" } : { parte: "calabaza" });
   const tubos: TuboDecoracion[] = [];
   if (p.tallo) {
     const t = p.tallo;
     const tope = mas(globo.nudo, por(ARRIBA, altoGlobo(d)));
     // Tallo: una burbuja corta hacia arriba.
-    tubos.push(tubito(t, [mas(tope, P(0, 0, -t.grosorCm * 0.3)), mas(tope, P(0.8, 0, 7))]));
+    tubos.push({ ...tubito(t, [mas(tope, P(0, 0, -t.grosorCm * 0.3)), mas(tope, P(0.8, 0, 7))]), parte: "tallo" });
     // Lazos tumbados alrededor del tallo, un poco caídos sobre la calabaza.
     const n = Math.max(2, Math.min(10, Math.round(t.lazos)));
     for (let k = 0; k < n; k++) {
@@ -398,6 +399,7 @@ export function armarCalabaza(p: PropiedadesCalabaza): FiguraHalloween {
       const lateral = P(-Math.sin(phi), Math.cos(phi), 0);
       tubos.push(tubito(t, lazo(mas(tope, P(0, 0, t.grosorCm * 0.2)), radial, lateral, t.largoLazoCm, t.largoLazoCm * 0.55)));
     }
+    marcarParte(tubos, 0, "tallo/lazos");
     if (t.zarcillos) {
       // Zarcillos: dos rizos de T-160 que salen hacia los lados.
       for (const [s, frente] of [[1, 0.4], [-1, -0.2]] as const) {
@@ -406,7 +408,7 @@ export function armarCalabaza(p: PropiedadesCalabaza): FiguraHalloween {
           const u = i / 30, a = 2 * Math.PI * 2.5 * u;
           puntos.push(mas(tope, P(s * (3 + 13 * u) + s * 2.4 * Math.cos(a), frente * 10 * u + 2.4 * Math.sin(a) * 0.4, 2 + 2.4 * Math.sin(a))));
         }
-        tubos.push(tubito({ formatoId: "T-160", grosorCm: 2, codigo: t.codigo }, puntos));
+        tubos.push({ ...tubito({ formatoId: "T-160", grosorCm: 2, codigo: t.codigo }, puntos), parte: "tallo/zarcillos" });
       }
     }
   }
@@ -415,7 +417,7 @@ export function armarCalabaza(p: PropiedadesCalabaza): FiguraHalloween {
 
 export function armarCalabazaBruja(p: PropiedadesCalabazaBruja): FiguraHalloween {
   const rc = p.cuerpo.infladoCm / 2, rh = p.cabeza.infladoCm / 2;
-  const globos: GloboDecoracion[] = [globoEn(p.cuerpo, P(0, 0, 0), ARRIBA)];
+  const globos: GloboDecoracion[] = [globoEn(p.cuerpo, P(0, 0, 0), ARRIBA, { parte: "cuerpo" })];
   // Cuello: un anillo de globitos sobre el cuerpo, con los nudos al centro.
   const n = Math.max(3, Math.min(10, Math.round(p.cuello.cantidad)));
   const dc = p.cuello.infladoCm;
@@ -423,32 +425,32 @@ export function armarCalabazaBruja(p: PropiedadesCalabazaBruja): FiguraHalloween
   const rho = (0.46 * dc) / Math.sin(Math.PI / n);
   for (let k = 0; k < n; k++) {
     const a = (2 * Math.PI * k) / n + rad(90);
-    globos.push(globoEn(p.cuello, P(rho * Math.cos(a), rho * Math.sin(a), alturaCuello), P(Math.cos(a), Math.sin(a), 0)));
+    globos.push(globoEn(p.cuello, P(rho * Math.cos(a), rho * Math.sin(a), alturaCuello), P(Math.cos(a), Math.sin(a), 0), { parte: "cuello" }));
   }
   const centroCabeza = P(0, 0, alturaCuello + dc * 0.35 + rh);
-  globos.push(globoEn(p.cabeza, centroCabeza, ARRIBA, p.cara ? { frente: AL_FRENTE, estampado: { en: "cara", capas: capasCaraCalabaza(rh, p.cara.hex) } } : {}));
+  globos.push(globoEn(p.cabeza, centroCabeza, ARRIBA, p.cara ? { frente: AL_FRENTE, estampado: { en: "cara", capas: capasCaraCalabaza(rh, p.cara.hex) }, parte: "cabeza" } : { parte: "cabeza" }));
   const tubos: TuboDecoracion[] = [];
   // Brazos: un tubito por lado que sale del hombro, se abre y termina en una burbuja de mano.
   for (const s of [1, -1]) {
     const hombro = P(s * rc * 0.8, 1, rc * 0.45);
     const codo = P(s * (rc + 11), 3, rc * 0.1);
     const muneca = P(s * (rc + 20), 5, rc * 0.45);
-    tubos.push(tubito(p.brazos, [hombro, codo, muneca]), tubito(p.brazos, [muneca, P(s * (rc + 23), 5.5, rc * 0.8)]));
+    tubos.push({ ...tubito(p.brazos, [hombro, codo, muneca]), parte: "brazos" }, { ...tubito(p.brazos, [muneca, P(s * (rc + 23), 5.5, rc * 0.8)]), parte: "brazos/manos" });
   }
   if (p.sombrero) {
     const { hex, cinta } = p.sombrero;
     const ala = centroCabeza.z + rh * 0.78;
     const inclinado = (v: Vec3): Vec3 => ({ x: v.x, y: v.y * Math.cos(rad(10)) - (v.z - ala) * Math.sin(rad(10)), z: ala + v.y * Math.sin(rad(10)) + (v.z - ala) * Math.cos(rad(10)) });
     const aro = (radio: number, z: number, m = 32) => Array.from({ length: m }, (_, i) => inclinado(P(radio * Math.cos((2 * Math.PI * i) / m), radio * Math.sin((2 * Math.PI * i) / m), z)));
-    tubos.push(papel(hex, 1.2, aro(rh * 1.4, ala), true, true));
+    tubos.push({ ...papel(hex, 1.2, aro(rh * 1.4, ala), true, true), parte: "sombrero/ala" });
     // Copa: tramos cada vez más finos, con la punta doblada hacia un lado.
     const tramos = 10, alto = rh * 2.3;
     const eje = (u: number) => inclinado(P(rh * 0.55 * u ** 2.2, 0, ala + alto * u));
     for (let k = 0; k < tramos; k++) {
       const u0 = k / tramos, u1 = (k + 1) / tramos;
-      tubos.push(papel(hex, Math.max(1.2, 2 * rh * 0.72 * (1 - (u0 + u1) / 2)), [eje(u0 + 0.01), eje(u1)]));
+      tubos.push({ ...papel(hex, Math.max(1.2, 2 * rh * 0.72 * (1 - (u0 + u1) / 2)), [eje(u0 + 0.01), eje(u1)]), parte: "sombrero/copa" });
     }
-    tubos.push(papel(cinta, 2.2, aro(rh * 0.66, ala + 2.2, 24), true));
+    tubos.push({ ...papel(cinta, 2.2, aro(rh * 0.66, ala + 2.2, 24), true), parte: "sombrero/cinta" });
   }
   return figura(globos, tubos);
 }
@@ -459,7 +461,8 @@ export function armarMano(p: PropiedadesMano): FiguraHalloween {
   // Palma: tres burbujas cruzadas, una sobre otra; la muñeca baja de ella.
   const anchoPalma = g * 3.6;
   for (let k = 0; k < 3; k++) tubos.push(tubito(p, [P(-anchoPalma / 2 + g / 2, 0, -g * (0.5 + k * 0.95)), P(anchoPalma / 2 - g / 2, 0, -g * (0.5 + k * 0.95))]));
-  tubos.push(tubito(p, [P(0, -0.5, -g * 2.9), P(0, -1, -g * 2.9 - L * 0.45)]));
+  marcarParte(tubos, 0, "palma");
+  tubos.push({ ...tubito(p, [P(0, -0.5, -g * 2.9), P(0, -1, -g * 2.9 - L * 0.45)]), parte: "muneca" });
   // Dedos juntos, en abanico: el del medio más largo; con garra la punta se dobla hacia delante.
   const largos = [0.82, 0.97, 1, 0.9];
   for (let i = 0; i < 4; i++) {
@@ -473,6 +476,7 @@ export function armarMano(p: PropiedadesMano): FiguraHalloween {
       : mas(nudillo, P(Math.cos(a) * largo * 0.42, 0, Math.sin(a) * largo * 0.42));
     tubos.push(tubito(p, [base, nudillo]), tubito(p, [nudillo, punta]));
   }
+  marcarParte(tubos, 0, "dedos");
   if (p.dedos >= 5) {
     // Pulgar: sale del costado de la palma, abierto hacia fuera.
     const base = P(-anchoPalma / 2, 0.5, -g * 1.6);
@@ -481,6 +485,7 @@ export function armarMano(p: PropiedadesMano): FiguraHalloween {
     const punta = mas(nudillo, P(Math.cos(a + rad(-35)) * L * 0.32, p.garra ? L * 0.15 : 0, Math.sin(a + rad(-35)) * L * 0.32));
     tubos.push(tubito(p, [base, nudillo]), tubito(p, [nudillo, punta]));
   }
+  marcarParte(tubos, 0, "dedos/pulgar");
   return girarEnPlano(figura([], tubos), p.giroGrados);
 }
 
@@ -498,7 +503,7 @@ export function armarRamoHelio(p: PropiedadesRamoHelio): FiguraHalloween {
     const radio = i === 0 ? 0 : mayor * (0.75 + 0.2 * (i % 2));
     const centro = P(radio * Math.cos(a), radio * Math.sin(a) * 0.6, p.alturaCm - parte.infladoCm * 0.55 - i * tramo);
     const direccion = mas(ARRIBA, P(Math.cos(a) * 0.25 * (i ? 1 : 0), Math.sin(a) * 0.15 * (i ? 1 : 0), 0));
-    const globo = globoEn(parte, centro, direccion);
+    const globo = globoEn(parte, centro, direccion, { parte: "ramo" });
     globos.push(globo);
     // Cinta: del nudo al peso, con una onda suave al salir del globo.
     const puntos: Vec3[] = [];
@@ -507,9 +512,9 @@ export function armarRamoHelio(p: PropiedadesRamoHelio): FiguraHalloween {
       const onda = 2.2 * Math.sin(t * Math.PI * 3) * (1 - t);
       puntos.push(mas(mas(por(globo.nudo, 1 - t), por(amarre, t)), P(onda, 0, 0)));
     }
-    tubos.push(papel(p.cinta.hex, 0.35, puntos));
+    tubos.push({ ...papel(p.cinta.hex, 0.35, puntos), parte: "cintas" });
   }
-  tubos.push(papel(p.peso.hex, 10, [P(0, 0, 3), P(0, 0, altoPeso)]));
+  tubos.push({ ...papel(p.peso.hex, 10, [P(0, 0, 3), P(0, 0, altoPeso)]), parte: "peso" });
   return figura(globos, tubos);
 }
 
@@ -534,11 +539,12 @@ export function armarArbolTrenzado(p: PropiedadesArbolTrenzado): FiguraHalloween
       const a = (2 * Math.PI * k) / 4 + 0.6;
       globos.push(globoEn(grande, P(Math.cos(a) * rg * 1.1, Math.sin(a) * rg * 0.9, rg * 2.4), P(Math.cos(a), Math.sin(a), 0.8)));
     }
+    marcarParte(globos, 0, "base");
     for (let k = 0; k < 12; k++) {
       const a = (2 * Math.PI * k) / 12 + 0.45;
       const parte = acento(k);
       const lejos = k % 2 === 0 ? rg * 3.05 : rg * 1.95;
-      globos.push(globoEn(parte, P(Math.cos(a) * lejos, Math.sin(a) * lejos * 0.85, k % 2 === 0 ? parte.infladoCm * 0.5 : rg * 2.1), P(Math.cos(a), Math.sin(a), 0.6)));
+      globos.push(globoEn(parte, P(Math.cos(a) * lejos, Math.sin(a) * lejos * 0.85, k % 2 === 0 ? parte.infladoCm * 0.5 : rg * 2.1), P(Math.cos(a), Math.sin(a), 0.6), { parte: "base/acentos" }));
     }
 
     // Tronco: tubitos torcidos en espiral, de lo alto de la base a la copa.
@@ -549,7 +555,7 @@ export function armarArbolTrenzado(p: PropiedadesArbolTrenzado): FiguraHalloween
         const u = i / 28, a = (2 * Math.PI * k) / n + 2 * Math.PI * ((z1 - z0) / 70) * u;
         puntos.push(P(radioTronco * Math.cos(a), radioTronco * Math.sin(a), z0 + (z1 - z0) * u));
       }
-      tubos.push(tubito(t, puntos));
+      tubos.push({ ...tubito(t, puntos), parte: "tronco" });
     }
     // Tubitos dorados enrollados por fuera, más abiertos en el medio.
     if (p.cintas) {
@@ -561,7 +567,7 @@ export function armarArbolTrenzado(p: PropiedadesArbolTrenzado): FiguraHalloween
           const radio = radioTronco + g * 0.9 + 9 * Math.sin(Math.PI * u);
           puntos.push(P(radio * Math.cos(a), radio * Math.sin(a), desde + (hasta - desde) * u));
         }
-        tubos.push(tubito({ formatoId: p.cintas!.formatoId, grosorCm: p.cintas!.grosorCm, codigo }, puntos));
+        tubos.push({ ...tubito({ formatoId: p.cintas!.formatoId, grosorCm: p.cintas!.grosorCm, codigo }, puntos), parte: "tronco/cintas" });
       });
     }
   }
@@ -594,13 +600,13 @@ export function armarArbolTrenzado(p: PropiedadesArbolTrenzado): FiguraHalloween
         // Trenza: los dos tubitos giran uno alrededor del otro (hacia el frente y a lo largo de la normal de la rama).
         puntos.push(P(s * (e.x - Math.sin(e.a) * r * Math.cos(giro)), r * Math.sin(giro), e.z + Math.cos(e.a) * r * Math.cos(giro)));
       }
-      tubos.push(tubito(t, puntos));
+      tubos.push({ ...tubito(t, puntos), parte: "ramas" });
     }
     // Ramitas en la punta: tres burbujas cortas en abanico.
     const fin = eje(1);
     for (const abre of [-35, 0, 35]) {
       const a = fin.a + rad(abre);
-      tubos.push(tubito({ ...t, grosorCm: g * 0.8 }, [P(s * fin.x, 0, fin.z), P(s * (fin.x + Math.cos(a) * 9), 0, fin.z + Math.sin(a) * 9)]));
+      tubos.push({ ...tubito({ ...t, grosorCm: g * 0.8 }, [P(s * fin.x, 0, fin.z), P(s * (fin.x + Math.cos(a) * 9), 0, fin.z + Math.sin(a) * 9)]), parte: "ramas/ramitas" });
     }
   }
   if (solo) return figura(globos, tubos);
@@ -613,7 +619,7 @@ export function armarArbolTrenzado(p: PropiedadesArbolTrenzado): FiguraHalloween
     const v = 1 - (2 * (k + 0.5)) / cantidad, s = Math.sqrt(1 - v * v), a = k * rad(137.5);
     const dir = P(s * Math.cos(a), s * Math.sin(a), v);
     const codigo = copa.codigos[k % Math.max(1, copa.codigos.length)] ?? grande.codigo;
-    globos.push(globoEn({ formatoId: copa.formatoId, infladoCm: copa.infladoCm, codigo }, P(s * Math.cos(a) * rcopa * 1.6, s * Math.sin(a) * rcopa * 1.6, copaZ + v * rcopa * 2.6), dir));
+    globos.push(globoEn({ formatoId: copa.formatoId, infladoCm: copa.infladoCm, codigo }, P(s * Math.cos(a) * rcopa * 1.6, s * Math.sin(a) * rcopa * 1.6, copaZ + v * rcopa * 2.6), dir, { parte: "copa" }));
   }
   if (p.ojos) {
     // Ojos bravos (foto 4): dos globitos cobre con pupila y ceja impresas, al frente de la copa.
@@ -625,7 +631,7 @@ export function armarArbolTrenzado(p: PropiedadesArbolTrenzado): FiguraHalloween
         { hex: "#ffffff", puntos: circulo(-s * 0.12 * ro - 0.1 * ro, 0.04 * ro, 0.07 * ro, undefined, 12) },
         cejaBrava(ro, s, "#1b120d"),
       ];
-      globos.push(globoEn(ojo, P(s * ro * 1.05, rcopa * 1.6 + ro * 0.6, copaZ - rcopa * 1.2), AL_FRENTE, { frente: ARRIBA, estampado: { en: "punta", capas } }));
+      globos.push(globoEn(ojo, P(s * ro * 1.05, rcopa * 1.6 + ro * 0.6, copaZ - rcopa * 1.2), AL_FRENTE, { frente: ARRIBA, estampado: { en: "punta", capas }, parte: "copa/ojos" }));
     }
   }
   return figura(globos, tubos);
@@ -643,11 +649,12 @@ export function armarFantasma(p: PropiedadesFantasma): FiguraHalloween {
   for (let i = 1; i <= 12; i++) { const [x, z] = bezier([-w, zc], [-w * 0.9, A * 0.12], punta, i / 12); contorno.push(P(x, 0, z)); }
   // Lado derecho: sube de la punta a la cabeza, con una ondita (el pliegue del papel).
   for (let i = 1; i < 12; i++) { const [x, z] = bezier(punta, [w * 0.55, A * 0.3], [w, zc], i / 12); contorno.push(P(x + 1.2 * Math.sin(i * 0.9), 0, z)); }
-  const tubos: TuboDecoracion[] = [papel(p.hex, 0.6, contorno, true, true)];
+  const tubos: TuboDecoracion[] = [{ ...papel(p.hex, 0.6, contorno, true, true), parte: "silueta" }];
   const cara = (cu: number, cz: number, ru: number, rz: number) => Array.from({ length: 16 }, (_, i) => P(cu + ru * Math.cos((2 * Math.PI * i) / 16), 0.4, cz + rz * Math.sin((2 * Math.PI * i) / 16)));
   tubos.push(papel(p.hexCara, 0.3, cara(-w * 0.32, zc + w * 0.08, A * 0.035, A * 0.06), true, true));
   tubos.push(papel(p.hexCara, 0.3, cara(w * 0.28, zc + w * 0.08, A * 0.035, A * 0.06), true, true));
   tubos.push(papel(p.hexCara, 0.3, cara(-w * 0.02, zc - w * 0.32, A * 0.03, A * 0.045), true, true));
+  marcarParte(tubos, 1, "cara");
   if (p.cola) {
     // Tira en espiral que cuelga de la punta de la cola, cada vez más cerrada.
     const puntos: Vec3[] = [];
@@ -656,7 +663,7 @@ export function armarFantasma(p: PropiedadesFantasma): FiguraHalloween {
       const u = i / 60, a = 2 * Math.PI * vueltas * u, r = A * 0.16 * (1 - 0.7 * u);
       puntos.push(P(punta[0] + r * (Math.cos(a) - 1) * 0.9, r * Math.sin(a), -p.cola.largoCm * u));
     }
-    tubos.push(papel(p.hex, 1.3, puntos));
+    tubos.push({ ...papel(p.hex, 1.3, puntos), parte: "cola" });
   }
   return figura([], tubos);
 }
@@ -668,7 +675,7 @@ export function armarTelarana(p: PropiedadesTelarana): FiguraHalloween {
   // Un poco irregular, pero determinista: ángulos y largos con un vaivén fijo.
   const angulos = Array.from({ length: n }, (_, i) => (2 * Math.PI * i) / n + 0.1 * Math.sin(i * 2.3));
   const largos = Array.from({ length: n }, (_, i) => p.radioCm * (0.9 + 0.1 * Math.sin(i * 1.7 + 0.5)));
-  const tubos: TuboDecoracion[] = angulos.map((a, i) => papel(p.hex, p.grosorCm, [P(0, 0, 0), P(largos[i]! * Math.cos(a), 0, largos[i]! * Math.sin(a))]));
+  const tubos: TuboDecoracion[] = angulos.map((a, i) => ({ ...papel(p.hex, p.grosorCm, [P(0, 0, 0), P(largos[i]! * Math.cos(a), 0, largos[i]! * Math.sin(a))]), parte: "radios" }));
   for (let k = 1; k <= anillos; k++) {
     const f = k / (anillos + 0.15);
     const puntos: Vec3[] = [];
@@ -680,7 +687,7 @@ export function armarTelarana(p: PropiedadesTelarana): FiguraHalloween {
       const m = (a + b) / 2, rm = ((ra + rb) / 2) * Math.cos((b - a) / 2) * 0.86;
       puntos.push(P(rm * Math.cos(m), 0, rm * Math.sin(m)));
     }
-    tubos.push(papel(p.hex, p.grosorCm, puntos, true));
+    tubos.push({ ...papel(p.hex, p.grosorCm, puntos, true), parte: "anillos" });
   }
   return figura([], tubos);
 }

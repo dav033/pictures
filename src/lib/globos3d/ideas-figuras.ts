@@ -73,7 +73,7 @@ export const IDEAS_FIGURAS: readonly IdeaFigura[] = [
       accesorios: [
         { en: "coronilla", corrimientoCm: [0, -3, -4], forma: { tipo: "cresta", abanico: { ...T("T-360", 6, "015"), estilo: "burbujas", cantidad: 2, largoCm: 13, aberturaGrados: 42 }, anguloGrados: 90 } },
         { en: "cara", par: true, corrimientoCm: [5, 0, 3], forma: { tipo: "globo", globo: G("R-5", 8, "005"), anguloGrados: 25, adelanteGrados: 75, estampado: "ojo" } },
-        { en: "cara", par: true, corrimientoCm: [2, 3, 9], forma: { tipo: "burbujas", tubito: T("T-260", 3.5, "080"), largosCm: [11], angulosGrados: [16] } },
+        { en: "cara", par: true, parte: "cejas", corrimientoCm: [2, 3, 9], forma: { tipo: "burbujas", tubito: T("T-260", 3.5, "080"), largosCm: [11], angulosGrados: [16] } },
         { en: "cara", corrimientoCm: [0, 2, -4], forma: { tipo: "pico", abanico: { ...T("T-260", 4, "020"), estilo: "lazos", cantidad: 2, largoCm: 9, anchoCm: 5, aberturaGrados: 46 }, anguloGrados: -10 } },
         { en: "espalda", corrimientoCm: [-14, 0, 6], forma: { tipo: "cola", estilo: "plumas", tubito: T("T-260", 4, "080"), largoCm: 20, anguloGrados: 165, cantidad: 2 } },
       ],
@@ -101,8 +101,8 @@ export const IDEAS_FIGURAS: readonly IdeaFigura[] = [
       piernas: null, cuerpo: [{ tipo: "globo", globo: G("R-12", 29, "009") }], cuello: null, cabeza: null, brazos: null,
       accesorios: [
         { en: "oreja", par: true, forma: { tipo: "orejas", estilo: "globo", globo: G("R-5", 12, "009"), largoCm: 12, anguloGrados: 55 } },
-        { en: "pecho", par: true, corrimientoCm: [4.5, 0, 4], forma: { tipo: "globo", globo: G("R-5", 7, "080"), anguloGrados: 30, adelanteGrados: 75 } },
-        { en: "pecho", par: true, corrimientoCm: [2.5, 1, 9], forma: { tipo: "burbujas", tubito: T("T-260", 2.8, "009"), largosCm: [6], angulosGrados: [12] } },
+        { en: "pecho", par: true, parte: "ojos", corrimientoCm: [4.5, 0, 4], forma: { tipo: "globo", globo: G("R-5", 7, "080"), anguloGrados: 30, adelanteGrados: 75 } },
+        { en: "pecho", par: true, parte: "orejas", corrimientoCm: [2.5, 1, 9], forma: { tipo: "burbujas", tubito: T("T-260", 2.8, "009"), largosCm: [6], angulosGrados: [12] } },
         { en: "pecho", corrimientoCm: [0, 0, -4], forma: { tipo: "globo", globo: G("R-5", 11, "009"), anguloGrados: 90, adelanteGrados: 82, estampado: "nariz_cerdo" } },
         { en: "cola", forma: { tipo: "cola", estilo: "rizo", tubito: T("T-260", 3.5, "009"), largoCm: 11, anguloGrados: 160 } },
       ],
@@ -143,8 +143,8 @@ export const IDEAS_FIGURAS: readonly IdeaFigura[] = [
       brazos: { ...T("T-160", 2.2, "015"), burbujasCm: [15, 12], angulosGrados: [-4, 32], adelanteGrados: [10], punta: { tipo: "dedos", cantidad: 3, largoCm: 4, aberturaGrados: 40 } },
       accesorios: [
         { en: "coronilla", corrimientoCm: [0, 0, -2], forma: { tipo: "cresta", abanico: { ...T("T-260", 3.5, "005"), estilo: "burbujas", cantidad: 4, largoCm: 9, aberturaGrados: 13 }, anguloGrados: 90 } },
-        { en: "hombro", corrimientoCm: [-3.5, 0, 0], forma: { tipo: "aro", tubito: T("T-160", 2.2, "015"), radioCm: 4.6, plano: "horizontal", desdeGrados: 0, hastaGrados: 360 } },
-        { en: "pie", par: true, corrimientoCm: [4, 8, -2], forma: { tipo: "globo", globo: G("R-12", 18, "060"), anguloGrados: -15, adelanteGrados: 55 } },
+        { en: "hombro", parte: "cinturon", corrimientoCm: [-3.5, 0, 0], forma: { tipo: "aro", tubito: T("T-160", 2.2, "015"), radioCm: 4.6, plano: "horizontal", desdeGrados: 0, hastaGrados: 360 } },
+        { en: "pie", par: true, parte: "piernas/pies", corrimientoCm: [4, 8, -2], forma: { tipo: "globo", globo: G("R-12", 18, "060"), anguloGrados: -15, adelanteGrados: 55 } },
       ],
     }),
   },
@@ -158,7 +158,7 @@ export const IDEAS_FIGURAS: readonly IdeaFigura[] = [
       accesorios: [
         { en: "pecho", par: true, corrimientoCm: [4, 0, 6], forma: { tipo: "globo", globo: G("R-5", 7, "005"), anguloGrados: 40, adelanteGrados: 70, estampado: "ojo" } },
         { en: "pecho", corrimientoCm: [0, 0, 1], forma: { tipo: "pico", abanico: { ...T("T-260", 3.5, "015"), estilo: "lazos", cantidad: 2, largoCm: 6, anchoCm: 4, aberturaGrados: 50 } } },
-        { en: "pecho", corrimientoCm: [0, 1, -3], forma: { tipo: "burbujas", tubito: T("T-260", 3, "015"), largosCm: [5], angulosGrados: [-95], adelanteGrados: [30] } },
+        { en: "pecho", parte: "barbilla", corrimientoCm: [0, 1, -3], forma: { tipo: "burbujas", tubito: T("T-260", 3, "015"), largosCm: [5], angulosGrados: [-95], adelanteGrados: [30] } },
         { en: "coronilla", corrimientoCm: [0, 0, -1], forma: { tipo: "cresta", abanico: { ...T("T-260", 4, "015"), estilo: "lazos", cantidad: 2, largoCm: 9, anchoCm: 6, aberturaGrados: 110 }, anguloGrados: 90 } },
         { en: "espalda", corrimientoCm: [-9, 0, 0], forma: { tipo: "alas", abanico: { ...T("T-260", 4.5, "005"), estilo: "burbujas", cantidad: 2, largoCm: 21, aberturaGrados: 14 }, anguloGrados: 178, adelanteGrados: 0 } },
         { en: "base", corrimientoCm: [0, 9, -1], forma: { tipo: "cresta", abanico: { ...T("T-160", 2.1, "020"), estilo: "flecos", cantidad: 5, largoCm: 10, aberturaGrados: 24 }, anguloGrados: -5, adelanteGrados: 45 } },

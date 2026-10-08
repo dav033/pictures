@@ -1,6 +1,7 @@
 import type { Vec3 } from "./modulos";
 import type { GloboDecoracion, ParteGlobo, TuboDecoracion } from "./decoraciones";
 import { centroCuerpo, perfilRedondo, type PuntoPerfil } from "./geometria";
+import { marcarParte } from "./partes-decoraciones";
 
 /**
  * **Globo burbuja y globo dentro de globo**, por propiedades: un globo transparente (R-18, R-24 o R-36 Cristal
@@ -260,6 +261,10 @@ export function armarBurbuja(p: PropiedadesBurbuja): BurbujaArmada {
   }
 
   const alto = perfil.reduce((m, q) => Math.max(m, q.y), 0);
+  // Partes: los de adentro (del segundo en adelante) son los interiores; el primero, el exterior; lo de papel, el relleno.
+  marcarParte(globos, 1, "interiores");
+  marcarParte(globos, 0, "exterior");
+  marcarParte(tubos, 0, "relleno");
   return { globos, tubos, colocados: globos.length - 1, pedidos: pedidos.length, radioCm: r2(Math.max(D / 2, alto / 2)), fondoCm: r2(D / 2), altoCm: r2(alto) };
 }
 

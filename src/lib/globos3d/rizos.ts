@@ -2,6 +2,7 @@ import type { Vec3 } from "./modulos";
 import type { TuboDecoracion } from "./decoraciones";
 import type { MaterialDecoracion } from "./figuras";
 import { formatoPorId } from "./formatos";
+import { conParte } from "./partes-decoraciones";
 
 /**
  * **Rizos de tubito** (T-160 / T-260 / T-360), todo por propiedades: lo que más falta en las «Ideas de fiesta» de
@@ -350,6 +351,8 @@ export function armarRizo(p: PropiedadesRizo): RizoArmado {
     case "voluta": tubos = armarVoluta(p); break;
     case "burbujas": tubos = armarBurbujas(p); break;
   }
+  // La parte de cada tubito es la forma del rizo («tirabuzon», «penacho», «flecos», «burbujas»…: ver `partes-decoraciones.ts`).
+  tubos = conParte(tubos, p.forma);
   let minX = Infinity, maxX = -Infinity, minY = Infinity, minZ = Infinity, maxZ = -Infinity;
   for (const t of tubos) for (const q of t.puntos) {
     const r = t.grosorCm / 2;
@@ -384,8 +387,9 @@ export const RIZOS_PREDEFINIDOS: ReadonlyArray<{ id: string; nombre: string; des
     decoracion: { tipo: "rizo", propiedades: { forma: "tirabuzon", tubito: T260("012"), vueltas: 4, radioInicialCm: 2.5, radioFinalCm: 5, largoCm: 34 } },
   },
   {
-    id: "rizo_resorte", nombre: "Resorte de T-160", descripcion: "Un T-160 Reflex Dorado en resorte apretado: 6 vueltas de 2 cm de radio, 18 cm.",
-    decoracion: { tipo: "rizo", propiedades: { forma: "resorte", tubito: { formatoId: "T-160", grosorCm: 2, codigo: "970" }, vueltas: 6, radioCm: 2, largoCm: 18 } },
+    // Era Reflex Dorado (970), que no se fabrica en T-160: va el Fashion Moca (070), el T-160 más cercano al dorado (ΔE 13).
+    id: "rizo_resorte", nombre: "Resorte de T-160", descripcion: "Un T-160 Fashion Moca (el tono dorado que viene en T-160) en resorte apretado: 6 vueltas de 2 cm de radio, 18 cm.",
+    decoracion: { tipo: "rizo", propiedades: { forma: "resorte", tubito: { formatoId: "T-160", grosorCm: 2, codigo: "070" }, vueltas: 6, radioCm: 2, largoCm: 18 } },
   },
   {
     id: "rizo_resorte_frente", nombre: "Rizo de frente (neón)", descripcion: "Un T-260 Neón Fucsia en resorte corto que sale de frente: de lejos se ve como un caracol, como los rizos pegados a una columna.",

@@ -6,6 +6,7 @@ import { armarFiguraTubito, figuraEnIngles, type DecoracionFigura } from "./figu
 import { FIGURAS_PREDEFINIDAS } from "./ideas-figuras";
 import { RIZOS_PREDEFINIDOS, armarRizo, rizoEnIngles, type DecoracionRizo } from "./rizos";
 import { BURBUJAS_PREDEFINIDAS, armarBurbuja, burbujaEnIngles, type DecoracionBurbuja } from "./burbujas";
+import { conParte } from "./partes-decoraciones";
 import { RACIMOS_PREDEFINIDOS, armarOrbe, armarRacimo, orbeEnIngles, racimoEnIngles, type DecoracionOrbe, type DecoracionRacimo } from "./racimos-globos";
 
 /**
@@ -171,9 +172,9 @@ function alcanceAnillo(a: AnilloTubito): number {
   return (desde + Math.max(a.grosorCm, a.largoCm)) * Math.cos(rad(a.aperturaGrados)) + a.grosorCm / 2;
 }
 
-/** Un globito al centro, mirando hacia fuera (+Y), con el nudo en `y0`. */
+/** Un globito al centro (la parte «centro»), mirando hacia fuera (+Y), con el nudo en `y0`. */
 function globoCentral(parte: ParteGlobo, y0: number): GloboDecoracion {
-  return { formatoId: parte.formatoId, infladoCm: parte.infladoCm, codigo: parte.codigo, nudo: { x: 0, y: y0, z: 0 }, direccion: { x: 0, y: 1, z: 0 }, cuelloExtraCm: 0 };
+  return { formatoId: parte.formatoId, infladoCm: parte.infladoCm, codigo: parte.codigo, nudo: { x: 0, y: y0, z: 0 }, direccion: { x: 0, y: 1, z: 0 }, cuelloExtraCm: 0, parte: "centro" };
 }
 
 export function largoCurva(puntos: readonly Vec3[], cerrado: boolean): number {
@@ -213,14 +214,14 @@ function armada(globos: GloboDecoracion[], tubos: TuboDecoracion[], radioCm: num
 }
 
 export function armarFlorTubito(p: PropiedadesFlorTubito): DecoracionArmada {
-  const tubos = anilloTubito(p.petalos, 0);
+  const tubos = conParte(anilloTubito(p.petalos, 0), "petalos");
   const g = p.petalos.grosorCm;
-  if (p.interior) tubos.push(...anilloTubito(p.interior, g * 0.7));
+  if (p.interior) tubos.push(...conParte(anilloTubito(p.interior, g * 0.7), "petalos/interior"));
   const globos: GloboDecoracion[] = [];
   const alto = p.interior ? g * 0.7 + p.interior.grosorCm * 0.5 : g * 0.4;
   if (p.corona && p.corona.cantidad >= 3) {
     for (const globo of anillo(p.corona, Math.min(8, Math.round(p.corona.cantidad)), 30, p.petalos.giroGrados + 180 / p.corona.cantidad)) {
-      globos.push({ ...globo, nudo: { ...globo.nudo, y: globo.nudo.y + alto } });
+      globos.push({ ...globo, nudo: { ...globo.nudo, y: globo.nudo.y + alto }, parte: "corona" });
     }
   }
   if (p.centro) globos.push(globoCentral(p.centro, alto));
@@ -238,7 +239,7 @@ export function armarMono(p: PropiedadesMono): DecoracionArmada {
       // Los lazos de cada lado se abren en abanico, un poco hacia arriba (+Z local).
       const theta = rad((j - (k - 1) / 2) * p.aberturaGrados + 8);
       const phi = lado > 0 ? theta : Math.PI - theta;
-      tubos.push({ formatoId: p.formatoId, grosorCm: g, codigo: p.codigo, puntos: curvaLazo(phi, apertura, g * 0.3, p.largoLazoCm, Math.max(g, p.anchoLazoCm)), cerrado: false });
+      tubos.push({ formatoId: p.formatoId, grosorCm: g, codigo: p.codigo, puntos: curvaLazo(phi, apertura, g * 0.3, p.largoLazoCm, Math.max(g, p.anchoLazoCm)), cerrado: false, parte: "lazos" });
     }
     if (p.colas) {
       // Colas: bajan hacia fuera con una onda, como las puntas del T-260 que quedan sueltas.
@@ -249,7 +250,7 @@ export function armarMono(p: PropiedadesMono): DecoracionArmada {
         const u = g * 0.4 + (p.largoColaCm - g * 0.4) * (i / 10);
         puntos.push(punto(radial, lateral, u, lado * p.largoColaCm * 0.12 * Math.sin((2 * Math.PI * i) / 10), -g * 0.2));
       }
-      tubos.push({ formatoId: p.formatoId, grosorCm: g, codigo: p.codigo, puntos, cerrado: false });
+      tubos.push({ formatoId: p.formatoId, grosorCm: g, codigo: p.codigo, puntos, cerrado: false, parte: "colas" });
     }
   }
   const globos = p.centro ? [globoCentral(p.centro, g * 0.3)] : [];
@@ -267,9 +268,9 @@ export function armarEstrella(p: PropiedadesEstrella): DecoracionArmada {
   if (p.estilo === "rayos") {
     const desde = Math.max(g / 2, (n * g * 0.8) / (2 * Math.PI));
     for (let i = 0; i < n; i++) {
-      tubos.push({ formatoId: p.formatoId, grosorCm: g, codigo: p.codigo, puntos: curvaBurbuja(angulo(i), 0, desde + g / 2, r - g * 1.6), cerrado: false });
+      tubos.push({ formatoId: p.formatoId, grosorCm: g, codigo: p.codigo, puntos: curvaBurbuja(angulo(i), 0, desde + g / 2, r - g * 1.6), cerrado: false, parte: "rayos" });
       // La perilla de la punta: una burbuja cortita después de la torcedura.
-      tubos.push({ formatoId: p.formatoId, grosorCm: g, codigo: p.codigo, puntos: curvaBurbuja(angulo(i), 0, r - g * 1.05, r - g * 0.5), cerrado: false });
+      tubos.push({ formatoId: p.formatoId, grosorCm: g, codigo: p.codigo, puntos: curvaBurbuja(angulo(i), 0, r - g * 1.05, r - g * 0.5), cerrado: false, parte: "rayos/perillas" });
     }
   } else {
     const puntos: Vec3[] = [];
@@ -278,7 +279,7 @@ export function armarEstrella(p: PropiedadesEstrella): DecoracionArmada {
       const a = angulo(0) + (Math.PI * j) / n;
       puntos.push({ x: Math.cos(a) * radio, y: 0, z: Math.sin(a) * radio });
     }
-    tubos.push({ formatoId: p.formatoId, grosorCm: g, codigo: p.codigo, puntos, cerrado: true });
+    tubos.push({ formatoId: p.formatoId, grosorCm: g, codigo: p.codigo, puntos, cerrado: true, parte: "contorno" });
   }
   const globos = p.centro ? [globoCentral(p.centro, g * 0.3)] : [];
   return armada(globos, tubos, r, g / 2);
@@ -297,19 +298,29 @@ export function armarFlorCorazones(p: PropiedadesFlorCorazones): DecoracionArmad
     const { radial } = ejes(phi, apertura);
     // La cara del corazón mira hacia fuera de la flor (perpendicular al pétalo).
     const frente: Vec3 = { x: -Math.cos(phi) * Math.sin(apertura), y: Math.cos(apertura), z: -Math.sin(phi) * Math.sin(apertura) };
-    globos.push({ formatoId: corazones.formatoId, infladoCm: a, codigo: corazones.codigo, nudo: { x: radial.x * desde, y: radial.y * desde, z: radial.z * desde }, direccion: radial, cuelloExtraCm: 0, frente });
+    globos.push({ formatoId: corazones.formatoId, infladoCm: a, codigo: corazones.codigo, nudo: { x: radial.x * desde, y: radial.y * desde, z: radial.z * desde }, direccion: radial, cuelloExtraCm: 0, frente, parte: "petalos" });
   }
-  const tubos = p.interior ? anilloTubito(p.interior, a * 0.28) : [];
+  const tubos = p.interior ? conParte(anilloTubito(p.interior, a * 0.28), "petalos/interior") : [];
   if (p.centro) globos.push(globoCentral(p.centro, a * 0.25));
   const radio = Math.max((desde + a * 0.95) * Math.cos(apertura), p.interior ? alcanceAnillo(p.interior) : 0);
   return armada(globos, tubos, radio, a * 0.25);
+}
+
+/**
+ * Las partes de una flor de globos redondos, en el orden en que la arma `armarFlor`: primero los pétalos (3 a 8), luego
+ * la corona (si lleva 3 o más, hasta 8) y al final el centro (uno o un trío).
+ */
+function partesDeFlor(globos: readonly GloboDecoracion[], p: PropiedadesFlor): GloboDecoracion[] {
+  const petalos = Math.max(3, Math.min(8, Math.round(p.petalos.cantidad)));
+  const corona = p.corona && p.corona.cantidad >= 3 ? Math.min(8, Math.round(p.corona.cantidad)) : 0;
+  return globos.map((g, i) => (g.parte ? g : { ...g, parte: i < petalos ? "petalos" : i < petalos + corona ? "corona" : "centro" }));
 }
 
 export function armarDecoracion(decoracion: Decoracion): DecoracionArmada {
   switch (decoracion.tipo) {
     case "flor": {
       const flor = armarFlor(decoracion.propiedades);
-      return armada(flor.globos, [], flor.diametroCm / 2, decoracion.propiedades.petalos.infladoCm / 2);
+      return armada(partesDeFlor(flor.globos, decoracion.propiedades), [], flor.diametroCm / 2, decoracion.propiedades.petalos.infladoCm / 2);
     }
     case "flor_tubito": return armarFlorTubito(decoracion.propiedades);
     case "mono": return armarMono(decoracion.propiedades);

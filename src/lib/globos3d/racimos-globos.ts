@@ -1,6 +1,7 @@
 import type { Vec3 } from "./modulos";
 import type { GloboDecoracion, ParteGlobo, TuboDecoracion } from "./decoraciones";
 import { centroCuerpo } from "./geometria";
+import { conParte, marcarParte } from "./partes-decoraciones";
 
 /**
  * **Racimos y totems** de las fotos de Pinterest que no eran ni flor ni burbuja (2026-10-08):
@@ -57,7 +58,8 @@ function filasUvas(n: number): number[] {
 export function armarRacimo(p: PropiedadesRacimo): RacimoArmado {
   const r = racimoEnPlano(p);
   const cambio = (q: Vec3): Vec3 => ({ x: q.x, y: q.z, z: q.y });
-  return { ...r, globos: r.globos.map((g) => ({ ...g, nudo: cambio(g.nudo), direccion: cambio(g.direccion) })) };
+  // Todos sus globitos son una sola parte: la forma del racimo («uvas», «bola» o «collar»).
+  return { ...r, globos: conParte(r.globos.map((g) => ({ ...g, nudo: cambio(g.nudo), direccion: cambio(g.direccion) })), p.forma) };
 }
 
 function racimoEnPlano(p: PropiedadesRacimo): RacimoArmado {
@@ -111,7 +113,7 @@ export function armarOrbe(p: PropiedadesOrbe): RacimoArmado {
   const globos: GloboDecoracion[] = [];
   const tubos: TuboDecoracion[] = [];
   const { formatoId, infladoCm, codigo } = p.esfera;
-  globos.push({ formatoId, infladoCm, codigo, nudo: v(0, 0, 0), direccion: { x: 0, y: 0, z: 1 }, cuelloExtraCm: 0 });
+  globos.push({ formatoId, infladoCm, codigo, nudo: v(0, 0, 0), direccion: { x: 0, y: 0, z: 1 }, cuelloExtraCm: 0, parte: "esfera" });
   const radioEsfera = infladoCm / 2;
   if (p.collar) {
     const c = p.collar, n = Math.max(3, Math.round(c.cantidad)), rc = c.infladoCm / 2;
@@ -121,6 +123,7 @@ export function armarOrbe(p: PropiedadesOrbe): RacimoArmado {
       globos.push(globoEn(v(Math.cos(a) * radio, Math.sin(a) * radio, rc * 0.6), { x: Math.cos(a), y: Math.sin(a), z: -0.3 }, c.formatoId, c.infladoCm, c.codigo));
     }
   }
+  marcarParte(globos, 1, "collar");
   if (p.flecos) {
     const f = p.flecos, n = Math.max(4, Math.min(60, Math.round(f.tiras)));
     // Tiras finas (tubitos casi sin inflar) que caen rectas, con un leve vaivén, desde un círculo bajo el collar.
@@ -132,7 +135,7 @@ export function armarOrbe(p: PropiedadesOrbe): RacimoArmado {
         const t = i / 8;
         puntos.push(v(Math.cos(a) * rr + Math.sin(t * 7 + k) * 1.2 * t, Math.sin(a) * rr + Math.cos(t * 5 + k) * 1.2 * t, -2 - largo * t));
       }
-      tubos.push({ formatoId: "T-260", grosorCm: 0.8, codigo: f.codigos[k % f.codigos.length] ?? "970", puntos, cerrado: false });
+      tubos.push({ formatoId: "T-260", grosorCm: 0.8, codigo: f.codigos[k % f.codigos.length] ?? "970", puntos, cerrado: false, parte: "flecos" });
     }
   }
   return { globos, tubos, radioCm: radioEsfera, fondoCm: p.flecos ? p.flecos.largoCm : 0 };

@@ -40,7 +40,8 @@ export function grupoDe(p: Pick<Predefinida, "id" | "decoracion">): GrupoDecorac
   if (p.decoracion.tipo === "figura") return "figuras";
   if (p.decoracion.tipo === "rizo") return "rizos";
   if (p.decoracion.tipo === "burbuja") return "burbujas";
-  if (p.id.startsWith("racimo")) return "racimos";
+  // Los racimos de globitos (uvas, bola, collar), el orbe y la flor en copa «racimo_dorado».
+  if (p.decoracion.tipo === "racimo" || p.decoracion.tipo === "orbe" || p.id.startsWith("racimo")) return "racimos";
   switch (p.decoracion.tipo) {
     case "flor": return "flores";
     case "flor_tubito": return "flores_tubito";

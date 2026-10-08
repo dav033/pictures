@@ -200,7 +200,7 @@ function armarPiezaBase(pieza: PiezaBase): PiezaArmada {
     case "globo": {
       const formato = formatoPorId(pieza.formatoId);
       if (!formato) throw new Error(`Formato desconocido: ${pieza.formatoId}`);
-      const globo: GloboDePieza = { formatoId: formato.id, infladoCm: pieza.infladoCm, codigo: pieza.codigo, nudo: { x: 0, y: -centroCuerpo("redondo", pieza.infladoCm), z: 0 }, direccion: { x: 0, y: 1, z: 0 }, cuelloExtraCm: 0 };
+      const globo: GloboDePieza = { formatoId: formato.id, infladoCm: pieza.infladoCm, codigo: pieza.codigo, nudo: { x: 0, y: -centroCuerpo("redondo", pieza.infladoCm), z: 0 }, direccion: { x: 0, y: 1, z: 0 }, cuelloExtraCm: 0, parte: "globo" };
       return conCaja({ globos: [globo], tubos: [], flores: [], anclas: [], materiales: materialesPorFormato([globo]) });
     }
     case "modulo": {
