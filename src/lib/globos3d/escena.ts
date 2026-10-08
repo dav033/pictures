@@ -4,6 +4,7 @@ import type { TuboDecoracion } from "./decoraciones";
 import { decoracionEnIngles, type MaterialDecoracion } from "./figuras";
 import { esDePie } from "./halloween";
 import { formaEnIngles } from "./formas";
+import { metalizadoEnIngles } from "./metalizados";
 import { sumarMateriales } from "./mezcla";
 import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
@@ -494,6 +495,7 @@ export function piezaEnIngles(pieza: Pieza, caja: Caja): string {
     case "globo": return `a single large round balloon ${metrosEn(pieza.infladoCm)} across`;
     case "forma": return `${formaEnIngles(pieza.forma)} ${alto} tall`;
     case "letras": return `the balloon lettering "${pieza.letras.texto}" ${alto} tall`;
+    case "metalizado": return metalizadoEnIngles(pieza.metalizado);
   }
 }
 

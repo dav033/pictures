@@ -7,6 +7,7 @@ import { LOTE_03 } from "./lote-03";
 import { LOTE_04 } from "./lote-04";
 import { LOTE_05 } from "./lote-05";
 import { LOTE_06 } from "./lote-06";
+import { IDEAS_IMPRESOS } from "../ideas-impresos";
 
 /** Etiqueta de la tienda → ocasión de la biblioteca (las mismas palabras de `OCASIONES`). */
 const OCASION_DE_ETIQUETA: Readonly<Record<string, string>> = {
@@ -35,4 +36,4 @@ function deFiguras(): IdeaDigitalizada[] {
 }
 
 /** Todas las ideas de sempertex.com digitalizadas (cada lote lo llena un encargo distinto, sin pisarse). */
-export const IDEAS_SEMPERTEX: readonly IdeaDigitalizada[] = [...LOTE_01, ...LOTE_02, ...LOTE_03, ...LOTE_04, ...LOTE_05, ...LOTE_06, ...deFiguras()];
+export const IDEAS_SEMPERTEX: readonly IdeaDigitalizada[] = [...LOTE_01, ...LOTE_02, ...LOTE_03, ...LOTE_04, ...LOTE_05, ...LOTE_06, ...deFiguras(), ...IDEAS_IMPRESOS];

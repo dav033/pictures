@@ -1,6 +1,7 @@
 import { formatoPorId } from "./formatos";
 import { centroCuerpo, nudoCm } from "./geometria";
 import type { Vec3 } from "./modulos";
+import type { ImpresoGlobo } from "./estampados";
 
 /**
  * Decoraciones hijas, definidas solo por propiedades y colgadas de anclas. Aquí está la flor de globos redondos y
@@ -47,8 +48,10 @@ export type CapaEstampado = { hex: string; puntos: Array<[number, number]> };
  * material (no se cotiza). Va centrado en la **cara** (hacia `frente`, con v hacia la punta del globo) o en la
  * **punta** (el polo opuesto al nudo, con v hacia `frente`); necesita `frente` para saber dónde es arriba. Las
  * capas se pintan en orden: la última queda encima.
+ * Con `impreso` lleva además una textura impresa (letrero, patrón, cara, ícono; ver `estampados.ts`) que el visor
+ * envuelve sobre el cuerpo, centrada hacia `frente`.
  */
-export type EstampadoGlobo = { en: "cara" | "punta"; capas: CapaEstampado[] };
+export type EstampadoGlobo = { en: "cara" | "punta"; capas: CapaEstampado[]; impreso?: ImpresoGlobo };
 
 /**
  * Un tramo de tubito (T-160/T-260/T-360) que sigue una curva: un lazo, una burbuja, la cola de un moño. `puntos`

@@ -5,6 +5,8 @@ import type { FormatoGlobo } from "@/lib/globos3d/formatos";
 import { centroCuerpo, contornoCorazon, perfilLink, perfilRedondo, type PuntoPerfil } from "@/lib/globos3d/geometria";
 import type { SolidoEscenografia } from "@/lib/globos3d/escenografia";
 import { calcoMotivo } from "./motivos-utileria";
+import type { ImpresoGlobo } from "@/lib/globos3d/estampados";
+import { calcoCorazon, cascaraImpresa, geometriaFoil, materialFoil } from "./impresos-visor";
 
 /**
  * La escena de /3d con three.js, sin React: un globo (o la fila de todos los formatos) sobre un piso con
@@ -28,9 +30,10 @@ export type Punto3 = { x: number; y: number; z: number };
 /**
  * Lo impreso sobre un globo redondo (iris de un ojo, cara de calabaza): polígonos de color en cm medidos sobre su
  * superficie. En la **cara** (hacia `frente`: u = eje × frente, v = eje) o en la **punta** (el polo opuesto al nudo:
- * u = −(eje × frente), v = frente). Las capas se pintan en orden (la última encima).
+ * u = −(eje × frente), v = frente). Las capas se pintan en orden (la última encima). Con `impreso`, además, una
+ * textura impresa envuelta sobre el cuerpo (letrero, patrón, cara, ícono; ver `impresos-visor.ts`).
  */
-export type EstampadoEnEscena = { en: "cara" | "punta"; capas: ReadonlyArray<{ hex: string; puntos: ReadonlyArray<readonly [number, number]> }> };
+export type EstampadoEnEscena = { en: "cara" | "punta"; capas: ReadonlyArray<{ hex: string; puntos: ReadonlyArray<readonly [number, number]> }>; impreso?: ImpresoGlobo };
 
 /**
  * Un tramo de tubito que sigue una curva (lazos, burbujas, colas): el eje en cm, su grosor y su color. Con familia
@@ -445,6 +448,9 @@ function materialEscenografia(s: SolidoEscenografia): THREE.Material {
     // Utilería de fiesta: el metal de los cubiertos y bandejas metalizadas, y la llama de una vela (se ve encendida).
     case "metal": return new THREE.MeshStandardMaterial({ color, metalness: 0.85, roughness: 0.25, envMap: entornoMetal, envMapIntensity: 1 });
     case "llama": return new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.4, roughness: 0.6 });
+    // Globo metalizado: papel metalizado espejo o satinado.
+    case "foil": return materialFoil(s.hex, false, entornoMetal);
+    case "foil_mate": return materialFoil(s.hex, true, entornoMetal);
     default: return new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
   }
 }
@@ -457,6 +463,9 @@ function solidoEscenografia(s: SolidoEscenografia): THREE.Object3D {
   } else if (s.forma === "cilindro") {
     geometria = new THREE.CylinderGeometry(s.radioArribaCm * CM, s.radioCm * CM, s.altoCm * CM, 64);
     geometria.translate(0, (s.altoCm / 2) * CM, 0);
+  } else if (s.acabado === "foil" || s.acabado === "foil_mate") {
+    // Un globo metalizado: el contorno inflado como almohada, de z = 0 a z = grosor.
+    geometria = geometriaFoil(s.contorno, s.huecos, s.grosorCm);
   } else {
     const forma = new THREE.Shape(s.contorno.map((p) => new THREE.Vector2(p.x * CM, p.y * CM)));
     for (const hueco of s.huecos) forma.holes.push(new THREE.Path(hueco.map((p) => new THREE.Vector2(p.x * CM, p.y * CM))));
@@ -662,6 +671,17 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     }
     // Lo impreso (iris, cara de calabaza) pegado a la superficie, en el marco del globo.
     if (globo.estampado && globo.formato.tipo === "redondo") objeto.add(estampadoSobre(globo.infladoCm, globo.cuelloExtraCm ?? 0, globo.estampado));
+    // Lo impreso como textura (letrero, patrón, cara): cáscara sobre el redondo o calcomanía en la cara del corazón.
+    const impreso = globo.estampado?.impreso;
+    if (impreso && globo.formato.tipo === "redondo") {
+      const extra = globo.cuelloExtraCm ?? 0;
+      const cascara = cascaraImpresa(perfilRedondo(globo.infladoCm, extra), centroCuerpo("redondo", globo.infladoCm) + extra, impreso, entornoMetal);
+      if (cascara) objeto.add(cascara);
+    } else if (impreso && globo.formato.tipo === "corazon") {
+      const malla = objeto.children.find((hijo): hijo is THREE.Mesh => hijo instanceof THREE.Mesh && hijo.geometry instanceof THREE.ExtrudeGeometry);
+      const calco = malla ? calcoCorazon(malla, globo.infladoCm, impreso, entornoMetal) : null;
+      if (malla && calco) malla.add(calco);
+    }
     const eje = new THREE.Vector3(globo.direccion.x, globo.direccion.y, globo.direccion.z).normalize();
     if (globo.frente) {
       // Globo plano: Y local = dirección del cuerpo, Z local (la cara del corazón) = frente.

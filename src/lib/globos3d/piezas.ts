@@ -16,6 +16,8 @@ import { armarEscenografia, puntosSolido, type ElementoEscenografia, type Produc
 import type { TipoUtileria } from "./utileria-catalogo";
 import { armarForma, type OpcionesForma } from "./formas";
 import { armarLetras, type OpcionesLetras } from "./letras";
+import { armarMetalizado, type OpcionesMetalizado } from "./metalizados";
+import { aplicarImpresos, type ImpresoEnPieza } from "./impresos-catalogo";
 
 /**
  * Una **pieza**: cualquier cosa que sabe armar el taller, descrita solo con datos (JSON) para poder guardarla,
@@ -23,7 +25,7 @@ import { armarLetras, type OpcionesLetras } from "./letras";
  * materiales, en su propio espacio (cm, y hacia arriba, apoyada en y = 0 cuando es una estructura de piso).
  * Las escenas (varias piezas colocadas) y el catálogo de decoraciones digitalizadas se construyen encima.
  */
-export type Pieza =
+type PiezaBase =
   | { tipo: "columna"; formatoId: string; infladoCm: number; alturaCm: number; patron: PatronColumna; colores: string[] }
   | { tipo: "arco"; formatoId: string; infladoCm: number; forma: FormaArco; anchoCm: number; altoCm: number; patron: PatronColumna; colores: string[] }
   | { tipo: "pared_malla"; formatoId: string; infladoCm: number; anchoCm: number; altoCm: number; patron: PatronMalla; colores: string[]; union: { infladoCm: number; codigo: string } }
@@ -55,7 +57,18 @@ export type Pieza =
    */
   | { tipo: "forma"; forma: OpcionesForma }
   /** Letras y números de globos (hilera de R-5, cuartetos o tubitos trenzados). Ver `letras.ts`. */
-  | { tipo: "letras"; letras: OpcionesLetras };
+  | { tipo: "letras"; letras: OpcionesLetras }
+  /**
+   * Globo metalizado (foil): número, letra, corazón, estrella, redondo… parado de frente, con la base en y = 0 (o
+   * flotando sobre su cinta). No es látex: no da materiales; su producto de la tienda va en `productos`. Ver `metalizados.ts`.
+   */
+  | { tipo: "metalizado"; metalizado: OpcionesMetalizado };
+
+/**
+ * Cualquier pieza puede llevar **globos impresos** de la tienda (`impresos`, ver `impresos-catalogo.ts`): se eligen
+ * sus globos por color o por índice y esos toman el impreso, su color base y su producto.
+ */
+export type Pieza = PiezaBase & { impresos?: ImpresoEnPieza[] };
 
 export type TipoPieza = Pieza["tipo"];
 
@@ -76,6 +89,8 @@ export type PiezaArmada = {
   solidos?: SolidoEscenografia[];
   /** Caja que ocupa (cm), contando el cuerpo de cada globo. */
   caja: { min: Vec3; max: Vec3 };
+  /** Productos de la tienda que no son globos lisos (metalizados, globos impresos), con su cantidad. */
+  productos?: ProductoDePieza[];
 };
 
 function cajaDe(globos: readonly GloboDecoracion[], tubos: readonly TuboDecoracion[], solidos: readonly SolidoEscenografia[] = []): PiezaArmada["caja"] {
@@ -100,6 +115,13 @@ function conCaja(p: Omit<PiezaArmada, "caja">): PiezaArmada {
 }
 
 export function armarPieza(pieza: Pieza): PiezaArmada {
+  const armada = armarPiezaBase(pieza);
+  if (!pieza.impresos?.length) return armada;
+  const conImpresos = aplicarImpresos(armada.globos, armada.materiales, pieza.impresos);
+  return { ...armada, globos: conImpresos.globos, materiales: conImpresos.materiales, productos: [...(armada.productos ?? []), ...conImpresos.productos] };
+}
+
+function armarPiezaBase(pieza: PiezaBase): PiezaArmada {
   switch (pieza.tipo) {
     case "columna":
     case "arco": {
@@ -160,6 +182,10 @@ export function armarPieza(pieza: Pieza): PiezaArmada {
     case "letras": {
       const armada = armarLetras(pieza.letras);
       return conCaja({ globos: armada.globos, tubos: armada.tubos, flores: [], anclas: armada.anclas, materiales: armada.materiales });
+    }
+    case "metalizado": {
+      const m = armarMetalizado(pieza.metalizado);
+      return conCaja({ globos: [], tubos: m.tubos, flores: [], anclas: [], materiales: [], solidos: armarEscenografia(m.elementos), ...(m.productos.length ? { productos: m.productos } : {}) });
     }
     case "decoracion": {
       const armada = armarDecoracion(pieza.decoracion);
