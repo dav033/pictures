@@ -216,7 +216,7 @@ function montaje(raiz: { id: string; nombre: string; pieza: Pieza; en: Vec3 }, a
     { id: raiz.id, nombre: raiz.nombre, pieza: raiz.pieza, colocacion: libre(raiz.en.x, raiz.en.y, raiz.en.z) },
     {
       id: amarreId, nombre: `Amarre de ${raiz.nombre.charAt(0).toLowerCase()}${raiz.nombre.slice(1)} (no se ve)`,
-      pieza: escenografia([cilindro(v(0, 0, 0), 2, 0.5, "#d6d6d6", "satinado")]),
+      pieza: escenografia([{ ...cilindro(v(0, 0, 0), 2, 0.5, "#d6d6d6", "satinado"), oculto: true }]),
       colocacion: { en: "sobre", padreId: raiz.id, puntoCm: redondo(mas(menos(amarreEn, raiz.en), v(0, HUNDIMIENTO_SOBRE_CM, 0))), normal: ARRIBA, giroGrados: 90 },
     },
   ];

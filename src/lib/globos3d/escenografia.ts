@@ -25,7 +25,8 @@ export type DibujoMotivo = "calavera" | "murcielago" | "calabaza" | "fantasma" |
  */
 export type MotivoEscenografia = { dibujo: DibujoMotivo; texto?: string; hex?: string; cara?: "frente" | "arriba"; escala?: number };
 
-type Aspecto = { hex: string; acabado: AcabadoEscenografia; motivo?: MotivoEscenografia };
+/** `oculto`: el elemento existe (sostiene o da un marco a lo que cuelga de él) pero no se dibuja (un amarre interno). */
+type Aspecto = { hex: string; acabado: AcabadoEscenografia; motivo?: MotivoEscenografia; oculto?: boolean };
 
 /**
  * Marco propio de un elemento (opcional): su forma se arma como siempre y luego se lleva a este marco (origen y dos
@@ -76,7 +77,7 @@ function enMarco(s: SolidoEscenografia, en: MarcoElemento): SolidoEscenografia {
 }
 
 export function armarEscenografia(elementos: readonly ElementoEscenografia[]): SolidoEscenografia[] {
-  return elementos.map((e): SolidoEscenografia => {
+  return elementos.filter((e) => !e.oculto).map((e): SolidoEscenografia => {
     const solido = armarElemento(e);
     return e.en ? enMarco(solido, e.en) : solido;
   });
