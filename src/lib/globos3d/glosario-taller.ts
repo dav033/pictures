@@ -48,8 +48,22 @@ function plurales(parte: string): string[] {
   return plural === ultimo ? [] : [[...nivel.slice(0, -1), plural].join(" ")];
 }
 
+/**
+ * Los sinónimos que no confunden: fuera los que son el nombre de otra parte («collar» en la corona) y los que
+ * comparten dos partes («ring» es corona y collar); esos se resuelven mejor con buscar_en_escena.
+ */
+function partesSinChoques(partes: readonly { nombre: string; ingles: readonly string[] }[]): ParteDeclarada[] {
+  const nombres = new Set(partes.map((p) => normalizarTexto(p.nombre.replace(/\//g, " "))));
+  const usos = new Map<string, number>();
+  for (const p of partes) for (const s of new Set(p.ingles.map(normalizarTexto))) usos.set(s, (usos.get(s) ?? 0) + 1);
+  return partes.map((p) => ({
+    parte: p.nombre,
+    sinonimos: [...p.ingles.filter((s) => !nombres.has(normalizarTexto(s)) && usos.get(normalizarTexto(s)) === 1), ...plurales(p.nombre)],
+  }));
+}
+
 const PARTES_DE_MODULOS: ReadonlyArray<readonly ParteDeclarada[]> = [
-  PARTES_DECORACIONES.filter((p) => !PARTES_AMBIGUAS.has(p.nombre)).map((p) => ({ parte: p.nombre, sinonimos: [...p.ingles, ...plurales(p.nombre)] })),
+  partesSinChoques(PARTES_DECORACIONES.filter((p) => !PARTES_AMBIGUAS.has(p.nombre))),
   // PARTES_ESTRUCTURAS,
 ];
 

@@ -106,7 +106,7 @@ prueba("«linkoloon» con falta y en inglés también", () => {
 });
 prueba("«los tubitos de las ramas a dorado» en Halloween → las ramas trenzadas; dorado es el color nuevo", () => {
   const r = consulta(halloween, "buscar_en_escena", { texto: "cambia los tubitos de las ramas a dorado" });
-  assert.match(primero(r), /«Ramas trenzadas» \(id ramas\).*20 T-260 076 chocolate.*selector: \{"formatos":\["T-260"\]\}/);
+  assert.match(primero(r), /«Ramas trenzadas» \(id ramas\).*20 T-260 076 chocolate.*selector: \{"formatos":\["T-260"\](,"partes":\["ramas"(,"ramas\/ramitas")?\])?\}/);
   assert.match(r, /El color nuevo \(«dorado»\) no filtra/);
   // Los fantasmas «de la rama» se llaman así pero no tienen tubitos: solo en parte.
   assert.match(r, /«Fantasma \(rama izquierda\)» \(id fantasma-izq\): se llama «ramas»; pero no tiene T-\*/);
@@ -201,13 +201,14 @@ prueba("lo que va encima o colgado de ella sale con su id y su contenido; y ella
   const e = ok(aplicarHerramienta(base, "poner_sobre", { decoracion_id: "flor_r5_rosada", padre_id: "columna-izq", altura_cm: 120 })).escena;
   const flor = e.nodos.find((n: NodoEscena) => n.colocacion.en === "sobre")!;
   const v = consulta(e, "ver_pieza", { id: "columna-izq" });
-  assert.match(v, new RegExp(`Encima o colgado de ella \\(1;[^\\n]*\\n- «${flor.nombre}» \\(id ${flor.id}, encima\\) · lleva: 5 R-5 009 rosado`));
+  assert.match(v, new RegExp(`Encima o colgado de ella \\(1;[^\\n]*\\n- «${flor.nombre}» \\(id ${flor.id}, encima\\) · lleva: .*5 R-5 009 rosado`));
   assert.match(consulta(e, "ver_pieza", { id: flor.id }), /Ella misma va encima de «columna-izq»/);
 });
-prueba("sin etiquetas lo dice; los tubitos se cuentan aparte", () => {
+prueba("con etiquetas lista sus partes; los tubitos se cuentan aparte", () => {
   const v = consulta(halloween, "ver_pieza", { id: "ramas" });
   assert.match(v, /0 globos y 20 tubitos/);
-  assert.match(v, /la pieza aún no dice sus partes/);
+  assert.match(v, /^- ramas: T-260 ×8/m);
+  assert.match(v, /^- ramas\/ramitas: T-260 ×12/m);
 });
 prueba("un fantasma de papel no lleva globos de látex", () => {
   assert.match(consulta(halloween, "ver_pieza", { id: "fantasma-izq" }), /No lleva globos de látex/);
