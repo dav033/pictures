@@ -17,6 +17,7 @@ import {
 } from "@/lib/globos3d/escena";
 import { ESCENAS_PREDEFINIDAS, PIEZAS_NUEVAS, piezaNueva } from "@/lib/globos3d/escenas-presets";
 import { ACTIVO, BOTON, Deslizador, INACTIVO, SelectorColor } from "./PanelFlor";
+import { AsistenteEscena } from "./AsistenteEscena";
 import { DecoracionesPequenas } from "./DecoracionesPequenas";
 
 const m = (cm: number) => `${(cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m`;
@@ -92,6 +93,8 @@ export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, 
           <button type="button" onClick={() => { onEscena({ ...escena, nodos: [] }); onSeleccion(null); }} className={`${BOTON} ${INACTIVO}`}>Empezar con la sala vacía</button>
         </div>
       </section>
+
+      <AsistenteEscena escena={escena} onEscena={onEscena} />
 
       <section className={TARJETA} aria-label="Piezas de la escena">
         <h2 className="text-sm font-semibold text-texto">Piezas <span className="font-normal text-texto-suave">· {escena.nodos.length} · {armada.globos.length} globos</span></h2>

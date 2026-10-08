@@ -47,6 +47,7 @@ export const INVENTARIO: readonly Punto[] = [
   { id: "gemini-cliente", archivo: "src/lib/gemini.ts", patron: /new\s+GoogleGenAI/, que: "cliente compartido getGeminiClient()", envoltorio: "getGeminiClient(proposito) → envolverClienteGemini(cliente, { proposito })", enganche: [GEMINI_CENTRAL] },
   { id: "gemini-parser-intencion", archivo: "src/lib/ia/inari/parse.ts", patron: /\.models\.generateContent\(/, que: "Inari: parser de intención (JSON) cuando INTENT_PARSER_PYTHON está apagado", envoltorio: "getGeminiClient(\"parser_intencion\")", enganche: [GEMINI_CENTRAL] },
   { id: "gemini-traduccion-revision", archivo: "src/app/api/generate/route.ts", patron: /\.models\.generateContent\(/, que: "traducción al inglés de la revisión pedida para FLUX", envoltorio: "getGeminiClient(\"traduccion_revision\")", enganche: [GEMINI_CENTRAL] },
+  { id: "gemini-escena-ia", archivo: "src/app/api/escena-ia/route.ts", patron: /\.models\.generateContent\(/, que: "taller 3D: bucle de herramientas que arma la escena (solo texto, sin imágenes)", envoltorio: "getGeminiClient(\"escena_ia\") + conRegistro + decidir por herramienta", enganche: [GEMINI_CENTRAL, { archivo: "src/app/api/escena-ia/route.ts", contiene: /decidir\("herramienta:escena_ia"/ }] },
   { id: "gemini-embedding", archivo: "src/lib/rag/embeddings.ts", patron: /\.models\.embedContent\(/, que: "embeddings de consulta/documento (RAG)", envoltorio: "getGeminiClient(\"embedding\")", enganche: [GEMINI_CENTRAL] },
   // ── @sempertex/agente-core (paquete): adaptador Gemini del ChatPort ──
   { id: "agente-core-cliente", archivo: "packages/agente-core/src/gemini/chat.ts", patron: /new\s+GoogleGenAI|export function crearChatGemini/, que: "ChatPort Gemini (chat clásico, guiado, Amaterasu, venue)", envoltorio: "chatDe()/chatOmoikaneDe() → envolverChatPort(port, { proposito })", enganche: [CHATPORT_CENTRAL] },
@@ -125,6 +126,8 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
   "src/app/api/admin/ordenes/manual/route.ts": "caption de orden con opencode (IA)",
   "src/app/api/admin/ordenes/[numero]/recaption/route.ts": "caption de orden con opencode (IA)",
   "src/app/api/internal/ai/echo/route.ts": "eco Next → Python (diagnóstico)",
+  "src/app/api/escena-ia/route.ts": "taller 3D: la IA arma la escena con herramientas (Gemini texto)",
+  "src/app/api/render-3d-imagen/route.ts": "taller 3D: foto con IA (FLUX)",
 };
 
 /** Rutas /api fuera del flujo de decisiones, con el motivo. Una ruta nueva debe clasificarse aquí o arriba. */
