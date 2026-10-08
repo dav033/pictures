@@ -11,7 +11,7 @@
 import assert from "node:assert/strict";
 import {
   AMBIENTES_RENDER, AMBIENTE_POR_DEFECTO, MAX_DESCRIPCION, NADA_MAS, NADA_MAS_CON_UTILERIA, PREFIJO_SALA, coloresEnIngles, descripcionRender3d, formatoEnIngles, promptRender3d,
-  promptRender3dFiel, tonoEnIngles,
+  promptRender3dFiel, tonoEnIngles, colorDeGloboEnIngles,
 } from "../../src/lib/globos3d/render-ia";
 import { ESCENAS_HALLOWEEN, ESCENAS_PREDEFINIDAS } from "../../src/lib/globos3d/escenas-presets";
 import { armarEscena, escenaEnIngles } from "../../src/lib/globos3d/escena";
@@ -24,10 +24,14 @@ assert.equal(formatoEnIngles("T-260"), "260 twisting tube");
 assert.equal(formatoEnIngles("C-12"), "12-inch heart");
 
 // Colores de la sala y de una pieza.
-assert.equal(tonoEnIngles("#f1ece6"), "warm off-white");
-assert.equal(tonoEnIngles("#d8cbbb"), "light beige");
-assert.equal(tonoEnIngles("#fbfaf8"), "white");
-assert.equal(tonoEnIngles("#1f3fbf"), "blue");
+assert.equal(tonoEnIngles("#f1ece6"), "off-white (#F1ECE6)");
+assert.equal(tonoEnIngles("#d8cbbb"), "light beige (#D8CBBB)");
+assert.equal(tonoEnIngles("#fbfaf8"), "white (#FBFAF8)");
+assert.equal(tonoEnIngles("#1f3fbf"), "blue (#1F3FBF)");
+// Color de globo: nombre corregido y hex oficial (FLUX volvía verde el «turquoise» de Azul Caribe).
+assert.equal(colorDeGloboEnIngles({ nombreEn: "turquoise", hexGlobo: "#4bbbcf" }), "light aqua blue (#4BBBCF)");
+assert.equal(colorDeGloboEnIngles({ nombreEn: "matte lime green", hexGlobo: "#8ac85b" }), "matte lime green (#8AC85B)");
+assert.equal(colorDeGloboEnIngles({ nombreEn: "turquoise", hexGlobo: "#00b5a0" }), "turquoise (#00B5A0)");
 assert.equal(coloresEnIngles([{ nombre: "turquoise", cantidad: 60 }, { nombre: "lime green", cantidad: 25 }, { nombre: "red", cantidad: 6 }, { nombre: "white", cantidad: 1 }]), "turquoise and lime green with red accents");
 assert.equal(coloresEnIngles([]), "");
 
@@ -60,7 +64,8 @@ for (const ambiente of AMBIENTES_RENDER) {
   assert.ok(prompt.includes(`The decoration: ${descripcion}.`), ambiente.id);
   assert.ok(/Add nothing that is not in the input/.test(prompt));
   assert.ok(!/Sempertex/i.test(prompt), "sin marcas en el texto");
-  if (ambiente.id === "igual_visor") assert.match(prompt, /Keep the room exactly as shown/);
+  assert.match(prompt, /Color fidelity: every balloon keeps exactly the color/);
+  if (ambiente.id === "igual_visor") { assert.match(prompt, /Keep the room exactly as shown/); assert.match(prompt, /Neutral daylight white balance/); }
   else assert.ok(prompt.includes(ambiente.frase), ambiente.id);
 }
 assert.ok(!promptRender3d("", "estudio").includes("The decoration:"));
@@ -70,11 +75,12 @@ const armada = armarEscena(ESCENA_RENDER_FIEL);
 const inventario = escenaEnIngles(ESCENA_RENDER_FIEL, armada);
 assert.match(inventario, /Exactly 6 separate pieces: 3 × balloon tree, 1 × balloon palm tree, 1 × four-legged balloon puppy, 1 × big orange jack-o'-lantern balloon/, inventario);
 assert.match(inventario, /From left to right: \(1\) a balloon tree .*\(2\) a balloon palm tree .*\(3\) the same as \(1\); \(4\) the same as \(1\); \(5\) a four-legged balloon puppy .*\(6\) a big orange jack-o'-lantern/);
-assert.match(inventario, /dark brown trunk with small brown accents, turquoise and matte lime green canopy and matte red balloon fruits/);
-assert.match(inventario, /brown trunk, matte dark green and bright matte green fronds and dark brown coconuts/);
-assert.match(inventario, /puppy[^;]*in matte nude beige/, "el perrito no es plateado");
-assert.match(inventario, /jack-o'-lantern[^;]*in matte orange and matte lime green/, "lo que se ve pesa más que los tubitos");
-assert.ok(inventario.includes(`${PREFIJO_SALA} warm off-white back and side walls, a light beige floor and a white ceiling, all plain and empty`), inventario);
+assert.match(inventario, /dark brown \(#684C41\) trunk with small brown \(#835836\) accents, light aqua blue \(#4BBBCF\) and matte lime green \(#8AC85B\) canopy and matte red \(#E01B2B\) balloon fruits/, inventario);
+assert.match(inventario, /brown \(#835836\) trunk, matte dark green \(#007B45\) and bright matte green \(#02AE26\) fronds and dark brown \(#684C41\) coconuts/);
+assert.match(inventario, /puppy[^;]*in matte nude beige \(#CA9E5D\)/, "el perrito no es plateado");
+assert.match(inventario, /jack-o'-lantern[^;]*in matte orange \(#E75D1D\) and matte lime green \(#8AC85B\)/, "lo que se ve pesa más que los tubitos");
+assert.ok(/off-white \(#[0-9A-F]{6}\) back and side walls, a light beige \(#[0-9A-F]{6}\) floor and a white \(#[0-9A-F]{6}\) ceiling, all plain and empty/.test(inventario), inventario);
+assert.ok(!/\bwarm\b/.test(inventario), "la sala no se pide cálida");
 const completa = descripcionRender3d(inventario, armada.materiales.map((m) => ({ cantidad: m.cantidad, formatoId: m.formatoId, colorEn: referenciaPorCodigo(m.codigo)?.nombreEn ?? m.codigo })));
 assert.ok(completa.length <= MAX_DESCRIPCION, `${completa.length}`);
 assert.ok(completa.startsWith(inventario.replace(/\.$/, "")), "el inventario entra entero");
@@ -102,7 +108,7 @@ assert.ok(!/\(\d+\) party props/.test(mesas), "la escenografía no va numerada")
 const mesasDescripcion = descripcionRender3d(mesas, []);
 assert.ok(mesasDescripcion.length <= MAX_DESCRIPCION, `${mesasDescripcion.length}`);
 assert.ok(mesasDescripcion.endsWith(NADA_MAS_CON_UTILERIA), mesasDescripcion.slice(-120));
-assert.match(mesasDescripcion, /\) [^;]+…\. Nothing else/, "corta en el último «;»");
+assert.ok(!mesasDescripcion.includes("…") || /\) [^;]+…\. Nothing else/.test(mesasDescripcion), "si corta, corta en el último «;»");
 const media = enIngles("halloween_guirnalda_arana");
 assert.match(media, /HALF arch: it rises from the bottom left/, media);
 assert.match(media, /only one leg/);

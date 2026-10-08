@@ -25,7 +25,7 @@ export const AMBIENTES_RENDER: ReadonlyArray<{ id: AmbienteRender; nombre: strin
 export const AMBIENTE_POR_DEFECTO: AmbienteRender = "igual_visor";
 
 /** Tope de la descripción: el inventario de una escena de 6 a 8 piezas con sus colores cabe entero. */
-export const MAX_DESCRIPCION = 1400;
+export const MAX_DESCRIPCION = 1800;
 
 /** El cierre del inventario: va siempre al final de la descripción, aunque haya que recortar lo demás. */
 export const NADA_MAS = "Nothing else is in the room: no furniture, tables, food, extra balloons or props";
@@ -39,6 +39,13 @@ export const PREFIJO_SALA = "The room as shown:";
 const FRASE_SALA = /The room as shown:[^.]*\.?\s*/;
 
 /** Lo que FLUX añadía por su cuenta y nunca debe aparecer. */
+/**
+ * Color: FLUX.2 calentaba y oscurecía toda la foto (la pared de L92 b*4 a L78 b*24) y volvía verde el celeste
+ * (render-fiel, 2026-10-08). Con esta frase y el hex de cada color el error medio bajó de ΔE ~25 a ~15.
+ */
+const COLOR_FIEL = "Color fidelity: every balloon keeps exactly the color it has in the input image and the hex code given for it; do not darken, desaturate or tint the balloons.";
+const LUZ_NEUTRA = "Neutral daylight white balance and the same exposure and brightness as the input: do not warm or darken the image.";
+
 const NO_ANADIR = "Add nothing that is not in the input: no furniture, tables, desserts, cupcakes, gifts, plants, people, extra balloons, extra trees or extra figures.";
 
 function lugarDe(ambiente: AmbienteRender) {
@@ -65,6 +72,8 @@ export function promptRender3d(descripcion: string, ambiente: AmbienteRender): s
     "Make it a real photograph, not a 3D render: real latex balloons with natural soft highlights and subtle texture, tightly packed and slightly squashed where they touch (where the preview shows small gaps or see-through spots, the real decoration is full), knots hidden; chrome balloons with mirror reflections, clear balloons see-through.",
     sala,
     decoracion ? `The decoration: ${decoracion}.` : "",
+    COLOR_FIEL,
+    ambiente === "igual_visor" ? LUZ_NEUTRA : "",
     NO_ANADIR,
     "Same camera angle and framing as the input; sharp detail, natural depth.",
   ].filter(Boolean).join(" ");
@@ -90,6 +99,11 @@ export function promptRender3dFiel(descripcion: string, ambiente: AmbienteRender
  * FLUX conserve la sala del visor sin inventarle otra.
  */
 export function tonoEnIngles(hex: string): string {
+  const nombre = nombreDeTono(hex);
+  return /^#?[0-9a-f]{6}$/i.test(hex.trim()) ? `${nombre} (#${hex.trim().replace("#", "").toUpperCase()})` : nombre;
+}
+
+function nombreDeTono(hex: string): string {
   const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
   if (!m) return "plain";
   const [r, g, b] = [m[1]!, m[2]!, m[3]!].map((x) => parseInt(x, 16) / 255) as [number, number, number];
@@ -98,9 +112,21 @@ export function tonoEnIngles(hex: string): string {
   if (croma > 0) tono = max === r ? 60 * (((g - b) / croma) % 6) : max === g ? 60 * ((b - r) / croma + 2) : 60 * ((r - g) / croma + 4);
   if (tono < 0) tono += 360;
   if (croma < 0.03) return luz >= 0.95 ? "white" : luz >= 0.85 ? "off-white" : luz >= 0.7 ? "light gray" : luz >= 0.45 ? "gray" : luz >= 0.2 ? "dark gray" : "black";
-  if (croma < 0.25 && tono >= 15 && tono < 60) return luz >= 0.88 ? "warm off-white" : luz >= 0.7 ? "light beige" : luz >= 0.5 ? "beige" : luz >= 0.3 ? "brown" : "dark brown";
+  if (croma < 0.25 && tono >= 15 && tono < 60) return luz >= 0.88 ? "off-white" : luz >= 0.7 ? "light beige" : luz >= 0.5 ? "beige" : luz >= 0.3 ? "brown" : "dark brown";
   const nombre = tono < 15 || tono >= 345 ? "red" : tono < 40 ? "orange" : tono < 65 ? "yellow" : tono < 160 ? "green" : tono < 195 ? "turquoise" : tono < 250 ? "blue" : tono < 290 ? "purple" : "pink";
   return `${luz >= 0.75 ? "light " : luz < 0.3 ? "dark " : ""}${nombre}`;
+}
+
+/**
+ * Un color de globo para FLUX: su nombre en inglés de la tabla oficial y su hex de globo, «light aqua blue
+ * (#4BBBCF)». El nombre «turquoise» de un color que en el globo es más azul que verde (Fashion Azul Caribe) lo
+ * leía FLUX como verde azulado: se dice «light aqua blue».
+ */
+export function colorDeGloboEnIngles(ref: { nombreEn: string; hexGlobo?: string | null }): string {
+  const hex = ref.hexGlobo && /^#[0-9a-f]{6}$/i.test(ref.hexGlobo) ? ref.hexGlobo.toUpperCase() : null;
+  const azulado = hex ? parseInt(hex.slice(5, 7), 16) > parseInt(hex.slice(3, 5), 16) : false;
+  const nombre = azulado ? ref.nombreEn.replace(/\bturquoise\b/, "light aqua blue") : ref.nombreEn;
+  return hex ? `${nombre} (${hex})` : nombre;
 }
 
 /**
@@ -191,7 +217,7 @@ export function descripcionRender3d(estructura: string, materiales: ReadonlyArra
   const corte = base.slice(0, cupo - 1);
   const pieza = corte.lastIndexOf("; ");
   let texto = base.length <= cupo ? base : `${pieza > cupo * 0.6 ? corte.slice(0, pieza) : corte.replace(/[,;\s]+\S*$/, "")}…`;
-  for (const parte of [extra.trim().replace(/[.\s]+$/, ""), colores.length ? `Colors: about ${colores.join(", ")}` : "", tamanos.length ? `Sizes: ${tamanos.join(", ")}` : ""]) {
+  for (const parte of [extra.trim().replace(/[.\s]+$/, ""), colores.length && !/\(#[0-9A-F]{6}\)/.test(estructura) ? `Colors: about ${colores.join(", ")}` : "", tamanos.length ? `Sizes: ${tamanos.join(", ")}` : ""]) {
     if (parte && texto.length + 2 + parte.length <= cupo) texto = texto ? `${texto}. ${parte}` : parte;
   }
   return texto ? `${texto}${cierre}` : nadaMas;
