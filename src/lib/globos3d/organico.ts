@@ -990,6 +990,9 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
   const objetivos = new Map<string, Objetivo[]>();
   const estructuraPorMetro: number[] = [];
   const densidad = opciones.densidad ?? 1;
+  // Todos los formatos de la mezcla antes de recorrer: el acumulado de cada uno empieza en s = 0. (Registrarlos al
+  // aparecer corría hacia el principio los que la mezcla pide solo más adelante: R-24 en la punta fina de un trazo.)
+  for (const tp of tramos) for (const p of tp.def.mezcla) for (const [id, w] of Object.entries(p.pesos)) if (w > 0) formatoValido(id);
   tramos.forEach((tp, it) => {
     const ds = 1;
     const acumulados = new Map<string, number[]>();
