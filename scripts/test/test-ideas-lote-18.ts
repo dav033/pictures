@@ -188,7 +188,7 @@ for (const i of LOTE_18) {
   for (const nodo of escena.nodos) {
     const copias = armada.porNodo.find((n) => n.id === nodo.id)!.copias;
     if (nodo.pieza.tipo === "escenografia") continue;
-    for (const p of armarPieza(nodo.pieza).productos ?? []) deLaEscena.set(p.url, (deLaEscena.get(p.url) ?? 0) + p.cantidad * copias);
+    for (const p of (armarPieza(nodo.pieza).productos ?? []).filter((x) => x.url)) deLaEscena.set(p.url, (deLaEscena.get(p.url) ?? 0) + p.cantidad * copias);
   }
   const especiales = new Map<string, number>();
   for (const p of i.productos) {
