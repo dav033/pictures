@@ -138,6 +138,8 @@ export function recolorearConPedidos(pieza: Pieza, pedidoDe: (viejo: string) => 
     const resto = mapearCodigos({ ...pieza, opciones: { ...pieza.opciones, colores: [] } }, mapa, destino, formatosPorCodigo);
     cambios = resto.cambios + pieza.opciones.colores.filter((c) => destinoOrganico(c.codigo) !== c.codigo).length;
     nueva = { ...resto.valor, opciones: { ...resto.valor.opciones, colores } };
+    // El generador (el trazo) lleva la misma paleta: si no, al volver a armarlo por sus parámetros volvería el color viejo.
+    if (nueva.tipo === "organico" && nueva.generador) nueva = { ...nueva, generador: { ...nueva.generador, trazo: { ...nueva.generador.trazo, colores } } };
   } else if (pieza.tipo === "arco_organico") {
     const colores = paletaOrganica(pieza.arco.colores, destinoOrganico);
     const resto = mapearCodigos({ ...pieza, arco: { ...pieza.arco, colores: [] } }, mapa, destino, formatosPorCodigo);

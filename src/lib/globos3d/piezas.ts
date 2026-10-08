@@ -6,6 +6,7 @@ import { armarArco, type FormaArco } from "./arcos";
 import { armarPared, type PatronMalla } from "./paredes";
 import { armarParedTrenzas, type OpcionesParedTrenzas } from "./pared-trenzas";
 import { armarOrganico, type OpcionesOrganico } from "./organico";
+import type { GeneradorOrganico } from "./generadores-organicos";
 import { repartirFlores, type OpcionesFlores } from "./flores-artificiales";
 import { armarDecoracion, type Decoracion, type MaterialDecoracion } from "./figuras";
 import { materialesPorFormato, type GloboDecoracion, type TuboDecoracion } from "./decoraciones";
@@ -33,7 +34,11 @@ type PiezaBase =
   | { tipo: "arco"; formatoId: string; infladoCm: number; forma: FormaArco; anchoCm: number; altoCm: number; patron: PatronColumna; colores: string[] }
   | { tipo: "pared_malla"; formatoId: string; infladoCm: number; anchoCm: number; altoCm: number; patron: PatronMalla; colores: string[]; union: { infladoCm: number; codigo: string } }
   | { tipo: "pared_trenzas"; opciones: OpcionesParedTrenzas }
-  | { tipo: "organico"; opciones: OpcionesOrganico; flores: OpcionesFlores | null }
+  /**
+   * Orgánico: lo arma el motor desde `opciones`. Con `generador`, la pieza guarda además los PARÁMETROS con que se
+   * hizo (el trazo de una guirnalda libre…): los editores y la IA la cambian por ellos y vuelven a sacar `opciones`.
+   */
+  | { tipo: "organico"; opciones: OpcionesOrganico; flores: OpcionesFlores | null; generador?: GeneradorOrganico }
   /**
    * Decoración pequeña (flor, moño, estrella…). Se arma mirando a +y (bien en el piso, del techo o colgada de un
    * ancla); con `deFrente` mira a +z, al salón, con su arriba hacia +y: así va pegada a una pared.

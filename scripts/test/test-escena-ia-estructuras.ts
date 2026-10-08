@@ -309,4 +309,29 @@ prueba("la ruta acepta cualquier escena de la biblioteca: todos sus tipos de pie
   }
 });
 
+prueba("trazo orgánico: por silueta en la pared a su altura, por puntos desde el piso, y se cambia por sus parámetros", () => {
+  const r = ok(aplicarHerramienta(vacia, "agregar_pieza", { tipo: "trazo_organico", silueta: "esquina_derecha", ancho_cm: 240, alto_cm: 160, grosor_cm: 55, colores: ["verde", "rosado pastel", "dorado"], pesos: [45, 40, 15] }));
+  const n = r.escena.nodos[0]!;
+  assert.ok(n.pieza.tipo === "organico" && n.pieza.generador?.tipo === "trazo", "lleva su generador");
+  assert.ok(n.colocacion.en === "pared" && n.colocacion.alturaCm >= 100, "cuelga en la pared");
+  assert.ok(Math.abs(ancho(n.pieza) - 240) < 30, `ancho ${ancho(n.pieza)}`);
+  // Por puntos: nace del piso a la izquierda y cruza arriba (el medio arco de la foto).
+  const puntos = [{ x_cm: -120, y_cm: 20, grosor_cm: 80 }, { x_cm: -125, y_cm: 120, grosor_cm: 70 }, { x_cm: -90, y_cm: 200, grosor_cm: 60 }, { x_cm: 20, y_cm: 230, grosor_cm: 50 }, { x_cm: 120, y_cm: 215, grosor_cm: 35 }];
+  const p = ok(aplicarHerramienta(vacia, "agregar_pieza", { tipo: "trazo_organico", puntos, colores: ["azul pastel", "dorado", "blanco"] }));
+  const q = p.escena.nodos[0]!;
+  assert.ok(q.colocacion.en === "pared" && q.colocacion.alturaCm <= 2, "nace del piso");
+  assert.ok(alto(q.pieza) > 230 && alto(q.pieza) < 275, `alto ${alto(q.pieza)}`);
+  error(aplicarHerramienta(vacia, "agregar_pieza", { tipo: "trazo_organico", silueta: "feston", puntos }), /no los dos/);
+  // Cambiar por parámetros: más ancho y otro color; sigue siendo el mismo trazo (con generador).
+  const c = ok(aplicarHerramienta(r.escena, "cambiar_pieza", { id: n.id, ancho_cm: 360, colores: ["rojo"] }));
+  const m = nodo(c.escena, n.id).pieza;
+  assert.ok(m.tipo === "organico" && m.generador, "conserva el generador");
+  assert.ok(Math.abs(ancho(m) - 360) < 40, `ancho nuevo ${ancho(m)}`);
+  assert.ok(codigos(m).every((x) => /rojo/i.test(nombre(x))));
+  const verde = ok(aplicarHerramienta(c.escena, "recolorear_escena", { colores: ["verde"] }));
+  const v = nodo(verde.escena, n.id).pieza;
+  assert.ok(v.tipo === "organico" && v.generador?.trazo.colores.every((x) => /verde/i.test(nombre(x.codigo))), "el recolor llega al generador");
+  armaBien(verde.escena);
+});
+
 console.log(`\n${pruebas} pruebas OK`);

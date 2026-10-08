@@ -11,6 +11,8 @@ import {
   ajustarOrganico, coloresOrganicosPedidos, crearEstructura, type LugarPieza,
 } from "./herramientas-escena-estructuras";
 import { coloresDePieza, recolorearConPaleta, recolorearConPedidos } from "./herramientas-escena-recolor";
+import { IDS_SILUETA } from "./herramientas-escena-trazo";
+import { SILUETAS_TRAZO, cajaTrazo } from "./trazo-organico";
 import { buscarEnBiblioteca, describirItem, itemDeBiblioteca } from "./herramientas-escena-biblioteca";
 import { PATRONES_COLUMNA, type PatronColumna } from "./columnas";
 import { PATRONES_MALLA, type PatronMalla } from "./paredes";
@@ -115,6 +117,7 @@ const QUE_ES_TIPO: Readonly<Record<TipoNuevo, string>> = {
   semiarco_organico: "semiarco orgánico (sube del piso y se curva hacia un lado)",
   aro_organico: "aro orgánico (círculo de globos, ancho_cm = diámetro)",
   marco_organico: "marco orgánico rectangular (arco cuadrado de patas rectas)",
+  trazo_organico: "guirnalda ORGÁNICA de silueta libre en la pared (la de Pinterest): por «silueta» (feston, arco_pared, esquina_derecha, esquina_izquierda, semiarco_izquierdo, semiarco_derecho, arco_asimetrico, diagonal) con ancho_cm, alto_cm y grosor_cm, o por «puntos» exactos; más gruesa donde carga",
   pared_trenzas: "pared de trenzas de cuartetos",
   forma: "forma de globos: figura corazon/estrella/circulo/aro/ancla/cruz/nube/castillo rellena (tecnica celdas, malla u organico), o esfera, o cono",
   letras: "letras o números de globos (texto; tecnica cuartetos, hilera o tubito)",
@@ -170,6 +173,10 @@ const PropiedadesSchema = z.object({
   colores: ColoresSchema.optional(),
   pesos: z.array(z.number()).max(6).optional().describe("orgánicas (arco_organico, columna_organica, guirnalda_organica… y piezas orgánicas que ya existen) y formas: proporción de cada color 0–100, en el orden de «colores»"),
   flores: z.boolean().optional().describe("orgánicas: flores artificiales en los huecos"),
+  silueta: z.enum(IDS_SILUETA).optional().describe("trazo_organico: la silueta (" + SILUETAS_TRAZO.map((x) => `${x.id} = ${x.descripcion}`).join(" ") + ")"),
+  puntos: z.array(z.object({ x_cm: z.number(), y_cm: z.number().describe("altura del eje desde el piso"), grosor_cm: z.number().describe("diámetro del cuerpo de globos en ese punto, 20–140") })).min(2).max(40).optional()
+    .describe("trazo_organico: en vez de silueta, el recorrido exacto en el plano de la pared (x a la derecha desde el centro de la pieza, y hacia arriba desde el piso), en orden; un extremo con y ≤ grosor/2 nace del piso"),
+  racimos: z.number().min(0).max(1).optional().describe("trazo_organico: 0 = cuerpo parejo, 1 = muy abultado en racimos (0,35 por defecto)"),
   decoracion_id: z.enum(DECORACION_IDS).optional().describe(`decoracion: cuál (${DECORACIONES_PREDEFINIDAS.map((d) => `${d.id} = ${d.nombre}`).join("; ")})`),
 });
 type Propiedades = z.infer<typeof PropiedadesSchema>;
@@ -789,7 +796,11 @@ function medidasHeredadas(vieja: Pieza, a: { tipo: TipoNuevo; alto_cm?: number; 
 /** Dónde va por defecto una pieza nueva según su lugar (la de «Añadir» del panel). */
 function colocacionDeLugar(lugar: LugarPieza, pieza: Pieza): Colocacion {
   if (lugar === "techo") return { en: "techo", xCm: 0, zCm: 0, cuelgaCm: pieza.tipo === "decoracion" ? 60 : 0, giroGrados: 0, volteada: pieza.tipo === "decoracion" };
-  if (lugar === "pared") return { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: pieza.tipo === "guirnalda" || (pieza.tipo === "organico" && !pieza.opciones.suelo) ? 180 : pieza.tipo === "letras" ? 80 : 0 };
+  if (lugar === "pared") {
+    // El trazo trae su altura (sus puntos van desde el piso); las de pared (por silueta) cuelgan a 1,3 m.
+    if (pieza.tipo === "organico" && pieza.generador?.tipo === "trazo") return { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: Math.round(cajaTrazo(pieza.generador.trazo).minY) };
+    return { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: pieza.tipo === "guirnalda" || (pieza.tipo === "organico" && !pieza.opciones.suelo) ? 180 : pieza.tipo === "letras" ? 80 : 0 };
+  }
   return { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 };
 }
 

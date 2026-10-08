@@ -1,3 +1,4 @@
+import { ajustarTrazo, crearTrazo, type PuntoPedido } from "./herramientas-escena-trazo";
 import { armarPieza, type Pieza, type TipoPieza } from "./piezas";
 import { formatoPorId } from "./formatos";
 import {
@@ -34,7 +35,7 @@ import { recolorearConPaleta } from "./herramientas-escena-recolor";
 type Rango = readonly [number, number];
 
 export const TIPOS_ESTRUCTURA = [
-  "columna_organica", "guirnalda_organica", "semiarco_organico", "aro_organico", "marco_organico",
+  "columna_organica", "guirnalda_organica", "semiarco_organico", "aro_organico", "marco_organico", "trazo_organico",
   "pared_trenzas", "forma", "letras", "metalizado", "mural", "techo", "arbol", "globo",
 ] as const;
 export type TipoEstructura = (typeof TIPOS_ESTRUCTURA)[number];
@@ -74,6 +75,7 @@ export type PedidoEstructura = {
   colores?: string[]; pesos?: number[]; tamanos?: string[]; acabado?: string; flores?: boolean;
   texto?: string; figura?: string; tecnica?: string; formato?: string;
   forma_metalizado?: string; pulgadas?: number; color_metalizado?: string; modelo?: string;
+  silueta?: string; puntos?: PuntoPedido[]; racimos?: number;
 };
 
 export type LugarPieza = "piso" | "pared" | "techo";
@@ -163,7 +165,7 @@ function alAlto(pieza: Pieza, altoCm: number): Pieza {
 /** Una semilla estable por medidas (dos columnas iguales pedidas iguales salen iguales; otras medidas, otro reparto). */
 const semillaDe = (...n: number[]) => (n.reduce((s, x) => (s * 31 + r0(x)) % 9973, 7) || 7);
 
-function crearOrganica(tipo: Extract<TipoEstructura, `${string}_organic${string}`>, p: PedidoEstructura, notas: string[]): { pieza: Pieza; nombre: string; lugar: LugarPieza } {
+function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic${string}`>, "trazo_organico">, p: PedidoEstructura, notas: string[]): { pieza: Pieza; nombre: string; lugar: LugarPieza } {
   const pedidos = pedidosCon(p);
   const colores = coloresOrganicosPedidos(pedidos ?? [...PALETA_ORGANICA], pedidos ? p.pesos : [45, 25, 15, 15], notas);
   const flores = p.flores ?? false;
@@ -269,6 +271,14 @@ export function escalarOrganico(pieza: Organico, p: { altoCm?: number; anchoCm?:
 
 /** Cambia lo pedido de un orgánico: medidas, grosor, colores con pesos (o solo pesos), tamaños de globo y flores. */
 export function ajustarOrganico(pieza: Organico, p: PedidoEstructura, notas: string[]): Organico {
+  // Con generador se cambia por sus parámetros (la silueta del trazo no se deforma).
+  if (pieza.generador?.tipo === "trazo") {
+    const pedidos = pedidosCon(p);
+    const actuales = pieza.generador.trazo.colores;
+    if (!pedidos && p.pesos && p.pesos.length !== actuales.length) fallar(`pesos tiene ${p.pesos.length} valores y la pieza ${actuales.length} colores (en el orden de ver_escena).`);
+    const colores = pedidos ? coloresOrganicosPedidos(pedidos, p.pesos, notas) : p.pesos ? actuales.map((c, i) => ({ ...c, peso: r0(p.pesos![i]!) })) : undefined;
+    return ajustarTrazo(pieza, pieza.generador, { ancho_cm: p.ancho_cm, alto_cm: p.alto_cm, grosor_cm: p.grosor_cm, tamanos: p.tamanos, racimos: p.racimos, flores: p.flores, ...(colores ? { colores } : {}) });
+  }
   const R = RANGOS_ESTRUCTURA.organico;
   let o: Organico = escalarOrganico(pieza, {
     ...(p.alto_cm !== undefined ? { altoCm: enRango(p.alto_cm, R.alto_cm, "alto_cm") } : {}),
@@ -424,6 +434,11 @@ export function crearEstructura(tipo: TipoEstructura, p: PedidoEstructura, notas
     case "aro_organico":
     case "marco_organico":
       return crearOrganica(tipo, p, notas);
+    case "trazo_organico": {
+      const pedidos = pedidosCon(p);
+      const { pieza, nombre } = crearTrazo(p, coloresOrganicosPedidos(pedidos ?? [...PALETA_ORGANICA], pedidos ? p.pesos : [45, 25, 15, 15], notas));
+      return { pieza, nombre, lugar: "pared" };
+    }
     case "pared_trenzas": return crearParedTrenzas(p, notas);
     case "forma": return crearForma(p, notas);
     case "letras": return crearLetras(p, notas);
