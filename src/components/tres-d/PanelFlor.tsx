@@ -6,8 +6,8 @@ import type { ParteGlobo, PropiedadesFlor } from "@/lib/globos3d/decoraciones";
 
 export type DondeDecoracion = "sola" | "columna" | "arco" | "pared";
 
-export const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
-export const ACTIVO = "bg-acento text-sobre-acento ring-acento";
+export const BOTON = "min-h-11 rounded-[9px] px-2 text-sm ring-1 transition-colors lg:min-h-8 lg:text-xs";
+export const ACTIVO = "bg-taller-elegido text-taller-texto ring-taller-resalte";
 export const INACTIVO = "bg-superficie text-texto ring-borde hover:bg-superficie-suave";
 const FORMATOS_PETALO = ["R-5", "R-9", "R-12", "LOL-6", "C-12"] as const;
 export const FORMATOS_CENTRO = ["R-5", "R-9"] as const;
@@ -42,7 +42,7 @@ export function Deslizador({ id, etiqueta, valor, min, max, paso, texto, onCambi
   return (
     <div>
       <label htmlFor={id} className="flex items-baseline justify-between text-xs font-semibold text-texto">{etiqueta}<span className="font-mono font-normal text-texto-suave">{texto}</span></label>
-      <input id={id} type="range" min={min} max={max} step={paso} value={valor} onChange={(e) => onCambio(Number(e.target.value))} className="w-full accent-[var(--color-acento,#7c3aed)]" />
+      <input id={id} type="range" min={min} max={max} step={paso} value={valor} onChange={(e) => onCambio(Number(e.target.value))} className="w-full accent-taller-resalte" />
     </div>
   );
 }

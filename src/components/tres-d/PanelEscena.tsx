@@ -1,41 +1,31 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { ArrowDownToLine, ChevronRight, Copy, Layers, PanelTop, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { ArrowDownToLine, ChevronRight, PanelTop } from "lucide-react";
 import { coloresDelFormato, formatoPorId } from "@/lib/globos3d/formatos";
 import { PATRONES_COLUMNA, type PatronColumna } from "@/lib/globos3d/columnas";
 import { FORMAS_ARCO } from "@/lib/globos3d/arcos";
 import { PATRONES_MALLA } from "@/lib/globos3d/paredes";
 import { DECORACIONES_PREDEFINIDAS } from "@/lib/globos3d/figuras";
 import { COLUMNA_QUINCE_AZUL } from "@/lib/globos3d/organico-presets";
-import { CATALOGO_DECORACIONES } from "@/lib/globos3d/catalogo-fotos";
 import type { ColorOrganico } from "@/lib/globos3d/organico";
 import type { Pieza } from "@/lib/globos3d/piezas";
 import {
-  NOMBRE_PARED, descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo,
+  NOMBRE_PARED, descendientes, marcoDePared,
   type Colocacion, type Escena, type EscenaArmada, type LugarColocacion, type NodoEscena, type ParedSala, type Sala,
 } from "@/lib/globos3d/escena";
-import { ESCENAS_PREDEFINIDAS, PIEZAS_NUEVAS, piezaNueva } from "@/lib/globos3d/escenas-presets";
 import { ACTIVO, BOTON, Deslizador, INACTIVO, SelectorColor } from "./PanelFlor";
-import { AsistenteEscena } from "./AsistenteEscena";
-import { DecoracionesPequenas } from "./DecoracionesPequenas";
+import { NOMBRE_TIPO } from "./tipos-pieza";
 
 const m = (cm: number) => `${(cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m`;
 const TARJETA = "flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde";
-
-const NOMBRE_TIPO: Readonly<Record<Pieza["tipo"], string>> = {
-  columna: "Columna", arco: "Arco", pared_malla: "Pared de malla", pared_trenzas: "Pared de trenzas", organico: "Orgánico",
-  decoracion: "Decoración", arco_organico: "Arco orgánico", guirnalda: "Guirnalda", escenografia: "Escenografía", globo: "Globo suelto",
-  forma: "Forma de globos", letras: "Letras de globos", metalizado: "Globo metalizado",
-  mural: "Mural pixelado", techo: "Decoración de techo", arbol_globos: "Palmera o árbol",
-};
 
 const LUGARES: ReadonlyArray<{ id: LugarColocacion; nombre: string }> = [
   { id: "piso", nombre: "En el piso" }, { id: "pared", nombre: "En una pared" }, { id: "techo", nombre: "Del techo" }, { id: "ancla", nombre: "En otra pieza" }, { id: "libre", nombre: "Suelta (x, y, z)" },
 ];
 
 /** Dónde está una pieza, en palabras. */
-function dondeEsta(nodo: NodoEscena, escena: Escena): string {
+export function dondeEsta(nodo: NodoEscena, escena: Escena): string {
   const c = nodo.colocacion;
   if (c.en === "piso") return "en el piso";
   if (c.en === "pared") return NOMBRE_PARED[c.pared].replace("Pared", "en la pared");
@@ -45,24 +35,8 @@ function dondeEsta(nodo: NodoEscena, escena: Escena): string {
   return `en «${escena.nodos.find((n) => n.id === c.padreId)?.nombre ?? "?"}»`;
 }
 
-type Props = {
-  escena: Escena;
-  onEscena: (e: Escena) => void;
-  armada: EscenaArmada;
-  seleccion: string | null;
-  onSeleccion: (id: string | null) => void;
-  /** Carga una escena predefinida (y reencuadra la cámara). */
-  onPreset: (id: string) => void;
-  /** La pieza que se está arrastrando en el visor y dónde va: sus coordenadas se ven en vivo. */
-  enVivo?: { id: string; colocacion: Colocacion } | null;
-  /** Lo de la biblioteca para la pieza elegida («Ver sola con sus decoraciones», «Guardar en la biblioteca»). */
-  accionesPieza?: (nodoId: string) => ReactNode;
-  /** En la hoja del teléfono (menos de 1024 px): solo las piezas o solo el chat de la IA. En escritorio se ve todo. */
-  enMovil?: "piezas" | "ia";
-};
-
 /** Dónde está exactamente (lo que mueven el arrastre y las flechas), en metros y grados. */
-function coordenadas(c: Colocacion): string {
+export function coordenadas(c: Colocacion): string {
   if (c.en === "piso") return `x ${m(c.xCm)} · z ${m(c.zCm)} · giro ${c.giroGrados}°`;
   if (c.en === "pared") return `a lo largo ${m(c.aLoLargoCm)} · altura ${m(c.alturaCm)}`;
   if (c.en === "techo") return `x ${m(c.xCm)} · z ${m(c.zCm)} · cuelga ${m(c.cuelgaCm)} · giro ${c.giroGrados}°`;
@@ -71,114 +45,15 @@ function coordenadas(c: Colocacion): string {
   return `ancla ${c.ancla + 1}${c.cada > 0 ? `, 1 de cada ${c.cada}` : ""}${c.omitir?.length ? ` (sin ${c.omitir.length})` : ""} · giro ${c.giroGrados}°`;
 }
 
+// ----------------------------------------------------------------------------------------------------------
+// Dónde va la pieza elegida (inspector: «Cambiar dónde va»)
+// ----------------------------------------------------------------------------------------------------------
+
 /**
- * Pestaña Escena: varias piezas en una sala. Arriba las escenas de partida; luego la lista de piezas (tocar una la
- * elige y la resalta en el visor), «Añadir», el editor de la pieza elegida (dónde va y sus propiedades) y la sala.
+ * Dónde va una pieza: en el piso, en una pared, del techo, colgada de otra pieza (ancla, repetida cada N) o suelta, con
+ * sus deslizadores. Lo que mueven el arrastre del visor y las flechas, en controles.
  */
-export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, onPreset, enVivo = null, accionesPieza, enMovil }: Props) {
-  const elegido = escena.nodos.find((n) => n.id === seleccion) ?? null;
-  // Mientras se arrastra en el visor, la pieza elegida se ve donde va (coordenadas y deslizadores en vivo).
-  const nodo = elegido && enVivo?.id === elegido.id ? { ...elegido, colocacion: enVivo.colocacion } : elegido;
-  const ponNodo = (id: string, cambio: Partial<NodoEscena>) => onEscena({ ...escena, nodos: escena.nodos.map((n) => (n.id === id ? { ...n, ...cambio } : n)) });
-  const anadir = (nuevo: { pieza: Pieza; nombre: string; colocacion: Colocacion }, base: string) => {
-    const id = idNuevo(escena, base);
-    // Lo que va al piso entra un poco delante para no quedar dentro de lo que ya hay.
-    const colocacion = nuevo.colocacion.en === "piso" ? { ...nuevo.colocacion, zCm: Math.round(escena.sala.fondoCm * 0.15) } : nuevo.colocacion;
-    onEscena({ ...escena, nodos: [...escena.nodos, { id, nombre: nuevo.nombre, pieza: nuevo.pieza, colocacion }] });
-    onSeleccion(id);
-  };
-
-  const ocultarPiezas = enMovil === "ia" ? "max-lg:hidden" : "";
-  const ocultarIA = enMovil === "piezas" ? "max-lg:hidden" : "";
-
-  return (
-    <>
-      <section className={`${TARJETA} ${ocultarPiezas}`}>
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-texto"><Layers className="size-4 text-acento" aria-hidden /> Escena</h2>
-        <p className="text-xs text-texto-suave">Varias piezas en un salón. <b>1.</b> Elige una escena para empezar. <b>2.</b> Toca una pieza de la lista o en el visor (se marca en ambos) y arrástrala o muévela con las flechas. <b>3.</b> Añade más con «Añadir».</p>
-        <div className="flex flex-col gap-1">
-          {ESCENAS_PREDEFINIDAS.map((p) => (
-            <button key={p.id} type="button" onClick={() => onPreset(p.id)} title={p.descripcion} className={`${BOTON} ${INACTIVO} py-1.5 text-left`}>
-              <span className="block font-medium">{p.nombre}</span>
-              <span className="block text-[0.7rem] text-texto-suave">{p.descripcion}</span>
-            </button>
-          ))}
-          <button type="button" onClick={() => { onEscena({ ...escena, nodos: [] }); onSeleccion(null); }} className={`${BOTON} ${INACTIVO}`}>Empezar con la sala vacía</button>
-        </div>
-      </section>
-
-      <div className={`flex flex-col ${ocultarIA}`}><AsistenteEscena escena={escena} onEscena={onEscena} /></div>
-
-      <div className={`flex flex-col gap-3 lg:gap-4 ${ocultarPiezas}`}>
-      <section className={TARJETA} aria-label="Piezas de la escena">
-        <h2 className="text-sm font-semibold text-texto">Piezas <span className="font-normal text-texto-suave">· {escena.nodos.length} · {armada.globos.length} globos</span></h2>
-        {escena.nodos.length === 0 && <p className="text-xs text-texto-suave">La sala está vacía: añade una pieza con los botones de abajo.</p>}
-        <ul className="flex flex-col gap-1">
-          {escena.nodos.map((n) => {
-            const hecho = armada.porNodo.find((x) => x.id === n.id);
-            const elegida = n.id === seleccion;
-            return (
-              <li key={n.id} className={`flex items-center gap-1 rounded-xl ring-1 ${elegida ? "bg-superficie-suave ring-2 ring-acento" : "ring-borde"}`}>
-                <button type="button" onClick={() => onSeleccion(elegida ? null : n.id)} aria-pressed={elegida} className="min-h-11 min-w-0 flex-1 px-2 py-1 text-left">
-                  <span className="block truncate text-sm text-texto">{n.nombre}</span>
-                  <span className="block truncate text-[0.7rem] text-texto-suave">
-                    {NOMBRE_TIPO[n.pieza.tipo]} · {dondeEsta(n, escena)} · {hecho?.globos.length ?? 0} globos{hecho && hecho.copias > 1 ? ` (${hecho.copias} copias)` : ""}
-                  </span>
-                  {hecho?.avisos.map((a) => <span key={a} className="block text-[0.7rem] text-texto">{a}</span>)}
-                </button>
-                <button type="button" onClick={() => onEscena(duplicarNodo(escena, n.id))} title={`Duplicar «${n.nombre}»`} aria-label={`Duplicar ${n.nombre}`} className="grid size-11 shrink-0 place-items-center rounded-lg text-texto-suave hover:bg-superficie-suave hover:text-texto lg:size-10">
-                  <Copy className="size-4" aria-hidden />
-                </button>
-                <button type="button" onClick={() => { onEscena(quitarNodo(escena, n.id, armada)); if (elegida) onSeleccion(null); }} title={`Quitar «${n.nombre}»`} aria-label={`Quitar ${n.nombre}`} className="grid size-11 shrink-0 place-items-center rounded-lg text-texto-suave hover:bg-superficie-suave hover:text-texto lg:size-10">
-                  <Trash2 className="size-4" aria-hidden />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      {nodo ? (
-        <EditorNodo key={nodo.id} nodo={nodo} escena={escena} armada={armada} onNodo={(cambio) => ponNodo(nodo.id, cambio)} />
-      ) : escena.nodos.length > 0 && (
-        <p className="rounded-2xl bg-superficie-suave p-3 text-xs text-texto-suave ring-1 ring-borde">Toca una pieza de la lista para moverla, girarla o cambiar sus medidas y colores.</p>
-      )}
-      {nodo && accionesPieza?.(nodo.id)}
-
-      <section className={TARJETA} aria-label="Añadir piezas">
-        <h2 className="flex items-center gap-1 text-sm font-semibold text-texto"><Plus className="size-3.5" aria-hidden /> Añadir</h2>
-        <div className="grid grid-cols-3 gap-1">
-          {PIEZAS_NUEVAS.map((t) => (
-            <button key={t.id} type="button" title={t.descripcion} onClick={() => anadir(piezaNueva(t.id), t.id.replace("_", "-"))} className={`${BOTON} ${INACTIVO} text-xs`}>{t.nombre}</button>
-          ))}
-        </div>
-        {CATALOGO_DECORACIONES.length > 0 && (
-          <>
-            <p className="text-[0.7rem] text-texto-suave">Del catálogo (decoraciones reales digitalizadas):</p>
-            <div className="flex max-h-40 flex-col gap-1 overflow-y-auto pr-1">
-              {CATALOGO_DECORACIONES.map((d) => (
-                <button key={d.id} type="button" title={`${d.descripcion} · ${d.fuente}`} onClick={() => anadir({ pieza: structuredClone(d.pieza), nombre: d.nombre, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }, d.id)} className={`${BOTON} ${INACTIVO} py-1 text-left text-xs`}>
-                  {d.nombre} <span className="text-texto-suave">· {d.fuente}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </section>
-
-      <DecoracionesPequenas escena={escena} onEscena={onEscena} armada={armada} seleccion={seleccion} onSeleccion={onSeleccion} />
-
-      <EditorSala sala={escena.sala} onSala={(sala) => onEscena({ ...escena, sala })} />
-      </div>
-    </>
-  );
-}
-
-// ----------------------------------------------------------------------------------------------------------
-// Pieza elegida
-// ----------------------------------------------------------------------------------------------------------
-
-function EditorNodo({ nodo, escena, armada, onNodo }: { nodo: NodoEscena; escena: Escena; armada: EscenaArmada; onNodo: (cambio: Partial<NodoEscena>) => void }) {
+export function EditorLugar({ nodo, escena, armada, onNodo }: { nodo: NodoEscena; escena: Escena; armada: EscenaArmada; onNodo: (cambio: Partial<NodoEscena>) => void }) {
   const c = nodo.colocacion;
   const { sala } = escena;
   const hecho = armada.porNodo.find((n) => n.id === nodo.id);
@@ -203,9 +78,7 @@ function EditorNodo({ nodo, escena, armada, onNodo }: { nodo: NodoEscena; escena
 
   return (
     <>
-      <section className={`${TARJETA} ring-2 ring-acento/60`} aria-label={`Editar ${nodo.nombre}`}>
-        <label htmlFor="nodo-nombre" className="text-xs font-semibold text-texto">Pieza elegida</label>
-        <input id="nodo-nombre" value={nodo.nombre} onChange={(e) => onNodo({ nombre: e.target.value })} className="min-h-11 rounded-lg bg-superficie-suave px-2 text-base text-texto ring-1 ring-borde lg:min-h-10 lg:text-sm" />
+      <div className="flex flex-col gap-2" aria-label={`Dónde va ${nodo.nombre}`}>
         <h3 className="flex flex-wrap items-baseline justify-between gap-x-2 text-xs font-semibold text-texto">Dónde va <span className="font-mono font-normal text-texto-suave" aria-live="polite">{coordenadas(c)}</span></h3>
         <div className="grid grid-cols-2 gap-1">
           {LUGARES.map((l) => {
@@ -283,8 +156,7 @@ function EditorNodo({ nodo, escena, armada, onNodo }: { nodo: NodoEscena; escena
             </>
           );
         })()}
-      </section>
-      <EditorPieza pieza={nodo.pieza} onPieza={(pieza) => onNodo({ pieza })} />
+      </div>
     </>
   );
 }
@@ -294,7 +166,7 @@ function EditorNodo({ nodo, escena, armada, onNodo }: { nodo: NodoEscena; escena
 // ----------------------------------------------------------------------------------------------------------
 
 /** Colores por puesto de un patrón (1, 2 o 4): toca un puesto y elige su color. */
-function ColoresPorPuesto({ id, formatoId, colores, cantidad, onColores }: { id: string; formatoId: string; colores: readonly string[]; cantidad: number; onColores: (c: string[]) => void }) {
+export function ColoresPorPuesto({ id, formatoId, colores, cantidad, onColores }: { id: string; formatoId: string; colores: readonly string[]; cantidad: number; onColores: (c: string[]) => void }) {
   const [puesto, setPuesto] = useState(0);
   const lista = Array.from({ length: cantidad }, (_, i) => colores[i] ?? colores[0] ?? "005");
   const elegido = Math.min(puesto, cantidad - 1);
@@ -319,7 +191,7 @@ function ColoresPorPuesto({ id, formatoId, colores, cantidad, onColores }: { id:
 }
 
 /** Formato de una trenza: ajusta el inflado y deja solo colores que se fabrican en él. */
-function conFormatoTrenza<T extends { formatoId: string; infladoCm: number; colores: string[] }>(p: T, formatoId: string): T {
+export function conFormatoTrenza<T extends { formatoId: string; infladoCm: number; colores: string[] }>(p: T, formatoId: string): T {
   const formato = formatoPorId(formatoId);
   if (!formato) return p;
   const disponibles = coloresDelFormato(formatoId);
@@ -349,7 +221,8 @@ function Trenza({ id, formatoId, patron, colores, formatos, onFormato, onPatron,
   );
 }
 
-function EditorPieza({ pieza, onPieza }: { pieza: Pieza; onPieza: (p: Pieza) => void }) {
+/** Propiedades de una pieza por su tipo (lo que no tiene un editor propio en el editor solitario). */
+export function EditorPieza({ pieza, onPieza }: { pieza: Pieza; onPieza: (p: Pieza) => void }) {
   return (
     <section className={TARJETA} aria-label="Propiedades de la pieza">
       <h2 className="text-sm font-semibold text-texto">{NOMBRE_TIPO[pieza.tipo]}</h2>
@@ -416,19 +289,22 @@ function EditorPieza({ pieza, onPieza }: { pieza: Pieza; onPieza: (p: Pieza) => 
               return <button key={d.id} type="button" title={d.descripcion} onClick={() => onPieza({ tipo: "decoracion", decoracion: structuredClone(d.decoracion) })} aria-pressed={activa} className={`${BOTON} ${activa ? ACTIVO : INACTIVO} py-1 text-xs`}>{d.nombre}</button>;
             })}
           </div>
-          <p className="text-[0.7rem] text-texto-suave">Para cambiar sus colores usa «Colores de la escena»; para afinar pétalos y lazos, la pestaña Decoración.</p>
+          <p className="text-[0.7rem] text-texto-suave">Para cambiar sus colores usa «Colores de la escena»; para afinar pétalos y lazos, «Editar sola».</p>
         </>
       )}
-      {pieza.tipo === "organico" && <p className="text-[0.7rem] text-texto-suave">Pieza orgánica armada: muévela con «Dónde va» y cambia sus colores con «Colores de la escena».</p>}
+      {pieza.tipo === "organico" && <p className="text-[0.7rem] text-texto-suave">Pieza orgánica armada: muévela con «Lugar» y cambia sus colores con «Colores de la escena».</p>}
+      {(pieza.tipo === "forma" || pieza.tipo === "letras" || pieza.tipo === "metalizado" || pieza.tipo === "mural" || pieza.tipo === "techo" || pieza.tipo === "arbol_globos") && (
+        <p className="text-[0.7rem] text-texto-suave">Pieza armada desde una idea o un modelo: muévela con «Lugar», cambia sus colores con «Colores de la pieza» o pídele a la IA que la cambie («haz las letras de 1 m»).</p>
+      )}
       {pieza.tipo === "globo" && <p className="text-[0.7rem] text-texto-suave">Un {pieza.formatoId} suelto de {m(pieza.infladoCm)}: cambia su color con «Colores de la escena».</p>}
       {pieza.tipo === "escenografia" && (pieza.productos?.length
-        ? <p className="text-[0.7rem] text-texto-suave">Utilería de fiesta (no es globo): {pieza.productos.map((p) => `${p.cantidad} × ${p.nombre}${p.variante ? ` (${p.variante})` : ""}`).join(", ")}. Sale en «Productos de fiesta» de la ficha; muévela con «Dónde va».</p>
-        : <p className="text-[0.7rem] text-texto-suave">Escenografía (no son globos ni cuentan en los materiales): muévela con «Dónde va».</p>)}
+        ? <p className="text-[0.7rem] text-texto-suave">Utilería de fiesta (no es globo): {pieza.productos.map((p) => `${p.cantidad} × ${p.nombre}${p.variante ? ` (${p.variante})` : ""}`).join(", ")}. Sale en «Productos de fiesta» de la lista de compra; muévela con «Lugar».</p>
+        : <p className="text-[0.7rem] text-texto-suave">Escenografía (no son globos ni cuentan en los materiales): muévela con «Lugar».</p>)}
     </section>
   );
 }
 
-function EditorArcoOrganico({ pieza, onPieza }: { pieza: Extract<Pieza, { tipo: "arco_organico" }>; onPieza: (p: Pieza) => void }) {
+export function EditorArcoOrganico({ pieza, onPieza }: { pieza: Extract<Pieza, { tipo: "arco_organico" }>; onPieza: (p: Pieza) => void }) {
   const a = pieza.arco;
   const pon = (cambio: Partial<typeof a>) => onPieza({ ...pieza, arco: { ...a, ...cambio } });
   const ponColor = (i: number, cambio: Partial<ColorOrganico>) => pon({ colores: a.colores.map((c, j) => (j === i ? { ...c, ...cambio } : c)) });
@@ -480,7 +356,8 @@ function ColorDelArco({ indice, color, porcentaje, onCambio }: { indice: number;
 // Sala
 // ----------------------------------------------------------------------------------------------------------
 
-function EditorSala({ sala, onSala }: { sala: Sala; onSala: (s: Sala) => void }) {
+/** La sala: medidas, qué superficies se ven y sus tonos. `plegable`: dentro de un «details» (si no, abierta). */
+export function EditorSala({ sala, onSala, plegable = true }: { sala: Sala; onSala: (s: Sala) => void; plegable?: boolean }) {
   const pon = (cambio: Partial<Sala>) => onSala({ ...sala, ...cambio });
   const verSuperficie = (clave: keyof Sala["mostrar"], etiqueta: string) => (
     <label key={clave} className="flex items-center gap-2 text-sm text-texto" htmlFor={`sala-${clave}`}>
@@ -493,22 +370,32 @@ function EditorSala({ sala, onSala }: { sala: Sala; onSala: (s: Sala) => void })
       {etiqueta}
     </label>
   );
-  return (
-    <details className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
-      <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-texto"><PanelTop className="size-4 text-acento" aria-hidden /> Sala <span className="font-normal text-texto-suave">· {m(sala.anchoCm)} × {m(sala.fondoCm)} × {m(sala.altoCm)}</span></summary>
-      <div className="mt-2 flex flex-col gap-2">
-        <Deslizador id="sala-ancho" etiqueta="Ancho" valor={sala.anchoCm} min={300} max={1200} paso={20} texto={m(sala.anchoCm)} onCambio={(v) => pon({ anchoCm: v })} />
-        <Deslizador id="sala-fondo" etiqueta="Fondo" valor={sala.fondoCm} min={300} max={1000} paso={20} texto={m(sala.fondoCm)} onCambio={(v) => pon({ fondoCm: v })} />
-        <Deslizador id="sala-alto" etiqueta="Alto (al techo)" valor={sala.altoCm} min={240} max={600} paso={10} texto={m(sala.altoCm)} onCambio={(v) => pon({ altoCm: v })} />
+  const contenido = (
+    <div className="flex flex-col gap-3">
+      <Deslizador id="sala-ancho" etiqueta="Ancho" valor={sala.anchoCm} min={300} max={1200} paso={20} texto={m(sala.anchoCm)} onCambio={(v) => pon({ anchoCm: v })} />
+      <Deslizador id="sala-fondo" etiqueta="Fondo" valor={sala.fondoCm} min={300} max={1000} paso={20} texto={m(sala.fondoCm)} onCambio={(v) => pon({ fondoCm: v })} />
+      <Deslizador id="sala-alto" etiqueta="Alto (al techo)" valor={sala.altoCm} min={240} max={600} paso={10} texto={m(sala.altoCm)} onCambio={(v) => pon({ altoCm: v })} />
+      <fieldset className="flex flex-col gap-1">
+        <legend className="mb-1 text-xs font-semibold text-texto">Qué se ve</legend>
         <div className="grid grid-cols-2 gap-1">
           {verSuperficie("piso", "Piso")}
           {verSuperficie("fondo", "Pared del fondo")}
           {verSuperficie("laterales", "Paredes laterales")}
           {verSuperficie("techo", "Techo")}
         </div>
+      </fieldset>
+      <fieldset>
+        <legend className="mb-1 text-xs font-semibold text-texto">Tonos</legend>
         <div className="flex gap-3">{tono("piso", "Piso")}{tono("paredes", "Paredes")}{tono("techo", "Techo")}</div>
-        <p className="flex items-start gap-1 text-[0.7rem] text-texto-suave"><ArrowDownToLine className="mt-0.5 size-3 shrink-0" aria-hidden /> Al girar la cámara por detrás de una pared o por encima del techo, esa superficie se oculta sola para que veas dentro.</p>
-      </div>
+      </fieldset>
+      <p className="flex items-start gap-1 text-[0.7rem] text-texto-suave"><ArrowDownToLine className="mt-0.5 size-3 shrink-0" aria-hidden /> Al girar la cámara por detrás de una pared o por encima del techo, esa superficie se oculta sola para que veas dentro.</p>
+    </div>
+  );
+  if (!plegable) return contenido;
+  return (
+    <details className="rounded-2xl bg-superficie p-3 ring-1 ring-borde">
+      <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-texto"><PanelTop className="size-4 text-acento" aria-hidden /> Sala <span className="font-normal text-texto-suave">· {m(sala.anchoCm)} × {m(sala.fondoCm)} × {m(sala.altoCm)}</span></summary>
+      <div className="mt-2">{contenido}</div>
     </details>
   );
 }
