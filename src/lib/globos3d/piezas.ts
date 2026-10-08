@@ -12,7 +12,8 @@ import { materialesPorFormato, type GloboDecoracion, type TuboDecoracion } from 
 import { sumarMateriales } from "./mezcla";
 import { armarTrenza } from "./trenza";
 import { opcionesArcoOrganico, recorridoGuirnalda, type OpcionesArcoOrganico, type OpcionesGuirnalda } from "./formas-escena";
-import { armarEscenografia, puntosSolido, type ElementoEscenografia, type SolidoEscenografia } from "./escenografia";
+import { armarEscenografia, puntosSolido, type ElementoEscenografia, type ProductoDePieza, type SolidoEscenografia } from "./escenografia";
+import type { TipoUtileria } from "./utileria-catalogo";
 
 /**
  * Una **pieza**: cualquier cosa que sabe armar el taller, descrita solo con datos (JSON) para poder guardarla,
@@ -35,8 +36,12 @@ export type Pieza =
   | { tipo: "arco_organico"; arco: OpcionesArcoOrganico }
   /** Guirnalda clásica: trenza de cuartetos en festón, recta o sobre una curva libre. */
   | { tipo: "guirnalda"; guirnalda: OpcionesGuirnalda }
-  /** Escenografía (no es globo ni cotiza): paneles de fondo, pared de lentejuelas, mesas, tapete (ver `escenografia.ts`). */
-  | { tipo: "escenografia"; elementos: ElementoEscenografia[] }
+  /**
+   * Escenografía (no es globo ni cotiza): paneles de fondo, pared de lentejuelas, mesas, tapete (ver `escenografia.ts`).
+   * La **utilería de fiesta** (banderín, platos, vasos… ver `utileria.ts`) también es escenografía, pero dice qué es
+   * (`utileria`) y qué producto Sempertex representa (`productos`): sale en la lista «Productos de fiesta».
+   */
+  | { tipo: "escenografia"; elementos: ElementoEscenografia[]; utileria?: TipoUtileria; productos?: ProductoDePieza[] }
   /**
    * Un globo suelto (el R-24 de remate encima de un arco): el centro de su cuerpo en el origen y el cuerpo hacia +y
    * (nudo abajo). Cotiza como un globo.

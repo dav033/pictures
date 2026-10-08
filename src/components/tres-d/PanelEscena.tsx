@@ -409,7 +409,9 @@ function EditorPieza({ pieza, onPieza }: { pieza: Pieza; onPieza: (p: Pieza) => 
       )}
       {pieza.tipo === "organico" && <p className="text-[0.7rem] text-texto-suave">Pieza orgánica armada: muévela con «Dónde va» y cambia sus colores con «Colores de la escena».</p>}
       {pieza.tipo === "globo" && <p className="text-[0.7rem] text-texto-suave">Un {pieza.formatoId} suelto de {m(pieza.infladoCm)}: cambia su color con «Colores de la escena».</p>}
-      {pieza.tipo === "escenografia" && <p className="text-[0.7rem] text-texto-suave">Escenografía (no son globos ni cuentan en los materiales): muévela con «Dónde va».</p>}
+      {pieza.tipo === "escenografia" && (pieza.productos?.length
+        ? <p className="text-[0.7rem] text-texto-suave">Utilería de fiesta (no es globo): {pieza.productos.map((p) => `${p.cantidad} × ${p.nombre}${p.variante ? ` (${p.variante})` : ""}`).join(", ")}. Sale en «Productos de fiesta» de la ficha; muévela con «Dónde va».</p>
+        : <p className="text-[0.7rem] text-texto-suave">Escenografía (no son globos ni cuentan en los materiales): muévela con «Dónde va».</p>)}
     </section>
   );
 }

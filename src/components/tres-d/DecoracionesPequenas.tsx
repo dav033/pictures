@@ -6,6 +6,7 @@ import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import { agregarDecoracion, decoracionesPorGrupo, miniaturaDecoracion, repartoSugerido, type DecoracionPequena, type DestinoDecoracion, type Miniatura } from "@/lib/globos3d/decoraciones-escena";
 import { ACTIVO, BOTON, Deslizador, INACTIVO } from "./PanelFlor";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
+import { UtileriaFiesta } from "./UtileriaFiesta";
 
 /** Las predefinidas por grupo, con su miniatura: no cambian, se calculan una vez. */
 const GRUPOS = decoracionesPorGrupo().map((g) => ({ ...g, decoraciones: g.decoraciones.map((d) => ({ ...d, miniatura: miniaturaDecoracion(d.decoracion) })) }));
@@ -162,6 +163,8 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
           </div>
         );
       })}
+      {/* Banderines, platos, vasos… (productos Sempertex de fiesta, no globos). */}
+      <UtileriaFiesta escena={escena} onEscena={onEscena} armada={armada} seleccion={seleccion} onSeleccion={onSeleccion} />
     </section>
   );
 }

@@ -32,6 +32,7 @@ import { PanelEscena } from "./PanelEscena";
 import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdicionEscena";
 import { useLienzoDecoraciones, type CopiaElegida } from "./useLienzoDecoraciones";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
+import { ProductosFiesta } from "./UtileriaFiesta";
 
 const formatoCm = (valor: number) => `${valor.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
 const metros = (cm: number) => (cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 });
@@ -499,6 +500,7 @@ export function Taller3D() {
                       {armadaEscena.porNodo.map((n) => <li key={n.id}>{n.nombre}: {n.globos.length} globos{n.copias > 1 ? ` en ${n.copias} copias` : ""}</li>)}
                     </ul>
                     <ListaMateriales materiales={armadaEscena.materiales} />
+                    <ProductosFiesta escena={escenaEdit} armada={armadaEscena} />
                     {armadaEscena.avisos.length > 0 && <p className="mt-1 text-[0.7rem] text-texto">{armadaEscena.avisos.join(" ")}</p>}
                   </>
                 ) : modo === "organico" ? (

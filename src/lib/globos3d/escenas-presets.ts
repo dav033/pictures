@@ -5,6 +5,7 @@ import type { ParteGlobo } from "./decoraciones";
 import type { DecoracionHalloween, TipoHalloween } from "./halloween";
 import { fondoMarcoOndulado, mesaCilindrica, mesaConMantel, tapete } from "./escenografia";
 import { opcionesArcoRectangular, opcionesAroOrganico, opcionesRacimosLibres, opcionesTroncoConBase } from "./estructuras-organicas";
+import { utileriaArcoConCalabazas, utileriaMarcoConMesas } from "./utileria-escenas";
 
 /**
  * Escenas de partida del taller y las piezas que se pueden añadir a una escena. Todo es un punto de partida: cada
@@ -191,7 +192,7 @@ function marcoOrganicoConMesas(): Escena {
       ],
     }),
   };
-  return {
+  const escena: Escena = {
     sala: sala({ anchoCm: 520, fondoCm: 420, altoCm: 320, tonos: { piso: "#d9d2ca", paredes: "#ece9ef", techo: "#fbfaf8" }, mostrar: { piso: true, fondo: true, laterales: false, techo: false } }),
     nodos: [
       { id: "fondo-marco", nombre: "Marco verde y lentejuelas", pieza: { tipo: "escenografia", elementos: fondoMarcoOndulado({ anchoCm: 240, altoCm: 245, bandaCm: 42, bandaArribaCm: 40, capas: ["#4f9e7b", "#8fcab5"], lentejuelas: "#1d1c21" }) }, colocacion: { en: "piso", xCm: 0, zCm: -205, giroGrados: 0 } },
@@ -220,6 +221,7 @@ function marcoOrganicoConMesas(): Escena {
       pequena("fantasma-3", "Fantasmita de la guirnalda de papel 3", halloween("fantasma", "fantasma", { altoCm: 13, cola: null }), suelta(46, 198, -139)),
     ],
   };
+  return { ...escena, nodos: [...escena.nodos, ...utileriaMarcoConMesas(escena)] };
 }
 
 /** Foto 2: arco orgánico rectangular naranja, negro y gris con huecos para las calabazas, y la mesa con mantel. */
@@ -239,7 +241,7 @@ function arcoConCalabazas(): Escena {
       semilla: 13,
     }),
   };
-  return {
+  const escena: Escena = {
     sala: sala({ anchoCm: 520, fondoCm: 420, altoCm: 320, tonos: { piso: "#e3b47c", paredes: "#f2f2ef", techo: "#fbfaf8" }, mostrar: { piso: true, fondo: true, laterales: false, techo: false } }),
     nodos: [
       { id: "arco", nombre: "Arco orgánico rectangular", pieza: arco, colocacion: { en: "piso", xCm: 0, zCm: -150, giroGrados: 0 } },
@@ -257,6 +259,7 @@ function arcoConCalabazas(): Escena {
       pequena("bruja", "Calabaza con sombrero de bruja", halloween("calabaza_bruja", "calabaza_bruja"), suelta(0, 90, -112)),
     ],
   };
+  return { ...escena, nodos: [...escena.nodos, ...utileriaArcoConCalabazas(escena)] };
 }
 
 /** Foto 3: aro orgánico de 1,6 m en la pared: fila de R-12 verde por fuera y mezcla verde, café, naranja y beige por dentro. */
@@ -399,8 +402,8 @@ function guirnaldaConArana(): Escena {
 }
 
 export const ESCENAS_HALLOWEEN: readonly PresetEscena[] = [
-  { id: "halloween_marco_mesas", nombre: "Halloween: marco orgánico con mesas", descripcion: "Marco verde ondulado de 2,4 m con pared de lentejuelas, cuatro racimos orgánicos, dos mesas cilíndricas negras, tapete naranja, ramo de helio, ojos saltones, manos verdes, arañas, telaraña y fantasmitas.", escena: marcoOrganicoConMesas() },
-  { id: "halloween_arco_calabazas", nombre: "Halloween: arco con calabazas", descripcion: "Arco orgánico rectangular naranja, negro y gris de 2,6 × 2,6 m con dos calabazas en las patas, un R-24 de remate y la calabaza bruja sobre la mesa con mantel.", escena: arcoConCalabazas() },
+  { id: "halloween_marco_mesas", nombre: "Halloween: marco orgánico con mesas", descripcion: "Marco verde ondulado de 2,4 m con pared de lentejuelas, cuatro racimos orgánicos, dos mesas cilíndricas negras, tapete naranja, ramo de helio, ojos saltones, manos verdes, arañas, telaraña y fantasmitas, con la utilería de la foto: guirnalda de recortes, banderines «Happy Halloween» en las mesas, platos, vasos y servilletas, cubeta y bolsa de dulces y paquetes al frente.", escena: marcoOrganicoConMesas() },
+  { id: "halloween_arco_calabazas", nombre: "Halloween: arco con calabazas", descripcion: "Arco orgánico rectangular naranja, negro y gris de 2,6 × 2,6 m con dos calabazas en las patas, un R-24 de remate y la calabaza bruja sobre la mesa con mantel, con el banderín de triángulos «Happy Halloween» dentro del arco y platos, vasos, servilletas, cubiertos y bandeja en la mesa.", escena: arcoConCalabazas() },
   { id: "halloween_aro_ojos", nombre: "Halloween: aro de ojos y arañas", descripcion: "Aro orgánico de 1,6 m en la pared: R-12 verde por fuera y mezcla verde, café, naranja y beige por dentro, 14 ojos con venas y dos arañas.", escena: aroDeOjos() },
   { id: "halloween_arbol_fantasmas", nombre: "Halloween: árbol con fantasmas", descripcion: "Árbol café de 2,5 m: montículo de R-18 y tronco de R-12 y R-5 chocolate con cobre y crema, cuatro ramas trenzadas, ojos bravos y cuatro fantasmas.", escena: arbolConFantasmas() },
   { id: "halloween_guirnalda_arana", nombre: "Halloween: guirnalda con araña", descripcion: "Media guirnalda orgánica en curva de 1,2 × 1,9 m en óxido, latte, grafito y tríos dorados, colgada en la pared, con la araña de lazos y una telaraña.", escena: guirnaldaConArana() },

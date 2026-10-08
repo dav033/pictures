@@ -11,14 +11,39 @@ import type { Punto2 } from "./trenza";
  * - `cilindro`: base en `base` y sube `altoCm`; con `radioArribaCm` es un tronco de cono (un mantel que se abre).
  * - `panel`: un contorno del plano XY (cm), extruido `grosorCm` desde `zCm` hacia +z; `huecos` son ventanas.
  */
-export type AcabadoEscenografia = "mate" | "satinado" | "brillante" | "lentejuelas" | "tela" | "madera";
+export type AcabadoEscenografia = "mate" | "satinado" | "brillante" | "lentejuelas" | "tela" | "madera" | "papel" | "metal" | "llama";
 
-type Aspecto = { hex: string; acabado: AcabadoEscenografia };
+/** Los dibujos que sabe estampar el visor en la utilería de fiesta (banderines, platos, bolsas, letreros…). */
+export type DibujoMotivo = "calavera" | "murcielago" | "calabaza" | "fantasma" | "arana" | "telarana" | "sombrero_bruja" | "texto" | "lunares" | "rayas" | "estrellas";
+
+/**
+ * Lo impreso en una cara del sólido (como una calcomanía): en la cara de delante (+z local; en un cilindro, su
+ * costado de delante) o en la de arriba (+y; en un plato, su cara). `hex` es la tinta (por defecto, blanco o negro
+ * según el fondo) y `escala` lo agranda o achica respecto a la cara (1 = lo que cabe).
+ */
+export type MotivoEscenografia = { dibujo: DibujoMotivo; texto?: string; hex?: string; cara?: "frente" | "arriba"; escala?: number };
+
+type Aspecto = { hex: string; acabado: AcabadoEscenografia; motivo?: MotivoEscenografia };
+
+/**
+ * Marco propio de un elemento (opcional): su forma se arma como siempre y luego se lleva a este marco (origen y dos
+ * ejes; el tercero sale de ellos). Sirve para lo que va inclinado o girado en cualquier eje: un banderín que sigue
+ * su cordón, un plato de pie, un tramo de cordón.
+ */
+export type MarcoElemento = { origen: Vec3; ejeX: Vec3; ejeY: Vec3 };
 
 export type ElementoEscenografia =
-  | (Aspecto & { forma: "caja"; centro: Vec3; tamano: Vec3; giroGrados?: number })
-  | (Aspecto & { forma: "cilindro"; base: Vec3; radioCm: number; altoCm: number; radioArribaCm?: number })
-  | (Aspecto & { forma: "panel"; contorno: Punto2[]; huecos?: Punto2[][]; zCm: number; grosorCm: number });
+  | (Aspecto & { forma: "caja"; centro: Vec3; tamano: Vec3; giroGrados?: number; en?: MarcoElemento })
+  | (Aspecto & { forma: "cilindro"; base: Vec3; radioCm: number; altoCm: number; radioArribaCm?: number; en?: MarcoElemento })
+  | (Aspecto & { forma: "panel"; contorno: Punto2[]; huecos?: Punto2[][]; zCm: number; grosorCm: number; en?: MarcoElemento });
+
+/**
+ * El producto Sempertex que representa una pieza de **utilería de fiesta** (banderín, platos, vasos…): su nombre exacto
+ * en la tienda, su url relativa (/products/…), cuántos paquetes lleva la pieza y, si el producto viene en varios colores,
+ * cuál (`variante`). `generico`: no hay en el catálogo uno
+ * igual (se dibuja, pero no es un producto específico).
+ */
+export type ProductoDePieza = { nombre: string; url: string; cantidad: number; /** El color o modelo dentro del producto (lila, naranja…). */ variante?: string; generico?: boolean };
 
 /**
  * Un elemento ya armado, con su marco (origen y ejes): así la escena lo mueve y lo gira como a los globos y el visor
@@ -35,18 +60,36 @@ export type SolidoEscenografia = MarcoSolido & Aspecto & (
 
 const X: Vec3 = { x: 1, y: 0, z: 0 }, Y: Vec3 = { x: 0, y: 1, z: 0 }, Z: Vec3 = { x: 0, y: 0, z: 1 };
 
+const cruz = (a: Vec3, b: Vec3): Vec3 => ({ x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x });
+const unitario = (v: Vec3): Vec3 => { const n = Math.hypot(v.x, v.y, v.z) || 1; return { x: v.x / n, y: v.y / n, z: v.z / n }; };
+
+/** Lleva un sólido armado a un marco propio (`en`): origen y ejes pasan por el giro del marco y se corren a su origen. */
+function enMarco(s: SolidoEscenografia, en: MarcoElemento): SolidoEscenografia {
+  const x = unitario(en.ejeX);
+  const z = unitario(cruz(x, en.ejeY));
+  const y = cruz(z, x);
+  const girar = (v: Vec3): Vec3 => ({ x: x.x * v.x + y.x * v.y + z.x * v.z, y: x.y * v.x + y.y * v.y + z.y * v.z, z: x.z * v.x + y.z * v.y + z.z * v.z });
+  const o = girar(s.origen);
+  return { ...s, origen: { x: en.origen.x + o.x, y: en.origen.y + o.y, z: en.origen.z + o.z }, ejeX: girar(s.ejeX), ejeY: girar(s.ejeY), ejeZ: girar(s.ejeZ) };
+}
+
 export function armarEscenografia(elementos: readonly ElementoEscenografia[]): SolidoEscenografia[] {
   return elementos.map((e): SolidoEscenografia => {
-    const aspecto = { hex: e.hex, acabado: e.acabado };
-    if (e.forma === "caja") {
-      const a = ((e.giroGrados ?? 0) * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
-      return { ...aspecto, forma: "caja", tamano: { ...e.tamano }, origen: { ...e.centro }, ejeX: { x: c, y: 0, z: -s }, ejeY: Y, ejeZ: { x: s, y: 0, z: c } };
-    }
-    if (e.forma === "cilindro") {
-      return { ...aspecto, forma: "cilindro", radioCm: e.radioCm, altoCm: e.altoCm, radioArribaCm: e.radioArribaCm ?? e.radioCm, origen: { ...e.base }, ejeX: X, ejeY: Y, ejeZ: Z };
-    }
-    return { ...aspecto, forma: "panel", contorno: e.contorno.map((p) => ({ ...p })), huecos: (e.huecos ?? []).map((h) => h.map((p) => ({ ...p }))), grosorCm: e.grosorCm, origen: { x: 0, y: 0, z: e.zCm }, ejeX: X, ejeY: Y, ejeZ: Z };
+    const solido = armarElemento(e);
+    return e.en ? enMarco(solido, e.en) : solido;
   });
+}
+
+function armarElemento(e: ElementoEscenografia): SolidoEscenografia {
+  const aspecto: Aspecto = { hex: e.hex, acabado: e.acabado, ...(e.motivo ? { motivo: { ...e.motivo } } : {}) };
+  if (e.forma === "caja") {
+    const a = ((e.giroGrados ?? 0) * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+    return { ...aspecto, forma: "caja", tamano: { ...e.tamano }, origen: { ...e.centro }, ejeX: { x: c, y: 0, z: -s }, ejeY: Y, ejeZ: { x: s, y: 0, z: c } };
+  }
+  if (e.forma === "cilindro") {
+    return { ...aspecto, forma: "cilindro", radioCm: e.radioCm, altoCm: e.altoCm, radioArribaCm: e.radioArribaCm ?? e.radioCm, origen: { ...e.base }, ejeX: X, ejeY: Y, ejeZ: Z };
+  }
+  return { ...aspecto, forma: "panel", contorno: e.contorno.map((p) => ({ ...p })), huecos: (e.huecos ?? []).map((h) => h.map((p) => ({ ...p }))), grosorCm: e.grosorCm, origen: { x: 0, y: 0, z: e.zCm }, ejeX: X, ejeY: Y, ejeZ: Z };
 }
 
 /** Puntos del sólido en su marco (las esquinas de su caja local), para medir lo que ocupa. */

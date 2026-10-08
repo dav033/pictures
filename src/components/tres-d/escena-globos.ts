@@ -4,6 +4,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import type { FormatoGlobo } from "@/lib/globos3d/formatos";
 import { centroCuerpo, contornoCorazon, perfilLink, perfilRedondo, type PuntoPerfil } from "@/lib/globos3d/geometria";
 import type { SolidoEscenografia } from "@/lib/globos3d/escenografia";
+import { calcoMotivo } from "./motivos-utileria";
 
 /**
  * La escena de /3d con three.js, sin React: un globo (o la fila de todos los formatos) sobre un piso con
@@ -441,6 +442,9 @@ function materialEscenografia(s: SolidoEscenografia): THREE.Material {
     case "satinado": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.35 });
     case "tela": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.95, sheen: 0.6, sheenColor: color.clone().lerp(new THREE.Color(0xffffff), 0.3), sheenRoughness: 0.7 });
     case "madera": return new THREE.MeshStandardMaterial({ color, roughness: 0.72 });
+    // Utilería de fiesta: el metal de los cubiertos y bandejas metalizadas, y la llama de una vela (se ve encendida).
+    case "metal": return new THREE.MeshStandardMaterial({ color, metalness: 0.85, roughness: 0.25, envMap: entornoMetal, envMapIntensity: 1 });
+    case "llama": return new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.4, roughness: 0.6 });
     default: return new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
   }
 }
@@ -469,6 +473,9 @@ function solidoEscenografia(s: SolidoEscenografia): THREE.Object3D {
   );
   malla.quaternion.setFromRotationMatrix(ejes);
   malla.position.set(s.origen.x * CM, s.origen.y * CM, s.origen.z * CM);
+  // Lo impreso (calavera, «Happy Halloween», lunares…) de la utilería de fiesta, como calcomanía en su cara.
+  const calco = calcoMotivo(s);
+  if (calco) malla.add(calco);
   return malla;
 }
 
