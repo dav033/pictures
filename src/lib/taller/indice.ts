@@ -247,6 +247,9 @@ export function itemsSinEmbeddingVigente(
 
 const esTexto = (v: unknown): v is string => typeof v === "string";
 const listaDeTextos = (v: unknown): string[] => (Array.isArray(v) ? v.filter(esTexto) : []);
+/** Textos de una lista de textos u objetos (las fichas traen `{codigo, nombre}` en colores y `{nombre, url…}` en productos). */
+const listaDeCampo = (v: unknown, campo: string): string[] =>
+  Array.isArray(v) ? v.flatMap((x) => (esTexto(x) ? [x] : typeof x === "object" && x !== null && esTexto((x as Record<string, unknown>)[campo]) ? [(x as Record<string, string>)[campo]!] : [])) : [];
 const numero = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? v : 0);
 
 /** Valida y completa un registro crudo del JSONL; devuelve el motivo si no sirve. */
@@ -270,14 +273,14 @@ export function normalizarRegistro(crudo: unknown): { registro: RegistroParaIndi
     ocasiones: listaDeTextos(r.ocasiones),
     tiposPieza: listaDeTextos(r.tiposPieza),
     formatos: listaDeTextos(r.formatos),
-    colores: listaDeTextos(r.colores),
+    colores: listaDeCampo(r.colores, "codigo"),
     partes: listaDeTextos(r.partes),
     lineasPartes: lineas.flatMap((l) => {
       if (typeof l !== "object" || l === null) return [];
       const x = l as Record<string, unknown>;
       return esTexto(x.parte) && esTexto(x.formatoId) ? [{ parte: x.parte, formatoId: x.formatoId, codigo: esTexto(x.codigo) ? x.codigo : "", cantidad: numero(x.cantidad) }] : [];
     }),
-    productos: listaDeTextos(r.productos),
+    productos: listaDeCampo(r.productos, "nombre"),
     medidas: { altoCm: typeof medidas.altoCm === "number" ? medidas.altoCm : null, anchoCm: typeof medidas.anchoCm === "number" ? medidas.anchoCm : null, fondoCm: typeof medidas.fondoCm === "number" ? medidas.fondoCm : null },
     globos: numero(r.globos),
     tubos: numero(r.tubos),
