@@ -16,6 +16,7 @@ import { ACCIONES_TAMANO, FORMATOS_AJUSTABLES, ajustarTamanos, esPiezaOrganica, 
 import { ZONAS_ORGANICAS } from "./zonas-organicas";
 import { SILUETAS_TRAZO, cajaTrazo } from "./trazo-organico";
 import { buscarEnBiblioteca, describirItem, itemDeBiblioteca } from "./herramientas-escena-biblioteca";
+import { DESCRIPCION_BUSCAR_EN_ESCENA, DESCRIPCION_VER_PIEZA, ESQUEMA_BUSCAR_EN_ESCENA, ESQUEMA_VER_PIEZA, buscarEnEscena, contenidoCompacto, verPieza } from "./herramientas-escena-inventario";
 import { PATRONES_COLUMNA, type PatronColumna } from "./columnas";
 import { PATRONES_MALLA, type PatronMalla } from "./paredes";
 import type { FormaArco } from "./arcos";
@@ -293,6 +294,8 @@ const ESQUEMAS = {
     donde: DondeSchema.optional().describe("dónde va la pieza principal; si falta, donde estaba en su escena"),
     nombre: z.string().min(1).max(60).optional().describe("nombre para la pieza principal"),
   }),
+  ver_pieza: ESQUEMA_VER_PIEZA,
+  buscar_en_escena: ESQUEMA_BUSCAR_EN_ESCENA,
 } as const;
 
 export { resolverColor, type ColorResuelto } from "./herramientas-escena-colores";
@@ -301,7 +304,7 @@ export type NombreHerramienta = keyof typeof ESQUEMAS;
 export const NOMBRES_HERRAMIENTAS = Object.keys(ESQUEMAS) as NombreHerramienta[];
 
 const DESCRIPCIONES: Readonly<Record<NombreHerramienta, string>> = {
-  ver_escena: "Lista la sala y cada pieza de la escena: id, tipo, medidas, colores y dónde está (en las orgánicas, además, cuántos globos hay de cada tamaño y color). Úsala antes de cambiar algo que ya existe.",
+  ver_escena: "Lista la sala y cada pieza de la escena: id, tipo, medidas, colores y dónde está (en las orgánicas, además, cuántos globos hay de cada tamaño y color y sus partes; en las demás, de qué formatos, colores y partes está hecha). Úsala antes de cambiar algo que ya existe.",
   usar_preset: "Reemplaza TODA la escena por una escena de partida. Solo si el usuario pide empezar de nuevo con una de ellas.",
   agregar_pieza: "Suma una pieza nueva a la escena (no toca las demás). Devuelve su id.",
   mover_pieza: "Cambia dónde está una pieza (piso, pared, techo o colgada de otra). Los campos que falten se conservan si sigue en el mismo sitio.",
@@ -319,6 +322,8 @@ const DESCRIPCIONES: Readonly<Record<NombreHerramienta, string>> = {
   recolorear_escena: "Recolorea TODAS las piezas (o las de ids) de una vez respetando el patrón de cada una, o cambia un color por otro en todo. Nunca agrega ni quita piezas. Para «todo a rojo y verde» o «cambia el rosado por azul».",
   buscar_en_biblioteca: "Busca en la Biblioteca del taller (escenas, estructuras con sus decoraciones, estructuras, decoraciones, utilería, ideas Sempertex): devuelve una lista corta con id y resumen. No cambia la escena.",
   ajustar_tamanos: "Edición PRECISA de una pieza orgánica: más/menos/quitar/poner un tamaño de globo (R-36…R-5) en toda la pieza o en una zona (abajo, arriba, inicio, medio, fin), con cantidad o porcentaje exactos; colores por tamaño («los R-24 en azul»); más o menos tupida (densidad) y abultada (racimos). Arma la pieza y devuelve cuántos globos de cada tamaño había y cuántos hay. Úsala para «más R-24», «menos globos chicos», «los grandes azules», «más tupida», «más abultada».",
+  ver_pieza: DESCRIPCION_VER_PIEZA,
+  buscar_en_escena: DESCRIPCION_BUSCAR_EN_ESCENA,
   insertar_de_biblioteca: "Pone un item de la biblioteca en la escena como piezas normales y editables (una estructura con sus decoraciones, una pieza o una escena entera). Devuelve los ids: después se cambia con cambiar_pieza (más alta, otro color, con flores…).",
 };
 
@@ -428,7 +433,7 @@ export function resumenEscena(escena: Escena): string {
   const lineas = [
     `Sala ${r0(s.anchoCm)}×${r0(s.fondoCm)}×${r0(s.altoCm)} cm (ancho×fondo×alto): x de −${r0(s.anchoCm / 2)} a ${r0(s.anchoCm / 2)}, z de −${r0(s.fondoCm / 2)} (pared del fondo) a ${r0(s.fondoCm / 2)} (frente). Se ve: ${vistas}.`,
     escena.nodos.length ? `${escena.nodos.length} piezas:` : "La sala está vacía.",
-    ...escena.nodos.map((n) => `- ${n.id} · «${n.nombre}» · ${n.pieza.tipo} (${NOMBRE_TIPO[n.pieza.tipo]}) · ${medidasDe(n.pieza)} · colores: ${coloresTexto(n.pieza) || "—"} · ${dondeTexto(n.colocacion, escena, armada)}${copias(n)}`),
+    ...escena.nodos.map((n) => `- ${n.id} · «${n.nombre}» · ${n.pieza.tipo} (${NOMBRE_TIPO[n.pieza.tipo]}) · ${medidasDe(n.pieza)} · colores: ${coloresTexto(n.pieza) || "—"} · ${dondeTexto(n.colocacion, escena, armada)}${copias(n)}${contenidoCompacto(n.pieza, armadaDe)}`),
   ];
   return lineas.join("\n");
 }
@@ -895,6 +900,12 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
     case "ver_escena":
       ESQUEMAS.ver_escena.parse(argumentos ?? {});
       return { escena, resumen: resumenEscena(escena), consulta: true };
+
+    case "ver_pieza":
+      return { escena, resumen: verPieza(escena, ESQUEMAS.ver_pieza.parse(argumentos).id, armadaDe), consulta: true };
+
+    case "buscar_en_escena":
+      return { escena, resumen: buscarEnEscena(escena, ESQUEMAS.buscar_en_escena.parse(argumentos), armadaDe), consulta: true };
 
     case "listar_colores": {
       const a = ESQUEMAS.listar_colores.parse(argumentos);
