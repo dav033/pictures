@@ -314,16 +314,18 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
       arco: {
         marco: { forma: "arco", curva: "medio_punto" }, anchoCm: 230, altoCm: 225,
         segmentos: [{ id: "semiarco", desde: 0, hasta: 0.6, grosorCm: { inicio: 90, medio: 66, fin: 58 }, mezcla: { inicio: M.baseGruesa, fin: M.cuerpo }, tapas: { fin: true } }],
-        franjas: [0.24, 0.42],
+        franjas: [0.09, 0.15, 0.21, 0.36],
         colores: [
           c("012", 3, ["franja_1"]), c("011", 2, ["franja_1"]),
-          c("009", 3, ["franja_2"]), c("005", 2, ["franja_2"]), c("981", 1, ["franja_2"]),
-          c("005", 3, ["franja_3"]), c("981", 1, ["franja_3"]), c("012", 1, ["franja_3"]), c("390", 1, ["franja_3"], ["R-18", "R-24"]),
+          c("009", 3, ["franja_2"]), c("011", 1, ["franja_2"]),
+          c("005", 3, ["franja_3"]), c("009", 1, ["franja_3"]),
+          c("981", 2, ["franja_4"]), c("009", 2, ["franja_4"]), c("012", 1, ["franja_4"]), c("390", 1, ["franja_4"], ["R-18", "R-24"]),
+          c("005", 3, ["franja_5"]), c("981", 1, ["franja_5"]), c("009", 1, ["franja_5"]),
         ],
         semilla: 101,
       },
     },
-    nota: "Igual: una sola pata de ~2,25 m que sube recta y se dobla a la derecha arriba (en J, ~1,2 m de vuelo), gruesa abajo (~90 cm) y más fina arriba, con grandes en la base y racimos de R-5; colores por tramos medidos en la foto: fucsia #c90957 y magenta #da1b78 → Fashion Fucsia 012 y Fashion Rosa 011 abajo, rosa pastel #f4abc6 → Fashion Rosado 009 con blanco y Reflex Plata 981 en medio, blanco arriba con algo de plata, fucsia y cristal. Distinto: el foil de bola disco y las dos burbujas con globos dentro no se modelan (el cristal va liso); el reparto por tramos es más ordenado que en la foto, donde los bloques se entrelazan.",
+    nota: "Igual: una sola pata de ~2,25 m que sube recta y se dobla a la derecha arriba (en J, ~1,2 m de vuelo), gruesa abajo (~90 cm) y más fina arriba, con grandes en la base y racimos de R-5; cinco tramos de color medidos en la foto, de abajo arriba: fucsia #c90957 y magenta #da1b78 → Fashion Fucsia 012 y Fashion Rosa 011, rosa pastel #f4abc6 → Fashion Rosado 009, blanco, plata cromada (Reflex Plata 981) con rosado, fucsia y cristal en la esquina, y blanco con plata en la vuelta. Distinto: el foil de bola disco y las dos burbujas con globos dentro no se modelan (el cristal va liso); el reparto por tramos es más ordenado que en la foto, donde los bloques se entrelazan.",
     fidelidad: 3,
   },
   {
@@ -333,7 +335,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
     forma: {
       generador: "arco",
       arco: {
-        marco: { forma: "arco", curva: "elipse" }, anchoCm: 300, altoCm: 270,
+        marco: { forma: "arco", curva: "medio_punto" }, anchoCm: 300, altoCm: 270,
         segmentos: [
           { id: "pata_izquierda", desde: 0, hasta: 0.5, grosorCm: { inicio: 62, medio: 54, fin: 52 }, mezcla: { inicio: M.base, fin: M.fina } },
           { id: "pata_derecha", desde: 1, hasta: 0.5, grosorCm: { inicio: 62, medio: 54, fin: 52 }, mezcla: { inicio: M.base, fin: M.fina } },
@@ -342,7 +344,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
         colores: [c("061", 1), c("044", 1)], semilla: 102,
       },
     },
-    nota: "Igual: arco de dos patas de ~3 × 2,7 m, redondo arriba, casi del mismo grueso en todo el recorrido (~55 cm, ~60 en los pies), hecho de racimos de un solo color que se alternan cada ~40 cm; naranja medido #fc5f2d → Fashion Naranja 061 y azul marino casi negro #12223f → Fashion Azul Naval 044. Distinto: en la foto casi no hay globos grandes (R-12 y R-5); aquí el motor pone algún R-18 en los pies. Los racimos son tramos de un color uno tras otro: el zigzag de la foto, donde un racimo se monta sobre el siguiente, no se reproduce.",
+    nota: "Igual: arco de dos patas de ~3 × 2,7 m, de patas rectas y medio punto arriba, casi del mismo grueso en todo el recorrido (~55 cm, ~60 en los pies), hecho de racimos de un solo color que se alternan cada ~40 cm; naranja medido #fc5f2d → Fashion Naranja 061 y azul marino casi negro #12223f → Fashion Azul Naval 044. Distinto: en la foto casi no hay globos grandes (R-12 y R-5); aquí el motor pone algún R-18 en los pies. Los racimos son tramos de un color uno tras otro: el zigzag de la foto, donde un racimo se monta sobre el siguiente, no se reproduce.",
     fidelidad: 4,
   },
   {
@@ -427,7 +429,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
       arco: {
         marco: { forma: "rectangulo", radioEsquinaCm: 35 }, anchoCm: 210, altoCm: 250,
         segmentos: [{ id: "guirnalda", desde: 0, hasta: 0.47, grosorCm: { inicio: 105, medio: 70, fin: 50 }, mezcla: { inicio: M.baseGruesa, fin: M.fina }, tapas: { fin: true } }],
-        franjas: [0.14, 0.24, 0.33, 0.41],
+        franjas: [0.12, 0.2, 0.31, 0.4],
         colores: [
           c("014", 3, ["franja_1"]), c("015", 1, ["franja_1"]),
           c("059", 2, ["franja_2"]), c("060", 1, ["franja_2"]),
