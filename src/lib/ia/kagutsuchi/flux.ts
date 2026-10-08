@@ -739,3 +739,159 @@ async function generarConSempertexFluxSinAuditar(
 function lorasFor(loras: FluxApplication[]): Array<{ path: string; scale: number }> {
   return loras.map((lora) => ({ path: lora.path, scale: lora.scale }));
 }
+
+// ----------------------------------------------------------------------------------------------------------
+// FLUX.1 [dev] imagen-a-imagen (solo el taller 3D): la captura es la imagen de partida y `strength` dice cuánto
+// se aparta. FLUX.2 `/edit` no tiene ese control y reinterpreta la escena (inventaba árboles, mesas y cupcakes).
+// ----------------------------------------------------------------------------------------------------------
+
+const FIEL_I2I_ENDPOINT = "https://queue.fal.run/fal-ai/flux/dev/image-to-image";
+const FIEL_CONTROL_ENDPOINT = "https://queue.fal.run/fal-ai/flux-general/image-to-image";
+/** ControlNet Union de FLUX.1 [dev] (canny, depth… en un solo modelo), el que acepta `flux-general`. */
+export const CONTROLNET_UNION_FLUX1 = "InstantX/FLUX.1-dev-Controlnet-Union";
+/** Tarifas publicadas en fal (2026-10): US$ por megapíxel, redondeando hacia arriba cada imagen. */
+export const PRECIO_MP_FLUX1_I2I = 0.03;
+export const PRECIO_MP_FLUX1_CONTROL = 0.075;
+
+export type ControlFluxFiel = { modo: "canny" | "depth"; base64: string; mime: string; escala: number; fin?: number };
+
+export type OpcionesFluxFiel = {
+  /** La imagen de partida (la captura del visor); la salida sale de su mismo tamaño. */
+  imagen: { base64: string; mime: string; ancho: number; alto: number };
+  /** 0 = la captura tal cual, 1 = rehacerla. */
+  strength: number;
+  seed?: number;
+  guidanceScale?: number;
+  pasos?: number;
+  /** Con controles va por `flux-general` con el ControlNet Union; sin ellos, por `flux/dev/image-to-image`. */
+  controles?: readonly ControlFluxFiel[];
+  /** Solo con controles (`flux-general`, NAG): de qué alejarse («3d render, cgi…»). */
+  negativo?: string;
+  signal?: AbortSignal;
+  telemetria?: ContextoTelemetriaIA;
+};
+
+/** Lo que cuesta una imagen de FLUX.1 de ese tamaño (megapíxeles redondeados hacia arriba). */
+export function costeFluxFiel(ancho: number, alto: number, conControl: boolean): number {
+  return Math.ceil((ancho * alto) / 1_000_000) * (conControl ? PRECIO_MP_FLUX1_CONTROL : PRECIO_MP_FLUX1_I2I);
+}
+
+function cuerpoFluxFiel(prompt: string, o: OpcionesFluxFiel): Record<string, unknown> {
+  const base = {
+    prompt,
+    image_url: `data:${o.imagen.mime};base64,${o.imagen.base64}`,
+    strength: Math.min(1, Math.max(0, o.strength)),
+    guidance_scale: o.guidanceScale ?? 3.5,
+    num_inference_steps: o.pasos ?? 28,
+    ...(Number.isInteger(o.seed) ? { seed: o.seed } : {}),
+    num_images: 1,
+    enable_safety_checker: true,
+    output_format: "png",
+  };
+  if (!o.controles?.length) return base;
+  return {
+    ...base,
+    image_size: { width: o.imagen.ancho, height: o.imagen.alto },
+    ...(o.negativo ? { negative_prompt: o.negativo } : {}),
+    controlnet_unions: [{
+      path: CONTROLNET_UNION_FLUX1,
+      controls: o.controles.map((c) => ({ control_image_url: `data:${c.mime};base64,${c.base64}`, control_mode: c.modo, conditioning_scale: c.escala, end_percentage: c.fin ?? 0.8 })),
+    }],
+  };
+}
+
+/**
+ * FLUX.1 [dev] imagen-a-imagen en fal (con ControlNet si hay `controles`), con el mismo registro que FLUX.2: evento
+ * `imagen` en la auditoría (prompt, referencias como hash, parámetros, coste estimado) y telemetría de la llamada.
+ */
+export async function generarConFluxFiel(prompt: string, opciones: OpcionesFluxFiel): Promise<Imagen> {
+  const conControl = Boolean(opciones.controles?.length);
+  const endpoint = conControl ? FIEL_CONTROL_ENDPOINT : FIEL_I2I_ENDPOINT;
+  const modelo = conControl ? "flux-1-dev/controlnet-union/i2i" : "flux-1-dev/i2i";
+  const coste = costeFluxFiel(opciones.imagen.ancho, opciones.imagen.alto, conControl);
+  const descripcion: DescripcionImagen = {
+    proveedor: "fal",
+    endpoint,
+    modelo,
+    prompt,
+    referencias: [
+      { base64: opciones.imagen.base64, mime: opciones.imagen.mime, rol: "captura_3d" },
+      ...(opciones.controles ?? []).map((c) => ({ base64: c.base64, mime: c.mime, rol: `control_${c.modo}` })),
+    ],
+    parametros: {
+      strength: opciones.strength, guidanceScale: opciones.guidanceScale ?? 3.5, numInferenceSteps: opciones.pasos ?? 28,
+      ancho: opciones.imagen.ancho, alto: opciones.imagen.alto, ...(Number.isInteger(opciones.seed) ? { seed: opciones.seed } : {}),
+      controles: (opciones.controles ?? []).map((c) => ({ modo: c.modo, escala: c.escala, fin: c.fin ?? 0.8 })),
+      ...(opciones.negativo ? { negativo: opciones.negativo } : {}),
+    },
+    costeEstimadoUsd: coste,
+  };
+  return auditarGeneracionImagen(descripcion, () => generarConFluxFielSinAuditar(prompt, opciones, endpoint, modelo, coste), (imagen) => ({ base64: imagen.base64, mime: imagen.mime }));
+}
+
+async function generarConFluxFielSinAuditar(prompt: string, opciones: OpcionesFluxFiel, endpoint: string, modelo: string, coste: number): Promise<Imagen> {
+  const key = process.env.FAL_KEY;
+  if (!key) throw new Error("FLUX no está conectado todavía: falta FAL_KEY en .env.local.");
+  const inicio = Date.now();
+  const deadlineAt = inicio + 105_000;
+  const signalFor = (budgetMs: number): AbortSignal => {
+    const timeoutSignal = AbortSignal.timeout(Math.max(1, Math.min(budgetMs, deadlineAt - Date.now())));
+    return opciones.signal ? AbortSignal.any([opciones.signal, timeoutSignal]) : timeoutSignal;
+  };
+  let proveedorRequestId: string | undefined;
+  const ids = idsTelemetria(opciones.telemetria);
+  const registrar = (resultado: "ok" | "error" | "timeout" | "cancelado") => registrarLlamadaIA({
+    proveedor: "fal",
+    flujo: "generador_imagen",
+    capacidad: "imagen_generacion",
+    modelo,
+    superficie: opciones.telemetria?.superficie ?? "taller-3d",
+    requestId: ids.requestId,
+    correlationId: ids.correlationId,
+    intento: opciones.telemetria?.intento ?? 1,
+    proveedorRequestId,
+    ms: Math.max(0, Date.now() - inicio),
+    resultado,
+    bytesImagenEntrada: bytesDeBase64(opciones.imagen.base64) + (opciones.controles ?? []).reduce((t, c) => t + bytesDeBase64(c.base64), 0),
+    unidadesFacturadas: resultado === "ok" ? 1 : undefined,
+    ...(resultado === "ok" ? { costeEstimado: coste, moneda: "USD" } : {}),
+  });
+  try {
+    const response = await fetchFalAllowed(endpoint, {
+      method: "POST",
+      headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify(cuerpoFluxFiel(prompt, opciones)),
+      signal: signalFor(30_000),
+    }, isAllowedFalQueueUrl);
+    if (!response.ok) throw await falResponseError(response, "fal.ai rechazó la solicitud FLUX.1");
+    const submission = parseQueueSubmission(await response.json());
+    if (!submission || !isAllowedFalQueueUrl(submission.status_url) || !isAllowedFalQueueUrl(submission.response_url)) throw new Error("fal.ai no devolvió una solicitud FLUX.1 en cola válida.");
+    proveedorRequestId = submission.request_id;
+    let completed = false;
+    while (Date.now() < deadlineAt) {
+      const statusResponse = await fetchFalAllowed(submission.status_url, { headers: { Authorization: `Key ${key}` }, signal: signalFor(15_000) }, isAllowedFalQueueUrl);
+      if (!statusResponse.ok) throw await falResponseError(statusResponse, "fal.ai no pudo consultar el estado FLUX.1");
+      const status = parseQueueStatus(await statusResponse.json());
+      if (!status) throw new Error("fal.ai devolvió un estado FLUX.1 inválido.");
+      if (status.status === "COMPLETED") { completed = true; break; }
+      if (status.status === "FAILED" || status.status === "CANCELLED") throw new Error(`fal.ai no pudo completar FLUX.1${status.error ? `: ${status.error.slice(0, 300)}` : ""}`);
+      await sleep(1_500);
+    }
+    if (!completed) throw new Error("fal.ai tardó demasiado en completar FLUX.1.");
+    const resultResponse = await fetchFalAllowed(submission.response_url, { headers: { Authorization: `Key ${key}` }, signal: signalFor(15_000) }, isAllowedFalQueueUrl);
+    if (!resultResponse.ok) throw await falResponseError(resultResponse, "fal.ai no devolvió el resultado FLUX.1");
+    const result = parseFalResponse(await resultResponse.json());
+    const url = result?.images?.[0]?.url;
+    if (!result || !url || !isAllowedFalImageUrl(url)) throw new Error("fal.ai no devolvió una imagen FLUX.1 válida.");
+    const imageResponse = await fetchFalAllowed(url, { signal: signalFor(15_000) }, isAllowedFalImageUrl);
+    if (!imageResponse.ok) throw new Error(`No se pudo descargar la imagen de FLUX.1 (${imageResponse.status}).`);
+    const contentType = result.images?.[0]?.content_type ?? imageResponse.headers.get("content-type")?.split(";", 1)[0];
+    if (!contentType || !new Set(["image/png", "image/jpeg", "image/webp"]).has(contentType.toLowerCase())) throw new Error("fal.ai devolvió un tipo de imagen no permitido.");
+    const imagen = { base64: (await readBoundedImage(imageResponse)).toString("base64"), mime: contentType.toLowerCase() };
+    registrar("ok");
+    return imagen;
+  } catch (error) {
+    registrar(resultadoTelemetria(error));
+    throw error;
+  }
+}

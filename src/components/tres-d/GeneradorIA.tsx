@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Sparkles, LoaderCircle } from "lucide-react";
-import { AMBIENTES_RENDER, type AmbienteRender } from "@/lib/globos3d/render-ia";
+import { AMBIENTES_RENDER, AMBIENTE_POR_DEFECTO, type AmbienteRender } from "@/lib/globos3d/render-ia";
 import type { AspectoCaptura } from "./escena-globos";
 
 type Generada = { id: number; imagen: string; ambiente: AmbienteRender };
@@ -13,7 +13,7 @@ type Generada = { id: number; imagen: string; ambiente: AmbienteRender };
  * en la página; nada se guarda en el servidor.
  */
 export function GeneradorIA({ capturar, descripcion }: { capturar: () => { datos: string; aspecto: AspectoCaptura } | null; descripcion: string }) {
-  const [ambiente, setAmbiente] = useState<AmbienteRender>("salon_elegante");
+  const [ambiente, setAmbiente] = useState<AmbienteRender>(AMBIENTE_POR_DEFECTO);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generadas, setGeneradas] = useState<Generada[]>([]);

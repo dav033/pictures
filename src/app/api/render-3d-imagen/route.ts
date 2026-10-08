@@ -2,7 +2,7 @@ import { z } from "zod";
 import { conRegistro, decidir } from "@/lib/registro/servidor";
 import { generarConSempertexFlux } from "@/lib/ia/kagutsuchi/flux";
 import { aligerarImagenGenerada } from "@/lib/generacion/imagen-liviana";
-import { MAX_DESCRIPCION, promptRender3d, type AmbienteRender } from "@/lib/globos3d/render-ia";
+import { AMBIENTE_POR_DEFECTO, MAX_DESCRIPCION, promptRender3d, type AmbienteRender } from "@/lib/globos3d/render-ia";
 
 /**
  * Taller 3D → foto con IA. Recibe la captura del visor (JPEG o PNG) y una descripción corta de la decoración, y
@@ -13,7 +13,7 @@ import { MAX_DESCRIPCION, promptRender3d, type AmbienteRender } from "@/lib/glob
 const CuerpoSchema = z.object({
   render: z.string().regex(/^data:image\/(png|jpeg);base64,/).max(12_000_000),
   descripcion: z.string().max(MAX_DESCRIPCION * 2),
-  ambiente: z.enum(["salon_elegante", "fiesta_infantil", "boda_jardin", "estudio"]),
+  ambiente: z.enum(["igual_visor", "salon_elegante", "fiesta_infantil", "boda_jardin", "estudio"]).default(AMBIENTE_POR_DEFECTO),
   aspecto: z.enum(["3:2", "1:1", "2:3", "16:9"]).default("3:2"),
 }).strict();
 

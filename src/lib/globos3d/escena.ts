@@ -11,7 +11,8 @@ import { arbolEnIngles } from "./arboles-globos";
 import { sumarMateriales } from "./mezcla";
 import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
-import { siluetaEnIngles } from "./render-ia";
+import { PREFIJO_SALA, PREFIJO_UTILERIA, coloresEnIngles, enLista, siluetaEnIngles, tonoEnIngles } from "./render-ia";
+import { referenciaPorCodigo } from "../plan/referencia-sempertex";
 
 /**
  * Una **escena**: varias piezas del taller colocadas en una sala (el arco orgánico con dos columnas y una
@@ -509,35 +510,84 @@ export function piezaEnIngles(pieza: Pieza, caja: Caja): string {
 const LUGAR_EN: Readonly<Record<ParedSala, string>> = { fondo: "on the back wall", izquierda: "on the left wall", derecha: "on the right wall" };
 
 /**
- * La escena contada en inglés: cada pieza con dónde está (a la izquierda, al centro, colgada del techo…), las
- * copias juntas («two classic balloon columns…»). Sin colores: los pone `descripcionRender3d`.
+ * La escena contada en inglés como **inventario cerrado** (FLUX inventaba un quinto árbol, otra calabaza, una mesa
+ * de postres): cuántas piezas hay y de qué clase («Exactly 6 separate pieces: 3 × balloon tree, …»), cada una de
+ * izquierda a derecha con dónde está y sus colores (nombres en inglés de la tabla oficial; en los árboles por
+ * partes: tronco, copa, frutas), las repetidas como «the same as (1)», lo que va pegado a otra pieza aparte, la
+ * escenografía (paneles, mesas, tapete) junta en una frase y sin numerar, y la sala del visor (paredes y piso con su color) para el lugar «Igual al visor». El «nada más» lo cierra
+ * `descripcionRender3d`.
  */
 export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
-  const frases: string[] = [];
-  const vistos = new Map<string, { frase: string; cantidad: number; lugares: string[] }>();
+  const colorEn = (codigo: string) => referenciaPorCodigo(codigo)?.nombreEn ?? codigo;
+  const lista = (codigos: readonly string[]) => enLista([...new Set(codigos.map(colorEn))]);
+  const coloresDe = (pieza: Pieza, hecho: NodoArmado): string => {
+    if (pieza.tipo === "arbol_globos") {
+      const { tronco, copa } = pieza.arbol;
+      const partes = [`${lista(tronco.colores)} trunk${tronco.acento ? ` with small ${colorEn(tronco.acento.codigo)} accents` : ""}`];
+      if (copa.tipo === "palmera") partes.push(`${lista(copa.hojas.codigos)} fronds`, ...(copa.cocos ? [`${colorEn(copa.cocos.codigo)} coconuts`] : []));
+      else partes.push(`${lista(copa.colores)} canopy`, ...(copa.frutas ? [`${colorEn(copa.frutas.codigo)} balloon fruits`] : []));
+      return `with ${enLista(partes)}`;
+    }
+    // Por lo que se ve, no por unidades: un R-24 naranja pesa más que seis tubitos verdes del tallo.
+    const vista = (formatoId: string) => { const n = Number(/^(?:R|C|LOL)-(\d+)/.exec(formatoId)?.[1]); return n ? (n / 12) ** 2 : 0.3; };
+    const colores = coloresEnIngles(hecho.materiales.map((m) => ({ nombre: colorEn(m.codigo), cantidad: m.cantidad * vista(m.formatoId) })));
+    return colores ? `in ${colores}` : "";
+  };
+  // Clase corta de la pieza para el conteo: «a balloon tree with a column trunk…» → «balloon tree».
+  // « of » solo corta tras «balloon» («organic balloon piece of…»; «cluster of balloon eyeballs» queda entero).
+  const claseDe = (texto: string) => texto.replace(/^(an?|the) /, "").split(/,|\(| with | on | seen | made | \d/)[0]!.replace(/(balloon \w+) of .*$/, "$1").trim();
+  const conArticulo = (t: string) => `${/^[aeiou]/i.test(t) ? "an" : "a"} ${t}`;
+
+  type Entrada = { id: string; x: number; frase: string; clase: string; copias: number; padreId: string | null };
+  const sueltas: Entrada[] = [], pegadas: Entrada[] = [];
+  // La escenografía (paneles, mesas, tapete) no es decoración de globos: va junta en una frase, sin numerar.
+  let escenografia = 0;
   for (const nodo of escena.nodos) {
     const hecho = armada.porNodo.find((n) => n.id === nodo.id);
     if (!hecho || hecho.copias === 0) continue;
     const c = nodo.colocacion;
+    if (nodo.pieza.tipo === "escenografia") { escenografia += hecho.copias; continue; }
     const x = (hecho.caja.min.x + hecho.caja.max.x) / 2;
-    const lado = x < -escena.sala.anchoCm * 0.12 ? "on the left" : x > escena.sala.anchoCm * 0.12 ? "on the right" : "in the center";
-    const lugar = c.en === "piso" ? `standing ${lado}` : c.en === "pared" ? LUGAR_EN[c.pared] : c.en === "techo" ? "hanging from the ceiling" : c.en === "libre" ? `set on the arrangement ${lado}` : `attached to the ${escena.nodos.find((n) => n.id === c.padreId)?.pieza.tipo.replace("_", " ") ?? "structure"}`;
+    const lugar = c.en === "piso" ? "standing on the floor" : c.en === "pared" ? LUGAR_EN[c.pared] : c.en === "techo" ? "hanging from the ceiling" : c.en === "libre" ? "set on the arrangement" : "";
     // Lo orgánico, con su silueta vista de frente (si mira a la cámara): sin ella FLUX completaba una media guirnalda.
     const deFrente = (c.en === "pared" && c.pared === "fondo") || ((c.en === "piso" || c.en === "libre") && Math.abs(c.giroGrados) < 20);
     const silueta = deFrente && (nodo.pieza.tipo === "organico" || nodo.pieza.tipo === "arco_organico") && hecho.copias === 1 ? siluetaEnIngles(hecho.globos) : "";
-    const frase = `${piezaEnIngles(nodo.pieza, hecho.caja)}${silueta ? ` (${silueta})` : ""}`;
-    const clave = `${nodo.pieza.tipo}|${frase}|${c.en}`;
-    const previo = vistos.get(clave);
-    if (previo) { previo.cantidad += hecho.copias; previo.lugares.push(lugar); }
-    else vistos.set(clave, { frase, cantidad: hecho.copias, lugares: [lugar] });
+    const pieza = piezaEnIngles(nodo.pieza, hecho.caja);
+    const frase = [`${pieza}${silueta ? ` (${silueta})` : ""}`, lugar, coloresDe(nodo.pieza, hecho)].filter(Boolean).join(", ");
+    const entrada = { id: nodo.id, x, frase, clase: claseDe(pieza), copias: hecho.copias, padreId: c.en === "ancla" || c.en === "sobre" ? c.padreId : null };
+    (entrada.padreId ? pegadas : sueltas).push(entrada);
   }
-  for (const { frase, cantidad, lugares } of vistos.values()) {
-    const unicos = [...new Set(lugares)];
-    const lugar = unicos.length > 1 && unicos.every((l) => l.startsWith("standing")) ? "one at each side" : unicos.join(" and ");
-    frases.push(cantidad > 1 ? `${cantidad} × ${frase.replace(/^an? /, "")} (${lugar})` : `${frase} ${lugar}`);
-  }
-  const paredes = [escena.sala.mostrar.fondo ? "a back wall" : "", escena.sala.mostrar.techo ? "a ceiling" : ""].filter(Boolean).join(" and ");
-  return `A balloon decoration set in a room${paredes ? ` with ${paredes}` : ""}: ${frases.join("; ")}`;
+  sueltas.sort((a, b) => a.x - b.x);
+
+  const conteo = new Map<string, number>();
+  for (const s of sueltas) conteo.set(s.clase, (conteo.get(s.clase) ?? 0) + s.copias);
+  const total = sueltas.reduce((suma, s) => suma + s.copias, 0);
+  const numero = new Map(sueltas.map((s, i) => [s.id, i + 1]));
+  const primera = new Map<string, number>();
+  const items = sueltas.map((s, i) => {
+    const igual = primera.get(s.frase);
+    if (igual === undefined) primera.set(s.frase, i + 1);
+    const texto = igual === undefined ? s.frase : `the same as (${igual})`;
+    return `(${i + 1}) ${s.copias > 1 ? `${s.copias} × ` : ""}${texto}`;
+  });
+  const partes = [
+    total ? `A balloon decoration in a room. Exactly ${total} separate ${total === 1 ? "piece" : "pieces"}: ${[...conteo].map(([clase, n]) => `${n} × ${clase}`).join(", ")}` : "A balloon decoration in a room",
+    items.length ? `From left to right: ${items.join("; ")}` : "",
+    ...pegadas.map((p) => {
+      const padre = numero.get(p.padreId ?? "");
+      return `Attached to ${padre ? `piece (${padre})` : "the structure"}: ${p.copias > 1 ? `${p.copias} × ` : ""}${p.frase.replace(/^an? /, "")}`;
+    }),
+    escenografia ? `${PREFIJO_UTILERIA} ${escenografia} party ${escenografia === 1 ? "prop" : "props"} (backdrop panels, tables or rug), exactly as in the input` : "",
+  ];
+  const { tonos, mostrar } = escena.sala;
+  const paredes = [mostrar.fondo ? "back" : "", mostrar.laterales ? "side" : ""].filter(Boolean);
+  const sala = [
+    paredes.length ? (mostrar.laterales ? `${tonoEnIngles(tonos.paredes)} ${paredes.join(" and ")} walls` : conArticulo(`${tonoEnIngles(tonos.paredes)} back wall`)) : "",
+    mostrar.piso ? conArticulo(`${tonoEnIngles(tonos.piso)} floor`) : "",
+    mostrar.techo ? conArticulo(`${tonoEnIngles(tonos.techo)} ceiling`) : "",
+  ].filter(Boolean);
+  if (sala.length) partes.push(`${PREFIJO_SALA} ${enLista(sala)}, all plain and empty`);
+  return partes.filter(Boolean).join(". ");
 }
 
 // ----------------------------------------------------------------------------------------------------------
