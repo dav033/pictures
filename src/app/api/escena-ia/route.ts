@@ -2,9 +2,9 @@ import { ThinkingLevel, type Content, type Part } from "@google/genai";
 import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { conRegistro, decidir } from "@/lib/registro/servidor";
-import { DECLARACIONES_ESCENA, aplicarHerramienta, idsDeEscena } from "@/lib/globos3d/herramientas-escena";
+import { DECLARACIONES_ESCENA, MAX_NODOS, TIPOS_PIEZA, aplicarHerramienta, idsDeEscena } from "@/lib/globos3d/herramientas-escena";
 import type { Colocacion, Escena } from "@/lib/globos3d/escena";
-import type { Pieza, TipoPieza } from "@/lib/globos3d/piezas";
+import type { Pieza } from "@/lib/globos3d/piezas";
 
 /**
  * Taller 3D → «Pídele a la IA»: el usuario escribe en lenguaje natural («un arco orgánico rosado y dorado de 3 m,
@@ -20,7 +20,6 @@ const MAX_LLAMADAS = 24;
 const TOPE_POR_HORA = 60;
 let ventana = { desde: Date.now(), usadas: 0 };
 
-const TIPOS: readonly TipoPieza[] = ["columna", "arco", "pared_malla", "pared_trenzas", "organico", "decoracion", "arco_organico", "guirnalda", "escenografia", "globo"];
 const Hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const Numero = z.number().finite();
 const Vec = z.object({ x: Numero, y: Numero, z: Numero });
@@ -34,8 +33,11 @@ const ColocacionSchema: z.ZodType<Colocacion> = z.discriminatedUnion("en", [
   z.object({ en: z.literal("sobre"), padreId: z.string().min(1).max(80), puntoCm: Vec, normal: Vec, giroGrados: Numero }),
 ]);
 
-/** La pieza la arma el taller (que ya valida sus datos al armar): aquí basta con que sea un objeto de un tipo conocido. */
-const PiezaSchema = z.custom<Pieza>((v) => typeof v === "object" && v !== null && (TIPOS as readonly unknown[]).includes((v as { tipo?: unknown }).tipo), "Pieza desconocida");
+/**
+ * La pieza la arma el taller (que ya valida sus datos al armar): aquí basta con que sea un objeto de un tipo conocido.
+ * Todos los tipos: una escena con formas, letras, metalizados, murales, techo o árboles (las de la biblioteca) también vale.
+ */
+const PiezaSchema = z.custom<Pieza>((v) => typeof v === "object" && v !== null && (TIPOS_PIEZA as readonly unknown[]).includes((v as { tipo?: unknown }).tipo), "Pieza desconocida");
 
 const EscenaSchema: z.ZodType<Escena> = z.object({
   sala: z.object({
@@ -43,7 +45,7 @@ const EscenaSchema: z.ZodType<Escena> = z.object({
     tonos: z.object({ piso: Hex, paredes: Hex, techo: Hex }),
     mostrar: z.object({ piso: z.boolean(), fondo: z.boolean(), laterales: z.boolean(), techo: z.boolean() }),
   }),
-  nodos: z.array(z.object({ id: z.string().min(1).max(80), nombre: z.string().max(120), pieza: PiezaSchema, colocacion: ColocacionSchema })).max(80),
+  nodos: z.array(z.object({ id: z.string().min(1).max(80), nombre: z.string().max(120), pieza: PiezaSchema, colocacion: ColocacionSchema })).max(MAX_NODOS),
 });
 
 const CuerpoSchema = z.object({
@@ -54,12 +56,20 @@ const CuerpoSchema = z.object({
 
 const SISTEMA = `Eres el asistente del taller 3D de decoración con globos Sempertex. Armas y cambias la escena SOLO con las herramientas; no generas imágenes.
 Sala (cm): x de izquierda (−) a derecha (+) desde el centro; z de fondo (−) a frente (+); la pared del fondo está en z = −fondo/2. Lo que va delante de la pared del fondo suele ir a z ≈ −fondo/2 + 100.
-Piezas y rangos: columna (alto 60–500; R-5, R-9, R-12 o R-18), arco clásico (ancho 100–500, alto 100–350), arco_organico (ancho entre patas 150–500, alto 150–320; colores con pesos; flores opcionales), guirnalda (largo 100–800, caída 0–150; va en una pared con el borde de abajo a ~180–240), pared_malla (ancho 100–600, alto 100–300), decoracion (flores, moños, estrellas: del techo van volteadas; repetidas en las anclas de otra pieza con donde.en = "ancla"). agregar_del_catalogo trae decoraciones reales.
-Decoraciones EN un punto de una estructura (la estructura es un lienzo): poner_sobre con padre_id + altura_cm desde el piso + lado (frente, izquierda, derecha, atras) o angulo_grados alrededor (para repartir alrededor de una columna) + x_cm a lo ancho (en un arco, una guirnalda o una pared; en un arco las patas están en ±ancho/2). Queda apoyada en los globos mirando hacia fuera. Para llevar una que ya existe a otro punto u otra estructura: mover_sobre (si está repetida en varias anclas, indica copia; ver_escena lista las copias con su altura). Para sacar UNA copia de un reparto sin mover las demás: separar_copia. Usa agregar_pieza con donde.en = "ancla" solo para repartir muchas iguales a lo largo de una pieza.
-Colores: código Sempertex o nombre («rosado pastel», «dorado», «blanco»). Si una herramienta responde error, corrige con su sugerencia y reintenta una vez.
-Reglas:
+
+QUÉ ES CADA COSA (no las confundas):
+- «columna» a secas = columna (clásica de cuartetos, lisa). «columna orgánica» (o «de varios tamaños», «tipo burbuja», «inclinada/torcida») = columna_organica. Lo mismo: «guirnalda orgánica» = guirnalda_organica (la guirnalda a secas es la clásica de cuartetos), «arco orgánico» = arco_organico, «semiarco» = semiarco_organico, «aro» = aro_organico, «marco» = marco_organico.
+- También creas de cero: pared_trenzas, forma (figura corazon/estrella/nube/castillo… rellena, esfera o cono), letras (texto), metalizado (foil: número, letras, corazón, estrella…), mural, techo, arbol (palmera), globo suelto, decoracion (flor, moño, estrella). Cada una con sus parámetros: alto_cm, ancho_cm, grosor_cm, inclinacion_cm, colores (con acabado: «rojo metal», «verde reflex»), pesos (proporción de cada color en lo orgánico), tamanos (R-24, R-18, R-12, R-9, R-5 que se mezclan), flores.
+- Biblioteca: «toma/usa X de la biblioteca», «como la idea Y», «la columna con flores de la biblioteca» → buscar_en_biblioteca y luego insertar_de_biblioteca con el id elegido (queda como piezas normales); si además pide cambios («más alto», «en dorado», «con flores»), cámbiala después con cambiar_pieza sobre el id principal que devuelve. Si hay varias que encajan, usa la primera que coincida con lo pedido y dilo.
+Decoraciones EN un punto de una estructura (la estructura es un lienzo): poner_sobre con padre_id + altura_cm desde el piso + lado (frente, izquierda, derecha, atras) o angulo_grados alrededor + x_cm a lo ancho (en un arco las patas están en ±ancho/2). Para llevar una que ya existe a otro punto: mover_sobre (si está repetida en varias anclas, indica copia). separar_copia saca UNA copia de un reparto. agregar_pieza con donde.en = "ancla" solo para repartir muchas iguales a lo largo de una pieza.
+Colores: código Sempertex o nombre («rosado pastel», «dorado»). Si una herramienta responde error, corrige con su sugerencia y reintenta una vez.
+
+REGLAS:
 - Es CRUD: «agrega X» suma con agregar_pieza; no quites ni rehagas lo que no se pidió. usar_preset solo si piden empezar de cero con una escena de partida.
-- Antes de cambiar, mover, girar, duplicar o quitar algo que ya existe, llama ver_escena.
+- NUNCA crees piezas que no se pidieron. Si el pedido es solo de color («cámbiame todo a rojo y verde», «ponlo en dorado», «cambia el rosado por azul») SOLO recolorea: recolorear_escena (todas, o las de ids) o cambiar_pieza con colores en una sola pieza. Jamás agregues piezas para «mostrar» colores.
+- Corrección = REEMPLAZO en la misma vuelta: si el usuario corrige lo que hiciste («no normales, orgánicas», «no, la quería de malla»), usa reemplazar_pieza en cada pieza a corregir (mismo sitio, mismos colores) — nunca la quites sin poner la buena. Si ya la quitaste en un turno anterior, vuelve a ponerla del tipo correcto donde estaba. Mira el historial para saber qué hiciste.
+- Antes de cambiar, mover, girar, duplicar, reemplazar o quitar algo que ya existe, llama ver_escena.
+- No encimes piezas: si el sitio pedido ya está ocupado (ver_escena da x, z), corre la nueva al lado; si es evidente que va EN LUGAR de la que está, usa reemplazar_pieza (o quita la vieja si la nueva viene de la biblioteca). Al insertar de la biblioteca pasa «donde» desde el principio en vez de moverla después.
 - «A los lados» de un arco de ancho A: x = ±(A/2 + 75) (más cerca rozan sus patas), a la misma z del arco. Todo dentro de la sala.
 - Pregunta solo si falta algo esencial que no puedas suponer; si no, supón valores razonables.
 - Al terminar, responde en español en 1 a 3 frases cortas qué hiciste (y lo que no se pudo).`;

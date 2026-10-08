@@ -1,8 +1,17 @@
 import { z } from "zod";
-import { TABLA_SEMPERTEX, referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
-import { labDeRgb } from "@/lib/rag/catalog/similitud-color";
+import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { paraGoogleSchema } from "@/lib/ia/nucleo/esquema-google";
 import { FORMATOS_GLOBO, NOMBRE_FAMILIA, coloresDelFormato, formatoPorId } from "./formatos";
+import { OCASIONES, TIPOS_ITEM, insertarEnEscena, dentroDeSala, type TipoItem } from "./biblioteca";
+import {
+  ErrorHerramienta, FAMILIAS_POR_PALABRA, codigosDePedido, coloresDeDato, conAcabado, fallar, nombreColor, nombreDe, palabras, referenciaDePedido, resolverColor, resolverColorFlexible, resolverColorOrganico, resolverColores,
+} from "./herramientas-escena-colores";
+import {
+  COLORES_FOIL, FIGURAS, FORMAS_METALIZADO, MODELOS, NOMBRE_TIPO, RANGOS_ESTRUCTURA, TECNICAS, TIPOS_ESTRUCTURA,
+  ajustarOrganico, coloresOrganicosPedidos, crearEstructura, type LugarPieza,
+} from "./herramientas-escena-estructuras";
+import { coloresDePieza, recolorearConPaleta, recolorearConPedidos } from "./herramientas-escena-recolor";
+import { buscarEnBiblioteca, describirItem, itemDeBiblioteca } from "./herramientas-escena-biblioteca";
 import { PATRONES_COLUMNA, type PatronColumna } from "./columnas";
 import { PATRONES_MALLA, type PatronMalla } from "./paredes";
 import type { FormaArco } from "./arcos";
@@ -10,10 +19,10 @@ import { DECORACIONES_PREDEFINIDAS, decoracionPredefinida } from "./figuras";
 import { COLUMNA_QUINCE_AZUL } from "./organico-presets";
 import { CATALOGO_DECORACIONES } from "./catalogo-fotos";
 import { reemplazarColor } from "./recolorear";
-import type { ColorOrganico } from "./organico";
-import { nombreForma } from "./formas";
-import { nombreMetalizado } from "./metalizados";
-import type { Pieza, PiezaArmada, TipoPieza } from "./piezas";
+import { nombreForma, type ColoresForma, type OpcionesForma } from "./formas";
+import { opcionesArcoOrganico } from "./formas-escena";
+import { COLORES_METALIZADO, PULGADAS_METALIZADO, nombreMetalizado } from "./metalizados";
+import { armarPieza, type Pieza, type PiezaArmada, type TipoPieza } from "./piezas";
 import { armarEscena, descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo, NOMBRE_PARED, type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoEscena, type ParedSala, type Sala } from "./escena";
 import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
 import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, guirnaldaFeston, piezaNueva } from "./escenas-presets";
@@ -35,6 +44,17 @@ import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, 
  *
  * Medidas en cm. Colores por código Sempertex («609») o por nombre («rosado pastel», «dorado»): se buscan en la
  * tabla oficial y solo valen los que se fabrican en el formato de la pieza.
+ *
+ * Además (2026-10-08, lo que pidió el usuario tras probar la IA):
+ * - Crear de cero cualquier estructura que el taller sabe armar (`TIPOS_ESTRUCTURA` en herramientas-escena-estructuras.ts:
+ *   columna/guirnalda/semiarco/aro/marco orgánicos, pared de trenzas, formas, letras, metalizados, murales, techo,
+ *   árboles, globo suelto) con sus parámetros; «columna» a secas es la clásica y `columna_organica` la orgánica.
+ * - `reemplazar_pieza`: la corrección («no normales, orgánicas») en una llamada: mismo id, sitio, colores y alto.
+ * - `recolorear_escena`: «todo a rojo y verde» recolorea todas (o las indicadas) respetando el patrón de cada una
+ *   (herramientas-escena-recolor.ts); nunca agrega ni quita piezas.
+ * - `buscar_en_biblioteca` e `insertar_de_biblioteca` (herramientas-escena-biblioteca.ts): cualquier item de la
+ *   biblioteca como base, puesto como nodos normales que luego cambia `cambiar_pieza` (un orgánico se estira con
+ *   alto/ancho/grosor y lo que va sobre él lo acompaña).
  */
 
 // ----------------------------------------------------------------------------------------------------------
@@ -62,10 +82,19 @@ export const FORMATOS_POR_TIPO: Readonly<Partial<Record<TipoPieza, readonly stri
   pared_malla: ["LOL-12", "LOL-6"],
 };
 
-/** Formatos que usa el arco orgánico (`INFLADOS_ORGANICO` de formas-escena.ts). */
-const FORMATOS_ORGANICO = ["R-5", "R-9", "R-12", "R-18", "R-24"] as const;
+/** Todos los tipos de pieza del taller (los que puede traer una escena, también la de la biblioteca). */
+export const TIPOS_PIEZA = [
+  "columna", "arco", "pared_malla", "pared_trenzas", "organico", "decoracion", "arco_organico", "guirnalda", "escenografia", "globo",
+  "forma", "letras", "metalizado", "mural", "techo", "arbol_globos",
+] as const satisfies readonly TipoPieza[];
 
-const TIPOS_NUEVOS = ["columna", "arco", "arco_organico", "guirnalda", "pared_malla", "decoracion"] as const;
+/** Los tipos con su pieza de partida aquí; los demás de `TIPOS_ESTRUCTURA` los arma `crearEstructura`. */
+const TIPOS_CLASICOS = ["columna", "arco", "arco_organico", "guirnalda", "pared_malla", "decoracion"] as const;
+type TipoClasico = (typeof TIPOS_CLASICOS)[number];
+/** Todo lo que la IA puede crear de cero (y poner en lugar de otra pieza). */
+const TIPOS_NUEVOS = [...TIPOS_CLASICOS, ...TIPOS_ESTRUCTURA] as const;
+type TipoNuevo = (typeof TIPOS_NUEVOS)[number];
+const esClasico = (t: TipoNuevo): t is TipoClasico => (TIPOS_CLASICOS as readonly string[]).includes(t);
 const PATRONES_TRENZA_IDS = PATRONES_COLUMNA.map((p) => p.id);
 const PATRONES_MALLA_IDS = PATRONES_MALLA.map((p) => p.id);
 const PATRONES = [...PATRONES_TRENZA_IDS, ...PATRONES_MALLA_IDS.filter((p) => !(PATRONES_TRENZA_IDS as readonly string[]).includes(p))] as [string, ...string[]];
@@ -73,11 +102,27 @@ const DECORACION_IDS = DECORACIONES_PREDEFINIDAS.map((d) => d.id) as [string, ..
 const PRESET_IDS = ESCENAS_PREDEFINIDAS.map((p) => p.id) as [string, ...string[]];
 const CATALOGO_IDS = CATALOGO_DECORACIONES.map((d) => d.id) as [string, ...string[]];
 
-const NOMBRE_TIPO: Readonly<Record<TipoPieza, string>> = {
-  columna: "columna", arco: "arco", pared_malla: "pared de malla", pared_trenzas: "pared de trenzas", organico: "pieza orgánica",
-  decoracion: "decoración", arco_organico: "arco orgánico", guirnalda: "guirnalda", escenografia: "escenografía", globo: "globo suelto",
-  forma: "forma de globos", letras: "letras de globos", metalizado: "globo metalizado",
-  mural: "mural pixelado", techo: "decoración de techo", arbol_globos: "palmera o árbol de globos",
+/** Qué es cada tipo que se puede crear (para la descripción de la herramienta). */
+const QUE_ES_TIPO: Readonly<Record<TipoNuevo, string>> = {
+  columna: "columna CLÁSICA de cuartetos (trenza recta y lisa; NO es orgánica)",
+  arco: "arco CLÁSICO de cuartetos",
+  arco_organico: "arco orgánico de dos patas (globos de varios tamaños)",
+  guirnalda: "guirnalda CLÁSICA (trenza de cuartetos) en festón o recta",
+  pared_malla: "pared/mural de Link-O-Loon",
+  decoracion: "flor/moño/estrella de globos (decoracion_id)",
+  columna_organica: "columna ORGÁNICA (globos de varios tamaños, gruesa abajo; inclinacion_cm la inclina)",
+  guirnalda_organica: "guirnalda ORGÁNICA (racimo de varios tamaños) en festón; va en pared",
+  semiarco_organico: "semiarco orgánico (sube del piso y se curva hacia un lado)",
+  aro_organico: "aro orgánico (círculo de globos, ancho_cm = diámetro)",
+  marco_organico: "marco orgánico rectangular (arco cuadrado de patas rectas)",
+  pared_trenzas: "pared de trenzas de cuartetos",
+  forma: "forma de globos: figura corazon/estrella/circulo/aro/ancla/cruz/nube/castillo rellena (tecnica celdas, malla u organico), o esfera, o cono",
+  letras: "letras o números de globos (texto; tecnica cuartetos, hilera o tubito)",
+  metalizado: "globo metalizado de foil (forma_metalizado, texto, pulgadas, color_metalizado)",
+  mural: "mural pixelado (modelo)",
+  techo: "decoración de techo (modelo: festones, red de racimos, tiras, helio)",
+  arbol: "palmera o árbol de globos (modelo)",
+  globo: "globo suelto (formato, un color)",
 };
 
 // ----------------------------------------------------------------------------------------------------------
@@ -101,19 +146,30 @@ const DondeSchema = z.object({
 type Donde = z.infer<typeof DondeSchema>;
 
 const ColoresSchema = z.array(z.string().min(1).max(60)).min(1).max(6)
-  .describe("Colores en orden: código Sempertex («609») o nombre («rosado pastel», «dorado», «blanco»). Solo valen los que se fabrican en el formato de la pieza.");
+  .describe("Colores en orden: código Sempertex («609») o nombre, con acabado si se quiere («rosado pastel», «dorado», «rojo metal», «verde reflex»). En columna, arco, guirnalda y pared_malla solo valen los que se fabrican en su formato; en lo demás, si no viene se usa el más parecido y se avisa.");
 
 const PropiedadesSchema = z.object({
   nombre: z.string().min(1).max(60).optional().describe("Nombre visible en la lista («Columna izquierda»)"),
-  formato: z.string().optional().describe("columna/arco: R-5, R-9, R-12 o R-18; guirnalda: R-5, R-9 o R-12; pared_malla: LOL-12 o LOL-6"),
-  alto_cm: z.number().optional().describe("columna 60–500; arco 100–350; arco_organico 150–320; pared 100–300"),
-  ancho_cm: z.number().optional().describe("arco 100–500; arco_organico (entre patas) 150–500; guirnalda (de punta a punta) 100–800; pared 100–600"),
-  caida_cm: z.number().optional().describe("guirnalda: cuánto cuelga en el medio, 0–150 (0 = recta)"),
+  formato: z.string().optional().describe("columna/arco: R-5, R-9, R-12 o R-18; guirnalda: R-5, R-9 o R-12; pared_malla: LOL-12 o LOL-6; forma: celdas R-9 por defecto, malla LOL-12, esfera/cono R-12; letras R-5; globo R-24 por defecto"),
+  alto_cm: z.number().optional().describe("columna 60–500; arco 100–350; arco_organico 150–320; columna_organica 80–320; semiarco_organico 100–300; marco_organico 150–320; pared 100–300; forma 40–300; cono 40–250; letras (alto de cada letra) 20–200; arbol 100–400; una pieza orgánica que ya existe 40–400 (se estira)"),
+  ancho_cm: z.number().optional().describe("arco 100–500; arco_organico (entre patas) 150–500; guirnalda y guirnalda_organica (de punta a punta) 100–800; semiarco_organico 60–300; aro_organico (diámetro) 80–300; marco_organico 120–500; pared 100–600; forma 40–300; esfera (diámetro) 30–200; una pieza orgánica que ya existe 30–800"),
+  caida_cm: z.number().optional().describe("guirnalda y guirnalda_organica: cuánto cuelga en el medio, 0–150 (0 = recta)"),
+  grosor_cm: z.number().optional().describe("orgánicas: diámetro del cuerpo de globos (columna_organica 30–120, 70 por defecto; guirnalda_organica 20–90; semiarco 30–110; aro 20–70; marco 30–100; arco_organico y piezas orgánicas que ya existen 20–120)"),
+  inclinacion_cm: z.number().optional().describe("columna_organica: cuánto se corre la punta a la derecha (− a la izquierda), −120 a 120; 0 = recta"),
+  tamanos: z.array(z.string()).max(5).optional().describe("orgánicas: tamaños de globo que se mezclan, de R-24, R-18, R-12, R-9, R-5 (p. ej. [\"R-18\",\"R-12\",\"R-5\"]); si falta, los que caben en el grosor"),
+  acabado: z.string().max(20).optional().describe("acabado para los colores que no traen uno: pastel, fashion, metal, reflex, satin, silk, neon, cristal"),
+  texto: z.string().max(24).optional().describe("letras: lo que dicen («FELIZ», «ANA»); metalizado: número o letras («5», «15», «HBD»)"),
+  figura: z.enum(FIGURAS).optional().describe("forma: corazon, estrella, circulo, aro, ancla, cruz, nube, castillo (rellenas), esfera o cono"),
+  tecnica: z.enum(TECNICAS).optional().describe("forma rellena: celdas (por defecto), malla u organico; letras: cuartetos (por defecto), hilera o tubito"),
+  forma_metalizado: z.enum(FORMAS_METALIZADO).optional().describe("metalizado: numero, letra, letras, corazon, estrella, redondo, luna, flor, nube"),
+  pulgadas: z.number().optional().describe(`metalizado: ${PULGADAS_METALIZADO.join(", ")}`),
+  color_metalizado: z.enum(COLORES_FOIL).optional().describe("metalizado: color del foil (o pásalo en colores y se elige el foil más parecido)"),
+  modelo: z.enum(MODELOS).optional().describe("mural, techo o arbol: el modelo de partida, que luego se recolorea con colores"),
   forma: z.enum(["redondo", "parabolico", "rectangular"]).optional().describe("arco clásico"),
   patron: z.enum(PATRONES).optional().describe("trenza (columna, arco, guirnalda): un_color (1 color), dos_colores (2), espiral (4), salvavidas (bloques, 2+), zigzag (4); pared_malla: un_color, damero (2), rombos (4), franjas (4). Si falta se deduce del número de colores."),
   colores: ColoresSchema.optional(),
-  pesos: z.array(z.number()).max(6).optional().describe("arco_organico: proporción de cada color, en el orden de «colores»"),
-  flores: z.boolean().optional().describe("arco_organico: flores artificiales en los huecos"),
+  pesos: z.array(z.number()).max(6).optional().describe("orgánicas (arco_organico, columna_organica, guirnalda_organica… y piezas orgánicas que ya existen) y formas: proporción de cada color 0–100, en el orden de «colores»"),
+  flores: z.boolean().optional().describe("orgánicas: flores artificiales en los huecos"),
   decoracion_id: z.enum(DECORACION_IDS).optional().describe(`decoracion: cuál (${DECORACIONES_PREDEFINIDAS.map((d) => `${d.id} = ${d.nombre}`).join("; ")})`),
 });
 type Propiedades = z.infer<typeof PropiedadesSchema>;
@@ -134,7 +190,7 @@ const ESQUEMAS = {
   ver_escena: z.object({}),
   usar_preset: z.object({ id: z.enum(PRESET_IDS).describe(ESCENAS_PREDEFINIDAS.map((p) => `${p.id}: ${p.nombre}`).join("; ")) }),
   agregar_pieza: PropiedadesSchema.extend({
-    tipo: z.enum(TIPOS_NUEVOS).describe("columna: columna clásica de cuartetos; arco: arco clásico de cuartetos; arco_organico: globos de varios tamaños; guirnalda: trenza en festón o recta; pared_malla: mural de Link-O-Loon; decoracion: flor/moño/estrella de globos"),
+    tipo: z.enum(TIPOS_NUEVOS).describe(TIPOS_NUEVOS.map((t) => `${t}: ${QUE_ES_TIPO[t]}`).join("; ")),
     donde: DondeSchema.optional(),
   }),
   mover_pieza: z.object({ id: IdSchema, donde: DondeSchema }),
@@ -181,7 +237,32 @@ const ESQUEMAS = {
     id: IdSchema.describe("id de la decoración repetida en varias anclas"),
     copia: z.number().int().min(0).describe("cuál copia (0 = la primera; ver_escena las lista con su altura)"),
   }),
+  reemplazar_pieza: PropiedadesSchema.extend({
+    id: IdSchema.describe("id de la pieza que se cambia por otra"),
+    tipo: z.enum(TIPOS_NUEVOS).describe("el tipo nuevo (los mismos de agregar_pieza)"),
+  }),
+  recolorear_escena: z.object({
+    colores: ColoresSchema.optional().describe("la paleta nueva: en cada pieza, el color que más globos lleva pasa al primero, el segundo al segundo… (si la paleta es más corta, se reparte en orden y el patrón se mantiene)"),
+    reemplazar: z.array(z.object({ de: z.string().min(1).max(60), a: z.string().min(1).max(60) })).max(6).optional().describe("en vez de paleta: cambia un color por otro donde aparezca («rosado» → «azul»)"),
+    ids: z.array(IdSchema).max(80).optional().describe("solo estas piezas (por defecto, todas las que tienen globos)"),
+    acabado: z.string().max(20).optional().describe("acabado para los colores que no traen uno (metal, pastel, reflex…)"),
+  }),
+  buscar_en_biblioteca: z.object({
+    texto: z.string().max(80).optional().describe("lo que se busca, en palabras («arco orgánico», «columna con flores», «calabaza halloween»)"),
+    tipo: z.enum(TIPOS_ITEM.map((t) => t.id) as [TipoItem, ...TipoItem[]]).optional().describe("escena (completa), conjunto (estructura con sus decoraciones), estructura (sola), decoracion, utileria"),
+    ocasion: z.enum(OCASIONES as [string, ...string[]]).optional(),
+    colores: z.array(z.string().min(1).max(60)).max(4).optional().describe("que lleve estos colores (nombre o código)"),
+    tipo_pieza: z.enum(TIPOS_PIEZA).optional().describe("el tipo de su estructura (organico = columnas, arcos, guirnaldas y semiarcos orgánicos de las ideas)"),
+    limite: z.number().int().min(1).max(15).optional().describe("cuántos (8 por defecto)"),
+  }),
+  insertar_de_biblioteca: z.object({
+    id: z.string().min(1).max(160).describe("id del item (los da buscar_en_biblioteca)"),
+    donde: DondeSchema.optional().describe("dónde va la pieza principal; si falta, donde estaba en su escena"),
+    nombre: z.string().min(1).max(60).optional().describe("nombre para la pieza principal"),
+  }),
 } as const;
+
+export { resolverColor, type ColorResuelto } from "./herramientas-escena-colores";
 
 export type NombreHerramienta = keyof typeof ESQUEMAS;
 export const NOMBRES_HERRAMIENTAS = Object.keys(ESQUEMAS) as NombreHerramienta[];
@@ -201,6 +282,10 @@ const DESCRIPCIONES: Readonly<Record<NombreHerramienta, string>> = {
   poner_sobre: "Pone una decoración nueva SOBRE una estructura (columna, arco, aro, guirnalda, pared de globos) en el punto que se describe con altura, lado o ángulo y corrimiento: queda apoyada en los globos mirando hacia fuera. No toca lo demás.",
   mover_sobre: "Mueve una decoración que ya existe a otro punto de una estructura (la misma u otra), descrito igual que en poner_sobre. Si está repetida en varias anclas, mueve solo la copia indicada (las demás se quedan).",
   separar_copia: "Separa UNA copia de una decoración repetida en varias anclas en una pieza propia (en el mismo sitio), para moverla o quitarla sola. Las demás copias se quedan.",
+  reemplazar_pieza: "Cambia una pieza por otra de OTRO tipo en una sola llamada: mismo sitio, mismo id (lo que cuelga de ella se queda) y sus mismos colores si no se pasan otros. Para «no normales, orgánicas»: reemplazar_pieza con tipo columna_organica en cada columna.",
+  recolorear_escena: "Recolorea TODAS las piezas (o las de ids) de una vez respetando el patrón de cada una, o cambia un color por otro en todo. Nunca agrega ni quita piezas. Para «todo a rojo y verde» o «cambia el rosado por azul».",
+  buscar_en_biblioteca: "Busca en la Biblioteca del taller (escenas, estructuras con sus decoraciones, estructuras, decoraciones, utilería, ideas Sempertex): devuelve una lista corta con id y resumen. No cambia la escena.",
+  insertar_de_biblioteca: "Pone un item de la biblioteca en la escena como piezas normales y editables (una estructura con sus decoraciones, una pieza o una escena entera). Devuelve los ids: después se cambia con cambiar_pieza (más alta, otro color, con flores…).",
 };
 
 /** Una declaración de función para Gemini (`functionDeclarations` con `parametersJsonSchema`). */
@@ -211,130 +296,6 @@ export const DECLARACIONES_ESCENA: readonly DeclaracionHerramienta[] = NOMBRES_H
   description: DESCRIPCIONES[nombre],
   parametersJsonSchema: paraGoogleSchema(z.toJSONSchema(ESQUEMAS[nombre], { target: "draft-7" })) as Record<string, unknown>,
 }));
-
-// ----------------------------------------------------------------------------------------------------------
-// Colores
-// ----------------------------------------------------------------------------------------------------------
-
-class ErrorHerramienta extends Error {}
-const fallar = (mensaje: string): never => { throw new ErrorHerramienta(mensaje); };
-
-const plegar = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-const VACIAS = new Set(["de", "del", "la", "el", "color", "globo", "globos", "tono", "y", "en"]);
-/** Variantes de una palabra de color a la forma de la tabla. */
-const VARIANTES: Readonly<Record<string, string>> = {
-  rosada: "rosado", blanca: "blanco", dorada: "dorado", oro: "dorado", plateado: "plata", plateada: "plata", roja: "rojo", amarilla: "amarillo",
-  negra: "negro", morado: "violeta", morada: "violeta", purpura: "violeta", anaranjado: "naranja", marron: "cafe", champagne: "champana",
-  verdes: "verde", azules: "azul", rosados: "rosado", rosadas: "rosado", blancos: "blanco", blancas: "blanco", dorados: "dorado", doradas: "dorado",
-};
-/** Palabras de acabado: eligen la familia. */
-const FAMILIAS_POR_PALABRA: Readonly<Record<string, readonly string[]>> = {
-  pastel: ["pastelMate", "pastelDusk"], mate: ["pastelMate"], dusk: ["pastelDusk"], metal: ["metal"], metalico: ["metal"], metalica: ["metal"],
-  metalizado: ["metal"], metalizada: ["metal"], satin: ["satin"], satinado: ["satin"], satinada: ["satin"], reflex: ["reflex"], cromado: ["reflex"],
-  cromada: ["reflex"], espejo: ["reflex"], silk: ["silk"], seda: ["silk"], neon: ["neon"], fluorescente: ["neon"], fashion: ["fashion"],
-};
-/** Palabras que traen color y acabado a la vez. */
-const PISTAS: Readonly<Record<string, { color: string; familias: readonly string[] }>> = { celeste: { color: "azul", familias: ["pastelMate"] } };
-/** Ante la duda, la familia más común en decoración. */
-const PRIORIDAD_FAMILIA = ["fashion", "pastelMate", "metal", "reflex", "satin", "silk", "pastelDusk", "neon", "cristal"];
-
-const palabras = (texto: string) => plegar(texto).split(/[^a-z0-9]+/).filter((p) => p && !VACIAS.has(p)).map((p) => VARIANTES[p] ?? p);
-const nombreDe = (r: Pick<ReferenciaSempertex, "codigo" | "nombreCompleto">) => `${r.codigo} ${r.nombreCompleto}`;
-
-function distanciaLab(a: string, b: string): number {
-  const lab = (hex: string) => labDeRgb(parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16));
-  const [l1, a1, b1] = lab(a), [l2, a2, b2] = lab(b);
-  return Math.hypot(l1 - l2, a1 - a2, b1 - b2);
-}
-
-/** El color del formato más parecido (por el color del globo inflado). */
-function masParecido(ref: ReferenciaSempertex, formatoId: string): ReferenciaSempertex | undefined {
-  return coloresDelFormato(formatoId).filter((r) => r.codigo !== ref.codigo).sort((x, y) => distanciaLab(ref.hexGlobo, x.hexGlobo) - distanciaLab(ref.hexGlobo, y.hexGlobo))[0];
-}
-
-/** Busca un color por nombre en toda la tabla; devuelve el mejor y los otros que también encajan igual de bien. */
-function buscarPorNombre(pedido: string): { mejor: ReferenciaSempertex; otros: ReferenciaSempertex[] } | null {
-  const tokens = palabras(pedido);
-  const familias = new Set<string>();
-  const color: string[] = [];
-  for (const t of tokens) {
-    const pista = PISTAS[t];
-    if (pista) { color.push(pista.color); if (!tokens.some((x) => FAMILIAS_POR_PALABRA[x])) pista.familias.forEach((f) => familias.add(f)); continue; }
-    const fam = FAMILIAS_POR_PALABRA[t];
-    if (fam) fam.forEach((f) => familias.add(f)); else color.push(t);
-  }
-  if (!color.length) return null;
-  const puntuadas = TABLA_SEMPERTEX.referencias.flatMap((r) => {
-    if (familias.size && !familias.has(r.familia)) return [];
-    const nombre = palabras(r.nombre);
-    if (!color.every((c) => nombre.includes(c))) return [];
-    const prioridad = PRIORIDAD_FAMILIA.indexOf(r.familia);
-    return [{ r, sobra: nombre.length - color.length, puntos: (nombre.length - color.length) * 10 + (prioridad < 0 ? 9 : prioridad) }];
-  }).sort((a, b) => a.puntos - b.puntos);
-  const mejor = puntuadas[0];
-  if (!mejor) return null;
-  return { mejor: mejor.r, otros: puntuadas.slice(1).filter((p) => p.sobra === mejor.sobra).map((p) => p.r) };
-}
-
-export type ColorResuelto = { codigo: string; nota?: string };
-
-/**
- * Un color pedido (código o nombre) → código Sempertex que se fabrica en ese formato. Error claro si no existe o
- * no viene en el formato, con el más parecido que sí viene.
- */
-export function resolverColor(pedido: string, formatoId: string): ColorResuelto {
-  const formato = formatoPorId(formatoId) ?? fallar(`El formato «${formatoId}» no existe. Formatos: ${FORMATOS_GLOBO.map((f) => f.id).join(", ")}.`);
-  const enFormato = (codigo: string) => coloresDelFormato(formato.id).some((r) => r.codigo === codigo);
-  const codigo = pedido.match(/\b(\d{3})\b/)?.[1];
-  let ref: ReferenciaSempertex;
-  let nota: string | undefined;
-  if (codigo) {
-    ref = referenciaPorCodigo(codigo) ?? fallar(`El color ${codigo} no está en la tabla oficial Sempertex. Usa listar_colores con el formato ${formato.id}.`);
-  } else {
-    const hallado = buscarPorNombre(pedido) ?? fallar(`No encontré el color «${pedido}» en la tabla Sempertex. Usa listar_colores con el formato ${formato.id} para ver los que hay.`);
-    // Si el mejor no viene en el formato pero otro igual de bueno sí (Metal Dorado no, Reflex Dorado sí), ese.
-    ref = enFormato(hallado.mejor.codigo) ? hallado.mejor : hallado.otros.find((r) => enFormato(r.codigo)) ?? hallado.mejor;
-    const otros = hallado.otros.filter((r) => r.codigo !== ref.codigo && enFormato(r.codigo));
-    nota = `«${pedido}» → ${nombreDe(ref)}${otros.length ? ` (también hay ${otros.slice(0, 3).map(nombreDe).join(", ")})` : ""}`;
-  }
-  if (!enFormato(ref.codigo)) {
-    const sugerido = masParecido(ref, formato.id);
-    fallar(`El color ${nombreDe(ref)} no se fabrica en ${formato.id}.${sugerido ? ` El más parecido que sí viene en ${formato.id} es ${nombreDe(sugerido)}.` : ""}`);
-  }
-  return nota ? { codigo: ref.codigo, nota } : { codigo: ref.codigo };
-}
-
-/** Resuelve una lista de colores y junta las notas. */
-function resolverColores(pedidos: readonly string[], formatoId: string, notas: string[]): string[] {
-  return pedidos.map((p) => { const r = resolverColor(p, formatoId); if (r.nota) notas.push(r.nota); return r.codigo; });
-}
-
-const nombreColor = (codigo: string) => { const r = referenciaPorCodigo(codigo); return r ? nombreDe(r) : codigo; };
-
-/** Los colores (código y formatos donde aparece) de cualquier dato del taller, en orden de aparición. */
-function coloresDeDato(valor: unknown): Array<{ codigo: string; formatos: string[] }> {
-  const salida = new Map<string, Set<string>>();
-  const anotar = (codigo: unknown, formatos: readonly string[]) => {
-    if (typeof codigo !== "string" || !/^\d{3}$/.test(codigo)) return;
-    const s = salida.get(codigo) ?? new Set<string>();
-    formatos.forEach((f) => s.add(f));
-    salida.set(codigo, s);
-  };
-  const recorrer = (v: unknown) => {
-    if (Array.isArray(v)) { v.forEach(recorrer); return; }
-    if (typeof v !== "object" || v === null) return;
-    const o = v as Record<string, unknown>;
-    const formatos = [o.formatoId, ...["grande", "chico"].map((k) => { const x = o[k]; return typeof x === "object" && x !== null ? (x as Record<string, unknown>).formatoId : undefined; })]
-      .filter((f): f is string => typeof f === "string");
-    for (const [clave, x] of Object.entries(o)) {
-      if (clave === "codigo") anotar(x, formatos);
-      else if ((clave === "codigos" || clave === "colores") && Array.isArray(x)) x.forEach((c) => (typeof c === "string" ? anotar(c, formatos) : recorrer(c)));
-      else recorrer(x);
-    }
-  };
-  recorrer(valor);
-  return [...salida.entries()].map(([codigo, formatos]) => ({ codigo, formatos: [...formatos] }));
-}
 
 // ----------------------------------------------------------------------------------------------------------
 // Lectura de la escena
@@ -350,12 +311,12 @@ function medidasDe(p: Pieza): string {
     case "guirnalda": return `${p.guirnalda.formatoId} · ${p.guirnalda.recorrido ? "curva libre" : `largo ${r0(p.guirnalda.anchoCm)} cm, caída ${r0(p.guirnalda.caidaCm)} cm`} · ${p.guirnalda.patron}`;
     case "pared_malla": return `${p.formatoId} · ${r0(p.anchoCm)}×${r0(p.altoCm)} cm · ${p.patron}`;
     case "pared_trenzas": return `${r0(p.opciones.anchoCm)}×${r0(p.opciones.altoCm)} cm · ${p.opciones.patron}`;
-    case "organico": return "pieza orgánica armada";
+    case "organico": return `${medidasCaja(p)}${p.flores ? " · con flores" : ""}`;
     case "decoracion": return `${p.decoracion.tipo}`;
     case "escenografia": return `escenografía (${p.elementos.length} elementos, sin globos)`;
     case "globo": return `${p.formatoId} · ${r0(p.infladoCm)} cm`;
-    case "forma": return nombreForma(p.forma);
-    case "letras": return `«${p.letras.texto}» · ${r0(p.letras.altoCm)} cm de alto · ${p.letras.tecnica}`;
+    case "forma": return `${nombreForma(p.forma)} · ${medidasCaja(p)}`;
+    case "letras": return `«${p.letras.texto}» · ${r0(p.letras.altoCm)} cm de alto cada letra · ${p.letras.tecnica} ${p.letras.formatoId}`;
     case "metalizado": return `${nombreMetalizado(p.metalizado)} (foil, no es látex)`;
     case "mural": return `mural ${p.mural.matriz.filas[0]?.length ?? 0}×${p.mural.matriz.filas.length} celdas · ${p.mural.disposicion} · ${p.mural.grande.formatoId}`;
     case "techo": return `techo: ${p.techo.elementos.map((e) => e.tipo).join(", ")}`;
@@ -363,11 +324,35 @@ function medidasDe(p: Pieza): string {
   }
 }
 
-function coloresTexto(p: Pieza): string {
-  if (p.tipo === "arco_organico") {
-    const total = p.arco.colores.reduce((s, c) => s + c.peso, 0) || 1;
-    return p.arco.colores.map((c) => `${nombreColor(c.codigo)} ${Math.round((c.peso / total) * 100)}%`).join(", ");
+/** Piezas ya armadas por su JSON (para no rehacer un arco orgánico en cada llamada que necesita la geometría). */
+const CACHE_ARMADO = new Map<string, PiezaArmada>();
+
+function armadaDe(p: Pieza): PiezaArmada {
+  const clave = JSON.stringify(p);
+  let armada = CACHE_ARMADO.get(clave);
+  if (!armada) {
+    armada = armarPieza(p);
+    CACHE_ARMADO.set(clave, armada);
+    while (CACHE_ARMADO.size > 300) { const primera = CACHE_ARMADO.keys().next().value; if (primera === undefined) break; CACHE_ARMADO.delete(primera); }
   }
+  return armada;
+}
+
+/** Alto y ancho de la pieza armada (lo que no tiene medidas propias: orgánicos, formas). */
+function medidasCaja(p: Pieza): string {
+  try {
+    const { min, max } = armadaDe(p).caja;
+    return `${r0(max.y - min.y)} cm de alto × ${r0(max.x - min.x)} cm de ancho`;
+  } catch { return "sin medidas"; }
+}
+
+function coloresTexto(p: Pieza): string {
+  if (p.tipo === "arco_organico" || p.tipo === "organico") {
+    const colores = p.tipo === "arco_organico" ? p.arco.colores : p.opciones.colores;
+    const total = colores.reduce((s, c) => s + c.peso, 0) || 1;
+    return colores.map((c) => `${nombreColor(c.codigo)} ${Math.round((c.peso / total) * 100)}%`).join(", ");
+  }
+  if (p.tipo === "metalizado") return `foil ${COLORES_METALIZADO[p.metalizado.color].nombre}`;
   const lista = p.tipo === "columna" || p.tipo === "arco" || p.tipo === "pared_malla" ? p.colores : p.tipo === "guirnalda" ? p.guirnalda.colores : coloresDeDato(p).map((c) => c.codigo);
   return lista.map(nombreColor).join(", ");
 }
@@ -381,9 +366,6 @@ function dondeTexto(c: Colocacion, escena: Escena, armada?: EscenaArmada): strin
   const padre = escena.nodos.find((n) => n.id === c.padreId);
   return `colgada de «${padre?.id ?? c.padreId}» ancla=${c.ancla} cada=${c.cada}${c.omitir?.length ? ` sin_anclas=${c.omitir.join(",")}` : ""} giro=${r0(c.giroGrados)}°`;
 }
-
-/** Piezas ya armadas por su JSON (para no rehacer un arco orgánico en cada llamada que necesita la geometría). */
-const CACHE_ARMADO = new Map<string, PiezaArmada>();
 
 /** Las copias de un reparto en anclas, con su altura y su corrimiento a lo ancho (para elegir cuál separar o mover). */
 function copiasTexto(armada: EscenaArmada, id: string): string {
@@ -406,7 +388,7 @@ export function resumenEscena(escena: Escena): string {
   const lineas = [
     `Sala ${r0(s.anchoCm)}×${r0(s.fondoCm)}×${r0(s.altoCm)} cm (ancho×fondo×alto): x de −${r0(s.anchoCm / 2)} a ${r0(s.anchoCm / 2)}, z de −${r0(s.fondoCm / 2)} (pared del fondo) a ${r0(s.fondoCm / 2)} (frente). Se ve: ${vistas}.`,
     escena.nodos.length ? `${escena.nodos.length} piezas:` : "La sala está vacía.",
-    ...escena.nodos.map((n) => `- ${n.id} · «${n.nombre}» · ${n.pieza.tipo} · ${medidasDe(n.pieza)} · colores: ${coloresTexto(n.pieza) || "—"} · ${dondeTexto(n.colocacion, escena, armada)}${copias(n)}`),
+    ...escena.nodos.map((n) => `- ${n.id} · «${n.nombre}» · ${n.pieza.tipo} (${NOMBRE_TIPO[n.pieza.tipo]}) · ${medidasDe(n.pieza)} · colores: ${coloresTexto(n.pieza) || "—"} · ${dondeTexto(n.colocacion, escena, armada)}${copias(n)}`),
   ];
   return lineas.join("\n");
 }
@@ -478,7 +460,10 @@ function colocacionDe(donde: Donde, escena: Escena, previa: Colocacion | null, p
 }
 
 function comprobarAltura(pieza: Pieza, c: Colocacion, sala: Sala) {
-  const alto = pieza.tipo === "columna" ? pieza.alturaCm : pieza.tipo === "arco" || pieza.tipo === "pared_malla" ? pieza.altoCm : pieza.tipo === "arco_organico" ? pieza.arco.altoCm : pieza.tipo === "pared_trenzas" ? pieza.opciones.altoCm : 0;
+  if (c.en !== "piso" && c.en !== "pared") return;
+  const porCaja = () => { const { min, max } = armadaDe(pieza).caja; return max.y - min.y; };
+  const alto = pieza.tipo === "columna" ? pieza.alturaCm : pieza.tipo === "arco" || pieza.tipo === "pared_malla" ? pieza.altoCm : pieza.tipo === "arco_organico" ? pieza.arco.altoCm : pieza.tipo === "pared_trenzas" ? pieza.opciones.altoCm
+    : pieza.tipo === "decoracion" || pieza.tipo === "escenografia" || pieza.tipo === "techo" ? 0 : porCaja();
   const base = c.en === "pared" ? c.alturaCm : 0;
   if ((c.en === "piso" || c.en === "pared") && alto + base > sala.altoCm) fallar(`La pieza mide ${r0(alto)} cm${base ? ` y empieza a ${r0(base)} cm` : ""}: no cabe bajo el techo de ${r0(sala.altoCm)} cm.`);
 }
@@ -516,12 +501,14 @@ function formatoValido(tipo: TipoPieza, formato: string): string {
   return formato;
 }
 
-/** Comprueba que una propiedad aplica a la pieza. */
+/** Comprueba que una propiedad aplica a la pieza (sin tipos: solo vale al crear). */
 function soloPara(props: Propiedades, campo: keyof Propiedades, tipos: readonly TipoPieza[], tipo: TipoPieza) {
-  if (props[campo] !== undefined && !tipos.includes(tipo)) fallar(`«${campo}» no aplica a una ${NOMBRE_TIPO[tipo]} (vale en: ${tipos.map((t) => NOMBRE_TIPO[t]).join(", ")}).`);
+  if (props[campo] === undefined || tipos.includes(tipo)) return;
+  if (!tipos.length) fallar(`«${campo}» solo se usa al crear una pieza (agregar_pieza o reemplazar_pieza), no al cambiarla.`);
+  fallar(`«${campo}» no aplica a una ${NOMBRE_TIPO[tipo]} (vale en: ${tipos.map((t) => NOMBRE_TIPO[t]).join(", ")}).`);
 }
 
-/** Recolorea una pieza sin lista simple de colores (decoración, pared de trenzas, orgánico): sus colores en orden. */
+/** Recolorea una pieza sin lista simple de colores (decoración, pared de trenzas, mural…): sus colores en orden. */
 function recolorearEnOrden(pieza: Pieza, pedidos: readonly string[], notas: string[]): Pieza {
   const actuales = coloresDeDato(pieza);
   if (pedidos.length > actuales.length) fallar(`Esta pieza tiene ${actuales.length} color${actuales.length === 1 ? "" : "es"} (${actuales.map((c) => nombreColor(c.codigo)).join(", ")}) y se pasaron ${pedidos.length}.`);
@@ -537,30 +524,80 @@ function recolorearEnOrden(pieza: Pieza, pedidos: readonly string[], notas: stri
   return valor;
 }
 
-function coloresOrganicos(pedidos: readonly string[], pesos: readonly number[] | undefined, notas: string[]): ColorOrganico[] {
-  if (pesos && pesos.length !== pedidos.length) fallar(`pesos tiene ${pesos.length} valores y colores ${pedidos.length}: deben ir uno por color.`);
-  if (pesos?.some((p) => !Number.isFinite(p) || p < 0 || p > 100)) fallar("Cada peso va de 0 a 100.");
-  return pedidos.map((pedido, i) => {
-    const { codigo, nota } = resolverColor(pedido, "R-12");
-    if (nota) notas.push(nota);
-    const formatos = FORMATOS_ORGANICO.filter((f) => coloresDelFormato(f).some((r) => r.codigo === codigo));
-    const peso = pesos ? r0(pesos[i]!) : pedidos.length === 1 ? 100 : i === 0 ? 40 : r0(60 / (pedidos.length - 1));
-    return formatos.length < FORMATOS_ORGANICO.length ? { codigo, peso, formatos } : { codigo, peso };
+/** Los colores de la pieza en su orden (la lista de una trenza tal cual, con sus repeticiones). */
+function listaColores(p: Pieza): string[] {
+  if (p.tipo === "columna" || p.tipo === "arco" || p.tipo === "pared_malla") return [...p.colores];
+  if (p.tipo === "guirnalda") return [...p.guirnalda.colores];
+  if (p.tipo === "arco_organico") return p.arco.colores.map((c) => c.codigo);
+  if (p.tipo === "organico") return p.opciones.colores.map((c) => c.codigo);
+  return coloresDePieza(p, "aparicion").map((c) => c.codigo);
+}
+
+/**
+ * El acabado («hazla metalizada»): con colores, se le pone a los que no traen uno; sin colores, cada color de la
+ * pieza pasa a su mismo tono con ese acabado (sin cambiar patrón ni pesos).
+ */
+function conAcabadoPedido(base: Pieza, props: Propiedades): Propiedades {
+  if (!props.acabado) return props;
+  if (props.colores) return { ...props, colores: props.colores.map((c) => conAcabado(c, props.acabado)) };
+  const colores = listaColores(base).map((c) => `${referenciaPorCodigo(c)?.nombre ?? c} ${props.acabado}`);
+  const patron = base.tipo === "columna" || base.tipo === "arco" || base.tipo === "pared_malla" ? base.patron : base.tipo === "guirnalda" ? base.guirnalda.patron : undefined;
+  const pesos = base.tipo === "arco_organico" ? base.arco.colores.map((c) => c.peso) : base.tipo === "organico" ? base.opciones.colores.map((c) => c.peso) : undefined;
+  return { ...props, colores, ...(patron && !props.patron ? { patron } : {}), ...(pesos && !props.pesos ? { pesos } : {}) };
+}
+
+/** Los colores pedidos para una forma, en su formato principal; el patrón se conserva si ya mezclaba. */
+function coloresDeForma(f: OpcionesForma, pedidos: readonly string[], pesos: readonly number[] | undefined, notas: string[]): OpcionesForma {
+  const formato = f.clase === "rellena" ? (f.tecnica.tipo === "organico" ? null : f.tecnica.formatoId) : f.clase === "esfera" ? f.globo.formatoId : f.clase === "cono" ? f.formatoId : null;
+  const codigos = [...new Set(pedidos.map((c) => (formato ? resolverColorFlexible(c, [formato], notas) : resolverColorOrganico(c, notas).codigo)))];
+  if (pesos && pesos.length !== codigos.length) fallar(`pesos tiene ${pesos.length} valores y colores ${codigos.length}: deben ir uno por color.`);
+  const cambiar = (actual: ColoresForma): ColoresForma => ({
+    ...actual, codigos,
+    patron: codigos.length === 1 ? "un_color" : actual.patron === "un_color" ? "mezcla" : actual.patron,
+    ...(pesos ? { pesos: pesos.map(r0) } : codigos.length > 1 && actual.patron === "un_color" ? { pesos: codigos.map(() => 1), semilla: 11 } : {}),
   });
+  if (f.clase === "arbol") return { ...f, copa: { ...f.copa, colores: cambiar(f.copa.colores) } };
+  if (f.clase === "aerostatico") return { ...f, globo: { ...f.globo, colores: cambiar(f.globo.colores) } };
+  return { ...f, colores: cambiar(f.colores) };
+}
+
+/** Las medidas de una forma: contorno predefinido (ancho y alto), esfera (diámetro) o cono (alto). */
+function medidasDeForma(f: OpcionesForma, props: Propiedades): OpcionesForma {
+  if (props.alto_cm === undefined && props.ancho_cm === undefined) return f;
+  const R = RANGOS_ESTRUCTURA;
+  if (f.clase === "rellena" && f.contorno.tipo === "predefinido") {
+    return { ...f, contorno: { ...f.contorno, ...(props.ancho_cm !== undefined ? { anchoCm: enRango(props.ancho_cm, R.forma.ancho_cm, "ancho_cm") } : {}), ...(props.alto_cm !== undefined ? { altoCm: enRango(props.alto_cm, R.forma.alto_cm, "alto_cm") } : {}) } };
+  }
+  if (f.clase === "esfera") return { ...f, diametroCm: enRango(props.ancho_cm ?? props.alto_cm ?? f.diametroCm, R.esfera.diametro_cm, "diámetro (ancho_cm)") };
+  if (f.clase === "cono" && props.alto_cm !== undefined) return { ...f, altoCm: enRango(props.alto_cm, R.cono.alto_cm, "alto_cm") };
+  return fallar("Esta forma no cambia de medida aquí (solo las figuras predefinidas, la esfera y el cono): reemplázala con reemplazar_pieza.");
+}
+
+/** El texto de un metalizado (si es de número o letras). */
+function textoMetalizado(m: Extract<Pieza, { tipo: "metalizado" }>["metalizado"]): string | undefined {
+  return m.forma.tipo === "numero" ? String(m.forma.valor) : m.forma.tipo === "letra" ? m.forma.valor : m.forma.tipo === "letras" ? m.forma.texto : undefined;
 }
 
 /** Aplica las propiedades pedidas a una pieza (nueva o existente). Solo cambia lo que viene. */
-function aplicarPropiedades(base: Pieza, props: Propiedades, notas: string[]): Pieza {
+function aplicarPropiedades(base: Pieza, entrada: Propiedades, notas: string[]): Pieza {
   const t = base.tipo;
-  soloPara(props, "formato", ["columna", "arco", "guirnalda", "pared_malla"], t);
-  soloPara(props, "alto_cm", ["columna", "arco", "arco_organico", "pared_malla", "pared_trenzas"], t);
-  soloPara(props, "ancho_cm", ["arco", "arco_organico", "guirnalda", "pared_malla", "pared_trenzas"], t);
-  soloPara(props, "caida_cm", ["guirnalda"], t);
-  soloPara(props, "forma", ["arco"], t);
-  soloPara(props, "patron", ["columna", "arco", "guirnalda", "pared_malla"], t);
-  soloPara(props, "pesos", ["arco_organico"], t);
-  soloPara(props, "flores", ["arco_organico"], t);
-  soloPara(props, "decoracion_id", ["decoracion"], t);
+  soloPara(entrada, "formato", ["columna", "arco", "guirnalda", "pared_malla", "globo"], t);
+  soloPara(entrada, "alto_cm", ["columna", "arco", "arco_organico", "pared_malla", "pared_trenzas", "organico", "forma", "letras", "arbol_globos"], t);
+  soloPara(entrada, "ancho_cm", ["arco", "arco_organico", "guirnalda", "pared_malla", "pared_trenzas", "organico", "forma"], t);
+  soloPara(entrada, "caida_cm", ["guirnalda"], t);
+  soloPara(entrada, "forma", ["arco"], t);
+  soloPara(entrada, "patron", ["columna", "arco", "guirnalda", "pared_malla"], t);
+  soloPara(entrada, "pesos", ["arco_organico", "organico", "forma"], t);
+  soloPara(entrada, "flores", ["arco_organico", "organico"], t);
+  soloPara(entrada, "grosor_cm", ["arco_organico", "organico"], t);
+  soloPara(entrada, "tamanos", ["arco_organico", "organico"], t);
+  soloPara(entrada, "decoracion_id", ["decoracion"], t);
+  soloPara(entrada, "texto", ["letras", "metalizado"], t);
+  soloPara(entrada, "pulgadas", ["metalizado"], t);
+  soloPara(entrada, "color_metalizado", ["metalizado"], t);
+  soloPara(entrada, "forma_metalizado", ["metalizado"], t);
+  for (const campo of ["figura", "tecnica", "modelo", "inclinacion_cm"] as const) soloPara(entrada, campo, [], t);
+  const props = conAcabadoPedido(base, entrada);
 
   switch (base.tipo) {
     case "columna":
@@ -617,14 +654,19 @@ function aplicarPropiedades(base: Pieza, props: Propiedades, notas: string[]): P
       const a = { ...base.arco };
       if (props.ancho_cm !== undefined) a.anchoCm = enRango(props.ancho_cm, RANGOS.arco_organico.ancho_cm, "ancho_cm");
       if (props.alto_cm !== undefined) a.altoCm = enRango(props.alto_cm, RANGOS.arco_organico.alto_cm, "alto_cm");
-      if (props.colores) a.colores = coloresOrganicos(props.colores, props.pesos, notas);
+      if (props.grosor_cm !== undefined) { const g = enRango(props.grosor_cm, RANGOS_ESTRUCTURA.organico.grosor_cm, "grosor_cm"); a.radioBaseCm = g / 2; a.radioPuntaCm = Math.round(g * 0.34); }
+      if (props.colores) a.colores = coloresOrganicosPedidos(props.colores, props.pesos, notas);
       else if (props.pesos) {
         if (props.pesos.length !== a.colores.length) fallar(`pesos tiene ${props.pesos.length} valores y el arco ${a.colores.length} colores.`);
         a.colores = a.colores.map((c, i) => ({ ...c, peso: r0(props.pesos![i]!) }));
       }
       if (props.flores !== undefined) Object.assign(a, props.flores ? { flores: structuredClone(COLUMNA_QUINCE_AZUL.flores), huecosFlores: 14 } : { flores: null, huecosFlores: 0 });
+      // Con tamaños de globo propios deja de ser el arco por medidas: pasa a pieza orgánica con esos tamaños.
+      if (props.tamanos?.length) return ajustarOrganico({ tipo: "organico", opciones: opcionesArcoOrganico(a), flores: a.flores }, { tamanos: props.tamanos }, notas);
       return { ...base, arco: a };
     }
+    case "organico":
+      return ajustarOrganico(base, props, notas);
     case "pared_trenzas": {
       const o = { ...base.opciones };
       if (props.alto_cm !== undefined) o.altoCm = enRango(props.alto_cm, RANGOS.pared_trenzas.alto_cm, "alto_cm");
@@ -636,24 +678,60 @@ function aplicarPropiedades(base: Pieza, props: Propiedades, notas: string[]): P
       const p: Pieza = props.decoracion_id ? { tipo: "decoracion", decoracion: structuredClone(decoracionPredefinida(props.decoracion_id)) } : base;
       return props.colores ? recolorearEnOrden(p, props.colores, notas) : p;
     }
-    case "organico":
-      return props.colores ? recolorearEnOrden(base, props.colores, notas) : base;
+    case "forma": {
+      let forma = medidasDeForma(base.forma, props);
+      if (props.colores) forma = coloresDeForma(forma, props.colores, props.pesos, notas);
+      else if (props.pesos) fallar("pesos va con colores en una forma.");
+      return { ...base, forma };
+    }
+    case "letras": {
+      const l = { ...base.letras };
+      if (props.texto !== undefined) l.texto = props.texto.trim() || fallar("El texto de las letras no puede quedar vacío.");
+      if (props.alto_cm !== undefined) l.altoCm = enRango(props.alto_cm, RANGOS_ESTRUCTURA.letras.alto_cm, "alto_cm");
+      if (props.colores) {
+        l.colores = [...new Set(props.colores.map((c) => resolverColorFlexible(c, [l.formatoId], notas)))];
+        l.patron = l.colores.length === 1 ? "un_color" : l.patron === "un_color" ? "por_letra" : l.patron;
+      }
+      return { ...base, letras: l };
+    }
+    case "metalizado": {
+      const m = base.metalizado;
+      const cambiaForma = props.texto !== undefined || props.forma_metalizado !== undefined;
+      const nueva = crearEstructura("metalizado", {
+        texto: props.texto ?? textoMetalizado(m), forma_metalizado: props.forma_metalizado ?? (props.texto !== undefined ? undefined : m.forma.tipo),
+        pulgadas: props.pulgadas ?? m.pulgadas, ...(props.color_metalizado || props.colores ? { color_metalizado: props.color_metalizado, colores: props.colores } : { color_metalizado: m.color }),
+      }, notas).pieza;
+      if (nueva.tipo !== "metalizado") return base;
+      const cambio = cambiaForma || nueva.metalizado.pulgadas !== m.pulgadas || nueva.metalizado.color !== m.color;
+      // El producto de la tienda deja de ser ese si cambian su forma, su talla o su color.
+      return { ...base, metalizado: { ...m, forma: nueva.metalizado.forma, pulgadas: nueva.metalizado.pulgadas, color: nueva.metalizado.color, ...(cambio ? { producto: null } : {}) } };
+    }
+    case "arbol_globos": {
+      let p: Pieza = base;
+      if (props.alto_cm !== undefined) p = { ...base, arbol: { ...base.arbol, tronco: { ...base.arbol.tronco, altoCm: enRango(props.alto_cm, RANGOS_ESTRUCTURA.arbol.alto_cm, "alto_cm") } } };
+      return props.colores ? recolorearConPaleta(p, props.colores, notas, "aparicion").pieza : p;
+    }
+    case "globo": {
+      const g = { ...base };
+      if (props.formato && props.formato !== g.formatoId) {
+        g.formatoId = (formatoPorId(props.formato) ?? fallar(`El formato «${props.formato}» no existe. Formatos: ${FORMATOS_GLOBO.map((f) => f.id).join(", ")}.`)).id;
+        g.infladoCm = formatoPorId(g.formatoId)!.infladoDecoracionCm;
+        if (!props.colores) g.codigo = resolverColorFlexible(g.codigo, [g.formatoId], notas);
+      }
+      if (props.colores?.[0]) g.codigo = resolverColorFlexible(props.colores[0], [g.formatoId], notas);
+      return g;
+    }
     case "escenografia":
-    case "metalizado":
       // No es globo de látex: no tiene colores Sempertex que cambiar.
       return base;
-    case "globo":
-    case "forma":
-    case "letras":
     case "mural":
     case "techo":
-    case "arbol_globos":
       return props.colores ? recolorearEnOrden(base, props.colores, notas) : base;
   }
 }
 
-/** La pieza de partida de cada tipo nuevo (la de «Añadir», con los valores del preset del dueño). */
-function piezaBase(tipo: (typeof TIPOS_NUEVOS)[number]): Pieza {
+/** La pieza de partida de cada tipo clásico (la de «Añadir», con los valores del preset del dueño). */
+function piezaBase(tipo: TipoClasico): Pieza {
   switch (tipo) {
     case "columna": return columnaClasica();
     case "arco": return piezaNueva("arco").pieza;
@@ -664,9 +742,50 @@ function piezaBase(tipo: (typeof TIPOS_NUEVOS)[number]): Pieza {
   }
 }
 
-const NOMBRE_BASE: Readonly<Record<(typeof TIPOS_NUEVOS)[number], string>> = {
+const NOMBRE_BASE: Readonly<Record<TipoClasico, string>> = {
   columna: "Columna", arco: "Arco", arco_organico: "Arco orgánico", guirnalda: "Guirnalda", pared_malla: "Pared de globos", decoracion: "Flor de globos",
 };
+
+/** Una pieza nueva de cualquier tipo que la IA puede crear, con lo pedido, su nombre y dónde suele ir. */
+function crearPieza(tipo: TipoNuevo, props: Propiedades, notas: string[]): { pieza: Pieza; nombre: string; lugar: LugarPieza } {
+  if (esClasico(tipo)) {
+    const pieza = aplicarPropiedades(piezaBase(tipo), props, notas);
+    const lugar: LugarPieza = tipo === "decoracion" ? "techo" : tipo === "guirnalda" || tipo === "pared_malla" ? "pared" : "piso";
+    return { pieza, nombre: NOMBRE_BASE[tipo], lugar };
+  }
+  for (const campo of ["patron", "forma", "decoracion_id"] as const) if (props[campo] !== undefined) fallar(`«${campo}» no aplica a ${tipo} (vale en ${campo === "decoracion_id" ? "decoracion" : campo === "forma" ? "arco" : "columna, arco, guirnalda o pared_malla"}).`);
+  return crearEstructura(tipo, props, notas);
+}
+
+/** Alto (y ancho de arco a arco) que la pieza nueva toma de la que reemplaza, si no se piden y caben en su rango. */
+const RANGO_ALTO_REEMPLAZO: Partial<Record<TipoNuevo, Rango>> = {
+  columna: RANGOS.columna.alto_cm, arco: RANGOS.arco.alto_cm, arco_organico: RANGOS.arco_organico.alto_cm, columna_organica: RANGOS_ESTRUCTURA.columna_organica.alto_cm,
+  semiarco_organico: RANGOS_ESTRUCTURA.semiarco_organico.alto_cm, marco_organico: RANGOS_ESTRUCTURA.marco_organico.alto_cm,
+};
+const RANGO_ANCHO_ARCO: Partial<Record<TipoNuevo, Rango>> = { arco: RANGOS.arco.ancho_cm, arco_organico: RANGOS.arco_organico.ancho_cm, marco_organico: RANGOS_ESTRUCTURA.marco_organico.ancho_cm };
+
+function medidasHeredadas(vieja: Pieza, a: { tipo: TipoNuevo; alto_cm?: number; ancho_cm?: number }): Partial<Propiedades> {
+  const salida: Partial<Propiedades> = {};
+  const dentro = (v: number, r: Rango | undefined) => (r && v >= r[0] && v <= r[1] ? r0(v) : undefined);
+  if (a.alto_cm === undefined && RANGO_ALTO_REEMPLAZO[a.tipo]) {
+    const alto = vieja.tipo === "columna" ? vieja.alturaCm : vieja.tipo === "arco" ? vieja.altoCm : vieja.tipo === "arco_organico" ? vieja.arco.altoCm : (() => { try { const { min, max } = armadaDe(vieja).caja; return max.y - min.y; } catch { return NaN; } })();
+    const v = dentro(alto, RANGO_ALTO_REEMPLAZO[a.tipo]);
+    if (v !== undefined) salida.alto_cm = v;
+  }
+  const anchoViejo = vieja.tipo === "arco" ? vieja.anchoCm : vieja.tipo === "arco_organico" ? vieja.arco.anchoCm : undefined;
+  if (a.ancho_cm === undefined && anchoViejo !== undefined) {
+    const v = dentro(anchoViejo, RANGO_ANCHO_ARCO[a.tipo]);
+    if (v !== undefined) salida.ancho_cm = v;
+  }
+  return salida;
+}
+
+/** Dónde va por defecto una pieza nueva según su lugar (la de «Añadir» del panel). */
+function colocacionDeLugar(lugar: LugarPieza, pieza: Pieza): Colocacion {
+  if (lugar === "techo") return { en: "techo", xCm: 0, zCm: 0, cuelgaCm: pieza.tipo === "decoracion" ? 60 : 0, giroGrados: 0, volteada: pieza.tipo === "decoracion" };
+  if (lugar === "pared") return { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: pieza.tipo === "guirnalda" || (pieza.tipo === "organico" && !pieza.opciones.suelo) ? 180 : pieza.tipo === "letras" ? 80 : 0 };
+  return { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 };
+}
 
 // ----------------------------------------------------------------------------------------------------------
 // Aplicar una llamada
@@ -675,6 +794,38 @@ const NOMBRE_BASE: Readonly<Record<(typeof TIPOS_NUEVOS)[number], string>> = {
 export type ResultadoHerramienta =
   | { ok: true; escena: Escena; resumen: string; consulta: boolean }
   | { ok: false; escena: Escena; error: string };
+
+/**
+ * Lo que va SOBRE una pieza tiene su punto en el espacio de ella: si ella cambia de medida (más alta, más gruesa, otra
+ * forma), ese punto se lleva a la misma posición relativa de su caja (el R-24 de la punta sigue en la punta).
+ */
+function reubicarSobre(escena: Escena, id: string, vieja: Pieza, nueva: Pieza): Escena {
+  if (!escena.nodos.some((n) => n.colocacion.en === "sobre" && n.colocacion.padreId === id)) return escena;
+  let antes: PiezaArmada["caja"], despues: PiezaArmada["caja"];
+  try { antes = armadaDe(vieja).caja; despues = armadaDe(nueva).caja; } catch { return escena; }
+  const eje = (v: number, k: "x" | "y" | "z") => {
+    const largo = antes.max[k] - antes.min[k];
+    return largo > 1 ? Math.round((despues.min[k] + ((v - antes.min[k]) * (despues.max[k] - despues.min[k])) / largo) * 10) / 10 : v;
+  };
+  return {
+    ...escena,
+    nodos: escena.nodos.map((n) => {
+      const c = n.colocacion;
+      if (c.en !== "sobre" || c.padreId !== id) return n;
+      return { ...n, colocacion: { ...c, puntoCm: { x: eje(c.puntoCm.x, "x"), y: eje(c.puntoCm.y, "y"), z: eje(c.puntoCm.z, "z") } } };
+    }),
+  };
+}
+
+/** Máximo de piezas de una escena (las de la biblioteca traen varias). */
+export const MAX_NODOS = 150;
+
+/** ¿El código es el color que se nombra («rosado» → Pastel Mate Rosado)? */
+function usaColor(codigo: string, de: string): boolean {
+  if (de.match(/\b(\d{3})\b/)?.[1] === codigo) return true;
+  const r = referenciaPorCodigo(codigo);
+  return !!r && palabras(r.nombreCompleto).join(" ").includes(palabras(de).join(" "));
+}
 
 const conNotas = (texto: string, notas: readonly string[]) => (notas.length ? `${texto} (${notas.join("; ")})` : texto);
 
@@ -715,11 +866,13 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
 
     case "agregar_pieza": {
       const a = ESQUEMAS.agregar_pieza.parse(argumentos);
-      const pieza = aplicarPropiedades(piezaBase(a.tipo), a, notas);
-      const id = idNuevo(escena, a.tipo.replace("_", "-"));
-      const colocacion = a.donde ? colocacionDe(a.donde, escena, null, pieza, id) : colocacionPorDefecto(pieza);
+      if (escena.nodos.length >= MAX_NODOS) fallar(`La escena ya tiene ${escena.nodos.length} piezas (máximo ${MAX_NODOS}).`);
+      const hecho = crearPieza(a.tipo, a, notas);
+      const pieza = hecho.pieza;
+      const id = idNuevo(escena, a.tipo.replace(/_/g, "-"));
+      const colocacion = a.donde ? colocacionDe(a.donde, escena, null, pieza, id) : colocacionDeLugar(hecho.lugar, pieza);
       comprobarAltura(pieza, colocacion, escena.sala);
-      const nodo: NodoEscena = { id, nombre: a.nombre ?? NOMBRE_BASE[a.tipo], pieza, colocacion };
+      const nodo: NodoEscena = { id, nombre: a.nombre ?? hecho.nombre, pieza, colocacion };
       const nueva = insertar(escena, nodo);
       return { escena: nueva, resumen: conNotas(`Agregué «${nodo.nombre}» (id ${id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}, colores ${coloresTexto(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas) };
     }
@@ -761,7 +914,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       let pieza = aplicarPropiedades(nodo.pieza, a, notas);
       for (const { de, a: hacia } of a.reemplazar_colores ?? []) {
         const usados = coloresDeDato(pieza);
-        const deCodigo = de.match(/\b(\d{3})\b/)?.[1] ?? usados.find((u) => { const r = referenciaPorCodigo(u.codigo); return r && palabras(r.nombreCompleto).join(" ").includes(palabras(de).join(" ")); })?.codigo;
+        const deCodigo = de.match(/\b(\d{3})\b/)?.[1] ?? usados.find((u) => usaColor(u.codigo, de))?.codigo;
         const actual = usados.find((u) => u.codigo === deCodigo) ?? fallar(`La pieza no usa el color «${de}». Usa: ${usados.map((u) => nombreColor(u.codigo)).join(", ")}.`);
         const nuevo = resolverColor(hacia, actual.formatos[0] ?? "R-12");
         if (nuevo.nota) notas.push(nuevo.nota);
@@ -772,7 +925,96 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       comprobarAltura(pieza, nodo.colocacion, escena.sala);
       const nodoNuevo: NodoEscena = { ...nodo, pieza, nombre: a.nombre ?? nodo.nombre };
       if (JSON.stringify(nodoNuevo) === JSON.stringify(nodo)) return { escena, resumen: conNotas(`«${nodo.nombre}» ya estaba así: no cambió nada.`, notas) };
-      return { escena: reemplazar(escena, nodoNuevo), resumen: conNotas(`Cambié «${nodoNuevo.nombre}» (${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}, colores ${coloresTexto(pieza)}.`, notas) };
+      return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza), resumen: conNotas(`Cambié «${nodoNuevo.nombre}» (${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}, colores ${coloresTexto(pieza)}.`, notas) };
+    }
+
+    case "reemplazar_pieza": {
+      const a = ESQUEMAS.reemplazar_pieza.parse(argumentos);
+      const nodo = nodoPorId(escena, a.id);
+      // Sin colores pedidos, la nueva hereda los de la vieja (las orgánicas, con pesos por cuántos globos llevaba).
+      const viejos = nodo.pieza.tipo === "metalizado" || nodo.pieza.tipo === "escenografia" ? [] : coloresDePieza(nodo.pieza, "uso").slice(0, 6);
+      const hereda = !a.colores && viejos.length > 0;
+      const organica = ["arco_organico", "columna_organica", "guirnalda_organica", "semiarco_organico", "aro_organico", "marco_organico"].includes(a.tipo);
+      const conColores: Propiedades = hereda && organica ? { ...a, colores: viejos.map((c) => c.codigo), pesos: viejos.map((c) => Math.max(1, c.cantidad)) } : a;
+      const hecho = crearPieza(a.tipo, { ...conColores, ...medidasHeredadas(nodo.pieza, a) }, notas);
+      let pieza = hecho.pieza;
+      if (hereda && !organica) pieza = recolorearConPaleta(pieza, viejos.map((c) => c.codigo), notas, "uso").pieza;
+      // El mismo sitio: si la nueva va en otra superficie (una guirnalda en la pared), a la misma altura de la sala.
+      const c = nodo.colocacion;
+      const mismoSitio = c.en === hecho.lugar || c.en === "ancla" || c.en === "sobre" || c.en === "libre";
+      let colocacion: Colocacion = mismoSitio ? c : colocacionDeLugar(hecho.lugar, pieza);
+      if (!mismoSitio && c.en === "piso" && colocacion.en === "pared") colocacion = { ...colocacion, aLoLargoCm: Math.max(-escena.sala.anchoCm / 2, Math.min(escena.sala.anchoCm / 2, c.xCm)) };
+      if (!mismoSitio && c.en === "pared" && colocacion.en === "piso") colocacion = c.pared === "fondo" ? { ...colocacion, xCm: c.aLoLargoCm, zCm: r0(-escena.sala.fondoCm / 2 + 100) } : colocacion;
+      comprobarAltura(pieza, colocacion, escena.sala);
+      const resto = nodo.nombre.replace(/^(columna|arco|guirnalda|pared|flor|semiarco|aro|marco)(\s+(de globos|de cuartetos|clásica|clásico|orgánica|orgánico|normal))?\b/i, "").trim();
+      const nombre = a.nombre ?? (resto ? `${hecho.nombre} ${resto}` : hecho.nombre);
+      const colgadas = escena.nodos.filter((n) => (n.colocacion.en === "ancla" || n.colocacion.en === "sobre") && n.colocacion.padreId === nodo.id).map((n) => n.id);
+      if (colgadas.length) notas.push(`lo que va en ella (${colgadas.join(", ")}) sigue con ella; revisa que encaje`);
+      const nodoNuevo: NodoEscena = { id: nodo.id, nombre, pieza, colocacion };
+      const nueva = reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza);
+      return { escena: nueva, resumen: conNotas(`Cambié «${nodo.nombre}» (${NOMBRE_TIPO[nodo.pieza.tipo]}) por «${nombre}» (mismo id ${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}, colores ${coloresTexto(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas) };
+    }
+
+    case "recolorear_escena": {
+      const a = ESQUEMAS.recolorear_escena.parse(argumentos);
+      if (!a.colores && !a.reemplazar?.length) fallar("Pasa colores (la paleta nueva) o reemplazar (de → a).");
+      for (const id of a.ids ?? []) nodoPorId(escena, id);
+      const paleta = a.colores?.map((c) => conAcabado(c, a.acabado));
+      for (const c of [...(paleta ?? []), ...(a.reemplazar ?? []).map((r) => r.a)]) if (!referenciaDePedido(c)) fallar(`No encontré el color «${c}» en la tabla Sempertex.`);
+      const reglas = (a.reemplazar ?? []).map((r) => ({ de: r.de, codigos: codigosDePedido(r.de), a: conAcabado(r.a, a.acabado) }));
+      const regla = (viejo: string) => reglas.find((r) => r.codigos.includes(viejo) || usaColor(viejo, r.de))?.a ?? null;
+      let nodos = escena.nodos;
+      const hechas: string[] = [];
+      for (const n of escena.nodos) {
+        if (a.ids && !a.ids.includes(n.id)) continue;
+        const r = paleta ? recolorearConPaleta(n.pieza, paleta, notas, "uso")
+          : n.pieza.tipo === "metalizado" ? { pieza: n.pieza, cambios: 0, detalle: [] } : recolorearConPedidos(n.pieza, regla, notas);
+        if (!r.cambios) continue;
+        nodos = nodos.map((x) => (x.id === n.id ? { ...x, pieza: r.pieza } : x));
+        hechas.push(`${n.id}: ${r.detalle.slice(0, 4).join(", ")}`);
+      }
+      if (!hechas.length) {
+        if (a.reemplazar?.length) fallar(`Ninguna pieza ${a.ids ? "de esas " : ""}usa ${a.reemplazar.map((r) => `«${r.de}»`).join(" ni ")}. Mira los colores con ver_escena.`);
+        return { escena, resumen: "Ya tenían esos colores: no cambió nada." };
+      }
+      const unicas = [...new Set(notas)];
+      notas.length = 0;
+      notas.push(...unicas.slice(0, 6));
+      return { escena: { ...escena, nodos }, resumen: conNotas(`Recoloreé ${hechas.length} pieza${hechas.length === 1 ? "" : "s"} sin agregar ni quitar nada (${escena.nodos.length} piezas en la escena): ${hechas.join(" | ")}.`, notas) };
+    }
+
+    case "buscar_en_biblioteca": {
+      const a = ESQUEMAS.buscar_en_biblioteca.parse(argumentos);
+      const colores = a.colores?.map((c) => { const codigos = codigosDePedido(c); return codigos.length ? codigos : fallar(`No encontré el color «${c}» en la tabla Sempertex.`); });
+      const lista = buscarEnBiblioteca({ texto: a.texto, tipo: a.tipo, ocasion: a.ocasion, colores, tipoPieza: a.tipo_pieza, limite: a.limite });
+      return {
+        escena, consulta: true,
+        resumen: lista.length ? `${lista.length} de la biblioteca (ponlo con insertar_de_biblioteca y su id):\n${lista.map(describirItem).join("\n")}` : "No hay nada en la biblioteca con eso: prueba con menos palabras, sin filtros o con otro tipo.",
+      };
+    }
+
+    case "insertar_de_biblioteca": {
+      const a = ESQUEMAS.insertar_de_biblioteca.parse(argumentos);
+      const item = itemDeBiblioteca(a.id) ?? fallar(`No hay ningún item «${a.id}» en la biblioteca: búscalo con buscar_en_biblioteca y usa el id que da.`);
+      const c = item.contenido;
+      // Una escena entera en una sala vacía trae también su sala; si no, sus piezas se ajustan a la sala de ahora.
+      const base: Escena = c.tipo === "escena" && escena.nodos.length === 0 ? { ...escena, sala: structuredClone(c.escena.sala) } : escena;
+      const raizPieza = c.tipo === "conjunto" ? c.conjunto.raiz.pieza : c.tipo === "pieza" ? c.pieza : null;
+      if (a.donde && !raizPieza) notas.push("una escena entera va con sus posiciones: «donde» no se usó");
+      const donde = a.donde && raizPieza ? colocacionDe(a.donde, base, null, raizPieza, null) : undefined;
+      const hecho = insertarEnEscena(base, item, donde);
+      const nuevos = new Set(hecho.ids);
+      let nodos = hecho.escena.nodos.map((n) => (nuevos.has(n.id) && (n.colocacion.en === "piso" || n.colocacion.en === "pared" || n.colocacion.en === "techo" || n.colocacion.en === "libre") ? { ...n, colocacion: dentroDeSala(n.colocacion, base.sala) } : n));
+      if (a.nombre && hecho.raizId) nodos = nodos.map((n) => (n.id === hecho.raizId ? { ...n, nombre: a.nombre! } : n));
+      if (nodos.length > MAX_NODOS) fallar(`La escena quedaría con ${nodos.length} piezas y el máximo es ${MAX_NODOS}: quita algo antes o elige un item más chico (una estructura en vez de la escena entera).`);
+      for (const n of nodos) if (nuevos.has(n.id)) comprobarAltura(n.pieza, n.colocacion, base.sala);
+      const nueva: Escena = { ...base, nodos };
+      const raiz = nodos.find((n) => n.id === hecho.raizId);
+      const otros = hecho.ids.filter((id) => id !== hecho.raizId);
+      const principal = raiz ? `Principal: ${raiz.id} · «${raiz.nombre}» · ${NOMBRE_TIPO[raiz.pieza.tipo]} · ${medidasDe(raiz.pieza)} · colores ${coloresTexto(raiz.pieza)} · ${dondeTexto(raiz.colocacion, nueva)}.` : "";
+      const lista = otros.length ? ` Con ella: ${otros.slice(0, 14).map((id) => { const n = nodos.find((x) => x.id === id)!; return `${id} (${n.pieza.tipo})`; }).join(", ")}${otros.length > 14 ? ` y ${otros.length - 14} más` : ""}.` : "";
+      const sala = base !== escena ? " Tomé también su sala." : "";
+      return { escena: nueva, resumen: conNotas(`Puse de la biblioteca «${item.nombre}» (${item.id}) como ${hecho.ids.length} pieza${hecho.ids.length === 1 ? "" : "s"} normales y editables.${sala} ${principal}${lista} Para cambiarla usa cambiar_pieza con su id.`, notas) };
     }
 
     case "quitar_pieza": {
@@ -900,5 +1142,5 @@ export function aplicarHerramienta(escena: Escena, nombre: string, argumentos: u
 
 /** Los ids de las piezas, para el primer mensaje al modelo. */
 export function idsDeEscena(escena: Escena): string {
-  return escena.nodos.length ? escena.nodos.map((n) => `${n.id} (${n.pieza.tipo})`).join(", ") : "ninguna (sala vacía)";
+  return escena.nodos.length ? escena.nodos.map((n) => `${n.id} (${NOMBRE_TIPO[n.pieza.tipo]}, «${n.nombre}»)`).join(", ") : "ninguna (sala vacía)";
 }
