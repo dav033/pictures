@@ -7,6 +7,7 @@ import type { ItemBiblioteca, TipoItem } from "@/lib/globos3d/biblioteca";
 import { miniaturaDecoracion } from "@/lib/globos3d/decoraciones-escena";
 import { DecoracionesPequenas, MiniaturaDecoracion, contarDecoraciones } from "./DecoracionesPequenas";
 import { UtileriaFiesta, contarUtileria } from "./UtileriaFiesta";
+import { FondosYMuebles } from "./FondosYMuebles";
 import { MuralesTechoArboles } from "./MuralesTechoArboles";
 import { FormasYLetras } from "./FormasYLetras";
 import { FILTRO_COMPACTO_VACIO, FiltrosCompactos, GrillaCompacta, useBibliotecaFiltrada, type FiltroCompacto } from "./Biblioteca";
@@ -161,7 +162,12 @@ export const PanelAnadir = memo(function PanelAnadir({ escena, armada, onEscena,
             )}
           </>
         )}
-        {pestana === "utileria" && <UtileriaFiesta escena={escena} onEscena={onEscena} armada={armada} seleccion={seleccion} onSeleccion={onSeleccion} filtro={texto} />}
+        {pestana === "utileria" && (
+          <>
+            <FondosYMuebles escena={escena} onEscena={onEscena} onSeleccion={onSeleccion} filtro={texto} />
+            <UtileriaFiesta escena={escena} onEscena={onEscena} armada={armada} seleccion={seleccion} onSeleccion={onSeleccion} filtro={texto} />
+          </>
+        )}
 
         <section className="flex flex-col gap-2" aria-label="De la biblioteca">
           <h3 className="taller-rotulo flex items-baseline justify-between gap-2">
