@@ -69,7 +69,7 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
   const resumen = a.quitar
     ? hechas.length ? `Quité el globo de arriba de ${hechas.join(", ")}.` : "No había globos de arriba que quitar."
     : `Globo de arriba (amarrado sobre la punta, nudo abajo) en ${hechas.join(", ")}.`;
-  return { escena: { ...escena, nodos }, resumen: [resumen, ...notas].join(" ") };
+  return { escena: { ...escena, nodos }, resumen: [resumen, ...new Set(notas)].join(" ") };
 }
 
 export const HERRAMIENTAS_REMATE: Readonly<Record<string, HerramientaExtra>> = {
