@@ -22,6 +22,7 @@ import { aplicarImpresos, type ImpresoEnPieza } from "./impresos-catalogo";
 import { armarMural, type OpcionesMural } from "./murales";
 import { armarTecho, type OpcionesTecho } from "./techo";
 import { armarArbolGlobos, type OpcionesArbolGlobos } from "./arboles-globos";
+import { aplicarRepintes, type Repinte } from "./repintes";
 
 /**
  * Una **pieza**: cualquier cosa que sabe armar el taller, descrita solo con datos (JSON) para poder guardarla,
@@ -93,7 +94,11 @@ type PiezaBase =
  * Cualquier pieza puede llevar **globos impresos** de la tienda (`impresos`, ver `impresos-catalogo.ts`): se eligen
  * sus globos por color o por índice y esos toman el impreso, su color base y su producto.
  */
-export type Pieza = PiezaBase & { impresos?: ImpresoEnPieza[] };
+export type Pieza = PiezaBase & {
+  impresos?: ImpresoEnPieza[];
+  /** Reglas de color por formato/parte/color que se aplican al terminar de armarla (las pone `editar_globos`; ver `repintes.ts`). */
+  repintes?: Repinte[];
+};
 
 export type TipoPieza = Pieza["tipo"];
 
@@ -143,7 +148,8 @@ function conCaja(p: Omit<PiezaArmada, "caja">): PiezaArmada {
 const parteOrganica = (tramo: string) => tramo.toLowerCase().replace(/_/g, "/");
 
 export function armarPieza(pieza: Pieza): PiezaArmada {
-  const armada = armarPiezaBase(pieza);
+  const base = armarPiezaBase(pieza);
+  const armada = pieza.repintes?.length ? aplicarRepintes(base, pieza.repintes) : base;
   if (!pieza.impresos?.length) return armada;
   const conImpresos = aplicarImpresos(armada.globos, armada.materiales, pieza.impresos);
   return { ...armada, globos: conImpresos.globos, materiales: conImpresos.materiales, productos: [...(armada.productos ?? []), ...conImpresos.productos] };
