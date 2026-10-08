@@ -7,6 +7,7 @@ import { agregarUtileria, esMesa, productosDeFiesta, puntosBanderinEn, sobreMesa
 import { UTILERIA_LISTA, type UtileriaLista } from "@/lib/globos3d/utileria-escenas";
 import { urlTienda } from "@/lib/globos3d/utileria-catalogo";
 import { ACTIVO, BOTON, INACTIVO } from "./PanelFlor";
+import { coincide } from "./ui-taller";
 
 /** Miniatura de una pieza de utilería: un dibujo plano de lo que es, en sus colores. */
 const MiniaturaUtileria = memo(function MiniaturaUtileria({ u }: { u: UtileriaLista }) {
@@ -67,7 +68,12 @@ type Props = {
   armada: EscenaArmada;
   seleccion?: string | null;
   onSeleccion?: (id: string | null) => void;
+  /** Lo escrito en el buscador de «Añadir». */
+  filtro?: string;
 };
+
+/** Cuántas piezas de utilería coinciden con la búsqueda. */
+export const contarUtileria = (filtro: string) => UTILERIA_LISTA.filter((u) => coincide(filtro, u.nombre, u.descripcion)).length;
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
 const medio = (a: Vec3, b: Vec3): Vec3 => ({ x: r1((a.x + b.x) / 2), y: r1((a.y + b.y) / 2), z: r1((a.z + b.z) / 2) });
@@ -79,7 +85,7 @@ const menos = (a: Vec3, b: Vec3): Vec3 => ({ x: r1(a.x - b.x), y: r1(a.y - b.y),
  * Sempertex que representa. El banderín se cuelga entre dos puntos de la estructura elegida (la cara de dentro de sus
  * globos) o de pared a pared; lo de mesa va sobre la tapa de la mesa elegida; lo demás, en el piso.
  */
-export function UtileriaFiesta({ escena, onEscena, armada, seleccion = null, onSeleccion }: Props) {
+export function UtileriaFiesta({ escena, onEscena, armada, seleccion = null, onSeleccion, filtro = "" }: Props) {
   const [elegida, setElegida] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const nodo = escena.nodos.find((n) => n.id === seleccion) ?? null;
@@ -93,7 +99,7 @@ export function UtileriaFiesta({ escena, onEscena, armada, seleccion = null, onS
     const { escena: nueva, id } = agregarUtileria(escena, u.crear(entre), colocacion, u.nombre, `fiesta-${u.id.replace(/_/g, "-")}`);
     onEscena(nueva);
     onSeleccion?.(id);
-    setAviso(`Listo: «${u.nombre}» quedó ${donde}. Va en «Productos de fiesta» de la ficha.`);
+    setAviso(`Listo: «${u.nombre}» quedó ${donde}. Va en «Productos de fiesta» de la lista de compra.`);
   };
 
   const colgarEntre = (u: UtileriaLista, desde: Vec3, hasta: Vec3, donde: string) => {
@@ -121,9 +127,9 @@ export function UtileriaFiesta({ escena, onEscena, armada, seleccion = null, onS
   const abierta = UTILERIA_LISTA.find((u) => u.id === elegida) ?? null;
   return (
     <div className="flex flex-col gap-1" aria-label="Utilería de fiesta">
-      <h3 className="text-xs font-semibold text-texto">Utilería de fiesta <span className="font-normal text-texto-suave">· productos Sempertex (no son globos)</span></h3>
+      <h3 className="taller-rotulo">Utilería de fiesta <span className="font-normal normal-case tracking-normal">· productos Sempertex (no son globos)</span></h3>
       <div className="grid grid-cols-3 gap-1">
-        {UTILERIA_LISTA.map((u) => {
+        {UTILERIA_LISTA.filter((u) => coincide(filtro, u.nombre, u.descripcion)).map((u) => {
           const activa = u.id === elegida;
           return (
             <button key={u.id} type="button" onClick={() => { setElegida(activa ? null : u.id); setAviso(null); }} aria-pressed={activa} aria-expanded={activa} title={u.descripcion}
@@ -144,7 +150,7 @@ export function UtileriaFiesta({ escena, onEscena, armada, seleccion = null, onS
                 <button type="button" className={`${BOTON} ${ACTIVO}`} onClick={() => { const p = puntosBanderinEn(armadoElegido); colgarEntre(abierta, p.desde, p.hasta, `colgado entre dos puntos de «${estructura.nombre}»`); }}>
                   Colgar entre dos puntos de «{estructura.nombre}»
                 </button>
-              ) : <p className="text-[0.7rem] text-texto-suave">Para colgarlo de un arco, un marco o dos columnas, primero toca esa pieza en la lista de arriba.</p>}
+              ) : <p className="text-[0.7rem] text-texto-suave">Para colgarlo de un arco, un marco o dos columnas, primero elige esa pieza (en el visor o en «Piezas»).</p>}
               <button type="button" className={`${BOTON} ${INACTIVO} text-xs`} onClick={() => {
                 const y = Math.min(escena.sala.altoCm - 60, 240), z = -escena.sala.fondoCm / 2 + 40;
                 colgarEntre(abierta, { x: -escena.sala.anchoCm / 2, y, z }, { x: escena.sala.anchoCm / 2, y, z }, "colgado de pared a pared");
@@ -154,14 +160,14 @@ export function UtileriaFiesta({ escena, onEscena, armada, seleccion = null, onS
             <div className="grid grid-cols-2 gap-1">
               {mesa
                 ? <button type="button" className={`${BOTON} ${ACTIVO} text-xs`} onClick={() => sobreLaMesa(abierta)}>Sobre «{mesa.nombre}»</button>
-                : abierta.donde === "mesa" && <p className="col-span-2 text-[0.7rem] text-texto-suave">Para ponerlo sobre una mesa, primero toca la mesa en la lista de arriba.</p>}
+                : abierta.donde === "mesa" && <p className="col-span-2 text-[0.7rem] text-texto-suave">Para ponerlo sobre una mesa, primero elige la mesa (en el visor o en «Piezas»).</p>}
               <button type="button" className={`${BOTON} ${INACTIVO} text-xs`} onClick={() => enElPiso(abierta)}>En el piso</button>
             </div>
           )}
           {aviso && <p role="status" className="rounded-lg bg-superficie p-2 text-xs text-texto ring-1 ring-borde">{aviso}</p>}
         </div>
       )}
-      {productos.length > 0 && <p className="text-[0.7rem] text-texto-suave">En esta escena: {productos.reduce((s, p) => s + p.cantidad, 0)} productos de fiesta (lista en la ficha).</p>}
+      {productos.length > 0 && <p className="text-[0.7rem] text-texto-suave">En esta escena: {productos.reduce((s, p) => s + p.cantidad, 0)} productos de fiesta (en la lista de compra).</p>}
     </div>
   );
 }

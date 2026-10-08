@@ -7,15 +7,13 @@ import { agregarDecoracion, decoracionesPorGrupo, miniaturaDecoracion, repartoSu
 import { ACTIVO, BOTON, Deslizador, INACTIVO } from "./PanelFlor";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
 import { perezoso } from "@/lib/globos3d/perezoso";
-import { UtileriaFiesta } from "./UtileriaFiesta";
-import { FormasYLetras } from "./FormasYLetras";
-import { MuralesTechoArboles } from "./MuralesTechoArboles";
+import { coincide } from "./ui-taller";
 
 /**
  * Las predefinidas por grupo, con su miniatura: no cambian, se calculan una vez, la primera vez que se pintan (no al
  * importar: armar todas cuesta ~150 ms y /3d importa este módulo al abrir).
  */
-const GRUPOS = perezoso(() => decoracionesPorGrupo().map((g) => ({ ...g, decoraciones: g.decoraciones.map((d) => ({ ...d, miniatura: miniaturaDecoracion(d.decoracion) })) })));
+export const GRUPOS = perezoso(() => decoracionesPorGrupo().map((g) => ({ ...g, decoraciones: g.decoraciones.map((d) => ({ ...d, miniatura: miniaturaDecoracion(d.decoracion) })) })));
 
 /** Corazón de lado 2 con la punta abajo (y = 1) y los lóbulos arriba (y = −1). */
 const CORAZON = "M0,1 C-0.6,0.55 -1.05,0.1 -1,-0.35 C-0.95,-0.85 -0.35,-1.05 0,-0.55 C0.35,-1.05 0.95,-0.85 1,-0.35 C1.05,0.1 0.6,0.55 0,1 Z";
@@ -64,7 +62,14 @@ type Props = {
   /** La pieza elegida en la lista: si tiene anclas, se ofrece colgar la decoración de ella. */
   seleccion?: string | null;
   onSeleccion?: (id: string | null) => void;
+  /** Lo escrito en el buscador de «Añadir». */
+  filtro?: string;
 };
+
+/** Cuántas decoraciones pequeñas coinciden con la búsqueda. */
+export function contarDecoraciones(filtro: string): number {
+  return GRUPOS().reduce((s, g) => s + g.decoraciones.filter((d) => coincide(filtro, d.nombre, d.descripcion, g.nombre)).length, 0);
+}
 
 type DecoracionConMiniatura = ReturnType<typeof GRUPOS>[number]["decoraciones"][number];
 
@@ -104,7 +109,7 @@ const copiasEn = (n: number) => `${n} ${n === 1 ? "copia" : "copias"}`;
  * el dedo) se abre debajo qué hacer con ella: colgarla de la pieza elegida (si tiene anclas), repetida cada N
  * anclas, o ponerla suelta en la pared del fondo, el piso o el techo.
  */
-export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = null, onSeleccion }: Props) {
+export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = null, onSeleccion, filtro = "" }: Props) {
   const [elegida, setElegida] = useState<string | null>(null);
   const [cadaPedido, setCadaPedido] = useState<{ nodo: string; cada: number } | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -118,6 +123,7 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
   const cada = cadaPedido && nodo && cadaPedido.nodo === nodo.id ? cadaPedido.cada : undefined;
   const reparto = useMemo(() => repartoSugerido(anclas, cada), [anclas, cada]);
   const total = GRUPOS().reduce((s, g) => s + g.decoraciones.length, 0);
+  const grupos = useMemo(() => GRUPOS().map((g) => ({ ...g, decoraciones: g.decoraciones.filter((d) => coincide(filtro, d.nombre, d.descripcion, g.nombre)) })).filter((g) => g.decoraciones.length > 0), [filtro]);
 
   const tocar = useCallback((id: string) => { setElegida((actual) => (actual === id ? null : id)); setAviso(null); }, []);
   const alApretar = useCallback((e: PointerEvent<HTMLButtonElement>, d: DecoracionConMiniatura) => {
@@ -138,24 +144,25 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
     const { escena: nueva, id } = agregarDecoracion(escena, d.decoracion, destino, { nombre: d.nombre, idBase: d.id.replace(/_/g, "-") });
     onEscena(nueva);
     if (destino.en === "ancla") {
-      setAviso(`Listo: «${d.nombre}» quedó colgada en «${nodo?.nombre ?? "la pieza"}» (${copiasEn(reparto.copias)}, ${reparto.copias * d.globos} globos). Ya está en la lista de piezas.`);
+      setAviso(`Listo: «${d.nombre}» quedó colgada en «${nodo?.nombre ?? "la pieza"}» (${copiasEn(reparto.copias)}, ${reparto.copias * d.globos} globos). Ya está en «Piezas».`);
     } else {
       const donde = destino.en === "pared" ? "en la pared del fondo" : destino.en === "piso" ? "en el piso" : "colgada del techo";
-      setAviso(`Listo: «${d.nombre}» quedó ${donde} y la dejé elegida para que la muevas con «Dónde va».`);
+      setAviso(`Listo: «${d.nombre}» quedó ${donde} y la dejé elegida para que la muevas (arrástrala o usa «Lugar»).`);
       onSeleccion?.(id);
     }
   };
 
   return (
-    <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde" aria-label="Decoraciones pequeñas">
-      <h2 className="flex items-center gap-2 text-sm font-semibold text-texto"><Flower2 className="size-4 text-acento" aria-hidden /> Decoraciones pequeñas <span className="font-normal text-texto-suave">· {total} listas</span></h2>
+    <section className="flex flex-col gap-2" aria-label="Decoraciones pequeñas">
+      <h2 className="taller-rotulo flex items-center gap-2"><Flower2 className="size-3.5 text-taller-acento" aria-hidden /> Decoraciones pequeñas <span className="font-normal normal-case tracking-normal">· {total} listas</span></h2>
       <p className="text-xs text-texto-suave">
         Flores, moños y estrellas ya armados. {arrastrar ? <><b className="text-texto">Arrástrala al visor</b> y suéltala sobre una columna, un arco, un aro, una guirnalda, una pared de globos o una pared (se marcan en verde), o tócala y elige dónde va.</> : "Toca una y elige dónde va."}{" "}
         {puedeColgar
           ? <>Puedes colgarla de <b className="text-texto">«{nodo.nombre}»</b> (la pieza elegida) o ponerla suelta en la sala.</>
-          : <>Para colgarla de una columna, un arco o una pared de globos, primero toca esa pieza en la lista de arriba.</>}
+          : <>Para colgarla de una columna, un arco o una pared de globos, primero elige esa pieza (en el visor o en «Piezas»).</>}
       </p>
-      {GRUPOS().map((g) => {
+      {grupos.length === 0 && <p className="text-xs text-texto-suave">Ninguna decoración pequeña coincide con «{filtro}».</p>}
+      {grupos.map((g) => {
         const abierta = g.decoraciones.find((d) => d.id === elegida);
         return (
           <div key={g.id} className="flex flex-col gap-1">
@@ -187,12 +194,6 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
           </div>
         );
       })}
-      {/* Murales pixelados, decoraciones de techo y palmeras y árboles de globos. */}
-      <MuralesTechoArboles escena={escena} onEscena={onEscena} onSeleccion={onSeleccion} />
-      {/* Siluetas rellenas, volúmenes y letras de globos (ideas de sempertex.com). */}
-      <FormasYLetras escena={escena} onEscena={onEscena} onSeleccion={onSeleccion} />
-      {/* Banderines, platos, vasos… (productos Sempertex de fiesta, no globos). */}
-      <UtileriaFiesta escena={escena} onEscena={onEscena} armada={armada} seleccion={seleccion} onSeleccion={onSeleccion} />
     </section>
   );
 }

@@ -1,10 +1,11 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import type { Escena } from "@/lib/globos3d/escena";
 import type { Miniatura } from "@/lib/globos3d/decoraciones-escena";
 import { agregarIdeaForma, formasConMiniatura, type DestinoForma } from "@/lib/globos3d/ideas-formas";
 import { ACTIVO, BOTON, INACTIVO } from "./PanelFlor";
+import { coincide } from "./ui-taller";
 
 /** Dibujo de frente de una forma: globos como elipses y tubitos como trazos. */
 const MiniaturaForma = memo(function MiniaturaForma({ miniatura, nombre }: { miniatura: Miniatura; nombre: string }) {
@@ -22,6 +23,10 @@ type Props = {
   escena: Escena;
   onEscena: (e: Escena) => void;
   onSeleccion?: (id: string | null) => void;
+  /** Lo escrito en el buscador de «Añadir» (con texto, se abre sola). */
+  filtro?: string;
+  /** Cuántas coinciden con la búsqueda (0 mientras está cerrada: no se arman). */
+  onCuenta?: (n: number) => void;
 };
 
 /**
@@ -29,11 +34,15 @@ type Props = {
  * letras (ancla, corazones, cruz, árboles, esfera, globo aerostático, «2012», el 1 orgánico…) y unas formas básicas.
  * Se abre a pedido (armarlas todas cuesta un poco) y cada una se pone de pie en el piso o en la pared del fondo.
  */
-export const FormasYLetras = memo(function FormasYLetras({ escena, onEscena, onSeleccion }: Props) {
-  const [abierto, setAbierto] = useState(false);
+export const FormasYLetras = memo(function FormasYLetras({ escena, onEscena, onSeleccion, filtro = "", onCuenta }: Props) {
+  const [abiertoPedido, setAbierto] = useState(false);
+  // Buscando algo (3 letras o más), se abre sola para buscar también aquí.
+  const abierto = abiertoPedido || filtro.trim().length >= 3;
   const [elegida, setElegida] = useState<number | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
-  const formas = useMemo(() => (abierto ? formasConMiniatura() : []), [abierto]);
+  const todas = useMemo(() => (abierto ? formasConMiniatura() : []), [abierto]);
+  const formas = useMemo(() => todas.filter((f) => coincide(filtro, f.nombre, f.nota, f.id ? `#${f.id}` : "")), [todas, filtro]);
+  useEffect(() => { onCuenta?.(formas.length); }, [formas.length, onCuenta]);
   const abierta = elegida === null ? null : formas[elegida] ?? null;
 
   const poner = (destino: DestinoForma) => {
@@ -41,12 +50,12 @@ export const FormasYLetras = memo(function FormasYLetras({ escena, onEscena, onS
     const { escena: nueva, id } = agregarIdeaForma(escena, abierta, destino);
     onEscena(nueva);
     onSeleccion?.(id);
-    setAviso(`Listo: «${abierta.nombre}» quedó ${destino.en === "piso" ? "de pie en el piso" : "en la pared del fondo"} y la dejé elegida para que la muevas con «Dónde va».`);
+    setAviso(`Listo: «${abierta.nombre}» quedó ${destino.en === "piso" ? "de pie en el piso" : "en la pared del fondo"} y la dejé elegida para que la muevas (arrástrala o usa «Lugar»).`);
   };
 
   return (
     <details className="flex flex-col gap-1" open={abierto} onToggle={(e) => setAbierto(e.currentTarget.open)} aria-label="Formas y letras">
-      <summary className="cursor-pointer text-xs font-semibold text-texto">Formas y letras <span className="font-normal text-texto-suave">· siluetas rellenas, volúmenes y letras de globos (ideas de sempertex.com)</span></summary>
+      <summary className="taller-rotulo min-h-8 cursor-pointer py-2">Formas y letras <span className="font-normal normal-case tracking-normal">· siluetas, volúmenes y letras (ideas de sempertex.com)</span></summary>
       <div className="mt-1 grid grid-cols-3 gap-1">
         {formas.map((f, i) => {
           const activa = i === elegida;

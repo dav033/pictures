@@ -1,10 +1,11 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import type { Escena } from "@/lib/globos3d/escena";
 import type { Miniatura } from "@/lib/globos3d/decoraciones-escena";
 import { agregarMuralTechoArbol, GRUPOS_MURAL_TECHO_ARBOL, muralesTechoArbolesConMiniatura } from "@/lib/globos3d/catalogo-murales-techo-arboles";
 import { ACTIVO, BOTON } from "./PanelFlor";
+import { coincide } from "./ui-taller";
 
 /** Dibujo de la pieza: globos como elipses y tubitos como trazos. */
 const MiniaturaPiezaSvg = memo(function MiniaturaPiezaSvg({ miniatura, nombre }: { miniatura: Miniatura; nombre: string }) {
@@ -22,6 +23,10 @@ type Props = {
   escena: Escena;
   onEscena: (e: Escena) => void;
   onSeleccion?: (id: string | null) => void;
+  /** Lo escrito en el buscador de «Añadir». */
+  filtro?: string;
+  /** Cuántas coinciden con la búsqueda (para el contador del buscador). */
+  onCuenta?: (n: number) => void;
 };
 
 const DONDE: Readonly<Record<string, string>> = { murales: "en la pared del fondo, apoyado en el piso", techo: "pegada al techo", arboles: "de pie en el piso" };
@@ -31,10 +36,12 @@ const DONDE: Readonly<Record<string, string>> = { murales: "en la pared del fond
  * en malla de globos), decoraciones de techo (red, festones en catenaria, tiras colgantes, helio) y palmeras y árboles
  * de globos. Cada uno se pone donde va (pared, techo o piso) y queda elegido para moverlo con «Dónde va».
  */
-export const MuralesTechoArboles = memo(function MuralesTechoArboles({ escena, onEscena, onSeleccion }: Props) {
+export const MuralesTechoArboles = memo(function MuralesTechoArboles({ escena, onEscena, onSeleccion, filtro = "", onCuenta }: Props) {
   const [elegida, setElegida] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const piezas = useMemo(() => muralesTechoArbolesConMiniatura(), []);
+  const cuenta = useMemo(() => piezas.filter((p) => coincide(filtro, p.nombre, p.descripcion, GRUPOS_MURAL_TECHO_ARBOL.find((g) => g.id === p.grupo)?.nombre)).length, [piezas, filtro]);
+  useEffect(() => { onCuenta?.(cuenta); }, [cuenta, onCuenta]);
 
   const poner = (id: string) => {
     const p = piezas.find((x) => x.id === id);
@@ -42,17 +49,18 @@ export const MuralesTechoArboles = memo(function MuralesTechoArboles({ escena, o
     const { escena: nueva, id: nodo } = agregarMuralTechoArbol(escena, p);
     onEscena(nueva);
     onSeleccion?.(nodo);
-    setAviso(`Listo: «${p.nombre}» quedó ${DONDE[p.grupo]} y la dejé elegida para que la muevas con «Dónde va».`);
+    setAviso(`Listo: «${p.nombre}» quedó ${DONDE[p.grupo]} y la dejé elegida para que la muevas (arrástrala o usa «Lugar»).`);
   };
 
   return (
     <>
       {GRUPOS_MURAL_TECHO_ARBOL.map((g) => {
-        const delGrupo = piezas.filter((p) => p.grupo === g.id);
+        const delGrupo = piezas.filter((p) => p.grupo === g.id && coincide(filtro, p.nombre, p.descripcion, g.nombre));
+        if (!delGrupo.length) return null;
         const abierta = delGrupo.find((p) => p.id === elegida);
         return (
           <div key={g.id} className="flex flex-col gap-1" aria-label={g.nombre}>
-            <h3 className="text-xs font-semibold text-texto">{g.nombre}</h3>
+            <h3 className="taller-rotulo">{g.nombre}</h3>
             <div className="grid grid-cols-3 gap-1">
               {delGrupo.map((p) => {
                 const activa = p.id === elegida;

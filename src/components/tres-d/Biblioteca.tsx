@@ -1,10 +1,10 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ArrowLeft, BookmarkPlus, Box, ClipboardCopy, ExternalLink, Eye, Library, Plus, Replace, Search, Trash2 } from "lucide-react";
+import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { ArrowLeft, BookmarkPlus, Box, ClipboardCopy, ExternalLink, Eye, Plus, Replace, Trash2 } from "lucide-react";
 import {
   BIBLIOTECA_FABRICA, OCASIONES, TIPOS_ITEM, clasePieza, contenidoDeEscena, copiarItem, escenaDeItem, filtrarBiblioteca, huellaConId, itemDeEscena, itemDeNodo, nombreGenerico,
-  unirBiblioteca, validarItem, type FiltroBiblioteca, type ItemBiblioteca, type ProductosDeItem, type ResumenItem, type TipoItem,
+  unirBiblioteca, validarItem, type ItemBiblioteca, type ProductosDeItem, type ResumenItem, type TipoItem,
 } from "@/lib/globos3d/biblioteca";
 import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import { hexDeCodigo, miniaturaDecoracion, type Miniatura } from "@/lib/globos3d/decoraciones-escena";
@@ -95,7 +95,7 @@ function idPropio(base: string): string {
  * aquí no se toca el contenido de nada. La grilla sale enseguida con lo fijo (nombre, tipo, ocasiones, foto) y se
  * completa (sin repetidos, con lo de cada escena) a medida que el motor avanza.
  */
-function useBiblioteca(propios: readonly ItemBiblioteca[]) {
+export function useBiblioteca(propios: readonly ItemBiblioteca[]) {
   const motor = useMotorBiblioteca(propios);
   const base = useMemo(() => [...BIBLIOTECA_FABRICA, ...propios], [propios]);
   // Mientras el motor no ha firmado un item, su firma es única (no se junta con nada todavía).
@@ -140,7 +140,7 @@ const esperarCuadro = () => new Promise<void>((r) => requestAnimationFrame(() =>
  * oculto (se cierra al terminar). Cada una se guarda en sessionStorage por la huella de su contenido. Lo arma el motor
  * (fuera de la página); aquí solo se dibuja. Sin huella todavía (el motor no llegó a ese item), espera.
  */
-function useMiniaturas3d(orden: readonly ItemBiblioteca[], huellas: ReadonlyMap<string, string>) {
+export function useMiniaturas3d(orden: readonly ItemBiblioteca[], huellas: ReadonlyMap<string, string>) {
   const lienzoRef = useRef<HTMLCanvasElement>(null);
   const visorRef = useRef<EscenaGlobos | null>(null);
   /** Una miniatura a la vez: el visor oculto es uno solo (la siguiente espera a que termine la anterior). */
@@ -215,7 +215,7 @@ function useMiniaturas3d(orden: readonly ItemBiblioteca[], huellas: ReadonlyMap<
 // Piezas de la interfaz
 // ----------------------------------------------------------------------------------------------------------
 
-const NOMBRE_TIPO = new Map(TIPOS_ITEM.map((t) => [t.id, t.nombre]));
+export const NOMBRE_TIPO_ITEM = new Map(TIPOS_ITEM.map((t) => [t.id, t.nombre]));
 const TARJETA = "rounded-2xl bg-superficie ring-1 ring-borde";
 const ETIQUETA = "rounded-full bg-superficie-suave px-2 py-0.5 text-[0.7rem] text-texto-suave ring-1 ring-borde";
 /** 44 px de alto y, en el teléfono, letra de 16 px (si no, iOS acerca la página al tocar el campo). */
@@ -224,7 +224,7 @@ const SELECT = "min-h-11 min-w-0 rounded-xl bg-superficie px-2 text-base text-te
 const nombreColor = (codigo: string) => `${referenciaPorCodigo(codigo)?.nombreCompleto ?? codigo} ${codigo}`;
 const nombreProducto = (clave: string) => { const [f, c] = clave.split("|"); return `${f} ${nombreColor(c ?? "")}`; };
 
-function Chips({ colores, max = 8 }: { colores: readonly string[]; max?: number }) {
+export function Chips({ colores, max = 8 }: { colores: readonly string[]; max?: number }) {
   return (
     <span className="flex flex-wrap items-center gap-1" aria-label={`Colores: ${colores.map(nombreColor).join(", ")}`}>
       {colores.slice(0, max).map((c) => <span key={c} title={nombreColor(c)} className="size-4 rounded-full ring-1 ring-black/15" style={{ background: hexDeCodigo(c) }} />)}
@@ -233,7 +233,7 @@ function Chips({ colores, max = 8 }: { colores: readonly string[]; max?: number 
   );
 }
 
-function Miniatura3d({ item, url, className = "" }: { item: ItemBiblioteca; url: string | undefined; className?: string }) {
+export function Miniatura3d({ item, url, className = "" }: { item: ItemBiblioteca; url: string | undefined; className?: string }) {
   const svg = useMemo(() => miniaturaSvg(item), [item]);
   if (svg) return <div className={`grid place-items-center bg-[#efedf2] p-3 ${className}`}><MiniaturaDecoracion miniatura={svg} nombre={item.nombre} className="h-full max-h-full w-full" /></div>;
   if (url) return <div role="img" aria-label={`Vista 3D de ${item.nombre}`} className={`bg-[#efedf2] bg-cover bg-center ${className}`} style={{ backgroundImage: `url(${url})` }} />;
@@ -243,7 +243,7 @@ function Miniatura3d({ item, url, className = "" }: { item: ItemBiblioteca; url:
   return <div className={`grid place-items-center bg-[#efedf2] text-xs text-texto-suave ${className}`}><Box className="size-6 animate-pulse opacity-50" aria-hidden /><span className="sr-only">Dibujando…</span></div>;
 }
 
-function Fuente({ item, corta = false }: { item: ItemBiblioteca; corta?: boolean }) {
+export function Fuente({ item, corta = false }: { item: ItemBiblioteca; corta?: boolean }) {
   const f = item.fuente;
   if (!f) return null;
   const tipo = f.tipo === "idea-sempertex" ? "Idea de sempertex.com" : f.tipo === "celebra" ? "Revista Celebra" : f.tipo === "referencia-web" ? "Referencia web" : item.id.startsWith("vista:") ? "De tu escena" : item.propio ? "Tu biblioteca" : "Del taller";
@@ -255,36 +255,6 @@ function Fuente({ item, corta = false }: { item: ItemBiblioteca; corta?: boolean
     </span>
   );
 }
-
-type PropsTarjeta = { item: ItemBiblioteca; resumen: ResumenItem | undefined; mini: string | undefined; onAbrir: (item: ItemBiblioteca) => void };
-
-/**
- * Una tarjeta de la grilla. Memorizada: el motor rehace la lista cada ~200 ms (items nuevos, mismos datos) y repintar
- * cientos de tarjetas cada vez trabaría el teléfono; solo se repinta si cambia lo que muestra.
- */
-const TarjetaItem = memo(function TarjetaItem({ item, resumen, mini, onAbrir }: PropsTarjeta) {
-  return (
-    <li>
-      <button type="button" onClick={() => onAbrir(item)} className={`${TARJETA} flex h-full w-full flex-col overflow-hidden text-left transition hover:ring-2 hover:ring-acento focus-visible:ring-2 focus-visible:ring-acento`}>
-        <Miniatura3d item={item} url={mini} className="aspect-[4/3] w-full" />
-        <span className="flex min-w-0 flex-1 flex-col gap-1 p-2">
-          <span className="line-clamp-2 text-sm font-semibold text-texto">{item.nombre}</span>
-          <span className="flex flex-wrap gap-1">
-            <span className={`${ETIQUETA} text-texto`}>{NOMBRE_TIPO.get(item.tipo)}</span>
-            {item.ocasiones.filter((o) => o !== "general").slice(0, 2).map((o) => <span key={o} className={ETIQUETA}>{o}</span>)}
-            {item.propio && <span className={`${ETIQUETA} text-acento`}>propio</span>}
-          </span>
-          <span className="flex items-center justify-between gap-2">
-            <span className="font-mono text-[0.7rem] text-texto-suave">{resumen ? `${resumen.globos} ${resumen.globos === 1 ? "globo" : "globos"}` : "…"}</span>
-            {resumen && <Chips colores={resumen.colores} max={6} />}
-          </span>
-          <Fuente item={item} corta />
-        </span>
-      </button>
-    </li>
-  );
-}, (a, b) => a.resumen === b.resumen && a.mini === b.mini && a.onAbrir === b.onAbrir && a.item.id === b.item.id && a.item.nombre === b.item.nombre
-  && a.item.tipo === b.item.tipo && a.item.propio === b.item.propio && a.item.fuente?.titulo === b.item.fuente?.titulo && a.item.ocasiones.join("|") === b.item.ocasiones.join("|"));
 
 /** La lista de compra en texto (para copiarla y pegarla en un pedido). */
 function listaEnTexto(item: ItemBiblioteca, p: ProductosDeItem): string {
@@ -299,7 +269,7 @@ function listaEnTexto(item: ItemBiblioteca, p: ProductosDeItem): string {
   return lineas.join("\n");
 }
 
-function TablaProductos({ item, productos }: { item: ItemBiblioteca; productos: ProductosDeItem }) {
+export function TablaProductos({ item, productos }: { item: ItemBiblioteca; productos: ProductosDeItem }) {
   const [copiado, setCopiado] = useState(false);
   const copiar = async () => {
     try { await navigator.clipboard.writeText(listaEnTexto(item, productos)); setCopiado(true); setTimeout(() => setCopiado(false), 2500); } catch { setCopiado(false); }
@@ -454,7 +424,7 @@ function useArmadoFicha(item: ItemBiblioteca): Armado | null {
   return hecho?.item === item ? hecho.armado : null;
 }
 
-function Ficha({ item, biblioteca, huellas, minis, onVer, onVolver, acciones, puedeVolver }: {
+export function Ficha({ item, biblioteca, huellas, minis, onVer, onVolver, acciones, puedeVolver }: {
   item: ItemBiblioteca; biblioteca: readonly ItemBiblioteca[]; huellas: ReadonlyMap<string, string>; minis: ReadonlyMap<string, string>;
   onVer: (item: ItemBiblioteca) => void; onVolver: () => void; acciones: Acciones; puedeVolver: boolean;
 }) {
@@ -487,7 +457,7 @@ function Ficha({ item, biblioteca, huellas, minis, onVer, onVolver, acciones, pu
             <Miniatura3d item={i} url={minis.get(huellas.get(i.id) ?? "")} className="size-12 shrink-0 rounded-lg" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm text-texto">{i.nombre}{veces(i) > 1 && <span className="text-texto-suave"> · {veces(i)} veces</span>}</span>
-              <span className="block truncate text-[0.7rem] text-texto-suave">{NOMBRE_TIPO.get(i.tipo)}{i.derivado ? "" : " · también en la biblioteca"}</span>
+              <span className="block truncate text-[0.7rem] text-texto-suave">{NOMBRE_TIPO_ITEM.get(i.tipo)}{i.derivado ? "" : " · también en la biblioteca"}</span>
             </span>
             <button type="button" onClick={() => onVer(i)} className={`${BOTON} ${INACTIVO} inline-flex max-w-[45%] shrink-0 items-center gap-1 px-2 text-left text-xs sm:max-w-none`}><Eye className="size-3.5 shrink-0" aria-hidden />{verTexto}</button>
           </li>
@@ -500,7 +470,7 @@ function Ficha({ item, biblioteca, huellas, minis, onVer, onVolver, acciones, pu
     <article className="flex flex-col gap-3" aria-label={`Ficha de ${item.nombre}`}>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={onVolver} className={`${BOTON} ${INACTIVO} inline-flex items-center gap-1.5 px-3`}><ArrowLeft className="size-4" aria-hidden />{puedeVolver ? "Volver" : "Volver a la biblioteca"}</button>
-        <span className={`${ETIQUETA} text-texto`}>{NOMBRE_TIPO.get(item.tipo)}</span>
+        <span className={`${ETIQUETA} text-texto`}>{NOMBRE_TIPO_ITEM.get(item.tipo)}</span>
         {item.ocasiones.map((o) => <span key={o} className={ETIQUETA}>{o}</span>)}
       </div>
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
@@ -511,13 +481,13 @@ function Ficha({ item, biblioteca, huellas, minis, onVer, onVolver, acciones, pu
             </div>
           )}
           <div className="flex flex-wrap gap-2">
-            <button type="button" disabled={!completo} onClick={() => { if (completo) acciones.onAbrirEnEscena(completo); }} title="Reemplaza la escena de la pestaña Escena (allí Ctrl+Z la recupera)" className={`${BOTON} ${ACTIVO} inline-flex items-center gap-1.5 px-4 disabled:opacity-60`}><Replace className="size-4" aria-hidden />Abrir en Escena</button>
+            <button type="button" disabled={!completo} onClick={() => { if (completo) acciones.onAbrirEnEscena(completo); }} title="Reemplaza la escena que tienes (Ctrl+Z la recupera)" className={`${BOTON} ${ACTIVO} inline-flex items-center gap-1.5 px-4 disabled:opacity-60`}><Replace className="size-4" aria-hidden />Abrir en Escena</button>
             <button type="button" disabled={!completo} onClick={() => { if (completo) acciones.onAnadir(completo); }} title="La añade a la escena que tienes, donde estaba en la suya" className={`${BOTON} ${INACTIVO} inline-flex items-center gap-1.5 px-4 disabled:opacity-60`}><Plus className="size-4" aria-hidden />Añadir a mi escena</button>
             {item.propio && (
               <button type="button" onClick={() => { if (quitarPropio(item.id)) { setQuitado(true); onVolver(); } }} disabled={quitado} className={`${BOTON} ${INACTIVO} inline-flex items-center gap-1.5 px-3`}><Trash2 className="size-4" aria-hidden />Quitar de mi biblioteca</button>
             )}
           </div>
-          <p className="text-xs text-texto-suave">«Abrir en Escena» reemplaza la escena actual (en la pestaña Escena, Ctrl+Z la recupera). «Añadir a mi escena» la suma a la que tienes, con su armado: la estructura y sus decoraciones juntas.</p>
+          <p className="text-xs text-texto-suave">«Abrir en Escena» reemplaza la escena que tienes (Ctrl+Z la recupera). «Añadir a mi escena» la suma a la que tienes, con su armado: la estructura y sus decoraciones juntas.</p>
         </div>
         <div className="flex min-w-0 flex-col gap-3">
           <header>
@@ -568,190 +538,257 @@ function Ficha({ item, biblioteca, huellas, minis, onVer, onVolver, acciones, pu
 }
 
 // ----------------------------------------------------------------------------------------------------------
-// La pestaña
+// En el panel «Añadir»: filtros, tarjetas compactas y la ficha en un diálogo
 // ----------------------------------------------------------------------------------------------------------
 
-type Props = {
-  /** La escena de la pestaña Escena (para decir a qué se añade). */
-  escenaActual: Escena;
-  /** Reemplaza la escena de la pestaña Escena con la de este item. */
-  onAbrirEnEscena: (escena: Escena) => void;
-  /** Añade el item a la escena actual, con su armado. */
-  onAnadirAEscena: (item: ItemBiblioteca) => void;
-  /** Un item para abrir su ficha al entrar (lo que se pidió ver desde la pestaña Escena). */
-  abrir?: ItemBiblioteca | null;
-};
+/** Ocasión, color y globo elegidos en los filtros de «Añadir» (el texto viene del buscador del panel). */
+export type FiltroCompacto = { ocasion: string | null; color: string | null; producto: string | null };
+export const FILTRO_COMPACTO_VACIO: FiltroCompacto = { ocasion: null, color: null, producto: null };
 
-const FILTRO_VACIO: FiltroBiblioteca = { tipo: null, ocasion: null, color: null, producto: null, texto: "" };
-/** Tarjetas por página de la grilla. */
-const POR_PAGINA = 48;
-
-export function Biblioteca({ escenaActual, onAbrirEnEscena, onAnadirAEscena, abrir = null }: Props) {
+/**
+ * La biblioteca de los tipos de una pestaña de «Añadir» (Estructuras: estructuras y conjuntos; Decoraciones; Utilería;
+ * Ideas: escenas), con el texto del buscador y los filtros; y las opciones de los filtros (ocasiones, colores y globos
+ * que hay en esos tipos). El motor (Web Worker) cuenta y arma fuera de la página.
+ */
+export function useBibliotecaFiltrada(tipos: readonly TipoItem[], texto: string, filtro: FiltroCompacto) {
   const propios = useBibliotecaPropia();
   const { items, resumenes, huellas, listos, indexadas, escenas } = useBiblioteca(propios);
-  const [filtro, setFiltro] = useState<FiltroBiblioteca>(FILTRO_VACIO);
-  const [pila, setPila] = useState<ItemBiblioteca[]>(() => (abrir ? [abrir] : []));
-  const visibles = useMemo(() => filtrarBiblioteca(items, resumenes, filtro), [items, resumenes, filtro]);
-  // La grilla se pinta de a una página (y crece al llegar al final): cientos de tarjetas de una vez traban el teléfono.
-  const [cuantos, setCuantos] = useState(POR_PAGINA);
-  const mostrados = useMemo(() => visibles.slice(0, cuantos), [visibles, cuantos]);
-  const finRef = useRef<HTMLLIElement>(null);
-  const hayMas = mostrados.length < visibles.length;
-  useEffect(() => {
-    const fin = finRef.current;
-    if (!fin || !hayMas) return;
-    const observador = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) setCuantos((c) => c + POR_PAGINA); }, { rootMargin: "600px" });
-    observador.observe(fin);
-    return () => observador.disconnect();
-  }, [hayMas, mostrados.length]);
-  const { lienzoRef, minis } = useMiniaturas3d(mostrados, huellas);
-  const abierto = pila[pila.length - 1] ?? null;
-  // La tarjeta memorizada puede tener un item de una vuelta anterior: se abre el de ahora (con todas sus escenas).
-  const itemsRef = useRef(items);
-  useEffect(() => { itemsRef.current = items; }, [items]);
-  const abrirItem = useCallback((i: ItemBiblioteca) => setPila([itemsRef.current.find((x) => x.id === i.id) ?? i]), []);
-
-  const porTipo = useMemo(() => new Map(TIPOS_ITEM.map((t) => [t.id, items.filter((i) => i.tipo === t.id).length])), [items]);
-  const ocasiones = useMemo(() => OCASIONES.filter((o) => items.some((i) => i.ocasiones.includes(o))), [items]);
+  const clave = tipos.join("|");
+  const deTipo = useMemo(() => { const t = new Set(clave.split("|")); return items.filter((i) => t.has(i.tipo)); }, [items, clave]);
+  const visibles = useMemo(() => filtrarBiblioteca(deTipo, resumenes, { tipo: null, ...filtro, texto }), [deTipo, resumenes, filtro, texto]);
+  const ocasiones = useMemo(() => OCASIONES.filter((o) => deTipo.some((i) => i.ocasiones.includes(o))), [deTipo]);
   const { colores, productos } = useMemo(() => {
     const c = new Map<string, number>(), p = new Map<string, number>();
-    for (const r of resumenes.values()) { for (const x of r.colores) c.set(x, (c.get(x) ?? 0) + 1); for (const x of r.productos) p.set(x, (p.get(x) ?? 0) + 1); }
+    for (const i of deTipo) {
+      const r = resumenes.get(i.id);
+      if (!r) continue;
+      for (const x of r.colores) c.set(x, (c.get(x) ?? 0) + 1);
+      for (const x of r.productos) p.set(x, (p.get(x) ?? 0) + 1);
+    }
     const porNombre = (a: string, b: string) => a.localeCompare(b, "es");
     return {
       colores: [...c.entries()].sort((a, b) => porNombre(nombreColor(a[0]), nombreColor(b[0]))),
       productos: [...p.entries()].sort((a, b) => porNombre(nombreProducto(a[0]), nombreProducto(b[0]))),
     };
-  }, [resumenes]);
-  const poner = (cambio: Partial<FiltroBiblioteca>) => { setFiltro((f) => ({ ...f, ...cambio })); setCuantos(POR_PAGINA); };
-  const hayFiltro = Boolean(filtro.tipo || filtro.ocasion || filtro.color || filtro.producto || filtro.texto?.trim());
-  const acciones: Acciones = {
-    onAbrirEnEscena: (item) => onAbrirEnEscena(escenaDeItem(item)),
-    onAnadir: (item) => onAnadirAEscena(item),
-  };
+  }, [deTipo, resumenes]);
+  return { items, deTipo, visibles, resumenes, huellas, ocasiones, colores, productos, contando: listos < items.length || indexadas < escenas, propios };
+}
 
-  const contenido: ReactNode = abierto ? (
-    <Ficha key={`${pila.length}:${abierto.id}`} item={abierto} biblioteca={items} huellas={huellas} minis={minis} acciones={acciones} puedeVolver={pila.length > 1}
-      onVer={(i) => setPila((p) => [...p, i])} onVolver={() => setPila((p) => p.slice(0, -1))} />
-  ) : (
+const FILTRO_CHIP = "h-[30px] min-w-0 flex-1 truncate rounded-lg border border-taller-borde bg-taller-panel px-2 text-xs font-medium text-taller-medio hover:text-taller-texto";
+
+/** Los filtros de la biblioteca como chips (selectores nativos: accesibles y cómodos con el dedo). */
+export const FiltrosCompactos = memo(function FiltrosCompactos({ filtro, onFiltro, ocasiones, colores, productos }: {
+  filtro: FiltroCompacto; onFiltro: (f: FiltroCompacto) => void; ocasiones: readonly string[];
+  colores: ReadonlyArray<readonly [string, number]>; productos: ReadonlyArray<readonly [string, number]>;
+}) {
+  const hay = Boolean(filtro.ocasion || filtro.color || filtro.producto);
+  return (
+    <div className="flex gap-1.5" role="group" aria-label="Filtros de la biblioteca">
+      <select value={filtro.ocasion ?? ""} onChange={(e) => onFiltro({ ...filtro, ocasion: e.target.value || null })} aria-label="Ocasión" className={`${FILTRO_CHIP} ${filtro.ocasion ? "border-taller-resalte text-taller-texto" : ""}`}>
+        <option value="">Ocasión: todas</option>
+        {ocasiones.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+      <select value={filtro.color ?? ""} onChange={(e) => onFiltro({ ...filtro, color: e.target.value || null })} aria-label="Color" className={`${FILTRO_CHIP} ${filtro.color ? "border-taller-resalte text-taller-texto" : ""}`}>
+        <option value="">Color: todos</option>
+        {colores.map(([c, n]) => <option key={c} value={c}>{nombreColor(c)} ({n})</option>)}
+      </select>
+      <select value={filtro.producto ?? ""} onChange={(e) => onFiltro({ ...filtro, producto: e.target.value || null })} aria-label="Globo que usa" className={`${FILTRO_CHIP} ${filtro.producto ? "border-taller-resalte text-taller-texto" : ""}`}>
+        <option value="">Globo: todos</option>
+        {productos.map(([x, n]) => <option key={x} value={x}>{x.split("|")[0]} · {nombreColor(x.split("|")[1] ?? "")} ({n})</option>)}
+      </select>
+      {hay && <button type="button" onClick={() => onFiltro(FILTRO_COMPACTO_VACIO)} aria-label="Quitar filtros" title="Quitar filtros" className="h-[30px] shrink-0 px-1.5 text-xs text-taller-acento hover:underline">Quitar</button>}
+    </div>
+  );
+});
+
+/** De dónde viene, en corto, para la tarjeta compacta («Idea Sempertex #384», «Celebra», «Referencia web»). */
+function fuenteCorta(item: ItemBiblioteca): string {
+  const f = item.fuente;
+  if (!f) return item.propio ? "Tu biblioteca" : "Del taller";
+  if (f.tipo === "idea-sempertex") { const n = /#\s?(\d+)/.exec(f.titulo)?.[1]; return n ? `Idea Sempertex #${n}` : "Idea Sempertex"; }
+  if (f.tipo === "celebra") return "Celebra";
+  if (f.tipo === "referencia-web") return "Referencia web";
+  return item.id.startsWith("vista:") ? "De tu escena" : item.propio ? "Tu biblioteca" : "Del taller";
+}
+
+const TarjetaCompacta = memo(function TarjetaCompacta({ item, resumen, mini, onAbrir }: { item: ItemBiblioteca; resumen: ResumenItem | undefined; mini: string | undefined; onAbrir: (item: ItemBiblioteca) => void }) {
+  const sub = `${fuenteCorta(item)}${resumen ? ` · ${resumen.globos} globos` : ""}`;
+  return (
+    <li>
+      <button type="button" onClick={() => onAbrir(item)} title={`${item.nombre}${item.descripcion ? ` — ${item.descripcion}` : ""}. Toca para ver su ficha y añadirla.`}
+        className="flex h-full w-full flex-col gap-1.5 rounded-xl border border-taller-borde bg-taller-tarjeta p-2 text-left text-xs font-medium leading-snug text-taller-texto hover:border-taller-resalte">
+        <Miniatura3d item={item} url={mini} className="h-[72px] w-full rounded-lg" />
+        <span className="line-clamp-2">{item.nombre}</span>
+        <span className="truncate text-[11px] font-normal text-taller-suave">{sub}</span>
+      </button>
+    </li>
+  );
+}, (a, b) => a.resumen === b.resumen && a.mini === b.mini && a.onAbrir === b.onAbrir && a.item.id === b.item.id && a.item.nombre === b.item.nombre);
+
+/** Tarjetas por página en el panel (24: abrir el panel no debe pintar cientos de tarjetas). */
+const POR_PAGINA_PANEL = 24;
+
+/** La grilla de la biblioteca en el panel «Añadir» (3 columnas, miniaturas 3D del motor, de a 24). */
+export function GrillaCompacta({ visibles, resumenes, huellas, onAbrir, vacio }: {
+  visibles: readonly ItemBiblioteca[]; resumenes: ReadonlyMap<string, ResumenItem>; huellas: ReadonlyMap<string, string>;
+  onAbrir: (item: ItemBiblioteca) => void; vacio: string;
+}) {
+  const [pagina, setPagina] = useState<{ de: readonly ItemBiblioteca[]; cuantos: number }>({ de: visibles, cuantos: POR_PAGINA_PANEL });
+  // Otra búsqueda u otro filtro (otra lista que no empieza igual): vuelve a la primera página.
+  const cuantos = pagina.de === visibles || (pagina.de.length <= visibles.length && pagina.de[0]?.id === visibles[0]?.id) ? pagina.cuantos : POR_PAGINA_PANEL;
+  const mas = () => setPagina({ de: visibles, cuantos: cuantos + POR_PAGINA_PANEL });
+  const mostrados = useMemo(() => visibles.slice(0, cuantos), [visibles, cuantos]);
+  const { lienzoRef, minis } = useMiniaturas3d(mostrados, huellas);
+  const hayMas = mostrados.length < visibles.length;
+  const finRef = useRef<HTMLLIElement>(null);
+  const masRef = useRef(mas);
+  useEffect(() => { masRef.current = mas; });
+  useEffect(() => {
+    const fin = finRef.current;
+    if (!fin || !hayMas) return;
+    const observador = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) masRef.current(); }, { rootMargin: "300px" });
+    observador.observe(fin);
+    return () => observador.disconnect();
+  }, [hayMas, mostrados.length]);
+  return (
     <>
-      <section className={`${TARJETA} flex flex-col gap-2 p-3`} aria-label="Buscar en la biblioteca">
-        <div className="-mx-3 flex gap-1 overflow-x-auto px-3 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&>button]:shrink-0" role="group" aria-label="Tipo">
-          <button type="button" onClick={() => poner({ tipo: null })} aria-pressed={!filtro.tipo} className={`${BOTON} ${!filtro.tipo ? ACTIVO : INACTIVO} px-3`}>Todo <span className="font-mono text-xs opacity-75">{items.length}</span></button>
-          {TIPOS_ITEM.map((t) => (
-            <button key={t.id} type="button" onClick={() => poner({ tipo: filtro.tipo === t.id ? null : t.id })} aria-pressed={filtro.tipo === t.id} className={`${BOTON} ${filtro.tipo === t.id ? ACTIVO : INACTIVO} px-3`}>
-              {t.plural} <span className="font-mono text-xs opacity-75">{porTipo.get(t.id) ?? 0}</span>
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-          <label className="relative col-span-2 flex items-center lg:col-span-1">
-            <Search className="pointer-events-none absolute left-2.5 size-4 text-texto-suave" aria-hidden />
-            <input type="search" value={filtro.texto ?? ""} onChange={(e) => poner({ texto: e.target.value })} placeholder="Buscar: araña, columna, dorado…" aria-label="Buscar por texto" className={`${SELECT} w-full pl-8`} />
-          </label>
-          <select value={filtro.ocasion ?? ""} onChange={(e) => poner({ ocasion: e.target.value || null })} aria-label="Ocasión" className={SELECT}>
-            <option value="">Cualquier ocasión</option>
-            {ocasiones.map((o) => <option key={o} value={o}>{o}</option>)}
-          </select>
-          <select value={filtro.color ?? ""} onChange={(e) => poner({ color: e.target.value || null })} aria-label="Color" className={SELECT}>
-            <option value="">Cualquier color</option>
-            {colores.map(([c, n]) => <option key={c} value={c}>{nombreColor(c)} ({n})</option>)}
-          </select>
-          <select value={filtro.producto ?? ""} onChange={(e) => poner({ producto: e.target.value || null })} aria-label="Producto (globo)" className={`${SELECT} col-span-2 lg:col-span-1`}>
-            <option value="">Usa cualquier globo</option>
-            {productos.map(([p, n]) => <option key={p} value={p}>Usa {nombreProducto(p)} ({n})</option>)}
-          </select>
-        </div>
-        <p className="flex flex-wrap items-center justify-between gap-2 text-xs text-texto-suave" aria-live="polite">
-          <span>
-            {visibles.length} de {items.length}
-            {indexadas < escenas ? ` · buscando estructuras y decoraciones dentro de las escenas (${indexadas} de ${escenas})…` : ""}
-            {listos < items.length ? ` · contando globos (${listos} de ${items.length})…` : ""}
-          </span>
-          {hayFiltro && <button type="button" onClick={() => { setFiltro(FILTRO_VACIO); setCuantos(POR_PAGINA); }}className="min-h-11 text-acento underline-offset-2 hover:underline sm:min-h-0">Quitar filtros</button>}
-        </p>
-      </section>
-      {visibles.length === 0 ? (
-        <p className="rounded-2xl bg-superficie-suave p-6 text-center text-sm text-texto-suave ring-1 ring-borde">Nada con esos filtros.</p>
-      ) : (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {mostrados.map((i) => <TarjetaItem key={i.id} item={i} resumen={resumenes.get(i.id)} mini={minis.get(huellas.get(i.id) ?? "")} onAbrir={abrirItem} />)}
+      {visibles.length === 0 ? <p className="px-1 text-xs text-taller-suave">{vacio}</p> : (
+        <ul className="grid grid-cols-3 gap-2">
+          {mostrados.map((i) => <TarjetaCompacta key={i.id} item={i} resumen={resumenes.get(i.id)} mini={minis.get(huellas.get(i.id) ?? "")} onAbrir={onAbrir} />)}
           {hayMas && (
             <li ref={finRef} className="col-span-full flex justify-center">
-              <button type="button" onClick={() => setCuantos((c) => c + POR_PAGINA)} className={`${BOTON} ${INACTIVO} px-4 text-sm`}>Mostrar más ({visibles.length - mostrados.length})</button>
+              <button type="button" onClick={mas} className="min-h-9 rounded-lg px-3 text-xs text-taller-acento hover:bg-taller-encima">Mostrar más ({visibles.length - mostrados.length})</button>
             </li>
           )}
         </ul>
       )}
-    </>
-  );
-
-  return (
-    <section className="flex flex-col gap-3" aria-label="Biblioteca">
-      <header className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-texto"><Library className="size-5 text-acento" aria-hidden />Biblioteca</h2>
-          <p className="text-sm text-texto-suave">Escenas, estructuras con sus decoraciones, estructuras, decoraciones y utilería, cada una con su lista exacta de productos. Tu escena actual tiene {escenaActual.nodos.length} {escenaActual.nodos.length === 1 ? "pieza" : "piezas"}.</p>
-        </div>
-        {propios.length > 0 && <span className={ETIQUETA}>{propios.length} en tu biblioteca</span>}
-      </header>
-      {contenido}
-      {/* El lienzo oculto donde se dibujan las miniaturas 3D (fuera de la pantalla, con tamaño). */}
       <div aria-hidden className="pointer-events-none fixed left-[-10000px] top-0 h-[240px] w-[320px]"><canvas ref={lienzoRef} className="block h-full w-full" /></div>
-    </section>
+    </>
   );
 }
 
+/**
+ * La ficha de un item en un diálogo: vista 3D, productos exactos de la tienda (copiar la lista), de dónde viene (enlace
+ * y foto de la idea), lo que contiene (y verlo por separado), «Abrir en Escena», «Añadir a mi escena» y quitar lo propio.
+ */
+export function FichaDialogo({ item, onAbrirEnEscena, onAnadir, onCerrar }: {
+  item: ItemBiblioteca; onAbrirEnEscena: (escena: Escena, item: ItemBiblioteca) => void; onAnadir: (item: ItemBiblioteca) => void; onCerrar: () => void;
+}) {
+  const propios = useBibliotecaPropia();
+  const { items, huellas } = useBiblioteca(propios);
+  const [pila, setPila] = useState<ItemBiblioteca[]>(() => [item]);
+  const abierto = pila[pila.length - 1] ?? item;
+  const contenido = useMemo(() => (abierto.tipo === "escena" ? contenidoDeEscena(items, abierto.id) : []), [abierto, items]);
+  const { lienzoRef, minis } = useMiniaturas3d(contenido, huellas);
+  const acciones: Acciones = { onAbrirEnEscena: (i) => onAbrirEnEscena(escenaDeItem(i), i), onAnadir };
+  return (
+    <div className="p-3 sm:p-4">
+      <Ficha key={`${pila.length}:${abierto.id}`} item={abierto} biblioteca={items} huellas={huellas} minis={minis} acciones={acciones} puedeVolver={pila.length > 1}
+        onVer={(i) => setPila((p) => [...p, i])} onVolver={() => { if (pila.length > 1) setPila((p) => p.slice(0, -1)); else onCerrar(); }} />
+      <div aria-hidden className="pointer-events-none fixed left-[-10000px] top-0 h-[240px] w-[320px]"><canvas ref={lienzoRef} className="block h-full w-full" /></div>
+    </div>
+  );
+}
+
+/** Las escenas predefinidas (Plantillas) como tarjetas compactas con su miniatura 3D. */
+export function TarjetasPlantillas({ plantillas, onElegir, onVacia }: {
+  plantillas: ReadonlyArray<{ id: string; nombre: string; descripcion: string }>; onElegir: (id: string) => void; onVacia: () => void;
+}) {
+  const propios = useBibliotecaPropia();
+  const { items, resumenes, huellas } = useBiblioteca(propios);
+  const deItems = useMemo(() => plantillas.flatMap((p) => { const i = items.find((x) => x.id === `escena:${p.id}`); return i ? [i] : []; }), [plantillas, items]);
+  const { lienzoRef, minis } = useMiniaturas3d(deItems, huellas);
+  return (
+    <>
+      <ul className="grid grid-cols-2 gap-2">
+        {plantillas.map((p) => {
+          const item = deItems.find((i) => i.id === `escena:${p.id}`);
+          const r = item ? resumenes.get(item.id) : undefined;
+          return (
+            <li key={p.id}>
+              <button type="button" onClick={() => onElegir(p.id)} title={p.descripcion}
+                className="flex h-full w-full flex-col gap-1.5 rounded-xl border border-taller-borde bg-taller-tarjeta p-2 text-left text-xs font-medium leading-snug text-taller-texto hover:border-taller-resalte">
+                {item ? <Miniatura3d item={item} url={minis.get(huellas.get(item.id) ?? "")} className="aspect-[4/3] w-full rounded-lg" /> : <span className="aspect-[4/3] w-full rounded-lg bg-taller-encima" aria-hidden />}
+                <span className="line-clamp-2">{p.nombre}</span>
+                <span className="text-[11px] font-normal text-taller-suave">{r ? `${r.globos} globos · ${r.piezas} piezas` : "…"}</span>
+              </button>
+            </li>
+          );
+        })}
+        <li>
+          <button type="button" onClick={onVacia} className="flex h-full min-h-32 w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-taller-borde p-2 text-center text-xs font-medium text-taller-texto-2 hover:border-taller-resalte">
+            <Plus className="size-5 text-taller-medio" aria-hidden />Empezar con la sala vacía
+          </button>
+        </li>
+      </ul>
+      <div aria-hidden className="pointer-events-none fixed left-[-10000px] top-0 h-[240px] w-[320px]"><canvas ref={lienzoRef} className="block h-full w-full" /></div>
+    </>
+  );
+}
+
+/** Los productos exactos de la tienda para la escena que se tiene (los arma el motor, fuera de la página). */
+export function ProductosEscena({ escena, nombre }: { escena: Escena; nombre: string }) {
+  const item = useMemo(() => itemDeEscena({ id: "vista:escena-actual", nombre, ocasiones: ["general"], escena }), [escena, nombre]);
+  const hecho = useArmadoFicha(item);
+  const productos = hecho && !("error" in hecho) ? hecho.productos ?? null : null;
+  if (!productos) return <p className="text-sm text-taller-suave" role="status">{hecho && "error" in hecho ? `No se pudo armar la lista de productos: ${hecho.error}` : "Calculando los productos exactos de la tienda…"}</p>;
+  return <TablaProductos item={item} productos={productos} />;
+}
+
 // ----------------------------------------------------------------------------------------------------------
-// En la pestaña Escena: con una pieza elegida, verla sola o guardarla
+// Inspector: con una pieza elegida, verla sola o guardarla (o, sin pieza, guardar la escena)
 // ----------------------------------------------------------------------------------------------------------
 
 /**
- * Lo de la biblioteca para la pieza elegida de la pestaña Escena: «Ver sola con sus decoraciones» (abre su ficha en la
- * Biblioteca) y «Guardar en la biblioteca» (en la propia, con nombre y ocasión). También guardar la escena entera.
+ * Lo de la biblioteca para la pieza elegida: «Ver sola con sus decoraciones» (abre su ficha) y «Guardar en mi
+ * biblioteca» (en la propia, con nombre y ocasión). También guardar la escena entera. `pedirGuardar` (un contador que
+ * sube) abre el formulario de guardar la pieza desde fuera (el menú contextual).
  */
-export function AccionesPieza({ escena, armada, nodoId, onVer }: { escena: Escena; armada: EscenaArmada; nodoId: string; onVer: (item: ItemBiblioteca) => void }) {
-  const nodo = escena.nodos.find((n) => n.id === nodoId);
+export function AccionesPieza({ escena, armada, nodoId, onVer, pedirGuardar = 0 }: { escena: Escena; armada: EscenaArmada; nodoId: string | null; onVer: (item: ItemBiblioteca) => void; pedirGuardar?: number }) {
+  const nodo = nodoId ? escena.nodos.find((n) => n.id === nodoId) ?? null : null;
   const [abierto, setAbierto] = useState<"pieza" | "escena" | null>(null);
   const [nombre, setNombre] = useState("");
   const [ocasion, setOcasion] = useState("general");
   const [aviso, setAviso] = useState<string | null>(null);
-  if (!nodo) return null;
-  const clase = clasePieza(nodo.pieza);
-  if (clase === "escenografia") return null;
-  const temporal = () => itemDeNodo(escena, nodoId, { id: `vista:${nodoId}`, armada });
+  const [pedido, setPedido] = useState(pedirGuardar);
+  if (pedirGuardar !== pedido) { setPedido(pedirGuardar); if (nodo) { setAbierto("pieza"); setNombre(nodo.nombre); setAviso(null); } }
+  const clase = nodo ? clasePieza(nodo.pieza) : null;
+  const temporal = () => (nodoId ? itemDeNodo(escena, nodoId, { id: `vista:${nodoId}`, armada }) : null);
   const guardar = () => {
-    const nombreFinal = nombre.trim() || (abierto === "escena" ? "Mi escena" : nodo.nombre);
-    const item = abierto === "escena"
-      ? { ...itemDeEscena({ id: idPropio(nombreFinal), nombre: nombreFinal, ocasiones: [ocasion], fuente: { tipo: "propio", titulo: "Guardado desde la pestaña Escena" }, escena }), propio: true }
+    const nombreFinal = nombre.trim() || (abierto === "escena" || !nodo ? "Mi escena" : nodo.nombre);
+    const item = abierto === "escena" || !nodoId
+      ? { ...itemDeEscena({ id: idPropio(nombreFinal), nombre: nombreFinal, ocasiones: [ocasion], fuente: { tipo: "propio", titulo: "Guardado desde el Taller 3D" }, escena }), propio: true }
       : itemDeNodo(escena, nodoId, { id: idPropio(nombreFinal), nombre: nombreFinal, ocasiones: [ocasion], armada });
     if (!item) { setAviso("Esta pieza no se puede guardar sola."); return; }
-    setAviso(guardarPropio(item) ? `Guardado en tu biblioteca: «${nombreFinal}» (${NOMBRE_TIPO.get(item.tipo)?.toLowerCase()}).` : "Tu navegador no dejó guardarlo (almacenamiento lleno o bloqueado).");
+    setAviso(guardarPropio(item) ? `Guardado en tu biblioteca: «${nombreFinal}» (${NOMBRE_TIPO_ITEM.get(item.tipo)?.toLowerCase()}).` : "Tu navegador no dejó guardarlo (almacenamiento lleno o bloqueado).");
     setAbierto(null);
   };
+  const conPieza = nodo !== null && clase !== "escenografia";
   return (
-    <section className="flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde" aria-label="Biblioteca">
-      <h2 className="flex items-center gap-2 text-sm font-semibold text-texto"><Library className="size-4 text-acento" aria-hidden />Biblioteca</h2>
-      <div className="grid grid-cols-2 gap-1">
-        <button type="button" onClick={() => { const i = temporal(); if (i) onVer({ ...i, propio: false, fuente: { tipo: "propio", titulo: "sin guardar (para guardarla, «Guardar en la biblioteca»)" } }); }} className={`${BOTON} ${INACTIVO} inline-flex items-center justify-center gap-1.5 text-xs`}>
-          <Eye className="size-3.5" aria-hidden />{clase === "estructura" ? "Ver sola con sus decoraciones" : "Ver sola"}
-        </button>
-        <button type="button" onClick={() => { setAbierto(abierto === "pieza" ? null : "pieza"); setNombre(nodo.nombre); setAviso(null); }} aria-expanded={abierto === "pieza"} className={`${BOTON} ${abierto === "pieza" ? ACTIVO : INACTIVO} inline-flex items-center justify-center gap-1.5 text-xs`}>
-          <BookmarkPlus className="size-3.5" aria-hidden />Guardar en la biblioteca
-        </button>
-      </div>
-      <button type="button" onClick={() => { setAbierto(abierto === "escena" ? null : "escena"); setNombre(""); setAviso(null); }} aria-expanded={abierto === "escena"} className="min-h-11 self-start text-xs text-acento underline-offset-2 hover:underline lg:min-h-0">
-        Guardar toda la escena en la biblioteca
+    <section className="flex flex-col gap-2" aria-label="Biblioteca">
+      {conPieza && (
+        <div className="grid grid-cols-2 gap-1.5">
+          <button type="button" onClick={() => { const i = temporal(); if (i) onVer({ ...i, propio: false, fuente: { tipo: "propio", titulo: "sin guardar (para guardarla, «Guardar en mi biblioteca»)" } }); }} className={`${BOTON} ${INACTIVO} inline-flex items-center justify-center gap-1.5 text-xs`}>
+            <Eye className="size-3.5" aria-hidden />{clase === "estructura" ? "Ver con sus decoraciones" : "Ver sola"}
+          </button>
+          <button type="button" onClick={() => { setAbierto(abierto === "pieza" ? null : "pieza"); setNombre(nodo.nombre); setAviso(null); }} aria-expanded={abierto === "pieza"} className={`${BOTON} ${abierto === "pieza" ? ACTIVO : INACTIVO} inline-flex items-center justify-center gap-1.5 text-xs`}>
+            <BookmarkPlus className="size-3.5" aria-hidden />Guardar en mi biblioteca
+          </button>
+        </div>
+      )}
+      <button type="button" onClick={() => { setAbierto(abierto === "escena" ? null : "escena"); setNombre(""); setAviso(null); }} aria-expanded={abierto === "escena"} className="min-h-9 self-start text-xs text-taller-acento underline-offset-2 hover:underline">
+        Guardar toda la escena en mi biblioteca
       </button>
       {abierto && (
         <div className="flex flex-col gap-2 rounded-xl bg-superficie-suave p-2 ring-1 ring-borde">
-          <p className="text-[0.7rem] text-texto-suave">{abierto === "escena" ? `La escena entera (${escena.nodos.length} piezas).` : clase === "estructura" ? "La estructura con todo lo que cuelga de ella y lo pegado a sus globos." : "La pieza sola."}</p>
+          <p className="text-[0.7rem] text-texto-suave">{abierto === "escena" || !nodo ? `La escena entera (${escena.nodos.length} piezas).` : clase === "estructura" ? "La estructura con todo lo que cuelga de ella y lo pegado a sus globos." : "La pieza sola."}</p>
           <label className="flex flex-col gap-1 text-xs font-semibold text-texto">Nombre
-            <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={abierto === "escena" ? "Mi escena" : nodo.nombre} className="min-h-11 rounded-lg bg-superficie px-2 text-base font-normal text-texto ring-1 ring-borde sm:text-sm" />
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={abierto === "escena" || !nodo ? "Mi escena" : nodo.nombre} className="min-h-11 rounded-lg bg-superficie px-2 text-base font-normal text-texto ring-1 ring-borde sm:text-sm lg:min-h-9" />
           </label>
           <label className="flex flex-col gap-1 text-xs font-semibold text-texto">Ocasión
             <select value={ocasion} onChange={(e) => setOcasion(e.target.value)} className={SELECT}>{OCASIONES.map((o) => <option key={o} value={o}>{o}</option>)}</select>
           </label>
-          <button type="button" onClick={guardar} className={`${BOTON} ${ACTIVO}`}>Guardar</button>
+          <button type="button" onClick={guardar} className="min-h-11 rounded-[10px] bg-taller-primario px-3 text-sm font-medium text-taller-sobre-primario hover:bg-taller-primario-hover lg:min-h-9">Guardar</button>
         </div>
       )}
       {aviso && <p role="status" className="text-xs text-texto">{aviso}</p>}

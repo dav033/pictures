@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useRef, type RefObject } from "react";
 import {
-  armarEscena, armarNodoSuelto, descendientes, girarNodo, quitarNodo,
-  type Colocacion, type Escena, type EscenaArmada, type NodoArmado, type NodoEscena,
+  armarEscena, armarNodoSuelto, descendientes, girarNodo, idNuevo, quitarNodo,
+  type Caja, type Colocacion, type Escena, type EscenaArmada, type NodoArmado, type NodoEscena,
 } from "@/lib/globos3d/escena";
-import type { PiezaArmada, Pieza } from "@/lib/globos3d/piezas";
+import { armarPieza, type PiezaArmada, type Pieza } from "@/lib/globos3d/piezas";
 import { agregarDecoracion } from "@/lib/globos3d/decoraciones-escena";
 import {
   aceptaDecoraciones, colocacionEnSala, colocacionSobre, copiaEn, deslizarSobre, moverCopia, quitarCopia, radioLateral, separarCopia, sitioDeSobre, sitioEnPieza,
@@ -40,6 +40,7 @@ const UMBRAL_PX = 6;
 const ARRIBA: Punto3 = { x: 0, y: 1, z: 0 };
 const ID_FANTASMA = "__fantasma__";
 const LUGARES_VALIDOS = "una columna, un arco, un aro, una guirnalda, una pared de globos, una pared o el techo (lo marcado en verde)";
+const LUGARES_SALA = "el piso, una pared o el techo (lo marcado en verde)";
 
 /** Lo colgado de un ancla o apoyado sobre otra pieza: se puede coger con el ratón y mover por la superficie. */
 const colgada = (n: NodoEscena | undefined): n is NodoEscena => n !== undefined && (n.colocacion.en === "ancla" || n.colocacion.en === "sobre");
@@ -63,6 +64,10 @@ type Sesion = {
   destino: { colocacion: Colocacion; donde: string } | null;
   /** Arrastre desde el panel: se escucha en la ventana; desde el visor: en el lienzo (con captura del puntero). */
   desdePanel: boolean;
+  /** Una pieza entera (no una decoración): solo va a la sala (piso, paredes, techo), no sobre otra pieza. */
+  soloSala: boolean;
+  /** Lo que ocupa la pieza (de pie y de frente), medido una vez al empezar: no se rearma en cada cuadro. */
+  cajas: { piso: Caja; frente: Caja } | null;
   idPuntero: number | null;
   etiqueta: HTMLDivElement | null;
 };
@@ -95,7 +100,7 @@ export function useLienzoDecoraciones(opciones: Opciones) {
     if (s.etiqueta) { s.etiqueta.style.left = `${s.puntero.x + 14}px`; s.etiqueta.style.top = `${s.puntero.y + 10}px`; }
     const r = lienzo.getBoundingClientRect();
     const encima = s.puntero.x >= r.left && s.puntero.x <= r.right && s.puntero.y >= r.top && s.puntero.y <= r.bottom;
-    const lugar = encima ? visor.lugarEn(s.puntero.x, s.puntero.y, { nodos: s.candidatos, sala: true, preferir: s.origen?.padreId ?? null }) : null;
+    const lugar = encima ? visor.lugarEn(s.puntero.x, s.puntero.y, { nodos: s.soloSala ? [] : s.candidatos, sala: true, preferir: s.origen?.padreId ?? null }) : null;
     let destino: Sesion["destino"] = null;
     if (lugar?.tipo === "nodo") {
       const padre = d.armada.porNodo.find((n) => n.id === lugar.nodo);
@@ -106,10 +111,10 @@ export function useLienzoDecoraciones(opciones: Opciones) {
         if (colocacion) destino = { colocacion, donde: `sobre «${padre.nombre}»${sitio.ancla !== null ? ` (pegada al ancla ${sitio.ancla + 1})` : ""}` };
       }
     } else if (lugar?.tipo === "sala") {
-      destino = { colocacion: colocacionEnSala(d.escena.sala, lugar.superficie, lugar.punto, s.pieza), donde: SUPERFICIE[lugar.superficie] };
+      destino = { colocacion: colocacionEnSala(d.escena.sala, lugar.superficie, lugar.punto, s.pieza, s.cajas ?? undefined), donde: SUPERFICIE[lugar.superficie] };
     }
     s.destino = destino;
-    if (s.etiqueta) s.etiqueta.textContent = destino ? `«${s.nombre}» → ${destino.donde}` : `«${s.nombre}»: suéltala sobre ${LUGARES_VALIDOS}`;
+    if (s.etiqueta) s.etiqueta.textContent = destino ? `Soltar ${destino.donde}` : `«${s.nombre}»: suéltala sobre ${s.soloSala ? LUGARES_SALA : LUGARES_VALIDOS}`;
     if (encima) lienzo.style.cursor = destino ? "grabbing" : "no-drop";
     if (!destino) { visor.mostrarFantasma([], []); return; }
     const armado = armarNodoSuelto(d.escena, d.armada, { id: ID_FANTASMA, nombre: s.nombre, pieza: s.pieza, colocacion: destino.colocacion }, d.cache);
@@ -126,14 +131,20 @@ export function useLienzoDecoraciones(opciones: Opciones) {
     if (!visor || !d.armada) return;
     s.movido = true;
     const fuera = s.origen ? descendientes(d.escena, s.origen.id) : new Set<string>();
-    s.candidatos = d.escena.nodos.filter((n) => !fuera.has(n.id) && aceptaDecoraciones(n, d.armada?.porNodo.find((x) => x.id === n.id))).map((n) => n.id);
+    s.candidatos = s.soloSala ? [] : d.escena.nodos.filter((n) => !fuera.has(n.id) && aceptaDecoraciones(n, d.armada?.porNodo.find((x) => x.id === n.id))).map((n) => n.id);
+    if (s.soloSala && !s.cajas) {
+      // Una vez: lo que ocupa de pie y de frente (la del caché si la escena ya la armó).
+      const caja = (p: Pieza) => (d.cache.get(JSON.stringify(p)) ?? armarPieza(p)).caja;
+      s.cajas = { piso: caja(s.pieza), frente: caja(s.pieza) };
+    }
     visor.resaltarLugares(s.candidatos.flatMap((id) => { const c = d.armada?.porNodo.find((x) => x.id === id)?.caja; return c ? [c] : []; }), true);
     visor.resaltarEncima(null);
     if (s.origen?.caja) visor.ocultarCopia(s.origen.id, s.origen.caja);
     if (s.desdePanel) {
       const etiqueta = document.createElement("div");
       etiqueta.setAttribute("role", "status");
-      etiqueta.style.cssText = "position:fixed;z-index:60;pointer-events:none;max-width:22rem;padding:4px 10px;border-radius:9999px;font-size:12px;background:rgba(17,24,39,.88);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25)";
+      // La etiqueta que sigue al puntero («Soltar en…»), con los colores del taller.
+      etiqueta.style.cssText = "position:fixed;z-index:60;pointer-events:none;max-width:22rem;padding:3px 8px;border-radius:6px;font-size:12px;background:var(--taller-valido-fondo);color:var(--taller-sobre-valido);box-shadow:0 2px 8px var(--sombra)";
       document.body.appendChild(etiqueta);
       s.etiqueta = etiqueta;
     }
@@ -166,7 +177,15 @@ export function useLienzoDecoraciones(opciones: Opciones) {
     const destino = s.destino;
     limpiar();
     if (!s.movido || !d.armada) return;
-    if (!destino) { d.onAviso(`Ahí no se puede poner «${s.nombre}»: suéltala sobre ${LUGARES_VALIDOS}.`); return; }
+    if (!destino) { d.onAviso(`Ahí no se puede poner «${s.nombre}»: suéltala sobre ${s.soloSala ? LUGARES_SALA : LUGARES_VALIDOS}.`); return; }
+    if (s.nueva?.pieza) {
+      const id = idNuevo(d.escena, s.nueva.idBase);
+      d.onCambio({ ...d.escena, nodos: [...d.escena.nodos, { id, nombre: s.nueva.nombre, pieza: structuredClone(s.nueva.pieza), colocacion: destino.colocacion }] });
+      d.onSeleccion(id);
+      d.onCopia(null);
+      d.onAviso(`Listo: «${s.nombre}» quedó ${destino.donde}. Arrástrala para moverla o ábrela con «Editar sola».`);
+      return;
+    }
     if (s.nueva) {
       const { escena, id } = agregarDecoracion(d.escena, s.nueva.decoracion, { en: "sitio", colocacion: destino.colocacion }, { nombre: s.nueva.nombre, idBase: s.nueva.idBase });
       d.onCambio(escena);
@@ -188,8 +207,9 @@ export function useLienzoDecoraciones(opciones: Opciones) {
   const empezarArrastre = useCallback((nueva: DecoracionArrastrada, inicio: { x: number; y: number }) => {
     if (!datos.current.activo || sesionRef.current) return;
     const s: Sesion = {
-      pieza: { tipo: "decoracion", decoracion: structuredClone(nueva.decoracion) }, nombre: nueva.nombre, nueva, origen: null, candidatos: [],
+      pieza: nueva.pieza ? structuredClone(nueva.pieza) : { tipo: "decoracion", decoracion: structuredClone(nueva.decoracion) }, nombre: nueva.nombre, nueva, origen: null, candidatos: [],
       inicio, puntero: { ...inicio, alt: false }, movido: false, destino: null, desdePanel: true, idPuntero: null, etiqueta: null,
+      soloSala: Boolean(nueva.pieza), cajas: null,
     };
     sesionRef.current = s;
     const alMover = (e: PointerEvent) => {
@@ -248,7 +268,7 @@ export function useLienzoDecoraciones(opciones: Opciones) {
         pieza: bajo.nodo.pieza, nombre: bajo.nodo.nombre, nueva: null,
         origen: { id: bajo.nodo.id, copia: bajo.copia, padreId: c.en === "ancla" || c.en === "sobre" ? c.padreId : null, caja: bajo.caja },
         candidatos: [], inicio: { x: e.clientX, y: e.clientY }, puntero: { x: e.clientX, y: e.clientY, alt: e.altKey },
-        movido: false, destino: null, desdePanel: false, idPuntero: e.pointerId, etiqueta: null,
+        movido: false, destino: null, desdePanel: false, idPuntero: e.pointerId, etiqueta: null, soloSala: false, cajas: null,
       };
     };
 

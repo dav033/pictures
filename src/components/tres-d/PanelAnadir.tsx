@@ -1,0 +1,177 @@
+"use client";
+
+import { memo, useCallback, useContext, useMemo, useRef, useState, type PointerEvent as EventoPuntero, type ReactNode } from "react";
+import { Search, X } from "lucide-react";
+import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
+import type { ItemBiblioteca, TipoItem } from "@/lib/globos3d/biblioteca";
+import { miniaturaDecoracion } from "@/lib/globos3d/decoraciones-escena";
+import { DecoracionesPequenas, MiniaturaDecoracion, contarDecoraciones } from "./DecoracionesPequenas";
+import { UtileriaFiesta, contarUtileria } from "./UtileriaFiesta";
+import { MuralesTechoArboles } from "./MuralesTechoArboles";
+import { FormasYLetras } from "./FormasYLetras";
+import { FILTRO_COMPACTO_VACIO, FiltrosCompactos, GrillaCompacta, useBibliotecaFiltrada, type FiltroCompacto } from "./Biblioteca";
+import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
+import { DibujoGlobo, FORMATOS_SUELTOS, NUEVAS_DECORACIONES, NUEVAS_ESTRUCTURAS, globoSuelto, type PiezaParaAnadir } from "./nuevas-taller";
+import { MINI, SEG, SEG_ON, TARJETA, coincide } from "./ui-taller";
+
+export type PestanaAnadir = "estructuras" | "decoraciones" | "utileria" | "ideas";
+
+const PESTANAS: ReadonlyArray<{ id: PestanaAnadir; nombre: string; tipos: readonly TipoItem[]; vacio: string }> = [
+  { id: "estructuras", nombre: "Estructuras", tipos: ["conjunto", "estructura"], vacio: "Ninguna estructura de la biblioteca coincide." },
+  { id: "decoraciones", nombre: "Decoraciones", tipos: ["decoracion"], vacio: "Ninguna decoración de la biblioteca coincide." },
+  { id: "utileria", nombre: "Utilería", tipos: ["utileria"], vacio: "Ninguna utilería de la biblioteca coincide." },
+  { id: "ideas", nombre: "Ideas", tipos: ["escena"], vacio: "Ninguna idea coincide." },
+];
+
+type Props = {
+  escena: Escena;
+  armada: EscenaArmada;
+  onEscena: (e: Escena) => void;
+  seleccion: string | null;
+  onSeleccion: (id: string | null) => void;
+  pestana: PestanaAnadir;
+  onPestana: (p: PestanaAnadir) => void;
+  /** Tocar una tarjeta de «Nuevas» (o un globo suelto): entra a la escena y se abre su editor solitario. */
+  onNueva: (p: PiezaParaAnadir) => void;
+  /** Tocar una tarjeta de la biblioteca: su ficha (vista 3D, productos, añadir). */
+  onFicha: (item: ItemBiblioteca) => void;
+  /** En la hoja del teléfono (sin el título del panel). */
+  enHoja?: boolean;
+};
+
+/** Una tarjeta de «Nuevas»: con el ratón se arrastra al visor (lugares en verde); al tocarla, se abre su editor. */
+const TarjetaNueva = memo(function TarjetaNueva({ nombre, sub, descripcion, dibujo, crear, onNueva }: {
+  nombre: string; sub: string; descripcion: string; dibujo: ReactNode; crear: () => PiezaParaAnadir; onNueva: (p: PiezaParaAnadir) => void;
+}) {
+  const arrastrar = useContext(ArrastreDecoracionContexto);
+  const apretada = useRef<{ x: number; y: number } | null>(null);
+  const alApretar = (e: EventoPuntero<HTMLButtonElement>) => {
+    apretada.current = { x: e.clientX, y: e.clientY };
+    // Con el dedo se toca (arrastrar movería la lista); con ratón o lápiz, se arrastra al visor.
+    if (!arrastrar || e.button !== 0 || e.pointerType === "touch") return;
+    e.preventDefault();
+    const p = crear();
+    arrastrar(p.pieza.tipo === "decoracion" ? { decoracion: p.pieza.decoracion, nombre: p.nombre, idBase: p.idBase } : { pieza: p.pieza, nombre: p.nombre, idBase: p.idBase }, { x: e.clientX, y: e.clientY });
+  };
+  return (
+    <button type="button" onPointerDown={alApretar} title={`${descripcion} Tócala para ajustarla sola, o arrástrala al visor.`}
+      onClick={(e) => {
+        const desde = apretada.current;
+        apretada.current = null;
+        // Un clic lejos de donde se apretó fue un arrastre al visor (ya la puso): no abre el editor.
+        if (desde && e.detail > 0 && Math.hypot(e.clientX - desde.x, e.clientY - desde.y) > 6) return;
+        onNueva(crear());
+      }}
+      className={`${TARJETA} cursor-grab select-none active:cursor-grabbing`}>
+      <span className={MINI} aria-hidden>{dibujo}</span>
+      <span>{nombre}<span className="block text-[11px] font-normal text-taller-suave">{sub}</span></span>
+    </button>
+  );
+});
+
+/** Las decoraciones ajustables (una por tipo), con su dibujo (se arma una vez). */
+const DECORACIONES_NUEVAS = () => NUEVAS_DECORACIONES.map((d) => {
+  const p = d.crear();
+  return { ...d, miniatura: p.pieza.tipo === "decoracion" ? miniaturaDecoracion(p.pieza.decoracion) : null };
+});
+
+/**
+ * Panel «Añadir a la escena»: un buscador para todo y cuatro pestañas (Estructuras, Decoraciones, Utilería, Ideas).
+ * Arriba «Nuevas · ajustables» (cada una abre su editor solitario: el generador de su tipo); luego lo armado (decoraciones
+ * pequeñas, murales, formas y letras, utilería, globos sueltos) y la biblioteca con sus filtros y su ficha.
+ */
+export const PanelAnadir = memo(function PanelAnadir({ escena, armada, onEscena, seleccion, onSeleccion, pestana, onPestana, onNueva, onFicha, enHoja = false }: Props) {
+  const [texto, setTexto] = useState("");
+  const [filtro, setFiltro] = useState<FiltroCompacto>(FILTRO_COMPACTO_VACIO);
+  const datos = PESTANAS.find((p) => p.id === pestana) ?? PESTANAS[0]!;
+  const biblio = useBibliotecaFiltrada(datos.tipos, texto, filtro);
+  const [cuentaMurales, setCuentaMurales] = useState(0);
+  const [cuentaFormas, setCuentaFormas] = useState(0);
+  const decoracionesNuevas = useMemo(() => (pestana === "decoraciones" ? DECORACIONES_NUEVAS() : []), [pestana]);
+  const nuevas = NUEVAS_ESTRUCTURAS.filter((n) => coincide(texto, n.nombre, n.sub, n.descripcion));
+  const decosNuevas = decoracionesNuevas.filter((d) => coincide(texto, d.nombre, d.descripcion));
+  const globos = FORMATOS_SUELTOS.filter((f) => coincide(texto, f.id, f.nombre, "globo suelto"));
+  const cuenta = biblio.visibles.length + (pestana === "estructuras" ? nuevas.length + cuentaMurales + cuentaFormas
+    : pestana === "decoraciones" ? decosNuevas.length + globos.length + contarDecoraciones(texto)
+      : pestana === "utileria" ? contarUtileria(texto) : 0);
+  const alCuentaMurales = useCallback((n: number) => setCuentaMurales(n), []);
+  const alCuentaFormas = useCallback((n: number) => setCuentaFormas(n), []);
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex flex-col gap-3 px-4 pb-3 pt-4">
+        {!enHoja && <h2 className="text-[15px] font-semibold">Añadir a la escena</h2>}
+        <div className="flex h-[38px] items-center gap-2 rounded-[10px] border border-taller-solitario-borde bg-taller-tarjeta px-3 focus-within:border-taller-resalte">
+          <Search className="size-[18px] shrink-0 text-taller-suave" aria-hidden />
+          <label htmlFor="anadir-buscar" className="sr-only">Buscar en todo</label>
+          <input id="anadir-buscar" type="search" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Buscar: columna, flor, dorado…" autoComplete="off"
+            className="h-full min-w-0 flex-1 bg-transparent text-sm text-taller-texto outline-none placeholder:text-taller-suave [&::-webkit-search-cancel-button]:hidden" />
+          {texto && <button type="button" onClick={() => setTexto("")} aria-label="Borrar la búsqueda" className="grid size-6 place-items-center rounded text-taller-suave hover:text-taller-texto"><X className="size-3.5" aria-hidden /></button>}
+          <span className="font-mono text-[11px] text-taller-suave" aria-live="polite" aria-label={`${cuenta} resultados`}>{cuenta}</span>
+        </div>
+        <div role="tablist" aria-label="Qué añadir" className="flex gap-1 rounded-[10px] bg-taller-barra p-[3px]">
+          {PESTANAS.map((p) => (
+            <button key={p.id} type="button" role="tab" id={`anadir-tab-${p.id}`} aria-selected={pestana === p.id} aria-controls="anadir-contenido" onClick={() => onPestana(p.id)}
+              className={`${SEG} flex-1 ${pestana === p.id ? SEG_ON : ""}`}>{p.nombre}</button>
+          ))}
+        </div>
+        <FiltrosCompactos filtro={filtro} onFiltro={setFiltro} ocasiones={biblio.ocasiones} colores={biblio.colores} productos={biblio.productos} />
+      </div>
+
+      <div id="anadir-contenido" role="tabpanel" aria-labelledby={`anadir-tab-${pestana}`} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-4 pb-4">
+        {pestana === "estructuras" && (
+          <>
+            {nuevas.length > 0 && (
+              <section className="flex flex-col gap-2" aria-label="Nuevas y ajustables">
+                <h3 className="taller-rotulo">Nuevas · ajustables</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {nuevas.map((n) => <TarjetaNueva key={n.id} nombre={n.nombre} sub={n.sub} descripcion={n.descripcion} dibujo={n.dibujo()} crear={n.crear} onNueva={onNueva} />)}
+                </div>
+              </section>
+            )}
+            <MuralesTechoArboles escena={escena} onEscena={onEscena} onSeleccion={onSeleccion} filtro={texto} onCuenta={alCuentaMurales} />
+            <FormasYLetras escena={escena} onEscena={onEscena} onSeleccion={onSeleccion} filtro={texto} onCuenta={alCuentaFormas} />
+          </>
+        )}
+        {pestana === "decoraciones" && (
+          <>
+            {decosNuevas.length > 0 && (
+              <section className="flex flex-col gap-2" aria-label="Decoraciones nuevas y ajustables">
+                <h3 className="taller-rotulo">Nuevas · ajustables</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {decosNuevas.map((d) => (
+                    <TarjetaNueva key={d.tipo} nombre={d.nombre} sub="ajustable" descripcion={d.descripcion} crear={d.crear} onNueva={onNueva}
+                      dibujo={d.miniatura ? <MiniaturaDecoracion miniatura={d.miniatura} nombre={d.nombre} className="size-14" /> : null} />
+                  ))}
+                </div>
+              </section>
+            )}
+            <DecoracionesPequenas escena={escena} onEscena={onEscena} armada={armada} seleccion={seleccion} onSeleccion={onSeleccion} filtro={texto} />
+            {globos.length > 0 && (
+              <section className="flex flex-col gap-2" aria-label="Globos sueltos">
+                <h3 className="taller-rotulo">Globos sueltos <span className="font-normal normal-case tracking-normal">· cada globo a su tamaño real</span></h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {globos.map((f) => {
+                    const p = globoSuelto(f);
+                    return <TarjetaNueva key={f.id} nombre={f.id} sub={f.nombre} descripcion={f.descripcion} crear={() => globoSuelto(f)} onNueva={onNueva}
+                      dibujo={<DibujoGlobo formato={f} codigo={p.pieza.tipo === "globo" ? p.pieza.codigo : "009"} />} />;
+                  })}
+                </div>
+              </section>
+            )}
+          </>
+        )}
+        {pestana === "utileria" && <UtileriaFiesta escena={escena} onEscena={onEscena} armada={armada} seleccion={seleccion} onSeleccion={onSeleccion} filtro={texto} />}
+
+        <section className="flex flex-col gap-2" aria-label="De la biblioteca">
+          <h3 className="taller-rotulo flex items-baseline justify-between gap-2">
+            <span>{pestana === "ideas" ? "Ideas y escenas" : "De la biblioteca"}</span>
+            <span className="font-normal normal-case tracking-normal">{biblio.contando ? "contando…" : pestana === "estructuras" ? "con sus decoraciones" : pestana === "ideas" ? "con su enlace y foto" : `${biblio.visibles.length}`}</span>
+          </h3>
+          <GrillaCompacta visibles={biblio.visibles} resumenes={biblio.resumenes} huellas={biblio.huellas} onAbrir={onFicha} vacio={datos.vacio} />
+        </section>
+        <p className="text-xs leading-snug text-taller-suave">Arrastra una tarjeta al visor: se marca en verde dónde puede ir. O tócala y elige dónde.</p>
+      </div>
+    </div>
+  );
+});

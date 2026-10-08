@@ -1,7 +1,7 @@
 import type { Vec3 } from "./modulos";
 import {
   descendientes, idNuevo, marcoDePared, puntoALocal, puntoAlMundo, quitarNodo, vectorALocal, vectorAlMundo,
-  type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoArmado, type NodoEscena, type ParedSala, type Sala,
+  type Caja, type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoArmado, type NodoEscena, type ParedSala, type Sala,
 } from "./escena";
 import { armarPieza, type Pieza } from "./piezas";
 import { esDePie } from "./halloween";
@@ -270,10 +270,10 @@ export type SuperficieSala = "piso" | "techo" | ParedSala;
  * altura (de frente); en el techo, colgada sobre ese punto (cabeza abajo si es una flor); en el piso, ahí. Sin
  * salirse de la sala.
  */
-export function colocacionEnSala(sala: Sala, superficie: SuperficieSala, punto: Vec3, pieza: Pieza): Colocacion {
+export function colocacionEnSala(sala: Sala, superficie: SuperficieSala, punto: Vec3, pieza: Pieza, caja?: { piso: Caja; frente: Caja }): Colocacion {
   const dentro = (v: number, medio: number) => Math.round(Math.max(-medio, Math.min(medio, v)));
   if (superficie === "piso" || superficie === "techo") {
-    const { min, max } = armarPieza(pieza).caja;
+    const { min, max } = caja?.piso ?? armarPieza(pieza).caja;
     const medioX = Math.max(0, sala.anchoCm / 2 - (max.x - min.x) / 2), medioZ = Math.max(0, sala.fondoCm / 2 - (max.z - min.z) / 2);
     const x = dentro(punto.x, medioX), z = dentro(punto.z, medioZ);
     if (superficie === "piso") return { en: "piso", xCm: x, zCm: z, giroGrados: 0 };
@@ -281,7 +281,7 @@ export function colocacionEnSala(sala: Sala, superficie: SuperficieSala, punto: 
     return { en: "techo", xCm: x, zCm: z, cuelgaCm: Math.min(CUELGA_DEL_TECHO_CM, Math.max(0, sala.altoCm - 60)), giroGrados: 0, volteada };
   }
   const marco = marcoDePared(sala, superficie);
-  const { min, max } = armarPieza(pieza.tipo === "decoracion" ? { ...pieza, deFrente: true } : pieza).caja;
+  const { min, max } = caja?.frente ?? armarPieza(pieza.tipo === "decoracion" ? { ...pieza, deFrente: true } : pieza).caja;
   const alto = max.y - min.y, ancho = max.x - min.x;
   const aLo = escalar(menos(punto, marco.centro), marco.derecha);
   return {
