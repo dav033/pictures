@@ -13,6 +13,9 @@
  * 4. La biblioteca como base: buscar_en_biblioteca da una lista corta con ids; insertar_de_biblioteca la pone como
  *    nodos normales; cambiar_pieza la hace más alta, dorada y con flores. Una escena entera en una sala vacía trae su
  *    sala. Y la ruta acepta cualquier escena de la biblioteca (todos los tipos de pieza, hasta MAX_NODOS piezas).
+ * 5. Edición precisa de lo orgánico (ajustar_tamanos): «más R-24» sube de verdad (≥ +50 %, contado en la pieza armada)
+ *    y engruesa el cuerpo si no cabe; quitar/menos R-5, cantidad y porcentaje exactos, «R-24 solo abajo», colores por
+ *    tamaño, más tupida y más abultada; ver_escena cuenta cada tamaño y color.
  */
 import assert from "node:assert/strict";
 import { DECLARACIONES_ESCENA, MAX_NODOS, TIPOS_PIEZA, aplicarHerramienta, resumenEscena, type ResultadoHerramienta } from "../../src/lib/globos3d/herramientas-escena";
@@ -22,6 +25,9 @@ import { armarPieza, type Pieza, type PiezaArmada } from "../../src/lib/globos3d
 import { BIBLIOTECA_FABRICA } from "../../src/lib/globos3d/biblioteca";
 import { referenciaPorCodigo } from "../../src/lib/plan/referencia-sempertex";
 import { coloresDelFormato } from "../../src/lib/globos3d/formatos";
+import { armarOrganico } from "../../src/lib/globos3d/organico";
+import { opcionesArcoOrganico } from "../../src/lib/globos3d/formas-escena";
+import { readFileSync } from "node:fs";
 
 let pruebas = 0;
 const prueba = (nombre: string, fn: () => void) => { fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
@@ -343,6 +349,129 @@ prueba("columnas orgánicas por tipo: «irregular» es recta y de pie; «de form
   const libre = ok(aplicarHerramienta(vacia, "agregar_pieza", { tipo: "trazo_organico", silueta: "columna_racimos", alto_cm: 200, colores: ["azul pastel", "dorado"] })).escena.nodos[0]!;
   assert.equal(libre.colocacion.en, "piso");
   assert.ok(ancho(libre.pieza) > 110, `forma libre: ancho ${ancho(libre.pieza)}`);
+});
+
+// ----------------------------------------------------------------------------------------------------------
+console.log("5 · Edición precisa de lo orgánico: «más R-24», «menos chicos», zonas, colores por tamaño, tupida, abultada");
+// ----------------------------------------------------------------------------------------------------------
+
+/** Globos de un formato contados en la pieza armada (sus materiales). */
+const deFormato = (p: Pieza, f: string) => armarPieza(p).materiales.filter((m) => m.formatoId === f).reduce((s, m) => s + m.cantidad, 0);
+const globosOrganicos = (p: Pieza) => (p.tipo === "organico" ? armarOrganico(p.opciones).globos : p.tipo === "arco_organico" ? armarOrganico(opcionesArcoOrganico(p.arco)).globos : assert.fail(`no es orgánica: ${p.tipo}`));
+/** «R-24: 2 → 5» del resumen: lo que dice debe ser lo que hay en la pieza armada. */
+const reportado = (resumen: string, f: string) => { const m = resumen.match(new RegExp(`${f}: (\\d+) → (\\d+)`)); assert.ok(m, `el resumen cuenta ${f}: ${resumen}`); return { antes: Number(m[1]), despues: Number(m[2]) }; };
+const ajustar = (e: Escena, id: string, args: Record<string, unknown>) => ok(aplicarHerramienta(e, "ajustar_tamanos", { id, ...args }));
+const conTrazo = (args: Record<string, unknown>) => ok(aplicarHerramienta(vacia, "agregar_pieza", { tipo: "trazo_organico", ...args })).escena;
+
+prueba("ajustar_tamanos existe, ver_escena cuenta los globos de cada tamaño y color, y el sistema de la ruta la pide", () => {
+  assert.ok(DECLARACIONES_ESCENA.some((d) => d.name === "ajustar_tamanos"));
+  const e = conTrazo({ silueta: "feston", colores: ["rosado pastel", "blanco"] });
+  assert.match(resumenEscena(e), /globos: R-24 \d+ \[\d{3}×\d+.*R-12 \d+ \[/);
+  const ruta = readFileSync(new URL("../../src/app/api/escena-ia/route.ts", import.meta.url), "utf8");
+  assert.match(ruta, /«más R-24».*ajustar_tamanos/);
+});
+
+prueba("«más R-24» en un trazo: al menos +50 % cada vez (dos veces seguidas), contado en la pieza armada", () => {
+  let e = conTrazo({ silueta: "feston", colores: ["rosado pastel", "blanco"] });
+  const id = e.nodos[0]!.id;
+  for (let vez = 0; vez < 2; vez++) {
+    const antes = deFormato(nodo(e, id).pieza, "R-24");
+    const r = ajustar(e, id, { cambios: [{ formato: "R-24", accion: "mas" }] });
+    e = r.escena;
+    const despues = deFormato(nodo(e, id).pieza, "R-24");
+    assert.ok(despues >= Math.max(antes * 1.5, antes + 2), `vez ${vez + 1}: R-24 ${antes} → ${despues}`);
+    assert.deepEqual(reportado(r.resumen, "R-24"), { antes, despues }, "el resumen dice lo que hay");
+    assert.ok(nodo(e, id).pieza.tipo === "organico" && (nodo(e, id).pieza as Extract<Pieza, { tipo: "organico" }>).generador, "sigue siendo el trazo");
+  }
+  armaBien(e);
+});
+
+prueba("un R-24 no cabe en un trazo delgado: se engruesa donde va (y se dice), o error claro con engrosar: false", () => {
+  const e = conTrazo({ silueta: "esquina_derecha", ancho_cm: 240, alto_cm: 160, grosor_cm: 45, colores: ["verde"] });
+  const id = e.nodos[0]!.id;
+  assert.equal(deFormato(nodo(e, id).pieza, "R-24"), 0);
+  error(aplicarHerramienta(e, "ajustar_tamanos", { id, cambios: [{ formato: "R-24", accion: "mas" }], engrosar: false }), /no caben.*al menos \d+ cm de grosor/);
+  const r = ajustar(e, id, { cambios: [{ formato: "R-24", accion: "mas" }] });
+  assert.match(r.resumen, /engrosé el cuerpo de [\d–]+ a 60 cm/);
+  assert.ok(deFormato(nodo(r.escena, id).pieza, "R-24") >= 3, `R-24: ${deFormato(nodo(r.escena, id).pieza, "R-24")}`);
+});
+
+prueba("«más R-24» también en una guirnalda orgánica sin generador y en el arco orgánico por medidas", () => {
+  for (const tipo of ["guirnalda_organica", "arco_organico"]) {
+    const e = ok(aplicarHerramienta(vacia, "agregar_pieza", { tipo, colores: ["rojo", "blanco"] })).escena;
+    const id = e.nodos[0]!.id;
+    const antes = deFormato(nodo(e, id).pieza, "R-24");
+    const r = ajustar(e, id, { cambios: [{ formato: "R-24", accion: "mas" }] });
+    const despues = deFormato(nodo(r.escena, id).pieza, "R-24");
+    assert.ok(despues >= Math.max(antes * 1.5, 4), `${tipo}: R-24 ${antes} → ${despues}`);
+    armaBien(r.escena);
+  }
+});
+
+prueba("«quita los R-5» deja 0 R-5 (tampoco de relleno); «menos R-5» los baja a cerca de la mitad", () => {
+  const e = conTrazo({ silueta: "feston", colores: ["dorado", "blanco"] });
+  const id = e.nodos[0]!.id;
+  const antes = deFormato(nodo(e, id).pieza, "R-5");
+  assert.ok(antes > 10);
+  const sin = ajustar(e, id, { cambios: [{ formato: "R-5", accion: "quitar" }] });
+  assert.equal(deFormato(nodo(sin.escena, id).pieza, "R-5"), 0);
+  assert.match(sin.resumen, /R-5: \d+ → 0/);
+  armaBien(sin.escena);
+  const menos = deFormato(nodo(ajustar(e, id, { cambios: [{ formato: "R-5", accion: "menos" }] }).escena, id).pieza, "R-5");
+  assert.ok(menos > 0 && menos <= antes * 0.75, `menos R-5: ${antes} → ${menos}`);
+});
+
+prueba("cantidad exacta (8 R-24 → 8 ± 2) y porcentaje (40 % de R-18 en la estructura ± 5)", () => {
+  const e = conTrazo({ silueta: "arco_pared", ancho_cm: 300, alto_cm: 130, grosor_cm: 65, colores: ["azul pastel", "blanco"] });
+  const id = e.nodos[0]!.id;
+  const ocho = deFormato(nodo(ajustar(e, id, { cambios: [{ formato: "R-24", accion: "poner", cantidad: 8 }] }).escena, id).pieza, "R-24");
+  assert.ok(Math.abs(ocho - 8) <= 2, `R-24: ${ocho}`);
+  const p = nodo(ajustar(e, id, { cambios: [{ formato: "R-18", accion: "poner", porcentaje: 40 }] }).escena, id).pieza;
+  const estructura = globosOrganicos(p).filter((g) => g.tamano !== "relleno");
+  const parte = (100 * estructura.filter((g) => g.formatoId === "R-18").length) / estructura.length;
+  assert.ok(Math.abs(parte - 40) <= 5, `R-18 = ${parte.toFixed(1)} % de la estructura`);
+  error(aplicarHerramienta(e, "ajustar_tamanos", { id, cambios: [{ formato: "R-24", accion: "poner" }] }), /cantidad o porcentaje/);
+});
+
+prueba("«los R-24 solo abajo» en un arco orgánico: más R-24 y todos en la parte de abajo", () => {
+  const e = ok(aplicarHerramienta(vacia, "agregar_pieza", { tipo: "arco_organico" })).escena;
+  const id = e.nodos[0]!.id;
+  const r = ajustar(e, id, { cambios: [{ formato: "R-24", accion: "mas", donde: "abajo", solo_ahi: true }] });
+  const p = nodo(r.escena, id).pieza;
+  const grandes = globosOrganicos(p).filter((g) => g.formatoId === "R-24");
+  const { min, max } = armarPieza(p).caja;
+  assert.ok(grandes.length >= 4, `R-24: ${grandes.length}`);
+  assert.ok(grandes.every((g) => g.centro.y < min.y + (max.y - min.y) * 0.5), `alturas ${grandes.map((g) => Math.round(g.centro.y)).join(", ")}`);
+  assert.match(r.resumen, /abajo: \d+ → \d+/);
+});
+
+prueba("colores por tamaño: los R-24 en azul reflex; «el blanco solo en los grandes» (exclusivo)", () => {
+  let e = conTrazo({ silueta: "feston", colores: ["rosado pastel", "blanco"] });
+  const id = e.nodos[0]!.id;
+  e = ajustar(e, id, { cambios: [{ formato: "R-24", accion: "mas" }], colores_por_tamano: [{ formatos: ["R-24"], colores: ["azul reflex"] }] }).escena;
+  const mats = armarPieza(nodo(e, id).pieza).materiales.filter((m) => m.cantidad > 0);
+  assert.ok(mats.some((m) => m.formatoId === "R-24"));
+  for (const m of mats) assert.equal(m.codigo === "940", m.formatoId === "R-24", `${m.formatoId} ${nombre(m.codigo)}`);
+  const ex = ajustar(e, id, { colores_por_tamano: [{ formatos: ["R-24"], colores: ["blanco"], exclusivo: true }] }).escena;
+  const blancos = armarPieza(nodo(ex, id).pieza).materiales.filter((m) => m.cantidad > 0 && /blanco/i.test(nombre(m.codigo)));
+  assert.ok(blancos.length > 0 && blancos.every((m) => m.formatoId === "R-24"), `blanco en ${blancos.map((m) => m.formatoId).join(", ")}`);
+  error(aplicarHerramienta(conTrazo({ silueta: "feston", colores: ["blanco"] }), "ajustar_tamanos", { id, colores_por_tamano: [{ formatos: ["R-24"], colores: ["blanco"], exclusivo: true }] }), /sin color/);
+});
+
+prueba("más tupida (más globos de estructura) y más abultada (racimos), con lo que cambió en el resumen", () => {
+  const e = ok(aplicarHerramienta(vacia, "agregar_pieza", { tipo: "guirnalda_organica", colores: ["verde"] })).escena;
+  const id = e.nodos[0]!.id;
+  const estructura = (p: Pieza) => globosOrganicos(p).filter((g) => g.tamano !== "relleno").length;
+  const t = ajustar(e, id, { densidad: "mas" });
+  assert.ok(estructura(nodo(t.escena, id).pieza) > estructura(nodo(e, id).pieza), "más estructura");
+  assert.match(t.resumen, /estructura \d+ → \d+/);
+  const trazo = conTrazo({ silueta: "feston", colores: ["verde"] });
+  const a = ajustar(trazo, trazo.nodos[0]!.id, { racimos: "mas" });
+  const g = nodo(a.escena, trazo.nodos[0]!.id).pieza;
+  assert.ok(g.tipo === "organico" && (g.generador?.trazo.racimos ?? 0) > 0.6, "racimos del trazo suben");
+  assert.match(a.resumen, /abultado \(racimos\) 0\.35 → 0\.65/);
+  error(aplicarHerramienta(base, "ajustar_tamanos", { id: "columna-izq", densidad: "mas" }), /es para piezas orgánicas/);
+  error(aplicarHerramienta(trazo, "ajustar_tamanos", { id: trazo.nodos[0]!.id }), /No pediste ningún cambio/);
 });
 
 console.log(`\n${pruebas} pruebas OK`);

@@ -12,6 +12,8 @@ import {
 } from "./herramientas-escena-estructuras";
 import { coloresDePieza, recolorearConPaleta, recolorearConPedidos } from "./herramientas-escena-recolor";
 import { IDS_SILUETA, TIPOS_FOLLAJE } from "./herramientas-escena-trazo";
+import { ACCIONES_TAMANO, FORMATOS_AJUSTABLES, ajustarTamanos, esPiezaOrganica, textoConteo } from "./herramientas-escena-tamanos";
+import { ZONAS_ORGANICAS } from "./zonas-organicas";
 import { SILUETAS_TRAZO, cajaTrazo } from "./trazo-organico";
 import { buscarEnBiblioteca, describirItem, itemDeBiblioteca } from "./herramientas-escena-biblioteca";
 import { PATRONES_COLUMNA, type PatronColumna } from "./columnas";
@@ -159,7 +161,7 @@ const PropiedadesSchema = z.object({
   caida_cm: z.number().optional().describe("guirnalda y guirnalda_organica: cuánto cuelga en el medio, 0–150 (0 = recta)"),
   grosor_cm: z.number().optional().describe("orgánicas: diámetro del cuerpo de globos (columna_organica 30–120, 70 por defecto; guirnalda_organica 20–90; semiarco 30–110; aro 20–70; marco 30–100; arco_organico y piezas orgánicas que ya existen 20–120)"),
   inclinacion_cm: z.number().optional().describe("columna_organica: cuánto se corre la punta a la derecha (− a la izquierda), −120 a 120; 0 = recta"),
-  tamanos: z.array(z.string()).max(5).optional().describe("orgánicas: tamaños de globo que se mezclan, de R-24, R-18, R-12, R-9, R-5 (p. ej. [\"R-18\",\"R-12\",\"R-5\"]); si falta, los que caben en el grosor"),
+  tamanos: z.array(z.string()).max(5).optional().describe("orgánicas: SOLO estos tamaños de globo (reemplaza toda la mezcla), de R-24, R-18, R-12, R-9, R-5 (p. ej. [\"R-18\",\"R-12\",\"R-5\"]); si falta, los que caben en el grosor. Para «más/menos R-24», «un 40 % de R-18» o «R-24 solo abajo» en una pieza que ya existe usa ajustar_tamanos"),
   acabado: z.string().max(20).optional().describe("acabado para los colores que no traen uno: pastel, fashion, metal, reflex, satin, silk, neon, cristal"),
   texto: z.string().max(24).optional().describe("letras: lo que dicen («FELIZ», «ANA»); metalizado: número o letras («5», «15», «HBD»)"),
   figura: z.enum(FIGURAS).optional().describe("forma: corazon, estrella, circulo, aro, ancla, cruz, nube, castillo (rellenas), esfera o cono"),
@@ -263,6 +265,29 @@ const ESQUEMAS = {
     tipo_pieza: z.enum(TIPOS_PIEZA).optional().describe("el tipo de su estructura (organico = columnas, arcos, guirnaldas y semiarcos orgánicos de las ideas)"),
     limite: z.number().int().min(1).max(15).optional().describe("cuántos (8 por defecto)"),
   }),
+  ajustar_tamanos: z.object({
+    id: IdSchema.describe("id de la pieza orgánica (arco orgánico, columna/guirnalda/semiarco/aro/marco orgánicos, trazo orgánico, orgánicos de la biblioteca)"),
+    cambios: z.array(z.object({
+      formato: z.enum(FORMATOS_AJUSTABLES).describe("tamaño de globo"),
+      accion: z.enum(ACCIONES_TAMANO).describe("mas: clara subida (al menos +60 %, o hasta cantidad/porcentaje); menos: la mitad (o hasta cantidad/porcentaje); quitar: ninguno (en la zona); poner: exactamente cantidad o porcentaje"),
+      cantidad: z.number().int().min(0).max(3000).optional().describe("cuántos globos de ese tamaño deben quedar al final en la zona (no cuántos sumar)"),
+      porcentaje: z.number().min(0).max(95).optional().describe("qué parte (0–95 %) de los globos de estructura de la zona (sin el relleno) es de ese tamaño al final"),
+      donde: z.enum(ZONAS_ORGANICAS).optional().describe("todo (por defecto); abajo/arriba = tercio de abajo/arriba de la altura; inicio/medio/fin = tercios del recorrido (en un arco, inicio = las patas)"),
+      solo_ahi: z.boolean().optional().describe("con donde: ese tamaño se quita del resto de la pieza («R-24 solo abajo»)"),
+    })).max(6).optional().describe("cambios de tamaños, en orden"),
+    colores_por_tamano: z.array(z.object({
+      formatos: z.array(z.enum(FORMATOS_AJUSTABLES)).min(1).max(6).describe("los tamaños que toman estos colores"),
+      colores: ColoresSchema.describe("colores de esos tamaños (nombre o código; con acabado)"),
+      pesos: z.array(z.number()).max(6).optional().describe("proporción de cada color entre esos tamaños"),
+      exclusivo: z.boolean().optional().describe("true: esos colores salen de los demás tamaños («el azul solo en los R-24»)"),
+    })).max(4).optional().describe("«los R-24 en azul reflex», «los grandes dorados»: esos tamaños solo con esos colores; los demás tamaños siguen con los suyos"),
+    acabado: z.string().max(20).optional().describe("acabado para los colores que no traen uno"),
+    densidad: z.enum(["mas", "menos"]).optional().describe("más tupida (más globos de estructura por metro, ×1,3) o menos (×0,75)"),
+    densidad_factor: z.number().min(0.4).max(2.5).optional().describe("en vez de densidad: multiplica la densidad actual"),
+    racimos: z.enum(["mas", "menos"]).optional().describe("más abultada (racimos que sobresalen, bultos y cinturas) o más pareja"),
+    racimos_valor: z.number().min(0).max(1).optional().describe("en vez de racimos: 0 = cuerpo parejo, 1 = muy abultado"),
+    engrosar: z.boolean().optional().describe("true (por defecto): si un tamaño no cabe en el cuerpo (un R-24 necesita ~60 cm de grosor), se engruesa el cuerpo donde va; false: devuelve error"),
+  }),
   insertar_de_biblioteca: z.object({
     id: z.string().min(1).max(160).describe("id del item (los da buscar_en_biblioteca)"),
     donde: DondeSchema.optional().describe("dónde va la pieza principal; si falta, donde estaba en su escena"),
@@ -276,7 +301,7 @@ export type NombreHerramienta = keyof typeof ESQUEMAS;
 export const NOMBRES_HERRAMIENTAS = Object.keys(ESQUEMAS) as NombreHerramienta[];
 
 const DESCRIPCIONES: Readonly<Record<NombreHerramienta, string>> = {
-  ver_escena: "Lista la sala y cada pieza de la escena: id, tipo, medidas, colores y dónde está. Úsala antes de cambiar algo que ya existe.",
+  ver_escena: "Lista la sala y cada pieza de la escena: id, tipo, medidas, colores y dónde está (en las orgánicas, además, cuántos globos hay de cada tamaño y color). Úsala antes de cambiar algo que ya existe.",
   usar_preset: "Reemplaza TODA la escena por una escena de partida. Solo si el usuario pide empezar de nuevo con una de ellas.",
   agregar_pieza: "Suma una pieza nueva a la escena (no toca las demás). Devuelve su id.",
   mover_pieza: "Cambia dónde está una pieza (piso, pared, techo o colgada de otra). Los campos que falten se conservan si sigue en el mismo sitio.",
@@ -293,6 +318,7 @@ const DESCRIPCIONES: Readonly<Record<NombreHerramienta, string>> = {
   reemplazar_pieza: "Cambia una pieza por otra de OTRO tipo en una sola llamada: mismo sitio, mismo id (lo que cuelga de ella se queda) y sus mismos colores si no se pasan otros. Para «no normales, orgánicas»: reemplazar_pieza con tipo columna_organica en cada columna.",
   recolorear_escena: "Recolorea TODAS las piezas (o las de ids) de una vez respetando el patrón de cada una, o cambia un color por otro en todo. Nunca agrega ni quita piezas. Para «todo a rojo y verde» o «cambia el rosado por azul».",
   buscar_en_biblioteca: "Busca en la Biblioteca del taller (escenas, estructuras con sus decoraciones, estructuras, decoraciones, utilería, ideas Sempertex): devuelve una lista corta con id y resumen. No cambia la escena.",
+  ajustar_tamanos: "Edición PRECISA de una pieza orgánica: más/menos/quitar/poner un tamaño de globo (R-36…R-5) en toda la pieza o en una zona (abajo, arriba, inicio, medio, fin), con cantidad o porcentaje exactos; colores por tamaño («los R-24 en azul»); más o menos tupida (densidad) y abultada (racimos). Arma la pieza y devuelve cuántos globos de cada tamaño había y cuántos hay. Úsala para «más R-24», «menos globos chicos», «los grandes azules», «más tupida», «más abultada».",
   insertar_de_biblioteca: "Pone un item de la biblioteca en la escena como piezas normales y editables (una estructura con sus decoraciones, una pieza o una escena entera). Devuelve los ids: después se cambia con cambiar_pieza (más alta, otro color, con flores…).",
 };
 
@@ -315,11 +341,11 @@ function medidasDe(p: Pieza): string {
   switch (p.tipo) {
     case "columna": return `${p.formatoId} · alto ${r0(p.alturaCm)} cm · ${p.patron}`;
     case "arco": return `${p.formatoId} · ${p.forma} · ${r0(p.anchoCm)}×${r0(p.altoCm)} cm (ancho×alto) · ${p.patron}`;
-    case "arco_organico": return `${r0(p.arco.anchoCm)}×${r0(p.arco.altoCm)} cm (ancho entre patas×alto) · ${p.arco.flores ? "con flores" : "sin flores"}`;
+    case "arco_organico": return `${r0(p.arco.anchoCm)}×${r0(p.arco.altoCm)} cm (ancho entre patas×alto) · ${p.arco.flores ? "con flores" : "sin flores"}${conteoOrganico(p)}`;
     case "guirnalda": return `${p.guirnalda.formatoId} · ${p.guirnalda.recorrido ? "curva libre" : `largo ${r0(p.guirnalda.anchoCm)} cm, caída ${r0(p.guirnalda.caidaCm)} cm`} · ${p.guirnalda.patron}`;
     case "pared_malla": return `${p.formatoId} · ${r0(p.anchoCm)}×${r0(p.altoCm)} cm · ${p.patron}`;
     case "pared_trenzas": return `${r0(p.opciones.anchoCm)}×${r0(p.opciones.altoCm)} cm · ${p.opciones.patron}`;
-    case "organico": return `${medidasCaja(p)}${p.flores ? " · con flores" : ""}`;
+    case "organico": return `${medidasCaja(p)}${p.flores ? " · con flores" : ""}${conteoOrganico(p)}`;
     case "decoracion": return `${p.decoracion.tipo}`;
     case "escenografia": return `escenografía (${p.elementos.length} elementos, sin globos)`;
     case "globo": return `${p.formatoId} · ${r0(p.infladoCm)} cm`;
@@ -345,6 +371,11 @@ function armadaDe(p: Pieza): PiezaArmada {
     while (CACHE_ARMADO.size > 300) { const primera = CACHE_ARMADO.keys().next().value; if (primera === undefined) break; CACHE_ARMADO.delete(primera); }
   }
   return armada;
+}
+
+/** Los globos de un orgánico por tamaño y color (lo que la IA necesita para «más R-24» o «los grandes azules»). */
+function conteoOrganico(p: Pieza): string {
+  try { return ` · ${textoConteo(armadaDe(p).materiales)}`; } catch { return ""; }
 }
 
 /** Alto y ancho de la pieza armada (lo que no tiene medidas propias: orgánicos, formas). */
@@ -944,6 +975,16 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       const nodoNuevo: NodoEscena = { ...nodo, pieza, nombre: a.nombre ?? nodo.nombre };
       if (JSON.stringify(nodoNuevo) === JSON.stringify(nodo)) return { escena, resumen: conNotas(`«${nodo.nombre}» ya estaba así: no cambió nada.`, notas) };
       return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza), resumen: conNotas(`Cambié «${nodoNuevo.nombre}» (${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}, colores ${coloresTexto(pieza)}.`, notas) };
+    }
+
+    case "ajustar_tamanos": {
+      const a = ESQUEMAS.ajustar_tamanos.parse(argumentos);
+      const nodo = nodoPorId(escena, a.id);
+      const organica = esPiezaOrganica(nodo.pieza) ? nodo.pieza : fallar(`«${nodo.nombre}» es ${NOMBRE_TIPO[nodo.pieza.tipo]}: ajustar_tamanos es para piezas orgánicas (de varios tamaños). Para las demás usa cambiar_pieza.`);
+      const hecho = ajustarTamanos(organica, a, notas);
+      comprobarAltura(hecho.pieza, nodo.colocacion, escena.sala);
+      const nodoNuevo: NodoEscena = { ...nodo, pieza: hecho.pieza };
+      return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, hecho.pieza), resumen: conNotas(`Ajusté «${nodo.nombre}» (${nodo.id}): ${hecho.resumen}`, notas) };
     }
 
     case "reemplazar_pieza": {

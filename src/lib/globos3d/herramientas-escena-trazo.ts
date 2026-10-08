@@ -71,7 +71,9 @@ export function ajustarTrazo(pieza: Extract<Pieza, { tipo: "organico" }>, g: Ext
   const grosorMayor = Math.max(...g.trazo.puntos.map((q) => q.grosor));
   const factor = p.grosor_cm === undefined ? undefined : enRango(p.grosor_cm, RANGOS_TRAZO.grosor_cm, "grosor_cm") / grosorMayor;
   if (ancho !== undefined || alto !== undefined || factor !== undefined) gen = escalarGenerador(gen, { ...(ancho !== undefined && ancho !== caja.anchoCm ? { anchoCm: ancho } : {}), ...(alto !== undefined ? { altoCm: alto } : {}), ...(factor !== undefined ? { grosor: factor } : {}) });
-  const t = gen.trazo;
+  // «Solo estos tamaños» reemplaza toda la mezcla: también los cambios por zona y el relleno a medida de ajustar_tamanos.
+  const t: ParametrosTrazoOrganico = { ...gen.trazo };
+  if (p.tamanos?.length) { delete t.zonas; delete t.relleno; }
   gen = { tipo: "trazo", trazo: { ...t, ...(p.colores ? { colores: p.colores } : {}), ...(p.tamanos?.length ? { mezcla: mezclaDe(p.tamanos) } : {}), ...(p.racimos !== undefined ? { racimos: Math.min(1, Math.max(0, p.racimos)) } : {}) } };
   const error = validarTrazo(gen.trazo);
   if (error) fallar(error);

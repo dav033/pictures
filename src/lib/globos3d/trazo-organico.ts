@@ -1,6 +1,7 @@
 import type { Vec3 } from "./modulos";
-import { RELLENO_TUPIDO, crearAzar, type ColorOrganico, type OpcionesOrganico, type PuntoGrosor, type PuntoMezcla, type TramoOrganico } from "./organico";
+import { RELLENO_TUPIDO, crearAzar, type ColorOrganico, type OpcionesOrganico, type PuntoGrosor, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "./organico";
 import { INFLADOS_ORGANICOS, type PesosFormato } from "./estructuras-organicas";
+import { ZONAS_ORGANICAS, pesosConZonas, rangoAltura, type RangoAltura, type ZonaMezcla } from "./zonas-organicas";
 
 /**
  * **Trazo orgánico**: una guirnalda orgánica que sigue CUALQUIER silueta dibujada en la pared — el festón, el arco
@@ -27,6 +28,13 @@ export type ParametrosTrazoOrganico = {
   silueta?: SiluetaTrazo;
   /** Pesos por formato (R-36, R-24, R-18, R-12, R-9, R-5) de la estructura; el relleno va aparte. */
   mezcla: PesosFormato;
+  /**
+   * Cambios de la mezcla por zona («los R-24 solo abajo», «más R-18 al inicio»; ver `zonas-organicas.ts`): en cada
+   * punto del eje dentro de la zona, esos formatos toman su peso sobre la mezcla normalizada. Los pone la IA de escena.
+   */
+  zonas?: readonly ZonaMezcla[];
+  /** El relleno de huecos, si no es el de siempre (R-9 si va en la mezcla y tríos de R-5): «sin R-5», «menos chicos». */
+  relleno?: readonly RellenoOrganico[];
   /** 0 = cuerpo parejo · 1 = muy abultado (racimos grandes que sobresalen y cinturas entre ellos). */
   racimos?: number;
   colores: readonly ColorOrganico[];
@@ -123,9 +131,15 @@ function suavizar(puntos: readonly PuntoTrazo[], pasosPorTramo: number): PuntoTr
   return salida;
 }
 
+/** Un formato cabe en un cuerpo si su inflado no pasa de esta fracción del grosor (un R-24 no va en una punta de 30 cm). */
+export const CABE_EN_GROSOR = 0.82;
+
+/** El grosor mínimo (cm) en que cabe un formato del trazo. */
+export const grosorParaFormato = (formatoId: string) => Math.ceil((INFLADOS_TRAZO[formatoId] ?? 0) / CABE_EN_GROSOR + 1);
+
 /** Los formatos que caben en un cuerpo de `grosor` cm (un R-24 no va en una punta de 30 cm). */
 function pesosQueCaben(mezcla: PesosFormato, grosor: number, inflados: Readonly<Record<string, number>>): Record<string, number> {
-  const caben = Object.entries(mezcla).filter(([f, w]) => w > 0 && (inflados[f] ?? 0) <= grosor * 0.82);
+  const caben = Object.entries(mezcla).filter(([f, w]) => w > 0 && (inflados[f] ?? 0) <= grosor * CABE_EN_GROSOR);
   const lista = caben.length ? caben : Object.entries(mezcla).filter(([, w]) => w > 0).sort((a, b) => (inflados[a[0]] ?? 0) - (inflados[b[0]] ?? 0)).slice(0, 2);
   return Object.fromEntries(lista.map(([f, w]) => [f, Math.round(w * 1000) / 1000]));
 }
@@ -140,15 +154,21 @@ export function validarTrazo(p: ParametrosTrazoOrganico): string | null {
   }
   if (!Object.values(p.mezcla).some((w) => w > 0)) return "La mezcla de tamaños no tiene ningún formato con peso.";
   if (!p.colores.some((c) => c.peso > 0)) return "El trazo necesita al menos un color con peso.";
+  for (const z of p.zonas ?? []) {
+    if (!(ZONAS_ORGANICAS as readonly string[]).includes(z.zona)) return `Zona «${z.zona}» desconocida: ${ZONAS_ORGANICAS.join(", ")}.`;
+    if (Object.values(z.pesos).some((w) => !Number.isFinite(w) || w < 0)) return "Un peso de zona no es un número positivo.";
+  }
   return null;
 }
 
-/** Las opciones del motor orgánico de un trazo. */
-export function opcionesTrazoOrganico(p: ParametrosTrazoOrganico): OpcionesOrganico {
-  const error = validarTrazo(p);
-  if (error) throw new Error(error);
-  const racimos = Math.min(1, Math.max(0, p.racimos ?? 0.35));
-  const azar = crearAzar(p.semilla * 7 + 3);
+/** Un punto del eje suavizado del trazo: dónde está, su grosor y su fracción del recorrido. */
+export type MuestraTrazo = { x: number; y: number; grosor: number; t: number };
+
+/**
+ * El eje del trazo como lo arma el motor: los extremos que tocan el piso bajan a un cuarto del grosor, suavizado y con
+ * la fracción del recorrido de cada punto; y la altura que recorre (para las zonas `abajo`/`arriba`).
+ */
+export function muestrasTrazo(p: Pick<ParametrosTrazoOrganico, "puntos">): { muestras: MuestraTrazo[]; rango: RangoAltura; largoCm: number; tocaPiso: { inicio: boolean; fin: boolean } } {
   // Los extremos que tocan el piso: el eje baja hasta un cuarto del grosor (como el pie de una columna).
   const tocaPiso = (q: PuntoTrazo) => q.y - q.grosor / 2 <= TOCA_PISO_CM;
   const ultimo = p.puntos.length - 1;
@@ -158,28 +178,44 @@ export function opcionesTrazoOrganico(p: ParametrosTrazoOrganico): OpcionesOrgan
   const largos = [0];
   for (let i = 1; i < densos.length; i++) largos.push(largos[i - 1]! + Math.hypot(densos[i]!.x - densos[i - 1]!.x, densos[i]!.y - densos[i - 1]!.y));
   const total = Math.max(1, largos[largos.length - 1]!);
+  const muestras = densos.map((q, i) => ({ ...q, t: largos[i]! / total }));
+  return { muestras, rango: rangoAltura(muestras), largoCm: total, tocaPiso: { inicio: tocaPiso(puntos[0]!), fin: tocaPiso(puntos[ultimo]!) } };
+}
+
+/** Las opciones del motor orgánico de un trazo. */
+export function opcionesTrazoOrganico(p: ParametrosTrazoOrganico): OpcionesOrganico {
+  const error = validarTrazo(p);
+  if (error) throw new Error(error);
+  const racimos = Math.min(1, Math.max(0, p.racimos ?? 0.35));
+  const azar = crearAzar(p.semilla * 7 + 3);
+  const { muestras: densos, rango, largoCm: total, tocaPiso } = muestrasTrazo(p);
   const grosorMedio = densos.reduce((s, q) => s + q.grosor, 0) / densos.length;
   // Racimos: bultos a lo largo (uno cada ~1,1 grosores) que engordan o adelgazan el cuerpo un poco al azar.
   const bultos: Array<{ t: number; amplitud: number }> = [];
   const paso = (grosorMedio * 1.1) / total;
   for (let t = paso * (0.3 + azar() * 0.5); t < 1; t += paso * (0.8 + azar() * 0.5)) bultos.push({ t, amplitud: (azar() * 0.5 - 0.15) * racimos });
   const abulta = (t: number) => 1 + bultos.reduce((s, b) => s + b.amplitud * Math.exp(-(((t - b.t) / (paso * 0.35)) ** 2)), 0);
-  const grosor: PuntoGrosor[] = densos.map((q, i) => ({ t: r1((largos[i]! / total) * 1000) / 1000, radioCm: r1((q.grosor / 2) * Math.max(0.6, abulta(largos[i]! / total))) }));
+  const grosor: PuntoGrosor[] = densos.map((q) => ({ t: r1(q.t * 1000) / 1000, radioCm: r1((q.grosor / 2) * Math.max(0.6, abulta(q.t))) }));
   const cadaMezcla = Math.max(1, Math.round(densos.length / 8));
-  const mezcla: PuntoMezcla[] = densos.flatMap((q, i) => (i % cadaMezcla === 0 || i === densos.length - 1 ? [{ t: r1((largos[i]! / total) * 1000) / 1000, pesos: pesosQueCaben(p.mezcla, q.grosor, INFLADOS_TRAZO) }] : []));
+  // Con zonas, la mezcla se pone en cada punto (para que el cambio de zona quede donde va); sin ellas, cada tanto.
+  const cada = p.zonas?.length ? 1 : cadaMezcla;
+  const mezcla: PuntoMezcla[] = densos.flatMap((q, i) => (i % cada === 0 || i === densos.length - 1 ? [{ t: r1(q.t * 1000) / 1000, pesos: pesosQueCaben(p.zonas?.length ? pesosConZonas(p.mezcla, p.zonas, q.t, q.y, rango) : p.mezcla, q.grosor, INFLADOS_TRAZO) }] : []));
   const recorrido: Vec3[] = densos.map((q) => ({ x: r1(q.x), y: r1(q.y), z: 0 }));
   const tramo: TramoOrganico = {
     id: "trazo", nombre: "Guirnalda orgánica (trazo)", recorrido, grosor, mezcla,
     irregularidad: Math.min(0.3, p.irregularidad ?? 0.12 + racimos * 0.1),
-    tapas: { inicio: !tocaPiso(puntos[0]!), fin: !tocaPiso(puntos[puntos.length - 1]!) },
+    tapas: { inicio: !tocaPiso.inicio, fin: !tocaPiso.fin },
   };
-  const formatos = new Set(Object.keys(p.mezcla).filter((f) => (p.mezcla[f] ?? 0) > 0));
-  const relleno = RELLENO_TUPIDO.filter((x) => formatos.has(x.formatoId) || x.formatoId === "R-5").map((x) => ({ ...x }));
+  const formatos = new Set([...Object.keys(p.mezcla).filter((f) => (p.mezcla[f] ?? 0) > 0), ...(p.zonas ?? []).flatMap((z) => Object.keys(z.pesos).filter((f) => (z.pesos[f] ?? 0) > 0))]);
+  const relleno = (p.relleno ?? RELLENO_TUPIDO.filter((x) => formatos.has(x.formatoId) || x.formatoId === "R-5")).map((x) => ({ ...x }));
   return {
     semilla: p.semilla, tramos: [tramo], inflados: INFLADOS_TRAZO, variacionInflado: 0.07, relleno,
-    colores: p.colores.map((c) => ({ ...c })), suelo: true, huecosFlores: 0, vista: { x: 0, y: 0, z: 1 }, densidad: p.densidad ?? 1.25,
+    colores: p.colores.map((c) => ({ ...c })), suelo: true, huecosFlores: 0, vista: { x: 0, y: 0, z: 1 }, densidad: p.densidad ?? DENSIDAD_TRAZO,
   };
 }
+
+/** La densidad de estructura del trazo cuando no se pide otra. */
+export const DENSIDAD_TRAZO = 1.25;
 
 /** Medidas de la caja del trazo (por fuera, con el grosor): ancho, alto y el punto más bajo de los globos. */
 export function cajaTrazo(p: Pick<ParametrosTrazoOrganico, "puntos">): { anchoCm: number; altoCm: number; minX: number; minY: number } {
