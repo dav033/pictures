@@ -202,4 +202,12 @@ function registro(extra: Partial<RegistroParaIndice> = {}): RegistroParaIndice {
   ok("JSONL: descarta JSON roto, sin hash y repetidos; completa lo que falta");
 }
 
+{
+  // Las fichas reales traen colores {codigo, nombre} y productos {origen, nombre, url, cantidad}: se indexan los códigos y los nombres.
+  const { registros } = leerFichasJsonl(JSON.stringify({ id: "x", tipo: "estructura", nombre: "X", hash: "h", colores: [{ codigo: "570", nombre: "Metal Dorado" }, "005"], productos: [{ origen: "globo", nombre: "GLOBO REDONDO METAL DORADO", url: "u", cantidad: 3 }] }));
+  assert.deepEqual(registros[0]!.colores, ["570", "005"]);
+  assert.deepEqual(registros[0]!.productos, ["GLOBO REDONDO METAL DORADO"]);
+  ok("JSONL: colores y productos como objetos → códigos y nombres");
+}
+
 console.log(`\n${casos} casos ok`);
