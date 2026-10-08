@@ -23,6 +23,10 @@ const VARIANTES: Readonly<Record<string, string>> = {
   verdes: "verde", azules: "azul", rosados: "rosado", rosadas: "rosado", blancos: "blanco", blancas: "blanco", dorados: "dorado", doradas: "dorado",
   rojos: "rojo", rojas: "rojo", negros: "negro", negras: "negro", amarillos: "amarillo", amarillas: "amarillo", plateados: "plata", plateadas: "plata",
   morados: "violeta", moradas: "violeta", violetas: "violeta", naranjas: "naranja", cafes: "cafe", grises: "gris", fucsias: "fucsia",
+  // Lo que dicen los decoradores (y Pinterest, en inglés) para los colores de la tabla (2026-10-08, fotos del dueño).
+  marino: "naval", navy: "naval", esmeralda: "selva", botella: "selva", blush: "nude", marfil: "crema", ivory: "crema", cream: "crema",
+  gold: "dorado", silver: "plata", white: "blanco", black: "negro", pink: "rosado", red: "rojo", green: "verde", blue: "azul",
+  orange: "naranja", yellow: "amarillo", purple: "violeta", lilac: "lila", chrome: "reflex", metallic: "metal",
 };
 /** Palabras de acabado: eligen la familia. */
 export const FAMILIAS_POR_PALABRA: Readonly<Record<string, readonly string[]>> = {

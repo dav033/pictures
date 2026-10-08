@@ -6,6 +6,7 @@ import { armarFiguraTubito, figuraEnIngles, type DecoracionFigura } from "./figu
 import { FIGURAS_PREDEFINIDAS } from "./ideas-figuras";
 import { RIZOS_PREDEFINIDOS, armarRizo, rizoEnIngles, type DecoracionRizo } from "./rizos";
 import { BURBUJAS_PREDEFINIDAS, armarBurbuja, burbujaEnIngles, type DecoracionBurbuja } from "./burbujas";
+import { RACIMOS_PREDEFINIDOS, armarOrbe, armarRacimo, orbeEnIngles, racimoEnIngles, type DecoracionOrbe, type DecoracionRacimo } from "./racimos-globos";
 
 /**
  * Todas las decoraciones aplicadas por propiedades: la flor de globos redondos (`decoraciones.ts`) y las de
@@ -88,7 +89,10 @@ export type Decoracion =
   /** Rizos de tubito (tirabuzón, resorte, penacho, flecos, voluta, burbujas en cadena): `rizos.ts`. */
   | DecoracionRizo
   /** Globo burbuja con globos (y confeti o plumas) dentro, y el globo dentro de globo: `burbujas.ts`. */
-  | DecoracionBurbuja;
+  | DecoracionBurbuja
+  /** Racimos de globitos (uvas, bola, collar) y el orbe con flecos: `racimos-globos.ts`. */
+  | DecoracionRacimo
+  | DecoracionOrbe;
 
 export type TipoDecoracion = Decoracion["tipo"];
 
@@ -324,6 +328,10 @@ export function armarDecoracion(decoracion: Decoracion): DecoracionArmada {
       const burbuja = armarBurbuja(decoracion.propiedades);
       return armada(burbuja.globos, burbuja.tubos, burbuja.radioCm, burbuja.fondoCm);
     }
+    case "racimo": case "orbe": {
+      const r = decoracion.tipo === "racimo" ? armarRacimo(decoracion.propiedades) : armarOrbe(decoracion.propiedades);
+      return armada(r.globos, r.tubos, r.radioCm, r.fondoCm);
+    }
     default: {
       const figura = armarHalloween(decoracion);
       return armada(figura.globos, figura.tubos, figura.radioCm, figura.fondoCm);
@@ -340,6 +348,8 @@ export function decoracionEnIngles(decoracion: Decoracion): string {
     case "figura": return figuraEnIngles(decoracion.propiedades);
     case "rizo": return rizoEnIngles(decoracion.propiedades);
     case "burbuja": return burbujaEnIngles(decoracion.propiedades);
+    case "racimo": return racimoEnIngles(decoracion.propiedades);
+    case "orbe": return orbeEnIngles(decoracion.propiedades);
     default: return halloweenEnIngles(decoracion);
   }
 }
@@ -402,6 +412,8 @@ export const DECORACIONES_PREDEFINIDAS: ReadonlyArray<{ id: string; nombre: stri
   // Rizos de tubito y globos burbuja (los que más faltan en las ideas de sempertex.com).
   ...RIZOS_PREDEFINIDOS,
   ...BURBUJAS_PREDEFINIDAS,
+  // Racimos de uvas, bolitas y collares de R-5, y el orbe con flecos (las fotos de Pinterest del dueño).
+  ...RACIMOS_PREDEFINIDOS,
 ];
 
 export function decoracionPredefinida(id: string): Decoracion {
