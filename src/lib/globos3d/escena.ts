@@ -11,6 +11,7 @@ import { arbolEnIngles } from "./arboles-globos";
 import { sumarMateriales } from "./mezcla";
 import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
+import { siluetaEnIngles } from "./render-ia";
 
 /**
  * Una **escena**: varias piezas del taller colocadas en una sala (el arco orgánico con dos columnas y una
@@ -521,7 +522,10 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     const x = (hecho.caja.min.x + hecho.caja.max.x) / 2;
     const lado = x < -escena.sala.anchoCm * 0.12 ? "on the left" : x > escena.sala.anchoCm * 0.12 ? "on the right" : "in the center";
     const lugar = c.en === "piso" ? `standing ${lado}` : c.en === "pared" ? LUGAR_EN[c.pared] : c.en === "techo" ? "hanging from the ceiling" : c.en === "libre" ? `set on the arrangement ${lado}` : `attached to the ${escena.nodos.find((n) => n.id === c.padreId)?.pieza.tipo.replace("_", " ") ?? "structure"}`;
-    const frase = piezaEnIngles(nodo.pieza, hecho.caja);
+    // Lo orgánico, con su silueta vista de frente (si mira a la cámara): sin ella FLUX completaba una media guirnalda.
+    const deFrente = (c.en === "pared" && c.pared === "fondo") || ((c.en === "piso" || c.en === "libre") && Math.abs(c.giroGrados) < 20);
+    const silueta = deFrente && (nodo.pieza.tipo === "organico" || nodo.pieza.tipo === "arco_organico") && hecho.copias === 1 ? siluetaEnIngles(hecho.globos) : "";
+    const frase = `${piezaEnIngles(nodo.pieza, hecho.caja)}${silueta ? ` (${silueta})` : ""}`;
     const clave = `${nodo.pieza.tipo}|${frase}|${c.en}`;
     const previo = vistos.get(clave);
     if (previo) { previo.cantidad += hecho.copias; previo.lugares.push(lugar); }

@@ -2,10 +2,13 @@
  * Texto que acompaña la captura del taller 3D a FLUX `/edit` (`promptRender3d`, `descripcionRender3d`). Sin coste:
  * no llama a FLUX.
  * - pide conservar forma, cantidades y colores, y cambia solo el fondo y el piso por el lugar elegido;
- * - la descripción va en inglés, de mayor a menor cantidad, y nunca pasa de MAX_DESCRIPCION.
+ * - la descripción va en inglés, de mayor a menor cantidad, y nunca pasa de MAX_DESCRIPCION;
+ * - lo orgánico lleva su silueta: la media guirnalda de la araña es medio arco de una pata (FLUX la completaba).
  */
 import assert from "node:assert/strict";
 import { AMBIENTES_RENDER, MAX_DESCRIPCION, descripcionRender3d, formatoEnIngles, promptRender3d } from "../../src/lib/globos3d/render-ia";
+import { ESCENAS_HALLOWEEN, ESCENAS_PREDEFINIDAS } from "../../src/lib/globos3d/escenas-presets";
+import { armarEscena, escenaEnIngles } from "../../src/lib/globos3d/escena";
 
 assert.equal(formatoEnIngles("R-12"), "12-inch round");
 assert.equal(formatoEnIngles("LOL-6"), "6-inch Link-O-Loon");
@@ -35,5 +38,17 @@ for (const ambiente of AMBIENTES_RENDER) {
   assert.ok(!/Sempertex/i.test(prompt), "sin marcas en el texto");
 }
 assert.ok(!promptRender3d("", "estudio").includes("The decoration:"));
+
+// La silueta de lo orgánico, vista de frente.
+const enIngles = (id: string) => {
+  const p = [...ESCENAS_HALLOWEEN, ...ESCENAS_PREDEFINIDAS].find((x) => x.id === id)!;
+  return escenaEnIngles(p.escena, armarEscena(p.escena));
+};
+const media = enIngles("halloween_guirnalda_arana");
+assert.match(media, /HALF arch: it rises from the bottom left/, media);
+assert.match(media, /only one leg/);
+assert.match(enIngles("arco_organico_columnas_guirnalda"), /complete arch: two legs/);
+assert.ok(!/HALF arch/.test(enIngles("arco_organico_columnas_guirnalda")));
+assert.match(promptRender3d("x", "estudio"), /never complete, mirror or close them/);
 
 console.log("test-render-ia: ok");
