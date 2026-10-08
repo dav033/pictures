@@ -230,10 +230,13 @@ const FILA = {
 
 const FORMA_RAIZ = ["avisos", "fuente", "ids", "interpretacion", "ramas", "resultados"];
 
+/** Las pruebas nunca llaman a Gemini: sin vector de consulta salvo donde se prueba a propósito. */
+const sinEmbedding = async (): Promise<undefined> => undefined;
+
 async function main(): Promise<void> {
   {
     const { obtenerPool, llamadas } = poolFalso([FILA]);
-    const r = await buscarEnTaller({ texto: "columna link-o-loon", filtros: { celebraciones: ["graduacion"] } }, { habilitado: true, obtenerPool });
+    const r = await buscarEnTaller({ texto: "columna link-o-loon", filtros: { celebraciones: ["graduacion"] } }, { habilitado: true, embeberConsulta: sinEmbedding, obtenerPool });
     assert.equal(llamadas.length, 1, "una sola sentencia, un solo viaje");
     assert.equal(r.fuente, "rag");
     assert.deepEqual(Object.keys(r).sort(), FORMA_RAIZ);
@@ -265,7 +268,7 @@ async function main(): Promise<void> {
     assert.equal(llamadas.length, 0, "bandera apagada: el pool ni se toca");
     assert.equal(r.fuente, "memoria");
     assert.deepEqual(Object.keys(r).sort(), FORMA_RAIZ, "misma forma que la respuesta RAG");
-    assert.deepEqual(Object.keys(r.resultados[0]!).sort(), Object.keys((await buscarEnTaller({}, { habilitado: true, obtenerPool: poolFalso([FILA]).obtenerPool })).resultados[0]!).sort(), "mismo ítem en ambas");
+    assert.deepEqual(Object.keys(r.resultados[0]!).sort(), Object.keys((await buscarEnTaller({}, { habilitado: true, embeberConsulta: sinEmbedding, obtenerPool: poolFalso([FILA]).obtenerPool })).resultados[0]!).sort(), "mismo ítem en ambas");
     assert.deepEqual(r.ids, [real.id]);
     assert.ok(r.avisos.some((a) => /ignora estos filtros: formatos, alto mínimo/.test(a)));
     assert.ok(r.avisos.some((a) => /no usa vectores/.test(a)));
@@ -278,7 +281,7 @@ async function main(): Promise<void> {
     const warn = console.warn;
     console.warn = (...a: unknown[]) => { avisosConsola.push(a); };
     try {
-      const r = await buscarEnTaller({ texto: palabra }, { habilitado: true, obtenerPool, memoria: memoriaFalsa });
+      const r = await buscarEnTaller({ texto: palabra }, { habilitado: true, embeberConsulta: sinEmbedding, obtenerPool, memoria: memoriaFalsa });
       assert.equal(llamadas.length, 1);
       assert.equal(r.fuente, "memoria", "la base falló: respaldo");
       assert.deepEqual(r.ids, [real.id]);
@@ -288,7 +291,7 @@ async function main(): Promise<void> {
     } finally {
       console.warn = warn;
     }
-    const sinPool = await buscarEnTaller({ texto: palabra }, { habilitado: true, obtenerPool: () => { throw new Error("DATABASE_URL no está configurada"); }, memoria: memoriaFalsa });
+    const sinPool = await buscarEnTaller({ texto: palabra }, { habilitado: true, embeberConsulta: sinEmbedding, obtenerPool: () => { throw new Error("DATABASE_URL no está configurada"); }, memoria: memoriaFalsa });
     assert.equal(sinPool.fuente, "memoria");
     ok("la base falla (consulta o pool): memoria con aviso, sin filtrar el error");
   }
@@ -302,8 +305,21 @@ async function main(): Promise<void> {
     assert.deepEqual(filtrada.ids, [], "la fuente sí se filtra en memoria");
     const entrada = await buscarEnTaller({ vectorTexto: [1, 2] }, { habilitado: false });
     assert.equal(entrada.fuente, "memoria", "apagada, ni siquiera se valida el vector");
-    await assert.rejects(buscarEnTaller({ vectorTexto: [1, 2] }, { habilitado: true, obtenerPool: poolFalso([]).obtenerPool }), /768/, "encendida, un vector malo es error de quien llama (no cae a memoria)");
+    await assert.rejects(buscarEnTaller({ vectorTexto: [1, 2] }, { habilitado: true, embeberConsulta: sinEmbedding, obtenerPool: poolFalso([]).obtenerPool }), /768/, "encendida, un vector malo es error de quien llama (no cae a memoria)");
     ok("memoria real (biblioteca de fábrica): límite, puntajes, filtro de fuente y vector inválido");
+  }
+
+  {
+    // Encendida y sin vector: se pide el embedding de la consulta y entra la rama vectorial de texto; si falla, solo léxica.
+    const conVector = poolFalso([FILA]);
+    const pedidos: string[] = [];
+    const r = await buscarEnTaller({ texto: "columna dorada" }, { habilitado: true, obtenerPool: conVector.obtenerPool, embeberConsulta: async (t) => { pedidos.push(t); return Array.from({ length: 768 }, () => 0.01); } });
+    assert.deepEqual(pedidos, ["columna dorada"]);
+    assert.ok(r.ramas.includes("vector_texto"), `ramas: ${r.ramas.join(",")}`);
+    const sinVector = await buscarEnTaller({ texto: "columna dorada" }, { habilitado: true, obtenerPool: poolFalso([FILA]).obtenerPool, embeberConsulta: async () => { throw new Error("gemini caído"); } });
+    assert.equal(sinVector.fuente, "rag");
+    assert.ok(!sinVector.ramas.includes("vector_texto"));
+    ok("embedding de la consulta: entra la rama vectorial; si Gemini falla, sigue léxica en la base");
   }
 
   console.log(`\n${casos} casos ok`);
