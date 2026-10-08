@@ -8,6 +8,7 @@
  */
 import { referenciaPorCodigo } from "../../src/lib/plan/referencia-sempertex";
 import { SALA_INICIAL, armarEscena, type Escena, type NodoEscena } from "../../src/lib/globos3d/escena";
+import { ARBOLES_PREDEFINIDOS } from "../../src/lib/globos3d/arboles-globos";
 import { escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
 import { aplicarHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 import { codigosDePedido, plegar } from "../../src/lib/globos3d/herramientas-escena-colores";
@@ -21,6 +22,8 @@ export type Turno = { rol: "usuario" | "asistente"; texto: string };
 export type Contexto = {
   /** Escena de partida (id de `ESCENAS_PREDEFINIDAS`); sin ella, la sala vacía. */
   preset?: string;
+  /** Escena de partida armada aquí (`ESCENAS_DEL_BANCO`): las que no salen de un preset ni de herramientas. */
+  escena?: keyof typeof ESCENAS_DEL_BANCO;
   /** Herramientas que se aplican antes para dejar la escena como estaba cuando el usuario escribió. */
   pasos?: Llamada[];
   /** Id de la pieza elegida en el editor (viaja como `seleccion`). */
@@ -70,8 +73,22 @@ export type Banco = { version: number; descripcion: string; casos: Caso[] };
 // Escena de partida
 // ----------------------------------------------------------------------------------------------------------
 
+/** El caso real del dueño: una decoración «Ramas» (palmera de hojas de LOL-660 blancas) junto a una pared de Link-O-Loon blanca: «los link-o-loon de las ramas» son solo los de «Ramas». */
+function ramasDeLink(): Escena {
+  const arbol = structuredClone(ARBOLES_PREDEFINIDOS[0]!.arbol);
+  if (arbol.copa.tipo !== "palmera") throw new Error("se esperaba una palmera");
+  arbol.copa.hojas = { ...arbol.copa.hojas, formatoId: "LOL-660", codigos: ["005"] };
+  const nodos: NodoEscena[] = [
+    { id: "ramas", nombre: "Ramas", pieza: { tipo: "arbol_globos", arbol }, colocacion: { en: "piso", xCm: -120, zCm: 0, giroGrados: 0 } },
+    { id: "pared-link", nombre: "Pared de link", pieza: { tipo: "pared_malla", formatoId: "LOL-12", infladoCm: 25, anchoCm: 150, altoCm: 150, patron: "un_color", colores: ["005"], union: { infladoCm: 12, codigo: "005" } }, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 80, alturaCm: 20 } },
+  ];
+  return { sala: structuredClone(SALA_INICIAL), nodos };
+}
+
+export const ESCENAS_DEL_BANCO = { ramas_de_link: ramasDeLink } as const;
+
 export function escenaDeContexto(c: Contexto): Escena {
-  let escena: Escena = c.preset ? escenaPredefinida(c.preset) : { sala: structuredClone(SALA_INICIAL), nodos: [] };
+  let escena: Escena = c.escena ? ESCENAS_DEL_BANCO[c.escena]() : c.preset ? escenaPredefinida(c.preset) : { sala: structuredClone(SALA_INICIAL), nodos: [] };
   for (const p of c.pasos ?? []) {
     const r = aplicarHerramienta(escena, p.herramienta, p.args);
     if (!r.ok) throw new Error(`contexto: ${p.herramienta} falló: ${r.error}`);
