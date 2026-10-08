@@ -175,6 +175,12 @@ function parteCoincide(etiqueta: string, canon: string, cache: Map<string, strin
   return partes.includes(canon);
 }
 
+/** «pata/izquierda» ya incluye «pata/izquierda/relleno»: el selector lleva solo las de más arriba. */
+function sinSubpartes(partes: readonly string[]): string[] {
+  const unicas = [...new Set(partes)];
+  return unicas.filter((p) => !unicas.some((q) => q !== p && p.startsWith(`${q}/`)));
+}
+
 type Criterios = { formatos: string[]; partes: string[]; colores: string[]; tipos: string[]; palabras: string[] };
 
 type Evaluacion = {
@@ -205,7 +211,7 @@ function evaluar(n: NodoEscena, k: Criterios, inv: readonly LineaInventario[], c
   const formatosSinParte = inv.filter((l) => deFormato(l) && (!colores.length || colores.includes(l.codigo))).reduce((s, l) => s + l.cantidad, 0);
   const selector: SelectorGlobos | null = deGlobos && cantidad > 0 ? {
     ...(k.formatos.length ? { formatos: [...new Set(lineas.map((l) => l.formatoId))] } : {}),
-    ...(partesFiltro.length ? { partes: [...new Set(lineas.map((l) => l.parte))] } : {}),
+    ...(partesFiltro.length ? { partes: sinSubpartes(lineas.map((l) => l.parte)) } : {}),
     ...(colores.length ? { colores: [...new Set(lineas.map((l) => l.codigo))] } : {}),
   } : null;
   const puntaje = (completa ? 1000 : 0) + parteEnNombre.length * 200 + (tipoOk ? 100 : 0) + palabras.length * 60 + (deGlobos ? Math.min(cantidad, 99) : 0) + (formatosSinParte && k.formatos.length ? 10 : 0);

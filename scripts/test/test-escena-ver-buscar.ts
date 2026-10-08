@@ -80,13 +80,13 @@ prueba("cada pieza dice de qué formatos y colores está hecha (y sus partes)", 
   const linea = (id: string) => r.split("\n").find((l) => l.startsWith(`- ${id} `)) ?? "";
   assert.match(linea("ramas"), /lleva: .*LOL-660 032 verde selva/);
   assert.match(linea("pared-link"), /lleva: .*36 LOL-12 005 blanco/);
-  assert.match(linea("columna-izq"), /lleva: 9 R-12 609 rosado/);
-  assert.match(linea("arco"), /partes: pata\/derecha \d+, pata\/izquierda \d+/);
+  assert.match(linea("columna-izq"), /lleva: .*9 R-12 609 rosado/);
+  assert.match(linea("arco"), /partes: pata\/derecha \d+, .*pata\/izquierda \d+/);
   for (const l of r.split("\n").filter((x) => x.startsWith("- "))) assert.ok(l.length < 900, `línea corta: ${l.length}`);
 });
 prueba("lo etiquetado sale con su parte; lo que no lleva globos no agrega nada", () => {
   const r = resumenEscena(halloween);
-  assert.match(r, /- arbol .*partes: base \d+, tronco \d+/);
+  assert.match(r, /- arbol .*partes: base \d+, .*tronco \d+/);
   assert.match(r, /- ramas .*lleva: 20 T-260 076 chocolate/);
   assert.ok(!/fantasma-izq .*lleva:/.test(r), "un fantasma de papel no lleva globos");
 });
@@ -132,7 +132,7 @@ prueba("«la pata izquierda del arco» → la parte etiquetada, con su selector"
 });
 prueba("«los R-5 dorados del tronco» → la parte tronco (aunque el árbol se llame «base y tronco»), solo el dorado", () => {
   const r = consulta(halloween, "buscar_en_escena", { texto: "los R-5 dorados del tronco" });
-  assert.match(primero(r), /id arbol.*6 R-5 970 dorado \[tronco\].*selector: \{"formatos":\["R-5"\],"partes":\["tronco"\],"colores":\["970"\]\}/);
+  assert.match(primero(r), /id arbol.*6 R-5 970 dorado \[tronco[^\]]*\].*selector: \{"formatos":\["R-5"\],"partes":\["tronco"\],"colores":\["970"\]\}/);
 });
 prueba("por argumentos: formatos, partes, colores e ids", () => {
   const r = consulta(halloween, "buscar_en_escena", { formatos: ["R-18"], partes: ["base"], ids: ["arbol", "ramas"] });
@@ -149,7 +149,7 @@ prueba("un color que ninguna pieza tiene ahí se toma como el color nuevo (se bu
 prueba("lo que no está: lo dice y cuenta qué formatos y partes hay", () => {
   const r = consulta(base, "buscar_en_escena", { texto: "los corazones" });
   assert.match(r, /No encontré eso en la escena/);
-  assert.match(r, /hay formatos R-5, R-9, R-12, R-18, R-24 y partes pata\/derecha, pata\/izquierda/);
+  assert.match(r, /hay formatos R-5, R-9, R-12, R-18, R-24 y partes pata\/derecha, .*pata\/izquierda/);
 });
 prueba("por tipo y por nombre, sin criterios de globos", () => {
   const r = consulta(base, "buscar_en_escena", { texto: "la columna izquierda" });
@@ -176,10 +176,10 @@ prueba("«los cocos» y «la base del tronco» por segmento de la etiqueta", () 
   assert.match(primero(buscarEnEscena(conPalmera, { texto: "los cocos" }, etiquetada)), /id palmera.*3 R-12 076 chocolate \[copa\/cocos\]/);
   assert.match(primero(buscarEnEscena(conPalmera, { texto: "los globos de la base del tronco" }, etiquetada)), /id palmera.*selector: \{"partes":\["tronco\/base"\]\}/);
 });
-prueba("sin etiquetas, una parte nombrada no se inventa: «aún no dice sus partes»", () => {
+prueba("la palmera ya etiquetada: «las hojas de la palmera» encuentra solo las hojas", () => {
   const r = consulta(conPalmera, "buscar_en_escena", { texto: "las hojas de la palmera" });
-  assert.match(r, /No encontré eso/);
-  assert.match(r, /«Palmera curva» \(id palmera\): es de ese tipo; pero aún no dice sus partes \(no se sabe si tiene «hojas»\)/);
+  assert.match(r, /«Palmera curva» \(id palmera\).*T-260 032 verde selva \[hojas\].*selector: \{"partes":\["hojas"\]\}/);
+  assert.doesNotMatch(r, /\[tronco/);
 });
 prueba("ver_pieza con etiquetas: partes → formatos → colores", () => {
   const v = verPieza(conPalmera, "palmera", etiquetada);
@@ -192,10 +192,10 @@ console.log("ver_pieza");
 prueba("una pieza etiquetada: total, partes, formatos y colores; ejemplo de selector", () => {
   const v = consulta(halloween, "ver_pieza", { id: "arbol" });
   assert.match(v, /«Árbol \(base y tronco\)» \(id arbol\) · organico/);
-  assert.match(v, /241 globos en 2 partes:/);
-  assert.match(v, /^- base: R-5 ×104 \(076 Fashion Chocolate ×78/m);
+  assert.match(v, /241 globos en 4 partes:/);
+  assert.match(v, /^- base\/relleno: R-5 ×104 \(076 Fashion Chocolate ×78/m);
   assert.match(v, /^- tronco: .*R-12 ×29 \(076 Fashion Chocolate ×29\)/m);
-  assert.match(v, /selector \{"partes":\["base"\],"formatos":\["R-5"\]\} con el id arbol/);
+  assert.match(v, /selector \{"partes":\["base"\],"formatos":\["R-18"\]\} con el id arbol/);
 });
 prueba("lo que va encima o colgado de ella sale con su id y su contenido; y ella dice de quién cuelga", () => {
   const e = ok(aplicarHerramienta(base, "poner_sobre", { decoracion_id: "flor_r5_rosada", padre_id: "columna-izq", altura_cm: 120 })).escena;

@@ -1,6 +1,7 @@
 import { TABLA_SEMPERTEX, referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { FAMILIAS_POR_PALABRA, codigosDePedido, palabras, plegar } from "./herramientas-escena-colores";
 import { PARTES_DECORACIONES } from "./partes-decoraciones";
+import { PARTES_ESTRUCTURA } from "./partes-estructuras";
 import type { SelectorGlobos } from "./partes-globos";
 import type { TipoPieza } from "./piezas";
 import {
@@ -49,22 +50,32 @@ function plurales(parte: string): string[] {
 }
 
 /**
- * Los sinónimos que no confunden: fuera los que son el nombre de otra parte («collar» en la corona) y los que
- * comparten dos partes («ring» es corona y collar); esos se resuelven mejor con buscar_en_escena.
+ * Las partes de decoraciones y estructuras juntas, con los sinónimos que no confunden: fuera los que son el nombre
+ * de otra parte («collar» en la corona, «cuerpo» en la trenza) y los que comparten dos partes («ring» es corona y
+ * collar); esos se resuelven mejor con buscar_en_escena.
  */
-function partesSinChoques(partes: readonly { nombre: string; ingles: readonly string[] }[]): ParteDeclarada[] {
-  const nombres = new Set(partes.map((p) => normalizarTexto(p.nombre.replace(/\//g, " "))));
-  const usos = new Map<string, number>();
-  for (const p of partes) for (const s of new Set(p.ingles.map(normalizarTexto))) usos.set(s, (usos.get(s) ?? 0) + 1);
-  return partes.map((p) => ({
-    parte: p.nombre,
-    sinonimos: [...p.ingles.filter((s) => !nombres.has(normalizarTexto(s)) && usos.get(normalizarTexto(s)) === 1), ...plurales(p.nombre)],
-  }));
+function partesSinChoques(partes: readonly { nombre: string; sinonimos: readonly string[] }[]): ParteDeclarada[] {
+  const sinBarra = (t: string) => normalizarTexto(t.replace(/\//g, " "));
+  const nombres = new Set(partes.map((p) => sinBarra(p.nombre)));
+  const duenos = new Map<string, Set<string>>();
+  for (const p of partes) for (const s of p.sinonimos) {
+    const n = normalizarTexto(s);
+    duenos.set(n, (duenos.get(n) ?? new Set<string>()).add(p.nombre));
+  }
+  const limpio = (p: { nombre: string }, s: string) => {
+    const n = normalizarTexto(s);
+    return n !== sinBarra(p.nombre) && !nombres.has(n) && duenos.get(n)?.size === 1;
+  };
+  return partes.map((p) => ({ parte: p.nombre, sinonimos: [...p.sinonimos.filter((s) => limpio(p, s)), ...plurales(p.nombre)] }));
 }
 
+const PARTES_DECLARADAS = [
+  ...PARTES_DECORACIONES.map((p) => ({ nombre: p.nombre, sinonimos: p.ingles })),
+  ...PARTES_ESTRUCTURA.map((p) => ({ nombre: p.id, sinonimos: [...p.en, ...(p.sinonimos ?? [])] })),
+].filter((p) => !PARTES_AMBIGUAS.has(p.nombre));
+
 const PARTES_DE_MODULOS: ReadonlyArray<readonly ParteDeclarada[]> = [
-  partesSinChoques(PARTES_DECORACIONES.filter((p) => !PARTES_AMBIGUAS.has(p.nombre))),
-  // PARTES_ESTRUCTURAS,
+  partesSinChoques(PARTES_DECLARADAS),
 ];
 
 // ----------------------------------------------------------------------------------------------------------
