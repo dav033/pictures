@@ -1,3 +1,5 @@
+import { piezaDeGenerador } from "@/lib/globos3d/generadores-organicos";
+import { MEZCLA_TRAZO, puntosDeSilueta } from "@/lib/globos3d/trazo-organico";
 import type { ReactNode } from "react";
 import { coloresDelFormato, FORMATOS_GLOBO, type FormatoGlobo } from "@/lib/globos3d/formatos";
 import { PARED_TRENZAS_INICIAL } from "@/lib/globos3d/pared-trenzas";
@@ -59,6 +61,18 @@ function DibujoArco({ colores, organico }: { colores: readonly string[]; organic
 
 function DibujoGuirnalda({ colores }: { colores: readonly string[] }) {
   return <svg viewBox="0 0 60 40" width="44" height="30" aria-hidden><path d="M4 12c10 16 42 16 52 0" fill="none" stroke={hex(colores, 0)} strokeWidth={8} strokeDasharray="1 7" strokeLinecap="round" /><path d="M4 12c10 16 42 16 52 0" fill="none" stroke={hex(colores, 1)} strokeWidth={5} strokeDasharray="1 14" strokeDashoffset={4} strokeLinecap="round" /></svg>;
+}
+
+/** Guirnalda libre: un trazo de bolitas de varios tamaños que cruza arriba y baja por un lado. */
+function DibujoTrazo({ colores }: { colores: readonly string[] }) {
+  const puntos: Array<[number, number, number]> = [[6, 12, 3], [13, 8, 4.5], [21, 7, 3.5], [29, 8, 5], [37, 10, 3.5], [44, 15, 4.5], [48, 23, 5], [47, 31, 4], [44, 36, 3]];
+  return <svg viewBox="0 0 56 42" width="44" height="33" aria-hidden>{puntos.map(([x, y, r], i) => <circle key={i} cx={x} cy={y} r={r} fill={hex(colores, i)} />)}</svg>;
+}
+
+/** Una guirnalda orgánica de trazo libre de partida: la esquina que cruza arriba y baja por la derecha, en la pared. */
+function guirnaldaLibre(): PiezaParaAnadir {
+  const pieza = piezaDeGenerador({ tipo: "trazo", trazo: { silueta: "esquina_derecha", puntos: puntosDeSilueta("esquina_derecha", { anchoCm: 260, altoCm: 170, grosorCm: 60 }), mezcla: { ...MEZCLA_TRAZO }, colores: [{ codigo: "609", peso: 40 }, { codigo: "005", peso: 30 }, { codigo: "570", peso: 30 }], racimos: 0.4, semilla: 7 } });
+  return { pieza, nombre: "Guirnalda libre", colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 120 }, idBase: "guirnalda-libre" };
 }
 
 function DibujoPared({ colores, trenzas }: { colores: readonly string[]; trenzas: boolean }) {
@@ -125,6 +139,7 @@ export const NUEVAS_ESTRUCTURAS: readonly Nueva[] = [
   { id: "arco", nombre: "Arco", sub: "clásico", descripcion: "Trenza de cuartetos de piso a piso: forma, ancho, alto y colores.", crear: () => colocada(piezaNueva("arco"), "arco"), dibujo: () => <DibujoArco colores={colores(piezaNueva("arco").pieza)} organico={false} /> },
   { id: "arco_organico", nombre: "Arco", sub: "orgánico", descripcion: "Globos de varios tamaños, grueso en las patas.", crear: () => colocada(piezaNueva("arco_organico"), "arco-organico"), dibujo: () => <DibujoArco colores={colores(piezaNueva("arco_organico").pieza)} organico /> },
   { id: "guirnalda", nombre: "Guirnalda", sub: "en festón", descripcion: "Trenza de cuartetos en festón o recta.", crear: () => colocada(piezaNueva("guirnalda"), "guirnalda"), dibujo: () => <DibujoGuirnalda colores={colores(piezaNueva("guirnalda").pieza)} /> },
+  { id: "guirnalda_libre", nombre: "Guirnalda", sub: "orgánica libre", descripcion: "Sigue cualquier silueta (festón, arco, esquina, medio arco, asimétrica) con grosor, racimos, tamaños, colores y hojas.", crear: guirnaldaLibre, dibujo: () => <DibujoTrazo colores={["609", "005", "570"]} /> },
   { id: "pared", nombre: "Pared", sub: "malla de flores", descripcion: "Malla Link-O-Loon tipo flor.", crear: () => colocada(piezaNueva("pared"), "pared"), dibujo: () => <DibujoPared colores={colores(piezaNueva("pared").pieza)} trenzas={false} /> },
   { id: "pared_trenzas", nombre: "Pared", sub: "de trenzas", descripcion: "Trenzas de cuartetos alternando tamaños (la de Celebra ed. 27).", crear: paredTrenzas, dibujo: () => <DibujoPared colores={PARED_TRENZAS_INICIAL.colores} trenzas /> },
   { id: "modulo", nombre: "Módulo", sub: "pareja a sexteto", descripcion: "Pareja, trío, cuarteto, quinteto o sexteto, con el color de cada globo.", crear: modulo, dibujo: () => <DibujoModulo colores={["009", "005", "009", "005"]} /> },

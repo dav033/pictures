@@ -20,6 +20,7 @@ import { PanelPared, PARED_INICIAL, type OpcionesPared } from "./PanelPared";
 import { AJUSTES_QUINCE_AZUL, PanelOrganico, ajustesDeOpciones, aplicarAjustes, opcionesDeAjustes, type AjustesOrganico } from "./PanelOrganico";
 import { EditorDecoracionCompleto, PanelDecoracion, nombreDecoracion } from "./PanelDecoracion";
 import { CHIP, CHIP_ON, centimetros, metros } from "./ui-taller";
+import { EditorTrazo } from "./EditorTrazo";
 
 /** Lo que el editor solitario muestra además de la pieza (las anclas de la raíz, todos los globos lado a lado). */
 export type VistaSolitario = { verAnclas: boolean; todosLosGlobos: boolean };
@@ -372,7 +373,7 @@ export function ParametrosPieza({ escena, raizId, nodo, onPieza, onEscena, vista
       }
       case "arco_organico":
         return <section className="flex flex-col gap-2.5" aria-label="Arco orgánico"><EditorArcoOrganico pieza={p} onPieza={(x) => onPieza(x, "organico")} /></section>;
-      case "organico": return <EditorOrganico pieza={p} onPieza={onPieza} />;
+      case "organico": return p.generador?.tipo === "trazo" ? <EditorTrazo pieza={p} trazo={p.generador.trazo} onPieza={onPieza} /> : <EditorOrganico pieza={p} onPieza={onPieza} />;
       case "pared_malla": case "pared_trenzas":
         return <EditorParedCompleto pieza={p} escena={escena} raizId={raizId} onPieza={onPieza} onEscena={onEscena} vista={vista} onVista={onVista} />;
       case "decoracion":

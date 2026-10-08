@@ -23,6 +23,8 @@ export type PuntoTrazo = { x: number; y: number; /** Diámetro del cuerpo de glo
 export type ParametrosTrazoOrganico = {
   /** Al menos 2 puntos, en orden a lo largo del trazo. */
   puntos: readonly PuntoTrazo[];
+  /** La silueta con nombre de la que salieron los puntos (sin ella, el trazo es libre: de una foto o de la IA). */
+  silueta?: SiluetaTrazo;
   /** Pesos por formato (R-36, R-24, R-18, R-12, R-9, R-5) de la estructura; el relleno va aparte. */
   mezcla: PesosFormato;
   /** 0 = cuerpo parejo · 1 = muy abultado (racimos grandes que sobresalen y cinturas entre ellos). */
