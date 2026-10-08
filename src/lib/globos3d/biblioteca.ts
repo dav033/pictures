@@ -682,7 +682,9 @@ export function indexarEscena(item: ItemBiblioteca, armada?: EscenaArmada, cache
       if (!conjunto) continue;
       // La escenografía (una escalera, un panel, una mesa) solo es conjunto si lleva globos colgados: «la escalera con
       // sus ramos» se puede sacar sola; sin nada colgado no es item.
-      if (clase === "escenografia" && !conjunto.hijos.some((h) => clasePieza(h.pieza) !== "escenografia")) continue;
+      // Si la escenografía cuelga a su vez de otra pieza (la varilla oculta de una columna), ya va dentro del conjunto
+      // de esa pieza: no se repite como conjunto propio.
+      if (clase === "escenografia" && (nodo.colocacion.en === "ancla" || nodo.colocacion.en === "sobre" || !conjunto.hijos.some((h) => clasePieza(h.pieza) !== "escenografia"))) continue;
       const ids = miembrosDeConjunto(escena, nodo.id, hecha, pegadas);
       if (conjunto.hijos.length === 0) {
         anotar(`pieza:${clavePieza(nodo.pieza)}`, () => ({
