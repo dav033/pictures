@@ -20,11 +20,21 @@ export type GloboEnEscena = { formato: FormatoGlobo; infladoCm: number; hex: str
  * mueve todo lo suyo junto.
  */
 export type DeNodo = { nodo?: string };
-export type GloboColocadoEnEscena = GloboEnEscena & DeNodo & { nudo: Punto3; direccion: Punto3; frente?: Punto3; confeti?: boolean };
+export type GloboColocadoEnEscena = GloboEnEscena & DeNodo & { nudo: Punto3; direccion: Punto3; frente?: Punto3; confeti?: boolean; estampado?: EstampadoEnEscena };
 export type Punto3 = { x: number; y: number; z: number };
 
-/** Un tramo de tubito que sigue una curva (lazos, burbujas, colas): el eje en cm, su grosor y su color. */
-export type TuboEnEscena = DeNodo & { puntos: readonly Punto3[]; grosorCm: number; hex: string; familia: string; cerrado: boolean };
+/**
+ * Lo impreso sobre un globo redondo (iris de un ojo, cara de calabaza): polígonos de color en cm medidos sobre su
+ * superficie. En la **cara** (hacia `frente`: u = eje × frente, v = eje) o en la **punta** (el polo opuesto al nudo:
+ * u = −(eje × frente), v = frente). Las capas se pintan en orden (la última encima).
+ */
+export type EstampadoEnEscena = { en: "cara" | "punta"; capas: ReadonlyArray<{ hex: string; puntos: ReadonlyArray<readonly [number, number]> }> };
+
+/**
+ * Un tramo de tubito que sigue una curva (lazos, burbujas, colas): el eje en cm, su grosor y su color. Con familia
+ * «papel» es escenografía (fantasma, telaraña): mate, y con `relleno` (si es cerrado) se pinta la figura entera.
+ */
+export type TuboEnEscena = DeNodo & { puntos: readonly Punto3[]; grosorCm: number; hex: string; familia: string; cerrado: boolean; relleno?: boolean };
 
 /** Flor artificial (follaje, no es globo) en un hueco: tipo, color, tamaño, dónde y hacia dónde mira (cm). */
 export type FlorEnEscena = DeNodo & { tipo: "hortensia" | "rosa" | "gypsophila"; hex: string; diametroCm: number; posicion: Punto3; normal: Punto3 };
@@ -105,6 +115,9 @@ function materialDe(familia: string, hex: string): THREE.MeshPhysicalMaterial {
       return new THREE.MeshPhysicalMaterial({ color, metalness: 0, roughness: 0.04, transmission: 0.92, thickness: 0.004, ior: 1.42, transparent: true, clearcoat: 1, clearcoatRoughness: 0.02 });
     case "neon":
       return new THREE.MeshPhysicalMaterial({ color, roughness: 0.5, clearcoat: 0.3, emissive: color, emissiveIntensity: 0.18 });
+    case "papel":
+      // No es látex: papel o cartulina mate, visible por las dos caras.
+      return new THREE.MeshPhysicalMaterial({ color, roughness: 0.92, metalness: 0, side: THREE.DoubleSide });
     case "pastelMate":
     case "pastelDusk":
       return new THREE.MeshPhysicalMaterial({ color, roughness: 0.68, clearcoat: 0.15, clearcoatRoughness: 0.6 });
@@ -239,6 +252,109 @@ function tuboEnCurva(tramo: TuboEnEscena, material: THREE.Material): THREE.Group
       grupo.add(punta);
     }
   }
+  return grupo;
+}
+
+/**
+ * La figura que encierra un contorno plano (la silueta de un fantasma de papel): se proyecta en su plano (normal de
+ * Newell), se triangula y se vuelve a llevar al espacio. `null` si no hay figura.
+ */
+function rellenoPlano(puntos: readonly Punto3[], material: THREE.Material): THREE.Mesh | null {
+  if (puntos.length < 3) return null;
+  const v = puntos.map((p) => new THREE.Vector3(p.x * CM, p.y * CM, p.z * CM));
+  const centro = v.reduce((s, p) => s.add(p), new THREE.Vector3()).divideScalar(v.length);
+  const normal = new THREE.Vector3();
+  for (let i = 0; i < v.length; i++) {
+    const a = v[i]!, b = v[(i + 1) % v.length]!;
+    normal.x += (a.y - b.y) * (a.z + b.z); normal.y += (a.z - b.z) * (a.x + b.x); normal.z += (a.x - b.x) * (a.y + b.y);
+  }
+  if (normal.lengthSq() < 1e-14) return null;
+  normal.normalize();
+  const e1 = v[0]!.clone().sub(centro);
+  e1.addScaledVector(normal, -e1.dot(normal));
+  if (e1.lengthSq() < 1e-14) return null;
+  e1.normalize();
+  const e2 = new THREE.Vector3().crossVectors(normal, e1);
+  const plano = v.map((p) => { const d = p.clone().sub(centro); return new THREE.Vector2(d.dot(e1), d.dot(e2)); });
+  const caras = THREE.ShapeUtils.triangulateShape(plano, []);
+  const geometria = new THREE.BufferGeometry().setFromPoints(v);
+  geometria.setIndex(caras.flat());
+  geometria.computeVertexNormals();
+  return new THREE.Mesh(geometria, material);
+}
+
+/** Radio del perfil torneado a la altura `y` (0 fuera de él). */
+function radioDelPerfil(perfil: readonly PuntoPerfil[], y: number): number {
+  for (let i = 1; i < perfil.length; i++) {
+    const a = perfil[i - 1]!, b = perfil[i]!;
+    if (y >= a.y && y <= b.y) return b.y - a.y < 1e-9 ? Math.max(a.r, b.r) : a.r + ((b.r - a.r) * (y - a.y)) / (b.y - a.y);
+  }
+  return 0;
+}
+
+/** Lo ya calculado de cada estampado (posiciones y normales), por globo y capa: los ojos repetidos no se rehacen. */
+const cacheEstampado = new Map<string, { posiciones: Float32Array; normales: Float32Array }>();
+
+/**
+ * Lo impreso sobre un globo redondo, en el marco local del globo (Y = eje, Z = frente): cada capa se triangula en
+ * el plano (u, v), se subdivide para que siga la curva, y cada punto se lleva al látex midiendo sobre la superficie
+ * (equidistante) y buscando el borde del perfil a lo largo del rayo desde el centro del cuerpo. Las capas salen un
+ * poco del globo (y del de abajo) para no parpadear.
+ */
+function estampadoSobre(infladoCm: number, cuelloExtraCm: number, estampado: EstampadoEnEscena): THREE.Group {
+  const grupo = new THREE.Group();
+  const perfil = perfilRedondo(infladoCm, cuelloExtraCm);
+  const yc = centroCuerpo("redondo", infladoCm) + cuelloExtraCm;
+  const r = infladoCm / 2;
+  const punta = estampado.en === "punta";
+  const d = punta ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+  const u = punta ? new THREE.Vector3(-1, 0, 0) : new THREE.Vector3(1, 0, 0);
+  const v = punta ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
+  const fuera = (dir: THREE.Vector3, t: number) => Math.hypot(dir.x * t, dir.z * t) >= radioDelPerfil(perfil, yc + dir.y * t);
+  const superficie = (dir: THREE.Vector3): number => {
+    let a = 0, b = r * 0.6;
+    while (!fuera(dir, b) && b < r * 3) { a = b; b += r * 0.1; }
+    for (let i = 0; i < 18; i++) { const m = (a + b) / 2; if (fuera(dir, m)) b = m; else a = m; }
+    return b;
+  };
+  estampado.capas.forEach((capa, k) => {
+    if (capa.puntos.length < 3) return;
+    const clave = `${infladoCm}|${cuelloExtraCm}|${estampado.en}|${k}|${JSON.stringify(capa.puntos)}`;
+    let datos = cacheEstampado.get(clave);
+    if (!datos) {
+      const contorno = capa.puntos.map(([pu, pv]) => new THREE.Vector2(pu, pv));
+      let triangulos = THREE.ShapeUtils.triangulateShape(contorno, []).map(([a, b, c]) => [contorno[a]!, contorno[b]!, contorno[c]!]);
+      // Subdividir: un triángulo grande (la boca de una calabaza) cortaría por dentro del globo.
+      const niveles = r > 10 ? 3 : 2;
+      for (let n = 0; n < niveles; n++) {
+        triangulos = triangulos.flatMap(([a, b, c]) => {
+          const ab = a.clone().lerp(b, 0.5), bc = b.clone().lerp(c, 0.5), ca = c.clone().lerp(a, 0.5);
+          return [[a, ab, ca], [ab, b, bc], [ca, bc, c], [ab, bc, ca]];
+        });
+      }
+      const posiciones = new Float32Array(triangulos.length * 9), normales = new Float32Array(triangulos.length * 9);
+      const salida = 0.05 + 0.04 * k;
+      let i = 0;
+      for (const tri of triangulos) for (const p of tri) {
+        const largo = Math.hypot(p.x, p.y), t = largo / r;
+        const dir = d.clone().multiplyScalar(Math.cos(t));
+        if (largo > 1e-9) dir.addScaledVector(u, (p.x / largo) * Math.sin(t)).addScaledVector(v, (p.y / largo) * Math.sin(t));
+        dir.normalize();
+        const s = superficie(dir) + salida;
+        posiciones.set([dir.x * s * CM, (yc + dir.y * s) * CM, dir.z * s * CM], i);
+        normales.set([dir.x, dir.y, dir.z], i);
+        i += 3;
+      }
+      datos = { posiciones, normales };
+      cacheEstampado.set(clave, datos);
+      if (cacheEstampado.size > 400) { const primera = cacheEstampado.keys().next().value; if (primera !== undefined) cacheEstampado.delete(primera); }
+    }
+    const geometria = new THREE.BufferGeometry();
+    geometria.setAttribute("position", new THREE.BufferAttribute(datos.posiciones, 3));
+    geometria.setAttribute("normal", new THREE.BufferAttribute(datos.normales, 3));
+    const material = new THREE.MeshPhysicalMaterial({ color: new THREE.Color(capa.hex), roughness: 0.5, clearcoat: 0.35, clearcoatRoughness: 0.45, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1 - k, polygonOffsetUnits: -1 - k });
+    grupo.add(new THREE.Mesh(geometria, material));
+  });
   return grupo;
 }
 
@@ -447,6 +563,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
         const centroY = (centroCuerpo("redondo", globo.infladoCm) + (globo.cuelloExtraCm ?? 0)) * CM;
         objeto.add(confetiDentro(centroY, (globo.infladoCm / 2) * CM, indice + 1));
       }
+      // Lo impreso (iris, cara de calabaza) pegado a la superficie, en el marco del globo.
+      if (globo.estampado && globo.formato.tipo === "redondo") objeto.add(estampadoSobre(globo.infladoCm, globo.cuelloExtraCm ?? 0, globo.estampado));
       const eje = new THREE.Vector3(globo.direccion.x, globo.direccion.y, globo.direccion.z).normalize();
       if (globo.frente) {
         // Globo plano: Y local = dirección del cuerpo, Z local (la cara del corazón) = frente.
@@ -462,7 +580,9 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       grupoDe(globo.nodo).add(objeto);
     }
     for (const tramo of tubos) {
-      const objeto = tuboEnCurva(tramo, materialDe(tramo.familia, tramo.hex));
+      const material = materialDe(tramo.familia, tramo.hex);
+      const objeto = tuboEnCurva(tramo, material);
+      if (tramo.relleno && tramo.cerrado) { const relleno = rellenoPlano(tramo.puntos, material); if (relleno) objeto.add(relleno); }
       objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
       grupoDe(tramo.nodo).add(objeto);
     }

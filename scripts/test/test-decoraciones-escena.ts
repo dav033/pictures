@@ -43,7 +43,8 @@ assert.equal(grupoDe({ id: "racimo_dorado", decoracion: decoracionPredefinida("r
 assert.equal(grupoDe({ id: "flor5", decoracion: decoracionPredefinida("flor5") }), "flores");
 for (const g of grupos) for (const d of g.decoraciones) {
   assert.equal(d.globos, globosDe(armarDecoracion(d.decoracion).materiales), `${d.id}: cuenta sus globos`);
-  assert.ok(d.globos > 0, `${d.id}: lleva globos`);
+  assert.ok(d.globos > 0 || d.noEsGlobo, `${d.id}: lleva globos (o es papel: fantasma, telaraña)`);
+  assert.equal(d.noEsGlobo, d.globos === 0, `${d.id}: «no es globo» solo si no lleva ninguno`);
 }
 
 // 2. Miniaturas.
@@ -56,6 +57,8 @@ for (const p of DECORACIONES_PREDEFINIDAS) {
   assert.ok(mini.formas.length > 0, `${p.id}: la miniatura dibuja algo`);
   if (armada.globos.length) assert.ok(globos.every((f) => f.rx > 0 && f.ry > 0 && f.rx >= f.ry - 1e-9), `${p.id}: círculos/elipses con radio`);
   for (const f of mini.formas) {
+    // El papel (fantasma, telaraña) no es globo: va en su propio color.
+    if (f.tipo === "tubito" && f.papel) { assert.match(f.hex, /^#[0-9a-f]{6}$/i); continue; }
     const ref = referenciaPorCodigo(f.codigo);
     assert.ok(ref, `${p.id}: el código ${f.codigo} es oficial`);
     assert.equal(f.hex, ref.hexGlobo, `${p.id}: ${f.codigo} con su hexGlobo`);

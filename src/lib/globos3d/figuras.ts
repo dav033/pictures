@@ -1,6 +1,7 @@
 import { formatoPorId } from "./formatos";
 import type { Vec3 } from "./modulos";
 import { FLORES_PREDEFINIDAS, anillo, armarFlor, materialesPorFormato, type GloboDecoracion, type ParteGlobo, type PropiedadesFlor, type TuboDecoracion } from "./decoraciones";
+import { HALLOWEEN_PREDEFINIDAS, armarHalloween, halloweenEnIngles, type DecoracionHalloween } from "./halloween";
 
 /**
  * Todas las decoraciones aplicadas por propiedades: la flor de globos redondos (`decoraciones.ts`) y las de
@@ -74,7 +75,9 @@ export type Decoracion =
   | { tipo: "flor_tubito"; propiedades: PropiedadesFlorTubito }
   | { tipo: "mono"; propiedades: PropiedadesMono }
   | { tipo: "estrella"; propiedades: PropiedadesEstrella }
-  | { tipo: "flor_corazones"; propiedades: PropiedadesFlorCorazones };
+  | { tipo: "flor_corazones"; propiedades: PropiedadesFlorCorazones }
+  /** Las de Halloween (ojos, araña, calabazas, mano, ramo de helio, árbol trenzado, fantasma y telaraña): `halloween.ts`. */
+  | DecoracionHalloween;
 
 export type TipoDecoracion = Decoracion["tipo"];
 
@@ -176,6 +179,8 @@ export function materialesDecoracion(globos: readonly GloboDecoracion[], tubos: 
   const lista = materialesPorFormato(globos);
   const largos = new Map<string, { formatoId: string; codigo: string; largo: number }>();
   for (const t of tubos) {
+    // Lo de papel (fantasma, telaraña, cintas) no es globo: no se cotiza aquí.
+    if (t.papel) continue;
     const clave = `${t.formatoId}|${t.codigo}`;
     const actual = largos.get(clave) ?? { formatoId: t.formatoId, codigo: t.codigo, largo: 0 };
     actual.largo += largoCurva(t.puntos, t.cerrado) + t.grosorCm;
@@ -295,6 +300,20 @@ export function armarDecoracion(decoracion: Decoracion): DecoracionArmada {
     case "mono": return armarMono(decoracion.propiedades);
     case "estrella": return armarEstrella(decoracion.propiedades);
     case "flor_corazones": return armarFlorCorazones(decoracion.propiedades);
+    default: {
+      const figura = armarHalloween(decoracion);
+      return armada(figura.globos, figura.tubos, figura.radioCm, figura.fondoCm);
+    }
+  }
+}
+
+/** Qué es una decoración, en inglés y corto (para la foto con IA). */
+export function decoracionEnIngles(decoracion: Decoracion): string {
+  switch (decoracion.tipo) {
+    case "mono": return "a twisted-balloon bow";
+    case "estrella": return "a twisted-balloon star";
+    case "flor": case "flor_tubito": case "flor_corazones": return "a small balloon flower";
+    default: return halloweenEnIngles(decoracion);
   }
 }
 
@@ -349,6 +368,8 @@ export const DECORACIONES_PREDEFINIDAS: ReadonlyArray<{ id: string; nombre: stri
     id: "flor_corazones", nombre: "Flor de corazones", descripcion: "Cinco Corazón 6 Fashion Fucsia, cinco lazos de T-260 Fashion Rosado encima y centro Reflex Dorado Rosa.",
     decoracion: { tipo: "flor_corazones", propiedades: { corazones: { formatoId: "C-6", infladoCm: 14, codigo: "012", cantidad: 5, aperturaGrados: 6, giroGrados: 90 }, interior: lazos(["009"], 5, 7, 4.5, 3, 126), centro: { formatoId: "R-5", infladoCm: 8, codigo: "968" } } },
   },
+  // Halloween (las 5 fotos del dueño): ojos, arañas, calabazas, mano, ramo de helio, árbol, fantasma y telaraña.
+  ...HALLOWEEN_PREDEFINIDAS,
 ];
 
 export function decoracionPredefinida(id: string): Decoracion {

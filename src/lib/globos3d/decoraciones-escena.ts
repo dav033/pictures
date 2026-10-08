@@ -1,12 +1,14 @@
 import type { Vec3 } from "./modulos";
 import { DECORACIONES_PREDEFINIDAS, armarDecoracion, type Decoracion, type MaterialDecoracion } from "./figuras";
+import type { GloboDecoracion } from "./decoraciones";
+import { esDePie, esHalloween } from "./halloween";
 import type { AnclaDePieza } from "./piezas";
 import { anclasElegidas, idNuevo, marcoDePared, type Colocacion, type Escena, type NodoEscena } from "./escena";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 
 /**
  * Las **decoraciones pequeñas** de la pestaña Escena: las predefinidas de `figuras.ts` (flores de globos, de
- * tubito, moños, estrellas, flor de corazones, racimos) agrupadas para escoger, con una miniatura de frente y lo
+ * tubito, moños, estrellas, flor de corazones, racimos, Halloween) agrupadas para escoger, con una miniatura de frente y lo
  * que hace falta para meterlas en la escena: colgadas de las anclas de otra pieza (repetidas cada N anclas) o
  * sueltas en la pared del fondo, el piso o el techo. Todo puro: sin React ni three.js.
  */
@@ -15,7 +17,7 @@ import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 // Grupos
 // ----------------------------------------------------------------------------------------------------------
 
-export type GrupoDecoracion = "flores" | "flores_tubito" | "monos" | "estrellas" | "corazones" | "racimos";
+export type GrupoDecoracion = "flores" | "flores_tubito" | "monos" | "estrellas" | "corazones" | "racimos" | "halloween";
 
 export const GRUPOS_DECORACION: ReadonlyArray<{ id: GrupoDecoracion; nombre: string }> = [
   { id: "flores", nombre: "Flores" },
@@ -24,12 +26,14 @@ export const GRUPOS_DECORACION: ReadonlyArray<{ id: GrupoDecoracion; nombre: str
   { id: "estrellas", nombre: "Estrellas" },
   { id: "corazones", nombre: "Corazones" },
   { id: "racimos", nombre: "Racimos" },
+  { id: "halloween", nombre: "Halloween" },
 ];
 
 type Predefinida = (typeof DECORACIONES_PREDEFINIDAS)[number];
 
 /** A qué grupo va una predefinida: por su tipo, salvo los racimos (que se arman como una flor en copa). */
 export function grupoDe(p: Pick<Predefinida, "id" | "decoracion">): GrupoDecoracion {
+  if (esHalloween(p.decoracion)) return "halloween";
   if (p.id.startsWith("racimo")) return "racimos";
   switch (p.decoracion.tipo) {
     case "flor": return "flores";
@@ -37,6 +41,7 @@ export function grupoDe(p: Pick<Predefinida, "id" | "decoracion">): GrupoDecorac
     case "mono": return "monos";
     case "estrella": return "estrellas";
     case "flor_corazones": return "corazones";
+    default: return "halloween";
   }
 }
 
@@ -45,13 +50,15 @@ export function globosDe(materiales: readonly MaterialDecoracion[]): number {
   return materiales.reduce((s, m) => s + m.cantidad, 0);
 }
 
-export type DecoracionPequena = Predefinida & { grupo: GrupoDecoracion; materiales: MaterialDecoracion[]; globos: number };
+/** `noEsGlobo`: escenografía de papel (fantasma, telaraña): no lleva globos ni se cotiza. */
+export type DecoracionPequena = Predefinida & { grupo: GrupoDecoracion; materiales: MaterialDecoracion[]; globos: number; noEsGlobo: boolean };
 
 /** Las predefinidas por grupo, en el orden de `GRUPOS_DECORACION` (sin grupos vacíos). */
 export function decoracionesPorGrupo(): Array<{ id: GrupoDecoracion; nombre: string; decoraciones: DecoracionPequena[] }> {
   const todas: DecoracionPequena[] = DECORACIONES_PREDEFINIDAS.map((p) => {
     const { materiales } = armarDecoracion(p.decoracion);
-    return { ...p, grupo: grupoDe(p), materiales, globos: globosDe(materiales) };
+    const globos = globosDe(materiales);
+    return { ...p, grupo: grupoDe(p), materiales, globos, noEsGlobo: globos === 0 };
   });
   return GRUPOS_DECORACION.map((g) => ({ ...g, decoraciones: todas.filter((d) => d.grupo === g.id) })).filter((g) => g.decoraciones.length > 0);
 }
@@ -65,8 +72,12 @@ export function decoracionesPorGrupo(): Array<{ id: GrupoDecoracion; nombre: str
  * hacia quien mira: las formas vienen ordenadas de la más lejana a la más cercana (se pintan en ese orden).
  */
 export type FormaMiniatura =
-  | { tipo: "globo"; cx: number; cy: number; /** Semieje a lo largo del globo (del nudo hacia fuera). */ rx: number; ry: number; giroGrados: number; corazon: boolean; codigo: string; hex: string; profundidad: number }
-  | { tipo: "tubito"; puntos: Array<[number, number]>; grosor: number; cerrado: boolean; codigo: string; hex: string; profundidad: number };
+  | {
+    tipo: "globo"; cx: number; cy: number; /** Semieje a lo largo del globo (del nudo hacia fuera). */ rx: number; ry: number; giroGrados: number; corazon: boolean; codigo: string; hex: string; profundidad: number;
+    /** Lo impreso que se ve de frente (iris, cara de calabaza), en coordenadas del dibujo. */
+    estampado?: Array<{ hex: string; puntos: Array<[number, number]> }>;
+  }
+  | { tipo: "tubito"; puntos: Array<[number, number]>; grosor: number; cerrado: boolean; codigo: string; hex: string; profundidad: number; /** Papel (no es globo): `relleno` pinta la figura. */ papel?: { relleno: boolean } };
 
 export type Miniatura = { caja: { x: number; y: number; ancho: number; alto: number }; formas: FormaMiniatura[] };
 
@@ -95,14 +106,19 @@ export function miniaturaDecoracion(decoracion: Decoracion): Miniatura {
     // Un globo es un elipsoide algo más largo (a) que ancho (r): de frente se ve su largo según cuánto se tumba.
     const a = r * 1.08;
     const corazon = g.formatoId.startsWith("C-");
+    const estampado = estampadoDeFrente(g, centro, plano);
     formas.push({
       tipo: "globo", cx, cy, rx: Math.sqrt(a * a * s * s + r * r * (1 - s * s)), ry: r,
       giroGrados: s > 1e-6 ? (Math.atan2(dy, dx) * 180) / Math.PI : -90, corazon, codigo: g.codigo, hex: hexDeCodigo(g.codigo), profundidad: centro.y,
+      ...(estampado ? { estampado } : {}),
     });
   }
   for (const t of armada.tubos) {
     const profundidad = t.puntos.reduce((s, p) => s + p.y, 0) / Math.max(1, t.puntos.length);
-    formas.push({ tipo: "tubito", puntos: t.puntos.map(plano), grosor: t.grosorCm, cerrado: t.cerrado, codigo: t.codigo, hex: hexDeCodigo(t.codigo), profundidad });
+    formas.push({
+      tipo: "tubito", puntos: t.puntos.map(plano), grosor: t.grosorCm, cerrado: t.cerrado, codigo: t.codigo, hex: t.papel?.hex ?? hexDeCodigo(t.codigo), profundidad,
+      ...(t.papel ? { papel: { relleno: Boolean(t.papel.relleno && t.cerrado) } } : {}),
+    });
   }
   formas.sort((a, b) => a.profundidad - b.profundidad);
 
@@ -117,6 +133,32 @@ export function miniaturaDecoracion(decoracion: Decoracion): Miniatura {
   const lado = Math.max(maxX - minX, maxY - minY) * 1.08;
   const redondo = (v: number) => Math.round(v * 100) / 100;
   return { caja: { x: redondo((minX + maxX) / 2 - lado / 2), y: redondo((minY + maxY) / 2 - lado / 2), ancho: redondo(lado), alto: redondo(lado) }, formas };
+}
+
+/**
+ * Lo impreso de un globo tal como se ve de frente, con el mismo marco que el visor: cara = hacia `frente` (u =
+ * eje × frente, v = eje); punta = el polo del globo (u = −(eje × frente), v = frente). Cada punto (u, v) se lleva a
+ * la esfera del cuerpo midiendo sobre ella (equidistante) y se proyecta. `undefined` si no se ve desde delante.
+ */
+function estampadoDeFrente(g: GloboDecoracion, centro: Vec3, plano: (p: Vec3) => [number, number]): Array<{ hex: string; puntos: Array<[number, number]> }> | undefined {
+  if (!g.estampado || !g.frente || !g.estampado.capas.length) return undefined;
+  const eje = unitario(g.direccion);
+  const f = g.frente;
+  const k = f.x * eje.x + f.y * eje.y + f.z * eje.z;
+  const z = unitario({ x: f.x - eje.x * k, y: f.y - eje.y * k, z: f.z - eje.z * k });
+  const x: Vec3 = { x: eje.y * z.z - eje.z * z.y, y: eje.z * z.x - eje.x * z.z, z: eje.x * z.y - eje.y * z.x };
+  const [d, u, v] = g.estampado.en === "punta" ? [eje, { x: -x.x, y: -x.y, z: -x.z }, z] : [z, x, eje];
+  // Se ve si la cara apunta hacia quien mira (+y del espacio de la decoración).
+  if (d.y < 0.15) return undefined;
+  const r = g.infladoCm / 2;
+  const sobre = ([pu, pv]: [number, number]): [number, number] => {
+    const largo = Math.hypot(pu, pv), t = largo / r;
+    const lado = largo > 1e-9 ? { x: (u.x * pu + v.x * pv) / largo, y: (u.y * pu + v.y * pv) / largo, z: (u.z * pu + v.z * pv) / largo } : { x: 0, y: 0, z: 0 };
+    const dir = { x: d.x * Math.cos(t) + lado.x * Math.sin(t), y: d.y * Math.cos(t) + lado.y * Math.sin(t), z: d.z * Math.cos(t) + lado.z * Math.sin(t) };
+    const [px, py] = plano({ x: centro.x + dir.x * r, y: centro.y + dir.y * r, z: centro.z + dir.z * r });
+    return [Math.round(px * 100) / 100, Math.round(py * 100) / 100];
+  };
+  return g.estampado.capas.map((c) => ({ hex: c.hex, puntos: c.puntos.map(sobre) }));
 }
 
 // ----------------------------------------------------------------------------------------------------------
@@ -200,6 +242,8 @@ export function agregarDecoracion(
   const nombre = opciones.nombre ?? "Decoración";
   const sueltas = escena.nodos.filter((n) => n.pieza.tipo === "decoracion" && n.colocacion.en === destino.en && (n.colocacion.en !== "pared" || n.colocacion.pared === "fondo")).length;
   let colocacion: Colocacion;
+  // Las que van de pie (calabazas, árbol, ramo, fantasma) quedan derechas también en el piso y colgadas del techo.
+  const dePie = esDePie(decoracion);
   let deFrente = false;
   if (destino.en === "ancla") {
     if (!escena.nodos.some((n) => n.id === destino.padreId)) throw new Error(`No hay ninguna pieza «${destino.padreId}» de la que colgarla.`);
@@ -210,8 +254,10 @@ export function agregarDecoracion(
     deFrente = true;
   } else if (destino.en === "piso") {
     colocacion = { en: "piso", xCm: limitar(desfase(sueltas), sala.anchoCm / 2 - 40), zCm: Math.round(sala.fondoCm * 0.25), giroGrados: 0 };
+    deFrente = dePie;
   } else {
-    colocacion = { en: "techo", xCm: limitar(desfase(sueltas), sala.anchoCm / 2 - 40), zCm: 0, cuelgaCm: Math.min(CUELGA_DEL_TECHO_CM, Math.max(0, sala.altoCm - 60)), giroGrados: 0, volteada: true };
+    colocacion = { en: "techo", xCm: limitar(desfase(sueltas), sala.anchoCm / 2 - 40), zCm: 0, cuelgaCm: Math.min(CUELGA_DEL_TECHO_CM, Math.max(0, sala.altoCm - 60)), giroGrados: 0, volteada: !dePie };
+    deFrente = dePie;
   }
   const nodo: NodoEscena = { id, nombre, pieza: { tipo: "decoracion", decoracion: structuredClone(decoracion), ...(deFrente ? { deFrente: true } : {}) }, colocacion };
   return { escena: { ...escena, nodos: [...escena.nodos, nodo] }, id };

@@ -39,12 +39,14 @@ function globoAEscena(g: GloboDecoracion, porDefecto: FormatoGlobo): GloboColoca
   const ref = referenciaPorCodigo(g.codigo);
   return {
     formato: formatoPorId(g.formatoId) ?? porDefecto, infladoCm: g.infladoCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion",
-    nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.frente ? { frente: g.frente } : {}),
+    nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.frente ? { frente: g.frente } : {}), ...(g.estampado ? { estampado: g.estampado } : {}),
   };
 }
 
 function tuboAEscena(t: TuboDecoracion): TuboEnEscena {
   const ref = referenciaPorCodigo(t.codigo);
+  // Papel (fantasma, telaraña, cintas): no es globo, va en su color y mate.
+  if (t.papel) return { puntos: t.puntos, grosorCm: t.grosorCm, hex: t.papel.hex, familia: "papel", cerrado: t.cerrado, ...(t.papel.relleno ? { relleno: true } : {}) };
   return { puntos: t.puntos, grosorCm: t.grosorCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion", cerrado: t.cerrado };
 }
 

@@ -1,7 +1,8 @@
 import type { Vec3 } from "./modulos";
 import { armarPieza, type AnclaDePieza, type FlorDePieza, type GloboDePieza, type Pieza, type PiezaArmada } from "./piezas";
 import type { TuboDecoracion } from "./decoraciones";
-import type { MaterialDecoracion } from "./figuras";
+import { decoracionEnIngles, type MaterialDecoracion } from "./figuras";
+import { esDePie } from "./halloween";
 import { sumarMateriales } from "./mezcla";
 
 /**
@@ -225,7 +226,8 @@ const HILO = { radioCm: 0.25, hex: "#d9d9de" };
 function orientada(nodo: NodoEscena): Pieza {
   const { pieza, colocacion } = nodo;
   if (pieza.tipo !== "decoracion") return pieza;
-  const deFrente = colocacion.en === "pared" ? true : colocacion.en === "ancla" ? false : Boolean(pieza.deFrente);
+  // Las de Halloween que van de pie (calabazas, árbol, ramo, fantasma) quedan derechas en el piso y del techo.
+  const deFrente = colocacion.en === "pared" ? true : colocacion.en === "ancla" ? false : Boolean(pieza.deFrente) || esDePie(pieza.decoracion);
   if (deFrente === Boolean(pieza.deFrente)) return pieza;
   const { deFrente: _anterior, ...resto } = pieza;
   void _anterior;
@@ -369,7 +371,7 @@ export function piezaEnIngles(pieza: Pieza, caja: Caja): string {
     case "pared_malla": return `a flat Link-O-Loon balloon wall ${ancho} wide and ${alto} tall`;
     case "pared_trenzas": return `a balloon wall of vertical quartet braids ${ancho} wide and ${alto} tall`;
     case "organico": return `an organic balloon piece of mixed-size balloons ${alto} tall`;
-    case "decoracion": return pieza.decoracion.tipo === "mono" ? "a twisted-balloon bow" : pieza.decoracion.tipo === "estrella" ? "a twisted-balloon star" : "a small balloon flower";
+    case "decoracion": return decoracionEnIngles(pieza.decoracion);
   }
 }
 

@@ -37,13 +37,26 @@ export type PropiedadesFlor = {
  * Un globo de una decoración. `frente` solo lo usan los globos planos (el corazón): hacia dónde mira su cara;
  * sin él, el visor deja el giro del globo sobre su eje como le salga (un redondo es igual por todos lados).
  */
-export type GloboDecoracion = { formatoId: string; infladoCm: number; codigo: string; nudo: Vec3; direccion: Vec3; cuelloExtraCm: number; frente?: Vec3 };
+export type GloboDecoracion = { formatoId: string; infladoCm: number; codigo: string; nudo: Vec3; direccion: Vec3; cuelloExtraCm: number; frente?: Vec3; estampado?: EstampadoGlobo };
+
+/** Una mancha impresa: un polígono de color, en cm medidos sobre la superficie del globo (u a la derecha, v arriba). */
+export type CapaEstampado = { hex: string; puntos: Array<[number, number]> };
+
+/**
+ * Lo impreso (o pegado) sobre un globo redondo: el iris y la pupila de un ojo, la cara de una calabaza. No es
+ * material (no se cotiza). Va centrado en la **cara** (hacia `frente`, con v hacia la punta del globo) o en la
+ * **punta** (el polo opuesto al nudo, con v hacia `frente`); necesita `frente` para saber dónde es arriba. Las
+ * capas se pintan en orden: la última queda encima.
+ */
+export type EstampadoGlobo = { en: "cara" | "punta"; capas: CapaEstampado[] };
 
 /**
  * Un tramo de tubito (T-160/T-260/T-360) que sigue una curva: un lazo, una burbuja, la cola de un moño. `puntos`
  * es la curva del eje del tubo (cm); `cerrado` la cierra sobre sí misma (el contorno de una estrella).
+ * Con `papel` no es globo sino escenografía (fantasma, telaraña, cintas): se pinta mate en ese color, no cuenta en
+ * los materiales y, si es cerrado y `relleno`, se pinta la figura entera.
  */
-export type TuboDecoracion = { formatoId: string; grosorCm: number; codigo: string; puntos: Vec3[]; cerrado: boolean };
+export type TuboDecoracion = { formatoId: string; grosorCm: number; codigo: string; puntos: Vec3[]; cerrado: boolean; papel?: { hex: string; relleno?: boolean } };
 
 export type FlorArmada = { globos: GloboDecoracion[]; diametroCm: number; altoCm: number };
 

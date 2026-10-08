@@ -14,11 +14,13 @@ import { colocarEn, colocarTubosEn } from "../../src/lib/globos3d/decoraciones";
 import { CELEBRA_27, cuotas, decorarPared, repartirMezcla, type MezclaDecoraciones } from "../../src/lib/globos3d/mezcla";
 import { armarParedTrenzas, superficieFrontal } from "../../src/lib/globos3d/pared-trenzas";
 import { coloresDelFormato, formatoPorId } from "../../src/lib/globos3d/formatos";
+import { esHalloween } from "../../src/lib/globos3d/halloween";
 
 const existe = (formatoId: string, codigo: string) => coloresDelFormato(formatoId).some((c) => c.codigo === codigo);
 
-// Todas las predefinidas: colores que existen en su formato; globos y tubos con sus formatos reales.
-for (const d of DECORACIONES_PREDEFINIDAS) {
+// Todas las predefinidas: colores que existen en su formato; globos y tubos con sus formatos reales. Las de
+// Halloween (figuras de hasta 2 m y papel que no es globo) las prueba `test-halloween-piezas.ts`.
+for (const d of DECORACIONES_PREDEFINIDAS.filter((x) => !esHalloween(x.decoracion))) {
   const a = armarDecoracion(d.decoracion);
   for (const g of a.globos) assert.ok(existe(g.formatoId, g.codigo), `${d.id}: ${g.codigo} no existe en ${g.formatoId}`);
   for (const t of a.tubos) {

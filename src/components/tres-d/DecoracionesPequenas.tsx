@@ -21,6 +21,8 @@ export function MiniaturaDecoracion({ miniatura, nombre, className }: { miniatur
         if (f.tipo === "tubito") {
           const puntos = f.puntos.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
           const Linea = f.cerrado ? "polygon" : "polyline";
+          // Papel (fantasma, telaraña): sin la sombra del látex; el relleno pinta la figura.
+          if (f.papel) return <Linea key={i} points={puntos} fill={f.papel.relleno ? f.hex : "none"} stroke={f.hex} strokeWidth={f.grosor} strokeLinecap="round" strokeLinejoin="round" />;
           return (
             <g key={i} fill="none" strokeLinecap="round" strokeLinejoin="round">
               <Linea points={puntos} stroke="rgba(0,0,0,.22)" strokeWidth={f.grosor + 0.8} />
@@ -30,11 +32,15 @@ export function MiniaturaDecoracion({ miniatura, nombre, className }: { miniatur
         }
         const brillo = { cx: -f.ry * 0.3, cy: -f.ry * 0.35, r: f.ry * 0.28 };
         return (
-          <g key={i} transform={`translate(${f.cx.toFixed(2)} ${f.cy.toFixed(2)})`}>
-            {f.corazon
-              ? <path d={CORAZON} transform={`rotate(${(f.giroGrados + 90).toFixed(1)}) scale(${f.ry.toFixed(2)} ${f.rx.toFixed(2)})`} fill={f.hex} stroke="rgba(0,0,0,.22)" strokeWidth={0.6 / Math.max(f.rx, f.ry)} />
-              : <ellipse rx={f.rx} ry={f.ry} transform={`rotate(${f.giroGrados.toFixed(1)})`} fill={f.hex} stroke="rgba(0,0,0,.22)" strokeWidth={0.6} />}
-            <circle cx={brillo.cx} cy={brillo.cy} r={brillo.r} fill="#fff" opacity={0.35} />
+          <g key={i}>
+            <g transform={`translate(${f.cx.toFixed(2)} ${f.cy.toFixed(2)})`}>
+              {f.corazon
+                ? <path d={CORAZON} transform={`rotate(${(f.giroGrados + 90).toFixed(1)}) scale(${f.ry.toFixed(2)} ${f.rx.toFixed(2)})`} fill={f.hex} stroke="rgba(0,0,0,.22)" strokeWidth={0.6 / Math.max(f.rx, f.ry)} />
+                : <ellipse rx={f.rx} ry={f.ry} transform={`rotate(${f.giroGrados.toFixed(1)})`} fill={f.hex} stroke="rgba(0,0,0,.22)" strokeWidth={0.6} />}
+              {!f.estampado && <circle cx={brillo.cx} cy={brillo.cy} r={brillo.r} fill="#fff" opacity={0.35} />}
+            </g>
+            {/* Lo impreso (iris, cara de calabaza), ya en coordenadas del dibujo. */}
+            {f.estampado?.map((c, k) => <polygon key={k} points={c.puntos.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ")} fill={c.hex} />)}
           </g>
         );
       })}
@@ -107,14 +113,14 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
                     className={`flex min-h-24 flex-col items-center gap-0.5 rounded-xl p-1.5 text-center ring-1 transition-colors ${activa ? "bg-superficie-suave ring-2 ring-acento" : "bg-superficie ring-borde hover:bg-superficie-suave"}`}>
                     <MiniaturaDecoracion miniatura={d.miniatura} nombre={d.nombre} className="size-14" />
                     <span className="text-[0.7rem] leading-tight text-texto">{d.nombre}</span>
-                    <span className="text-[0.65rem] text-texto-suave">{d.globos} globos</span>
+                    <span className="text-[0.65rem] text-texto-suave">{d.noEsGlobo ? "no es globo" : `${d.globos} globos`}</span>
                   </button>
                 );
               })}
             </div>
             {abierta && (
               <div className="flex flex-col gap-2 rounded-xl bg-superficie-suave p-2 ring-1 ring-acento/60" aria-label={`Dónde poner ${abierta.nombre}`}>
-                <p className="text-xs text-texto"><b>{abierta.nombre}</b> · {abierta.globos} globos. <span className="text-texto-suave">{abierta.descripcion}</span></p>
+                <p className="text-xs text-texto"><b>{abierta.nombre}</b> · {abierta.noEsGlobo ? "escenografía de papel (no es globo, no se cotiza)" : `${abierta.globos} globos`}. <span className="text-texto-suave">{abierta.descripcion}</span></p>
                 {puedeColgar && (
                   <>
                     <p className="text-[0.7rem] text-texto-suave">Se repite en las anclas de «{nodo.nombre}» (los puntos morados del visor), de las que miran al frente.</p>
