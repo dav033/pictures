@@ -271,7 +271,7 @@ const idea505 = idea({
 
 const idea550 = idea({
   id: "idea:feliz-cumpleanos-fantasia-rosado-plata", numero: 550, slug: "feliz-cumpleanos-fantasia-rosado-plata",
-  nombre: "Ramo Feliz Cumpleaños Fantasía Rosado y Plata", ocasiones: ["cumpleaños"],
+  nombre: "Ramo Feliz Cumpleaños Fantasía Rosado y Plata", ocasiones: ["cumpleanos"],
   fotoUrl: FOTO("Rosado-Plata.jpg"),
   productos: [
     publicado("GLOBO REDONDO REFLEX ROSADO", "/products/globo-para-fiesta-latex-redondo-reflex-rosado", "R-12", "909", 3),
@@ -300,7 +300,7 @@ const idea550 = idea({
 const MAMA = { nombre: "GLOBO REDONDO INFINITY® FELIZ DIA MAMA CORAZONES FASHION SURTIDO ROJO - BLANCO", url: "/products/globo-para-fiesta-latex-redondo-infinity-feliz-dia-mama-corazones-fashion-surtido-rojo-blanco" };
 const idea557 = idea({
   id: "idea:feliz-dia-mama-reflex-graffiti", numero: 557, slug: "feliz-dia-mama-reflex-graffiti",
-  nombre: "Ramo Feliz Día Mamá, Reflex y Graffiti", ocasiones: ["día de la madre"],
+  nombre: "Ramo Feliz Día Mamá, Reflex y Graffiti", ocasiones: ["dia-de-la-madre"],
   fotoUrl: FOTO("Plata-Grafitti-Invierno-015.jpg"),
   productos: [
     // El surtido trae rojos y blancos: una fila por color de fondo. La idea lo mapea a C-12, pero el nombre dice
@@ -495,7 +495,7 @@ function varita(prefijo: string, nombre: string, corazon: string, palo: string, 
 
 const idea506 = idea({
   id: "idea:dulce-corazon", numero: 506, slug: "dulce-corazon",
-  nombre: "Dulce corazón: varitas de corazón", ocasiones: ["amor", "general"],
+  nombre: "Dulce corazón: varitas de corazón", ocasiones: ["san-valentin", "general"],
   fotoUrl: FOTO("7d691f974802c05910667d6e5e77302e_06a6d74f-118f-4c7c-aaa1-61d62d7a12f9.jpg"),
   productos: [liso("C-12", "009", 1), liso("C-12", "015", 1), liso("T-260", "012", 1), liso("T-260", "015", 1), liso("R-5", "005", 4)],
   clase: "escena", contenido: () => ({
@@ -566,7 +566,7 @@ const GLOBOS_544: ReadonlyArray<{ g: GloboRamo; centro: Vec3 }> = [
 const AMARRE_544 = v(0, POMPON_544.y + 6, 0);
 const idea544 = idea({
   id: "idea:farol-encantado", numero: 544, slug: "farol-encantado",
-  nombre: "Farol encantado", ocasiones: ["amor", "general"],
+  nombre: "Farol encantado", ocasiones: ["san-valentin", "general"],
   fotoUrl: FOTO("e372675cf997f22517ce075039d175ae.jpg"),
   productos: [liso("R-12", "015", 2), liso("R-12", "005", 1), liso("T-260", "029", 1)],
   clase: "escena", contenido: () => ({
@@ -641,7 +641,7 @@ const FLOR_594: Pieza = {
 };
 const idea594 = idea({
   id: "idea:flor-colorida", numero: 594, slug: "flor-colorida",
-  nombre: "Flor colorida de lazos", ocasiones: ["cumpleaños"],
+  nombre: "Flor colorida de lazos", ocasiones: ["cumpleanos"],
   fotoUrl: FOTO("c22ef704df61396b8786383d949fd597_5f361952-c16f-4dee-b5ce-d37b8fcf6fee.jpg"),
   productos: [liso("T-260", "020", 2), liso("T-260", "061", 2), liso("T-260", "011", 2), liso("T-260", "038", 2), liso("R-5", "031", 1), liso("T-260", "029", 2)],
   clase: "escena", contenido: () => ({
@@ -671,7 +671,7 @@ const GLOBOS_597: ReadonlyArray<{ g: GloboRamo; centro: Vec3 }> = [
 ];
 const idea597 = idea({
   id: "idea:flor-de-corazones", numero: 597, slug: "flor-de-corazones",
-  nombre: "Flor de corazones (centro de mesa)", ocasiones: ["amor", "general"],
+  nombre: "Flor de corazones (centro de mesa)", ocasiones: ["san-valentin", "general"],
   fotoUrl: FOTO("dbe40e3ae348cbf8ee6ead7442221425_00c53ef5-dc4f-43d4-a44f-0fe6f53d429c.jpg"),
   productos: [liso("T-260", "005", 3), liso("C-12", "015", 5), liso("R-5", "015", 1), liso("R-12", "005", 1), liso("R-12", "015", 1)],
   clase: "escena", contenido: () => ({
@@ -708,7 +708,7 @@ const GLOBOS_598: ReadonlyArray<{ g: GloboRamo; centro: Vec3 }> = [
 ];
 const idea598 = idea({
   id: "idea:flor-destellos", numero: 598, slug: "flor-destellos",
-  nombre: "Flor destellos (centro de mesa)", ocasiones: ["amor", "general"],
+  nombre: "Flor destellos (centro de mesa)", ocasiones: ["san-valentin", "general"],
   fotoUrl: FOTO("98c584fcca04d6d7458f9831ead5d9e6.jpg"),
   productos: [liso("R-12", "015", 2), liso("R-12", "005", 1), liso("R-5", "015", 9), liso("R-5", "029", 1), liso("T-260", "005", 2), liso("T-260", "015", 1), liso("T-260", "029", 1)],
   clase: "escena", contenido: () => ({
@@ -748,7 +748,7 @@ const CORAZONES_600 = perezoso((): ReadonlyArray<{ g: GloboRamo; centro: Vec3 }>
 ]);
 const idea600 = idea({
   id: "idea:flor-en-lol-3", numero: 600, slug: "flor-en-lol-3",
-  nombre: "Flor en LOL con corazones", ocasiones: ["amor"],
+  nombre: "Flor en LOL con corazones", ocasiones: ["san-valentin"],
   fotoUrl: FOTO("Flor_en_LOL_dc34d02f-0c81-470d-9acf-6d6d0e08c0b4.png"),
   productos: [
     // La idea los mapea a LOL-12; en la foto el centro dorado es de eslabones chicos (LOL-6, que el mismo producto vende).
@@ -791,7 +791,7 @@ const FLOR_AMARILLA_603: Pieza = { tipo: "decoracion", deFrente: true, decoracio
 const PAREJAS_603: ReadonlyArray<[number, string]> = [[94, "061"], [124, "011"], [56, "051"], [23, "020"], [192, "030"], [-10, "038"], [206, "061"], [245, "038"], [319, "051"], [277, "030"]];
 const idea603 = idea({
   id: "idea:flor-fucsia", numero: 603, slug: "flor-fucsia",
-  nombre: "Flor fucsia de pared", ocasiones: ["cumpleaños"],
+  nombre: "Flor fucsia de pared", ocasiones: ["cumpleanos"],
   fotoUrl: FOTO("686a74b744eb4093d6512c31cf6196fa_24a34c41-44aa-4b99-84d2-c0f69378a4fd.jpg"),
   productos: [liso("R-12", "020", 6), liso("R-12", "011", 6), liso("R-12", "030", 1), liso("R-5", "061", 4), liso("R-5", "011", 2), liso("R-5", "051", 4), liso("R-5", "020", 2), liso("R-5", "030", 4), liso("R-5", "038", 4)],
   clase: "escena", contenido: () => ({
@@ -822,7 +822,7 @@ const idea603 = idea({
 const LAZOS_606: Pieza = { tipo: "decoracion", deFrente: true, decoracion: florTubito({ petalos: lazos("T-260", 3, ["005"], 5, 44, 31, 0, 270) }) };
 const idea606 = idea({
   id: "idea:flores-de-corazones", numero: 606, slug: "flores-de-corazones",
-  nombre: "Flor de lazos blancos con corazones", ocasiones: ["amor", "general"],
+  nombre: "Flor de lazos blancos con corazones", ocasiones: ["san-valentin", "general"],
   fotoUrl: FOTO("33fe94b207f4b244e24138a9241325ef_79725f95-fa19-4e1f-9101-fd94c0686c75.jpg"),
   productos: [liso("T-260", "005", 5), liso("C-12", "015", 5), liso("R-5", "005", 1)],
   clase: "escena", contenido: () => ({
@@ -850,7 +850,7 @@ const TURQUESA_609 = v(-50, 27.7, 0), NARANJA_609 = v(43.7, 28.3, 0), PIE_609 = 
 const TALLO_609: Tubito = { formatoId: "T-260", grosorCm: 3.5, codigo: "031" };
 const idea609 = idea({
   id: "idea:flores-unidas", numero: 609, slug: "flores-unidas",
-  nombre: "Flores unidas de pared", ocasiones: ["cumpleaños"],
+  nombre: "Flores unidas de pared", ocasiones: ["cumpleanos"],
   fotoUrl: FOTO("483de01ed900867dfc58da130d4e9371_80f8f429-b380-46a7-9276-d1d7275a1338.jpg"),
   productos: [liso("R-5", "051", 5), liso("R-5", "050", 5), liso("R-5", "038", 5), liso("R-5", "011", 5), liso("R-5", "061", 5), liso("R-5", "029", 5), liso("R-5", "021", 3), liso("T-260", "031", 3)],
   clase: "escena", contenido: () => ({

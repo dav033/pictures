@@ -9,6 +9,7 @@ import {
 import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import { hexDeCodigo, miniaturaDecoracion, type Miniatura } from "@/lib/globos3d/decoraciones-escena";
 import { urlTienda } from "@/lib/globos3d/utileria-catalogo";
+import { nombreOcasion } from "@/lib/taller/taxonomia-celebraciones";
 import { REVISADO_TIENDA } from "@/lib/globos3d/productos-tienda";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { MiniaturaDecoracion } from "./DecoracionesPequenas";
@@ -474,7 +475,7 @@ export function Ficha({ item, biblioteca, huellas, minis, onVer, onVolver, accio
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={onVolver} className={`${BOTON} ${INACTIVO} inline-flex items-center gap-1.5 px-3`}><ArrowLeft className="size-4" aria-hidden />{puedeVolver ? "Volver" : "Volver a la biblioteca"}</button>
         <span className={`${ETIQUETA} text-texto`}>{NOMBRE_TIPO_ITEM.get(item.tipo)}</span>
-        {item.ocasiones.map((o) => <span key={o} className={ETIQUETA}>{o}</span>)}
+        {item.ocasiones.map((o) => <span key={o} className={ETIQUETA}>{nombreOcasion(o)}</span>)}
       </div>
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-3">
@@ -589,7 +590,7 @@ export const FiltrosCompactos = memo(function FiltrosCompactos({ filtro, onFiltr
     <div className="flex gap-1.5" role="group" aria-label="Filtros de la biblioteca">
       <select value={filtro.ocasion ?? ""} onChange={(e) => onFiltro({ ...filtro, ocasion: e.target.value || null })} aria-label="Ocasión" className={`${FILTRO_CHIP} ${filtro.ocasion ? "border-taller-resalte text-taller-texto" : ""}`}>
         <option value="">Ocasión: todas</option>
-        {ocasiones.map((o) => <option key={o} value={o}>{o}</option>)}
+        {ocasiones.map((o) => <option key={o} value={o}>{nombreOcasion(o)}</option>)}
       </select>
       <select value={filtro.color ?? ""} onChange={(e) => onFiltro({ ...filtro, color: e.target.value || null })} aria-label="Color" className={`${FILTRO_CHIP} ${filtro.color ? "border-taller-resalte text-taller-texto" : ""}`}>
         <option value="">Color: todos</option>
@@ -810,7 +811,7 @@ export function AccionesPieza({ escena, armada, nodoId, onVer, pedirGuardar = 0 
             <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={abierto === "escena" || !nodo ? "Mi escena" : nodo.nombre} className="min-h-11 rounded-lg bg-superficie px-2 text-base font-normal text-texto ring-1 ring-borde sm:text-sm lg:min-h-9" />
           </label>
           <label className="flex flex-col gap-1 text-xs font-semibold text-texto">Ocasión
-            <select value={ocasion} onChange={(e) => setOcasion(e.target.value)} className={SELECT}>{OCASIONES.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+            <select value={ocasion} onChange={(e) => setOcasion(e.target.value)} className={SELECT}>{OCASIONES.map((o) => <option key={o} value={o}>{nombreOcasion(o)}</option>)}</select>
           </label>
           <button type="button" onClick={guardar} className="min-h-11 rounded-[10px] bg-taller-primario px-3 text-sm font-medium text-taller-sobre-primario hover:bg-taller-primario-hover lg:min-h-9">Guardar</button>
         </div>

@@ -362,7 +362,7 @@ const escena581 = (): Escena => ({
   ],
 });
 const idea581 = idea({
-  id: "idea:figura-de-amor-y-amistad-1", numero: 581, slug: "figura-de-amor-y-amistad-1", nombre: "Guirnalda de amor y amistad con cerezas", ocasiones: ["amor"],
+  id: "idea:figura-de-amor-y-amistad-1", numero: 581, slug: "figura-de-amor-y-amistad-1", nombre: "Guirnalda de amor y amistad con cerezas", ocasiones: ["san-valentin"],
   fotoUrl: FOTO("Figura_Amor_y_amistad.jpg"), escena: escena581,
   nota: "Igual: guirnalda de pared de ~2,1 × 0,9 m con sus 35 globos contados uno a uno, cada uno en su sitio y a su tamaño, en las tres zonas de color de la foto —coral a la izquierda (Fashion Fucsia 012, medido #da527c: 1 R-18, 5 R-12 y 5 R-5), frambuesa al medio (Fashion Frambuesa 014, medido #b62650: 7 R-12 y 4 R-5, sin grandes) y magenta a la derecha (Fashion Rosa 011, medido #cc3a7f: 2 R-18, 5 R-12, 2 R-9 y 4 R-5)— y tres moños de T-260 Metal Dorado con dos colas cada uno que acaban en un corazón C-12 Fashion Rojo con la punta arriba (las cerezas), con los productos que publica la idea (los grandes y los chicos son el mismo producto en otra talla). Distinto: los moños de la foto se ven verde metalizado (medido #767046): va el T-260 Metal Dorado 570 que publica la idea; el Fashion Rosado 009 publicado no se ve (sin cantidad); las colas bajan parejas a los lados (en la foto una de cada moño se va de lado); el soporte de pared no se ve (no cotiza).",
 }, [
@@ -402,7 +402,7 @@ const escena582 = (): Escena => ({
   ],
 });
 const idea582 = idea({
-  id: "idea:figura-de-amor-y-amistad", numero: 582, slug: "figura-de-amor-y-amistad", nombre: "Figura de amor y amistad: dos flores con moño", ocasiones: ["amor"],
+  id: "idea:figura-de-amor-y-amistad", numero: 582, slug: "figura-de-amor-y-amistad", nombre: "Figura de amor y amistad: dos flores con moño", ocasiones: ["san-valentin"],
   fotoUrl: FOTO("Figura_amor_y_amistad_2.jpg"), escena: escena582,
   nota: "Igual: figura de ~1,4 m con la flor lila de 6 pétalos arriba (centro verde y anillo de 8 burbujitas verdes), la flor malva de 5 pétalos (~22 cm) con su racimo verde al centro, dos tallos de dos T-260 Té Verde torcidos, dos ramitas de burbujas rosadas y verdes y el moño Silk Dorado grande de abajo (dos lazos arriba, dos de patas y la bolita del centro), con los productos que publica la idea: Silk Dorado 870, Silk Rosa Primaveral 809 (los pétalos malva y las burbujas rosadas: la foto los mide más cromados y fucsia, #9b7b7c y #e985a7) y Pastel Dusk Té Verde 126. Distinto: los pétalos lilas no son de ningún producto publicado (medido #e0ddf1, el lila más cercano es Pastel Mate Lila 650); las burbujitas verdes de los centros son de tubito en la foto y aquí R-5 al mínimo; la base que sostiene la figura no se ve (escenografía, no cotiza); Fashion Rosa 011 y Satín Blanco 405 publicados no se ven (sin cantidad); los tallos van rectos.",
 }, [
@@ -439,7 +439,7 @@ const escena595 = (): Escena => ({
   ],
 });
 const idea595 = idea({
-  id: "idea:flor-corazones-dobles", numero: 595, slug: "flor-corazones-dobles", nombre: "Flor de corazones dobles", ocasiones: ["amor"],
+  id: "idea:flor-corazones-dobles", numero: 595, slug: "flor-corazones-dobles", nombre: "Flor de corazones dobles", ocasiones: ["san-valentin"],
   fotoUrl: FOTO("27c854ad26216d2c684c05b370b3d15a.jpg"), escena: escena595,
   nota: "Igual: flor de pared de ~1 m: 5 pétalos R-12 rojos impresos con corazones blancos (el Infinity® Corazones por Siempre Fashion Rojo de la tienda), encima una florecita de 5 R-5 blancos con un R-5 rojo al centro y alrededor el aro de 10 R-9 blancos con un R-5 rojo cada dos (5), contados en la foto. La idea no publica productos; medidos: blancos #d7d5d9 → Silk Blanco Nácar 806 (perlado), rojos → Fashion Rojo 015. Distinto: los pétalos de la florecita blanca parecen corazoncitos (C-6 blanco, que no está en la tabla): van R-5 redondos; el soporte de pared no se ve (escenografía, no cotiza).",
 });
@@ -492,7 +492,7 @@ const escena596 = (): Escena => ({
   ],
 });
 const idea596 = idea({
-  id: "idea:flor-de-corazones-dorados", numero: 596, slug: "flor-de-corazones-dorados", nombre: "Flor de corazones dorados (columna con flor y helio)", ocasiones: ["amor", "cumpleaños", "infantil"],
+  id: "idea:flor-de-corazones-dorados", numero: 596, slug: "flor-de-corazones-dorados", nombre: "Flor de corazones dorados (columna con flor y helio)", ocasiones: ["san-valentin", "cumpleanos", "fiesta-infantil"],
   fotoUrl: FOTO("6ede545660cd3d75e0b457fd50cab165_178e66d4-468e-4e1c-9cd0-4ec8e079325c.jpg"), escena: escena596,
   nota: "Igual: columna de 5 cuartetos dorados (~1,2 m con sus aros) con un R-5 rojo en cada hueco entre niveles (16), un aro de 10 R-5 rojos abajo y otro arriba, encima la flor de 5 R-12 negros con 5 pétalos alargados rojos (Link-O-Loon) y un racimo de 9 R-5 dorados al centro, y tres R-12 de helio con su cinta hasta ~2,7 m. La idea no publica productos; medidos: dorado #eba10a con brillo metalizado → Metal Dorado 570 (el dorado metal más cercano; por tono queda más cerca Fashion Mostaza 023), rojo → Fashion Rojo 015, negro 080. Distinto: en la foto los cuartetos alternan grande y chico; aquí van iguales (24 cm); los pétalos rojos llevan corazoncitos dorados impresos que la tienda no vende (van lisos) y los dos rojos de helio van con el Infinity® Corazones Surtidos (corazones blancos, el más parecido de la tienda).",
 });
@@ -737,7 +737,7 @@ const escena623 = (): Escena => ({
   ],
 });
 const idea623 = idea({
-  id: "idea:garland-grado", numero: 623, slug: "garland-grado", nombre: "Garland de grado con cortina", ocasiones: ["grado"],
+  id: "idea:garland-grado", numero: 623, slug: "garland-grado", nombre: "Garland de grado con cortina", ocasiones: ["graduacion"],
   fotoUrl: FOTO("Garland_Grado.jpg"), escena: escena623,
   nota: "Igual: guirnalda orgánica de pared de ~2 × 0,9 m de perlados blancos, Reflex Plata y Reflex Azul (R-18 a R-9 con racimos de R-5 plata), con tres R-12 «Feliz Grado» plata (arriba y en las dos puntas), uno azul más, un transparente de estrellas abajo a la izquierda, cinco cintas doradas rizadas colgando y la cortina metálica (plata detrás, azul delante) bajo el centro, con los productos que publica la idea. Distinto: los perlados de la foto miden #d4d4d6 → Silk Blanco Nácar 806, que la idea no publica (el Fashion Gris 081 publicado no se ve: sin cantidad); el «Feliz Grado» azul de la foto no se vende (el impreso es solo plata): va Reflex Azul liso; la cortina azul no está en la tienda (genérica) y las cintas son escenografía (no cotizan); las cantidades de la guirnalda son las del motor orgánico, no contadas una a una.",
 }, [
@@ -933,7 +933,7 @@ const escena709 = (): Escena => ({
   ],
 });
 const idea709 = idea({
-  id: "idea:malla-futbol", numero: 709, slug: "malla-futbol", nombre: "Malla fútbol: pared verde con balones", ocasiones: ["cumpleaños", "infantil"],
+  id: "idea:malla-futbol", numero: 709, slug: "malla-futbol", nombre: "Malla fútbol: pared verde con balones", ocasiones: ["cumpleanos", "fiesta-infantil"],
   fotoUrl: FOTO("a1d3e8359e951cd6ce43c7d988bbd198.jpg"), escena: escena709,
   nota: "Igual: pared de 5 trenzas de cuartetos verdes que alternan grande y chico (~2,4 × 1,4 m) y encima, en su sitio de la foto, 4 balones grandes (R-24) y 10 chicos (R-12 a 16 cm) del Infinity® Balón de Fútbol, 2 negros R-18, 3 negros R-12 y 9 negros R-9, con los tres productos que publica la idea. Distinto: el verde de la foto mide #02ae31 (Verde Trébol 029, a 4 ΔE) y tiene dos tonos por la luz: va el Fashion Verde 030 publicado, de un solo tono; los negros miden más cerca de Metal Negro 580, va el Fashion Negro 080 publicado; la pared va con su trenza (en la foto los globos se ven más sueltos).",
 }, [
@@ -974,7 +974,7 @@ const escena710 = (): Escena => ({
   ],
 });
 const idea710 = idea({
-  id: "idea:malla-link-o-loon-r-amor-en-fucsia-y-lila", numero: 710, slug: "malla-link-o-loon-r-amor-en-fucsia-y-lila", nombre: "Malla Link-O-Loon amor en fucsia", ocasiones: ["amor"],
+  id: "idea:malla-link-o-loon-r-amor-en-fucsia-y-lila", numero: 710, slug: "malla-link-o-loon-r-amor-en-fucsia-y-lila", nombre: "Malla Link-O-Loon amor en fucsia", ocasiones: ["san-valentin"],
   fotoUrl: FOTO("IMG_20200814_175713_59b3aa7e-e5f5-452a-87c3-7743835a140b.jpg"), escena: escena710,
   nota: "Igual: malla de Link-O-Loon de ~1,8 × 1,8 m y encima la retícula de 7 × 7 globos de la foto en franjas diagonales: la diagonal de 7 R-18 Fashion Fucsia, 11 Duo Fucsia, 11 Pastel Mate Rosado, 6 transparentes de confeti rosado y 14 Reflex Plata, contados uno a uno, con los productos que publica la idea. Distinto: el Reflex Plata no se fabrica en Link-O-Loon: la malla va en Link-O-Loon Satín Plata 481 (no publicado); el Duo Fucsia (un fucsia dentro de otro) no tiene código en la tabla: se dibuja como Metal Fucsia 512, el fucsia perlado más cercano (medido #b1216e); los transparentes de confeti van con el Infinity® Graffiti Rosa transparente (la idea no publica el impreso); el fucsia grande mide #cb3b84 (más cerca de Fashion Rosa 011): va el Fucsia 012 publicado.",
 }, [
@@ -1068,7 +1068,7 @@ const escena712 = (): Escena => ({
   ],
 });
 const idea712 = idea({
-  id: "idea:malla-marina", numero: 712, slug: "malla-marina", nombre: "Malla marina en franjas con ramos de mármol", ocasiones: ["cumpleaños"],
+  id: "idea:malla-marina", numero: 712, slug: "malla-marina", nombre: "Malla marina en franjas con ramos de mármol", ocasiones: ["cumpleanos"],
   fotoUrl: FOTO("malla-Marina_d8c14a3b-9709-46b1-a5d2-7ef31d4d5552.jpg"), escena: escena712,
   nota: "Igual: pared de ~1,6 × 2,5 m en cinco franjas de R-12 al tresbolillo con R-5 del mismo color en los huecos —de abajo arriba Fashion Azul, Fashion Aguamarina, Reflex Violeta, Satín Lila y Satín Rosado, los cinco productos que publica la idea— con 14 R-12 Infinity® Graffiti Invierno repartidos como en la foto (4, 3, 2, 3 y 2), y a cada lado un ramo de mármol con varillas lila (5 y 6 globos: Graffiti Invierno, Cielo y Rosa). Distinto: en la foto los mármoles de la pared toman el color de su franja (llevan un globo de color dentro): aquí son el transparente con el impreso; el azul y el aguamarina miden #0284bd y #01b3ba (más cerca de Neón Azul y Azul Caribe): van los publicados; los Graffiti Cielo y Rosa de los ramos no los publica la idea; la cantidad de R-5 de relleno es la del motor de celdas.",
 }, [
@@ -1102,7 +1102,7 @@ const escena713 = (): Escena => ({
   nodos: [{ id: "malla", nombre: "Malla orgánica azul naval, roja y blanca", pieza: MALLA_713, colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: 15 } }],
 });
 const idea713 = idea({
-  id: "idea:malla-organica-naval", numero: 713, slug: "malla-organica-naval", nombre: "Malla orgánica naval", ocasiones: ["cumpleaños"],
+  id: "idea:malla-organica-naval", numero: 713, slug: "malla-organica-naval", nombre: "Malla orgánica naval", ocasiones: ["cumpleanos"],
   fotoUrl: FOTO("49e234b8402f01cf61dde963073e12bf.jpg"), escena: escena713,
   nota: "Igual: pared orgánica de ~2,45 × 2,25 m de azul naval, rojo y blanco mezclados al azar (más o menos 40 %, 32 % y 28 %, como en la foto), de R-5 a R-24 con la mayoría R-12. La idea no publica productos; medidos: azul #0e2c49 → Fashion Azul Naval 044, rojo #ff362f → Fashion Rojo 015, blanco #eaece7 → Fashion Blanco 005 (Satín Blanco queda a menos de 6 ΔE: va el Fashion). Distinto: las cantidades y el sitio de cada globo son los del motor orgánico (no contados uno a uno; su relleno de tríos de R-5 pone más chicos de los que se ven); el R-5 blanco suelto del centro de la foto no se pone aparte.",
 });
@@ -1207,7 +1207,7 @@ const escena779 = (): Escena => ({
   ],
 });
 const idea779 = idea({
-  id: "idea:mural-neon", numero: 779, slug: "mural-neon", nombre: "Mural neón", ocasiones: ["cumpleaños"],
+  id: "idea:mural-neon", numero: 779, slug: "mural-neon", nombre: "Mural neón", ocasiones: ["cumpleanos"],
   fotoUrl: FOTO("b8e14c7a69386be4b3b5801b59a9eb42_6e49e98c-63cc-4166-889a-ac7a477fedd4.jpg"), escena: escena779,
   nota: "Igual: malla de Link-O-Loon negra de ~3 × 2 m y encima la retícula de 13 × 9 neones de la foto, alternando un R-12 (59) y un R-5 (58) como un tablero, en franjas diagonales de verde, naranja y fucsia, contada uno a uno. La idea no publica productos; medidos (el más cercano en su formato): verde #02c28d → Fashion Verde 030, naranja #ff8b63 → Neón Naranja 261, fucsia #e870b2 → Neón Fucsia 212, negro 080. Distinto: la escala sale de suponer Link-O-Loon de 12\" (con LOL-6 el mural mediría ~1,9 × 1,3 m y los neones serían R-5); el brillo neón (luz negra) no se modela.",
 });

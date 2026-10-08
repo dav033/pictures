@@ -307,7 +307,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   // ------------------------------------------------------------------------------------------------ Arcos
   {
     id: "base-organica:semiarco-fucsia-rosa-plata", nombre: "Semiarco orgánico fucsia, rosa y plata en J", tipo: "arco", subtipo: "semiarco en J",
-    ocasiones: ["cumpleaños", "quince años", "general"],
+    ocasiones: ["cumpleanos", "quince-anos", "general"],
     fuente: { sitio: "Lush Balloons (EE. UU.)", urlPagina: "https://www.lushballoons.com/products/extra-lush-organic-demi-arch-rental", urlImagen: "https://cdn.shopify.com/s/files/1/0363/2984/8969/files/extra-lush-organic-demi-arch-rental-247026.jpg?width=1400" },
     forma: {
       generador: "arco",
@@ -330,7 +330,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:arco-naranja-azul-naval-racimos", nombre: "Arco orgánico de racimos naranja y azul naval", tipo: "arco", subtipo: "arco completo por racimos de color",
-    ocasiones: ["cumpleaños", "grado", "halloween", "general"],
+    ocasiones: ["cumpleanos", "graduacion", "halloween", "general"],
     fuente: { sitio: "Lush Balloons (EE. UU.)", urlPagina: "https://www.lushballoons.com/products/organic-balloon-arch-rental", urlImagen: "https://cdn.shopify.com/s/files/1/0363/2984/8969/files/organic-balloon-arch-rental-312613.jpg?width=1400" },
     forma: {
       generador: "arco",
@@ -349,7 +349,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:arco-l-cromado-negro-oro-plata", nombre: "Arco en L cromado negro, oro y plata", tipo: "arco", subtipo: "asimétrico en L",
-    ocasiones: ["año nuevo", "grado", "cumpleaños", "general"],
+    ocasiones: ["ano-nuevo", "graduacion", "cumpleanos", "general"],
     fuente: { sitio: "B&M Unique", urlPagina: "https://www.bnmunique.com/products/chrome-organic-balloon-semi-arch", urlImagen: "https://cdn.shopify.com/s/files/1/0649/6908/1023/files/Chrome-Organic-Balloon-Semi-Arch-for-Elegant-Parties.png" },
     forma: {
       generador: "arco",
@@ -364,7 +364,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:aro-dorado-nude-palo-de-rosa", nombre: "Guirnalda sobre aro dorado nude, palo de rosa y champaña", tipo: "arco", subtipo: "guirnalda sobre marco redondo",
-    ocasiones: ["boda", "baby shower", "día de la madre", "general"],
+    ocasiones: ["boda", "baby-shower", "dia-de-la-madre", "general"],
     fuente: { sitio: "Now It's A Party", urlPagina: "https://www.shopnowitsaparty.com/products/rental-67ft-ringhoop-arch-backdrop", urlImagen: "https://cdn.shopify.com/s/files/1/0725/6375/3274/files/CA801A96-0AD8-4C85-BD80-C5573240A897.jpg?width=1400" },
     forma: {
       generador: "arco",
@@ -383,7 +383,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:guirnalda-marco-lila-plata", nombre: "Guirnalda en S lila y plata cromada", tipo: "arco", subtipo: "guirnalda sobre marco rectangular",
-    ocasiones: ["quince años", "cumpleaños", "boda", "general"],
+    ocasiones: ["quince-anos", "cumpleanos", "boda", "general"],
     fuente: { sitio: "Salem Balloons and Flowers (Oregón)", urlPagina: "https://www.salemballoonsandflowers.com/products/organic-balloon-garland-on-a-frame-oregon", urlImagen: "https://www.salemballoonsandflowers.com/cdn/shop/files/Balloon-Garland-on-a-metal-frame.-Balloon-Decor.-Oregon.jpg?width=1400" },
     forma: {
       generador: "arco",
@@ -399,7 +399,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:arco-cromado-negro-oro-plata", nombre: "Arco orgánico cromado negro, oro y plata", tipo: "arco", subtipo: "arco completo cromado",
-    ocasiones: ["año nuevo", "grado", "boda", "general"],
+    ocasiones: ["ano-nuevo", "graduacion", "boda", "general"],
     fuente: { sitio: "Monarch Balloon Boutique (California)", urlPagina: "https://www.monarchballoonboutique.com/products/20ft-organic-balloon-arch", urlImagen: "https://cdn.shopify.com/s/files/1/0609/6909/1142/files/20ftOrganicArchSantaAna_27261a9f-8057-4d05-aa0b-43c8a5ee3abf.jpg?width=1400" },
     forma: { generador: "arco_organico", arco: { anchoCm: 260, altoCm: 255, radioBaseCm: 25, radioPuntaCm: 20, semilla: 106, densidad: 1, colores: [c("080", 32), c("970", 50), c("981", 18)], flores: null, huecosFlores: 0 } },
     nota: "Igual: arco de dos patas de ~3 × 2,6 m (unos 6 m de guirnalda), delgado (~40 cm, ~50 en los pies), mezcla uniforme de negro mate → Fashion Negro 080, oro cromado #916a41 → Reflex Dorado 970 (la mitad) y plata cromada → Reflex Plata 981. Va como arco orgánico de dos patas: se edita entero en el panel (ancho, alto, grosores, densidad y colores). Distinto: la foto tiene patas rectas y arriba casi plano; este arco es de curva elíptica.",
@@ -407,7 +407,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:arco-asimetrico-oro-perlado", nombre: "Arco asimétrico dorado perlado de un solo color", tipo: "arco", subtipo: "asimétrico rectangular monocromo",
-    ocasiones: ["boda", "año nuevo", "grado", "general"],
+    ocasiones: ["boda", "ano-nuevo", "graduacion", "general"],
     fuente: { sitio: "Mis Globos (Madrid)", urlPagina: "https://misglobos.com/products/columna-organica-por-metros", urlImagen: "https://cdn.shopify.com/s/files/1/0320/5854/0091/products/columna-organica-por-metros-709234.jpg?width=1400" },
     forma: {
       generador: "arco",
@@ -422,7 +422,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:arco-ombre-coral-menta", nombre: "Arco asimétrico en degradé de coral a menta", tipo: "arco", subtipo: "asimétrico en degradé",
-    ocasiones: ["cumpleaños", "baby shower", "general"],
+    ocasiones: ["cumpleanos", "baby-shower", "general"],
     fuente: { sitio: "Inflated Creations", urlPagina: "https://www.inflatedcreations.com/organic-arches", urlImagen: "https://images.squarespace-cdn.com/content/v1/55668890e4b0a63819e5bd65/1628885594423-ZBGZ8BZSG13TR9FPQX8Q/1ombreorganicballoonarchgarlandentry.jpg?format=1500w" },
     forma: {
       generador: "arco",
@@ -445,7 +445,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:marco-blanco-rojo-durazno-flores", nombre: "Guirnalda sobre marco blanco de rojo a durazno con flores", tipo: "arco", subtipo: "guirnalda sobre marco rectangular con flores",
-    ocasiones: ["cumpleaños", "día de la madre", "boda"],
+    ocasiones: ["cumpleanos", "dia-de-la-madre", "boda"],
     fuente: { sitio: "Salem Balloons and Flowers (Oregón)", urlPagina: "https://www.salemballoonsandflowers.com/products/organic-balloon-garland-on-a-frame-oregon", urlImagen: "https://www.salemballoonsandflowers.com/cdn/shop/files/garland-on-a-white-wooden-frame.Balloon-Decor.-Salem-Oregon-and-nearby-cities..jpg?width=1400" },
     forma: {
       generador: "arco",
@@ -469,7 +469,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:arco-menta-azul-blanco", nombre: "Arco orgánico menta, azul empolvado y blanco", tipo: "arco", subtipo: "arco completo pastel tricolor",
-    ocasiones: ["baby shower", "bautizo y comunión", "cumpleaños", "general"],
+    ocasiones: ["baby-shower", "bautizo", "primera-comunion", "cumpleanos", "general"],
     fuente: { sitio: "Pink Flamingo Party Co. (Connecticut)", urlPagina: "https://pinkflamingoparty.co/products/8x12-organic-balloon-arch", urlImagen: "https://cdn.shopify.com/s/files/1/0013/9683/4349/files/IMG_3197.jpg?width=1400" },
     forma: { generador: "arco_organico", arco: { anchoCm: 250, altoCm: 270, radioBaseCm: 30, radioPuntaCm: 22, semilla: 110, densidad: 1, colores: [c("140", 30), c("126", 30), c("005", 40)], flores: null, huecosFlores: 0 } },
     nota: "Igual: arco de dos patas de ~3 × 2,8 m, ~45 cm de grueso (~60 en los pies), mezcla uniforme de azul acero empolvado #37859e → Pastel Dusk Azul 140, menta #abcdba → Pastel Dusk Té Verde 126 y blanco → Fashion Blanco 005, con R-18 abajo y R-5 de relleno. Va como arco orgánico de dos patas: se edita entero en el panel. Distinto: en la foto hay además un celeste más claro (#79b6d3) en poca cantidad que aquí no va, y la mezcla de las patas parece ir en espiral.",
@@ -478,7 +478,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   // ------------------------------------------------------------------------------------------------ Columnas
   {
     id: "base-organica:columna-recta-multicolor-tierra", nombre: "Columna orgánica recta multicolor rosa, café y naranja", tipo: "columna", subtipo: "recta multicolor",
-    ocasiones: ["cumpleaños", "infantil", "general"],
+    ocasiones: ["cumpleanos", "fiesta-infantil", "general"],
     fuente: { sitio: "99 Haus Balloons (Chicago)", urlPagina: "https://99hausballoons.com/products/organic-balloon-column", urlImagen: "https://99hausballoons.com/cdn/shop/files/Organic_Column.jpg" },
     forma: {
       generador: "columna",
@@ -493,7 +493,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:columna-cuatro-franjas", nombre: "Columna orgánica de cuatro franjas de color", tipo: "columna", subtipo: "por franjas de color",
-    ocasiones: ["cumpleaños", "infantil", "grado", "general"],
+    ocasiones: ["cumpleanos", "fiesta-infantil", "graduacion", "general"],
     fuente: { sitio: "Lush Balloons (EE. UU.)", urlPagina: "https://www.lushballoons.com/products/organic-balloon-column", urlImagen: "https://cdn.shopify.com/s/files/1/0363/2984/8969/files/organic-balloon-column-885772.jpg?width=1400" },
     forma: {
       generador: "columna",
@@ -515,7 +515,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:columna-pastel-pascua", nombre: "Columna orgánica pastel de seis colores", tipo: "columna", subtipo: "pastel mezclada",
-    ocasiones: ["baby shower", "infantil", "cumpleaños", "general"],
+    ocasiones: ["baby-shower", "fiesta-infantil", "cumpleanos", "general"],
     fuente: { sitio: "Pink Flamingo Party Co. (Connecticut)", urlPagina: "https://pinkflamingoparty.co/products/easter-column", urlImagen: "https://cdn.shopify.com/s/files/1/0013/9683/4349/files/6T4A0420_defa8a79-7077-4408-981f-9c5a16b4be10.jpg?width=1400" },
     forma: {
       generador: "columna",
@@ -530,7 +530,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:columna-cine-negro-rojo-oro", nombre: "Columna orgánica negra, roja y oro con remate dorado", tipo: "columna", subtipo: "con globo grande de remate",
-    ocasiones: ["grado", "año nuevo", "cumpleaños", "general"],
+    ocasiones: ["graduacion", "ano-nuevo", "cumpleanos", "general"],
     fuente: { sitio: "Kristopher Renee", urlPagina: "https://www.kristopherrenee.com/product-page/organic-balloon-column", urlImagen: "https://static.wixstatic.com/media/93aa26_324e66f8193c4633ad68eb3d1597cc30~mv2.jpg" },
     forma: { generador: "columna", columna: COLUMNA_CINE },
     extras: rematesColumna(COLUMNA_CINE, "Remate R-24 Metal Dorado", "R-24", 52, "570"),
@@ -539,7 +539,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:par-columnas-blanco-negro-oro", nombre: "Par de columnas blanco, negro y oro con remate blanco", tipo: "columna", subtipo: "doble con remate",
-    ocasiones: ["año nuevo", "boda", "grado", "general"],
+    ocasiones: ["ano-nuevo", "boda", "graduacion", "general"],
     fuente: { sitio: "Kristopher Renee", urlPagina: "https://www.kristopherrenee.com/product-page/organic-balloon-column", urlImagen: "https://static.wixstatic.com/media/93aa26_8f64be37598945d9afffcf8160febaaf~mv2.jpg" },
     forma: { generador: "columna", columna: PAR_BLANCO_NEGRO_ORO },
     extras: rematesColumna(PAR_BLANCO_NEGRO_ORO, "Remate R-24 blanco", "R-24", 55, "005"),
@@ -548,7 +548,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:par-columnas-otono-espiral", nombre: "Par de columnas otoñales naranja y oro con espiral y girasoles", tipo: "columna", subtipo: "espiral con flores (par)",
-    ocasiones: ["general", "halloween", "cumpleaños"],
+    ocasiones: ["general", "halloween", "cumpleanos"],
     fuente: { sitio: "Balloons Charlotte", urlPagina: "https://balloonscharlotte.com/products/fall-inspired-topless-balloon-columns", urlImagen: "https://cdn.shopify.com/s/files/1/0537/8664/0538/files/fall-inspired-topless-balloon-columns-530.jpg" },
     forma: { generador: "columna", columna: COLUMNAS_OTONO },
     huecos: 16,
@@ -558,7 +558,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:columna-bienvenida-crema-negro-oro", nombre: "Columna de bienvenida crema, negro y oro por franjas con remate", tipo: "columna", subtipo: "por franjas con remate grande",
-    ocasiones: ["boda", "grado", "año nuevo", "general"],
+    ocasiones: ["boda", "graduacion", "ano-nuevo", "general"],
     fuente: { sitio: "Lush Balloons (EE. UU.)", urlPagina: "https://www.lushballoons.com/products/organic-balloon-column", urlImagen: "https://cdn.shopify.com/s/files/1/0363/2984/8969/files/organic-balloon-column-560549.jpg?width=1400" },
     forma: { generador: "columna", columna: COLUMNA_BIENVENIDA },
     extras: rematesColumna(COLUMNA_BIENVENIDA, "Remate R-36 crema", "R-36", 85, "107"),
@@ -567,7 +567,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:columna-pastel-flores-de-globo", nombre: "Columna pastel con flores de globo y remate durazno", tipo: "columna", subtipo: "con flores de globo y remate",
-    ocasiones: ["cumpleaños", "infantil", "baby shower"],
+    ocasiones: ["cumpleanos", "fiesta-infantil", "baby-shower"],
     fuente: { sitio: "Party Hop Shop", urlPagina: "https://partyhopshop.com/products/custom-organic-balloon-column", urlImagen: "https://cdn.shopify.com/s/files/1/0006/7334/9684/files/E1CE6B9B-8B24-49CC-AEF1-A0B3E8C2DA71.jpg?width=1400" },
     forma: { generador: "columna", columna: COLUMNA_FLORES_PASTEL },
     huecos: 6,
@@ -581,7 +581,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:columna-champana-inclinada", nombre: "Columna champaña inclinada blanco perla y oro", tipo: "columna", subtipo: "base ancha e inclinada",
-    ocasiones: ["año nuevo", "boda", "grado", "cumpleaños"],
+    ocasiones: ["ano-nuevo", "boda", "graduacion", "cumpleanos"],
     fuente: { sitio: "Balloons Charlotte", urlPagina: "https://balloonscharlotte.com/products/happy-anniversary-organic-column", urlImagen: "https://cdn.shopify.com/s/files/1/0537/8664/0538/files/happy-anniversary-organic-column-584.jpg" },
     forma: {
       generador: "columna",
@@ -596,7 +596,7 @@ export const BASES_ORGANICAS: readonly BaseOrganica[] = [
   },
   {
     id: "base-organica:baston-ombre-rosa-blanco-monos", nombre: "Columna bastón en degradé de rosa palo a blanco con moños", tipo: "columna", subtipo: "se curva arriba, degradé",
-    ocasiones: ["baby shower", "bautizo y comunión", "día de la madre"],
+    ocasiones: ["baby-shower", "bautizo", "primera-comunion", "dia-de-la-madre"],
     fuente: { sitio: "Now It's A Party", urlPagina: "https://www.shopnowitsaparty.com/products/balloon-garland-column-organic", urlImagen: "https://cdn.shopify.com/s/files/1/0725/6375/3274/files/column_5_d4911de1-05a3-41ca-b189-da4f56ecb273.png" },
     forma: {
       generador: "arco",

@@ -19,7 +19,7 @@ const DORADO = (peso: number) => c("dorado", "#c9a24e", peso, "cromado");
 
 export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
   {
-    id: "referencia:dino-jungla-mesa", numero: 1, nombre: "Mesa de dinosaurios con guirnalda verde y dorada", ocasiones: ["cumpleanos", "infantil"], fidelidad: 3,
+    id: "referencia:dino-jungla-mesa", numero: 1, nombre: "Mesa de dinosaurios con guirnalda verde y dorada", ocasiones: ["cumpleanos", "fiesta-infantil"], fidelidad: 3,
     nota: "Guirnalda de arriba, columna cortada a la derecha, cortina con luces, letrero y mesa con mantel; los aros con helechos, los troncos, el musgo, la torta y los dinosaurios no son del taller.",
     lectura: {
       resumen: "Guirnalda orgánica verde oscuro, dorada, marfil y de confeti sobre una cortina con luces y una mesa de dinosaurios.", aspecto: 1,
@@ -37,7 +37,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
     },
   },
   {
-    id: "referencia:happy-birthday-azul-dorado-redondo", numero: 2, nombre: "Medio arco azul marino y dorado con panel redondo y media luna", ocasiones: ["cumpleanos", "elegante"], fidelidad: 3,
+    id: "referencia:happy-birthday-azul-dorado-redondo", numero: 2, nombre: "Medio arco azul marino y dorado con panel redondo y media luna", ocasiones: ["cumpleanos"], fidelidad: 3,
     nota: "Medio arco que nace del piso a la izquierda y cruza arriba, panel redondo con aro dorado, media luna azul, pedestales, ramo de helio y globos en el piso; el letrero de luz, la torta, la jaula y el florero no son del taller.",
     lectura: {
       resumen: "Medio arco orgánico azul marino, dorado, crema y confeti dorado sobre un panel redondo, con ramo de helio a la derecha.", aspecto: 0.667,
@@ -58,7 +58,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
     },
   },
   {
-    id: "referencia:happy-birthday-lentejuelas-arco-asimetrico", numero: 3, nombre: "Arco asimétrico azul marino y dorado con flores sobre lentejuelas", ocasiones: ["cumpleanos", "elegante"], fidelidad: 3,
+    id: "referencia:happy-birthday-lentejuelas-arco-asimetrico", numero: 3, nombre: "Arco asimétrico azul marino y dorado con flores sobre lentejuelas", ocasiones: ["cumpleanos"], fidelidad: 3,
     nota: "Arco asimétrico (racimo arriba a la izquierda, cruza y baja por la derecha hasta el piso) con rosas blancas y hojas secas doradas, pared de lentejuelas, pedestal azul y tapete; las rosas azules van blancas (no hay rosa de tela azul) y el letrero de neón no es del taller.",
     lectura: {
       resumen: "Arco orgánico asimétrico azul marino, dorado, champaña y confeti con flores y hojas doradas sobre una pared de lentejuelas.", aspecto: 0.8,
@@ -92,7 +92,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
     },
   },
   {
-    id: "referencia:arcos-chiara-tropical", numero: 5, nombre: "Arcos chiara con columna orgánica fucsia, naranja y crema", ocasiones: ["cumpleanos", "verano"], fidelidad: 3,
+    id: "referencia:arcos-chiara-tropical", numero: 5, nombre: "Arcos chiara con columna orgánica fucsia, naranja y crema", ocasiones: ["cumpleanos", "fiesta-verano"], fidelidad: 3,
     nota: "Arcos chiara azul, crema y fucsia; una columna orgánica grande a la derecha que sube y cruza arriba hacia la izquierda, y una corta a la izquierda; las rodajas de toronja y la flor de tela no son del taller.",
     lectura: {
       resumen: "Arcos chiara con un medio arco orgánico fucsia, naranja, crema y dorado a la derecha y una columna corta a la izquierda.", aspecto: 0.834,
@@ -108,7 +108,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
     },
   },
   {
-    id: "referencia:portal-rojo-orbes", numero: 6, nombre: "Portal rojo de columnas clásicas con orbes dorados y flecos", ocasiones: ["cumpleanos", "infantil"], fidelidad: 3,
+    id: "referencia:portal-rojo-orbes", numero: 6, nombre: "Portal rojo de columnas clásicas con orbes dorados y flecos", ocasiones: ["cumpleanos", "fiesta-infantil"], fidelidad: 3,
     nota: "Dos columnas clásicas rojas con base dorada y una guirnalda clásica roja arriba (el portal), y cuatro orbes con collar y flecos; los orbes de foil van como R-24 Reflex, los flecos como tubitos y el orbe naranja como Reflex naranja; el cartel de la izquierda no es del taller.",
     lectura: {
       resumen: "Portal de columnas clásicas rojas con travesaño rojo y bases doradas, con orbes dorados colgando flecos.", aspecto: 0.8,
@@ -126,7 +126,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
     },
   },
   {
-    id: "referencia:guirnalda-love-monstera", numero: 7, nombre: "Guirnalda verde y blush con monstera y «love»", ocasiones: ["amor", "boda", "verano"], fidelidad: 3,
+    id: "referencia:guirnalda-love-monstera", numero: 7, nombre: "Guirnalda verde y blush con monstera y «love»", ocasiones: ["san-valentin", "boda", "fiesta-verano"], fidelidad: 3,
     nota: "Guirnalda orgánica en arco verde esmeralda y blush con hojas de monstera y el «love» de foil; el «love» va en letras sueltas (no hay foil en cursiva) y el carrito no es del taller.",
     lectura: {
       resumen: "Guirnalda orgánica verde esmeralda y blush en arco sobre la pared, con hojas de monstera y letras «love» de foil.", aspecto: 0.97,
@@ -140,7 +140,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
     },
   },
   {
-    id: "referencia:guirnalda-esquina-armario-palmas", numero: 8, nombre: "Guirnalda en esquina sobre un armario con hojas de palma", ocasiones: ["verano", "general"], fidelidad: 3,
+    id: "referencia:guirnalda-esquina-armario-palmas", numero: 8, nombre: "Guirnalda en esquina sobre un armario con hojas de palma", ocasiones: ["fiesta-verano", "general"], fidelidad: 3,
     nota: "Guirnalda orgánica que cruza arriba y baja por la derecha (en esquina) con verdes, dorado y blanco perla y pencas de palma; el armario y la pared de piedra no son del taller.",
     lectura: {
       resumen: "Guirnalda orgánica en esquina sobre un armario: verde oscuro, verde, verde lima, dorado y blanco perla con hojas de palma.", aspecto: 1.165,
@@ -154,7 +154,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
     },
   },
   {
-    id: "referencia:guirnalda-diagonal-monstera", numero: 9, nombre: "Guirnalda en diagonal verde y blush con monstera", ocasiones: ["amor", "verano"], fidelidad: 3,
+    id: "referencia:guirnalda-diagonal-monstera", numero: 9, nombre: "Guirnalda en diagonal verde y blush con monstera", ocasiones: ["san-valentin", "fiesta-verano"], fidelidad: 3,
     nota: "Guirnalda orgánica que sube por la izquierda y baja en diagonal a la derecha, verde esmeralda y blush con globos grandes y hojas de monstera; el carrito no es del taller.",
     lectura: {
       resumen: "Guirnalda orgánica en arco que baja en diagonal, verde esmeralda y blush, con hojas de monstera sobre un carrito.", aspecto: 1.017,
@@ -167,7 +167,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
     },
   },
   {
-    id: "referencia:dino-menta-mesa", numero: 10, nombre: "Medio arco menta, blanco y verde con letrero sobre la mesa", ocasiones: ["cumpleanos", "infantil"], fidelidad: 3,
+    id: "referencia:dino-menta-mesa", numero: 10, nombre: "Medio arco menta, blanco y verde con letrero sobre la mesa", ocasiones: ["cumpleanos", "fiesta-infantil"], fidelidad: 3,
     nota: "Medio arco que sube por la izquierda y cruza arriba con globos gigantes menta y blancos y acentos verde oscuro, letrero de madera menta y mesa de postres; la cerca, la torta y los postres no son del taller.",
     lectura: {
       resumen: "Medio arco orgánico menta, blanco y verde oscuro con globos gigantes, letrero menta y mesa de postres.", aspecto: 0.984,
@@ -182,7 +182,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
     },
   },
   {
-    id: "referencia:frozen-let-it-go", numero: 11, nombre: "Guirnalda Frozen azul, lila y plata con «LET IT GO»", ocasiones: ["cumpleanos", "infantil"], fidelidad: 3,
+    id: "referencia:frozen-let-it-go", numero: 11, nombre: "Guirnalda Frozen azul, lila y plata con «LET IT GO»", ocasiones: ["cumpleanos", "fiesta-infantil"], fidelidad: 3,
     nota: "Guirnalda orgánica que sube por la izquierda y cruza arriba en azul, aguamarina, lila, plata y confeti, letras de foil plateadas y mesa; los copos de nieve y las figuras no son del taller.",
     lectura: {
       resumen: "Guirnalda orgánica de Frozen azul cromado, aguamarina, violeta, plata y confeti con letras «LET IT GO» de foil.", aspecto: 1,
