@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent as EventoPuntero } from "react";
 import Link from "next/link";
-import { ArrowLeft, Rows3, Circle, Anchor, Undo2, Redo2 } from "lucide-react";
+import { ArrowLeft, Rows3, Circle, Anchor, Undo2, Redo2, ChevronUp, ChevronDown } from "lucide-react";
+import { ControlesPieza, DeshacerTactil } from "./ControlesTactiles";
 import { FORMATOS_GLOBO, NOMBRE_FAMILIA, coloresDelFormato, formatoPorId, infladoValido, type FormatoGlobo } from "@/lib/globos3d/formatos";
 import { MODULOS, armarModulo, materialesModulo, moduloPorId, type TipoModulo } from "@/lib/globos3d/modulos";
 import { PATRONES_COLUMNA, armarColumna, type PatronColumna } from "@/lib/globos3d/columnas";
@@ -94,6 +95,29 @@ const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
 const ACTIVO = "bg-acento text-sobre-acento ring-acento";
 const INACTIVO = "bg-superficie text-texto ring-borde hover:bg-superficie-suave";
 
+// ----------------------------------------------------------------------------------------------------------
+// Teléfono y tablet: el visor ocupa la pantalla y los paneles van en una hoja inferior con pestañas.
+// Desde 1024 px (lg) vuelve la página de siempre: paneles a la izquierda y visor fijo a la derecha.
+// ----------------------------------------------------------------------------------------------------------
+
+/** El mismo corte que `lg:` de Tailwind. */
+const CONSULTA_ANCHO = "(min-width: 1024px)";
+function suscribirAncho(aviso: () => void) {
+  const consulta = window.matchMedia(CONSULTA_ANCHO);
+  consulta.addEventListener("change", aviso);
+  return () => consulta.removeEventListener("change", aviso);
+}
+/** Pantalla ancha (escritorio o tablet acostada). En el servidor se supone ancha; el navegador corrige al hidratar. */
+function useEsAncho() {
+  return useSyncExternalStore(suscribirAncho, () => window.matchMedia(CONSULTA_ANCHO).matches, () => true);
+}
+
+type AlturaHoja = "cerrada" | "media" | "alta";
+type PestanaHoja = "ajustes" | "colores" | "ia" | "detalle";
+const ALTURAS: readonly AlturaHoja[] = ["cerrada", "media", "alta"];
+/** Alto de la hoja en dvh (el visor se queda con el resto y se redimensiona solo). */
+const ALTURA_HOJA: Readonly<Record<AlturaHoja, string>> = { cerrada: "h-auto", media: "h-[44dvh]", alta: "h-[72dvh]" };
+
 /**
  * Página /3d. Dos pestañas:
  * - Globo: cada globo Sempertex a su tamaño real (formato, color oficial, inflado), o todos los redondos lado a lado.
@@ -162,6 +186,12 @@ export function Taller3D() {
   const [cacheEscena] = useState(() => new Map<string, PiezaArmada>());
   /** Lo que se pidió ver desde la pestaña Escena: la Biblioteca abre su ficha al entrar. */
   const [verEnBiblioteca, setVerEnBiblioteca] = useState<ItemBiblioteca | null>(null);
+  // Hoja inferior (teléfono y tablet): qué tan alta y qué pestaña se ve.
+  const esAncho = useEsAncho();
+  const [hoja, setHoja] = useState<AlturaHoja>("media");
+  const [pestanaElegida, setPestana] = useState<PestanaHoja>("ajustes");
+  const pestanasRef = useRef<HTMLDivElement>(null);
+  const deslizarHoja = useRef<number | null>(null);
 
   // La escena se crea una vez (three.js se carga solo en el navegador).
   useEffect(() => {
@@ -598,23 +628,98 @@ export function Taller3D() {
     </>
   ) : null;
 
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-4 px-4 py-5">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-mono text-xs uppercase tracking-wider text-acento">Taller 3D</p>
-          <h1 className="text-2xl font-semibold text-texto">Globos Sempertex en 3D</h1>
-          <p className="text-sm text-texto-suave">Cada formato a su tamaño real. La cuadrícula del piso es de 10 cm.</p>
+  // Pestañas de la hoja según lo que se modela: «Colores» no está en Globos (allí el color es parte de los ajustes)
+  // y «IA» solo en la Escena. Si la elegida no existe aquí, se ve la primera.
+  const pestanas: ReadonlyArray<{ id: PestanaHoja; nombre: string }> = [
+    { id: "ajustes", nombre: modo === "escena" ? "Piezas" : "Ajustes" },
+    ...(modo !== "globo" ? [{ id: "colores" as const, nombre: "Colores" }] : []),
+    ...(modo === "escena" ? [{ id: "ia" as const, nombre: "IA" }] : []),
+    { id: "detalle", nombre: "Detalle" },
+  ];
+  const pestana = pestanas.some((p) => p.id === pestanaElegida) ? pestanaElegida : "ajustes";
+  /** En la hoja (menos de 1024 px) solo se ve lo de la pestaña elegida; en escritorio, todo. */
+  const enHoja = (...ids: PestanaHoja[]) => (ids.includes(pestana) ? "" : "max-lg:hidden");
+  const elegirPestana = (id: PestanaHoja) => { setPestana(id); if (hoja === "cerrada") setHoja("media"); };
+  const cambiarAltura = (paso: 1 | -1) => setHoja((h) => ALTURAS[Math.max(0, Math.min(ALTURAS.length - 1, ALTURAS.indexOf(h) + paso))] ?? h);
+  // Deslizar el asa de la hoja hacia arriba la agranda; hacia abajo, la achica.
+  const alApretarAsa = (e: EventoPuntero<HTMLDivElement>) => { deslizarHoja.current = e.clientY; };
+  const alSoltarAsa = (e: EventoPuntero<HTMLDivElement>) => {
+    const inicio = deslizarHoja.current;
+    deslizarHoja.current = null;
+    if (inicio === null) return;
+    const dy = e.clientY - inicio;
+    if (Math.abs(dy) < 8) cambiarAltura(hoja === "alta" ? -1 : 1);
+    else cambiarAltura(dy < 0 ? 1 : -1);
+  };
+
+  // La pestaña del modo elegido siempre a la vista en la tira (en el teléfono no caben las nueve).
+  useEffect(() => {
+    const tira = pestanasRef.current;
+    const activa = tira?.querySelector<HTMLElement>("[aria-selected='true']");
+    if (!tira || !activa) return;
+    const izquierda = activa.offsetLeft - tira.offsetLeft;
+    if (izquierda < tira.scrollLeft || izquierda + activa.offsetWidth > tira.scrollLeft + tira.clientWidth) {
+      tira.scrollTo({ left: Math.max(0, izquierda - 16), behavior: "smooth" });
+    }
+  }, [modo]);
+
+  const nodoElegido = modo === "escena" ? escenaEdit.nodos.find((n) => n.id === seleccion) ?? null : null;
+  const piezaEnVivo = nodoElegido && enVivo?.id === nodoElegido.id ? enVivo.colocacion : nodoElegido?.colocacion;
+
+  /** Materiales, imagen con IA y ayuda: debajo del visor en escritorio; en la pestaña «Detalle» de la hoja. */
+  const detalle = (
+    <>
+      {color && (
+        <details className="rounded-2xl bg-superficie p-3 text-sm ring-1 ring-borde" open>
+          <summary className="cursor-pointer font-semibold text-texto max-lg:min-h-11 max-lg:content-center">Materiales y detalle</summary>
+          <div className="mt-2 min-w-0 break-words">{fichaVisor}</div>
+        </details>
+      )}
+      {listo && <GeneradorIA capturar={() => escenaRef.current?.capturar() ?? null} descripcion={descripcionIA} />}
+      {!esAncho ? (
+        <p className="text-xs text-texto-suave">
+          {modo === "escena"
+            ? <><b className="font-semibold text-texto">Toca una pieza para elegirla</b> y arrástrala con el dedo, o muévela con los botones del visor. Lo colgado de otra pieza pasa de ancla con ← →. Un dedo en el vacío gira la cámara; dos dedos acercan.</>
+            : "Un dedo gira la cámara · dos dedos acercan o alejan · medidas nominales del catálogo Sempertex; el color es el del globo inflado."}
+        </p>
+      ) : modo === "escena" ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-texto-suave">
+          <p className="min-w-0 flex-1">
+            <b className="font-semibold text-texto">Clic en una pieza para elegirla</b> · arrástrala para moverla (imán 5 cm; Alt lo quita) · flechas 5 cm (Shift 25) · Q/E girar · RePág/AvPág altura · Supr quitar · Ctrl+D duplicar · Ctrl+Z deshacer · Esc soltar.
+            Lo colgado de otra pieza no se arrastra: las flechas lo pasan de ancla. Arrastra el vacío para girar la cámara.
+          </p>
+          <div className="flex gap-1">
+            <button type="button" onClick={historialEscena.deshacer} disabled={!historialEscena.puedeDeshacer} title="Deshacer (Ctrl+Z)" aria-label="Deshacer" className="grid size-9 place-items-center rounded-lg text-texto ring-1 ring-borde hover:bg-superficie-suave disabled:opacity-40"><Undo2 className="size-4" aria-hidden /></button>
+            <button type="button" onClick={historialEscena.rehacer} disabled={!historialEscena.puedeRehacer} title="Rehacer (Ctrl+Y)" aria-label="Rehacer" className="grid size-9 place-items-center rounded-lg text-texto ring-1 ring-borde hover:bg-superficie-suave disabled:opacity-40"><Redo2 className="size-4" aria-hidden /></button>
+          </div>
         </div>
-        <Link href="/asistente" className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm text-texto ring-1 ring-borde hover:bg-superficie-suave">
-          <ArrowLeft className="size-4" aria-hidden /> Volver al asistente
+      ) : (
+        <p className="text-xs text-texto-suave">Arrastra para girar · rueda o pellizca para acercar · medidas nominales del catálogo Sempertex; el color es el del globo inflado.</p>
+      )}
+    </>
+  );
+
+  // En el teléfono la página no se desplaza (visor + hoja llenan la pantalla); la Biblioteca sí, como una página.
+  const fija = modo !== "biblioteca";
+  return (
+    <main className={`mx-auto flex w-full max-w-7xl flex-col gap-2 px-3 pt-2 lg:gap-4 lg:px-4 lg:py-5 ${fija ? "h-dvh overflow-hidden apaisado:pb-2 lg:h-auto lg:min-h-dvh lg:overflow-visible" : "min-h-dvh pb-[max(1rem,env(safe-area-inset-bottom))]"}`}>
+      <header className="flex shrink-0 items-center justify-between gap-2 lg:flex-wrap lg:gap-3">
+        <div className="min-w-0">
+          <p className="font-mono text-xs uppercase tracking-wider text-acento max-md:hidden apaisado:hidden">Taller 3D</p>
+          <h1 className="truncate text-lg font-semibold text-texto apaisado:text-base lg:text-2xl">Globos Sempertex en 3D</h1>
+          <p className="text-sm text-texto-suave max-md:hidden apaisado:hidden">Cada formato a su tamaño real. La cuadrícula del piso es de 10 cm.</p>
+        </div>
+        <Link href="/asistente" aria-label="Volver al asistente" className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-full px-3 text-sm text-texto ring-1 ring-borde hover:bg-superficie-suave sm:px-4">
+          <ArrowLeft className="size-4" aria-hidden /> <span className="max-sm:hidden">Volver al asistente</span>
         </Link>
       </header>
 
-      <div role="tablist" aria-label="Qué modelar" className="inline-flex w-fit gap-1 rounded-full bg-superficie p-1 ring-1 ring-borde">
+      {/* Nueve pestañas: en el teléfono la tira se desliza de lado (nunca ensancha la página). */}
+      <div ref={pestanasRef} role="tablist" aria-label="Qué modelar"
+        className="flex w-fit max-w-full shrink-0 gap-1 overflow-x-auto overscroll-x-contain rounded-full bg-superficie p-1 ring-1 ring-borde [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {([["globo", "Globos"], ["modulo", "Módulos"], ["columna", "Columna"], ["arco", "Arco"], ["pared", "Pared"], ["decoracion", "Decoración"], ["organico", "Orgánico"], ["escena", "Escena"], ["biblioteca", "Biblioteca"]] as const).map(([valor, etiqueta]) => (
           <button key={valor} type="button" role="tab" aria-selected={modo === valor} onClick={() => { setVerEnBiblioteca(null); cambiarModo(valor); }}
-            className={`min-h-10 rounded-full px-5 text-sm font-medium ${modo === valor ? "bg-acento text-sobre-acento" : "text-texto hover:bg-superficie-suave"}`}>
+            className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-medium apaisado:min-h-10 lg:min-h-10 lg:px-5 ${modo === valor ? "bg-acento text-sobre-acento" : "text-texto hover:bg-superficie-suave"}`}>
             {etiqueta}
           </button>
         ))}
@@ -626,15 +731,46 @@ export function Taller3D() {
           onAnadirAEscena={(item) => { const r = insertarEnEscena(escenaEdit, item); setEscenaEdit(r.escena); setSeleccion(r.raizId); setCopiaTocada(null); cambiarModo("escena"); }} />
       )}
       {/* El visor queda montado (oculto) en la Biblioteca: al volver, la escena sigue ahí. */}
-      <div className={`grid min-h-0 flex-1 gap-4 lg:grid-cols-[340px_minmax(0,1fr)] ${modo === "biblioteca" ? "hidden" : ""}`}>
+      <div className={`min-h-0 flex-1 flex-col gap-2 apaisado:flex-row lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-4 ${modo === "biblioteca" ? "hidden" : "flex lg:grid"}`}>
         <ArrastreDecoracionContexto.Provider value={modo === "escena" && listo ? lienzoDecoraciones.empezarArrastre : null}>
-        <aside className="order-2 flex min-w-0 flex-col gap-4 lg:order-1" aria-label="Elegir el globo">
+        {/* Teléfono y tablet: hoja inferior con pestañas (acostado, panel a la derecha). Escritorio: columna izquierda. */}
+        <aside aria-label="Ajustes del taller"
+          onFocusCapture={(e) => { if (!esAncho && e.target instanceof HTMLTextAreaElement) setHoja("alta"); }}
+          className={`order-2 flex min-h-0 min-w-0 shrink-0 flex-col overflow-hidden rounded-t-2xl bg-fondo shadow-[0_-6px_24px_var(--sombra)] ring-1 ring-borde ${ALTURA_HOJA[hoja]} apaisado:h-auto apaisado:w-[46%] apaisado:rounded-2xl lg:order-1 lg:h-auto lg:w-auto lg:overflow-visible lg:rounded-none lg:bg-transparent lg:shadow-none lg:ring-0`}>
+          <div className="flex shrink-0 flex-col border-b border-borde-suave px-2 pb-1.5 lg:hidden">
+            <div aria-hidden onPointerDown={alApretarAsa} onPointerUp={alSoltarAsa} onPointerCancel={() => { deslizarHoja.current = null; }}
+              className="flex h-5 cursor-row-resize touch-none items-center justify-center apaisado:hidden">
+              <span className="h-1 w-10 rounded-full bg-borde" />
+            </div>
+            <div className="flex items-center gap-1 apaisado:pt-1.5">
+              <div role="tablist" aria-label="Paneles del taller" className="flex min-w-0 flex-1 gap-1">
+                {pestanas.map((p) => (
+                  <button key={p.id} type="button" role="tab" aria-selected={pestana === p.id} onClick={() => elegirPestana(p.id)}
+                    className={`min-h-11 min-w-0 flex-1 truncate rounded-xl px-1 text-sm font-medium ${pestana === p.id ? "bg-acento text-sobre-acento" : "text-texto ring-1 ring-borde"}`}>
+                    {p.nombre}
+                  </button>
+                ))}
+              </div>
+              <button type="button" onClick={() => cambiarAltura(-1)} disabled={hoja === "cerrada"} aria-label="Achicar el panel" title="Achicar el panel"
+                className="grid size-11 shrink-0 place-items-center rounded-xl text-texto ring-1 ring-borde disabled:opacity-40 apaisado:hidden"><ChevronDown className="size-5" aria-hidden /></button>
+              <button type="button" onClick={() => cambiarAltura(1)} disabled={hoja === "alta"} aria-label="Agrandar el panel" title="Agrandar el panel"
+                className="grid size-11 shrink-0 place-items-center rounded-xl text-texto ring-1 ring-borde disabled:opacity-40 apaisado:hidden"><ChevronUp className="size-5" aria-hidden /></button>
+            </div>
+          </div>
+          {/* Los controles nativos de los paneles (deslizadores, casillas, colores, desplegables) con 44 px para el dedo. */}
+          <div className={`min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:flex lg:gap-4 lg:overflow-visible lg:p-0 ${hoja === "cerrada" ? "hidden apaisado:flex" : "flex"}
+            max-lg:[&_input[type=range]]:min-h-11 max-lg:[&_input[type=checkbox]]:size-5 max-lg:[&_input[type=checkbox]]:shrink-0 max-lg:[&_label:has(>input[type=checkbox])]:min-h-11
+            max-lg:[&_input[type=color]]:h-11 max-lg:[&_summary]:min-h-11 max-lg:[&_summary]:py-2.5`}>
           {modo !== "globo" && (
-            <PaletaEscena grupos={gruposColor.length ? gruposColor : [{ id: "todo", nombre: "", materiales: materialesEscena }]} onReemplazar={reemplazarEnEscena}
-              aviso={avisoColor} puedeDeshacer={historialColor.length > 0} onDeshacer={deshacerColor} />
+            <div className={`empty:hidden ${enHoja("colores")}`}>
+              <PaletaEscena grupos={gruposColor.length ? gruposColor : [{ id: "todo", nombre: "", materiales: materialesEscena }]} onReemplazar={reemplazarEnEscena}
+                aviso={avisoColor} puedeDeshacer={historialColor.length > 0} onDeshacer={deshacerColor} />
+            </div>
           )}
+          <div className={`flex min-w-0 flex-col gap-3 lg:gap-4 ${modo === "escena" ? enHoja("ajustes", "ia") : enHoja("ajustes")}`}>
           {modo === "escena" && armadaEscena ? (
             <PanelEscena escena={escenaEdit} onEscena={(e) => setEscenaEdit(e, { agrupar: "panel" })} armada={armadaEscena} seleccion={seleccion} onSeleccion={(id) => { setSeleccion(id); setCopiaTocada(null); }} enVivo={enVivo}
+              enMovil={pestana === "ia" ? "ia" : "piezas"}
               onPreset={(id) => { setEscenaEdit(escenaPredefinida(id)); setSeleccion(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); }}
               accionesPieza={(id) => <AccionesPieza key={`biblioteca-${id}`} escena={escenaEdit} armada={armadaEscena} nodoId={id} onVer={(item) => { setVerEnBiblioteca(item); cambiarModo("biblioteca"); }} />} />
           ) : modo === "organico" ? (
@@ -713,7 +849,7 @@ export function Taller3D() {
                       return (
                         <button key={i} type="button" onClick={() => setRanura(ranura === i ? null : i)} aria-pressed={ranura === i}
                           aria-label={`Color ${i + 1}: ${ref?.nombreCompleto ?? ""}`} title={`Color ${i + 1}: ${ref?.nombreCompleto ?? ""}`}
-                          className={`grid size-10 place-items-center rounded-full font-mono text-xs ring-2 ring-offset-2 ring-offset-superficie ${ranura === i ? "ring-acento" : "ring-borde"}`}
+                          className={`grid size-11 place-items-center rounded-full font-mono lg:size-10 text-xs ring-2 ring-offset-2 ring-offset-superficie ${ranura === i ? "ring-acento" : "ring-borde"}`}
                           style={{ background: ref?.hexGlobo, color: "rgba(0,0,0,.55)" }}>{i + 1}</button>
                       );
                     })}
@@ -750,7 +886,7 @@ export function Taller3D() {
               </label>
               <input id="inflado" type="range" min={Math.round(formato.diametroMaxCm * 0.4 * 10) / 10} max={formato.diametroMaxCm} step={0.5}
                 value={inflado} onChange={(e) => setInfladoCm(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-acento,#7c3aed)]" />
-              <button type="button" onClick={() => setInfladoCm(formato.infladoDecoracionCm)} className="mt-1 text-xs text-acento underline-offset-2 hover:underline">
+              <button type="button" onClick={() => setInfladoCm(formato.infladoDecoracionCm)} className="mt-1 text-xs text-acento underline-offset-2 hover:underline max-lg:min-h-11">
                 Inflado de decoración ({formatoCm(formato.infladoDecoracionCm)})
               </button>
               {modo === "globo" && <p className="mt-2 text-xs text-texto-suave">{formato.descripcion}</p>}
@@ -767,13 +903,13 @@ export function Taller3D() {
                   return (
                     <button key={i} type="button" onClick={() => setRanura(ranura === i ? null : i)} aria-pressed={ranura === i}
                       aria-label={`Globo ${i + 1}: ${ref?.nombreCompleto ?? ""}`} title={`Globo ${i + 1}: ${ref?.nombreCompleto ?? ""}`}
-                      className={`grid size-10 place-items-center rounded-full font-mono text-xs ring-2 ring-offset-2 ring-offset-superficie ${ranura === i ? "ring-acento" : "ring-borde"}`}
+                      className={`grid size-11 place-items-center rounded-full font-mono lg:size-10 text-xs ring-2 ring-offset-2 ring-offset-superficie ${ranura === i ? "ring-acento" : "ring-borde"}`}
                       style={{ background: ref?.hexGlobo, color: "rgba(0,0,0,.55)" }}>{i + 1}</button>
                   );
                 })}
-                {ranura !== null && <button type="button" onClick={() => setRanura(null)} className="text-xs text-acento underline-offset-2 hover:underline">Todo el módulo</button>}
+                {ranura !== null && <button type="button" onClick={() => setRanura(null)} className="text-xs text-acento underline-offset-2 hover:underline max-lg:min-h-11">Todo el módulo</button>}
               </div>
-              <label className="mt-3 flex items-center gap-2 text-sm text-texto" htmlFor="ver-anclas">
+              <label className="mt-3 flex items-center gap-2 text-sm text-texto max-lg:min-h-11" htmlFor="ver-anclas">
                 <input id="ver-anclas" type="checkbox" checked={verAnclas} onChange={(e) => setVerAnclas(e.target.checked)} />
                 <Anchor className="size-4 text-acento" aria-hidden /> Ver anclas ({armado.anclas.length})
               </label>
@@ -783,7 +919,7 @@ export function Taller3D() {
 
           <section className="min-h-0 rounded-2xl bg-superficie p-3 ring-1 ring-borde">
             <h2 className="mb-1 text-sm font-semibold text-texto">Color <span className="font-normal text-texto-suave">· {colores.length} en {formato.id}</span></h2>
-            <div className="flex max-h-[42vh] flex-col gap-3 overflow-y-auto pr-1">
+            <div className="flex flex-col gap-3 lg:max-h-[42vh] lg:overflow-y-auto lg:pr-1">
               {porFamilia.map(([familia, lista]) => (
                 <div key={familia}>
                   <p className="mb-1 font-mono text-[0.7rem] uppercase tracking-wider text-texto-suave">{NOMBRE_FAMILIA[familia] ?? familia}</p>
@@ -795,7 +931,7 @@ export function Taller3D() {
                       return (
                         <button key={c.codigo} type="button" onClick={() => elegirColor(c.codigo)} aria-pressed={marcado}
                           title={`${c.nombreCompleto} ${c.codigo}`} aria-label={`${c.nombreCompleto} ${c.codigo}`}
-                          className={`size-9 rounded-full ring-2 ring-offset-2 ring-offset-superficie ${marcado ? "ring-acento" : "ring-transparent hover:ring-borde"}`}
+                          className={`size-9 rounded-full ring-2 ring-offset-2 max-lg:size-11 ring-offset-superficie ${marcado ? "ring-acento" : "ring-transparent hover:ring-borde"}`}
                           style={{ background: c.hexGlobo, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.12)" }} />
                       );
                     })}
@@ -805,44 +941,32 @@ export function Taller3D() {
             </div>
           </section>
           </>)}
+          </div>
+          {!esAncho && <div className={`flex min-w-0 flex-col gap-3 ${enHoja("detalle")}`}>{detalle}</div>}
+          </div>
         </aside>
         </ArrastreDecoracionContexto.Provider>
 
-        <section className="order-1 flex min-w-0 flex-col gap-2 lg:sticky lg:top-4 lg:order-2 lg:self-start" aria-label="Visor 3D">
-          <div className="relative h-[58vh] min-h-[320px] overflow-hidden rounded-2xl bg-superficie-suave ring-1 ring-borde lg:h-[calc(100dvh-220px)]">
-            <canvas ref={lienzoRef} className="block h-full w-full touch-none" aria-label="Modelo en 3D: arrastra para girar, rueda o pellizca para acercar" />
+        <section className="order-1 flex min-h-0 min-w-0 flex-1 flex-col gap-2 lg:sticky lg:top-4 lg:order-2 lg:flex-none lg:self-start" aria-label="Visor 3D">
+          <div className="relative min-h-[140px] flex-1 overflow-hidden rounded-2xl bg-superficie-suave ring-1 ring-borde lg:h-[calc(100dvh-220px)] lg:min-h-[320px] lg:flex-none">
+            <canvas ref={lienzoRef} className="block h-full w-full touch-none" aria-label="Modelo en 3D: arrastra con un dedo o el ratón para girar; pellizca o usa la rueda para acercar" />
             {!listo && !error && <p className="absolute inset-0 grid place-items-center text-sm text-texto-suave">Cargando el visor 3D…</p>}
-            {modo === "escena" && avisoLienzo && (
-              <p role="status" className="pointer-events-none absolute bottom-3 left-3 right-3 mx-auto max-w-xl rounded-xl bg-superficie/95 px-3 py-2 text-center text-sm text-texto shadow-sm ring-1 ring-borde">{avisoLienzo}</p>
-            )}
             {error && <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-sm text-texto">{error}</p>}
             {color && (
-              <div className="pointer-events-none absolute left-3 top-3 max-w-[min(80%,34rem)] rounded-xl bg-superficie/90 px-3 py-2 text-sm shadow-sm ring-1 ring-borde backdrop-blur [&_.detalle-ficha]:hidden [&_ul]:hidden">
+              <div className="pointer-events-none absolute left-2 top-2 max-w-[calc(100%-7.5rem)] apaisado:hidden rounded-xl bg-superficie/90 px-2 py-1 text-xs shadow-sm ring-1 ring-borde backdrop-blur lg:left-3 lg:top-3 lg:max-w-[min(80%,34rem)] lg:px-3 lg:py-2 lg:text-sm [&_.detalle-ficha]:hidden [&_ul]:hidden">
                 {fichaVisor}
               </div>
             )}
+            {modo === "escena" && listo && (
+              <DeshacerTactil onDeshacer={historialEscena.deshacer} onRehacer={historialEscena.rehacer} puedeDeshacer={historialEscena.puedeDeshacer} puedeRehacer={historialEscena.puedeRehacer} />
+            )}
+            {/* Con la hoja alta el visor queda bajito: los botones de mover vuelven al bajar la hoja. */}
+            {nodoElegido && piezaEnVivo && listo && (esAncho || hoja !== "alta") && <ControlesPieza key={nodoElegido.id} nombre={nodoElegido.nombre} colocacion={piezaEnVivo} />}
+            {modo === "escena" && avisoLienzo && (
+              <p role="status" className={`pointer-events-none absolute left-3 right-3 mx-auto max-w-xl rounded-xl bg-superficie/95 px-3 py-2 text-center text-sm text-texto shadow-sm ring-1 ring-borde ${nodoElegido ? "top-16 lg:top-auto lg:bottom-3 lg:pointer-coarse:top-16 lg:pointer-coarse:bottom-auto" : "bottom-3"}`}>{avisoLienzo}</p>
+            )}
           </div>
-          {color && (
-            <details className="rounded-2xl bg-superficie p-3 text-sm ring-1 ring-borde" open>
-              <summary className="cursor-pointer font-semibold text-texto">Materiales y detalle</summary>
-              <div className="mt-2">{fichaVisor}</div>
-            </details>
-          )}
-          {listo && <GeneradorIA capturar={() => escenaRef.current?.capturar() ?? null} descripcion={descripcionIA} />}
-          {modo === "escena" ? (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-texto-suave">
-              <p className="min-w-0 flex-1">
-                <b className="font-semibold text-texto">Clic en una pieza para elegirla</b> · arrástrala para moverla (imán 5 cm; Alt lo quita) · flechas 5 cm (Shift 25) · Q/E girar · RePág/AvPág altura · Supr quitar · Ctrl+D duplicar · Ctrl+Z deshacer · Esc soltar.
-                Lo colgado de otra pieza no se arrastra: las flechas lo pasan de ancla. Arrastra el vacío para girar la cámara.
-              </p>
-              <div className="flex gap-1">
-                <button type="button" onClick={historialEscena.deshacer} disabled={!historialEscena.puedeDeshacer} title="Deshacer (Ctrl+Z)" aria-label="Deshacer" className="grid size-9 place-items-center rounded-lg text-texto ring-1 ring-borde hover:bg-superficie-suave disabled:opacity-40"><Undo2 className="size-4" aria-hidden /></button>
-                <button type="button" onClick={historialEscena.rehacer} disabled={!historialEscena.puedeRehacer} title="Rehacer (Ctrl+Y)" aria-label="Rehacer" className="grid size-9 place-items-center rounded-lg text-texto ring-1 ring-borde hover:bg-superficie-suave disabled:opacity-40"><Redo2 className="size-4" aria-hidden /></button>
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-texto-suave">Arrastra para girar · rueda o pellizca para acercar · medidas nominales del catálogo Sempertex; el color es el del globo inflado.</p>
-          )}
+          {esAncho && detalle}
         </section>
       </div>
     </main>

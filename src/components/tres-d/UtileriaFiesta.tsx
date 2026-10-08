@@ -180,7 +180,7 @@ export function ProductosFiesta({ escena, armada }: { escena: Escena; armada: Es
               ? <span className="text-texto-suave">{p.nombre}</span>
               : <a href={urlTienda(p.url)} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-2 hover:text-acento">{p.nombre}</a>}
             {p.variante && <span className="text-texto-suave"> · {p.variante}</span>}
-            {!p.generico && <span className="font-mono text-[0.65rem] text-texto-suave"> {p.url}</span>}
+            {!p.generico && <span className="break-all font-mono text-[0.65rem] text-texto-suave"> {p.url}</span>}
           </li>
         ))}
       </ul>

@@ -99,12 +99,12 @@ function CicloColores({ formatoId, codigos, onCodigos, etiqueta }: { formatoId: 
           const ref = coloresDelFormato(formatoId).find((c) => c.codigo === codigo);
           return (
             <button key={i} type="button" onClick={() => setPuesto(i)} aria-pressed={valido === i} aria-label={`${etiqueta} ${i + 1}: ${ref?.nombreCompleto ?? codigo}`} title={`${etiqueta} ${i + 1}: ${ref?.nombreCompleto ?? codigo}`}
-              className={`grid size-9 place-items-center rounded-full font-mono text-xs ring-2 ring-offset-2 ring-offset-superficie ${valido === i ? "ring-acento" : "ring-borde"}`}
+              className={`grid size-11 place-items-center rounded-full font-mono text-xs ring-2 lg:size-9 ring-offset-2 ring-offset-superficie ${valido === i ? "ring-acento" : "ring-borde"}`}
               style={{ background: ref?.hexGlobo, color: "rgba(0,0,0,.55)" }}>{i + 1}</button>
           );
         })}
-        {codigos.length < 4 && <button type="button" onClick={() => { onCodigos([...codigos, codigos[codigos.length - 1] ?? "009"]); setPuesto(codigos.length); }} className={`${BOTON} ${INACTIVO} min-h-9 px-3`} aria-label="Añadir un color al ciclo">+</button>}
-        {codigos.length > 1 && <button type="button" onClick={() => { onCodigos(codigos.slice(0, -1)); setPuesto(0); }} className={`${BOTON} ${INACTIVO} min-h-9 px-3`} aria-label="Quitar el último color del ciclo">−</button>}
+        {codigos.length < 4 && <button type="button" onClick={() => { onCodigos([...codigos, codigos[codigos.length - 1] ?? "009"]); setPuesto(codigos.length); }} className={`${BOTON} ${INACTIVO} min-h-11 px-3 lg:min-h-9`} aria-label="Añadir un color al ciclo">+</button>}
+        {codigos.length > 1 && <button type="button" onClick={() => { onCodigos(codigos.slice(0, -1)); setPuesto(0); }} className={`${BOTON} ${INACTIVO} min-h-11 px-3 lg:min-h-9`} aria-label="Quitar el último color del ciclo">−</button>}
       </div>
       <SelectorColor formatoId={formatoId} valor={codigos[valido] ?? ""} onCambio={(codigo) => onCodigos(codigos.map((c, i) => (i === valido ? codigo : c)))} etiqueta={`${etiqueta} ${valido + 1}`} />
     </>

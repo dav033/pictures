@@ -32,7 +32,7 @@ export function opcionesDeAjustes(a: AjustesOrganico): OpcionesOrganico {
   return { ...BASE, semilla: a.semilla, densidad: a.densidad, colores: a.colores, huecosFlores: a.conFlores ? a.huecosFlores : 0, tramos: [columna, ...BASE.tramos.slice(1)] };
 }
 
-const BOTON = "min-h-10 rounded-xl px-2 text-sm ring-1 transition-colors";
+const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
 const INACTIVO = "bg-superficie text-texto ring-borde hover:bg-superficie-suave";
 
 /** Editor de la columna orgánica: forma, azar (semilla), densidad, mezcla de colores por peso, flores y pedestal. */

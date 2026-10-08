@@ -77,10 +77,11 @@ export function AsistenteEscena({ escena, onEscena }: { escena: Escena; onEscena
       <h2 className="flex items-center gap-2 text-sm font-semibold text-texto"><Sparkles className="size-4 text-acento" aria-hidden /> Pídele a la IA</h2>
       <form onSubmit={(e) => { e.preventDefault(); void pedir(texto); }} className="flex flex-col gap-2">
         <label htmlFor="escena-ia-texto" className="sr-only">Qué quieres en la escena</label>
-        <textarea id="escena-ia-texto" value={texto} onChange={(e) => setTexto(e.target.value)} rows={3} maxLength={1000} disabled={cargando}
+        {/* En el teléfono: letra de 16 px (si no, iOS acerca la página al escribir) y alto con tope en dvh (el teclado no la tapa). */}
+        <textarea id="escena-ia-texto" value={texto} onChange={(e) => setTexto(e.target.value)} rows={3} maxLength={1000} disabled={cargando} enterKeyHint="send"
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void pedir(texto); } }}
           placeholder="Pídele a la IA… «agrega dos columnas doradas a los lados del arco»"
-          className="min-h-20 resize-y rounded-lg bg-superficie-suave p-2 text-sm text-texto ring-1 ring-borde placeholder:text-texto-suave disabled:opacity-60" />
+          className="max-h-[30dvh] min-h-20 resize-y rounded-lg bg-superficie-suave p-2 text-base text-texto ring-1 ring-borde placeholder:text-texto-suave disabled:opacity-60 lg:max-h-none lg:text-sm" />
         <button type="submit" disabled={cargando || !texto.trim()} className={`${BOTON} flex items-center justify-center gap-2 bg-acento text-sobre-acento ring-acento disabled:opacity-50`}>
           {cargando ? <><Loader2 className="size-4 animate-spin" aria-hidden /> La IA está armando…</> : "Pedir"}
         </button>

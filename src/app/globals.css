@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Teléfono acostado (o ventana baja y angosta): el taller 3D pone el panel al lado del visor y no debajo. */
+@custom-variant apaisado (@media (orientation: landscape) and (max-height: 540px) and (max-width: 1023.98px));
+
 /* ==========================================================================
    TOKENS — única fuente de color de la app (iteración 4, estilo limpio).
    Claro por defecto; el oscuro se aplica con [data-theme="dark"] (elección

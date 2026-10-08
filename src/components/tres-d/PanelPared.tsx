@@ -23,7 +23,7 @@ export type OpcionesPared = {
 /** Los valores del mural flor de Celebra ed. 2 (LOL Violeta, Lila, Fucsia y Rosado; uniones Pastel Rosado). */
 export const PARED_INICIAL: OpcionesPared = { formatoId: "LOL-12", infladoCm: 24, anchoCm: 300, altoCm: 225, patron: "rombos", colores: ["051", "650", "012", "009"], union: { infladoCm: 10, codigo: "609" } };
 
-const BOTON = "min-h-10 rounded-xl px-2 text-sm ring-1 transition-colors";
+const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
 const ACTIVO = "bg-acento text-sobre-acento ring-acento";
 const INACTIVO = "bg-superficie text-texto ring-borde hover:bg-superficie-suave";
 /** Colores para los puestos nuevos al pasar a un patrón de más colores: distintos de los que ya hay, para que se note. */

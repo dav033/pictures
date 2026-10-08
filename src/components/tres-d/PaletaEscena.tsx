@@ -42,7 +42,7 @@ export function PaletaEscena({ grupos, onReemplazar, aviso, puedeDeshacer, onDes
       <div className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-texto"><Palette className="size-4 text-acento" aria-hidden /> Colores de la escena</h2>
         {puedeDeshacer && (
-          <button type="button" onClick={onDeshacer} className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-xs text-acento ring-1 ring-borde hover:bg-superficie-suave">
+          <button type="button" onClick={onDeshacer} className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs text-acento ring-1 ring-borde hover:bg-superficie-suave lg:min-h-9">
             <Undo2 className="size-3.5" aria-hidden /> Deshacer
           </button>
         )}
@@ -58,7 +58,7 @@ export function PaletaEscena({ grupos, onReemplazar, aviso, puedeDeshacer, onDes
           return (
             <button key={u.codigo} type="button" onClick={() => setElegido(activo ? null : { grupo: g.id, codigo: u.codigo })} aria-pressed={activo}
               title={`${ref?.nombreCompleto ?? u.codigo} ${u.codigo} · ${u.cantidad} en ${u.formatos.join(", ")}`}
-              className={`inline-flex min-h-10 items-center gap-1.5 rounded-full py-1 pl-1 pr-2.5 text-xs ring-1 ${activo ? "bg-superficie-suave ring-acento ring-2" : "ring-borde hover:bg-superficie-suave"}`}>
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full py-1 pl-1 pr-2.5 text-xs ring-1 lg:min-h-10 ${activo ? "bg-superficie-suave ring-acento ring-2" : "ring-borde hover:bg-superficie-suave"}`}>
               <span className="size-7 shrink-0 rounded-full" style={{ background: ref?.hexGlobo ?? "#ccc", boxShadow: "inset 0 0 0 1px rgba(0,0,0,.12)" }} />
               <span className="text-left leading-tight text-texto">{ref?.nombreCompleto ?? u.codigo}<span className="block font-mono text-[0.65rem] text-texto-suave">{u.cantidad} · {u.codigo}</span></span>
             </button>
@@ -70,7 +70,7 @@ export function PaletaEscena({ grupos, onReemplazar, aviso, puedeDeshacer, onDes
       {actual && elegido && (
         <div className="rounded-xl bg-superficie-suave p-2">
           <p className="mb-1 text-xs text-texto">Cambiar <b>{referenciaPorCodigo(actual.codigo)?.nombreCompleto ?? actual.codigo}</b> por:</p>
-          <div className="max-h-52 overflow-y-auto pr-1">
+          <div className="lg:max-h-52 lg:overflow-y-auto lg:pr-1">
             {candidatos.map(([familia, lista]) => (
               <div key={familia} className="mb-1.5">
                 <p className="font-mono text-[0.65rem] uppercase tracking-wider text-texto-suave">{NOMBRE_FAMILIA[familia] ?? familia}</p>
@@ -79,7 +79,7 @@ export function PaletaEscena({ grupos, onReemplazar, aviso, puedeDeshacer, onDes
                     <button key={ref.codigo} type="button" onClick={() => { onReemplazar(actual.codigo, ref.codigo, elegido.grupo); setElegido({ grupo: elegido.grupo, codigo: ref.codigo }); }}
                       aria-label={`${ref.nombreCompleto} ${ref.codigo}${faltaEn.length ? ` (no viene en ${faltaEn.join(", ")})` : ""}`}
                       title={`${ref.nombreCompleto} ${ref.codigo}${faltaEn.length ? ` · no viene en ${faltaEn.join(", ")}` : ""}`}
-                      className={`relative size-8 rounded-full ring-2 ring-offset-1 ring-offset-superficie-suave ${ref.codigo === actual.codigo ? "ring-acento" : "ring-transparent hover:ring-borde"} ${faltaEn.length ? "opacity-60" : ""}`}
+                      className={`relative size-11 rounded-full ring-2 ring-offset-1 lg:size-8 ring-offset-superficie-suave ${ref.codigo === actual.codigo ? "ring-acento" : "ring-transparent hover:ring-borde"} ${faltaEn.length ? "opacity-60" : ""}`}
                       style={{ background: ref.hexGlobo, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.12)" }}>
                       {faltaEn.length > 0 && <span aria-hidden className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-texto-suave ring-1 ring-superficie" />}
                     </button>

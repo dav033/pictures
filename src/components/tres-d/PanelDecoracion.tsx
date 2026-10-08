@@ -130,8 +130,8 @@ export function PanelDecoracion(props: Props) {
                   <span className="min-w-0 truncate font-semibold">{e.nombre}</span>
                   <span className="shrink-0 font-mono text-texto-suave">{puestas[i] ?? 0} puestas</span>
                   <span className="flex shrink-0 gap-1">
-                    <button type="button" onClick={() => onEditando(editando === i ? null : i)} aria-pressed={editando === i} aria-label={`Editar ${e.nombre}`} title="Editar sus propiedades" className="grid size-8 place-items-center rounded-lg ring-1 ring-borde hover:bg-superficie-suave"><Pencil className="size-3.5" aria-hidden /></button>
-                    <button type="button" onClick={() => { onMezcla({ ...mezcla, elementos: mezcla.elementos.filter((_, k) => k !== i) }); onEditando(null); }} aria-label={`Quitar ${e.nombre}`} title="Quitar de la mezcla" className="grid size-8 place-items-center rounded-lg ring-1 ring-borde hover:bg-superficie-suave"><Trash2 className="size-3.5" aria-hidden /></button>
+                    <button type="button" onClick={() => onEditando(editando === i ? null : i)} aria-pressed={editando === i} aria-label={`Editar ${e.nombre}`} title="Editar sus propiedades" className="grid size-11 place-items-center rounded-lg ring-1 ring-borde hover:bg-superficie-suave lg:size-8"><Pencil className="size-3.5" aria-hidden /></button>
+                    <button type="button" onClick={() => { onMezcla({ ...mezcla, elementos: mezcla.elementos.filter((_, k) => k !== i) }); onEditando(null); }} aria-label={`Quitar ${e.nombre}`} title="Quitar de la mezcla" className="grid size-11 place-items-center rounded-lg ring-1 ring-borde hover:bg-superficie-suave lg:size-8"><Trash2 className="size-3.5" aria-hidden /></button>
                   </span>
                 </div>
                 {editando === i && (
@@ -179,7 +179,7 @@ export function PanelDecoracion(props: Props) {
           <Deslizador id="mezcla-separacion" etiqueta="Separación entre bordes" valor={mezcla.separacionCm} min={-15} max={30} paso={1} texto={mezcla.separacionCm < 0 ? `se pisan ${-mezcla.separacionCm} cm` : `${mezcla.separacionCm} cm`} onCambio={(v) => onMezcla({ ...mezcla, separacionCm: v })} />
           <div className="flex items-center gap-2">
             <label htmlFor="mezcla-semilla" className="text-xs font-semibold text-texto">Semilla</label>
-            <input id="mezcla-semilla" type="number" min={0} step={1} value={mezcla.semilla} onChange={(e) => onMezcla({ ...mezcla, semilla: Math.max(0, Math.round(Number(e.target.value) || 0)) })} className="min-h-10 w-24 rounded-lg bg-superficie px-2 font-mono text-sm text-texto ring-1 ring-borde" />
+            <input id="mezcla-semilla" type="number" min={0} step={1} value={mezcla.semilla} onChange={(e) => onMezcla({ ...mezcla, semilla: Math.max(0, Math.round(Number(e.target.value) || 0)) })} className="min-h-11 w-24 rounded-lg bg-superficie px-2 font-mono text-base text-texto ring-1 ring-borde lg:min-h-10 lg:text-sm" />
             <button type="button" onClick={() => onMezcla({ ...mezcla, semilla: mezcla.semilla + 1 })} className={`inline-flex items-center gap-1 ${BOTON} ${INACTIVO}`}><Shuffle className="size-4" aria-hidden /> Otra</button>
           </div>
           <label className="flex items-center gap-2 text-sm text-texto" htmlFor="mezcla-giro">

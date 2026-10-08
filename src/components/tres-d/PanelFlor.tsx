@@ -6,7 +6,7 @@ import type { ParteGlobo, PropiedadesFlor } from "@/lib/globos3d/decoraciones";
 
 export type DondeDecoracion = "sola" | "columna" | "arco" | "pared";
 
-export const BOTON = "min-h-10 rounded-xl px-2 text-sm ring-1 transition-colors";
+export const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
 export const ACTIVO = "bg-acento text-sobre-acento ring-acento";
 export const INACTIVO = "bg-superficie text-texto ring-borde hover:bg-superficie-suave";
 const FORMATOS_PETALO = ["R-5", "R-9", "R-12", "LOL-6", "C-12"] as const;
@@ -21,14 +21,14 @@ export function SelectorColor({ formatoId, valor, onCambio, etiqueta }: { format
     return [...mapa.entries()];
   }, [formatoId]);
   return (
-    <div className="max-h-40 overflow-y-auto pr-1" role="group" aria-label={etiqueta}>
+    <div className="max-h-60 overflow-y-auto pr-1 lg:max-h-40" role="group" aria-label={etiqueta}>
       {grupos.map(([familia, lista]) => (
         <div key={familia} className="mb-1.5">
           <p className="font-mono text-[0.65rem] uppercase tracking-wider text-texto-suave">{NOMBRE_FAMILIA[familia] ?? familia}</p>
           <div className="mt-0.5 flex flex-wrap gap-1">
             {lista.map((c) => (
               <button key={c.codigo} type="button" onClick={() => onCambio(c.codigo)} aria-pressed={c.codigo === valor} title={`${c.nombreCompleto} ${c.codigo}`} aria-label={`${c.nombreCompleto} ${c.codigo}`}
-                className={`size-7 rounded-full ring-2 ring-offset-1 ring-offset-superficie ${c.codigo === valor ? "ring-acento" : "ring-transparent hover:ring-borde"}`}
+                className={`size-11 rounded-full ring-2 ring-offset-1 ring-offset-superficie lg:size-7 ${c.codigo === valor ? "ring-acento" : "ring-transparent hover:ring-borde"}`}
                 style={{ background: c.hexGlobo, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.12)" }} />
             ))}
           </div>

@@ -229,7 +229,8 @@ function useMiniaturas3d(orden: readonly ItemBiblioteca[], cache: Map<string, Pi
 const NOMBRE_TIPO = new Map(TIPOS_ITEM.map((t) => [t.id, t.nombre]));
 const TARJETA = "rounded-2xl bg-superficie ring-1 ring-borde";
 const ETIQUETA = "rounded-full bg-superficie-suave px-2 py-0.5 text-[0.7rem] text-texto-suave ring-1 ring-borde";
-const SELECT = "min-h-10 min-w-0 rounded-xl bg-superficie px-2 text-sm text-texto ring-1 ring-borde";
+/** 44 px de alto y, en el teléfono, letra de 16 px (si no, iOS acerca la página al tocar el campo). */
+const SELECT = "min-h-11 min-w-0 rounded-xl bg-superficie px-2 text-base text-texto ring-1 ring-borde sm:text-sm";
 
 const nombreColor = (codigo: string) => `${referenciaPorCodigo(codigo)?.nombreCompleto ?? codigo} ${codigo}`;
 const nombreProducto = (clave: string) => { const [f, c] = clave.split("|"); return `${f} ${nombreColor(c ?? "")}`; };
@@ -306,6 +307,15 @@ function TablaProductos({ item, productos }: { item: ItemBiblioteca; productos: 
   };
   const th = "px-2 py-1.5 text-left text-[0.7rem] font-semibold uppercase tracking-wide text-texto-suave";
   const td = "px-2 py-1.5 align-top";
+  // En el teléfono cada fila es una ficha: la cantidad a la izquierda y lo demás apilado (sin scroll de lado).
+  // Desde 640 px, la tabla de siempre con su propio scroll horizontal si no cabe.
+  const tabla = "w-full border-collapse text-sm max-sm:block sm:min-w-[520px]";
+  const cabeza = "max-sm:hidden";
+  const cuerpo = "max-sm:block";
+  const fila = "border-b border-borde/60 max-sm:grid max-sm:grid-cols-[3rem_minmax(0,1fr)] max-sm:py-1";
+  const celdaCantidad = `${td} font-mono font-semibold text-texto max-sm:row-span-4`;
+  const celda = `${td} min-w-0 break-words max-sm:col-start-2 max-sm:py-0.5`;
+  const rotulo = "text-texto-suave sm:hidden";
   return (
     <section className={`${TARJETA} flex flex-col gap-3 p-3`} aria-label="Productos">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -316,18 +326,18 @@ function TablaProductos({ item, productos }: { item: ItemBiblioteca; productos: 
       <div>
         <h4 className="text-sm font-semibold text-texto">Globos <span className="font-normal text-texto-suave">· {productos.totalGlobos} en total</span></h4>
         {productos.globos.length === 0 ? <p className="text-xs text-texto-suave">No lleva globos.</p> : (
-          <div className="mt-1 overflow-x-auto">
-            <table className="w-full min-w-[520px] border-collapse text-sm">
-              <thead><tr className="border-b border-borde"><th className={th}>Cantidad</th><th className={th}>Globo (formato, color, código)</th><th className={th}>Producto en la tienda</th></tr></thead>
-              <tbody>
+          <div className="mt-1 overflow-x-auto overscroll-x-contain">
+            <table className={tabla}>
+              <thead className={cabeza}><tr className="border-b border-borde"><th className={th}>Cantidad</th><th className={th}>Globo (formato, color, código)</th><th className={th}>Producto en la tienda</th></tr></thead>
+              <tbody className={cuerpo}>
                 {productos.globos.map((g) => (
-                  <tr key={`${g.formatoId}|${g.codigo}`} className="border-b border-borde/60">
-                    <td className={`${td} font-mono font-semibold text-texto`}>{g.cantidad}{g.porLargo ? <span className="block text-[0.65rem] font-normal text-texto-suave">por largo</span> : null}</td>
-                    <td className={td}>
+                  <tr key={`${g.formatoId}|${g.codigo}`} className={fila}>
+                    <td className={celdaCantidad}>{g.cantidad}{g.porLargo ? <span className="block text-[0.65rem] font-normal text-texto-suave">por largo</span> : null}</td>
+                    <td className={celda}>
                       <span className="flex items-center gap-2 text-texto"><span className="size-4 shrink-0 rounded-full ring-1 ring-black/15" style={{ background: hexDeCodigo(g.codigo) }} aria-hidden /><b className="font-semibold">{g.nombreOficial}</b></span>
                       <span className="block text-[0.7rem] text-texto-suave">{g.formato}{g.impresos ? ` · ${g.impresos} ${g.impresos === 1 ? "va impreso" : "van impresos"}: se compran como el impreso de abajo` : ""}</span>
                     </td>
-                    <td className={td}>
+                    <td className={celda}>
                       <a href={g.producto.url} target="_blank" rel="noreferrer" className="text-texto underline decoration-dotted underline-offset-2 hover:text-acento">{g.producto.nombre}</a>
                       <span className="block text-[0.7rem] text-texto-suave">
                         {g.producto.estado === "verificado"
@@ -347,19 +357,19 @@ function TablaProductos({ item, productos }: { item: ItemBiblioteca; productos: 
       {productos.tienda.length > 0 && (
         <div>
           <h4 className="text-sm font-semibold text-texto">Globos impresos y metalizados <span className="font-normal text-texto-suave">· producto exacto de la tienda</span></h4>
-          <div className="mt-1 overflow-x-auto">
-            <table className="w-full min-w-[520px] border-collapse text-sm">
-              <thead><tr className="border-b border-borde"><th className={th}>Cantidad</th><th className={th}>Producto en la tienda</th><th className={th}>Sección</th><th className={th}>En la escena</th></tr></thead>
-              <tbody>
+          <div className="mt-1 overflow-x-auto overscroll-x-contain">
+            <table className={tabla}>
+              <thead className={cabeza}><tr className="border-b border-borde"><th className={th}>Cantidad</th><th className={th}>Producto en la tienda</th><th className={th}>Sección</th><th className={th}>En la escena</th></tr></thead>
+              <tbody className={cuerpo}>
                 {productos.tienda.map((t) => (
-                  <tr key={t.url} className="border-b border-borde/60">
-                    <td className={`${td} font-mono font-semibold text-texto`}>{t.cantidad}</td>
-                    <td className={td}>
+                  <tr key={t.url} className={fila}>
+                    <td className={celdaCantidad}>{t.cantidad}</td>
+                    <td className={celda}>
                       <a href={t.url} target="_blank" rel="noreferrer" className="text-texto underline decoration-dotted underline-offset-2 hover:text-acento">{t.nombre}</a>
                       <span className="block text-[0.7rem] text-texto-suave">{t.detalle}</span>
                     </td>
-                    <td className={`${td} text-xs text-texto`}>{t.seccion === "impresos" ? "Globos impresos" : "Metalizados"}</td>
-                    <td className={`${td} text-xs text-texto-suave`}>{t.piezas.join(", ")}</td>
+                    <td className={`${celda} text-xs text-texto`}>{t.seccion === "impresos" ? "Globos impresos" : "Metalizados"}</td>
+                    <td className={`${celda} text-xs text-texto-suave`}><span className={rotulo}>En la escena: </span>{t.piezas.join(", ")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -371,18 +381,18 @@ function TablaProductos({ item, productos }: { item: ItemBiblioteca; productos: 
       <div>
         <h4 className="text-sm font-semibold text-texto">Utilería de fiesta</h4>
         {productos.utileria.length === 0 ? <p className="text-xs text-texto-suave">No lleva utilería.</p> : (
-          <div className="mt-1 overflow-x-auto">
-            <table className="w-full min-w-[520px] border-collapse text-sm">
-              <thead><tr className="border-b border-borde"><th className={th}>Cantidad</th><th className={th}>Producto</th><th className={th}>En la escena</th></tr></thead>
-              <tbody>
+          <div className="mt-1 overflow-x-auto overscroll-x-contain">
+            <table className={tabla}>
+              <thead className={cabeza}><tr className="border-b border-borde"><th className={th}>Cantidad</th><th className={th}>Producto</th><th className={th}>En la escena</th></tr></thead>
+              <tbody className={cuerpo}>
                 {productos.utileria.map((u) => (
-                  <tr key={`${u.url}|${u.nombre}|${u.variante ?? ""}`} className="border-b border-borde/60">
-                    <td className={`${td} font-mono font-semibold text-texto`}>{u.cantidad}</td>
-                    <td className={td}>
+                  <tr key={`${u.url}|${u.nombre}|${u.variante ?? ""}`} className={fila}>
+                    <td className={celdaCantidad}>{u.cantidad}</td>
+                    <td className={celda}>
                       {u.generico ? <span className="text-texto-suave">{u.nombre}</span> : <a href={urlTienda(u.url)} target="_blank" rel="noreferrer" className="text-texto underline decoration-dotted underline-offset-2 hover:text-acento">{u.nombre}</a>}
                       {u.variante && <span className="text-texto-suave"> · {u.variante}</span>}
                     </td>
-                    <td className={`${td} text-xs text-texto-suave`}>{u.piezas.join(", ")}</td>
+                    <td className={`${celda} text-xs text-texto-suave`}><span className={rotulo}>En la escena: </span>{u.piezas.join(", ")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -464,7 +474,7 @@ function Ficha({ item, biblioteca, cache, minis, onVer, onVolver, acciones, pued
               <span className="block truncate text-sm text-texto">{i.nombre}{veces(i) > 1 && <span className="text-texto-suave"> · {veces(i)} veces</span>}</span>
               <span className="block truncate text-[0.7rem] text-texto-suave">{NOMBRE_TIPO.get(i.tipo)}{i.derivado ? "" : " · también en la biblioteca"}</span>
             </span>
-            <button type="button" onClick={() => onVer(i)} className={`${BOTON} ${INACTIVO} inline-flex shrink-0 items-center gap-1 px-2 text-xs`}><Eye className="size-3.5" aria-hidden />{verTexto}</button>
+            <button type="button" onClick={() => onVer(i)} className={`${BOTON} ${INACTIVO} inline-flex max-w-[45%] shrink-0 items-center gap-1 px-2 text-left text-xs sm:max-w-none`}><Eye className="size-3.5 shrink-0" aria-hidden />{verTexto}</button>
           </li>
         ))}
       </ul>
@@ -586,7 +596,7 @@ export function Biblioteca({ escenaActual, onAbrirEnEscena, onAnadirAEscena, abr
   ) : (
     <>
       <section className={`${TARJETA} flex flex-col gap-2 p-3`} aria-label="Buscar en la biblioteca">
-        <div className="flex flex-wrap gap-1" role="group" aria-label="Tipo">
+        <div className="-mx-3 flex gap-1 overflow-x-auto px-3 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&>button]:shrink-0" role="group" aria-label="Tipo">
           <button type="button" onClick={() => poner({ tipo: null })} aria-pressed={!filtro.tipo} className={`${BOTON} ${!filtro.tipo ? ACTIVO : INACTIVO} px-3`}>Todo <span className="font-mono text-xs opacity-75">{items.length}</span></button>
           {TIPOS_ITEM.map((t) => (
             <button key={t.id} type="button" onClick={() => poner({ tipo: filtro.tipo === t.id ? null : t.id })} aria-pressed={filtro.tipo === t.id} className={`${BOTON} ${filtro.tipo === t.id ? ACTIVO : INACTIVO} px-3`}>
@@ -594,8 +604,8 @@ export function Biblioteca({ escenaActual, onAbrirEnEscena, onAnadirAEscena, abr
             </button>
           ))}
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="relative flex items-center">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          <label className="relative col-span-2 flex items-center lg:col-span-1">
             <Search className="pointer-events-none absolute left-2.5 size-4 text-texto-suave" aria-hidden />
             <input type="search" value={filtro.texto ?? ""} onChange={(e) => poner({ texto: e.target.value })} placeholder="Buscar: araña, columna, dorado…" aria-label="Buscar por texto" className={`${SELECT} w-full pl-8`} />
           </label>
@@ -607,7 +617,7 @@ export function Biblioteca({ escenaActual, onAbrirEnEscena, onAnadirAEscena, abr
             <option value="">Cualquier color</option>
             {colores.map(([c, n]) => <option key={c} value={c}>{nombreColor(c)} ({n})</option>)}
           </select>
-          <select value={filtro.producto ?? ""} onChange={(e) => poner({ producto: e.target.value || null })} aria-label="Producto (globo)" className={SELECT}>
+          <select value={filtro.producto ?? ""} onChange={(e) => poner({ producto: e.target.value || null })} aria-label="Producto (globo)" className={`${SELECT} col-span-2 lg:col-span-1`}>
             <option value="">Usa cualquier globo</option>
             {productos.map(([p, n]) => <option key={p} value={p}>Usa {nombreProducto(p)} ({n})</option>)}
           </select>
@@ -618,7 +628,7 @@ export function Biblioteca({ escenaActual, onAbrirEnEscena, onAnadirAEscena, abr
             {indexadas < escenas ? ` · buscando estructuras y decoraciones dentro de las escenas (${indexadas} de ${escenas})…` : ""}
             {listos < items.length ? ` · contando globos (${listos} de ${items.length})…` : ""}
           </span>
-          {hayFiltro && <button type="button" onClick={() => setFiltro(FILTRO_VACIO)} className="text-acento underline-offset-2 hover:underline">Quitar filtros</button>}
+          {hayFiltro && <button type="button" onClick={() => setFiltro(FILTRO_VACIO)} className="min-h-11 text-acento underline-offset-2 hover:underline sm:min-h-0">Quitar filtros</button>}
         </p>
       </section>
       {visibles.length === 0 ? (
@@ -685,14 +695,14 @@ export function AccionesPieza({ escena, armada, nodoId, onVer }: { escena: Escen
           <BookmarkPlus className="size-3.5" aria-hidden />Guardar en la biblioteca
         </button>
       </div>
-      <button type="button" onClick={() => { setAbierto(abierto === "escena" ? null : "escena"); setNombre(""); setAviso(null); }} aria-expanded={abierto === "escena"} className="self-start text-xs text-acento underline-offset-2 hover:underline">
+      <button type="button" onClick={() => { setAbierto(abierto === "escena" ? null : "escena"); setNombre(""); setAviso(null); }} aria-expanded={abierto === "escena"} className="min-h-11 self-start text-xs text-acento underline-offset-2 hover:underline lg:min-h-0">
         Guardar toda la escena en la biblioteca
       </button>
       {abierto && (
         <div className="flex flex-col gap-2 rounded-xl bg-superficie-suave p-2 ring-1 ring-borde">
           <p className="text-[0.7rem] text-texto-suave">{abierto === "escena" ? `La escena entera (${escena.nodos.length} piezas).` : clase === "estructura" ? "La estructura con todo lo que cuelga de ella y lo pegado a sus globos." : "La pieza sola."}</p>
           <label className="flex flex-col gap-1 text-xs font-semibold text-texto">Nombre
-            <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={abierto === "escena" ? "Mi escena" : nodo.nombre} className="min-h-10 rounded-lg bg-superficie px-2 text-sm font-normal text-texto ring-1 ring-borde" />
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={abierto === "escena" ? "Mi escena" : nodo.nombre} className="min-h-11 rounded-lg bg-superficie px-2 text-base font-normal text-texto ring-1 ring-borde sm:text-sm" />
           </label>
           <label className="flex flex-col gap-1 text-xs font-semibold text-texto">Ocasión
             <select value={ocasion} onChange={(e) => setOcasion(e.target.value)} className={SELECT}>{OCASIONES.map((o) => <option key={o} value={o}>{o}</option>)}</select>

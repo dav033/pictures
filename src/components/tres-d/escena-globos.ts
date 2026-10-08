@@ -501,6 +501,9 @@ function construir(globo: GloboEnEscena): THREE.Object3D {
   return malla;
 }
 
+/** Tope de píxeles del lienzo (ancho × alto × densidad²): lo que cuesta dibujar cada cuadro. */
+const PIXELES_MAXIMOS = 3_500_000;
+
 function ancho(objeto: THREE.Object3D): number {
   const caja = new THREE.Box3().setFromObject(objeto);
   return caja.max.x - caja.min.x;
@@ -763,6 +766,11 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   function redimensionar() {
     const { clientWidth, clientHeight } = lienzo;
     if (!clientWidth || !clientHeight) return;
+    // Densidad con tope: hasta 2× y nunca más de ~3,5 millones de píxeles dibujados (un teléfono de 3×, una tablet
+    // grande o una pantalla 4K no se calientan; el escritorio común queda igual que antes).
+    const porPresupuesto = Math.sqrt(PIXELES_MAXIMOS / (clientWidth * clientHeight));
+    const densidad = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, porPresupuesto));
+    if (Math.abs(renderer.getPixelRatio() - densidad) > 0.01) renderer.setPixelRatio(densidad);
     renderer.setSize(clientWidth, clientHeight, false);
     camara.aspect = clientWidth / clientHeight;
     camara.updateProjectionMatrix();

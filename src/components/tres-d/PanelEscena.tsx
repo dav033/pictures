@@ -57,6 +57,8 @@ type Props = {
   enVivo?: { id: string; colocacion: Colocacion } | null;
   /** Lo de la biblioteca para la pieza elegida («Ver sola con sus decoraciones», «Guardar en la biblioteca»). */
   accionesPieza?: (nodoId: string) => ReactNode;
+  /** En la hoja del teléfono (menos de 1024 px): solo las piezas o solo el chat de la IA. En escritorio se ve todo. */
+  enMovil?: "piezas" | "ia";
 };
 
 /** Dónde está exactamente (lo que mueven el arrastre y las flechas), en metros y grados. */
@@ -73,7 +75,7 @@ function coordenadas(c: Colocacion): string {
  * Pestaña Escena: varias piezas en una sala. Arriba las escenas de partida; luego la lista de piezas (tocar una la
  * elige y la resalta en el visor), «Añadir», el editor de la pieza elegida (dónde va y sus propiedades) y la sala.
  */
-export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, onPreset, enVivo = null, accionesPieza }: Props) {
+export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, onPreset, enVivo = null, accionesPieza, enMovil }: Props) {
   const elegido = escena.nodos.find((n) => n.id === seleccion) ?? null;
   // Mientras se arrastra en el visor, la pieza elegida se ve donde va (coordenadas y deslizadores en vivo).
   const nodo = elegido && enVivo?.id === elegido.id ? { ...elegido, colocacion: enVivo.colocacion } : elegido;
@@ -86,9 +88,12 @@ export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, 
     onSeleccion(id);
   };
 
+  const ocultarPiezas = enMovil === "ia" ? "max-lg:hidden" : "";
+  const ocultarIA = enMovil === "piezas" ? "max-lg:hidden" : "";
+
   return (
     <>
-      <section className={TARJETA}>
+      <section className={`${TARJETA} ${ocultarPiezas}`}>
         <h2 className="flex items-center gap-2 text-sm font-semibold text-texto"><Layers className="size-4 text-acento" aria-hidden /> Escena</h2>
         <p className="text-xs text-texto-suave">Varias piezas en un salón. <b>1.</b> Elige una escena para empezar. <b>2.</b> Toca una pieza de la lista o en el visor (se marca en ambos) y arrástrala o muévela con las flechas. <b>3.</b> Añade más con «Añadir».</p>
         <div className="flex flex-col gap-1">
@@ -102,8 +107,9 @@ export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, 
         </div>
       </section>
 
-      <AsistenteEscena escena={escena} onEscena={onEscena} />
+      <div className={`flex flex-col ${ocultarIA}`}><AsistenteEscena escena={escena} onEscena={onEscena} /></div>
 
+      <div className={`flex flex-col gap-3 lg:gap-4 ${ocultarPiezas}`}>
       <section className={TARJETA} aria-label="Piezas de la escena">
         <h2 className="text-sm font-semibold text-texto">Piezas <span className="font-normal text-texto-suave">· {escena.nodos.length} · {armada.globos.length} globos</span></h2>
         {escena.nodos.length === 0 && <p className="text-xs text-texto-suave">La sala está vacía: añade una pieza con los botones de abajo.</p>}
@@ -120,10 +126,10 @@ export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, 
                   </span>
                   {hecho?.avisos.map((a) => <span key={a} className="block text-[0.7rem] text-texto">{a}</span>)}
                 </button>
-                <button type="button" onClick={() => onEscena(duplicarNodo(escena, n.id))} title={`Duplicar «${n.nombre}»`} aria-label={`Duplicar ${n.nombre}`} className="grid size-10 shrink-0 place-items-center rounded-lg text-texto-suave hover:bg-superficie-suave hover:text-texto">
+                <button type="button" onClick={() => onEscena(duplicarNodo(escena, n.id))} title={`Duplicar «${n.nombre}»`} aria-label={`Duplicar ${n.nombre}`} className="grid size-11 shrink-0 place-items-center rounded-lg text-texto-suave hover:bg-superficie-suave hover:text-texto lg:size-10">
                   <Copy className="size-4" aria-hidden />
                 </button>
-                <button type="button" onClick={() => { onEscena(quitarNodo(escena, n.id, armada)); if (elegida) onSeleccion(null); }} title={`Quitar «${n.nombre}»`} aria-label={`Quitar ${n.nombre}`} className="grid size-10 shrink-0 place-items-center rounded-lg text-texto-suave hover:bg-superficie-suave hover:text-texto">
+                <button type="button" onClick={() => { onEscena(quitarNodo(escena, n.id, armada)); if (elegida) onSeleccion(null); }} title={`Quitar «${n.nombre}»`} aria-label={`Quitar ${n.nombre}`} className="grid size-11 shrink-0 place-items-center rounded-lg text-texto-suave hover:bg-superficie-suave hover:text-texto lg:size-10">
                   <Trash2 className="size-4" aria-hidden />
                 </button>
               </li>
@@ -163,6 +169,7 @@ export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, 
       <DecoracionesPequenas escena={escena} onEscena={onEscena} armada={armada} seleccion={seleccion} onSeleccion={onSeleccion} />
 
       <EditorSala sala={escena.sala} onSala={(sala) => onEscena({ ...escena, sala })} />
+      </div>
     </>
   );
 }
@@ -198,7 +205,7 @@ function EditorNodo({ nodo, escena, armada, onNodo }: { nodo: NodoEscena; escena
     <>
       <section className={`${TARJETA} ring-2 ring-acento/60`} aria-label={`Editar ${nodo.nombre}`}>
         <label htmlFor="nodo-nombre" className="text-xs font-semibold text-texto">Pieza elegida</label>
-        <input id="nodo-nombre" value={nodo.nombre} onChange={(e) => onNodo({ nombre: e.target.value })} className="min-h-10 rounded-lg bg-superficie-suave px-2 text-sm text-texto ring-1 ring-borde" />
+        <input id="nodo-nombre" value={nodo.nombre} onChange={(e) => onNodo({ nombre: e.target.value })} className="min-h-11 rounded-lg bg-superficie-suave px-2 text-base text-texto ring-1 ring-borde lg:min-h-10 lg:text-sm" />
         <h3 className="flex flex-wrap items-baseline justify-between gap-x-2 text-xs font-semibold text-texto">Dónde va <span className="font-mono font-normal text-texto-suave" aria-live="polite">{coordenadas(c)}</span></h3>
         <div className="grid grid-cols-2 gap-1">
           {LUGARES.map((l) => {
@@ -261,7 +268,7 @@ function EditorNodo({ nodo, escena, armada, onNodo }: { nodo: NodoEscena; escena
           return (
             <>
               <label htmlFor="ancla-padre" className="text-xs font-semibold text-texto">Colgada de</label>
-              <select id="ancla-padre" value={c.padreId} onChange={(e) => onNodo({ colocacion: { ...c, padreId: e.target.value, ancla: 0 } })} className="min-h-10 rounded-lg bg-superficie-suave px-2 text-sm text-texto ring-1 ring-borde">
+              <select id="ancla-padre" value={c.padreId} onChange={(e) => onNodo({ colocacion: { ...c, padreId: e.target.value, ancla: 0 } })} className="min-h-11 rounded-lg bg-superficie-suave px-2 text-base text-texto ring-1 ring-borde lg:min-h-10 lg:text-sm">
                 {padres.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                 {!padres.some((p) => p.id === c.padreId) && <option value={c.padreId}>(pieza que ya no está)</option>}
               </select>
@@ -299,7 +306,7 @@ function ColoresPorPuesto({ id, formatoId, colores, cantidad, onColores }: { id:
             const ref = coloresDelFormato(formatoId).find((x) => x.codigo === codigo);
             return (
               <button key={i} type="button" onClick={() => setPuesto(i)} aria-pressed={elegido === i} aria-label={`Color ${i + 1}: ${ref?.nombreCompleto ?? codigo}`} title={`Color ${i + 1}: ${ref?.nombreCompleto ?? codigo}`}
-                className={`grid size-8 place-items-center rounded-full font-mono text-[0.65rem] ring-2 ring-offset-1 ring-offset-superficie ${elegido === i ? "ring-acento" : "ring-borde"}`}
+                className={`grid size-11 place-items-center rounded-full font-mono text-[0.65rem] ring-2 lg:size-8 ring-offset-1 ring-offset-superficie ${elegido === i ? "ring-acento" : "ring-borde"}`}
                 style={{ background: ref?.hexGlobo, color: "rgba(0,0,0,.55)" }}>{i + 1}</button>
             );
           })}
