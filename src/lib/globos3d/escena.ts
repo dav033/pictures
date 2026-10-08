@@ -48,7 +48,7 @@ export type NodoEscena = { id: string; nombre: string; pieza: Pieza; colocacion:
 export type Escena = { sala: Sala; nodos: NodoEscena[] };
 
 /** Un volumen vertical de la escena (hilos de lo que cuelga del techo). */
-export type CilindroDeEscena = { base: Vec3; radioCm: number; altoCm: number; hex: string };
+export type CilindroDeEscena = { base: Vec3; radioCm: number; altoCm: number; hex: string; /** De qué pieza es (el hilo se mueve con ella). */ nodo?: string };
 
 export type Caja = { min: Vec3; max: Vec3 };
 
@@ -269,7 +269,7 @@ export function armarEscena(escena: Escena, cache?: Map<string, PiezaArmada>): E
         resultado = { id: nodo.id, nombre: nodo.nombre, copias: 1, ...puesta, materiales: sumarMateriales(armada.materiales), avisos: [] };
         if (c.en === "techo" && c.cuelgaCm > 0) {
           const arriba = puesta.caja.max.y;
-          cilindrosPorNodo.set(nodo.id, [{ base: { x: c.xCm, y: arriba, z: c.zCm }, radioCm: HILO.radioCm, altoCm: Math.max(0, escena.sala.altoCm - arriba), hex: HILO.hex }]);
+          cilindrosPorNodo.set(nodo.id, [{ base: { x: c.xCm, y: arriba, z: c.zCm }, radioCm: HILO.radioCm, altoCm: Math.max(0, escena.sala.altoCm - arriba), hex: HILO.hex, nodo: nodo.id }]);
         }
       }
     } catch (error) {
@@ -387,4 +387,136 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
   }
   const paredes = [escena.sala.mostrar.fondo ? "a back wall" : "", escena.sala.mostrar.techo ? "a ceiling" : ""].filter(Boolean).join(" and ");
   return `A balloon decoration set in a room${paredes ? ` with ${paredes}` : ""}: ${frases.join("; ")}`;
+}
+
+// ----------------------------------------------------------------------------------------------------------
+// Mover a mano (arrastrar en el visor y teclado): imán, límites de la sala, giro e historial
+// ----------------------------------------------------------------------------------------------------------
+
+/** Paso del imán: lo movido cae en múltiplos de 5 cm (Alt lo quita). */
+export const PASO_IMAN_CM = 5;
+
+/** Al múltiplo de `paso` más cercano; sin imán, a un milímetro (para que el JSON no lleve decimales largos). */
+export function imanar(valor: number, iman: boolean, paso = PASO_IMAN_CM): number {
+  return iman ? Math.round(valor / paso) * paso : Math.round(valor * 10) / 10;
+}
+
+/** `valor` dentro de [min, max]; si no cabe (la pieza es más grande que la sala), al centro del rango. */
+function limitar(valor: number, min: number, max: number): number {
+  if (min > max) return (min + max) / 2;
+  return Math.min(max, Math.max(min, valor));
+}
+
+export type OpcionesMover = {
+  /** La escena armada: da el tamaño de cada pieza para que no se salga de la sala (sin ella, solo su centro). */
+  armada?: EscenaArmada;
+  /** Imán a `PASO_IMAN_CM` en lo que se mueve (por defecto, sí). */
+  iman?: boolean;
+};
+
+/**
+ * Mueve una pieza `delta` (cm, en el mundo) sobre su superficie: en el piso y en el techo, en (x, z) —y en el
+ * techo, `delta.y` la sube o la baja—; en una pared, a lo largo de ella y en altura (lo que se aleja de la pared
+ * no cuenta). Lo colgado de un ancla no se mueve así (ver `pasarDeAncla`). Cada coordenada que cambia cae en el
+ * imán y luego dentro de la sala: la caja de la pieza no pasa de las paredes, el piso ni el techo.
+ */
+export function moverNodo(escena: Escena, id: string, delta: Vec3, opciones: OpcionesMover = {}): Escena {
+  const nodo = escena.nodos.find((n) => n.id === id);
+  if (!nodo || nodo.colocacion.en === "ancla") return escena;
+  const { sala } = escena;
+  const iman = opciones.iman ?? true;
+  const caja = opciones.armada?.porNodo.find((n) => n.id === id && n.copias > 0)?.caja;
+  const medio = (eje: "x" | "y" | "z") => (caja ? (caja.max[eje] - caja.min[eje]) / 2 : 0);
+  const alto = caja ? caja.max.y - caja.min.y : 0;
+  const nuevo = (actual: number, d: number, min: number, max: number) => (Math.abs(d) < 1e-9 ? actual : limitar(imanar(actual + d, iman), min, max));
+  const c = nodo.colocacion;
+  let colocacion: Colocacion;
+  if (c.en === "pared") {
+    const marco = marcoDePared(sala, c.pared);
+    const aLo = delta.x * marco.derecha.x + delta.z * marco.derecha.z;
+    const medioLargo = c.pared === "fondo" ? medio("x") : medio("z");
+    colocacion = {
+      ...c,
+      aLoLargoCm: nuevo(c.aLoLargoCm, aLo, -marco.largoCm / 2 + medioLargo, marco.largoCm / 2 - medioLargo),
+      alturaCm: nuevo(c.alturaCm, delta.y, 0, sala.altoCm - alto),
+    };
+  } else {
+    const x = nuevo(c.xCm, delta.x, -sala.anchoCm / 2 + medio("x"), sala.anchoCm / 2 - medio("x"));
+    const z = nuevo(c.zCm, delta.z, -sala.fondoCm / 2 + medio("z"), sala.fondoCm / 2 - medio("z"));
+    colocacion = c.en === "piso" ? { ...c, xCm: x, zCm: z } : { ...c, xCm: x, zCm: z, cuelgaCm: nuevo(c.cuelgaCm, -delta.y, 0, sala.altoCm - alto) };
+  }
+  if (JSON.stringify(colocacion) === JSON.stringify(c)) return escena;
+  return { ...escena, nodos: escena.nodos.map((n) => (n.id === id ? { ...n, colocacion } : n)) };
+}
+
+/** Gira una pieza `grados` sobre sí misma (piso, techo o ancla), dejando el giro en (−180°, 180°]. En una pared no gira. */
+export function girarNodo(escena: Escena, id: string, grados: number): Escena {
+  const nodo = escena.nodos.find((n) => n.id === id);
+  if (!nodo || nodo.colocacion.en === "pared" || grados === 0) return escena;
+  let giro = Math.round((nodo.colocacion.giroGrados + grados) * 10) / 10;
+  while (giro > 180) giro -= 360;
+  while (giro <= -180) giro += 360;
+  const colocacion: Colocacion = { ...nodo.colocacion, giroGrados: giro };
+  return { ...escena, nodos: escena.nodos.map((n) => (n.id === id ? { ...n, colocacion } : n)) };
+}
+
+/** Lo colgado de un ancla pasa a la ancla `paso` más allá (o más acá), sin salirse de las que tiene su pieza. */
+export function pasarDeAncla(escena: Escena, id: string, paso: number, armada?: EscenaArmada): Escena {
+  const nodo = escena.nodos.find((n) => n.id === id);
+  if (!nodo || nodo.colocacion.en !== "ancla") return escena;
+  const c = nodo.colocacion;
+  const total = armada?.porNodo.find((n) => n.id === c.padreId)?.anclas.length;
+  const ancla = Math.max(0, Math.min(total ? total - 1 : Infinity, Math.round(c.ancla) + Math.round(paso)));
+  if (ancla === c.ancla) return escena;
+  return { ...escena, nodos: escena.nodos.map((n) => (n.id === id ? { ...n, colocacion: { ...c, ancla } } : n)) };
+}
+
+/**
+ * Cuánto se corre una pieza en el mundo (cm) al pasar de una colocación a otra, si solo se trasladó (mismo lugar,
+ * misma pared, mismo giro y volteo); `null` si cambió algo más. Sirve para mover lo dibujado mientras se arrastra
+ * sin rearmar nada.
+ */
+export function desplazamientoEntre(sala: Sala, antes: Colocacion, despues: Colocacion): Vec3 | null {
+  if (antes.en === "piso" && despues.en === "piso" && antes.giroGrados === despues.giroGrados) {
+    return { x: despues.xCm - antes.xCm, y: 0, z: despues.zCm - antes.zCm };
+  }
+  if (antes.en === "techo" && despues.en === "techo" && antes.giroGrados === despues.giroGrados && antes.volteada === despues.volteada) {
+    return { x: despues.xCm - antes.xCm, y: antes.cuelgaCm - despues.cuelgaCm, z: despues.zCm - antes.zCm };
+  }
+  if (antes.en === "pared" && despues.en === "pared" && antes.pared === despues.pared) {
+    const { derecha } = marcoDePared(sala, antes.pared);
+    const d = despues.aLoLargoCm - antes.aLoLargoCm;
+    return { x: derecha.x * d, y: despues.alturaCm - antes.alturaCm, z: derecha.z * d };
+  }
+  return null;
+}
+
+/** Deshacer y rehacer de la escena: lo de antes, lo de ahora y lo deshecho (para rehacer). */
+export type HistorialEscena = { pasado: Escena[]; presente: Escena; futuro: Escena[] };
+
+export const MAX_HISTORIAL = 50;
+
+export function historialNuevo(escena: Escena): HistorialEscena {
+  return { pasado: [], presente: escena, futuro: [] };
+}
+
+/** Un cambio nuevo: lo de ahora pasa al pasado (hasta `max` pasos) y lo deshecho ya no se puede rehacer. */
+export function historialCambiar(h: HistorialEscena, escena: Escena, max = MAX_HISTORIAL): HistorialEscena {
+  if (escena === h.presente) return h;
+  return { pasado: [...h.pasado, h.presente].slice(-max), presente: escena, futuro: [] };
+}
+
+/** Cambia lo de ahora sin guardar un paso (los pasos seguidos de un deslizador cuentan como uno). */
+export function historialReemplazar(h: HistorialEscena, escena: Escena): HistorialEscena {
+  return escena === h.presente ? h : { ...h, presente: escena, futuro: [] };
+}
+
+export function historialDeshacer(h: HistorialEscena): HistorialEscena {
+  const anterior = h.pasado[h.pasado.length - 1];
+  return anterior ? { pasado: h.pasado.slice(0, -1), presente: anterior, futuro: [h.presente, ...h.futuro] } : h;
+}
+
+export function historialRehacer(h: HistorialEscena): HistorialEscena {
+  const siguiente = h.futuro[0];
+  return siguiente ? { pasado: [...h.pasado, h.presente], presente: siguiente, futuro: h.futuro.slice(1) } : h;
 }

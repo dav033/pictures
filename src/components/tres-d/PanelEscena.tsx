@@ -47,14 +47,26 @@ type Props = {
   onSeleccion: (id: string | null) => void;
   /** Carga una escena predefinida (y reencuadra la cámara). */
   onPreset: (id: string) => void;
+  /** La pieza que se está arrastrando en el visor y dónde va: sus coordenadas se ven en vivo. */
+  enVivo?: { id: string; colocacion: Colocacion } | null;
 };
+
+/** Dónde está exactamente (lo que mueven el arrastre y las flechas), en metros y grados. */
+function coordenadas(c: Colocacion): string {
+  if (c.en === "piso") return `x ${m(c.xCm)} · z ${m(c.zCm)} · giro ${c.giroGrados}°`;
+  if (c.en === "pared") return `a lo largo ${m(c.aLoLargoCm)} · altura ${m(c.alturaCm)}`;
+  if (c.en === "techo") return `x ${m(c.xCm)} · z ${m(c.zCm)} · cuelga ${m(c.cuelgaCm)} · giro ${c.giroGrados}°`;
+  return `ancla ${c.ancla + 1}${c.cada > 0 ? `, 1 de cada ${c.cada}` : ""} · giro ${c.giroGrados}°`;
+}
 
 /**
  * Pestaña Escena: varias piezas en una sala. Arriba las escenas de partida; luego la lista de piezas (tocar una la
  * elige y la resalta en el visor), «Añadir», el editor de la pieza elegida (dónde va y sus propiedades) y la sala.
  */
-export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, onPreset }: Props) {
-  const nodo = escena.nodos.find((n) => n.id === seleccion) ?? null;
+export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, onPreset, enVivo = null }: Props) {
+  const elegido = escena.nodos.find((n) => n.id === seleccion) ?? null;
+  // Mientras se arrastra en el visor, la pieza elegida se ve donde va (coordenadas y deslizadores en vivo).
+  const nodo = elegido && enVivo?.id === elegido.id ? { ...elegido, colocacion: enVivo.colocacion } : elegido;
   const ponNodo = (id: string, cambio: Partial<NodoEscena>) => onEscena({ ...escena, nodos: escena.nodos.map((n) => (n.id === id ? { ...n, ...cambio } : n)) });
   const anadir = (nuevo: { pieza: Pieza; nombre: string; colocacion: Colocacion }, base: string) => {
     const id = idNuevo(escena, base);
@@ -68,7 +80,7 @@ export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, 
     <>
       <section className={TARJETA}>
         <h2 className="flex items-center gap-2 text-sm font-semibold text-texto"><Layers className="size-4 text-acento" aria-hidden /> Escena</h2>
-        <p className="text-xs text-texto-suave">Varias piezas en un salón. <b>1.</b> Elige una escena para empezar. <b>2.</b> Toca una pieza de la lista para moverla o cambiarla (se marca en el visor). <b>3.</b> Añade más con «Añadir».</p>
+        <p className="text-xs text-texto-suave">Varias piezas en un salón. <b>1.</b> Elige una escena para empezar. <b>2.</b> Toca una pieza de la lista o en el visor (se marca en ambos) y arrástrala o muévela con las flechas. <b>3.</b> Añade más con «Añadir».</p>
         <div className="flex flex-col gap-1">
           {ESCENAS_PREDEFINIDAS.map((p) => (
             <button key={p.id} type="button" onClick={() => onPreset(p.id)} title={p.descripcion} className={`${BOTON} ${INACTIVO} py-1.5 text-left`}>
@@ -168,7 +180,7 @@ function EditorNodo({ nodo, escena, armada, onNodo }: { nodo: NodoEscena; escena
       <section className={`${TARJETA} ring-2 ring-acento/60`} aria-label={`Editar ${nodo.nombre}`}>
         <label htmlFor="nodo-nombre" className="text-xs font-semibold text-texto">Pieza elegida</label>
         <input id="nodo-nombre" value={nodo.nombre} onChange={(e) => onNodo({ nombre: e.target.value })} className="min-h-10 rounded-lg bg-superficie-suave px-2 text-sm text-texto ring-1 ring-borde" />
-        <h3 className="text-xs font-semibold text-texto">Dónde va</h3>
+        <h3 className="flex flex-wrap items-baseline justify-between gap-x-2 text-xs font-semibold text-texto">Dónde va <span className="font-mono font-normal text-texto-suave" aria-live="polite">{coordenadas(c)}</span></h3>
         <div className="grid grid-cols-2 gap-1">
           {LUGARES.map((l) => {
             const sinPadre = l.id === "ancla" && padres.length === 0;

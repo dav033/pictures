@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Rows3, Circle, Anchor } from "lucide-react";
+import { ArrowLeft, Rows3, Circle, Anchor, Undo2, Redo2 } from "lucide-react";
 import { FORMATOS_GLOBO, NOMBRE_FAMILIA, coloresDelFormato, formatoPorId, infladoValido, type FormatoGlobo } from "@/lib/globos3d/formatos";
 import { MODULOS, armarModulo, materialesModulo, moduloPorId, type TipoModulo } from "@/lib/globos3d/modulos";
 import { PATRONES_COLUMNA, armarColumna, type PatronColumna } from "@/lib/globos3d/columnas";
@@ -29,6 +29,7 @@ import { armarEscena, escenaEnIngles, type Escena } from "@/lib/globos3d/escena"
 import { escenaPredefinida } from "@/lib/globos3d/escenas-presets";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
 import { PanelEscena } from "./PanelEscena";
+import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdicionEscena";
 
 const formatoCm = (valor: number) => `${valor.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
 const metros = (cm: number) => (cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 });
@@ -133,8 +134,15 @@ export function Taller3D() {
   const [paredTrenzas, setParedTrenzas] = useState<OpcionesParedTrenzas>(PARED_TRENZAS_INICIAL);
   const [verAnclasPared, setVerAnclasPared] = useState(false);
   // Escena: varias piezas (arco orgánico, columnas, guirnalda, pared…) colocadas en una sala.
-  const [escenaEdit, setEscenaEdit] = useState<Escena>(() => escenaPredefinida("arco_organico_columnas_guirnalda"));
-  const [seleccion, setSeleccion] = useState<string | null>(null);
+  // Con deshacer y rehacer (Ctrl+Z / Ctrl+Y): cada cambio de la escena guarda un paso.
+  const historialEscena = useHistorialEscena(() => escenaPredefinida("arco_organico_columnas_guirnalda"));
+  const escenaEdit = historialEscena.escena;
+  const setEscenaEdit = historialEscena.cambiar;
+  const [seleccionElegida, setSeleccion] = useState<string | null>(null);
+  // Si la pieza elegida ya no está (se quitó o se deshizo su llegada), no hay elegida.
+  const seleccion = seleccionElegida && escenaEdit.nodos.some((n) => n.id === seleccionElegida) ? seleccionElegida : null;
+  /** La pieza que se está arrastrando y dónde va (sus coordenadas en vivo en el panel). */
+  const [enVivo, setEnVivo] = useState<PiezaEnVivo | null>(null);
   /** Sube al cargar una escena predefinida: el visor reencuadra; al mover una pieza, la cámara se queda quieta. */
   const [vueltaEncuadre, setVueltaEncuadre] = useState(0);
   const encuadradoRef = useRef<number | null>(null);
@@ -256,11 +264,15 @@ export function Taller3D() {
       const anclas = padreId ? armadaEscena.porNodo.find((n) => n.id === padreId)?.anclas.map((a) => a.posicion) ?? [] : [];
       const encuadrar = encuadradoRef.current !== vueltaEncuadre;
       encuadradoRef.current = vueltaEncuadre;
+      // Cada cosa lleva el id de su pieza: un clic la elige y al arrastrarla se mueve todo lo suyo junto.
       escena.mostrarModulo(
-        armadaEscena.globos.map((g) => ({ ...globoAEscena(g, formato), ...(g.confeti ? { confeti: true } : {}) })),
+        armadaEscena.porNodo.flatMap((n) => n.globos.map((g) => ({ ...globoAEscena(g, formato), ...(g.confeti ? { confeti: true } : {}), nodo: n.id }))),
         anclas,
-        armadaEscena.tubos.map(tuboAEscena),
-        { flores: armadaEscena.flores, cilindros: armadaEscena.cilindros, sala: armadaEscena.sala, resaltado: armadaEscena.porNodo.find((n) => n.id === seleccion)?.caja ?? null, encuadrar },
+        armadaEscena.porNodo.flatMap((n) => n.tubos.map((t) => ({ ...tuboAEscena(t), nodo: n.id }))),
+        {
+          flores: armadaEscena.porNodo.flatMap((n) => n.flores.map((f) => ({ ...f, nodo: n.id }))), cilindros: armadaEscena.cilindros, sala: armadaEscena.sala,
+          resaltado: armadaEscena.porNodo.find((n) => n.id === seleccion)?.caja ?? null, encuadrar,
+        },
       );
       return;
     }
@@ -301,6 +313,12 @@ export function Taller3D() {
       escena.mostrar([{ formato, infladoCm: inflado, hex: color.hexGlobo, familia: color.familia }]);
     }
   }, [listo, modo, vista, formato, inflado, color, colores, coloresModulo, armado, verAnclas, columna, arco, escenaDecoracion, paredActual, verAnclasPared, organico, ajustesOrganico.conPedestal, armadaEscena, escenaEdit, seleccion, vueltaEncuadre]);
+
+  // Escena a mano en el visor: clic elige, arrastrar mueve, teclado (flechas, Q/E, RePág/AvPág, Supr, Ctrl+D/Z/Y, Esc).
+  useEdicionEscena({
+    lienzoRef, visorRef: escenaRef, activo: listo && modo === "escena", escena: escenaEdit, armada: armadaEscena, seleccion,
+    onSeleccion: setSeleccion, onCambio: setEscenaEdit, onEnVivo: setEnVivo, onDeshacer: historialEscena.deshacer, onRehacer: historialEscena.rehacer,
+  });
 
   function elegirFormato(f: FormatoGlobo) {
     setFormatoId(f.id);
@@ -576,7 +594,7 @@ export function Taller3D() {
               aviso={avisoColor} puedeDeshacer={historialColor.length > 0} onDeshacer={deshacerColor} />
           )}
           {modo === "escena" && armadaEscena ? (
-            <PanelEscena escena={escenaEdit} onEscena={setEscenaEdit} armada={armadaEscena} seleccion={seleccion} onSeleccion={setSeleccion}
+            <PanelEscena escena={escenaEdit} onEscena={(e) => setEscenaEdit(e, { agrupar: "panel" })} armada={armadaEscena} seleccion={seleccion} onSeleccion={setSeleccion} enVivo={enVivo}
               onPreset={(id) => { setEscenaEdit(escenaPredefinida(id)); setSeleccion(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); }} />
           ) : modo === "organico" ? (
             <PanelOrganico valor={ajustesOrganico} onCambio={setAjustesOrganico} />
@@ -766,7 +784,20 @@ export function Taller3D() {
             </details>
           )}
           {listo && <GeneradorIA capturar={() => escenaRef.current?.capturar() ?? null} descripcion={descripcionIA} />}
-          <p className="text-xs text-texto-suave">Arrastra para girar · rueda o pellizca para acercar · medidas nominales del catálogo Sempertex; el color es el del globo inflado.</p>
+          {modo === "escena" ? (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-texto-suave">
+              <p className="min-w-0 flex-1">
+                <b className="font-semibold text-texto">Clic en una pieza para elegirla</b> · arrástrala para moverla (imán 5 cm; Alt lo quita) · flechas 5 cm (Shift 25) · Q/E girar · RePág/AvPág altura · Supr quitar · Ctrl+D duplicar · Ctrl+Z deshacer · Esc soltar.
+                Lo colgado de otra pieza no se arrastra: las flechas lo pasan de ancla. Arrastra el vacío para girar la cámara.
+              </p>
+              <div className="flex gap-1">
+                <button type="button" onClick={historialEscena.deshacer} disabled={!historialEscena.puedeDeshacer} title="Deshacer (Ctrl+Z)" aria-label="Deshacer" className="grid size-9 place-items-center rounded-lg text-texto ring-1 ring-borde hover:bg-superficie-suave disabled:opacity-40"><Undo2 className="size-4" aria-hidden /></button>
+                <button type="button" onClick={historialEscena.rehacer} disabled={!historialEscena.puedeRehacer} title="Rehacer (Ctrl+Y)" aria-label="Rehacer" className="grid size-9 place-items-center rounded-lg text-texto ring-1 ring-borde hover:bg-superficie-suave disabled:opacity-40"><Redo2 className="size-4" aria-hidden /></button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-texto-suave">Arrastra para girar · rueda o pellizca para acercar · medidas nominales del catálogo Sempertex; el color es el del globo inflado.</p>
+          )}
         </section>
       </div>
     </main>

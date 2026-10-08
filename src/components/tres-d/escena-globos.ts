@@ -15,16 +15,21 @@ export type GloboEnEscena = { formato: FormatoGlobo; infladoCm: number; hex: str
  * Un globo de un módulo: dónde queda su nudo y hacia dónde apunta su cuerpo (cm, y hacia arriba). `frente`, si
  * viene, es hacia dónde mira la cara de un globo plano (el corazón).
  */
-export type GloboColocadoEnEscena = GloboEnEscena & { nudo: Punto3; direccion: Punto3; frente?: Punto3; confeti?: boolean };
+/**
+ * `nodo` (en una escena) es la pieza a la que pertenece lo dibujado: un clic sobre él la elige y al arrastrarla se
+ * mueve todo lo suyo junto.
+ */
+export type DeNodo = { nodo?: string };
+export type GloboColocadoEnEscena = GloboEnEscena & DeNodo & { nudo: Punto3; direccion: Punto3; frente?: Punto3; confeti?: boolean };
 export type Punto3 = { x: number; y: number; z: number };
 
 /** Un tramo de tubito que sigue una curva (lazos, burbujas, colas): el eje en cm, su grosor y su color. */
-export type TuboEnEscena = { puntos: readonly Punto3[]; grosorCm: number; hex: string; familia: string; cerrado: boolean };
+export type TuboEnEscena = DeNodo & { puntos: readonly Punto3[]; grosorCm: number; hex: string; familia: string; cerrado: boolean };
 
 /** Flor artificial (follaje, no es globo) en un hueco: tipo, color, tamaño, dónde y hacia dónde mira (cm). */
-export type FlorEnEscena = { tipo: "hortensia" | "rosa" | "gypsophila"; hex: string; diametroCm: number; posicion: Punto3; normal: Punto3 };
+export type FlorEnEscena = DeNodo & { tipo: "hortensia" | "rosa" | "gypsophila"; hex: string; diametroCm: number; posicion: Punto3; normal: Punto3 };
 /** Un volumen simple de la escena (el pedestal): base, radio y alto en cm. */
-export type CilindroEnEscena = { base: Punto3; radioCm: number; altoCm: number; hex: string };
+export type CilindroEnEscena = DeNodo & { base: Punto3; radioCm: number; altoCm: number; hex: string };
 /**
  * La sala de una escena (cm): piso en y = 0, x de −ancho/2 a +ancho/2, z de −fondo/2 a +fondo/2, techo en y = alto;
  * la pared del fondo en z = −fondo/2 y el frente abierto. Mismo formato que `Sala` de `lib/globos3d/escena.ts`.
@@ -53,6 +58,22 @@ export type EscenaGlobos = {
    * apaisada) y es la misma que se le pide a FLUX, para que no estire ni recorte.
    */
   capturar: () => { datos: string; aspecto: AspectoCaptura };
+  /**
+   * La pieza (su `nodo`) que hay bajo un punto de la pantalla (coordenadas de cliente) y dónde se tocó (cm, en el
+   * mundo); `null` si ahí no hay ninguna.
+   */
+  piezaEn: (clienteX: number, clienteY: number) => { nodo: string; punto: Punto3 } | null;
+  /** Dónde corta el rayo de ese punto de la pantalla el plano que pasa por `punto` con esa `normal` (cm). */
+  puntoEnPlano: (clienteX: number, clienteY: number, punto: Punto3, normal: Punto3) => Punto3 | null;
+  /**
+   * Corre lo dibujado de esas piezas (y la caja de la elegida) `delta` cm desde donde se armó, sin rearmar nada:
+   * para arrastrar con fluidez. Lo siguiente que se muestre vuelve a dibujarlo todo en su sitio.
+   */
+  trasladarPiezas: (nodos: readonly string[], delta: Punto3) => void;
+  /** Encender o apagar el giro de la cámara (se apaga mientras se arrastra una pieza). */
+  orbitar: (activo: boolean) => void;
+  /** Hacia dónde mira la cámara en el piso (horizontal, unitario) y su derecha: para las flechas del teclado. */
+  ejesCamara: () => { adelante: Punto3; derecha: Punto3 };
   destruir: () => void;
 };
 
@@ -301,6 +322,10 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const sala = new THREE.Group();
   const ayudas = new THREE.Group();
   escena.add(sala, ayudas);
+  /** Lo dibujado de cada pieza de una escena, en su propio grupo (para elegirla y arrastrarla). */
+  let gruposPorNodo = new Map<string, THREE.Group>();
+  /** La caja de la pieza elegida tal como se armó (al arrastrar se corre desde aquí). */
+  let resaltado: { caja: THREE.Box3; ayuda: THREE.Box3Helper } | null = null;
 
   function liberar(objeto: THREE.Object3D) {
     objeto.traverse((hijo) => {
@@ -327,6 +352,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   function dibujarSala(datos: SalaEnEscena | undefined) {
     vaciar(sala);
     vaciar(ayudas);
+    resaltado = null;
     const conPiso = Boolean(datos?.mostrar.piso);
     piso.visible = !conPiso;
     cuadricula.visible = !datos;
@@ -348,13 +374,16 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   }
 
   function resaltar(caja: CajaEnEscena | null | undefined) {
+    resaltado = null;
     if (!caja) return;
     const margen = 3;
     const box = new THREE.Box3(
       new THREE.Vector3((caja.min.x - margen) * CM, (caja.min.y - margen) * CM, (caja.min.z - margen) * CM),
       new THREE.Vector3((caja.max.x + margen) * CM, (caja.max.y + margen) * CM, (caja.max.z + margen) * CM),
     );
-    ayudas.add(new THREE.Box3Helper(box, new THREE.Color(0x7c3aed)));
+    const ayuda = new THREE.Box3Helper(box.clone(), new THREE.Color(0x7c3aed));
+    ayudas.add(ayuda);
+    resaltado = { caja: box, ayuda };
   }
 
   function encuadrar() {
@@ -375,6 +404,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
 
   function mostrar(globos: readonly GloboEnEscena[]) {
     for (const hijo of [...contenido.children]) { contenido.remove(hijo); liberar(hijo); }
+    gruposPorNodo = new Map();
     dibujarSala(undefined);
     let x = 0;
     const objetos = globos.map((globo) => construir(globo));
@@ -398,6 +428,19 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     dibujarSala(extras.sala);
     resaltar(extras.resaltado);
     const modulo = new THREE.Group();
+    gruposPorNodo = new Map();
+    // Lo de cada pieza va en su grupo (marcado con su id); lo que no es de ninguna, directo al módulo.
+    const grupoDe = (nodo: string | undefined): THREE.Group => {
+      if (!nodo) return modulo;
+      let grupo = gruposPorNodo.get(nodo);
+      if (!grupo) {
+        grupo = new THREE.Group();
+        grupo.userData.nodo = nodo;
+        gruposPorNodo.set(nodo, grupo);
+        modulo.add(grupo);
+      }
+      return grupo;
+    };
     for (const [indice, globo] of globos.entries()) {
       const objeto = construir(globo);
       if (globo.confeti && globo.formato.tipo === "redondo") {
@@ -416,12 +459,12 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       }
       objeto.position.set(globo.nudo.x * CM, globo.nudo.y * CM, globo.nudo.z * CM);
       objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
-      modulo.add(objeto);
+      grupoDe(globo.nodo).add(objeto);
     }
     for (const tramo of tubos) {
       const objeto = tuboEnCurva(tramo, materialDe(tramo.familia, tramo.hex));
       objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
-      modulo.add(objeto);
+      grupoDe(tramo.nodo).add(objeto);
     }
     // Follaje (no es globo): flores artificiales mirando hacia fuera de su hueco.
     for (const [indice, flor] of (extras.flores ?? []).entries()) {
@@ -429,7 +472,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       objeto.quaternion.setFromUnitVectors(ARRIBA, new THREE.Vector3(flor.normal.x, flor.normal.y, flor.normal.z).normalize());
       objeto.position.set(flor.posicion.x * CM, flor.posicion.y * CM, flor.posicion.z * CM);
       objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
-      modulo.add(objeto);
+      grupoDe(flor.nodo).add(objeto);
     }
     // Volúmenes de la escena (el pedestal).
     for (const c of extras.cilindros ?? []) {
@@ -437,7 +480,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       cilindro.position.set(c.base.x * CM, (c.base.y + c.altoCm / 2) * CM, c.base.z * CM);
       cilindro.castShadow = true;
       cilindro.receiveShadow = true;
-      modulo.add(cilindro);
+      grupoDe(c.nodo).add(cilindro);
     }
     // Anclas: puntos donde se cuelga una decoración hija (una flor, un moño).
     const materialAncla = new THREE.MeshStandardMaterial({ color: 0x7c3aed, emissive: 0x7c3aed, emissiveIntensity: 0.6 });
@@ -464,6 +507,50 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     camara.updateProjectionMatrix();
   }
 
+  const rayo = new THREE.Raycaster();
+  function apuntar(clienteX: number, clienteY: number) {
+    const r = lienzo.getBoundingClientRect();
+    if (!r.width || !r.height) return false;
+    rayo.setFromCamera(new THREE.Vector2(((clienteX - r.left) / r.width) * 2 - 1, -((clienteY - r.top) / r.height) * 2 + 1), camara);
+    return true;
+  }
+
+  function piezaEn(clienteX: number, clienteY: number): { nodo: string; punto: Punto3 } | null {
+    if (!gruposPorNodo.size || !apuntar(clienteX, clienteY)) return null;
+    for (const toque of rayo.intersectObjects([...gruposPorNodo.values()], true)) {
+      // De lo tocado hacia arriba hasta el grupo de su pieza.
+      for (let o: THREE.Object3D | null = toque.object; o; o = o.parent) {
+        const nodo: unknown = o.userData.nodo;
+        if (typeof nodo === "string") return { nodo, punto: { x: toque.point.x / CM, y: toque.point.y / CM, z: toque.point.z / CM } };
+      }
+    }
+    return null;
+  }
+
+  function puntoEnPlano(clienteX: number, clienteY: number, punto: Punto3, normal: Punto3): Punto3 | null {
+    if (!apuntar(clienteX, clienteY)) return null;
+    const n = new THREE.Vector3(normal.x, normal.y, normal.z).normalize();
+    const plano = new THREE.Plane().setFromNormalAndCoplanarPoint(n, new THREE.Vector3(punto.x * CM, punto.y * CM, punto.z * CM));
+    // Casi de canto el corte se va lejísimos: mejor no mover.
+    if (Math.abs(rayo.ray.direction.dot(n)) < 0.05) return null;
+    const corte = rayo.ray.intersectPlane(plano, new THREE.Vector3());
+    return corte ? { x: corte.x / CM, y: corte.y / CM, z: corte.z / CM } : null;
+  }
+
+  function trasladarPiezas(nodos: readonly string[], delta: Punto3) {
+    const d = new THREE.Vector3(delta.x * CM, delta.y * CM, delta.z * CM);
+    for (const id of nodos) gruposPorNodo.get(id)?.position.copy(d);
+    if (resaltado) resaltado.ayuda.box.copy(resaltado.caja).translate(d);
+  }
+
+  function ejesCamara(): { adelante: Punto3; derecha: Punto3 } {
+    const f = camara.getWorldDirection(new THREE.Vector3());
+    f.y = 0;
+    if (f.lengthSq() < 1e-8) f.set(0, 0, -1);
+    f.normalize();
+    return { adelante: { x: f.x, y: 0, z: f.z }, derecha: { x: -f.z, y: 0, z: f.x } };
+  }
+
   let cuadro = 0;
   const animar = () => {
     cuadro = requestAnimationFrame(animar);
@@ -477,6 +564,11 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     mostrar,
     mostrarModulo,
     redimensionar,
+    piezaEn,
+    puntoEnPlano,
+    trasladarPiezas,
+    orbitar(activo: boolean) { controles.enabled = activo; },
+    ejesCamara,
     capturar() {
       // 1. Render cuadrado grande desde el mismo ángulo, con la decoración entera en cuadro y fondo transparente.
       const L = 2304;
