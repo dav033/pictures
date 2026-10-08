@@ -64,7 +64,12 @@ for (const p of DECORACIONES_PREDEFINIDAS) {
     assert.equal(f.hex, ref.hexGlobo, `${p.id}: ${f.codigo} con su hexGlobo`);
     assert.match(f.hex, /^#[0-9a-f]{6}$/i);
   }
-  for (let i = 1; i < mini.formas.length; i++) assert.ok(mini.formas[i]!.profundidad >= mini.formas[i - 1]!.profundidad, `${p.id}: de lo lejano a lo cercano`);
+  // De lo lejano a lo cercano; los cristales van al final (se ve a través de ellos lo que llevan dentro).
+  const cristal = (f: (typeof mini.formas)[number]) => (f.tipo === "globo" && f.cristal ? 1 : 0);
+  for (let i = 1; i < mini.formas.length; i++) {
+    const [a, b] = [mini.formas[i - 1]!, mini.formas[i]!];
+    assert.ok(cristal(b) > cristal(a) || (cristal(b) === cristal(a) && b.profundidad >= a.profundidad), `${p.id}: de lo lejano a lo cercano (cristales al final)`);
+  }
   const { x, y, ancho, alto } = mini.caja;
   assert.ok(ancho > 0 && cerca(ancho, alto, 0.02), `${p.id}: caja cuadrada`);
   for (const f of mini.formas) {
