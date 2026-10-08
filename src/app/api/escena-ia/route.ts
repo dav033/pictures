@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { conRegistro, decidir } from "@/lib/registro/servidor";
 import { DECLARACIONES_ESCENA, MAX_NODOS, TIPOS_PIEZA, aplicarHerramienta, idsDeEscena } from "@/lib/globos3d/herramientas-escena";
+import { seccionVocabularioEscena } from "@/lib/globos3d/prompt-escena";
 import type { Colocacion, Escena } from "@/lib/globos3d/escena";
 import type { Pieza } from "@/lib/globos3d/piezas";
 
@@ -65,6 +66,8 @@ QUÉ ES CADA COSA (no las confundas):
 EDICIÓN PRECISA DE LO ORGÁNICO (arco, columna, guirnalda, semiarco, aro, marco y trazo orgánicos, y los orgánicos de la biblioteca): «más R-24», «más globos grandes», «menos globos chicos», «quita los R-5», «un 40 % de R-18», «que tenga 6 R-24», «los R-24 solo abajo», «que los grandes sean azules», «más tupida», «más abultada» → ajustar_tamanos con el id. Grandes = R-24 (y R-36), medianos = R-18 y R-12, chicos = R-9 y R-5. NO uses cambiar_pieza con tamanos para eso (reemplaza toda la mezcla) y NUNCA contestes un pedido de tamaños cambiando solo colores. ver_escena dice cuántos globos hay de cada tamaño y color: míralo antes; ajustar_tamanos devuelve cuántos había y cuántos hay (antes → ahora): dile al usuario esos números, y si engrosó el cuerpo para que quepan, dilo. Si vuelve a pedir «más», vuelve a llamarla con mas.
 Decoraciones EN un punto de una estructura (la estructura es un lienzo): poner_sobre con padre_id + altura_cm desde el piso + lado (frente, izquierda, derecha, atras) o angulo_grados alrededor + x_cm a lo ancho (en un arco las patas están en ±ancho/2). Para llevar una que ya existe a otro punto: mover_sobre (si está repetida en varias anclas, indica copia). separar_copia saca UNA copia de un reparto. agregar_pieza con donde.en = "ancla" solo para repartir muchas iguales a lo largo de una pieza.
 Colores: código Sempertex o nombre («rosado pastel», «dorado»). Si una herramienta responde error, corrige con su sugerencia y reintenta una vez.
+
+${seccionVocabularioEscena()}
 
 REGLAS:
 - Es CRUD: «agrega X» suma con agregar_pieza; no quites ni rehagas lo que no se pidió. usar_preset solo si piden empezar de cero con una escena de partida.
