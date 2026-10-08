@@ -69,6 +69,19 @@ function DibujoTrazo({ colores }: { colores: readonly string[] }) {
   return <svg viewBox="0 0 56 42" width="44" height="33" aria-hidden>{puntos.map(([x, y, r], i) => <circle key={i} cx={x} cy={y} r={r} fill={hex(colores, i)} />)}</svg>;
 }
 
+/** Columna de forma libre: racimos que se corren a un lado y al otro al subir. */
+function DibujoTrazoColumna({ colores }: { colores: readonly string[] }) {
+  const puntos: Array<[number, number, number]> = [[20, 36, 5.5], [27, 35, 4], [14, 29, 5], [22, 26, 3], [30, 21, 5], [24, 17, 3.5], [16, 12, 4.5], [24, 7, 4], [30, 9, 3]];
+  return <svg viewBox="0 0 44 42" width="36" height="34" aria-hidden>{puntos.map(([x, y, r], i) => <circle key={i} cx={x} cy={y} r={r} fill={hex(colores, i)} />)}</svg>;
+}
+
+/** Columna orgánica de trazo: irregular (la silueta de una normal) o de forma libre (racimos apilados), de pie. */
+function columnaTrazo(silueta: "columna_recta" | "columna_racimos"): PiezaParaAnadir {
+  const recta = silueta === "columna_recta";
+  const pieza = piezaDeGenerador({ tipo: "trazo", trazo: { silueta, puntos: puntosDeSilueta(silueta, { anchoCm: recta ? 65 : 170, altoCm: 210, grosorCm: 65 }), mezcla: { ...MEZCLA_TRAZO }, colores: [{ codigo: "040", peso: 45 }, { codigo: "570", peso: 35 }, { codigo: "005", peso: 20 }], racimos: recta ? 0.3 : 0.8, semilla: recta ? 4 : 8 } });
+  return { pieza, nombre: recta ? "Columna irregular" : "Columna de forma libre", colocacion: PISO, idBase: recta ? "columna-irregular" : "columna-libre" };
+}
+
 /** Una guirnalda orgánica de trazo libre de partida: la esquina que cruza arriba y baja por la derecha, en la pared. */
 function guirnaldaLibre(): PiezaParaAnadir {
   const pieza = piezaDeGenerador({ tipo: "trazo", trazo: { silueta: "esquina_derecha", puntos: puntosDeSilueta("esquina_derecha", { anchoCm: 260, altoCm: 170, grosorCm: 60 }), mezcla: { ...MEZCLA_TRAZO }, colores: [{ codigo: "609", peso: 40 }, { codigo: "005", peso: 30 }, { codigo: "570", peso: 30 }], racimos: 0.4, semilla: 7 } });
@@ -136,6 +149,8 @@ const paredTrenzas = (): PiezaParaAnadir => ({ pieza: { tipo: "pared_trenzas", o
 export const NUEVAS_ESTRUCTURAS: readonly Nueva[] = [
   { id: "columna", nombre: "Columna", sub: "clásica", descripcion: "Trenza de cuartetos: patrón, alto, globo y colores.", crear: () => colocada(piezaNueva("columna"), "columna"), dibujo: () => <DibujoColumna colores={colores(piezaNueva("columna").pieza)} /> },
   { id: "columna_organica", nombre: "Columna", sub: "orgánica", descripcion: "Globos de varios tamaños con flores y pedestal (la azul de XV).", crear: columnaOrganica, dibujo: () => <DibujoOrganico colores={AJUSTES_QUINCE_AZUL.colores.map((c) => c.codigo)} /> },
+  { id: "columna_irregular", nombre: "Columna", sub: "irregular", descripcion: "La silueta de una columna normal pero orgánica: globos de varios tamaños, sin cuartetos.", crear: () => columnaTrazo("columna_recta"), dibujo: () => <DibujoOrganico colores={["040", "570", "005"]} /> },
+  { id: "columna_libre", nombre: "Columna", sub: "forma libre", descripcion: "Racimos apilados que se corren de lado (o en S, o inclinada): la columna de las fotos de graduación.", crear: () => columnaTrazo("columna_racimos"), dibujo: () => <DibujoTrazoColumna colores={["040", "570", "005"]} /> },
   { id: "arco", nombre: "Arco", sub: "clásico", descripcion: "Trenza de cuartetos de piso a piso: forma, ancho, alto y colores.", crear: () => colocada(piezaNueva("arco"), "arco"), dibujo: () => <DibujoArco colores={colores(piezaNueva("arco").pieza)} organico={false} /> },
   { id: "arco_organico", nombre: "Arco", sub: "orgánico", descripcion: "Globos de varios tamaños, grueso en las patas.", crear: () => colocada(piezaNueva("arco_organico"), "arco-organico"), dibujo: () => <DibujoArco colores={colores(piezaNueva("arco_organico").pieza)} organico /> },
   { id: "guirnalda", nombre: "Guirnalda", sub: "en festón", descripcion: "Trenza de cuartetos en festón o recta.", crear: () => colocada(piezaNueva("guirnalda"), "guirnalda"), dibujo: () => <DibujoGuirnalda colores={colores(piezaNueva("guirnalda").pieza)} /> },

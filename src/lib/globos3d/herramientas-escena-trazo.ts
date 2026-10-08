@@ -3,7 +3,7 @@ import type { Pieza } from "./piezas";
 import { FLORES_ARTIFICIALES, type OpcionesFlores, type TipoFlorArtificial } from "./flores-artificiales";
 import { fallar } from "./herramientas-escena-colores";
 import { escalarGenerador, piezaDeGenerador, type GeneradorOrganico } from "./generadores-organicos";
-import { INFLADOS_TRAZO, MEZCLA_TRAZO, SILUETAS_TRAZO, cajaTrazo, puntosDeSilueta, validarTrazo, type ParametrosTrazoOrganico, type PuntoTrazo, type SiluetaTrazo } from "./trazo-organico";
+import { INFLADOS_TRAZO, MEZCLA_TRAZO, SILUETAS_TRAZO, cajaTrazo, esColumnaTrazo, puntosDeSilueta, validarTrazo, type ParametrosTrazoOrganico, type PuntoTrazo, type SiluetaTrazo } from "./trazo-organico";
 
 /**
  * La IA de escena con el **trazo orgánico** (`trazo-organico.ts`): crearlo por silueta con nombre o por puntos (de una
@@ -43,11 +43,13 @@ export function crearTrazo(p: PedidoTrazo, colores: ColorOrganico[]): { pieza: P
   } else {
     const elegida = SILUETAS_TRAZO.find((s) => s.id === (p.silueta ?? "feston")) ?? fallar(`Silueta «${p.silueta}» desconocida: ${IDS_SILUETA.join(", ")}.`);
     silueta = elegida.id;
-    const ancho = enRango(p.ancho_cm ?? 260, RANGOS_TRAZO.ancho_cm, "ancho_cm");
-    const alto = enRango(p.alto_cm ?? (elegida.id === "feston" ? 90 : 190), RANGOS_TRAZO.alto_cm, "alto_cm");
-    const grosor = enRango(p.grosor_cm ?? 60, RANGOS_TRAZO.grosor_cm, "grosor_cm");
+    const columna = esColumnaTrazo(elegida.id);
+    const grosor = enRango(p.grosor_cm ?? (columna ? 65 : 60), RANGOS_TRAZO.grosor_cm, "grosor_cm");
+    // La columna recta mide de ancho su grosor; las de forma libre, lo que se corren de lado.
+    const ancho = elegida.id === "columna_recta" ? grosor : enRango(p.ancho_cm ?? (columna ? Math.round(grosor * 2.6) : 260), [columna ? grosor : RANGOS_TRAZO.ancho_cm[0], RANGOS_TRAZO.ancho_cm[1]], "ancho_cm");
+    const alto = enRango(p.alto_cm ?? (elegida.id === "feston" ? 90 : columna ? 200 : 190), RANGOS_TRAZO.alto_cm, "alto_cm");
     puntos = puntosDeSilueta(elegida.id, { anchoCm: ancho, altoCm: Math.max(alto, grosor + 10), grosorCm: grosor });
-    nombre = `Guirnalda orgánica · ${elegida.nombre.toLowerCase()}`;
+    nombre = columna ? (elegida.id === "columna_recta" ? "Columna orgánica irregular" : `Columna orgánica · ${elegida.nombre.toLowerCase()}`) : `Guirnalda orgánica · ${elegida.nombre.toLowerCase()}`;
   }
   const racimos = p.racimos === undefined ? undefined : Math.min(1, Math.max(0, p.racimos));
   const trazo: ParametrosTrazoOrganico = { ...(silueta ? { silueta } : {}), puntos, mezcla: mezclaDe(p.tamanos), colores, ...(racimos !== undefined ? { racimos } : {}), semilla: semillaDe(...puntos.flatMap((q) => [q.x, q.y])) };

@@ -17,10 +17,13 @@ import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { ACTIVO, BOTON, Deslizador, INACTIVO, SelectorColor } from "./PanelFlor";
 import { EditorArcoOrganico, EditorPieza } from "./PanelEscena";
 import { PanelPared, PARED_INICIAL, type OpcionesPared } from "./PanelPared";
-import { AJUSTES_QUINCE_AZUL, PanelOrganico, ajustesDeOpciones, aplicarAjustes, opcionesDeAjustes, type AjustesOrganico } from "./PanelOrganico";
+import { AJUSTES_QUINCE_AZUL, PanelOrganico, ajustesDeOpciones, aplicarAjustes, opcionesDeAjustes } from "./PanelOrganico";
 import { EditorDecoracionCompleto, PanelDecoracion, nombreDecoracion } from "./PanelDecoracion";
 import { CHIP, CHIP_ON, centimetros, metros } from "./ui-taller";
 import { EditorTrazo } from "./EditorTrazo";
+import { piezaDeGenerador } from "@/lib/globos3d/generadores-organicos";
+import { MEZCLA_TRAZO, esColumnaTrazo, puntosDeSilueta } from "@/lib/globos3d/trazo-organico";
+import type { ColorOrganico } from "@/lib/globos3d/organico";
 
 /** Lo que el editor solitario muestra además de la pieza (las anclas de la raíz, todos los globos lado a lado). */
 export type VistaSolitario = { verAnclas: boolean; todosLosGlobos: boolean };
@@ -110,14 +113,41 @@ const FORMATOS_TRENZA = ["R-5", "R-9", "R-12", "R-18"] as const;
 const FORMATOS_MODULO = ["R-5", "R-9", "R-12", "R-18", "R-24", "LOL-6", "LOL-12"] as const;
 const PATRONES = PATRONES_COLUMNA.map((p) => ({ id: p.id, nombre: p.nombre, titulo: p.descripcion }));
 
-/** Conversión clásica ↔ orgánica (columna y arco), con el alto, el ancho y los colores que ya tiene. */
-function aOrganica(p: Extract<Pieza, { tipo: "columna" }>): Pieza {
-  const ajustes: AjustesOrganico = { ...AJUSTES_QUINCE_AZUL, altoCm: Math.max(150, Math.min(280, p.alturaCm)), colores: p.colores.map((codigo, i) => ({ codigo, peso: Math.max(5, 40 - i * 10) })) };
-  return { tipo: "organico", opciones: opcionesDeAjustes(ajustes), flores: null };
+/**
+ * Los cuatro tipos de columna y la conversión entre ellos con el alto y los colores que ya tiene: clásica (cuartetos),
+ * orgánica (la de XV, con flores), irregular (la silueta de una normal, empacada orgánica) y de forma libre (racimos
+ * apilados que se corren de lado; en su editor también en S o inclinada).
+ */
+type TipoColumna = "clasica" | "organica" | "irregular" | "libre";
+const TIPOS_COLUMNA: ReadonlyArray<{ id: TipoColumna; nombre: string; titulo: string }> = [
+  { id: "clasica", nombre: "Clásica · cuartetos", titulo: "Trenza de cuartetos, lisa" },
+  { id: "organica", nombre: "Orgánica · con flores", titulo: "La columna orgánica de XV, gruesa abajo, con flores" },
+  { id: "irregular", nombre: "Irregular", titulo: "La silueta de una columna normal (recta) pero orgánica, con globos de varios tamaños" },
+  { id: "libre", nombre: "Forma libre", titulo: "Racimos apilados que se corren de lado (o en S, o inclinada)" },
+];
+
+function tipoColumnaDe(p: Pieza): TipoColumna {
+  if (p.tipo === "columna") return "clasica";
+  if (p.tipo === "organico" && p.generador?.trazo.silueta === "columna_recta") return "irregular";
+  if (p.tipo === "organico" && esColumnaTrazo(p.generador?.trazo.silueta)) return "libre";
+  return "organica";
 }
-function aClasica(p: Extract<Pieza, { tipo: "organico" }>): Pieza {
-  const a = ajustesDeOpciones(p.opciones, p.flores !== null);
-  return columnaClasica(Math.max(60, Math.min(300, a.altoCm)), a.colores.slice(0, 4).map((c) => c.codigo));
+
+function columnaDeTipo(p: Pieza, tipo: TipoColumna): Pieza {
+  const { min, max } = armarPieza(p).caja;
+  const alto = Math.round(max.y - min.y);
+  const codigos = p.tipo === "columna" ? p.colores : p.tipo === "organico" ? p.opciones.colores.map((c) => c.codigo) : ["009", "005"];
+  const colores: ColorOrganico[] = p.tipo === "organico" ? p.opciones.colores.map((c) => ({ ...c })) : [...new Set(codigos)].map((codigo, i) => ({ codigo, peso: Math.max(5, 40 - i * 10) }));
+  switch (tipo) {
+    case "clasica": return columnaClasica(Math.max(60, Math.min(300, alto)), [...new Set(codigos)].slice(0, 4));
+    case "organica": return { tipo: "organico", opciones: opcionesDeAjustes({ ...AJUSTES_QUINCE_AZUL, altoCm: Math.max(150, Math.min(280, alto)), colores }), flores: null };
+    case "irregular":
+    case "libre": {
+      const silueta = tipo === "irregular" ? "columna_recta" : "columna_racimos";
+      const grosor = 65;
+      return piezaDeGenerador({ tipo: "trazo", trazo: { silueta, puntos: puntosDeSilueta(silueta, { anchoCm: tipo === "irregular" ? grosor : 170, altoCm: Math.max(80, Math.min(320, alto)), grosorCm: grosor }), mezcla: { ...MEZCLA_TRAZO }, colores, racimos: tipo === "irregular" ? 0.3 : 0.7, semilla: 5 } });
+    }
+  }
 }
 
 /** Pone una mezcla de decoraciones sobre la pared (cada una apoyada en sus globos, como pieza aparte de la escena). */
@@ -329,13 +359,13 @@ function EditorParedCompleto({ pieza, escena, raizId, onPieza, onEscena, vista, 
  */
 export function ParametrosPieza({ escena, raizId, nodo, onPieza, onEscena, vista, onVista }: Props): ReactNode {
   const p = nodo.pieza;
-  const tipoColumna = (p.tipo === "columna" || (p.tipo === "organico" && ajustesDeOpciones(p.opciones, false).esColumna)) && nodo.id === raizId;
+  const trazoColumna = p.tipo === "organico" && esColumnaTrazo(p.generador?.trazo.silueta);
+  const tipoColumna = (p.tipo === "columna" || trazoColumna || (p.tipo === "organico" && !p.generador && ajustesDeOpciones(p.opciones, false).esColumna)) && nodo.id === raizId;
   const tipoArco = (p.tipo === "arco" || p.tipo === "arco_organico") && nodo.id === raizId;
   const cabecera = (
     <section className="flex flex-col gap-2.5">
       {tipoColumna && (
-        <Chips etiqueta="Tipo de columna" columnas={2} opciones={[{ id: "clasica", nombre: "Clásica · cuartetos" }, { id: "organica", nombre: "Orgánica" }]} valor={p.tipo === "columna" ? "clasica" : "organica"}
-          onCambio={(t) => { if (t === "organica" && p.tipo === "columna") onPieza(aOrganica(p)); if (t === "clasica" && p.tipo === "organico") onPieza(aClasica(p)); }} />
+        <Chips etiqueta="Tipo de columna" columnas={2} opciones={TIPOS_COLUMNA} valor={tipoColumnaDe(p)} onCambio={(t) => { if (t !== tipoColumnaDe(p)) onPieza(columnaDeTipo(p, t)); }} />
       )}
       {tipoArco && (
         <Chips etiqueta="Tipo de arco" columnas={2} opciones={[{ id: "clasico", nombre: "Clásico · cuartetos" }, { id: "organico", nombre: "Orgánico" }]} valor={p.tipo === "arco" ? "clasico" : "organico"}

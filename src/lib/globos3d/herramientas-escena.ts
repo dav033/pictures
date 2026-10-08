@@ -117,7 +117,7 @@ const QUE_ES_TIPO: Readonly<Record<TipoNuevo, string>> = {
   semiarco_organico: "semiarco orgánico (sube del piso y se curva hacia un lado)",
   aro_organico: "aro orgánico (círculo de globos, ancho_cm = diámetro)",
   marco_organico: "marco orgánico rectangular (arco cuadrado de patas rectas)",
-  trazo_organico: "guirnalda ORGÁNICA de silueta libre en la pared (la de Pinterest): por «silueta» (feston, arco_pared, esquina_derecha, esquina_izquierda, semiarco_izquierdo, semiarco_derecho, arco_asimetrico, diagonal) con ancho_cm, alto_cm y grosor_cm, o por «puntos» exactos; más gruesa donde carga",
+  trazo_organico: "guirnalda ORGÁNICA de silueta libre en la pared (la de Pinterest): por «silueta» (feston, arco_pared, esquina_derecha, esquina_izquierda, semiarco_izquierdo, semiarco_derecho, arco_asimetrico, diagonal) con ancho_cm, alto_cm y grosor_cm, o por «puntos» exactos; más gruesa donde carga. TAMBIÉN las columnas orgánicas por tipo: «columna irregular» = silueta columna_recta (la silueta de una columna normal, empacada orgánica); «columna de forma libre / rara» = columna_racimos (racimos apilados que se corren a los lados), columna_s (en S) o columna_inclinada; van de pie en el piso",
   pared_trenzas: "pared de trenzas de cuartetos",
   forma: "forma de globos: figura corazon/estrella/circulo/aro/ancla/cruz/nube/castillo rellena (tecnica celdas, malla u organico), o esfera, o cono",
   letras: "letras o números de globos (texto; tecnica cuartetos, hilera o tubito)",

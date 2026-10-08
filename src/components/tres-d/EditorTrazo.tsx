@@ -7,7 +7,7 @@ import type { ColorOrganico } from "@/lib/globos3d/organico";
 import { coloresDelFormato } from "@/lib/globos3d/formatos";
 import { FLORES_ARTIFICIALES, type OpcionesFlores, type TipoFlorArtificial } from "@/lib/globos3d/flores-artificiales";
 import { piezaDeGenerador } from "@/lib/globos3d/generadores-organicos";
-import { SILUETAS_TRAZO, cajaTrazo, escalarTrazo, puntosDeSilueta, type ParametrosTrazoOrganico } from "@/lib/globos3d/trazo-organico";
+import { SILUETAS_TRAZO, cajaTrazo, esColumnaTrazo, escalarTrazo, puntosDeSilueta, type ParametrosTrazoOrganico } from "@/lib/globos3d/trazo-organico";
 import { Deslizador, SelectorColor } from "./PanelFlor";
 import { CHIP, CHIP_ON, metros } from "./ui-taller";
 
@@ -26,6 +26,8 @@ export function EditorTrazo({ pieza, trazo, onPieza }: Props) {
   const caja = useMemo(() => cajaTrazo(trazo), [trazo]);
   const grosor = useMemo(() => Math.max(...trazo.puntos.map((q) => q.grosor)), [trazo]);
   const silueta = trazo.silueta ?? null;
+  // Una columna cambia entre siluetas de columna; una guirnalda, entre las de guirnalda.
+  const grupo = esColumnaTrazo(trazo.silueta) ? "columna" : "guirnalda";
   const huecos = pieza.flores ? pieza.opciones.huecosFlores : 0;
   const pon = (t: ParametrosTrazoOrganico, agrupar?: string, flores: OpcionesFlores | null = pieza.flores, n = huecos || 10) => onPieza(piezaDeGenerador({ tipo: "trazo", trazo: t }, flores, n), agrupar);
   const ponColor = (i: number, cambio: Partial<ColorOrganico>) => pon({ ...trazo, colores: trazo.colores.map((c, j) => (j === i ? { ...c, ...cambio } : c)) });
@@ -40,7 +42,7 @@ export function EditorTrazo({ pieza, trazo, onPieza }: Props) {
       <section className="flex flex-col gap-2.5" aria-label="Silueta">
         <h3 className="taller-rotulo">Silueta</h3>
         <div role="radiogroup" aria-label="Silueta" className="grid grid-cols-2 gap-1.5">
-          {SILUETAS_TRAZO.map((s) => (
+          {SILUETAS_TRAZO.filter((s) => s.grupo === grupo).map((s) => (
             <button key={s.id} type="button" role="radio" aria-checked={s.id === silueta} title={s.descripcion}
               onClick={() => pon({ ...trazo, silueta: s.id, puntos: puntosDeSilueta(s.id, { anchoCm: caja.anchoCm, altoCm: Math.max(caja.altoCm, grosor + 10), grosorCm: grosor }) })}
               className={`${CHIP} ${s.id === silueta ? CHIP_ON : ""} min-w-0 truncate px-2`}>{s.nombre}</button>

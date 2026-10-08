@@ -334,4 +334,15 @@ prueba("trazo orgánico: por silueta en la pared a su altura, por puntos desde e
   armaBien(verde.escena);
 });
 
+prueba("columnas orgánicas por tipo: «irregular» es recta y de pie; «de forma libre» se corre de lado", () => {
+  const irregular = ok(aplicarHerramienta(vacia, "agregar_pieza", { tipo: "trazo_organico", silueta: "columna_recta", alto_cm: 220, colores: ["dorado", "blanco"] })).escena.nodos[0]!;
+  assert.equal(irregular.colocacion.en, "piso");
+  assert.ok(Math.abs(alto(irregular.pieza) - 220) < 30, `alto ${alto(irregular.pieza)}`);
+  assert.ok(ancho(irregular.pieza) < 100, `recta: ancho ${ancho(irregular.pieza)}`);
+  assert.equal(irregular.nombre, "Columna orgánica irregular");
+  const libre = ok(aplicarHerramienta(vacia, "agregar_pieza", { tipo: "trazo_organico", silueta: "columna_racimos", alto_cm: 200, colores: ["azul pastel", "dorado"] })).escena.nodos[0]!;
+  assert.equal(libre.colocacion.en, "piso");
+  assert.ok(ancho(libre.pieza) > 110, `forma libre: ancho ${ancho(libre.pieza)}`);
+});
+
 console.log(`\n${pruebas} pruebas OK`);

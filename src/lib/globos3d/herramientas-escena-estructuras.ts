@@ -1,4 +1,5 @@
 import { ajustarTrazo, crearTrazo, type PuntoPedido } from "./herramientas-escena-trazo";
+import { esColumnaTrazo } from "./trazo-organico";
 import { armarPieza, type Pieza, type TipoPieza } from "./piezas";
 import { formatoPorId } from "./formatos";
 import {
@@ -437,7 +438,7 @@ export function crearEstructura(tipo: TipoEstructura, p: PedidoEstructura, notas
     case "trazo_organico": {
       const pedidos = pedidosCon(p);
       const { pieza, nombre } = crearTrazo(p, coloresOrganicosPedidos(pedidos ?? [...PALETA_ORGANICA], pedidos ? p.pesos : [45, 25, 15, 15], notas));
-      return { pieza, nombre, lugar: "pared" };
+      return { pieza, nombre, lugar: pieza.tipo === "organico" && esColumnaTrazo(pieza.generador?.trazo.silueta) ? "piso" : "pared" };
     }
     case "pared_trenzas": return crearParedTrenzas(p, notas);
     case "forma": return crearForma(p, notas);

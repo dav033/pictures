@@ -9,7 +9,7 @@
  * Run: npx tsx scripts/test/test-trazo-organico.ts
  */
 import assert from "node:assert/strict";
-import { DESDE_EL_PISO, SILUETAS_TRAZO, MEZCLA_TRAZO, cajaTrazo, puntosDeSilueta, validarTrazo, type ParametrosTrazoOrganico } from "@/lib/globos3d/trazo-organico";
+import { DESDE_EL_PISO, SILUETAS_TRAZO, MEZCLA_TRAZO, esColumnaTrazo, cajaTrazo, puntosDeSilueta, validarTrazo, type ParametrosTrazoOrganico } from "@/lib/globos3d/trazo-organico";
 import { conGenerador, escalarGenerador, piezaDeGenerador } from "@/lib/globos3d/generadores-organicos";
 import { armarOrganico, APLASTAMIENTO_MAXIMO } from "@/lib/globos3d/organico";
 import { armarPieza } from "@/lib/globos3d/piezas";
@@ -21,7 +21,7 @@ const colores = [{ codigo: "009", peso: 40 }, { codigo: "570", peso: 35 }, { cod
 const trazo = (silueta: (typeof SILUETAS_TRAZO)[number]["id"], anchoCm = 260, altoCm = 180, grosorCm = 50): ParametrosTrazoOrganico =>
   ({ puntos: puntosDeSilueta(silueta, { anchoCm, altoCm, grosorCm }), mezcla: { ...MEZCLA_TRAZO, "R-24": 0.06 }, colores, racimos: 0.4, semilla: 11 });
 
-for (const { id } of SILUETAS_TRAZO) {
+for (const { id } of SILUETAS_TRAZO.filter((x) => x.grupo === "guirnalda")) {
   const t = trazo(id);
   const pieza = piezaDeGenerador({ tipo: "trazo", trazo: t });
   const r = armarOrganico(pieza.opciones);
@@ -39,6 +39,19 @@ for (const { id } of SILUETAS_TRAZO) {
   const tapas = pieza.opciones.tramos[0]!.tapas!;
   if (id === "feston") assert.deepEqual(tapas, { inicio: true, fin: true });
   if (id === "semiarco_izquierdo") assert.deepEqual(tapas, { inicio: false, fin: true });
+}
+
+// Columnas: la irregular es la silueta de una normal (recta, de su grosor); las de forma libre se corren de lado.
+for (const { id } of SILUETAS_TRAZO.filter((x) => x.grupo === "columna")) {
+  const ancho = id === "columna_recta" ? 60 : 130;
+  const pieza = piezaDeGenerador({ tipo: "trazo", trazo: { silueta: id, puntos: puntosDeSilueta(id, { anchoCm: ancho, altoCm: 220, grosorCm: 60 }), mezcla: MEZCLA_TRAZO, colores, semilla: 3 } });
+  const caja = armarPieza(pieza).caja;
+  assert.ok(caja.min.y < 8, `${id}: nace del piso (${caja.min.y.toFixed(1)})`);
+  assert.ok(Math.abs(caja.max.y - caja.min.y - 220) < 35, `${id}: alto ${(caja.max.y - caja.min.y).toFixed(0)}`);
+  const anchoArmado = caja.max.x - caja.min.x;
+  if (id === "columna_recta") assert.ok(anchoArmado < 95, `recta: ancho ${anchoArmado.toFixed(0)}`);
+  else assert.ok(anchoArmado > 105, `${id}: se corre de lado (${anchoArmado.toFixed(0)})`);
+  assert.ok(esColumnaTrazo(id) && !esColumnaTrazo("feston"));
 }
 
 // El grosor manda: en una punta de 22 cm no cabe un R-24; donde carga hay más globos.
