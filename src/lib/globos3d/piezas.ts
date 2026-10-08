@@ -139,6 +139,9 @@ function conCaja(p: Omit<PiezaArmada, "caja">): PiezaArmada {
   return { ...p, caja: cajaDe(p.globos, p.tubos, p.solidos) };
 }
 
+/** La parte de un globo orgánico: su tramo («columna», «trazo», «espiral», «pata_izquierda»…), en minúsculas y con «/» por «_». */
+const parteOrganica = (tramo: string) => tramo.toLowerCase().replace(/_/g, "/");
+
 export function armarPieza(pieza: Pieza): PiezaArmada {
   const armada = armarPiezaBase(pieza);
   if (!pieza.impresos?.length) return armada;
@@ -155,7 +158,7 @@ function armarPiezaBase(pieza: PiezaBase): PiezaArmada {
       const armada = pieza.tipo === "columna"
         ? armarColumna({ formato, infladoCm: pieza.infladoCm, alturaCm: pieza.alturaCm, patron: pieza.patron, colores: pieza.colores })
         : armarArco({ formato, infladoCm: pieza.infladoCm, forma: pieza.forma, anchoCm: pieza.anchoCm, altoCm: pieza.altoCm, patron: pieza.patron, colores: pieza.colores });
-      const globos: GloboDePieza[] = armada.globos.map((g) => ({ formatoId: formato.id, infladoCm: pieza.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
+      const globos: GloboDePieza[] = armada.globos.map((g) => ({ formatoId: formato.id, infladoCm: pieza.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.parte ? { parte: g.parte } : {}) }));
       return conCaja({ globos, tubos: [], flores: [], anclas: armada.anclas.map((a) => ({ posicion: a.posicion, normal: a.normal })), materiales: materialesPorFormato(globos) });
     }
     case "pared_malla": {
@@ -163,18 +166,18 @@ function armarPiezaBase(pieza: PiezaBase): PiezaArmada {
       const r5 = formatoPorId("R-5");
       if (!formato || !r5) throw new Error(`Formato desconocido: ${pieza.formatoId}`);
       const armada = armarPared({ formato, infladoCm: pieza.infladoCm, anchoCm: pieza.anchoCm, altoCm: pieza.altoCm, patron: pieza.patron, colores: pieza.colores, union: { formato: r5, infladoCm: pieza.union.infladoCm, codigo: pieza.union.codigo } });
-      const globos: GloboDePieza[] = armada.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
+      const globos: GloboDePieza[] = armada.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.parte ? { parte: g.parte } : {}) }));
       return conCaja({ globos, tubos: [], flores: [], anclas: armada.anclas.map((a) => ({ posicion: a.posicion, normal: a.normal })), materiales: armada.materiales });
     }
     case "pared_trenzas": {
       const armada = armarParedTrenzas(pieza.opciones);
-      const globos: GloboDePieza[] = armada.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
+      const globos: GloboDePieza[] = armada.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.parte ? { parte: g.parte } : {}) }));
       return conCaja({ globos, tubos: [], flores: [], anclas: armada.anclas.map((a) => ({ posicion: a.posicion, normal: a.normal })), materiales: armada.materiales });
     }
     case "organico": {
       const resultado = armarOrganico(pieza.opciones);
       const flores = pieza.flores ? repartirFlores(resultado.anclas, pieza.flores) : null;
-      const globos: GloboDePieza[] = resultado.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.confeti ? { confeti: true } : {}) }));
+      const globos: GloboDePieza[] = resultado.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.confeti ? { confeti: true } : {}), parte: parteOrganica(g.tramo) }));
       return conCaja({
         globos, tubos: [],
         flores: flores ? flores.racimos.flatMap((r) => r.flores.map((f) => ({ tipo: f.tipo, hex: f.hex, diametroCm: f.diametroCm, posicion: f.posicion, normal: f.normal }))) : [],
@@ -205,7 +208,7 @@ function armarPiezaBase(pieza: PiezaBase): PiezaArmada {
       const datos = moduloPorId(pieza.modulo);
       if (!formato || !datos) throw new Error(`Módulo desconocido: ${pieza.modulo} de ${pieza.formatoId}`);
       const armado = armarModulo(datos, formato, pieza.infladoCm);
-      const sueltos: GloboDePieza[] = armado.globos.map((g) => ({ formatoId: formato.id, infladoCm: pieza.infladoCm, codigo: pieza.colores[g.indice] ?? pieza.colores[0] ?? "005", nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm }));
+      const sueltos: GloboDePieza[] = armado.globos.map((g) => ({ formatoId: formato.id, infladoCm: pieza.infladoCm, codigo: pieza.colores[g.indice] ?? pieza.colores[0] ?? "005", nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.parte ? { parte: g.parte } : {}) }));
       // Apoyado en el piso (y = 0), como lo mostraba la pestaña Módulos.
       const dy = -cajaDe(sueltos, []).min.y;
       const subir = (p: Vec3): Vec3 => ({ x: p.x, y: p.y + dy, z: p.z });

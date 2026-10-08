@@ -38,7 +38,13 @@ export type PropiedadesFlor = {
  * Un globo de una decoración. `frente` solo lo usan los globos planos (el corazón): hacia dónde mira su cara;
  * sin él, el visor deja el giro del globo sobre su eje como le salga (un redondo es igual por todos lados).
  */
-export type GloboDecoracion = { formatoId: string; infladoCm: number; codigo: string; nudo: Vec3; direccion: Vec3; cuelloExtraCm: number; frente?: Vec3; estampado?: EstampadoGlobo };
+/**
+ * `parte`: de qué parte de su pieza es el globo (o el tubito), con nombre de oficio en minúsculas y sin tildes, del
+ * más general al más fino separado por «/» («petalos», «corona», «centro», «copa/frutas», «tronco», «ramas»,
+ * «estructura», «relleno», «flecos»…). Con el formato y el color, es lo que deja a la IA apuntar a «los Link-O-Loon de
+ * las ramas» o «los R-24» sin tocar lo demás (ver `partes-globos.ts`). Toda pieza nueva debe ponerla.
+ */
+export type GloboDecoracion = { formatoId: string; infladoCm: number; codigo: string; nudo: Vec3; direccion: Vec3; cuelloExtraCm: number; frente?: Vec3; estampado?: EstampadoGlobo; parte?: string };
 
 /** Una mancha impresa: un polígono de color, en cm medidos sobre la superficie del globo (u a la derecha, v arriba). */
 export type CapaEstampado = { hex: string; puntos: Array<[number, number]> };
@@ -59,7 +65,7 @@ export type EstampadoGlobo = { en: "cara" | "punta"; capas: CapaEstampado[]; imp
  * Con `papel` no es globo sino escenografía (fantasma, telaraña, cintas): se pinta mate en ese color, no cuenta en
  * los materiales y, si es cerrado y `relleno`, se pinta la figura entera.
  */
-export type TuboDecoracion = { formatoId: string; grosorCm: number; codigo: string; puntos: Vec3[]; cerrado: boolean; papel?: { hex: string; relleno?: boolean } };
+export type TuboDecoracion = { formatoId: string; grosorCm: number; codigo: string; puntos: Vec3[]; cerrado: boolean; papel?: { hex: string; relleno?: boolean }; /** Ver `GloboDecoracion.parte`. */ parte?: string };
 
 export type FlorArmada = { globos: GloboDecoracion[]; diametroCm: number; altoCm: number };
 

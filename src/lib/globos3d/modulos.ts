@@ -32,7 +32,8 @@ export const MODULOS: readonly Modulo[] = [
 export type Vec3 = { x: number; y: number; z: number };
 
 /** Un globo colocado: dónde queda su nudo, hacia dónde apunta (nudo → cuerpo) y cuánto se estira su cuello, en cm. */
-export type GloboColocado = { indice: number; nudo: Vec3; direccion: Vec3; cuelloExtraCm: number };
+/** `parte`: ver `GloboDecoracion.parte` (decoraciones.ts). */
+export type GloboColocado = { indice: number; nudo: Vec3; direccion: Vec3; cuelloExtraCm: number; parte?: string };
 
 /** Un punto donde se puede colgar una decoración hija (una flor, un moño): por ahora el centro y los huecos. */
 export type Ancla = { tipo: "centro" | "hueco"; posicion: Vec3; normal: Vec3 };
