@@ -1,5 +1,6 @@
 import { TABLA_SEMPERTEX, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
 import { coloresDelFormato, formatoPorId, infladoValido } from "./formatos";
+import { colorDeRescate, sustitutoDeFamilia } from "./colores-formato";
 import { centroCuerpo } from "./geometria";
 import type { GloboColocado, Vec3 } from "./modulos";
 
@@ -37,7 +38,8 @@ import type { GloboColocado, Vec3 } from "./modulos";
  *    cuentan el piso, el pedestal y el tubo del armazón (`RADIO_ARMAZON_CM`).
  * 6. **Color.** Por proporción (cuotas exactas sobre el total) y sin dos globos del mismo color pegados cuando se
  *    puede. Cada color debe fabricarse en el formato del globo: si no, se usa el más parecido de su misma familia
- *    en ese formato (y se avisa); si la familia no lo tiene, ese color no se usa en ese globo.
+ *    en ese formato (y se avisa); si la familia no lo tiene parecido, ese color no se usa en ese globo. Si ningún
+ *    color de la paleta viene en un formato, el más parecido que se fabrique en él (y se avisa), nunca el blanco.
  *
  * Los globos apuntan hacia fuera del eje: el nudo queda hacia dentro, oculto, y el cuerpo hacia fuera.
  *
@@ -451,12 +453,6 @@ function etiquetaDensidad(porPie: number): string {
 }
 
 const M_A_PIES = 3.28084;
-
-function distanciaHex(a: string, b: string): number {
-  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const [r1, g1, b1] = rgb(a), [r2, g2, b2] = rgb(b);
-  return Math.hypot((r1 ?? 0) - (r2 ?? 0), (g1 ?? 0) - (g2 ?? 0), (b1 ?? 0) - (b2 ?? 0));
-}
 
 /**
  * Lo que arma el empaque (pasos 1 a 5): dónde va cada globo, los huecos para flores y lo que se avisó. No depende de
@@ -1247,15 +1243,15 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
     const disponibles = coloresDelFormato(formatoId);
     if (disponibles.some((r) => r.codigo === e.codigo)) return e.codigo;
     const propia = referencias.get(e.codigo)!;
-    const familia = disponibles.filter((r) => r.familia === propia.familia).sort((a, b) => distanciaHex(a.hexGlobo, propia.hexGlobo) - distanciaHex(b.hexGlobo, propia.hexGlobo));
+    const sustituto = sustitutoDeFamilia(propia, formatoId);
     const clave = `${e.codigo}|${formatoId}`;
     if (!avisoSustitucion.has(clave)) {
       avisoSustitucion.add(clave);
-      avisos.push(familia[0]
-        ? `${propia.nombreCompleto} (${e.codigo}) no se fabrica en ${formatoId}: se usa ${familia[0].nombreCompleto} (${familia[0].codigo}).`
-        : `${propia.nombreCompleto} (${e.codigo}) no se fabrica en ${formatoId} y su familia tampoco tiene parecido: en ese formato no se usa.`);
+      avisos.push(sustituto
+        ? `${propia.nombreCompleto} (${e.codigo}) no se fabrica en ${formatoId}: se usa ${sustituto.nombreCompleto} (${sustituto.codigo}).`
+        : `${propia.nombreCompleto} (${e.codigo}) no se fabrica en ${formatoId} y su familia no tiene uno parecido: en ese formato no se usa.`);
     }
-    return familia[0]?.codigo ?? null;
+    return sustituto?.codigo ?? null;
   };
   const vecinos: number[][] = globos.map(() => []);
   for (let i = 0; i < globos.length; i++) {
@@ -1265,7 +1261,7 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
     }
   }
   const entrada: Array<number | null> = globos.map(() => null);
-  const codigos: Array<string | null> = globos.map(() => null);
+  const codigos: Array<string | null> = globos.map(() => null), rescate = new Map<number, string>();
   const pegadoIgual = (i: number, k: number) => vecinos[i]!.some((j) => entrada[j] === k);
   const conFranjas = paleta.some((e) => e.franjas?.length);
   /** Fracción del recorrido de su tramo en que cae cada globo (solo hace falta si algún color va por franjas). */
@@ -1300,11 +1296,13 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
     const elegibles = new Map(entradas.map((k) => [k, indices.filter((i) => codigoEn(paleta[k]!, globos[i]!.formatoId) !== null)]));
     const orden = [...entradas].sort((a, b) => elegibles.get(a)!.length - elegibles.get(b)!.length || a - b);
     orden.forEach((k, posicion) => {
-      const lista = elegibles.get(k)!.filter((i) => entrada[i] === null);
+      let lista = elegibles.get(k)!.filter((i) => entrada[i] === null);
       for (let i = lista.length - 1; i > 0; i--) {
         const j = Math.floor(azar() * (i + 1));
         [lista[i], lista[j]] = [lista[j]!, lista[i]!];
       }
+      const exacto = (i: number) => coloresDelFormato(globos[i]!.formatoId).some((r) => r.codigo === paleta[k]!.codigo);
+      lista = [...lista.filter(exacto), ...lista.filter((i) => !exacto(i))];
       const ultimo = posicion === orden.length - 1;
       let restante = ultimo ? lista.length : cuotas.get(k)!;
       for (const pasada of [0, 1]) {
@@ -1322,7 +1320,9 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
     if (entrada[i] !== null) return;
     const posibles = paleta.map((e, k) => ({ k, ok: vaEnGlobo(e, i) && codigoEn(e, g.formatoId) !== null })).filter((x) => x.ok).map((x) => x.k);
     if (posibles.length === 0) {
-      avisos.push(`Ningún color de la paleta se fabrica en ${g.formatoId}: se usa Fashion Blanco (005).`);
+      const { ref, aviso } = colorDeRescate(paleta.filter((e) => vaEnGlobo(e, i)), referencias, g.formatoId);
+      if (ref) rescate.set(i, ref.codigo);
+      if (!avisoSustitucion.has(aviso)) { avisoSustitucion.add(aviso); avisos.push(aviso); }
       return;
     }
     posibles.sort((a, b) => vecinos[i]!.filter((j) => entrada[j] === a).length - vecinos[i]!.filter((j) => entrada[j] === b).length || a - b);
@@ -1330,7 +1330,7 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
   });
   globos.forEach((g, i) => {
     const k = entrada[i];
-    codigos[i] = k === null || k === undefined ? "005" : codigoEn(paleta[k]!, g.formatoId) ?? "005";
+    codigos[i] = k === null || k === undefined ? rescate.get(i) ?? "005" : codigoEn(paleta[k]!, g.formatoId) ?? "005";
   });
 
   // Salida.

@@ -32,6 +32,7 @@ import { armarPieza, type Pieza, type PiezaArmada, type TipoPieza } from "./piez
 import { armarEscena, descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo, NOMBRE_PARED, type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoEscena, type ParedSala, type Sala } from "./escena";
 import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
 import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, guirnaldaFeston, piezaNueva } from "./escenas-presets";
+import { avisosDeColor } from "./avisos-color-escena";
 import { HERRAMIENTAS_EXTRA, NOMBRES_EXTRA, declaracionesExtra } from "./herramientas-escena-extra";
 
 /**
@@ -272,10 +273,10 @@ const ESQUEMAS = {
     id: IdSchema.describe("id de la pieza orgánica (arco orgánico, columna/guirnalda/semiarco/aro/marco orgánicos, trazo orgánico, orgánicos de la biblioteca)"),
     cambios: z.array(z.object({
       formato: z.enum(FORMATOS_AJUSTABLES).describe("tamaño de globo"),
-      accion: z.enum(ACCIONES_TAMANO).describe("mas: clara subida (al menos +60 %, o hasta cantidad/porcentaje); menos: la mitad (o hasta cantidad/porcentaje); quitar: ninguno (en la zona); poner: exactamente cantidad o porcentaje"),
+      accion: z.enum(ACCIONES_TAMANO).describe("mas: clara subida (al menos +60 % de lo que había al empezar, o hasta cantidad/porcentaje; si el cuerpo no da más, lo engruesa y lo dice); menos: la mitad (o hasta cantidad/porcentaje); quitar: ninguno (en la zona); poner: exactamente cantidad o porcentaje"),
       cantidad: z.number().int().min(0).max(3000).optional().describe("cuántos globos de ese tamaño deben quedar al final en la zona (no cuántos sumar)"),
       porcentaje: z.number().min(0).max(95).optional().describe("qué parte (0–95 %) de los globos de estructura de la zona (sin el relleno) es de ese tamaño al final"),
-      donde: z.enum(ZONAS_ORGANICAS).optional().describe("todo (por defecto); abajo/arriba = tercio de abajo/arriba de la altura; inicio/medio/fin = tercios del recorrido (en un arco, inicio = las patas)"),
+      donde: z.enum(ZONAS_ORGANICAS).optional().describe("todo (por defecto); abajo/arriba = tercio de abajo/arriba de la altura; inicio/medio/fin = tercios del recorrido (en un arco, inicio = las patas); izquierda/derecha = la mitad de ese lado (la pata izquierda o derecha de un arco, el lado de un marco)"),
       solo_ahi: z.boolean().optional().describe("con donde: ese tamaño se quita del resto de la pieza («R-24 solo abajo»)"),
     })).max(6).optional().describe("cambios de tamaños, en orden"),
     colores_por_tamano: z.array(z.object({
@@ -285,7 +286,7 @@ const ESQUEMAS = {
       exclusivo: z.boolean().optional().describe("true: esos colores salen de los demás tamaños («el azul solo en los R-24»)"),
     })).max(4).optional().describe("«los R-24 en azul reflex», «los grandes dorados»: esos tamaños solo con esos colores; los demás tamaños siguen con los suyos"),
     acabado: z.string().max(20).optional().describe("acabado para los colores que no traen uno"),
-    densidad: z.enum(["mas", "menos"]).optional().describe("más tupida (más globos de estructura por metro, ×1,3) o menos (×0,75)"),
+    densidad: z.enum(["mas", "menos"]).optional().describe("más tupida (más globos de estructura por metro, ×1,3) o menos (×0,75; el total baja: si el relleno de huecos lo subía, quita el relleno más chico)"),
     densidad_factor: z.number().min(0.4).max(2.5).optional().describe("en vez de densidad: multiplica la densidad actual"),
     racimos: z.enum(["mas", "menos"]).optional().describe("más abultada (racimos que sobresalen, bultos y cinturas) o más pareja"),
     racimos_valor: z.number().min(0).max(1).optional().describe("en vez de racimos: 0 = cuerpo parejo, 1 = muy abultado"),
@@ -326,7 +327,7 @@ const DESCRIPCIONES: Readonly<Record<NombreHerramienta, string>> = {
   reemplazar_pieza: "Cambia una pieza por otra de OTRO tipo en una sola llamada: mismo sitio, mismo id (lo que cuelga de ella se queda) y sus mismos colores si no se pasan otros. Para «no normales, orgánicas»: reemplazar_pieza con tipo columna_organica en cada columna.",
   recolorear_escena: "Recolorea TODAS las piezas (o las de ids) de una vez respetando el patrón de cada una, o cambia un color por otro en todo. Nunca agrega ni quita piezas. Para «todo a rojo y verde» o «cambia el rosado por azul».",
   buscar_en_biblioteca: "Busca en la Biblioteca del taller (escenas, estructuras con sus decoraciones, estructuras, decoraciones, utilería, ideas Sempertex): devuelve una lista corta con id y resumen. No cambia la escena.",
-  ajustar_tamanos: "Edición PRECISA de una pieza orgánica: más/menos/quitar/poner un tamaño de globo (R-36…R-5) en toda la pieza o en una zona (abajo, arriba, inicio, medio, fin), con cantidad o porcentaje exactos; colores por tamaño («los R-24 en azul»); más o menos tupida (densidad) y abultada (racimos). Arma la pieza y devuelve cuántos globos de cada tamaño había y cuántos hay. Úsala para «más R-24», «menos globos chicos», «los grandes azules», «más tupida», «más abultada».",
+  ajustar_tamanos: "Edición PRECISA de una pieza orgánica: más/menos/quitar/poner un tamaño de globo (R-36…R-5) en toda la pieza o en una zona (abajo, arriba, inicio, medio, fin, izquierda, derecha: «en la pata izquierda»), con cantidad o porcentaje exactos; colores por tamaño («los R-24 en azul»); más o menos tupida (densidad) y abultada (racimos). Arma la pieza y devuelve cuántos globos de cada tamaño había y cuántos hay. Úsala para «más R-24», «menos globos chicos», «los grandes azules», «más tupida», «más abultada».",
   ver_pieza: DESCRIPCION_VER_PIEZA,
   buscar_en_escena: DESCRIPCION_BUSCAR_EN_ESCENA,
   editar_globos: DESCRIPCION_EDITAR_GLOBOS,
@@ -1222,7 +1223,8 @@ export function aplicarHerramienta(escena: Escena, nombre: string, argumentos: u
   try {
     const extra = HERRAMIENTAS_EXTRA[nombre];
     const hecho = extra ? extra.aplicar(escena, argumentos ?? {}) : ejecutar(escena, nombre as NombreHerramienta, argumentos ?? {});
-    return { ok: true, escena: hecho.escena, resumen: hecho.resumen, consulta: hecho.consulta ?? false };
+    const avisoColor = hecho.consulta ? "" : avisosDeColor(escena, hecho.escena);
+    return { ok: true, escena: hecho.escena, resumen: avisoColor && !hecho.resumen.includes(avisoColor) ? `${hecho.resumen} ${avisoColor}` : hecho.resumen, consulta: hecho.consulta ?? false };
   } catch (error) {
     if (error instanceof z.ZodError) return { ok: false, escena, error: errorDeZod(error) };
     if (error instanceof ErrorHerramienta) return { ok: false, escena, error: error.message };

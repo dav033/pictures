@@ -80,7 +80,8 @@ function pesoTramos(o: OpcionesOrganico, f: string, zona: ZonaOrganica, k: numbe
     const ts = zona === "todo" && !soloAhi ? t.mezcla.map((p) => p.t) : [...new Set([...t.mezcla.map((p) => p.t), ...Array.from({ length: 13 }, (_, i) => i / 12)])].sort((a, b) => a - b);
     const mezcla: PuntoMezcla[] = ts.map((tt) => {
       const pesos: Record<string, number> = Object.fromEntries(mezclaEn(t.mezcla, tt));
-      const dentro = enZona(zona, tt, puntoEnRecorrido(t.recorrido, tt).y, rango);
+      const punto = puntoEnRecorrido(t.recorrido, tt);
+      const dentro = enZona(zona, tt, punto.y, rango, punto.x);
       if (dentro) {
         const w = pesos[f] ?? 0;
         if (w > 0) pesos[f] = w * k;
@@ -98,12 +99,17 @@ function pesoTramos(o: OpcionesOrganico, f: string, zona: ZonaOrganica, k: numbe
 export const conPeso = (p: Organico, f: string, zona: ZonaOrganica, k: number, soloAhi: boolean): Organico =>
   editar(p, (t) => pesoTrazo(t, f, zona, k, soloAhi), (o) => pesoTramos(o, f, zona, k, soloAhi));
 
-/** El relleno sin ese formato. Sin ningún relleno, el formato más chico de la mezcla a medio inflar. */
-export function conRelleno(p: Organico, f: string): Organico {
+/**
+ * El relleno sin ese formato. Sin ningún relleno que quede, el formato más chico de la mezcla a medio inflar, pero no uno
+ * de los `evitar` (los que el mismo pedido baja: «menos R-5 y R-9» no puede volver a taparlo todo con R-5); si todos se
+ * evitan, el más chico.
+ */
+export function conRelleno(p: Organico, f: string, evitar: ReadonlySet<string> = new Set()): Organico {
   let relleno: RellenoOrganico[] = opcionesDe(p).relleno.filter((r) => r.formatoId !== f).map((r) => ({ ...r }));
   if (!relleno.length) {
     const formatos = [...new Set(opcionesDe(p).tramos.flatMap((t) => t.mezcla.flatMap((m) => Object.keys(m.pesos).filter((x) => (m.pesos[x] ?? 0) > 0))))].filter((x) => x !== f);
-    const menor = formatos.sort((a, b) => inflado(p, a) - inflado(p, b))[0];
+    const admitidos = formatos.filter((x) => !evitar.has(x));
+    const menor = (admitidos.length ? admitidos : formatos).sort((a, b) => inflado(p, a) - inflado(p, b))[0];
     if (menor) relleno = [{ formatoId: menor, infladoCm: r0(inflado(p, menor) * 0.88), trios: false }];
   }
   return editar(p, (t) => ({ ...t, relleno }), (o) => ({ ...o, relleno }));
@@ -135,11 +141,11 @@ export function cabe(p: Organico, f: string, zona: ZonaOrganica): "todo" | "part
   let gruesos: boolean[];
   if (p.generador?.tipo === "trazo") {
     const { muestras, rango } = muestrasTrazo(p.generador.trazo);
-    gruesos = muestras.filter((q) => enZona(zona, q.t, q.y, rango)).map((q) => q.grosor >= minimo);
+    gruesos = muestras.filter((q) => enZona(zona, q.t, q.y, rango, q.x)).map((q) => q.grosor >= minimo);
   } else {
     const o = p.opciones;
     const rango = rangoAltura(o.tramos.flatMap((t) => t.recorrido));
-    gruesos = o.tramos.flatMap((t) => Array.from({ length: 51 }, (_, i) => i / 50).filter((u) => enZona(zona, u, puntoEnRecorrido(t.recorrido, u).y, rango)).map((u) => 2 * radioEn(t.grosor, u) >= minimo));
+    gruesos = o.tramos.flatMap((t) => Array.from({ length: 51 }, (_, i) => i / 50).filter((u) => { const q = puntoEnRecorrido(t.recorrido, u); return enZona(zona, u, q.y, rango, q.x); }).map((u) => 2 * radioEn(t.grosor, u) >= minimo));
   }
   const n = gruesos.filter(Boolean).length;
   return n === 0 ? "nada" : n === gruesos.length ? "todo" : "parte";
@@ -165,7 +171,7 @@ export function engrosar(p: Organico, f: string, zona: ZonaOrganica, amplio: boo
     const t = p.generador.trazo;
     const { rango } = muestrasTrazo(t);
     const fr = fraccionesDe(t.puntos);
-    let dentro = t.puntos.map((q, i) => enZona(zona, fr[i]!, q.y, rango));
+    let dentro = t.puntos.map((q, i) => enZona(zona, fr[i]!, q.y, rango, q.x));
     if (!dentro.some(Boolean)) dentro = t.puntos.map(() => true);
     const sube = elegir(t.puntos.map((q) => q.grosor), dentro);
     t.puntos.forEach((q, i) => { if (sube[i]) cambiados.push(q.grosor); });
@@ -174,7 +180,7 @@ export function engrosar(p: Organico, f: string, zona: ZonaOrganica, amplio: boo
   } else {
     const o = p.opciones;
     const rango = rangoAltura(o.tramos.flatMap((t) => t.recorrido));
-    const dentroDe = (t: TramoOrganico) => t.grosor.map((g) => enZona(zona, g.t, puntoEnRecorrido(t.recorrido, g.t).y, rango));
+    const dentroDe = (t: TramoOrganico) => t.grosor.map((g) => { const q = puntoEnRecorrido(t.recorrido, g.t); return enZona(zona, g.t, q.y, rango, q.x); });
     const ninguno = !o.tramos.some((t) => dentroDe(t).some(Boolean));
     const tramos = o.tramos.map((t) => {
       const dentro = ninguno ? t.grosor.map(() => true) : dentroDe(t);

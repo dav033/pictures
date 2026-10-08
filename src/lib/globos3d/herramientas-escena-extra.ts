@@ -3,6 +3,7 @@ import { paraGoogleSchema } from "@/lib/ia/nucleo/esquema-google";
 import type { Escena } from "./escena";
 import { HERRAMIENTAS_DISPOSICION } from "./herramientas-escena-disposicion";
 import { HERRAMIENTAS_GRUPOS, type HerramientaExtra } from "./herramientas-escena-grupos";
+import { HERRAMIENTAS_PINTAR } from "./herramientas-escena-pintar";
 import { HERRAMIENTAS_REMATE } from "./herramientas-escena-remate";
 
 /**
@@ -12,6 +13,7 @@ import { HERRAMIENTAS_REMATE } from "./herramientas-escena-remate";
  * - grupos (herramientas-escena-grupos.ts): seleccionar_grupo, contar_globos;
  * - disposición (herramientas-escena-disposicion.ts): alinear, distribuir, espejar;
  * - remate (herramientas-escena-remate.ts): poner_remate, el globo de arriba de las columnas;
+ * - pintar (herramientas-escena-pintar.ts): pintar_en_malla, una letra o figura pintada dentro de una pared de globos;
  * - preguntar_usuario: la ruta corta el turno y el taller muestra la pregunta con sus opciones como botones.
  */
 
@@ -39,7 +41,7 @@ const PREGUNTAR: HerramientaExtra = {
   },
 };
 
-export const HERRAMIENTAS_EXTRA: Readonly<Record<string, HerramientaExtra>> = { ...HERRAMIENTAS_GRUPOS, ...HERRAMIENTAS_DISPOSICION, ...HERRAMIENTAS_REMATE, [PREGUNTAR_USUARIO]: PREGUNTAR };
+export const HERRAMIENTAS_EXTRA: Readonly<Record<string, HerramientaExtra>> = { ...HERRAMIENTAS_GRUPOS, ...HERRAMIENTAS_DISPOSICION, ...HERRAMIENTAS_REMATE, ...HERRAMIENTAS_PINTAR, [PREGUNTAR_USUARIO]: PREGUNTAR };
 export const NOMBRES_EXTRA = Object.keys(HERRAMIENTAS_EXTRA);
 
 /** Las declaraciones para Gemini de las herramientas extra (mismo formato que `DECLARACIONES_ESCENA`). */

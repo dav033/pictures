@@ -244,7 +244,6 @@
       "origen": "real",
       "texto": "hazlo que el balnco sea un azul reflex y con mas r24",
       "cobertura": ["colores", "formatos", "erratas"],
-      "backlog": "ajustar_tamanos no conserva los colores por formato: el Reflex Azul (no se fabrica en R-9) queda solo en los R-24 y al subir los R-24 salen todos Metal Dorado; el azul pedido desaparece",
       "contexto": { "pasos": [ { "herramienta": "agregar_pieza", "args": { "tipo": "semiarco_organico", "tamanos": ["R-24", "R-9"], "colores": ["blanco", "dorado"] } } ] },
       "checks": [
         { "tipo": "conteo", "en": { "ids": ["semiarco-organico"] }, "selector": { "formatos": ["R-24"] }, "compara": "aumenta_pct", "valor": 50 },
@@ -275,7 +274,6 @@
     {
       "id": "real-16-aumentar-r24-otra-vez",
       "origen": "real",
-      "backlog": "el segundo «más R-24» satura (6 → 6, «es lo que cabe en ese cuerpo»): ajustar_tamanos debería engrosar más el cuerpo o alargar la pieza, o la IA proponerlo (el dueño lo pidió 3 veces seguidas)",
       "texto": "aumentar el numero de los globos r24",
       "cobertura": ["formatos"],
       "contexto": { "pasos": [
@@ -363,7 +361,6 @@
       "origen": "real",
       "texto": "recuce las densidad de estructuras",
       "cobertura": ["densidad", "grupos", "erratas"],
-      "backlog": "densidad «menos» baja los globos de estructura pero el relleno de huecos crece: el total SUBE (510 → 596); «menos tupida» debería bajar el total",
       "nota": "El modelo quitó piezas; lo pedido es que las estructuras sean menos tupidas.",
       "contexto": { "pasos": [
         { "herramienta": "agregar_pieza", "args": { "tipo": "arco_organico", "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } },
@@ -416,12 +413,17 @@
       "origen": "real",
       "texto": "pinta la letra w de la malla",
       "cobertura": ["dibujo_en_pared"],
-      "backlog": "pintar una letra o figura DENTRO de una pared/malla (pixeles de otro color); hoy solo hay letras como pieza aparte",
       "contexto": { "pasos": [ { "herramienta": "agregar_pieza", "args": { "tipo": "pared_trenzas", "ancho_cm": 450, "alto_cm": 260, "colores": ["amarillo", "azul", "rojo"] } } ] },
       "checks": [
         { "tipo": "piezas", "delta": 0 },
-        { "tipo": "solo_cambian", "ids": ["pared-trenzas"] }
-      ]
+        { "tipo": "solo_cambian", "ids": ["pared-trenzas"] },
+        { "tipo": "colores", "en": { "ids": ["pared-trenzas"] }, "contienen": [["negro"]], "modo": "alguno" },
+        { "tipo": "colores", "en": { "ids": ["pared-trenzas"] }, "contienen": [["amarillo"], ["azul"], ["rojo"]], "modo": "alguno" },
+        { "tipo": "conteo", "en": { "ids": ["pared-trenzas"] }, "selector": { "colores": ["negro"] }, "compara": "min", "valor": 20 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "pintar_en_malla", "args": { "id": "pared-trenzas", "texto": "W", "color": "negro" } }
+      ] }
     },
     {
       "id": "real-25-revelacion-de-genero",
@@ -654,7 +656,6 @@
       "origen": "real",
       "texto": "usa reflex de coloresoscuros",
       "cobertura": ["colores", "acabado", "erratas"],
-      "backlog": "colores que no se fabrican en un formato caen en Fashion Blanco SIN aviso: el arco queda con R-9 005 (Reflex Azul/Violeta/Cristal Rojo no vienen en R-9); debería usar el reflex más parecido que sí viene y decirlo",
       "contexto": { "pasos": [
         { "herramienta": "agregar_pieza", "args": { "tipo": "arco_organico", "ancho_cm": 200, "alto_cm": 200, "colores": ["dorado reflex", "plata reflex"], "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } }
       ] },
@@ -663,7 +664,8 @@
         { "tipo": "colores", "en": { "ids": ["arco-organico"] }, "excluye": ["plata", "dorado"] }
       ],
       "esperado": { "herramientas": [
-        { "herramienta": "cambiar_pieza", "args": { "id": "arco-organico", "colores": ["azul reflex", "violeta reflex", "rojo reflex"] } }
+        { "herramienta": "cambiar_pieza", "args": { "id": "arco-organico", "colores": ["azul reflex", "violeta reflex", "rojo reflex"] } },
+        { "herramienta": "ajustar_tamanos", "args": { "id": "arco-organico", "cambios": [{ "formato": "R-9", "accion": "quitar" }] } }
       ] }
     },
     {
@@ -1037,7 +1039,6 @@
       "origen": "estilo",
       "texto": "menos globos chicos en el arco y mas medianos",
       "cobertura": ["formatos", "tamanos_por_palabra"],
-      "backlog": "«menos R-5»: el resumen dice R-5 192 → 87 (solo estructura) pero el relleno de huecos vuelve a R-5 y la pieza queda con 319; el resumen engaña y el relleno no obedece a «menos chicos»",
       "contexto": { "preset": "arco_organico_columnas_guirnalda" },
       "checks": [
         { "tipo": "conteo", "en": { "ids": ["arco"] }, "selector": { "formatos": ["R-5"] }, "compara": "disminuye_pct", "valor": 20 },
@@ -1125,14 +1126,14 @@
       "origen": "estilo",
       "texto": "mas r24 solo en la pata izquierda del arco",
       "cobertura": ["partes", "formatos", "lado"],
-      "backlog": "ajustar_tamanos por parte y lado (pata/izquierda): hoy sus zonas son abajo/arriba/inicio/medio/fin y «inicio» toma las dos patas",
+      "backlog": "la zona izquierda/derecha ya existe (ajustar_tamanos donde izquierda: R-24 de la pata izquierda 2 → 5, mezcla y R-12/R-18/R-24 de la derecha idénticos), pero el motor orgánico arma las dos patas con UN solo azar y UN solo reparto de colores por cuotas: al cambiar una pata cambian el relleno, el R-9 y los colores de la otra; el check exige cero cambios fuera de pata/izquierda",
       "contexto": { "preset": "arco_organico_columnas_guirnalda" },
       "checks": [
         { "tipo": "conteo", "en": { "ids": ["arco"] }, "selector": { "formatos": ["R-24"], "partes": ["pata/izquierda"] }, "compara": "aumenta_pct", "valor": 50 },
         { "tipo": "solo_cambian_globos", "id": "arco", "selector": { "partes": ["pata/izquierda"] } }
       ],
       "esperado": { "herramientas": [
-        { "herramienta": "ajustar_tamanos", "args": { "id": "arco", "cambios": [{ "formato": "R-24", "accion": "mas", "donde": "inicio", "solo_ahi": true }] } }
+        { "herramienta": "ajustar_tamanos", "args": { "id": "arco", "cambios": [{ "formato": "R-24", "accion": "mas", "donde": "izquierda" }] } }
       ] }
     },
     {
