@@ -1,0 +1,269 @@
+/**
+ * La biblioteca del taller 3D (`biblioteca.ts` y `productos-tienda.ts`). Sin coste: no llama a ninguna IA ni a la red.
+ * - extraer un conjunto de cada estructura de cada escena predefinida conserva exactamente los globos (cuántos, de qué
+ *   formato y color, y dónde: puesto donde estaba, cada globo en su sitio ±0,01 cm) y los materiales de esa rama
+ *   (la estructura, lo que cuelga de ella y lo que va pegado a sus globos);
+ * - insertar el conjunto en otra escena suma exactamente sus materiales, sin avisos, con ids que no chocan, y la
+ *   escena de entrada no cambia; insertar una escena entera y una pieza sola, igual;
+ * - ids estables: extraer dos veces, o de la misma escena con otros ids, da el mismo conjunto («estructura», «hijo-N»);
+ * - lo que va en cada conjunto de Halloween (los 14 ojos y las 2 arañas del aro, los ojos de los racimos, las calabazas
+ *   y el remate del arco) y lo que no (la calabaza bruja sobre la mesa, las manos sobre el panel);
+ * - el índice: ids y contenidos sin duplicados, cada derivado apunta a su escena y a piezas que existen, y lo derivado
+ *   igual a algo de fábrica se une a ello (el racimo de ojos saltones de la foto 1 es la predefinida);
+ * - `productosDe` da nombre exacto y url de la tienda para cada globo liso de la tabla oficial (o «sin verificar» con una
+ *   búsqueda) y, para cada item, globos + utilería + escenografía con nombre y url;
+ * - filtros (tipo, ocasión, color, producto «R-12 Reflex Dorado 970», texto sin tildes) y la biblioteca propia
+ *   (JSON de ida y vuelta, `validarItem` descarta lo que no cuadra y las urls que no son públicas).
+ */
+import assert from "node:assert/strict";
+import { armarEscena, type Escena, type EscenaArmada, type NodoEscena } from "../../src/lib/globos3d/escena";
+import { ESCENAS_PREDEFINIDAS, escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
+import { sumarMateriales } from "../../src/lib/globos3d/mezcla";
+import type { MaterialDecoracion } from "../../src/lib/globos3d/figuras";
+import { coloresDelFormato, FORMATOS_GLOBO } from "../../src/lib/globos3d/formatos";
+import { TABLA_SEMPERTEX } from "../../src/lib/plan/referencia-sempertex";
+import { GLOBOS_TIENDA, NO_ESTAN_EN_LA_TIENDA, productoDeGlobo } from "../../src/lib/globos3d/productos-tienda";
+import {
+  BIBLIOTECA_FABRICA, bibliotecaCompleta, claveContenido, clasePieza, contenidoDeEscena, decoracionesPegadas, escenaDeConjunto, escenaDeItem, extraerConjunto,
+  filtrarBiblioteca, huellaItem, insertarEnEscena, itemDeEscena, itemDeNodo, miembrosDeConjunto, productosDe, resumenDe, validarItem,
+  type Conjunto, type ItemBiblioteca, type ResumenItem,
+} from "../../src/lib/globos3d/biblioteca";
+
+const ordenar = (m: readonly MaterialDecoracion[]) => sumarMateriales(m).filter((x) => x.cantidad > 0).map((x) => `${x.formatoId}|${x.codigo}|${Math.round(x.cantidad * 1000) / 1000}`).sort();
+const mismosMateriales = (a: readonly MaterialDecoracion[], b: readonly MaterialDecoracion[], que: string) => assert.deepEqual(ordenar(a), ordenar(b), `${que}: materiales distintos`);
+const itemConjunto = (c: Conjunto, id: string): ItemBiblioteca => ({ id, tipo: "conjunto", nombre: c.raiz.nombre, descripcion: "", ocasiones: [], contenido: { tipo: "conjunto", conjunto: c } });
+
+// ----------------------------------------------------------------------------------------------------------
+// 1. Extraer un conjunto conserva exactamente su rama
+// ----------------------------------------------------------------------------------------------------------
+
+const armadas = new Map<string, EscenaArmada>();
+let conjuntosProbados = 0, globosComparados = 0;
+const conjuntos: Array<{ escena: string; nodo: string; conjunto: Conjunto; materiales: MaterialDecoracion[] }> = [];
+for (const p of ESCENAS_PREDEFINIDAS) {
+  const escena = p.escena;
+  const armada = armarEscena(escena);
+  armadas.set(p.id, armada);
+  const pegadas = decoracionesPegadas(escena, armada);
+  for (const nodo of escena.nodos) {
+    if (clasePieza(nodo.pieza) !== "estructura") continue;
+    const que = `${p.id} / ${nodo.id}`;
+    const conjunto = extraerConjunto(escena, nodo.id, { armada });
+    assert.ok(conjunto, `${que}: sale el conjunto`);
+    const ids = miembrosDeConjunto(escena, nodo.id, armada, pegadas);
+    // Todos sus miembros entran (ninguno se queda fuera por no poder llevarse con la estructura).
+    assert.equal(conjunto.hijos.length, ids.length - 1, `${que}: entran todos sus miembros`);
+    assert.deepEqual(conjunto.hijos.map((h) => h.id), ids.slice(1).map((_, i) => `hijo-${i + 1}`), `${que}: ids estables`);
+    const deLaRama = armada.porNodo.filter((n) => ids.includes(n.id));
+    const materiales = sumarMateriales(...deLaRama.map((n) => n.materiales));
+    // Solo, en su sala y donde estaba: los mismos globos, en el mismo sitio.
+    const sola = armarEscena(escenaDeConjunto(conjunto, { sala: escena.sala, donde: conjunto.sugerida }));
+    assert.deepEqual(sola.avisos, [], `${que}: el conjunto solo arma sin avisos`);
+    mismosMateriales(sola.materiales, materiales, que);
+    const firma = (g: { formatoId: string; codigo: string; infladoCm: number; nudo: { x: number; y: number; z: number } }) => `${g.formatoId}|${g.codigo}|${g.infladoCm}|${g.nudo.x.toFixed(2)}|${g.nudo.y.toFixed(2)}|${g.nudo.z.toFixed(2)}`;
+    const antes = deLaRama.flatMap((n) => n.globos).map(firma).sort();
+    const despues = sola.globos.map(firma).sort();
+    assert.equal(despues.length, antes.length, `${que}: mismos globos`);
+    assert.deepEqual(despues.map((s) => s.replace(/-0\.00/g, "0.00")), antes.map((s) => s.replace(/-0\.00/g, "0.00")), `${que}: cada globo en su sitio`);
+    // Y en el origen (como se ve en la biblioteca), los mismos materiales.
+    mismosMateriales(armarEscena(escenaDeConjunto(conjunto)).materiales, materiales, `${que} (en el origen)`);
+    globosComparados += antes.length;
+    conjuntosProbados++;
+    conjuntos.push({ escena: p.id, nodo: nodo.id, conjunto, materiales });
+  }
+}
+assert.ok(conjuntosProbados >= 17, `se probaron ${conjuntosProbados} conjuntos`);
+console.log(`OK extraer: ${conjuntosProbados} conjuntos de ${ESCENAS_PREDEFINIDAS.length} escenas, ${globosComparados} globos en su sitio`);
+
+// Lo que va en cada conjunto de Halloween (y lo que no).
+const hijosDe = (escena: string, nodo: string) => conjuntos.find((c) => c.escena === escena && c.nodo === nodo)!.conjunto.hijos.map((h) => h.nombre);
+const aro = hijosDe("halloween_aro_ojos", "aro");
+assert.equal(aro.filter((n) => n.startsWith("Ojo con venas")).length, 14, "el aro lleva sus 14 ojos");
+assert.ok(aro.includes("Araña grande") && aro.includes("Araña chica"), "y sus dos arañas");
+const racimos = hijosDe("halloween_marco_mesas", "racimos");
+assert.equal(racimos.filter((n) => n.startsWith("Ojos saltones")).length, 4, "los 4 racimos de ojos van con los racimos");
+assert.ok(!racimos.some((n) => n.startsWith("Mano")), "las manos van en el panel del marco, no en los racimos");
+const arco = hijosDe("halloween_arco_calabazas", "arco");
+assert.deepEqual(arco, ["Calabaza grande (izquierda)", "Calabaza grande (derecha)", "Globo de remate R-24"], "el arco lleva sus calabazas y el remate; la bruja va en la mesa");
+assert.ok(hijosDe("halloween_arbol_fantasmas", "arbol").includes("Ramas trenzadas"), "el árbol lleva sus ramas");
+assert.deepEqual(hijosDe("pared_fondo_columnas", "pared"), ["Flores en la pared"], "la pared lleva sus flores colgadas");
+console.log(`OK conjuntos de Halloween: aro ${aro.length}, racimos ${racimos.length}, arco ${arco.length}`);
+
+// ----------------------------------------------------------------------------------------------------------
+// 2. Ids estables
+// ----------------------------------------------------------------------------------------------------------
+
+for (const { escena: id, nodo } of conjuntos.filter((c) => c.conjunto.hijos.length > 0)) {
+  const escena = escenaPredefinida(id);
+  const a = extraerConjunto(escena, nodo);
+  assert.deepEqual(a, extraerConjunto(escena, nodo), `${id}/${nodo}: extraer dos veces da lo mismo`);
+  // La misma escena con otros ids (y en otro orden de ids): el mismo conjunto.
+  const renombrar = (x: string) => `otra-${x}`;
+  const otra: Escena = {
+    ...escena, nodos: escena.nodos.map((n): NodoEscena => {
+      const c = n.colocacion;
+      return { ...n, id: renombrar(n.id), colocacion: c.en === "ancla" || c.en === "sobre" ? { ...c, padreId: renombrar(c.padreId) } : c };
+    }),
+  };
+  assert.equal(JSON.stringify(extraerConjunto(otra, renombrar(nodo))), JSON.stringify(a), `${id}/${nodo}: con otros ids, el mismo conjunto`);
+}
+console.log("OK ids estables");
+
+// ----------------------------------------------------------------------------------------------------------
+// 3. Insertar en otra escena
+// ----------------------------------------------------------------------------------------------------------
+
+let insertados = 0;
+for (const [k, c] of conjuntos.entries()) {
+  // En la escena siguiente de la lista (otra sala, otras piezas).
+  const destinoId = ESCENAS_PREDEFINIDAS[(ESCENAS_PREDEFINIDAS.findIndex((p) => p.id === c.escena) + 1) % ESCENAS_PREDEFINIDAS.length]!.id;
+  const destino = escenaPredefinida(destinoId);
+  const copia = structuredClone(destino);
+  const antes = armadas.get(destinoId)!;
+  const r = insertarEnEscena(destino, itemConjunto(c.conjunto, `prueba-${k}`));
+  assert.deepEqual(destino, copia, "la escena de entrada no cambia");
+  assert.equal(r.ids.length, 1 + c.conjunto.hijos.length, `${c.escena}/${c.nodo} → ${destinoId}: entran todas sus piezas`);
+  assert.equal(new Set(r.escena.nodos.map((n) => n.id)).size, r.escena.nodos.length, "ids sin chocar");
+  assert.equal(r.raizId, r.ids[0]);
+  const despues = armarEscena(r.escena);
+  assert.deepEqual(despues.avisos, [], `${c.escena}/${c.nodo} → ${destinoId}: sin avisos`);
+  mismosMateriales(despues.materiales, sumarMateriales(antes.materiales, c.materiales), `${c.escena}/${c.nodo} → ${destinoId}`);
+  insertados++;
+}
+// Una escena entera dentro de otra y una pieza sola.
+{
+  const a = escenaPredefinida("pared_fondo_columnas"), b = escenaPredefinida("halloween_aro_ojos");
+  const item = itemDeEscena({ id: "x", nombre: "Aro", ocasiones: ["halloween"], escena: b });
+  const r = insertarEnEscena(a, item);
+  assert.equal(r.escena.nodos.length, a.nodos.length + b.nodos.length);
+  mismosMateriales(armarEscena(r.escena).materiales, sumarMateriales(armadas.get("pared_fondo_columnas")!.materiales, armadas.get("halloween_aro_ojos")!.materiales), "escena dentro de escena");
+  const flor = BIBLIOTECA_FABRICA.find((i) => i.id === "decoracion:flor5")!;
+  const r2 = insertarEnEscena(a, flor);
+  assert.equal(r2.escena.nodos.length, a.nodos.length + 1);
+  mismosMateriales(armarEscena(r2.escena).materiales, sumarMateriales(armadas.get("pared_fondo_columnas")!.materiales, armarEscena(escenaDeItem(flor)).materiales), "una decoración sola");
+}
+console.log(`OK insertar: ${insertados} conjuntos en otra escena suman exactamente sus materiales; escena y pieza sola también`);
+
+// ----------------------------------------------------------------------------------------------------------
+// 4. El índice
+// ----------------------------------------------------------------------------------------------------------
+
+const biblioteca = bibliotecaCompleta();
+assert.equal(new Set(biblioteca.map((i) => i.id)).size, biblioteca.length, "ids sin duplicados");
+const claves = biblioteca.map((i) => claveContenido(i.contenido));
+assert.equal(new Set(claves).size, claves.length, "contenidos sin duplicados");
+const porTipo = new Map<string, number>();
+for (const i of biblioteca) porTipo.set(i.tipo, (porTipo.get(i.tipo) ?? 0) + 1);
+assert.equal(porTipo.get("escena"), ESCENAS_PREDEFINIDAS.length, "todas las escenas predefinidas");
+for (const t of ["conjunto", "estructura", "decoracion", "utileria"]) assert.ok((porTipo.get(t) ?? 0) > 0, `hay items de tipo ${t}`);
+for (const i of biblioteca) {
+  assert.equal(i.tipo === "escena", i.contenido.tipo === "escena", `${i.id}: tipo y contenido casan`);
+  assert.equal(i.tipo === "conjunto", i.contenido.tipo === "conjunto", `${i.id}: tipo y contenido casan`);
+  assert.ok(i.nombre.trim().length > 0 && i.ocasiones.length > 0, `${i.id}: nombre y ocasión`);
+  for (const o of i.apareceEn ?? []) {
+    const escena = biblioteca.find((x) => x.id === o.itemId);
+    assert.ok(escena && escena.contenido.tipo === "escena", `${i.id}: su escena ${o.itemId} está en la biblioteca`);
+    const ids = new Set(escena.contenido.tipo === "escena" ? escena.contenido.escena.nodos.map((n) => n.id) : []);
+    assert.ok(o.nodoIds.length > 0 && o.nodoIds.every((n) => ids.has(n)), `${i.id}: sus piezas existen en ${o.itemId}`);
+  }
+}
+// Los nombres dentro de una escena no se repiten.
+for (const e of biblioteca.filter((i) => i.tipo === "escena")) {
+  const nombres = contenidoDeEscena(biblioteca, e.id).filter((i) => i.derivado).map((i) => `${i.tipo}|${i.nombre}`);
+  assert.equal(new Set(nombres).size, nombres.length, `${e.id}: nombres sin repetir (${nombres.join(", ")})`);
+  assert.ok(contenidoDeEscena(biblioteca, e.id).length > 0, `${e.id}: algo sale de ella`);
+}
+// Lo derivado igual a algo de fábrica se une a ello.
+const ojosSaltones = biblioteca.find((i) => i.id === "decoracion:ojos_saltones")!;
+assert.ok(ojosSaltones.apareceEn?.some((o) => o.itemId === "escena:halloween_marco_mesas" && o.nodoIds.length === 4), "el racimo de ojos saltones de la foto 1 es la predefinida (4 veces)");
+assert.ok(!biblioteca.some((i) => i.derivado && i.contenido.tipo === "pieza" && claveContenido(i.contenido) === claveContenido(ojosSaltones.contenido)), "sin copia derivada");
+// Las dos columnas iguales del primer preset son una sola estructura.
+const columnas = biblioteca.filter((i) => i.apareceEn?.some((o) => o.itemId === "escena:arco_organico_columnas_guirnalda" && o.nodoIds.includes("columna-izq")));
+assert.equal(columnas.length, 1);
+assert.deepEqual(columnas[0]!.apareceEn![0]!.nodoIds, ["columna-izq", "columna-der"]);
+assert.equal(columnas[0]!.nombre, "Columna");
+console.log(`OK índice: ${biblioteca.length} items (${[...porTipo].map(([t, n]) => `${n} ${t}`).join(", ")}) sin duplicados`);
+
+// ----------------------------------------------------------------------------------------------------------
+// 5. Productos
+// ----------------------------------------------------------------------------------------------------------
+
+const TIENDA = "https://sempertex.com/";
+let verificados = 0, sinVerificar = 0;
+for (const ref of TABLA_SEMPERTEX.referencias) {
+  for (const f of FORMATOS_GLOBO) {
+    if (!coloresDelFormato(f.id).some((c) => c.codigo === ref.codigo)) continue;
+    const p = productoDeGlobo(f.id, ref.codigo);
+    assert.ok(p.nombre.startsWith("GLOBO "), `${f.id} ${ref.codigo}: nombre exacto`);
+    if (p.estado === "verificado") {
+      assert.ok(p.url.startsWith(`${TIENDA}products/`), `${f.id} ${ref.codigo}: url de producto`);
+      verificados++;
+    } else {
+      assert.ok(p.url.startsWith(`${TIENDA}search?q=`), `${f.id} ${ref.codigo}: sin verificar, con búsqueda`);
+      assert.ok(NO_ESTAN_EN_LA_TIENDA.some((x) => x.codigo === ref.codigo && x.tipo === f.tipo), `${f.id} ${ref.codigo}: está en la lista de lo que no está en la tienda`);
+      sinVerificar++;
+    }
+  }
+}
+assert.ok(GLOBOS_TIENDA.length >= 200, "más de 200 productos de globos lisos");
+assert.equal(new Set(GLOBOS_TIENDA.map((p) => `${p.tipo}|${p.codigo}`)).size, GLOBOS_TIENDA.length, "un producto por tipo y color");
+assert.ok(GLOBOS_TIENDA.every((p) => p.url.startsWith("/products/") && p.nombre === p.nombre.trim()), "urls relativas de producto");
+// Los ejemplos del dueño.
+assert.equal(productoDeGlobo("R-12", "061").url, "https://sempertex.com/products/globo-para-fiesta-latex-redondo-fashion-naranja");
+assert.equal(productoDeGlobo("T-260", "080").url, "https://sempertex.com/products/globo-para-fiesta-latex-tubito-fashion-negro");
+assert.equal(productoDeGlobo("LOL-12", "061").url, "https://sempertex.com/products/globo-para-fiesta-latex-link-o-loon-fashion-naranja");
+const dorado = productoDeGlobo("R-12", "970");
+assert.deepEqual([dorado.nombre, dorado.estado, dorado.tallaEnTienda], ["GLOBO LATEX REDONDO REFLEX DORADO", "verificado", true]);
+
+let lineas = 0;
+for (const item of biblioteca) {
+  const productos = productosDe(item);
+  for (const g of productos.globos) {
+    assert.ok(g.cantidad > 0 && g.nombreOficial === `${g.formatoId} ${g.color} ${g.codigo}`, `${item.id}: ${g.nombreOficial}`);
+    assert.ok(g.producto.nombre && g.producto.url.startsWith(TIENDA), `${item.id}: ${g.nombreOficial} con producto y url`);
+    lineas++;
+  }
+  assert.equal(productos.totalGlobos, productos.globos.reduce((s, g) => s + g.cantidad, 0));
+  for (const u of productos.utileria) assert.ok(u.nombre && (u.generico || u.url.startsWith("/products/")), `${item.id}: utilería ${u.nombre} con url`);
+  if (item.tipo === "utileria") assert.ok(productos.utileria.length > 0, `${item.id}: la utilería trae su producto`);
+}
+const marco = productosDe(biblioteca.find((i) => i.id === "escena:halloween_marco_mesas")!);
+assert.ok(marco.utileria.length >= 5 && marco.escenografia.some((e) => e.nombre.startsWith("Mesa cilíndrica")) && marco.escenografia.some((e) => e.clase === "papel"), "escena con utilería, escenografía y papel por separado");
+console.log(`OK productos: ${verificados} combinaciones formato-color con producto verificado, ${sinVerificar} sin verificar; ${lineas} líneas de globos con producto y url`);
+
+// ----------------------------------------------------------------------------------------------------------
+// 6. Filtros
+// ----------------------------------------------------------------------------------------------------------
+
+const resumenes = new Map<string, ResumenItem>(biblioteca.map((i) => [i.id, resumenDe(i, armarEscena(escenaDeItem(i)))]));
+// «Usa R-5 Reflex Dorado 970» (el racimo dorado, el árbol); el R-12 Reflex Dorado no lo usa nada todavía.
+const conDorado = filtrarBiblioteca(biblioteca, resumenes, { producto: "R-5|970" });
+assert.ok(conDorado.length > 0 && conDorado.every((i) => resumenes.get(i.id)!.productos.includes("R-5|970")), "filtro por producto: R-5 Reflex Dorado 970");
+assert.ok(conDorado.some((i) => i.id === "decoracion:racimo_dorado") && !conDorado.some((i) => i.id === "decoracion:flor_lazos_dorados"), "el racimo dorado sí; la flor de lazos dorados es de T-260");
+assert.deepEqual(filtrarBiblioteca(biblioteca, resumenes, { producto: "R-12|970" }).map((i) => i.id), biblioteca.filter((i) => resumenes.get(i.id)!.productos.includes("R-12|970")).map((i) => i.id), "R-12 Reflex Dorado 970: solo lo que lo usa");
+assert.ok(filtrarBiblioteca(biblioteca, resumenes, { tipo: "escena", ocasion: "halloween" }).length === 5, "5 escenas de Halloween");
+assert.deepEqual(filtrarBiblioteca(biblioteca, resumenes, { texto: "arana LAZOS" }).map((i) => i.id).sort(), biblioteca.filter((i) => /araña de lazos/i.test(i.nombre) || /araña de lazos/i.test(i.descripcion)).map((i) => i.id).sort(), "texto sin tildes ni mayúsculas");
+assert.ok(filtrarBiblioteca(biblioteca, resumenes, { color: "061" }).every((i) => resumenes.get(i.id)!.colores.includes("061")), "filtro por color");
+assert.ok(filtrarBiblioteca(biblioteca, resumenes, { texto: "reflex dorado" }).length >= conDorado.length, "el texto busca también en los colores");
+console.log(`OK filtros: ${conDorado.length} items usan R-5 Reflex Dorado 970`);
+
+// ----------------------------------------------------------------------------------------------------------
+// 7. Biblioteca propia: guardar desde la escena y leer lo guardado
+// ----------------------------------------------------------------------------------------------------------
+
+const escenaAro = escenaPredefinida("halloween_aro_ojos");
+const propio = itemDeNodo(escenaAro, "aro", { id: "propio:1", nombre: "Mi aro", ocasiones: ["halloween"] });
+assert.ok(propio && propio.tipo === "conjunto" && propio.propio, "una estructura con decoraciones se guarda como conjunto");
+const leido = validarItem(JSON.parse(JSON.stringify(propio)));
+assert.ok(leido);
+assert.equal(claveContenido(leido.contenido), claveContenido(propio.contenido), "JSON de ida y vuelta");
+assert.equal(huellaItem(leido), huellaItem(propio));
+assert.equal(itemDeNodo(escenaAro, "ojo-1", { id: "propio:2" })?.tipo, "decoracion");
+assert.equal(itemDeNodo(escenaPredefinida("halloween_marco_mesas"), "mesa-baja", { id: "propio:3" }), null, "la escenografía no se guarda sola");
+assert.equal(validarItem({ ...propio, tipo: "escena" }), null, "tipo y contenido tienen que casar");
+assert.equal(validarItem({ ...propio, fuente: { tipo: "propio", titulo: "x", fotoUrl: "data:image/png;base64,AAAA" } }), null, "nada de imágenes embebidas");
+assert.equal(validarItem({ ...propio, fuente: { tipo: "idea-sempertex", titulo: "x", url: "http://sempertex.com/blogs/x" } }), null, "solo https");
+assert.ok(validarItem({ ...propio, fuente: { tipo: "idea-sempertex", titulo: "Idea", url: "https://sempertex.com/blogs/ideas/x", fotoUrl: "https://cdn.shopify.com/x.jpg" } }));
+assert.equal(validarItem("basura"), null);
+assert.throws(() => itemDeEscena({ id: "x", nombre: "x", ocasiones: [], escena: escenaAro, fuente: { tipo: "idea-sempertex", titulo: "x", fotoUrl: "file:///C:/foto.jpg" } }));
+console.log("OK biblioteca propia");

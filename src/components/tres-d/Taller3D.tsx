@@ -33,6 +33,8 @@ import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdi
 import { useLienzoDecoraciones, type CopiaElegida } from "./useLienzoDecoraciones";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
 import { ProductosFiesta } from "./UtileriaFiesta";
+import { AccionesPieza, Biblioteca } from "./Biblioteca";
+import { insertarEnEscena, type ItemBiblioteca } from "@/lib/globos3d/biblioteca";
 
 const formatoCm = (valor: number) => `${valor.toLocaleString("es-CO", { maximumFractionDigits: 1 })} cm`;
 const metros = (cm: number) => (cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 });
@@ -86,7 +88,7 @@ const FORMATOS_COLUMNA = ["R-5", "R-9", "R-12", "R-18"] as const;
 /** Formatos con los que se arman módulos: redondos de 5" a 24" y Link-O-Loon 6 y 12. */
 const FORMATOS_MODULO = ["R-5", "R-9", "R-12", "R-18", "R-24", "LOL-6", "LOL-12"] as const;
 
-type Modo = "globo" | "modulo" | "columna" | "arco" | "pared" | "decoracion" | "organico" | "escena";
+type Modo = "globo" | "modulo" | "columna" | "arco" | "pared" | "decoracion" | "organico" | "escena" | "biblioteca";
 
 const BOTON = "min-h-11 rounded-xl px-2 text-sm ring-1 transition-colors";
 const ACTIVO = "bg-acento text-sobre-acento ring-acento";
@@ -158,6 +160,8 @@ export function Taller3D() {
   const encuadradoRef = useRef<number | null>(null);
   // Piezas ya armadas por su JSON: mover una pieza no rehace el arco orgánico (medio segundo).
   const [cacheEscena] = useState(() => new Map<string, PiezaArmada>());
+  /** Lo que se pidió ver desde la pestaña Escena: la Biblioteca abre su ficha al entrar. */
+  const [verEnBiblioteca, setVerEnBiblioteca] = useState<ItemBiblioteca | null>(null);
 
   // La escena se crea una vez (three.js se carga solo en el navegador).
   useEffect(() => {
@@ -266,7 +270,7 @@ export function Taller3D() {
   // Lo que se ve.
   useEffect(() => {
     const escena = escenaRef.current;
-    if (!listo || !escena || !color) return;
+    if (!listo || !escena || !color || modo === "biblioteca") return;
     if (modo === "escena" && armadaEscena) {
       // Ya viene en coordenadas del mundo, con su sala. Si la pieza elegida cuelga de otra, se ven las anclas de esa otra.
       const elegido = escenaEdit.nodos.find((n) => n.id === seleccion);
@@ -608,15 +612,21 @@ export function Taller3D() {
       </header>
 
       <div role="tablist" aria-label="Qué modelar" className="inline-flex w-fit gap-1 rounded-full bg-superficie p-1 ring-1 ring-borde">
-        {([["globo", "Globos"], ["modulo", "Módulos"], ["columna", "Columna"], ["arco", "Arco"], ["pared", "Pared"], ["decoracion", "Decoración"], ["organico", "Orgánico"], ["escena", "Escena"]] as const).map(([valor, etiqueta]) => (
-          <button key={valor} type="button" role="tab" aria-selected={modo === valor} onClick={() => cambiarModo(valor)}
+        {([["globo", "Globos"], ["modulo", "Módulos"], ["columna", "Columna"], ["arco", "Arco"], ["pared", "Pared"], ["decoracion", "Decoración"], ["organico", "Orgánico"], ["escena", "Escena"], ["biblioteca", "Biblioteca"]] as const).map(([valor, etiqueta]) => (
+          <button key={valor} type="button" role="tab" aria-selected={modo === valor} onClick={() => { setVerEnBiblioteca(null); cambiarModo(valor); }}
             className={`min-h-10 rounded-full px-5 text-sm font-medium ${modo === valor ? "bg-acento text-sobre-acento" : "text-texto hover:bg-superficie-suave"}`}>
             {etiqueta}
           </button>
         ))}
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+      {modo === "biblioteca" && (
+        <Biblioteca escenaActual={escenaEdit} abrir={verEnBiblioteca}
+          onAbrirEnEscena={(e) => { setEscenaEdit(e); setSeleccion(null); setCopiaTocada(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); cambiarModo("escena"); }}
+          onAnadirAEscena={(item) => { const r = insertarEnEscena(escenaEdit, item); setEscenaEdit(r.escena); setSeleccion(r.raizId); setCopiaTocada(null); cambiarModo("escena"); }} />
+      )}
+      {/* El visor queda montado (oculto) en la Biblioteca: al volver, la escena sigue ahí. */}
+      <div className={`grid min-h-0 flex-1 gap-4 lg:grid-cols-[340px_minmax(0,1fr)] ${modo === "biblioteca" ? "hidden" : ""}`}>
         <ArrastreDecoracionContexto.Provider value={modo === "escena" && listo ? lienzoDecoraciones.empezarArrastre : null}>
         <aside className="order-2 flex min-w-0 flex-col gap-4 lg:order-1" aria-label="Elegir el globo">
           {modo !== "globo" && (
@@ -625,7 +635,8 @@ export function Taller3D() {
           )}
           {modo === "escena" && armadaEscena ? (
             <PanelEscena escena={escenaEdit} onEscena={(e) => setEscenaEdit(e, { agrupar: "panel" })} armada={armadaEscena} seleccion={seleccion} onSeleccion={(id) => { setSeleccion(id); setCopiaTocada(null); }} enVivo={enVivo}
-              onPreset={(id) => { setEscenaEdit(escenaPredefinida(id)); setSeleccion(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); }} />
+              onPreset={(id) => { setEscenaEdit(escenaPredefinida(id)); setSeleccion(null); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); }}
+              accionesPieza={(id) => <AccionesPieza key={`biblioteca-${id}`} escena={escenaEdit} armada={armadaEscena} nodoId={id} onVer={(item) => { setVerEnBiblioteca(item); cambiarModo("biblioteca"); }} />} />
           ) : modo === "organico" ? (
             <PanelOrganico valor={ajustesOrganico} onCambio={setAjustesOrganico} />
           ) : modo === "pared" ? (

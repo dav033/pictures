@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ArrowDownToLine, ChevronRight, Copy, Layers, PanelTop, Plus, Trash2 } from "lucide-react";
 import { coloresDelFormato, formatoPorId } from "@/lib/globos3d/formatos";
 import { PATRONES_COLUMNA, type PatronColumna } from "@/lib/globos3d/columnas";
@@ -53,6 +53,8 @@ type Props = {
   onPreset: (id: string) => void;
   /** La pieza que se está arrastrando en el visor y dónde va: sus coordenadas se ven en vivo. */
   enVivo?: { id: string; colocacion: Colocacion } | null;
+  /** Lo de la biblioteca para la pieza elegida («Ver sola con sus decoraciones», «Guardar en la biblioteca»). */
+  accionesPieza?: (nodoId: string) => ReactNode;
 };
 
 /** Dónde está exactamente (lo que mueven el arrastre y las flechas), en metros y grados. */
@@ -69,7 +71,7 @@ function coordenadas(c: Colocacion): string {
  * Pestaña Escena: varias piezas en una sala. Arriba las escenas de partida; luego la lista de piezas (tocar una la
  * elige y la resalta en el visor), «Añadir», el editor de la pieza elegida (dónde va y sus propiedades) y la sala.
  */
-export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, onPreset, enVivo = null }: Props) {
+export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, onPreset, enVivo = null, accionesPieza }: Props) {
   const elegido = escena.nodos.find((n) => n.id === seleccion) ?? null;
   // Mientras se arrastra en el visor, la pieza elegida se ve donde va (coordenadas y deslizadores en vivo).
   const nodo = elegido && enVivo?.id === elegido.id ? { ...elegido, colocacion: enVivo.colocacion } : elegido;
@@ -133,6 +135,7 @@ export function PanelEscena({ escena, onEscena, armada, seleccion, onSeleccion, 
       ) : escena.nodos.length > 0 && (
         <p className="rounded-2xl bg-superficie-suave p-3 text-xs text-texto-suave ring-1 ring-borde">Toca una pieza de la lista para moverla, girarla o cambiar sus medidas y colores.</p>
       )}
+      {nodo && accionesPieza?.(nodo.id)}
 
       <section className={TARJETA} aria-label="Añadir piezas">
         <h2 className="flex items-center gap-1 text-sm font-semibold text-texto"><Plus className="size-3.5" aria-hidden /> Añadir</h2>
