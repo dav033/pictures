@@ -30,6 +30,7 @@ import { armarPieza, type Pieza, type PiezaArmada, type TipoPieza } from "./piez
 import { armarEscena, descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo, NOMBRE_PARED, type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoEscena, type ParedSala, type Sala } from "./escena";
 import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
 import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, guirnaldaFeston, piezaNueva } from "./escenas-presets";
+import { HERRAMIENTAS_EXTRA, NOMBRES_EXTRA, declaracionesExtra } from "./herramientas-escena-extra";
 
 /**
  * **Herramientas para que una IA construya la escena** del taller 3D (pestaña «Escena») por function calling.
@@ -298,7 +299,9 @@ const ESQUEMAS = {
 export { resolverColor, type ColorResuelto } from "./herramientas-escena-colores";
 
 export type NombreHerramienta = keyof typeof ESQUEMAS;
-export const NOMBRES_HERRAMIENTAS = Object.keys(ESQUEMAS) as NombreHerramienta[];
+const NOMBRES_PROPIOS = Object.keys(ESQUEMAS) as NombreHerramienta[];
+/** Todas: las de este archivo y las registradas en herramientas-escena-extra.ts (grupos, disposición, preguntar_usuario). */
+export const NOMBRES_HERRAMIENTAS: readonly string[] = [...NOMBRES_PROPIOS, ...NOMBRES_EXTRA];
 
 const DESCRIPCIONES: Readonly<Record<NombreHerramienta, string>> = {
   ver_escena: "Lista la sala y cada pieza de la escena: id, tipo, medidas, colores y dónde está (en las orgánicas, además, cuántos globos hay de cada tamaño y color). Úsala antes de cambiar algo que ya existe.",
@@ -323,13 +326,16 @@ const DESCRIPCIONES: Readonly<Record<NombreHerramienta, string>> = {
 };
 
 /** Una declaración de función para Gemini (`functionDeclarations` con `parametersJsonSchema`). */
-export type DeclaracionHerramienta = { name: NombreHerramienta; description: string; parametersJsonSchema: Record<string, unknown> };
+export type DeclaracionHerramienta = { name: string; description: string; parametersJsonSchema: Record<string, unknown> };
 
-export const DECLARACIONES_ESCENA: readonly DeclaracionHerramienta[] = NOMBRES_HERRAMIENTAS.map((nombre) => ({
-  name: nombre,
-  description: DESCRIPCIONES[nombre],
-  parametersJsonSchema: paraGoogleSchema(z.toJSONSchema(ESQUEMAS[nombre], { target: "draft-7" })) as Record<string, unknown>,
-}));
+export const DECLARACIONES_ESCENA: readonly DeclaracionHerramienta[] = [
+  ...NOMBRES_PROPIOS.map((nombre) => ({
+    name: nombre,
+    description: DESCRIPCIONES[nombre],
+    parametersJsonSchema: paraGoogleSchema(z.toJSONSchema(ESQUEMAS[nombre], { target: "draft-7" })) as Record<string, unknown>,
+  })),
+  ...declaracionesExtra(),
+];
 
 // ----------------------------------------------------------------------------------------------------------
 // Lectura de la escena
@@ -1188,9 +1194,10 @@ function sitioSobreDescrito(escena: Escena, armada: EscenaArmada, a: { padre_id:
  * valor fuera de rango devuelven `ok: false` con la escena intacta y el motivo en español.
  */
 export function aplicarHerramienta(escena: Escena, nombre: string, argumentos: unknown): ResultadoHerramienta {
-  if (!(NOMBRES_HERRAMIENTAS as readonly string[]).includes(nombre)) return { ok: false, escena, error: `No existe la herramienta «${nombre}». Hay: ${NOMBRES_HERRAMIENTAS.join(", ")}.` };
+  if (!NOMBRES_HERRAMIENTAS.includes(nombre)) return { ok: false, escena, error: `No existe la herramienta «${nombre}». Hay: ${NOMBRES_HERRAMIENTAS.join(", ")}.` };
   try {
-    const hecho = ejecutar(escena, nombre as NombreHerramienta, argumentos ?? {});
+    const extra = HERRAMIENTAS_EXTRA[nombre];
+    const hecho = extra ? extra.aplicar(escena, argumentos ?? {}) : ejecutar(escena, nombre as NombreHerramienta, argumentos ?? {});
     return { ok: true, escena: hecho.escena, resumen: hecho.resumen, consulta: hecho.consulta ?? false };
   } catch (error) {
     if (error instanceof z.ZodError) return { ok: false, escena, error: errorDeZod(error) };

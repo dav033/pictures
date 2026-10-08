@@ -1,0 +1,1147 @@
+{
+  "version": 1,
+  "descripcion": "Pedidos a la IA de la escena (/api/escena-ia): los reales del dueño (cosechados de data/registros/conversaciones, campo «mensaje», 2026-10-07/08, tal cual con sus erratas) y otros en su estilo. Cada caso: texto, escena de partida (preset + pasos), checks del efecto esperado y la secuencia ideal de herramientas. Lo usan scripts/test/test-banco-escena-ia.ts (sin coste) y scripts/exp/evaluar-escena-ia.ts (con Gemini, con tope).",
+  "casos": [
+    {
+      "id": "real-01-de-cero-arco-columnas-guirnalda-flores",
+      "origen": "real",
+      "texto": "un arco orgánico rosado y dorado de 3 m, dos columnas blancas a los lados, una guirnalda en la pared del fondo y flores colgando del techo",
+      "cobertura": ["crear", "varias_piezas", "colores"],
+      "contexto": {},
+      "checks": [
+        { "tipo": "hay", "en": { "tipo_pieza": ["arco_organico"] }, "min": 1, "max": 1 },
+        { "tipo": "medida", "en": { "tipo_pieza": ["arco_organico"] }, "eje": "ancho", "min": 290, "max": 420 },
+        { "tipo": "colores", "en": { "tipo_pieza": ["arco_organico"] }, "contienen": [["rosado"], ["dorado"]] },
+        { "tipo": "hay", "en": { "tipo_pieza": ["columna", "organico"], "nombre": "columna" }, "min": 2, "max": 2 },
+        { "tipo": "colores", "en": { "tipo_pieza": ["columna"] }, "contienen": [["blanco"]] },
+        { "tipo": "hay", "en": { "tipo_pieza": ["guirnalda", "organico"], "nombre": "guirnalda" }, "min": 1 },
+        { "tipo": "hay", "en": { "tipo_pieza": ["decoracion"] }, "min": 1 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arco_organico", "ancho_cm": 300, "colores": ["rosado pastel", "dorado"], "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna", "colores": ["blanco"], "nombre": "Columna izquierda", "donde": { "en": "piso", "x_cm": -225, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna", "colores": ["blanco"], "nombre": "Columna derecha", "donde": { "en": "piso", "x_cm": 225, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "guirnalda", "colores": ["rosado pastel", "dorado"], "donde": { "en": "pared", "pared": "fondo", "altura_cm": 250 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "decoracion", "decoracion_id": "flor5", "donde": { "en": "techo", "x_cm": -120, "z_cm": 0, "cuelga_cm": 60 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "decoracion", "decoracion_id": "flor5", "donde": { "en": "techo", "x_cm": 120, "z_cm": 0, "cuelga_cm": 60 } } }
+      ] }
+    },
+    {
+      "id": "real-02-flor-y-estrella-sobre-estructuras",
+      "origen": "real",
+      "texto": "Pon una flor de 5 pétalos sobre la columna izquierda a 1,5 m de altura, de frente, y una estrella dorada en la pata derecha del arco a 1 m del piso.",
+      "cobertura": ["decoraciones_sobre", "lado"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "piezas", "delta": 2 },
+        { "tipo": "solo_cambian", "ids": [] },
+        { "tipo": "padre", "en": { "nuevos": true, "nombre": "flor" }, "padre": { "ids": ["columna-izq"] }, "min": 1 },
+        { "tipo": "padre", "en": { "nuevos": true, "nombre": "estrella" }, "padre": { "ids": ["arco"] }, "min": 1 },
+        { "tipo": "posicion", "en": { "nuevos": true, "nombre": "estrella" }, "x": [100, 200] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "flor5", "padre_id": "columna-izq", "altura_cm": 150, "lado": "frente" } },
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "estrella_dorada", "padre_id": "arco", "altura_cm": 100, "x_cm": 150 } }
+      ] }
+    },
+    {
+      "id": "real-03-dos-columnas-organicas-a-los-lados",
+      "origen": "real",
+      "texto": "Pon dos columnas orgánicas a los lados del arco",
+      "cobertura": ["crear", "lado", "simetria"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda", "pasos": [
+        { "herramienta": "quitar_pieza", "args": { "id": "columna-izq" } },
+        { "herramienta": "quitar_pieza", "args": { "id": "columna-der" } }
+      ] },
+      "checks": [
+        { "tipo": "hay", "en": { "nuevos": true, "tipo_pieza": ["organico"] }, "min": 2, "max": 2 },
+        { "tipo": "solo_cambian", "ids": [] },
+        { "tipo": "posicion", "en": { "nuevos": true }, "x": [-300, 300] },
+        { "tipo": "misma", "en": { "nuevos": true }, "campo": "z" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica", "nombre": "Columna orgánica izquierda", "donde": { "en": "piso", "x_cm": -225, "z_cm": -150 } } },
+        { "herramienta": "espejar", "args": { "id": "columna-organica", "respecto_id": "arco" } }
+      ] }
+    },
+    {
+      "id": "real-04-correccion-no-normales-organicas",
+      "origen": "real",
+      "texto": "no normales, orgánicas",
+      "cobertura": ["correccion"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda", "historial": [
+        { "rol": "usuario", "texto": "Pon dos columnas a los lados del arco" },
+        { "rol": "asistente", "texto": "Listo: puse dos columnas a los lados del arco." }
+      ] },
+      "checks": [
+        { "tipo": "piezas", "delta": 0 },
+        { "tipo": "solo_cambian", "ids": ["columna-izq", "columna-der"] },
+        { "tipo": "hay", "en": { "ids": ["columna-izq", "columna-der"], "tipo_pieza": ["organico"] }, "min": 2 },
+        { "tipo": "posicion", "en": { "ids": ["columna-izq"] }, "x": [-230, -220] },
+        { "tipo": "posicion", "en": { "ids": ["columna-der"] }, "x": [220, 230] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "reemplazar_pieza", "args": { "id": "columna-izq", "tipo": "columna_organica" } },
+        { "herramienta": "reemplazar_pieza", "args": { "id": "columna-der", "tipo": "columna_organica" } }
+      ] }
+    },
+    {
+      "id": "real-05-todo-a-rojo-y-verde",
+      "origen": "real",
+      "texto": "cámbiame todo a rojo y verde",
+      "cobertura": ["colores", "todo"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "piezas", "delta": 0 },
+        { "tipo": "colores", "en": { "todos": true }, "contienen": [["rojo"], ["verde"]] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "recolorear_escena", "args": { "colores": ["rojo", "verde"] } }
+      ] }
+    },
+    {
+      "id": "real-06-columna-organica-2m-tamanos-inclinada",
+      "origen": "real",
+      "texto": "Dame una columna orgánica de 2 m en rosado pastel y dorado (60 y 40 %), con globos de 18, 12 y 5 pulgadas, un poco inclinada a la derecha",
+      "cobertura": ["crear", "formatos", "colores"],
+      "contexto": {},
+      "checks": [
+        { "tipo": "hay", "en": { "tipo_pieza": ["organico"] }, "min": 1, "max": 1 },
+        { "tipo": "medida", "en": { "nuevos": true }, "eje": "alto", "min": 180, "max": 220 },
+        { "tipo": "conteo", "en": { "nuevos": true }, "selector": { "formatos": ["R-24"] }, "compara": "cero" },
+        { "tipo": "conteo", "en": { "nuevos": true }, "selector": { "formatos": ["R-18"] }, "compara": "min", "valor": 1 },
+        { "tipo": "colores", "en": { "nuevos": true }, "contienen": [["rosado"], ["dorado"]] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica", "alto_cm": 200, "colores": ["rosado pastel", "dorado"], "pesos": [60, 40], "tamanos": ["R-18", "R-12", "R-5"], "inclinacion_cm": 25 } }
+      ] }
+    },
+    {
+      "id": "real-07-biblioteca-arco-mas-alto-dorado-flores",
+      "origen": "real",
+      "texto": "Toma el arco orgánico 1 de la biblioteca y hazlo más alto, en dorado y con flores",
+      "cobertura": ["biblioteca", "cambiar"],
+      "contexto": {},
+      "checks": [
+        { "tipo": "hay", "en": { "nuevos": true, "tipo_pieza": ["arco_organico", "organico"] }, "min": 1 },
+        { "tipo": "medida", "en": { "nuevos": true, "tipo_pieza": ["arco_organico", "organico"] }, "eje": "alto", "min": 265, "max": 360 },
+        { "tipo": "colores", "en": { "nuevos": true, "tipo_pieza": ["arco_organico", "organico"] }, "contienen": [["dorado"]] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "buscar_en_biblioteca", "args": { "texto": "arco orgánico" } },
+        { "herramienta": "insertar_de_biblioteca", "args": { "id": "escena:arco_organico_columnas_guirnalda~arco" } },
+        { "herramienta": "cambiar_pieza", "args": { "id": "arco-organico", "alto_cm": 280, "colores": ["dorado"], "flores": true } }
+      ] }
+    },
+    {
+      "id": "real-08-biblioteca-columna-perla-derecha",
+      "origen": "real",
+      "texto": "Usa como base la columna orgánica perla de la biblioteca: ponla a la derecha del arco, en rojo y blanco y de 2,2 m",
+      "cobertura": ["biblioteca", "lado", "cambiar"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "hay", "en": { "nuevos": true, "tipo_pieza": ["organico"], "nombre": "columna" }, "min": 1 },
+        { "tipo": "medida", "en": { "nuevos": true, "tipo_pieza": ["organico"], "nombre": "columna" }, "eje": "alto", "min": 200, "max": 245 },
+        { "tipo": "colores", "en": { "nuevos": true, "tipo_pieza": ["organico"], "nombre": "columna" }, "contienen": [["rojo"], ["blanco"]] },
+        { "tipo": "posicion", "en": { "nuevos": true, "tipo_pieza": ["organico"], "nombre": "columna" }, "x": [150, 300] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "buscar_en_biblioteca", "args": { "texto": "columna orgánica perla" } },
+        { "herramienta": "insertar_de_biblioteca", "args": { "id": "idea:columna-organica~columna", "donde": { "en": "piso", "x_cm": 255, "z_cm": -60 } } },
+        { "herramienta": "cambiar_pieza", "args": { "id": "organico", "alto_cm": 220, "colores": ["rojo", "blanco"] } }
+      ] }
+    },
+    {
+      "id": "real-09-fiesta-infantil-pared-y-organicas",
+      "origen": "real",
+      "texto": "generame una fiesta infantil con una apred de globos y decoraciones organicas",
+      "cobertura": ["crear", "varias_piezas", "erratas"],
+      "contexto": {},
+      "checks": [
+        { "tipo": "hay", "en": { "tipo_pieza": ["pared_malla", "pared_trenzas", "mural"] }, "min": 1 },
+        { "tipo": "hay", "en": { "tipo_pieza": ["organico", "arco_organico"] }, "min": 2 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "pared_malla", "colores": ["rosado pastel", "azul pastel", "amarillo pastel", "verde pastel"], "patron": "rombos" } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica", "colores": ["rosado pastel", "azul pastel", "amarillo pastel"], "nombre": "Columna orgánica izquierda", "donde": { "en": "piso", "x_cm": -230, "z_cm": -150 } } },
+        { "herramienta": "espejar", "args": { "id": "columna-organica" } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "guirnalda_organica", "colores": ["rosado pastel", "azul pastel", "amarillo pastel"] } }
+      ] }
+    },
+    {
+      "id": "real-10-quiero-globos-reflex",
+      "origen": "real",
+      "texto": "quiero globos rrflex",
+      "cobertura": ["colores", "acabado", "erratas"],
+      "contexto": { "pasos": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "pared_malla", "colores": ["rosado pastel", "azul pastel", "amarillo pastel", "verde pastel"], "patron": "rombos" } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica", "colores": ["rosado pastel", "azul pastel", "dorado"], "donde": { "en": "piso", "x_cm": -230, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica", "colores": ["rosado pastel", "azul pastel", "dorado"], "donde": { "en": "piso", "x_cm": 230, "z_cm": -150 } } }
+      ], "historial": [
+        { "rol": "usuario", "texto": "generame una fiesta infantil con una apred de globos y decoraciones organicas" },
+        { "rol": "asistente", "texto": "Armé una pared de globos de rombos pastel y dos columnas orgánicas a los lados." }
+      ] },
+      "checks": [
+        { "tipo": "piezas", "delta": 0 },
+        { "tipo": "colores", "en": { "tipo_pieza": ["organico"] }, "contienen": [["reflex"]] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "cambiar_pieza", "args": { "id": "columna-organica", "acabado": "reflex" } },
+        { "herramienta": "cambiar_pieza", "args": { "id": "columna-organica-2", "acabado": "reflex" } }
+      ] }
+    },
+    {
+      "id": "real-11-columnas-de-2-2m",
+      "origen": "real",
+      "texto": "Haz las columnas de 2,2 m",
+      "cobertura": ["grupos", "medidas"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "solo_cambian", "ids": ["columna-izq", "columna-der"] },
+        { "tipo": "medida", "en": { "ids": ["columna-izq", "columna-der"] }, "eje": "alto", "min": 210, "max": 245 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "seleccionar_grupo", "args": { "texto": "las columnas" } },
+        { "herramienta": "cambiar_pieza", "args": { "id": "columna-izq", "alto_cm": 220 } },
+        { "herramienta": "cambiar_pieza", "args": { "id": "columna-der", "alto_cm": 220 } }
+      ] }
+    },
+    {
+      "id": "real-12-arco-de-r5-con-r24",
+      "origen": "real",
+      "texto": "haz que sean gobo r5 con globos r-24",
+      "cobertura": ["formatos", "nomenclatura", "erratas"],
+      "nota": "Pedido ambiguo del dueño (el modelo no hizo nada): lo razonable es que el arco quede solo de R-24 y R-5.",
+      "contexto": { "pasos": [ { "herramienta": "agregar_pieza", "args": { "tipo": "arco_organico" } } ] },
+      "checks": [
+        { "tipo": "conteo", "en": { "ids": ["arco-organico"] }, "selector": { "formatos": ["R-24"] }, "compara": "min", "valor": 1 },
+        { "tipo": "conteo", "en": { "ids": ["arco-organico"] }, "selector": { "formatos": ["R-5"] }, "compara": "min", "valor": 1 },
+        { "tipo": "conteo", "en": { "ids": ["arco-organico"] }, "selector": { "formatos": ["R-12"] }, "compara": "cero" },
+        { "tipo": "conteo", "en": { "ids": ["arco-organico"] }, "selector": { "formatos": ["R-18"] }, "compara": "cero" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "cambiar_pieza", "args": { "id": "arco-organico", "tamanos": ["R-24", "R-5"] } }
+      ] }
+    },
+    {
+      "id": "real-13-semiarco-mayoria-r9-y-r24",
+      "origen": "real",
+      "texto": "semiarco organico con globso r9 mayoria y r24",
+      "cobertura": ["crear", "formatos", "erratas"],
+      "contexto": {},
+      "checks": [
+        { "tipo": "hay", "en": { "tipo_pieza": ["organico"] }, "min": 1, "max": 1 },
+        { "tipo": "domina", "en": { "nuevos": true }, "mas": { "formatos": ["R-9"] }, "que": { "formatos": ["R-24"] } },
+        { "tipo": "conteo", "en": { "nuevos": true }, "selector": { "formatos": ["R-24"] }, "compara": "min", "valor": 1 },
+        { "tipo": "conteo", "en": { "nuevos": true }, "selector": { "formatos": ["R-18"] }, "compara": "cero" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "semiarco_organico", "tamanos": ["R-24", "R-9"] } }
+      ] }
+    },
+    {
+      "id": "real-14-blanco-a-azul-reflex-y-mas-r24",
+      "origen": "real",
+      "texto": "hazlo que el balnco sea un azul reflex y con mas r24",
+      "cobertura": ["colores", "formatos", "erratas"],
+      "backlog": "ajustar_tamanos no conserva los colores por formato: el Reflex Azul (no se fabrica en R-9) queda solo en los R-24 y al subir los R-24 salen todos Metal Dorado; el azul pedido desaparece",
+      "contexto": { "pasos": [ { "herramienta": "agregar_pieza", "args": { "tipo": "semiarco_organico", "tamanos": ["R-24", "R-9"], "colores": ["blanco", "dorado"] } } ] },
+      "checks": [
+        { "tipo": "conteo", "en": { "ids": ["semiarco-organico"] }, "selector": { "formatos": ["R-24"] }, "compara": "aumenta_pct", "valor": 50 },
+        { "tipo": "colores", "en": { "ids": ["semiarco-organico"] }, "excluye": ["blanco"] },
+        { "tipo": "colores", "en": { "ids": ["semiarco-organico"] }, "contienen": [["azul", "reflex"]], "modo": "alguno" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "cambiar_pieza", "args": { "id": "semiarco-organico", "reemplazar_colores": [{ "de": "blanco", "a": "azul reflex" }] } },
+        { "herramienta": "ajustar_tamanos", "args": { "id": "semiarco-organico", "cambios": [{ "formato": "R-24", "accion": "mas" }] } }
+      ] }
+    },
+    {
+      "id": "real-15-aumenta-los-rs4",
+      "origen": "real",
+      "texto": "aumenta el numro de los rs4",
+      "cobertura": ["formatos", "nomenclatura", "erratas"],
+      "nota": "«rs4» = R-24 (sigue a «con mas r24»).",
+      "contexto": { "pasos": [ { "herramienta": "agregar_pieza", "args": { "tipo": "semiarco_organico", "tamanos": ["R-24", "R-9"], "colores": ["azul reflex", "dorado"] } } ],
+        "historial": [ { "rol": "usuario", "texto": "hazlo que el balnco sea un azul reflex y con mas r24" }, { "rol": "asistente", "texto": "Cambié el blanco por azul reflex y subí los R-24." } ] },
+      "checks": [
+        { "tipo": "conteo", "en": { "ids": ["semiarco-organico"] }, "selector": { "formatos": ["R-24"] }, "compara": "aumenta_pct", "valor": 50 },
+        { "tipo": "piezas", "delta": 0 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "ajustar_tamanos", "args": { "id": "semiarco-organico", "cambios": [{ "formato": "R-24", "accion": "mas" }] } }
+      ] }
+    },
+    {
+      "id": "real-16-aumentar-r24-otra-vez",
+      "origen": "real",
+      "backlog": "el segundo «más R-24» satura (6 → 6, «es lo que cabe en ese cuerpo»): ajustar_tamanos debería engrosar más el cuerpo o alargar la pieza, o la IA proponerlo (el dueño lo pidió 3 veces seguidas)",
+      "texto": "aumentar el numero de los globos r24",
+      "cobertura": ["formatos"],
+      "contexto": { "pasos": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "semiarco_organico", "tamanos": ["R-24", "R-9"], "colores": ["azul reflex", "dorado"] } },
+        { "herramienta": "ajustar_tamanos", "args": { "id": "semiarco-organico", "cambios": [{ "formato": "R-24", "accion": "mas" }] } }
+      ] },
+      "checks": [
+        { "tipo": "conteo", "en": { "ids": ["semiarco-organico"] }, "selector": { "formatos": ["R-24"] }, "compara": "aumenta_pct", "valor": 50 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "ajustar_tamanos", "args": { "id": "semiarco-organico", "cambios": [{ "formato": "R-24", "accion": "mas" }] } }
+      ] }
+    },
+    {
+      "id": "real-17-columna-y-semiarco-selva",
+      "origen": "real",
+      "texto": "hazme una columna organica y un semiarco organico, estilo selva",
+      "cobertura": ["crear", "tematica"],
+      "contexto": {},
+      "checks": [
+        { "tipo": "hay", "en": { "tipo_pieza": ["organico"] }, "min": 2, "max": 2 },
+        { "tipo": "colores", "en": { "tipo_pieza": ["organico"] }, "contienen": [["verde"]], "modo": "alguno" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica", "colores": ["verde selva", "verde lima", "dorado reflex"], "donde": { "en": "piso", "x_cm": -150, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "semiarco_organico", "colores": ["verde selva", "verde lima", "dorado reflex"], "donde": { "en": "piso", "x_cm": 100, "z_cm": -150 } } }
+      ] }
+    },
+    {
+      "id": "real-18-utileria-decoraciones-extra",
+      "origen": "real",
+      "texto": "metele utilieria  decoraciones extra",
+      "cobertura": ["decoraciones_sobre", "erratas"],
+      "contexto": { "pasos": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica", "colores": ["verde selva", "verde lima", "dorado reflex"], "donde": { "en": "piso", "x_cm": -150, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "semiarco_organico", "colores": ["verde selva", "verde lima", "dorado reflex"], "donde": { "en": "piso", "x_cm": 100, "z_cm": -150 } } }
+      ] },
+      "checks": [
+        { "tipo": "hay", "en": { "nuevos": true }, "min": 2 },
+        { "tipo": "solo_cambian", "ids": [] },
+        { "tipo": "padre", "en": { "nuevos": true }, "padre": { "tipo_pieza": ["organico"] }, "min": 2 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "flor_grande", "padre_id": "columna-organica", "altura_cm": 130 } },
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "racimo_dorado", "padre_id": "semiarco-organico", "altura_cm": 170 } }
+      ] }
+    },
+    {
+      "id": "real-19-naranja-a-verde-reflex",
+      "origen": "real",
+      "texto": "cambia el naranja por cverde reflex",
+      "cobertura": ["colores", "reemplazo", "erratas"],
+      "contexto": { "preset": "halloween_arco_calabazas" },
+      "checks": [
+        { "tipo": "piezas", "delta": 0 },
+        { "tipo": "colores", "en": { "todos": true }, "excluye": ["naranja"] },
+        { "tipo": "colores", "en": { "todos": true }, "contienen": [["verde", "reflex"]], "modo": "alguno" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "recolorear_escena", "args": { "reemplazar": [{ "de": "naranja", "a": "verde reflex" }] } }
+      ] }
+    },
+    {
+      "id": "real-20-fiesta-princesas-5-estructuras",
+      "origen": "real",
+      "texto": "daem una fisesta de princes agrega por lo menso 5 estructuras con decoraciones",
+      "cobertura": ["crear", "varias_piezas", "decoraciones_sobre", "erratas"],
+      "contexto": {},
+      "checks": [
+        { "tipo": "hay", "en": { "tipo_pieza": ["arco_organico", "organico", "forma", "columna", "arco", "pared_malla", "guirnalda", "letras", "metalizado"] }, "min": 5 },
+        { "tipo": "hay", "en": { "tipo_pieza": ["decoracion"] }, "min": 1 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arco_organico", "colores": ["rosado pastel", "lila pastel", "blanco", "dorado reflex"], "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica", "colores": ["rosado pastel", "lila pastel", "dorado reflex"], "donde": { "en": "piso", "x_cm": -240, "z_cm": -150 } } },
+        { "herramienta": "espejar", "args": { "id": "columna-organica" } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "forma", "figura": "castillo", "colores": ["rosado pastel", "lila pastel"], "alto_cm": 120, "donde": { "en": "piso", "x_cm": 0, "z_cm": 60 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "aro_organico", "colores": ["rosado pastel", "dorado reflex"], "donde": { "en": "pared", "pared": "izquierda", "altura_cm": 100 } } },
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "estrella_dorada", "padre_id": "columna-organica", "altura_cm": 150 } },
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "flor_lazos_dorados", "padre_id": "arco-organico", "altura_cm": 200 } }
+      ] }
+    },
+    {
+      "id": "real-21-reduce-densidad-estructuras",
+      "origen": "real",
+      "texto": "recuce las densidad de estructuras",
+      "cobertura": ["densidad", "grupos", "erratas"],
+      "backlog": "densidad «menos» baja los globos de estructura pero el relleno de huecos crece: el total SUBE (510 → 596); «menos tupida» debería bajar el total",
+      "nota": "El modelo quitó piezas; lo pedido es que las estructuras sean menos tupidas.",
+      "contexto": { "pasos": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arco_organico", "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica", "donde": { "en": "piso", "x_cm": -250, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica", "donde": { "en": "piso", "x_cm": 250, "z_cm": -150 } } }
+      ] },
+      "checks": [
+        { "tipo": "piezas", "delta": 0 },
+        { "tipo": "conteo", "en": { "ids": ["arco-organico", "columna-organica", "columna-organica-2"] }, "compara": "disminuye_pct", "valor": 10 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "ajustar_tamanos", "args": { "id": "arco-organico", "densidad": "menos" } },
+        { "herramienta": "ajustar_tamanos", "args": { "id": "columna-organica", "densidad": "menos" } },
+        { "herramienta": "ajustar_tamanos", "args": { "id": "columna-organica-2", "densidad": "menos" } }
+      ] }
+    },
+    {
+      "id": "real-22-muro-bandera-colombia",
+      "origen": "real",
+      "texto": "hazme un muro de globos con la bandera dce colombia",
+      "cobertura": ["crear", "colores", "erratas"],
+      "contexto": {},
+      "checks": [
+        { "tipo": "hay", "en": { "tipo_pieza": ["pared_malla", "mural", "pared_trenzas"] }, "min": 1 },
+        { "tipo": "colores", "en": { "todos": true }, "contienen": [["amarillo"]], "modo": "alguno" },
+        { "tipo": "colores", "en": { "todos": true }, "contienen": [["azul"]], "modo": "alguno" },
+        { "tipo": "colores", "en": { "todos": true }, "contienen": [["rojo"]], "modo": "alguno" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "mural", "modelo": "mural_bandera_malla", "colores": ["amarillo", "azul", "rojo"] } }
+      ] }
+    },
+    {
+      "id": "real-23-mas-grande-con-cuartetos",
+      "origen": "real",
+      "texto": "hazmela mas grande con cuartetos",
+      "cobertura": ["correccion", "reemplazo_tipo", "medidas"],
+      "contexto": { "pasos": [ { "herramienta": "agregar_pieza", "args": { "tipo": "mural", "modelo": "mural_bandera_malla", "colores": ["amarillo", "azul", "rojo"] } } ] },
+      "checks": [
+        { "tipo": "hay", "en": { "ids": ["mural"], "tipo_pieza": ["pared_trenzas"] }, "min": 1 },
+        { "tipo": "medida", "en": { "ids": ["mural"] }, "eje": "ancho", "min": 380, "max": 620 },
+        { "tipo": "piezas", "delta": 0 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "reemplazar_pieza", "args": { "id": "mural", "tipo": "pared_trenzas", "ancho_cm": 450, "alto_cm": 260 } }
+      ] }
+    },
+    {
+      "id": "real-24-pinta-la-letra-w-en-la-malla",
+      "origen": "real",
+      "texto": "pinta la letra w de la malla",
+      "cobertura": ["dibujo_en_pared"],
+      "backlog": "pintar una letra o figura DENTRO de una pared/malla (pixeles de otro color); hoy solo hay letras como pieza aparte",
+      "contexto": { "pasos": [ { "herramienta": "agregar_pieza", "args": { "tipo": "pared_trenzas", "ancho_cm": 450, "alto_cm": 260, "colores": ["amarillo", "azul", "rojo"] } } ] },
+      "checks": [
+        { "tipo": "piezas", "delta": 0 },
+        { "tipo": "solo_cambian", "ids": ["pared-trenzas"] }
+      ]
+    },
+    {
+      "id": "real-25-revelacion-de-genero",
+      "origen": "real",
+      "texto": "hazme una revelacion de genero",
+      "cobertura": ["biblioteca"],
+      "contexto": {},
+      "checks": [ { "tipo": "hay", "en": { "nuevos": true }, "min": 10 } ],
+      "esperado": { "herramientas": [
+        { "herramienta": "buscar_en_biblioteca", "args": { "texto": "revelación de género" } },
+        { "herramienta": "insertar_de_biblioteca", "args": { "id": "idea:revelacion-de-genero" } }
+      ] }
+    },
+    {
+      "id": "real-26-columnas-con-decoraciones-organicas",
+      "origen": "real",
+      "texto": "afgregale columans y a esas columans decoraciones organicas",
+      "cobertura": ["crear", "decoraciones_sobre", "erratas"],
+      "contexto": { "pasos": [ { "herramienta": "insertar_de_biblioteca", "args": { "id": "idea:revelacion-de-genero" } } ] },
+      "checks": [
+        { "tipo": "hay", "en": { "nuevos": true, "tipo_pieza": ["organico", "columna"] }, "min": 2 },
+        { "tipo": "padre", "en": { "nuevos": true, "tipo_pieza": ["decoracion"] }, "padre": { "nuevos": true, "tipo_pieza": ["organico", "columna"] }, "min": 2 },
+        { "tipo": "solo_cambian", "ids": [] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica", "colores": ["rosado pastel", "azul pastel", "perla"], "nombre": "Columna orgánica izquierda", "donde": { "en": "piso", "x_cm": -150, "z_cm": 0 } } },
+        { "herramienta": "espejar", "args": { "id": "columna-organica" } },
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "flor_grande", "padre_id": "columna-organica", "altura_cm": 140 } },
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "flor_grande", "padre_id": "columna-organica-2", "altura_cm": 140 } }
+      ] }
+    },
+    {
+      "id": "real-27-marrones-a-dorado-reflex",
+      "origen": "real",
+      "texto": "cambieme los globos marrones por reflex dorado",
+      "cobertura": ["colores", "reemplazo"],
+      "contexto": { "preset": "halloween_arbol_fantasmas" },
+      "checks": [
+        { "tipo": "piezas", "delta": 0 },
+        { "tipo": "colores", "en": { "todos": true }, "excluye": ["chocolate", "cafe"] },
+        { "tipo": "colores", "en": { "todos": true }, "contienen": [["reflex", "dorado"]], "modo": "alguno" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "recolorear_escena", "args": { "reemplazar": [{ "de": "076", "a": "dorado reflex" }] } }
+      ] }
+    },
+    {
+      "id": "real-28-vuelve-el-color-a-fashion-verde",
+      "origen": "real",
+      "texto": "vuelve el corror a fashion verde",
+      "cobertura": ["colores", "correccion", "erratas"],
+      "contexto": { "preset": "halloween_arbol_fantasmas", "pasos": [ { "herramienta": "recolorear_escena", "args": { "reemplazar": [{ "de": "076", "a": "dorado reflex" }] } } ],
+        "historial": [ { "rol": "usuario", "texto": "cambieme los globos marrones por reflex dorado" }, { "rol": "asistente", "texto": "Cambié el Fashion Chocolate del árbol y las ramas por Reflex Dorado." } ] },
+      "checks": [
+        { "tipo": "colores", "en": { "todos": true }, "excluye": ["970"] },
+        { "tipo": "colores", "en": { "todos": true }, "contienen": [["fashion", "verde"]], "modo": "alguno" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "recolorear_escena", "args": { "reemplazar": [{ "de": "970", "a": "fashion verde" }] } }
+      ] }
+    },
+    {
+      "id": "real-29-solo-los-link-o-loon-a-chocolate",
+      "origen": "real",
+      "texto": "solo los link aloon a fashion chocolate",
+      "cobertura": ["nomenclatura", "ambiguedad", "formatos"],
+      "nota": "En esa escena no hay link-o-loon: lo correcto es contarlos (0) y preguntar si se refiere a las ramas de tubitos.",
+      "contexto": { "preset": "halloween_arbol_fantasmas" },
+      "checks": [ { "tipo": "pregunta", "opciones_min": 2 }, { "tipo": "sin_cambios" } ],
+      "esperado": { "herramientas": [
+        { "herramienta": "contar_globos", "args": { "formatos": ["link-o-loon"] } },
+        { "herramienta": "preguntar_usuario", "args": { "pregunta": "En la escena no hay link-o-loon. ¿Te refieres a las ramas de tubitos?", "opciones": ["las ramas de tubitos", "todo el árbol"] } }
+      ] }
+    },
+    {
+      "id": "real-30-ramas-verde-reflex",
+      "origen": "real",
+      "texto": "haz que las rams sean verdes reflex",
+      "cobertura": ["colores", "partes", "erratas"],
+      "contexto": { "preset": "halloween_arbol_fantasmas" },
+      "checks": [
+        { "tipo": "solo_cambian", "ids": ["ramas"] },
+        { "tipo": "colores", "en": { "ids": ["ramas"] }, "contienen": [["verde"]] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "cambiar_pieza", "args": { "id": "ramas", "colores": ["verde reflex"] } }
+      ] }
+    },
+    {
+      "id": "real-31-arco-azul-rosa-columna-globo-revelacion",
+      "origen": "real",
+      "texto": "Dame un arco de color azul y rosa pastel de 1.5 metros de alto y dos metros de largo, al lado una dcolumna con los mismos colores con un globo gradne de revelacion de genero",
+      "cobertura": ["crear", "medidas", "decoraciones_sobre", "erratas"],
+      "contexto": {},
+      "checks": [
+        { "tipo": "hay", "en": { "tipo_pieza": ["arco"] }, "min": 1, "max": 1 },
+        { "tipo": "medida", "en": { "tipo_pieza": ["arco"] }, "eje": "alto", "min": 140, "max": 185 },
+        { "tipo": "medida", "en": { "tipo_pieza": ["arco"] }, "eje": "ancho", "min": 190, "max": 250 },
+        { "tipo": "hay", "en": { "tipo_pieza": ["columna"] }, "min": 1 },
+        { "tipo": "padre", "en": { "tipo_pieza": ["decoracion"] }, "padre": { "tipo_pieza": ["columna"] }, "min": 1 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arco", "alto_cm": 150, "ancho_cm": 200, "colores": ["azul pastel", "rosado pastel"], "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna", "colores": ["azul pastel", "rosado pastel"], "donde": { "en": "piso", "x_cm": 175, "z_cm": -150 } } },
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "doble_globo", "padre_id": "columna", "altura_cm": 170 } }
+      ] }
+    },
+    {
+      "id": "real-32-columna-a-1m-con-globo-r36",
+      "origen": "real",
+      "texto": "baja la coolumna a un metro y pongle uy n glboo r35 de revelacion de genero",
+      "cobertura": ["medidas", "formatos", "erratas"],
+      "backlog": "poner un globo suelto (R-36) encima de una columna: poner_sobre solo acepta decoraciones predefinidas, no un globo de formato libre; y la tabla no tiene «r35» (el dueño quiso R-36)",
+      "contexto": { "pasos": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arco", "alto_cm": 150, "ancho_cm": 200, "colores": ["azul pastel", "rosado pastel"], "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna", "colores": ["azul pastel", "rosado pastel"], "donde": { "en": "piso", "x_cm": 175, "z_cm": -150 } } }
+      ] },
+      "checks": [
+        { "tipo": "medida", "en": { "ids": ["columna"] }, "eje": "alto", "min": 90, "max": 130 },
+        { "tipo": "conteo", "en": { "todos": true }, "selector": { "formatos": ["R-36"] }, "compara": "min", "valor": 1 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "cambiar_pieza", "args": { "id": "columna", "alto_cm": 100 } },
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "doble_globo", "padre_id": "columna", "altura_cm": 100 } }
+      ] }
+    },
+    {
+      "id": "real-33-solo-la-palmera-otra-al-borde-y-mural-mar",
+      "origen": "real",
+      "texto": "elimna todo menos la palmera pon otra palmera enlos bordes y agrega un mural que abarque toda la pare  que simule u n mar",
+      "cobertura": ["crud", "simetria", "medidas", "erratas"],
+      "contexto": { "pasos": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arco", "alto_cm": 150, "ancho_cm": 200, "colores": ["azul pastel", "rosado pastel"], "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "columna", "colores": ["azul pastel", "rosado pastel"], "donde": { "en": "piso", "x_cm": 175, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arbol", "modelo": "arbol_palmera_curva", "donde": { "en": "piso", "x_cm": -120, "z_cm": -60 } } }
+      ] },
+      "checks": [
+        { "tipo": "hay", "en": { "tipo_pieza": ["arco", "columna"] }, "max": 0 },
+        { "tipo": "hay", "en": { "tipo_pieza": ["arbol_globos"] }, "min": 2, "max": 2 },
+        { "tipo": "simetricas", "a": "arbol", "b": { "tipo_pieza": ["arbol_globos"] } },
+        { "tipo": "posicion", "en": { "tipo_pieza": ["arbol_globos"] }, "x": [-300, 300] },
+        { "tipo": "hay", "en": { "tipo_pieza": ["pared_malla", "mural", "pared_trenzas"] }, "min": 1 },
+        { "tipo": "medida", "en": { "tipo_pieza": ["pared_malla", "mural", "pared_trenzas"] }, "eje": "ancho", "min": 540, "max": 640 },
+        { "tipo": "colores", "en": { "tipo_pieza": ["pared_malla", "mural", "pared_trenzas"] }, "contienen": [["azul"]], "modo": "alguno" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "quitar_pieza", "args": { "id": "arco" } },
+        { "herramienta": "quitar_pieza", "args": { "id": "columna" } },
+        { "herramienta": "mover_pieza", "args": { "id": "arbol", "donde": { "en": "piso", "x_cm": -230, "z_cm": -130 } } },
+        { "herramienta": "espejar", "args": { "id": "arbol" } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "pared_malla", "ancho_cm": 600, "alto_cm": 300, "colores": ["azul rey", "azul", "azul pastel", "blanco"], "patron": "franjas" } }
+      ] }
+    },
+    {
+      "id": "real-34-mural-toda-la-pared-y-alinea-palmeras",
+      "origen": "real",
+      "texto": "haz el muero ams grande que abarque toda la pared y alinea bien las palmeras",
+      "cobertura": ["medidas", "alinear", "grupos", "erratas"],
+      "contexto": { "pasos": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arbol", "modelo": "arbol_palmera_curva", "nombre": "Palmera izquierda", "donde": { "en": "piso", "x_cm": -240, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arbol", "modelo": "arbol_palmera_curva", "nombre": "Palmera derecha", "donde": { "en": "piso", "x_cm": 190, "z_cm": -90 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "pared_malla", "ancho_cm": 450, "alto_cm": 250, "colores": ["azul rey", "azul", "azul pastel", "blanco"], "patron": "franjas", "nombre": "Mural del mar" } }
+      ] },
+      "checks": [
+        { "tipo": "medida", "en": { "ids": ["pared-malla"] }, "eje": "ancho", "min": 540, "max": 640 },
+        { "tipo": "misma", "en": { "tipo_pieza": ["arbol_globos"] }, "campo": "z" },
+        { "tipo": "simetricas", "a": "arbol", "b": { "ids": ["arbol-2"] } }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "cambiar_pieza", "args": { "id": "pared-malla", "ancho_cm": 600, "alto_cm": 300 } },
+        { "herramienta": "seleccionar_grupo", "args": { "texto": "las palmeras" } },
+        { "herramienta": "alinear", "args": { "grupo": "las palmeras", "como": ["fila", "misma_linea"], "entre_centros_cm": 480, "centro_x_cm": 0, "z_cm": -150 } }
+      ] }
+    },
+    {
+      "id": "real-35-arco-organico-pequeno-entre-palmeras",
+      "origen": "real",
+      "texto": "agrega una arco organico pequeño entre las dos palmeras",
+      "cobertura": ["crear", "grupos", "medidas"],
+      "contexto": { "pasos": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arbol", "modelo": "arbol_palmera_curva", "donde": { "en": "piso", "x_cm": -240, "z_cm": -150 } } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arbol", "modelo": "arbol_palmera_curva", "donde": { "en": "piso", "x_cm": 240, "z_cm": -150 } } }
+      ] },
+      "checks": [
+        { "tipo": "hay", "en": { "nuevos": true, "tipo_pieza": ["arco_organico"] }, "min": 1, "max": 1 },
+        { "tipo": "posicion", "en": { "nuevos": true }, "x": [-30, 30] },
+        { "tipo": "medida", "en": { "nuevos": true }, "eje": "ancho", "min": 150, "max": 320 },
+        { "tipo": "solo_cambian", "ids": [] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arco_organico", "ancho_cm": 200, "alto_cm": 200, "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } }
+      ] }
+    },
+    {
+      "id": "real-36-contraste-reflex-otros-colores",
+      "origen": "real",
+      "texto": "no se ve bien el contrasste usa reflex de otro coloresw",
+      "cobertura": ["colores", "acabado", "erratas"],
+      "contexto": { "pasos": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "pared_malla", "ancho_cm": 600, "alto_cm": 300, "colores": ["azul rey", "azul", "azul pastel", "blanco"], "patron": "franjas" } },
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arco_organico", "ancho_cm": 200, "alto_cm": 200, "colores": ["azul", "blanco"], "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } }
+      ] },
+      "checks": [
+        { "tipo": "solo_cambian", "ids": ["arco-organico"] },
+        { "tipo": "colores", "en": { "ids": ["arco-organico"] }, "contienen": [["reflex"]] },
+        { "tipo": "colores", "en": { "ids": ["arco-organico"] }, "excluye": ["fashion azul", "fashion blanco"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "cambiar_pieza", "args": { "id": "arco-organico", "colores": ["dorado reflex", "plata reflex", "fucsia reflex"] } }
+      ] }
+    },
+    {
+      "id": "real-37-reflex-de-colores-oscuros",
+      "origen": "real",
+      "texto": "usa reflex de coloresoscuros",
+      "cobertura": ["colores", "acabado", "erratas"],
+      "backlog": "colores que no se fabrican en un formato caen en Fashion Blanco SIN aviso: el arco queda con R-9 005 (Reflex Azul/Violeta/Cristal Rojo no vienen en R-9); debería usar el reflex más parecido que sí viene y decirlo",
+      "contexto": { "pasos": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arco_organico", "ancho_cm": 200, "alto_cm": 200, "colores": ["dorado reflex", "plata reflex"], "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } }
+      ] },
+      "checks": [
+        { "tipo": "colores", "en": { "ids": ["arco-organico"] }, "contienen": [["reflex"]] },
+        { "tipo": "colores", "en": { "ids": ["arco-organico"] }, "excluye": ["plata", "dorado"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "cambiar_pieza", "args": { "id": "arco-organico", "colores": ["azul reflex", "violeta reflex", "rojo reflex"] } }
+      ] }
+    },
+    {
+      "id": "real-38-fashion-blanco-a-verde-oscuro",
+      "origen": "real",
+      "texto": "cmabia los fashion blanco por fashion verde oscuro",
+      "cobertura": ["colores", "reemplazo", "nomenclatura", "erratas"],
+      "nota": "«fashion verde oscuro» no resuelve a ningún código (lo más cercano: Fashion Verde Selva 032): el glosario de colores debería cubrirlo.",
+      "contexto": { "pasos": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arco_organico", "ancho_cm": 200, "alto_cm": 200, "colores": ["azul reflex", "blanco"], "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } }
+      ] },
+      "checks": [
+        { "tipo": "colores", "en": { "todos": true }, "excluye": ["005"] },
+        { "tipo": "colores", "en": { "todos": true }, "contienen": [["verde"]], "modo": "alguno" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "recolorear_escena", "args": { "reemplazar": [{ "de": "fashion blanco", "a": "verde selva" }] } }
+      ] }
+    },
+    {
+      "id": "real-39-grandes-rojo-reflex-pequenos-amarillo",
+      "origen": "real",
+      "texto": "todos los globos grandes deben ser reflex rojo y los mas pequeos amarilo fashion de la arco organico",
+      "cobertura": ["formatos", "colores", "erratas"],
+      "contexto": { "pasos": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "arco_organico", "ancho_cm": 200, "alto_cm": 200, "colores": ["azul reflex", "violeta reflex"], "donde": { "en": "piso", "x_cm": 0, "z_cm": -150 } } }
+      ] },
+      "checks": [
+        { "tipo": "colores", "en": { "ids": ["arco-organico"] }, "selector": { "formatos": ["R-24", "R-18"] }, "contienen": [["rojo"]] },
+        { "tipo": "colores", "en": { "ids": ["arco-organico"] }, "selector": { "formatos": ["R-5"] }, "contienen": [["amarillo"]] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "ajustar_tamanos", "args": { "id": "arco-organico", "colores_por_tamano": [
+          { "formatos": ["R-24", "R-18"], "colores": ["rojo reflex"], "exclusivo": true },
+          { "formatos": ["R-9", "R-5"], "colores": ["amarillo fashion"], "exclusivo": true }
+        ] } }
+      ] }
+    },
+
+    {
+      "id": "estilo-01-r24-solo-abajo",
+      "origen": "estilo",
+      "texto": "ponle mas r24 a la columna pero solo abajo",
+      "cobertura": ["formatos", "zonas"],
+      "contexto": { "pasos": [ { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica" } } ] },
+      "checks": [
+        { "tipo": "conteo", "en": { "ids": ["columna-organica"] }, "selector": { "formatos": ["R-24"] }, "compara": "min", "valor": 1 },
+        { "tipo": "solo_cambian", "ids": ["columna-organica"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "ajustar_tamanos", "args": { "id": "columna-organica", "cambios": [{ "formato": "R-24", "accion": "mas", "donde": "abajo", "solo_ahi": true }] } }
+      ] }
+    },
+    {
+      "id": "estilo-02-quitale-los-r5-al-arco",
+      "origen": "estilo",
+      "texto": "quitale los r5 al arco",
+      "cobertura": ["formatos", "nomenclatura"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "conteo", "en": { "ids": ["arco"] }, "selector": { "formatos": ["R-5"] }, "compara": "cero" },
+        { "tipo": "solo_cambian", "ids": ["arco"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "ajustar_tamanos", "args": { "id": "arco", "cambios": [{ "formato": "R-5", "accion": "quitar" }] } }
+      ] }
+    },
+    {
+      "id": "estilo-03-link-o-loon-de-la-pared-en-dorado",
+      "origen": "estilo",
+      "texto": "los link-o-loon de la pared en dorado",
+      "cobertura": ["nomenclatura", "formatos", "colores"],
+      "contexto": { "preset": "pared_fondo_columnas" },
+      "checks": [
+        { "tipo": "solo_cambian", "ids": ["pared"] },
+        { "tipo": "colores", "en": { "ids": ["pared"] }, "selector": { "formatos": ["LOL-*"] }, "contienen": [["dorado"]] },
+        { "tipo": "solo_cambian_globos", "id": "pared", "selector": { "formatos": ["LOL-*"] } }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "cambiar_pieza", "args": { "id": "pared", "colores": ["dorado"] } }
+      ] }
+    },
+    {
+      "id": "estilo-04-tubitos-de-las-calabazas-en-morado",
+      "origen": "estilo",
+      "texto": "los tubitos de las calabazas ponlos morados",
+      "cobertura": ["nomenclatura", "formatos", "grupos", "colores"],
+      "contexto": { "preset": "halloween_arco_calabazas" },
+      "checks": [
+        { "tipo": "solo_cambian", "ids": ["calabaza-izq", "calabaza-der"] },
+        { "tipo": "solo_cambian_globos", "id": "calabaza-izq", "selector": { "formatos": ["T-*"] } },
+        { "tipo": "colores", "en": { "ids": ["calabaza-izq", "calabaza-der"] }, "selector": { "formatos": ["T-*"] }, "contienen": [["violeta"], ["morado"], ["lila"], ["purpura"]] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "seleccionar_grupo", "args": { "texto": "las calabazas" } },
+        { "herramienta": "recolorear_escena", "args": { "ids": ["calabaza-izq", "calabaza-der"], "reemplazar": [{ "de": "031", "a": "violeta" }] } }
+      ] }
+    },
+    {
+      "id": "estilo-05-doble-de-r24-en-el-arco",
+      "origen": "estilo",
+      "texto": "súbele el doble de R24 al arco",
+      "cobertura": ["formatos", "cantidades"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "conteo", "en": { "ids": ["arco"] }, "selector": { "formatos": ["R-24"] }, "compara": "aumenta_pct", "valor": 80 },
+        { "tipo": "solo_cambian", "ids": ["arco"] },
+        { "tipo": "respuesta_con_numeros" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "contar_globos", "args": { "ids": ["arco"], "formatos": ["R-24"] } },
+        { "herramienta": "ajustar_tamanos", "args": { "id": "arco", "cambios": [{ "formato": "R-24", "accion": "poner", "cantidad": 8 }] } }
+      ] }
+    },
+    {
+      "id": "estilo-06-columna-izquierda-dorada-y-la-derecha-igual",
+      "origen": "estilo",
+      "texto": "la columna izquierda en dorado y la derecha igual",
+      "cobertura": ["lado", "grupos", "colores"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "solo_cambian", "ids": ["columna-izq", "columna-der"] },
+        { "tipo": "colores", "en": { "ids": ["columna-izq", "columna-der"] }, "contienen": [["dorado"]] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "cambiar_pieza", "args": { "id": "columna-izq", "colores": ["dorado"] } },
+        { "herramienta": "cambiar_pieza", "args": { "id": "columna-der", "colores": ["dorado"] } }
+      ] }
+    },
+    {
+      "id": "estilo-07-columnas-en-linea-con-el-arco",
+      "origen": "estilo",
+      "texto": "pon las dos columnas alineadas con el arco",
+      "cobertura": ["alinear", "grupos"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda", "pasos": [ { "herramienta": "mover_pieza", "args": { "id": "columna-der", "donde": { "en": "piso", "z_cm": -60 } } } ] },
+      "checks": [
+        { "tipo": "misma", "en": { "ids": ["arco", "columna-izq", "columna-der"] }, "campo": "z" },
+        { "tipo": "solo_cambian", "ids": ["columna-der"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "alinear", "args": { "ids": ["arco", "columna-izq", "columna-der"], "como": ["misma_linea"], "z_cm": -150 } }
+      ] }
+    },
+    {
+      "id": "estilo-08-columnas-en-fila-a-1m",
+      "origen": "estilo",
+      "texto": "pon las columnas en fila con 1 m de separacion entre ellas",
+      "cobertura": ["alinear", "grupos", "medidas"],
+      "contexto": { "preset": "pared_fondo_columnas" },
+      "checks": [
+        { "tipo": "solo_cambian", "ids": ["columna-izq", "columna-der"] },
+        { "tipo": "posicion", "en": { "ids": ["columna-izq"] }, "x": [-85, -60] },
+        { "tipo": "posicion", "en": { "ids": ["columna-der"] }, "x": [60, 85] },
+        { "tipo": "misma", "en": { "ids": ["columna-izq", "columna-der"] }, "campo": "z" }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "alinear", "args": { "grupo": "las columnas", "como": ["fila"], "separacion_cm": 100, "centro_x_cm": 0 } }
+      ] }
+    },
+    {
+      "id": "estilo-09-flores-del-techo-parejas",
+      "origen": "estilo",
+      "texto": "reparte las flores del techo parejas de -2 m a 2 m",
+      "cobertura": ["distribuir", "grupos"],
+      "contexto": { "preset": "techo_racimos" },
+      "checks": [
+        { "tipo": "equidistantes", "en": { "nombre": "flor" } },
+        { "tipo": "posicion", "en": { "nombre": "flor" }, "x": [-205, 205] },
+        { "tipo": "solo_cambian", "ids": ["flor-1", "flor-2", "flor-3", "flor-4", "flor-5"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "distribuir", "args": { "grupo": "las flores del techo", "desde_x_cm": -200, "hasta_x_cm": 200 } }
+      ] }
+    },
+    {
+      "id": "estilo-10-copia-de-la-columna-al-otro-lado",
+      "origen": "estilo",
+      "texto": "haz una copia de la columna izquierda al otro lado del arco, igualita",
+      "cobertura": ["espejar", "lado"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda", "pasos": [ { "herramienta": "quitar_pieza", "args": { "id": "columna-der" } } ] },
+      "checks": [
+        { "tipo": "hay", "en": { "tipo_pieza": ["columna"] }, "min": 2, "max": 2 },
+        { "tipo": "simetricas", "a": "columna-izq", "b": { "nuevos": true, "tipo_pieza": ["columna"] } },
+        { "tipo": "solo_cambian", "ids": [] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "espejar", "args": { "id": "columna-izq", "respecto_id": "arco" } }
+      ] }
+    },
+    {
+      "id": "estilo-11-espejo-de-la-columna-inclinada",
+      "origen": "estilo",
+      "texto": "pon la misma columna inclinada del otro lado pero en espejo",
+      "cobertura": ["espejar", "simetria"],
+      "contexto": { "pasos": [ { "herramienta": "agregar_pieza", "args": { "tipo": "columna_organica", "inclinacion_cm": 60, "donde": { "en": "piso", "x_cm": -200, "z_cm": -150 } } } ] },
+      "checks": [
+        { "tipo": "hay", "en": { "tipo_pieza": ["organico"] }, "min": 2 },
+        { "tipo": "simetricas", "a": "columna-organica", "b": { "nuevos": true }, "forma": true, "tolerancia": 20 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "espejar", "args": { "id": "columna-organica" } }
+      ] }
+    },
+    {
+      "id": "estilo-12-cuantos-r24-tiene-el-arco",
+      "origen": "estilo",
+      "texto": "cuantos r24 tiene el arco?",
+      "cobertura": ["contar", "nomenclatura"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [ { "tipo": "sin_cambios" }, { "tipo": "respuesta_con_numeros" } ],
+      "esperado": { "herramientas": [
+        { "herramienta": "contar_globos", "args": { "grupo": "el arco", "formatos": ["r24"] } }
+      ] }
+    },
+    {
+      "id": "estilo-13-cuantos-globos-hay-en-total",
+      "origen": "estilo",
+      "texto": "cuantos globos hay en total en la escena",
+      "cobertura": ["contar"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [ { "tipo": "sin_cambios" }, { "tipo": "respuesta_con_numeros" } ],
+      "esperado": { "herramientas": [ { "herramienta": "contar_globos", "args": {} } ] }
+    },
+    {
+      "id": "estilo-14-cambiale-el-color-a-la-elegida",
+      "origen": "estilo",
+      "texto": "cámbiale el color a rojo",
+      "cobertura": ["seleccion", "colores"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda", "seleccion": "columna-der" },
+      "checks": [
+        { "tipo": "solo_cambian", "ids": ["columna-der"] },
+        { "tipo": "colores", "en": { "ids": ["columna-der"] }, "contienen": [["rojo"]] }
+      ],
+      "esperado": { "herramientas": [ { "herramienta": "cambiar_pieza", "args": { "id": "columna-der", "colores": ["rojo"] } } ] }
+    },
+    {
+      "id": "estilo-15-hazla-mas-alta-la-elegida",
+      "origen": "estilo",
+      "texto": "hazla más alta, de 2,5 m",
+      "cobertura": ["seleccion", "medidas"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda", "seleccion": "columna-izq" },
+      "checks": [
+        { "tipo": "solo_cambian", "ids": ["columna-izq"] },
+        { "tipo": "medida", "en": { "ids": ["columna-izq"] }, "eje": "alto", "min": 240, "max": 275 }
+      ],
+      "esperado": { "herramientas": [ { "herramienta": "cambiar_pieza", "args": { "id": "columna-izq", "alto_cm": 250 } } ] }
+    },
+    {
+      "id": "estilo-16-cual-columna-pregunta",
+      "origen": "estilo",
+      "texto": "cambia el color de la columna a azul",
+      "cobertura": ["ambiguedad"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [ { "tipo": "pregunta", "opciones_min": 2 }, { "tipo": "sin_cambios" } ],
+      "esperado": { "herramientas": [
+        { "herramienta": "preguntar_usuario", "args": { "pregunta": "¿Cuál columna: la izquierda o la derecha?", "opciones": ["la columna izquierda", "la columna derecha", "las dos"] } }
+      ] }
+    },
+    {
+      "id": "estilo-17-quita-la-flor-pregunta",
+      "origen": "estilo",
+      "texto": "quita la flor",
+      "cobertura": ["ambiguedad", "crud"],
+      "contexto": { "preset": "techo_racimos" },
+      "checks": [ { "tipo": "pregunta", "opciones_min": 2 }, { "tipo": "sin_cambios" } ],
+      "esperado": { "herramientas": [
+        { "herramienta": "preguntar_usuario", "args": { "pregunta": "Hay 5 flores en el techo: ¿cuál quito?", "opciones": ["la del centro", "las de los extremos", "todas"] } }
+      ] }
+    },
+    {
+      "id": "estilo-18-no-la-otra-columna",
+      "origen": "estilo",
+      "texto": "no, la otra columna",
+      "cobertura": ["correccion", "lado"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda", "pasos": [ { "herramienta": "cambiar_pieza", "args": { "id": "columna-izq", "colores": ["rojo"] } } ],
+        "historial": [ { "rol": "usuario", "texto": "pon la columna en rojo" }, { "rol": "asistente", "texto": "Cambié la columna izquierda a rojo." } ] },
+      "checks": [
+        { "tipo": "colores", "en": { "ids": ["columna-der"] }, "contienen": [["rojo"]] },
+        { "tipo": "colores", "en": { "ids": ["columna-izq"] }, "excluye": ["rojo"] },
+        { "tipo": "solo_cambian", "ids": ["columna-izq", "columna-der"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "cambiar_pieza", "args": { "id": "columna-izq", "colores": ["609", "005", "570", "010"], "patron": "espiral" } },
+        { "herramienta": "cambiar_pieza", "args": { "id": "columna-der", "colores": ["rojo"] } }
+      ] }
+    },
+    {
+      "id": "estilo-19-cuatro-flores-alrededor-de-la-columna",
+      "origen": "estilo",
+      "texto": "ponle 4 flores alrededor a la columna derecha a 1,5 m",
+      "cobertura": ["decoraciones_sobre", "lado", "cantidades"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "piezas", "delta": 4 },
+        { "tipo": "padre", "en": { "nuevos": true }, "padre": { "ids": ["columna-der"] }, "min": 4 }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "flor5", "padre_id": "columna-der", "altura_cm": 150, "angulo_grados": 0 } },
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "flor5", "padre_id": "columna-der", "altura_cm": 150, "angulo_grados": 90 } },
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "flor5", "padre_id": "columna-der", "altura_cm": 150, "angulo_grados": 180 } },
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "flor5", "padre_id": "columna-der", "altura_cm": 150, "angulo_grados": -90 } }
+      ] }
+    },
+    {
+      "id": "estilo-20-quita-todas-las-guirnaldas",
+      "origen": "estilo",
+      "texto": "quita todas las guirnaldas",
+      "cobertura": ["grupos", "crud"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda", "pasos": [ { "herramienta": "agregar_pieza", "args": { "tipo": "guirnalda_organica", "donde": { "en": "pared", "pared": "izquierda", "altura_cm": 180 } } } ] },
+      "checks": [
+        { "tipo": "hay", "en": { "nombre": "guirnalda" }, "max": 0 },
+        { "tipo": "piezas", "delta": -2 },
+        { "tipo": "solo_cambian", "ids": ["guirnalda", "guirnalda-organica"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "seleccionar_grupo", "args": { "texto": "todas las guirnaldas" } },
+        { "herramienta": "quitar_pieza", "args": { "id": "guirnalda" } },
+        { "herramienta": "quitar_pieza", "args": { "id": "guirnalda-organica" } }
+      ] }
+    },
+    {
+      "id": "estilo-21-flores-de-la-columna-izquierda-a-la-derecha",
+      "origen": "estilo",
+      "texto": "las flores de la columna izquierda pasalas a la derecha",
+      "cobertura": ["grupos", "decoraciones_sobre", "lado"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda", "pasos": [
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "flor5", "padre_id": "columna-izq", "altura_cm": 150 } },
+        { "herramienta": "poner_sobre", "args": { "decoracion_id": "flor4", "padre_id": "columna-izq", "altura_cm": 100 } }
+      ] },
+      "checks": [
+        { "tipo": "padre", "en": { "ids": ["flor5", "flor4"] }, "padre": { "ids": ["columna-der"] }, "min": 2 },
+        { "tipo": "piezas", "delta": 0 },
+        { "tipo": "solo_cambian", "ids": ["flor5", "flor4"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "seleccionar_grupo", "args": { "texto": "las flores de la columna izquierda" } },
+        { "herramienta": "mover_sobre", "args": { "id": "flor5", "padre_id": "columna-der", "altura_cm": 150 } },
+        { "herramienta": "mover_sobre", "args": { "id": "flor4", "padre_id": "columna-der", "altura_cm": 100 } }
+      ] }
+    },
+    {
+      "id": "estilo-22-tubitos-verdes-en-la-guirnalda",
+      "origen": "estilo",
+      "texto": "ponle tubitos verdes enrollados a la guirnalda",
+      "cobertura": ["nomenclatura", "decoraciones_sobre"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "padre", "en": { "nuevos": true }, "padre": { "ids": ["guirnalda"] }, "min": 1 },
+        { "tipo": "conteo", "en": { "nuevos": true }, "selector": { "formatos": ["tubitos"] }, "compara": "min", "valor": 1 },
+        { "tipo": "colores", "en": { "nuevos": true }, "selector": { "formatos": ["T-*"] }, "contienen": [["verde"]] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "agregar_pieza", "args": { "tipo": "decoracion", "decoracion_id": "rizo_tirabuzon", "colores": ["verde"], "donde": { "en": "ancla", "padre_id": "guirnalda", "ancla": 0, "cada": 3 } } }
+      ] }
+    },
+    {
+      "id": "estilo-23-guirnalda-en-r12-en-vez-de-r9",
+      "origen": "estilo",
+      "texto": "hazme la guirnalda con R12 en vez de R9",
+      "cobertura": ["formatos", "nomenclatura"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "conteo", "en": { "ids": ["guirnalda"] }, "selector": { "formatos": ["R-9"] }, "compara": "cero" },
+        { "tipo": "conteo", "en": { "ids": ["guirnalda"] }, "selector": { "formatos": ["R-12"] }, "compara": "min", "valor": 1 },
+        { "tipo": "solo_cambian", "ids": ["guirnalda"] }
+      ],
+      "esperado": { "herramientas": [ { "herramienta": "cambiar_pieza", "args": { "id": "guirnalda", "formato": "R-12" } } ] }
+    },
+    {
+      "id": "estilo-24-menos-chicos-mas-medianos",
+      "origen": "estilo",
+      "texto": "menos globos chicos en el arco y mas medianos",
+      "cobertura": ["formatos", "tamanos_por_palabra"],
+      "backlog": "«menos R-5»: el resumen dice R-5 192 → 87 (solo estructura) pero el relleno de huecos vuelve a R-5 y la pieza queda con 319; el resumen engaña y el relleno no obedece a «menos chicos»",
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "conteo", "en": { "ids": ["arco"] }, "selector": { "formatos": ["R-5"] }, "compara": "disminuye_pct", "valor": 20 },
+        { "tipo": "conteo", "en": { "ids": ["arco"] }, "selector": { "formatos": ["R-12"] }, "compara": "aumenta_pct", "valor": 30 },
+        { "tipo": "solo_cambian", "ids": ["arco"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "ajustar_tamanos", "args": { "id": "arco", "cambios": [
+          { "formato": "R-5", "accion": "menos" }, { "formato": "R-9", "accion": "menos" }, { "formato": "R-12", "accion": "mas" }, { "formato": "R-18", "accion": "mas" }
+        ] } }
+      ] }
+    },
+    {
+      "id": "estilo-25-treinta-por-ciento-r18",
+      "origen": "estilo",
+      "texto": "que el 30% del arco sean r18",
+      "cobertura": ["formatos", "cantidades"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "conteo", "en": { "ids": ["arco"] }, "selector": { "formatos": ["R-18"] }, "compara": "aumenta_pct", "valor": 30 },
+        { "tipo": "solo_cambian", "ids": ["arco"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "ajustar_tamanos", "args": { "id": "arco", "cambios": [{ "formato": "R-18", "accion": "poner", "porcentaje": 30 }] } }
+      ] }
+    },
+    {
+      "id": "estilo-26-centra-el-arco",
+      "origen": "estilo",
+      "texto": "centra el arco en la pared",
+      "cobertura": ["alinear"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda", "pasos": [ { "herramienta": "mover_pieza", "args": { "id": "arco", "donde": { "en": "piso", "x_cm": 80 } } } ] },
+      "checks": [
+        { "tipo": "posicion", "en": { "ids": ["arco"] }, "x": [-10, 10] },
+        { "tipo": "solo_cambian", "ids": ["arco"] }
+      ],
+      "esperado": { "herramientas": [ { "herramienta": "alinear", "args": { "ids": ["arco"], "como": ["centrar"] } } ] }
+    },
+    {
+      "id": "estilo-27-r5-del-arco-en-dorado",
+      "origen": "estilo",
+      "texto": "los r5 del arco en dorado",
+      "cobertura": ["formatos", "colores"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "colores", "en": { "ids": ["arco"] }, "selector": { "formatos": ["R-5"] }, "contienen": [["dorado"]] },
+        { "tipo": "solo_cambian", "ids": ["arco"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "ajustar_tamanos", "args": { "id": "arco", "colores_por_tamano": [{ "formatos": ["R-5"], "colores": ["dorado"] }] } }
+      ] }
+    },
+    {
+      "id": "estilo-28-deja-solo-el-arco-y-las-columnas",
+      "origen": "estilo",
+      "texto": "deja solo el arco y las columnas",
+      "cobertura": ["crud", "grupos"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "piezas", "delta": -1 },
+        { "tipo": "hay", "en": { "ids": ["guirnalda"] }, "max": 0 },
+        { "tipo": "solo_cambian", "ids": ["guirnalda"] }
+      ],
+      "esperado": { "herramientas": [ { "herramienta": "quitar_pieza", "args": { "id": "guirnalda" } } ] }
+    },
+    {
+      "id": "estilo-29-link-o-loon-de-las-ramas-en-verde",
+      "origen": "estilo",
+      "texto": "solo los link-o-loon de las ramas en verde, lo demás igual",
+      "cobertura": ["partes", "nomenclatura", "formatos"],
+      "backlog": "editar globos por selector (formato + parte: «LOL-* de ramas») y etiquetas de parte en el árbol: editar_globos y el etiquetado de partes los hacen otros agentes",
+      "contexto": { "pasos": [ { "herramienta": "agregar_pieza", "args": { "tipo": "arbol", "modelo": "arbol_racimos" } } ] },
+      "checks": [
+        { "tipo": "solo_cambian", "ids": ["arbol"] },
+        { "tipo": "solo_cambian_globos", "id": "arbol", "selector": { "formatos": ["LOL-*"], "partes": ["ramas"] } },
+        { "tipo": "colores", "en": { "ids": ["arbol"] }, "selector": { "formatos": ["LOL-*"], "partes": ["ramas"] }, "contienen": [["verde"]] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "editar_globos", "args": { "id": "arbol", "selector": { "formatos": ["LOL-*"], "partes": ["ramas"] }, "color": "verde" } }
+      ] }
+    },
+    {
+      "id": "estilo-30-mas-r24-en-la-pata-izquierda",
+      "origen": "estilo",
+      "texto": "mas r24 solo en la pata izquierda del arco",
+      "cobertura": ["partes", "formatos", "lado"],
+      "backlog": "ajustar_tamanos por parte y lado (pata/izquierda): hoy sus zonas son abajo/arriba/inicio/medio/fin y «inicio» toma las dos patas",
+      "contexto": { "preset": "arco_organico_columnas_guirnalda" },
+      "checks": [
+        { "tipo": "conteo", "en": { "ids": ["arco"] }, "selector": { "formatos": ["R-24"], "partes": ["pata/izquierda"] }, "compara": "aumenta_pct", "valor": 50 },
+        { "tipo": "solo_cambian_globos", "id": "arco", "selector": { "partes": ["pata/izquierda"] } }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "ajustar_tamanos", "args": { "id": "arco", "cambios": [{ "formato": "R-24", "accion": "mas", "donde": "inicio", "solo_ahi": true }] } }
+      ] }
+    },
+    {
+      "id": "estilo-31-cuantos-tubitos-tiene-la-calabaza",
+      "origen": "estilo",
+      "texto": "cuantos tubitos lleva la calabaza izquierda",
+      "cobertura": ["contar", "nomenclatura", "lado"],
+      "contexto": { "preset": "halloween_arco_calabazas" },
+      "checks": [ { "tipo": "sin_cambios" }, { "tipo": "respuesta_con_numeros" } ],
+      "esperado": { "herramientas": [
+        { "herramienta": "contar_globos", "args": { "grupo": "la calabaza izquierda", "formatos": ["tubitos"] } }
+      ] }
+    },
+    {
+      "id": "estilo-32-misma-altura-guirnaldas-pared",
+      "origen": "estilo",
+      "texto": "pon las dos guirnaldas a la misma altura",
+      "cobertura": ["alinear", "grupos"],
+      "contexto": { "preset": "arco_organico_columnas_guirnalda", "pasos": [ { "herramienta": "agregar_pieza", "args": { "tipo": "guirnalda", "ancho_cm": 200, "donde": { "en": "pared", "pared": "fondo", "a_lo_largo_cm": -150, "altura_cm": 150 } } } ] },
+      "checks": [
+        { "tipo": "misma", "en": { "tipo_pieza": ["guirnalda"] }, "campo": "altura" },
+        { "tipo": "solo_cambian", "ids": ["guirnalda", "guirnalda-2"] }
+      ],
+      "esperado": { "herramientas": [
+        { "herramienta": "alinear", "args": { "grupo": "las dos guirnaldas", "como": ["misma_altura"], "altura_cm": 240 } }
+      ] }
+    }
+  ]
+}

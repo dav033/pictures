@@ -28,7 +28,7 @@ import { useMenuContextual } from "./useMenuContextual";
 import { cargarSolitario, useEditorSolitario } from "./useEditorSolitario";
 import type { InfoMenuPieza } from "@/lib/globos3d/editor-solitario";
 import type { ItemBiblioteca } from "@/lib/globos3d/biblioteca";
-import { AsistenteEscena } from "./AsistenteEscena";
+import { AsistenteEscena, type SeleccionIA } from "./AsistenteEscena";
 import { DialogoTaller } from "./DialogoTaller";
 import { Inspector } from "./Inspector";
 import { PanelPiezas } from "./PanelPiezas";
@@ -279,6 +279,10 @@ export function Taller3D() {
 
   const raizSolitario = solitario.solitario ? escenaVista.nodos.find((n) => n.id === solitario.solitario?.raizId) ?? null : null;
   const todosLosGlobos = solitario.activo && vistaSolitario.todosLosGlobos && raizSolitario?.pieza.tipo === "globo" ? raizSolitario.pieza : null;
+  // La IA recibe la pieza elegida (y, en el editor solitario, su raíz): «cámbiale el color» va sobre ella.
+  const elegidaIA = seleccion ? escenaVista.nodos.find((n) => n.id === seleccion) ?? null : null;
+  const baseIA = elegidaIA ?? raizSolitario;
+  const seleccionIA: SeleccionIA | null = baseIA ? { id: baseIA.id, nombre: baseIA.nombre, raizSolitario: raizSolitario ? { id: raizSolitario.id, nombre: raizSolitario.nombre } : null } : null;
 
   // Lo que se ve.
   useEffect(() => {
@@ -756,7 +760,7 @@ export function Taller3D() {
       )}
       {esAncho && armadaEscena && (
         <div className="absolute bottom-[18px] left-1/2 z-20 w-[min(560px,calc(100%-300px))] min-w-[300px] -translate-x-1/2">
-          <AsistenteEscena escena={escenaVista} onEscena={cambiarDesdePanel} compacta />
+          <AsistenteEscena escena={escenaVista} onEscena={cambiarDesdePanel} seleccion={seleccionIA} compacta />
         </div>
       )}
     </>
@@ -795,7 +799,7 @@ export function Taller3D() {
           {nodoEnVivo && <div className="border-t border-taller-linea px-4 py-3"><h3 className="taller-rotulo mb-2">Mover con botones</h3><ControlesPieza nombre={nodoEnVivo.nombre} colocacion={nodoEnVivo.colocacion} enLinea /></div>}
         </div>
       );
-      case "ia": return <div className="min-h-0 flex-1 overflow-y-auto p-3">{armadaEscena && <AsistenteEscena escena={escenaVista} onEscena={cambiarDesdePanel} />}</div>;
+      case "ia": return <div className="min-h-0 flex-1 overflow-y-auto p-3">{armadaEscena && <AsistenteEscena escena={escenaVista} onEscena={cambiarDesdePanel} seleccion={seleccionIA} />}</div>;
       case "parametros": return <div className="taller-seccionado min-h-0 flex-1 overflow-y-auto">{parametros}{listaParte}</div>;
       case "partes": return armadaEscena && inicialSolitario && raizSolitario ? (
         <PartesSolitario escena={escenaVista} armada={armadaEscena} inicial={inicialSolitario} raizId={raizSolitario.id} seleccion={seleccion ?? raizSolitario.id}
