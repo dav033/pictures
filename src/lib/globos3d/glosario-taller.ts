@@ -1,5 +1,6 @@
 import { TABLA_SEMPERTEX, referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { FAMILIAS_POR_PALABRA, codigosDePedido, palabras, plegar } from "./herramientas-escena-colores";
+import { PARTES_DECORACIONES } from "./partes-decoraciones";
 import type { SelectorGlobos } from "./partes-globos";
 import type { TipoPieza } from "./piezas";
 import {
@@ -35,8 +36,20 @@ export type ParteDeclarada = string | { parte?: string; id?: string; nombre?: st
  * (si un módulo exporta un Record, va `Object.keys(X)` o `Object.values(X)`). Una parte que ya está suma sus
  * sinónimos; una nueva entra con su nombre, su nombre visible y sus sinónimos.
  */
+/** «globo» es la parte del globo suelto: como término diría «cualquier globo» y filtraría mal («los globos de la flor»). */
+const PARTES_AMBIGUAS = new Set(["globo"]);
+
+/** «petalos/interior» → «petalos interiores», «patas/delantera» → «patas delanteras»: cómo lo dice el dueño. */
+function plurales(parte: string): string[] {
+  const nivel = parte.split("/");
+  if (nivel.length < 2) return [];
+  const ultimo = nivel[nivel.length - 1];
+  const plural = /[aeiou]$/.test(ultimo) ? `${ultimo}s` : /s$/.test(ultimo) ? ultimo : `${ultimo}es`;
+  return plural === ultimo ? [] : [[...nivel.slice(0, -1), plural].join(" ")];
+}
+
 const PARTES_DE_MODULOS: ReadonlyArray<readonly ParteDeclarada[]> = [
-  // PARTES_DECORACIONES,
+  PARTES_DECORACIONES.filter((p) => !PARTES_AMBIGUAS.has(p.nombre)).map((p) => ({ parte: p.nombre, sinonimos: [...p.ingles, ...plurales(p.nombre)] })),
   // PARTES_ESTRUCTURAS,
 ];
 
