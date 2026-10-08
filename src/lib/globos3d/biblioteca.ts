@@ -1,3 +1,5 @@
+import { IDEAS_SEMPERTEX } from "./ideas-sempertex";
+import { urlDeIdea } from "./ideas-sempertex/tipos";
 import type { Vec3 } from "./modulos";
 import {
   SALA_INICIAL, armarEscena, descendientes, idNuevo, puntoALocal, puntoAlMundo,
@@ -872,6 +874,13 @@ function construirFabrica(): ItemBiblioteca[] {
       id: `utileria:${u.id}`, nombre: u.nombre, descripcion: u.descripcion, pieza, ocasiones: ocasiones.length ? ocasiones : ["general"],
       fuente: { tipo: "propio", titulo: "Utilería del taller (producto de la tienda Sempertex)" }, sugerida,
     }));
+  }
+  for (const idea of IDEAS_SEMPERTEX) {
+    const fuente: FuenteItem = { tipo: "idea-sempertex", titulo: `Sempertex · Ideas de fiesta · ${idea.nombre}`, url: urlDeIdea(idea.slug), fotoUrl: idea.fotoUrl };
+    const descripcion = idea.nota;
+    items.push(idea.contenido.tipo === "escena"
+      ? itemDeEscena({ id: idea.id, nombre: idea.nombre, descripcion, ocasiones: idea.ocasiones, fuente, escena: idea.contenido.escena })
+      : itemDePieza({ id: idea.id, nombre: idea.nombre, descripcion, ocasiones: idea.ocasiones, fuente, pieza: idea.contenido.pieza, ...(idea.contenido.sugerida ? { sugerida: idea.contenido.sugerida } : {}) }));
   }
   return items;
 }
