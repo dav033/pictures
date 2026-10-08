@@ -1,0 +1,50 @@
+import { z } from "zod";
+import { paraGoogleSchema } from "@/lib/ia/nucleo/esquema-google";
+import type { Escena } from "./escena";
+import { HERRAMIENTAS_DISPOSICION } from "./herramientas-escena-disposicion";
+import { HERRAMIENTAS_GRUPOS, type HerramientaExtra } from "./herramientas-escena-grupos";
+
+/**
+ * **Herramientas de la IA de escena que viven fuera de herramientas-escena.ts** (2026-10-08): para no seguir
+ * engordando ese archivo, cada familia nueva se registra aquí con su esquema Zod, su descripción y su `aplicar`;
+ * herramientas-escena.ts las suma a `DECLARACIONES_ESCENA` y las despacha en `aplicarHerramienta`.
+ * - grupos (herramientas-escena-grupos.ts): seleccionar_grupo, contar_globos;
+ * - disposición (herramientas-escena-disposicion.ts): alinear, distribuir, espejar;
+ * - preguntar_usuario: la ruta corta el turno y el taller muestra la pregunta con sus opciones como botones.
+ */
+
+/** Nombre de la herramienta con la que la IA pregunta (la ruta la reconoce y termina el turno). */
+export const PREGUNTAR_USUARIO = "preguntar_usuario";
+
+const PreguntaSchema = z.object({
+  pregunta: z.string().min(3).max(240).describe("la pregunta, corta y en español («¿Cuál columna: la izquierda o la derecha?»)"),
+  opciones: z.array(z.string().min(1).max(80)).min(2).max(4).describe("2 a 4 respuestas posibles, cada una lista para mandarse tal cual como el próximo pedido («la columna izquierda», «las dos»)"),
+});
+export type PreguntaUsuario = z.infer<typeof PreguntaSchema>;
+
+/** La pregunta de una llamada a preguntar_usuario, o null si sus argumentos no valen. */
+export function preguntaDe(argumentos: unknown): PreguntaUsuario | null {
+  const r = PreguntaSchema.safeParse(argumentos ?? {});
+  return r.success ? { pregunta: r.data.pregunta.trim(), opciones: [...new Set(r.data.opciones.map((o) => o.trim()).filter(Boolean))] } : null;
+}
+
+const PREGUNTAR: HerramientaExtra = {
+  esquema: PreguntaSchema,
+  descripcion: "Pregunta al usuario y TERMINA el turno: el taller muestra la pregunta con 2 a 4 opciones como botones (al tocar una, su texto llega como el próximo pedido). Solo si dos o más piezas encajan con lo pedido y no hay pieza elegida ni nombrada; nunca para algo que puedas suponer.",
+  aplicar: (escena: Escena, argumentos: unknown) => {
+    const a = PreguntaSchema.parse(argumentos ?? {});
+    return { escena, consulta: true, resumen: `Pregunta al usuario: ${a.pregunta} (${a.opciones.join(" | ")})` };
+  },
+};
+
+export const HERRAMIENTAS_EXTRA: Readonly<Record<string, HerramientaExtra>> = { ...HERRAMIENTAS_GRUPOS, ...HERRAMIENTAS_DISPOSICION, [PREGUNTAR_USUARIO]: PREGUNTAR };
+export const NOMBRES_EXTRA = Object.keys(HERRAMIENTAS_EXTRA);
+
+/** Las declaraciones para Gemini de las herramientas extra (mismo formato que `DECLARACIONES_ESCENA`). */
+export function declaracionesExtra(): Array<{ name: string; description: string; parametersJsonSchema: Record<string, unknown> }> {
+  return NOMBRES_EXTRA.map((nombre) => ({
+    name: nombre,
+    description: HERRAMIENTAS_EXTRA[nombre]!.descripcion,
+    parametersJsonSchema: paraGoogleSchema(z.toJSONSchema(HERRAMIENTAS_EXTRA[nombre]!.esquema, { target: "draft-7" })) as Record<string, unknown>,
+  }));
+}

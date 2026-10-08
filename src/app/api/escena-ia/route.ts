@@ -6,18 +6,26 @@ import { DECLARACIONES_ESCENA, MAX_NODOS, TIPOS_PIEZA, aplicarHerramienta, idsDe
 import { seccionVocabularioEscena } from "@/lib/globos3d/prompt-escena";
 import type { Colocacion, Escena } from "@/lib/globos3d/escena";
 import type { Pieza } from "@/lib/globos3d/piezas";
+import { REGLAS_AGENTE, SeleccionSchema, seleccionValida, textoSeleccion } from "@/lib/globos3d/escena-ia-agente";
+import { PREGUNTAR_USUARIO, preguntaDe, type PreguntaUsuario } from "@/lib/globos3d/herramientas-escena-extra";
+import { verificarCambios } from "@/lib/globos3d/verificacion-escena";
 
 /**
  * Taller 3D → «Pídele a la IA»: el usuario escribe en lenguaje natural («un arco orgánico rosado y dorado de 3 m,
  * dos columnas blancas a los lados…») y Gemini (solo texto + herramientas: aquí NUNCA genera imágenes) arma o
  * cambia la escena llamando a las herramientas de `herramientas-escena.ts`. CRUD: suma o cambia lo pedido sin
- * rehacer lo demás. Hasta 8 vueltas del modelo con herramientas por mensaje (y 24 llamadas en total), tope de 60
+ * rehacer lo demás. Hasta 12 vueltas del modelo con herramientas por mensaje (y 40 llamadas en total), tope de 60
  * mensajes por hora por instancia. Cada herramienta aplicada (o rechazada) y la respuesta final quedan con
  * `decidir(...)` en el registro de la conversación; la llamada al modelo la audita `getGeminiClient`.
+ *
+ * Agente (2026-10-08, escena-ia-agente.ts): con el pedido viaja la pieza elegida en el editor (`seleccion`); el modelo
+ * puede preguntar (preguntar_usuario corta el turno y devuelve `pregunta` con opciones para botones); tras cada
+ * vuelta que cambia la escena recibe una verificación automática (piezas y globos por formato antes → después,
+ * verificacion-escena.ts) para que corrija y diga números reales.
  */
 
-const MAX_PASOS = 8;
-const MAX_LLAMADAS = 24;
+const MAX_PASOS = 12;
+const MAX_LLAMADAS = 40;
 const TOPE_POR_HORA = 60;
 let ventana = { desde: Date.now(), usadas: 0 };
 
@@ -53,6 +61,7 @@ const CuerpoSchema = z.object({
   escena: EscenaSchema,
   mensaje: z.string().trim().min(1).max(1000),
   historial: z.array(z.object({ rol: z.enum(["usuario", "asistente"]), texto: z.string().max(1500) })).max(8).default([]),
+  seleccion: SeleccionSchema,
 }).strict();
 
 const SISTEMA = `Eres el asistente del taller 3D de decoración con globos Sempertex. Armas y cambias la escena SOLO con las herramientas; no generas imágenes.
@@ -95,7 +104,7 @@ async function atenderPOST(request: Request) {
   try { cuerpo = await request.json(); } catch { return Response.json({ error: "El pedido no llegó en un formato válido." }, { status: 400 }); }
   const validado = CuerpoSchema.safeParse(cuerpo);
   if (!validado.success) return Response.json({ error: "El pedido o la escena no cumplen el formato." }, { status: 400 });
-  const { escena: inicial, mensaje, historial } = validado.data;
+  const { escena: inicial, mensaje, historial, seleccion } = validado.data;
 
   if (Date.now() - ventana.desde > 3_600_000) ventana = { desde: Date.now(), usadas: 0 };
   if (ventana.usadas >= TOPE_POR_HORA) {
@@ -109,19 +118,21 @@ async function atenderPOST(request: Request) {
 
   const contents: Content[] = [
     ...historial.map((h): Content => ({ role: h.rol === "usuario" ? "user" : "model", parts: [{ text: h.texto }] })),
-    { role: "user", parts: [{ text: `${mensaje}\n\n[Piezas que ya hay: ${idsDeEscena(inicial)}]` }] },
+    { role: "user", parts: [{ text: [mensaje, "", textoSeleccion(inicial, seleccion), `[Piezas que ya hay: ${idsDeEscena(inicial)}]`].filter((l, i) => i < 2 || l).join("\n") }] },
   ];
+  if (seleccion) decidir("regla:escena_ia_seleccion", "pieza elegida en el editor que viaja con el pedido", { seleccion, valida: seleccionValida(inicial, seleccion) });
   let escena = inicial;
   const acciones: Accion[] = [];
   const tokens = { entrada: 0, salida: 0, pensamiento: 0 };
   let pasos = 0, llamadas = 0, respuesta = "", cortado = false;
+  let pregunta: PreguntaUsuario | null = null;
 
   try {
     for (;;) {
       const r = await cliente.models.generateContent({
         model: MODELO_CHAT,
         contents,
-        config: { systemInstruction: SISTEMA, tools: [{ functionDeclarations: [...DECLARACIONES_ESCENA] }], thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, abortSignal: request.signal },
+        config: { systemInstruction: `${SISTEMA}\n\n${REGLAS_AGENTE}`, tools: [{ functionDeclarations: [...DECLARACIONES_ESCENA] }], thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, abortSignal: request.signal },
       });
       tokens.entrada += r.usageMetadata?.promptTokenCount ?? 0;
       tokens.salida += r.usageMetadata?.candidatesTokenCount ?? 0;
@@ -134,6 +145,8 @@ async function atenderPOST(request: Request) {
       // El turno del modelo va tal cual (con sus firmas de pensamiento): Gemini lo exige en la vuelta siguiente.
       contents.push(contenido ?? { role: "model", parts: funciones.map((functionCall): Part => ({ functionCall })) });
       const respuestas: Part[] = [];
+      const antesDelPaso = escena;
+      let ultimoCambio = -1;
       for (const llamada of funciones) {
         const nombre = llamada.name ?? "";
         llamadas += 1;
@@ -144,8 +157,19 @@ async function atenderPOST(request: Request) {
         if (hecho.ok) {
           escena = hecho.escena;
           acciones.push({ herramienta: nombre, resumen: hecho.consulta ? corto(hecho.resumen.split("\n")[0] ?? hecho.resumen, 140) : corto(hecho.resumen, 400), consulta: hecho.consulta });
+          if (!hecho.consulta) ultimoCambio = respuestas.length;
+          // Preguntar termina el turno: lo que venía después en esta vuelta no se aplica.
+          if (nombre === PREGUNTAR_USUARIO) { pregunta = preguntaDe(llamada.args); break; }
         }
         respuestas.push({ functionResponse: { name: nombre, ...(llamada.id ? { id: llamada.id } : {}), response: hecho.ok ? { resultado: hecho.resumen } : { error: hecho.error } } });
+      }
+      if (pregunta) { respuesta = pregunta.pregunta; break; }
+      // Verificación automática: lo que de verdad cambió en esta vuelta, junto a la última herramienta que cambió algo.
+      const verificacion = escena !== antesDelPaso ? verificarCambios(antesDelPaso, escena) : "";
+      const destino = respuestas[ultimoCambio]?.functionResponse;
+      if (verificacion && destino) {
+        destino.response = { ...destino.response, verificacion };
+        decidir("regla:escena_ia_verificacion", "verificación automática que recibe el modelo tras sus cambios", { verificacion, paso: pasos });
       }
       contents.push({ role: "user", parts: respuestas });
     }
@@ -166,8 +190,8 @@ async function atenderPOST(request: Request) {
   // Estimación con precios de Gemini Flash (US$0,50 por millón de entrada, US$3 por millón de salida y pensamiento).
   const costeEstimadoUsd = Math.round(((tokens.entrada * 0.5 + (tokens.salida + tokens.pensamiento) * 3) / 1e6) * 1e5) / 1e5;
   decidir("modelo:escena_ia", "respuesta final del asistente de escena", {
-    respuesta, acciones, pasos, llamadas, cortado, tokens, costeEstimadoUsd, modelo: MODELO_CHAT,
+    respuesta, acciones, pasos, llamadas, cortado, tokens, costeEstimadoUsd, modelo: MODELO_CHAT, pregunta,
     piezasAntes: inicial.nodos.length, piezasDespues: escena.nodos.length, ids: escena.nodos.map((n) => n.id),
-  }, { entrada: { mensaje, historial: historial.length } });
-  return Response.json({ escena, respuesta, acciones });
+  }, { entrada: { mensaje, historial: historial.length, seleccion: seleccion?.id ?? null } });
+  return Response.json({ escena, respuesta, acciones, ...(pregunta ? { pregunta: { texto: pregunta.pregunta, opciones: pregunta.opciones } } : {}), uso: { pasos, llamadas, costeEstimadoUsd } });
 }
