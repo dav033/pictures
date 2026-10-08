@@ -39,6 +39,8 @@ export type PedidoTamanos = {
 };
 
 const r0 = (n: number) => Math.round(n);
+/** Cuánto se engruesa el cuerpo, por pasos, cuando un tamaño no llega a la meta con el grosor que hay. */
+const FACTORES_CUERPO = [1.12, 1.25, 1.4, 1.55, 1.75, 2] as const;
 const orden = (f: string) => { const i = (FORMATOS_AJUSTABLES as readonly string[]).indexOf(f); return i < 0 ? 99 : i; };
 
 // ----------------------------------------------------------------------------------------------------------
@@ -63,7 +65,7 @@ function filtroZona(o: OpcionesOrganico, zona: ZonaOrganica): (g: GloboOrganico)
   if (zona === "todo") return () => true;
   const rango = rangoAltura(o.tramos.flatMap((t) => t.recorrido));
   const porId = new Map(o.tramos.map((t) => [t.id, t]));
-  return (g) => { const t = porId.get(g.tramo); return !t || enZona(zona, g.fraccion, puntoEnRecorrido(t.recorrido, g.fraccion).y, rango); };
+  return (g) => { const t = porId.get(g.tramo); if (!t) return true; const q = puntoEnRecorrido(t.recorrido, g.fraccion); return enZona(zona, g.fraccion, q.y, rango, q.x); };
 }
 
 type Medida = { cantidad: number; porcentaje: number; estructura: number };
@@ -149,7 +151,10 @@ function elegir(probadas: readonly Probada[], meta: number, modo: Modo): Probada
 // Un cambio de tamaño
 // ----------------------------------------------------------------------------------------------------------
 
-function aplicarCambio(entrada: PiezaOrganica, c: CambioTamano, engrosarPermitido: boolean, notas: string[]): { pieza: Organico; linea: string } {
+/** Un cambio hecho: la pieza que queda y su línea del resumen, que se escribe al final con lo que de verdad quedó armado (otros cambios del mismo pedido pueden mover estos números). */
+type CambioHecho = { pieza: Organico; linea: (final: PiezaOrganica) => string };
+
+function aplicarCambio(entrada: PiezaOrganica, original: PiezaOrganica, c: CambioTamano, engrosarPermitido: boolean, reducidos: ReadonlySet<string>, notas: string[]): CambioHecho {
   const f = c.formato.trim().toUpperCase();
   if (!(FORMATOS_AJUSTABLES as readonly string[]).includes(f)) fallar(`El tamaño «${c.formato}» no va en lo orgánico: usa ${FORMATOS_AJUSTABLES.join(", ")}.`);
   const zona = c.donde ?? "todo";
@@ -157,16 +162,17 @@ function aplicarCambio(entrada: PiezaOrganica, c: CambioTamano, engrosarPermitid
   if (c.accion === "poner" && c.cantidad === undefined && c.porcentaje === undefined) fallar("accion «poner» necesita cantidad o porcentaje (para «más», usa accion «mas»).");
   if (c.cantidad !== undefined && c.porcentaje !== undefined) fallar("Pasa cantidad o porcentaje, no los dos.");
   let pieza = comoOrganico(entrada);
-  const antesZona = medir(pieza, f, zona);
-  const antesTotal = totalDe(pieza, f);
+  const medidaPaso = medir(pieza, f, zona);
   const porPorcentaje = c.porcentaje !== undefined;
   const valor = (p: Organico) => (porPorcentaje ? medir(p, f, zona).porcentaje : medir(p, f, zona).cantidad);
-  const actual = porPorcentaje ? antesZona.porcentaje : antesZona.cantidad;
+  const actual = porPorcentaje ? medidaPaso.porcentaje : medidaPaso.cantidad;
+  /** Cuántos había al empezar el pedido: «más» y «menos» se miden contra eso, no contra lo que dejó un cambio anterior. */
+  const inicial = porPorcentaje ? actual : medir(original, f, zona).cantidad;
   let meta: number, modo: Modo;
   if (c.accion === "quitar") { meta = 0; modo = "a_lo_mas"; }
   else if (c.cantidad !== undefined || c.porcentaje !== undefined) { meta = c.cantidad ?? c.porcentaje!; modo = "cerca"; }
-  else if (c.accion === "mas") { meta = actual === 0 ? Math.max(4, Math.ceil(antesZona.estructura * 0.08)) : Math.max(actual + 3, Math.ceil(actual * 1.6)); modo = "al_menos"; }
-  else { meta = Math.floor(actual * 0.5); modo = "a_lo_mas"; }
+  else if (c.accion === "mas") { const base = Math.max(actual, inicial); meta = base === 0 ? Math.max(4, Math.ceil(medidaPaso.estructura * 0.08)) : Math.max(base + 3, Math.ceil(base * 1.6)); modo = "al_menos"; }
+  else { meta = Math.floor(Math.min(actual, inicial) * 0.5); modo = "a_lo_mas"; }
   const tolerancia = porPorcentaje ? 3 : Math.max(1, Math.round(meta * 0.08));
   const extra: string[] = [];
 
@@ -189,6 +195,21 @@ function aplicarCambio(entrada: PiezaOrganica, c: CambioTamano, engrosarPermitid
       if (otra.valor > elegida.valor) { elegida = otra; extra.push(hecho.nota); }
     }
   }
+  // Sigue sin llegar con el cuerpo en que cabe: es lo que da esa mezcla (el segundo «más R-24» seguido). Se engruesa todo
+  // el cuerpo por pasos hasta que llegue (más cuerpo, más globos de cada tamaño) y se dice cuánto.
+  const noLlega = (v: number) => v < meta - (modo === "cerca" ? tolerancia : 0);
+  if (quiereMas && modo !== "a_lo_mas" && zona === "todo" && engrosarPermitido && noLlega(elegida.valor)) {
+    let notaCuerpo = "";
+    for (const factor of FACTORES_CUERPO) {
+      const gruesa = conGrosor(base, factor) as Organico;
+      const otra = buscar((k) => conPeso(gruesa, f, zona, k, !!c.solo_ahi), valor, valor(gruesa), meta, modo, tolerancia);
+      if (otra.valor <= elegida.valor) continue;
+      elegida = otra;
+      notaCuerpo = `para llegar a ${meta} ${f} engrosé todo el cuerpo un ${r0((factor - 1) * 100)} % (con el cuerpo de antes ya no cabían más; pasa a llevar más globos de todos los tamaños)`;
+      if (!noLlega(otra.valor)) break;
+    }
+    if (notaCuerpo) extra.push(notaCuerpo);
+  }
   // Bajando: el relleno de ese formato también cuenta (los R-5 y R-9 son sobre todo relleno de huecos). El relleno es
   // de toda la pieza: solo se toca si el cambio es en toda ella; sin él, los huecos los tapa el relleno que queda.
   const sobra = (v: number) => v > meta + (modo === "cerca" ? tolerancia : 0);
@@ -197,27 +218,32 @@ function aplicarCambio(entrada: PiezaOrganica, c: CambioTamano, engrosarPermitid
     if (opcionesDe(sinPeso).relleno.some((r) => r.formatoId === f)) {
       if (zona !== "todo") extra.push(`el relleno de huecos de ${f} es de toda la pieza: en ${zona} quedan los de relleno`);
       else {
-        const sinRelleno = conRelleno(sinPeso, f);
+        const sinRelleno = conRelleno(sinPeso, f, reducidos);
         let otra: Probada = { pieza: sinRelleno, valor: valor(sinRelleno), k: 0 };
         // Sin relleno de ese formato quedan muy pocos: vuelve a la mezcla de estructura hasta la meta (menos, no ninguno).
         if (c.accion !== "quitar" && otra.valor < meta - tolerancia) {
           const conMezcla = buscar((k) => conPeso(sinRelleno, f, zona, k, !!c.solo_ahi), valor, otra.valor, meta, "cerca", Math.max(tolerancia, meta * 0.15));
           if (Math.abs(conMezcla.valor - meta) < Math.abs(otra.valor - meta)) otra = conMezcla;
         }
-        if (otra.valor < elegida.valor) { elegida = otra; extra.push(`los ${f} eran sobre todo relleno de huecos: los quité del relleno (los huecos los tapa el relleno que queda)${otra.valor > 0 ? ` y quedan ${otra.valor} en la mezcla de estructura` : ""}`); }
+        if (otra.valor < elegida.valor) { elegida = otra; extra.push(`los ${f} eran sobre todo relleno de huecos: los quité del relleno (los huecos los tapa el relleno que queda)`); }
       }
     }
   }
-  const despuesZona = medir(elegida.pieza, f, zona);
-  const despuesTotal = totalDe(elegida.pieza, f);
-  const enZonaTexto = zona === "todo" ? "" : ` (${zona}: ${antesZona.cantidad} → ${despuesZona.cantidad})`;
-  const pct = porPorcentaje ? `; ${r0(antesZona.porcentaje)} % → ${r0(despuesZona.porcentaje)} % de la estructura${zona === "todo" ? "" : ` en ${zona}`} (meta ${meta} %)` : "";
-  const cambio = antesTotal > 0 ? ` (${despuesTotal >= antesTotal ? "+" : ""}${r0(((despuesTotal - antesTotal) / antesTotal) * 100)} %)` : "";
-  const llegada = porPorcentaje ? despuesZona.porcentaje : despuesZona.cantidad;
-  const falta = (modo === "al_menos" && llegada < meta) || (modo === "a_lo_mas" && llegada > meta) || (modo === "cerca" && Math.abs(llegada - meta) > tolerancia)
-    ? (modo === "a_lo_mas" || (modo === "cerca" && llegada > meta) ? ` — quedan más que la meta (${meta}${porPorcentaje ? " %" : ""}): son relleno de huecos o lo que pide el cuerpo` : ` — no llegué a la meta (${meta}${porPorcentaje ? " %" : ""}): es lo que cabe en ese cuerpo`) : "";
   notas.push(...extra);
-  return { pieza: elegida.pieza, linea: `${f}: ${antesTotal} → ${despuesTotal}${cambio}${enZonaTexto}${pct}${falta}` };
+  const resultado = elegida.pieza;
+  const linea = (final: PiezaOrganica): string => {
+    const antesZona = medir(original, f, zona), antesTotal = totalDe(original, f);
+    const despuesZona = medir(final, f, zona);
+    const despuesTotal = totalDe(final, f);
+    const enZonaTexto = zona === "todo" ? "" : ` (${zona}: ${antesZona.cantidad} → ${despuesZona.cantidad})`;
+    const pct = porPorcentaje ? `; ${r0(antesZona.porcentaje)} % → ${r0(despuesZona.porcentaje)} % de la estructura${zona === "todo" ? "" : ` en ${zona}`} (meta ${meta} %)` : "";
+    const cambio = antesTotal > 0 ? ` (${despuesTotal >= antesTotal ? "+" : ""}${r0(((despuesTotal - antesTotal) / antesTotal) * 100)} %)` : "";
+    const llegada = porPorcentaje ? despuesZona.porcentaje : despuesZona.cantidad;
+    const falta = (modo === "al_menos" && llegada < meta) || (modo === "a_lo_mas" && llegada > meta) || (modo === "cerca" && Math.abs(llegada - meta) > tolerancia)
+      ? (modo === "a_lo_mas" || (modo === "cerca" && llegada > meta) ? ` — quedan más que la meta (${meta}${porPorcentaje ? " %" : ""}): son relleno de huecos o lo que pide el cuerpo` : ` — no llegué a la meta (${meta}${porPorcentaje ? " %" : ""}): es lo que cabe en ese cuerpo`) : "";
+    return `${f}: ${antesTotal} → ${despuesTotal}${cambio}${enZonaTexto}${pct}${falta}`;
+  };
+  return { pieza: resultado, linea };
 }
 
 // ----------------------------------------------------------------------------------------------------------
@@ -238,7 +264,27 @@ function densidadPedida(p: PiezaOrganica, factor: number, engrosarPermitido: boo
     if (engrosarPermitido) { pieza = conGrosor(p, 1.15); linea = `densidad: ya no caben más globos en ese grosor (${antes}), así que engrosé el cuerpo un 15 % para que lleve más`; }
     else linea += " — no caben más globos de estructura en ese grosor (engrosar: true para engrosarla)";
   }
+  if (factor < 1) {
+    const quitados = aligerarRelleno(pieza, totalAntes);
+    pieza = quitados.pieza;
+    if (quitados.formatos.length) linea += ` (con menos estructura el relleno de huecos hacía crecer el total: quité el relleno de ${quitados.formatos.join(" y ")}, y los huecos quedan más abiertos)`;
+  }
   return { pieza, linea: `${linea}: estructura ${estAntes} → ${estructuraDe(pieza)}, total ${totalAntes} → ${armada(pieza).globos.length} globos` };
+}
+
+/**
+ * «Menos tupida»: con menos globos de estructura quedan más huecos y el relleno los tapa, así que el total puede SUBIR.
+ * Mientras el total no baje al menos un 10 %, se quita el relleno del formato más chico (siempre queda alguno).
+ */
+function aligerarRelleno(p: PiezaOrganica, totalAntes: number): { pieza: PiezaOrganica; formatos: string[] } {
+  let pieza = p;
+  const formatos: string[] = [];
+  while (armada(pieza).globos.length > totalAntes * 0.9 && opcionesDe(pieza).relleno.length > 1) {
+    const chico = [...opcionesDe(pieza).relleno].sort((a, b) => a.infladoCm - b.infladoCm)[0]!;
+    pieza = conRelleno(comoOrganico(pieza), chico.formatoId);
+    formatos.push(chico.formatoId);
+  }
+  return { pieza, formatos };
 }
 
 /** «Los R-24 en azul reflex»: esos formatos solo con esos colores; con `exclusivo`, esos colores salen de los demás formatos. */
@@ -274,11 +320,12 @@ export function ajustarTamanos(pieza: PiezaOrganica, pedido: PedidoTamanos, nota
   if (nada) fallar("No pediste ningún cambio: pasa cambios (formato + accion), colores_por_tamano, densidad o racimos.");
   if (pedido.densidad !== undefined && pedido.densidad_factor !== undefined) fallar("Pasa densidad («mas»/«menos») o densidad_factor, no los dos.");
   if (pedido.racimos !== undefined && pedido.racimos_valor !== undefined) fallar("Pasa racimos («mas»/«menos») o racimos_valor, no los dos.");
-  const lineas: string[] = [];
+  const lineas: Array<string | CambioHecho["linea"]> = [];
   const totalAntes = armada(pieza).globos.length;
   let actual: PiezaOrganica = pieza;
+  const reducidos = new Set((pedido.cambios ?? []).filter((c) => c.accion === "menos" || c.accion === "quitar").map((c) => c.formato.trim().toUpperCase()));
   for (const c of pedido.cambios ?? []) {
-    const hecho = aplicarCambio(actual, c, pedido.engrosar ?? true, notas);
+    const hecho = aplicarCambio(actual, pieza, c, pedido.engrosar ?? true, reducidos, notas);
     actual = hecho.pieza;
     lineas.push(hecho.linea);
   }
@@ -309,5 +356,5 @@ export function ajustarTamanos(pieza: PiezaOrganica, pedido: PedidoTamanos, nota
   const colores = new Map<string, number>();
   for (const g of final.globos) colores.set(g.codigo, (colores.get(g.codigo) ?? 0) + 1);
   const porColor = [...colores].sort((a, b) => b[1] - a[1]).map(([c, n]) => `${nombreColor(c)} ${n}`).join(", ");
-  return { pieza: actual, resumen: `${lineas.join(" · ")}. Total ${totalAntes} → ${final.globos.length} globos. Ahora (contado en la pieza armada): ${conteoDe(actual)}. Por color: ${porColor}` };
+  return { pieza: actual, resumen: `${lineas.map((l) => (typeof l === "string" ? l : l(actual))).join(" · ")}. Total ${totalAntes} → ${final.globos.length} globos. Ahora (contado en la pieza armada): ${conteoDe(actual)}. Por color: ${porColor}` };
 }

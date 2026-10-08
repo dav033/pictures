@@ -199,7 +199,7 @@ export function opcionesTrazoOrganico(p: ParametrosTrazoOrganico): OpcionesOrgan
   const cadaMezcla = Math.max(1, Math.round(densos.length / 8));
   // Con zonas, la mezcla se pone en cada punto (para que el cambio de zona quede donde va); sin ellas, cada tanto.
   const cada = p.zonas?.length ? 1 : cadaMezcla;
-  const mezcla: PuntoMezcla[] = densos.flatMap((q, i) => (i % cada === 0 || i === densos.length - 1 ? [{ t: r1(q.t * 1000) / 1000, pesos: pesosQueCaben(p.zonas?.length ? pesosConZonas(p.mezcla, p.zonas, q.t, q.y, rango) : p.mezcla, q.grosor, INFLADOS_TRAZO) }] : []));
+  const mezcla: PuntoMezcla[] = densos.flatMap((q, i) => (i % cada === 0 || i === densos.length - 1 ? [{ t: r1(q.t * 1000) / 1000, pesos: pesosQueCaben(p.zonas?.length ? pesosConZonas(p.mezcla, p.zonas, q.t, q.y, rango, q.x) : p.mezcla, q.grosor, INFLADOS_TRAZO) }] : []));
   const recorrido: Vec3[] = densos.map((q) => ({ x: r1(q.x), y: r1(q.y), z: 0 }));
   const tramo: TramoOrganico = {
     id: "trazo", nombre: "Guirnalda orgánica (trazo)", recorrido, grosor, mezcla,

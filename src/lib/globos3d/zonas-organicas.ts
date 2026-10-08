@@ -4,30 +4,40 @@ import type { Vec3 } from "./modulos";
  * **Zonas de una pieza orgánica**: dónde va un cambio de tamaños («los R-24 solo abajo», «más R-18 al inicio»). Una
  * zona se decide por el eje de la pieza: `inicio`, `medio` y `fin` son tercios del recorrido (de cada tramo);
  * `abajo` y `arriba`, el tercio de abajo y el de arriba de la altura que recorre el eje (en una pieza casi plana —el
- * eje sube menos de 40 cm— no hay arriba ni abajo: valen para toda ella). La usan el trazo orgánico al sacar su mezcla
- * en cada punto y la IA de escena para contar los globos de cada zona.
+ * eje sube menos de 40 cm— no hay arriba ni abajo: valen para toda ella). `izquierda` y `derecha` son las mitades del
+ * eje a cada lado de su centro en x (las patas de un arco, los lados de un marco; en una pieza angosta —menos de 40 cm
+ * de ancho, una columna sola— valen para toda ella). La usan el trazo orgánico al sacar su mezcla en cada punto y la
+ * IA de escena para contar los globos de cada zona.
  */
 
-export const ZONAS_ORGANICAS = ["todo", "abajo", "arriba", "inicio", "medio", "fin"] as const;
+export const ZONAS_ORGANICAS = ["todo", "abajo", "arriba", "inicio", "medio", "fin", "izquierda", "derecha"] as const;
 export type ZonaOrganica = (typeof ZONAS_ORGANICAS)[number];
 
 /** En la zona, los formatos de `pesos` toman ese peso (sobre la mezcla de base normalizada a 1); 0 = ahí no va. */
 export type ZonaMezcla = { zona: ZonaOrganica; pesos: Readonly<Record<string, number>> };
 
-export type RangoAltura = { minY: number; maxY: number };
+/** Lo que recorre el eje en altura y, si se sabe, a lo ancho (para `izquierda` y `derecha`). */
+export type RangoAltura = { minY: number; maxY: number; minX?: number; maxX?: number };
 
 /** Por debajo de esto de recorrido en altura, la pieza es plana: abajo y arriba son toda ella. */
 export const ALTURA_PLANA_CM = 40;
 
 export const esPlana = (r: RangoAltura) => r.maxY - r.minY < ALTURA_PLANA_CM;
 
-export function rangoAltura(puntos: readonly { y: number }[]): RangoAltura {
+/** Por debajo de esto de ancho, la pieza es angosta: izquierda y derecha son toda ella. */
+export const ANCHO_ANGOSTO_CM = 40;
+
+export const esAngosta = (r: RangoAltura) => r.minX === undefined || r.maxX === undefined || r.maxX - r.minX < ANCHO_ANGOSTO_CM;
+
+export function rangoAltura(puntos: readonly { x?: number; y: number }[]): RangoAltura {
   const ys = puntos.map((p) => p.y);
-  return ys.length ? { minY: Math.min(...ys), maxY: Math.max(...ys) } : { minY: 0, maxY: 0 };
+  if (!ys.length) return { minY: 0, maxY: 0 };
+  const xs = puntos.flatMap((p) => (p.x === undefined ? [] : [p.x]));
+  return { minY: Math.min(...ys), maxY: Math.max(...ys), ...(xs.length === puntos.length ? { minX: Math.min(...xs), maxX: Math.max(...xs) } : {}) };
 }
 
-/** ¿El punto del eje a la fracción `t` de su tramo y a la altura `y` está en la zona? */
-export function enZona(zona: ZonaOrganica, t: number, y: number, rango: RangoAltura): boolean {
+/** ¿El punto del eje a la fracción `t` de su tramo, a la altura `y` (y a lo ancho `x`) está en la zona? */
+export function enZona(zona: ZonaOrganica, t: number, y: number, rango: RangoAltura, x?: number): boolean {
   const tercio = (rango.maxY - rango.minY) / 3;
   switch (zona) {
     case "todo": return true;
@@ -36,6 +46,8 @@ export function enZona(zona: ZonaOrganica, t: number, y: number, rango: RangoAlt
     case "fin": return t >= 2 / 3;
     case "abajo": return esPlana(rango) || y <= rango.minY + tercio;
     case "arriba": return esPlana(rango) || y >= rango.maxY - tercio;
+    case "izquierda": return x === undefined || esAngosta(rango) || x <= (rango.minX! + rango.maxX!) / 2;
+    case "derecha": return x === undefined || esAngosta(rango) || x >= (rango.minX! + rango.maxX!) / 2;
   }
 }
 
@@ -47,9 +59,9 @@ export function normalizarPesos(pesos: Readonly<Record<string, number>>): Record
 }
 
 /** Los pesos en un punto: la base normalizada y, encima, los de cada zona que lo contiene (la última manda). */
-export function pesosConZonas(base: Readonly<Record<string, number>>, zonas: readonly ZonaMezcla[] | undefined, t: number, y: number, rango: RangoAltura): Record<string, number> {
+export function pesosConZonas(base: Readonly<Record<string, number>>, zonas: readonly ZonaMezcla[] | undefined, t: number, y: number, rango: RangoAltura, x?: number): Record<string, number> {
   const salida: Record<string, number> = normalizarPesos(base);
-  for (const z of zonas ?? []) if (enZona(z.zona, t, y, rango)) Object.assign(salida, z.pesos);
+  for (const z of zonas ?? []) if (enZona(z.zona, t, y, rango, x)) Object.assign(salida, z.pesos);
   return salida;
 }
 

@@ -1,6 +1,7 @@
 import type { SelectorGlobos } from "./partes-globos";
 import type { GloboDecoracion, TuboDecoracion } from "./decoraciones";
 import type { MaterialDecoracion } from "./figuras";
+import { cajaDeCentros, indicesDentroDelDibujo, type DibujoRepinte } from "./dibujo-repinte";
 
 /**
  * **Repintes**: reglas de color guardadas en los DATOS de una pieza («los R-24 en azul reflex», «los Link-O-Loon de las
@@ -10,8 +11,10 @@ import type { MaterialDecoracion } from "./figuras";
  * exactamente lo seleccionado y nada más, y la regla sigue valiendo si la pieza se vuelve a armar o se agranda.
  * Se aplican en orden (una regla ve los colores que dejó la anterior). Los campos se llaman como en el resto del taller
  * (`colores`, `codigo`) para que el recolor de la escena (recolorear.ts) los cambie junto con lo demás.
+ * Con `dibujo` (una letra o figura pintada dentro de una pared de globos; ver `dibujo-repinte.ts`) la regla solo vale
+ * para los globos que caen dentro del dibujo.
  */
-export type Repinte = { formatos?: string[]; partes?: string[]; colores?: string[]; codigo: string };
+export type Repinte = { formatos?: string[]; partes?: string[]; colores?: string[]; codigo: string; dibujo?: DibujoRepinte };
 
 const plegar = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 /** «petalos» y «petalo», «flores» y «flor»: la misma palabra en singular o plural. */
@@ -56,9 +59,11 @@ export function aplicarRepintes<T extends ConGlobos>(armada: T, repintes: readon
   if (!repintes.length) return armada;
   const globos = armada.globos.map((g) => ({ ...g }));
   const tubos = armada.tubos.map((t) => ({ ...t }));
+  const caja = repintes.some((r) => r.dibujo) ? cajaDeCentros(armada.globos) : undefined;
   for (const r of repintes) {
-    for (const g of globos) if (coincideFlexible(g, r)) g.codigo = r.codigo;
-    for (const t of tubos) if (!t.papel && coincideFlexible(t, r)) t.codigo = r.codigo;
+    const dentro = r.dibujo ? indicesDentroDelDibujo(r.dibujo, globos, caja) : null;
+    globos.forEach((g, i) => { if ((!dentro || dentro.has(i)) && coincideFlexible(g, r)) g.codigo = r.codigo; });
+    if (!r.dibujo) for (const t of tubos) if (!t.papel && coincideFlexible(t, r)) t.codigo = r.codigo;
   }
   // Materiales: un globo es una unidad; los tubitos se cuentan por largo, así que se reparte su cantidad por largo.
   const delta = new Map<string, number>();

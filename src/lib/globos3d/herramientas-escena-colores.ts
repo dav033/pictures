@@ -1,5 +1,5 @@
 import { TABLA_SEMPERTEX, referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
-import { labDeRgb } from "@/lib/rag/catalog/similitud-color";
+import { distanciaLab } from "./colores-formato";
 import { FORMATOS_GLOBO, coloresDelFormato, formatoPorId } from "./formatos";
 import { COLORES_METALIZADO, type ColorMetalizado } from "./metalizados";
 
@@ -42,11 +42,7 @@ const PRIORIDAD_FAMILIA = ["fashion", "pastelMate", "metal", "reflex", "satin", 
 export const palabras = (texto: string) => plegar(texto).split(/[^a-z0-9]+/).filter((p) => p && !VACIAS.has(p)).map((p) => VARIANTES[p] ?? p);
 export const nombreDe = (r: Pick<ReferenciaSempertex, "codigo" | "nombreCompleto">) => `${r.codigo} ${r.nombreCompleto}`;
 
-export function distanciaLab(a: string, b: string): number {
-  const lab = (hex: string) => labDeRgb(parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16));
-  const [l1, a1, b1] = lab(a), [l2, a2, b2] = lab(b);
-  return Math.hypot(l1 - l2, a1 - a2, b1 - b2);
-}
+export { distanciaLab };
 
 /** El color del formato más parecido (por el color del globo inflado). */
 export function masParecido(ref: ReferenciaSempertex, formatoId: string): ReferenciaSempertex | undefined {
