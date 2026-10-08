@@ -42,7 +42,7 @@ function globoEn(c: Vec3, dir: Vec3, formatoId: string, infladoCm: number, codig
 /** Filas del racimo de uvas: de la de arriba (la más ancha) a la punta, que suman `n`. */
 function filasUvas(n: number): number[] {
   const filas: number[] = [];
-  let ancho = Math.max(2, Math.round(Math.sqrt(n * 1.1)));
+  let ancho = Math.max(2, Math.round(Math.sqrt(n * 0.65)));
   let quedan = n;
   while (quedan > 0) {
     const fila = Math.min(quedan, Math.max(1, ancho));
@@ -148,8 +148,8 @@ const R5 = (codigo: string) => ({ formatoId: "R-5", infladoCm: 11, codigo });
 
 export const RACIMOS_PREDEFINIDOS: ReadonlyArray<{ id: string; nombre: string; descripcion: string; decoracion: DecoracionRacimo | DecoracionOrbe }> = [
   {
-    id: "racimo_uvas_dorado", nombre: "Racimo de uvas dorado", descripcion: "Dieciocho R-5 Reflex Dorado en racimo de uvas: el acento de las columnas de graduación.",
-    decoracion: { tipo: "racimo", propiedades: { forma: "uvas", globo: { formatoId: "R-5", infladoCm: 11 }, codigos: ["970"], cantidad: 18, semilla: 1 } },
+    id: "racimo_uvas_dorado", nombre: "Racimo de uvas dorado", descripcion: "Catorce R-5 Reflex Dorado a medio inflar (9 cm) en racimo de uvas: el acento de las columnas de graduación.",
+    decoracion: { tipo: "racimo", propiedades: { forma: "uvas", globo: { formatoId: "R-5", infladoCm: 9 }, codigos: ["970"], cantidad: 14, semilla: 1 } },
   },
   {
     id: "racimo_bola_r5", nombre: "Bolita de R-5", descripcion: "Nueve R-5 en media bola compacta, para salpicar una guirnalda.",

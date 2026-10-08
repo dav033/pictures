@@ -247,7 +247,7 @@ export function Miniatura3d({ item, url, className = "" }: { item: ItemBibliotec
 export function Fuente({ item, corta = false }: { item: ItemBiblioteca; corta?: boolean }) {
   const f = item.fuente;
   if (!f) return null;
-  const tipo = f.tipo === "idea-sempertex" ? "Idea de sempertex.com" : f.tipo === "celebra" ? "Revista Celebra" : f.tipo === "referencia-web" ? "Referencia web" : item.id.startsWith("vista:") ? "De tu escena" : item.propio ? "Tu biblioteca" : "Del taller";
+  const tipo = f.tipo === "idea-sempertex" ? "Idea de sempertex.com" : f.tipo === "celebra" ? "Revista Celebra" : f.tipo === "referencia-web" ? "Referencia web" : f.tipo === "referencia-dueno" ? "Referencia del dueño" : item.id.startsWith("vista:") ? "De tu escena" : item.propio ? "Tu biblioteca" : "Del taller";
   if (corta) return <span className="truncate text-[0.7rem] text-texto-suave" title={f.titulo}>{tipo}{f.tipo !== "propio" ? ` · ${f.titulo}` : ""}</span>;
   return (
     <span className="text-sm text-texto">
@@ -609,6 +609,7 @@ function fuenteCorta(item: ItemBiblioteca): string {
   if (f.tipo === "idea-sempertex") { const n = /#\s?(\d+)/.exec(f.titulo)?.[1]; return n ? `Idea Sempertex #${n}` : "Idea Sempertex"; }
   if (f.tipo === "celebra") return "Celebra";
   if (f.tipo === "referencia-web") return "Referencia web";
+  if (f.tipo === "referencia-dueno") return "Referencia del dueño";
   return item.id.startsWith("vista:") ? "De tu escena" : item.propio ? "Tu biblioteca" : "Del taller";
 }
 

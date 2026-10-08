@@ -16,6 +16,7 @@
  *   (JSON de ida y vuelta, `validarItem` descarta lo que no cuadra y las urls que no son públicas).
  */
 import assert from "node:assert/strict";
+import { REFERENCIAS_DUENO } from "@/lib/globos3d/referencias-dueno";
 import { armarEscena, type Escena, type EscenaArmada, type NodoEscena } from "../../src/lib/globos3d/escena";
 import { ESCENAS_PREDEFINIDAS, escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
 import { IDEAS_SEMPERTEX } from "../../src/lib/globos3d/ideas-sempertex";
@@ -158,7 +159,7 @@ const claves = biblioteca.map((i) => claveContenido(i.contenido));
 assert.equal(new Set(claves).size, claves.length, "contenidos sin duplicados");
 const porTipo = new Map<string, number>();
 for (const i of biblioteca) porTipo.set(i.tipo, (porTipo.get(i.tipo) ?? 0) + 1);
-assert.equal(porTipo.get("escena"), ESCENAS_PREDEFINIDAS.length + IDEAS_SEMPERTEX.filter((i) => i.contenido.tipo === "escena").length, "todas las escenas predefinidas y las de ideas de Sempertex");
+assert.equal(porTipo.get("escena"), ESCENAS_PREDEFINIDAS.length + IDEAS_SEMPERTEX.filter((i) => i.contenido.tipo === "escena").length + REFERENCIAS_DUENO.length, "todas las escenas predefinidas, las de ideas de Sempertex y las referencias del dueño");
 for (const t of ["conjunto", "estructura", "decoracion", "utileria"]) assert.ok((porTipo.get(t) ?? 0) > 0, `hay items de tipo ${t}`);
 for (const i of biblioteca) {
   assert.equal(i.tipo === "escena", i.contenido.tipo === "escena", `${i.id}: tipo y contenido casan`);

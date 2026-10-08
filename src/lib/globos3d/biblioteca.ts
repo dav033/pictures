@@ -22,6 +22,8 @@ import { metalizadoPorUrl } from "./metalizados";
 import { productosDeFiesta, type ProductoEnLista } from "./utileria";
 import { productoDeGlobo, type ProductoDeGlobo } from "./productos-tienda";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
+import { REFERENCIAS_DUENO } from "./referencias-dueno";
+import { compilarLectura } from "./compilar-lectura";
 import { BASES_ORGANICAS, conjuntoDeBase, descripcionBase, piezaDeBase, tituloFuenteBase } from "./bases-organicas";
 
 /**
@@ -69,7 +71,7 @@ export const OCASIONES: readonly string[] = [
  * De dónde viene: una idea de sempertex.com, una revista Celebra, una referencia web (foto de un decorador o fabricante
  * digitalizada como base orgánica, con su sitio y enlace) o algo propio. Solo urls públicas (https).
  */
-export type FuenteItem = { tipo: "idea-sempertex" | "celebra" | "referencia-web" | "propio"; titulo: string; url?: string; fotoUrl?: string };
+export type FuenteItem = { tipo: "idea-sempertex" | "celebra" | "referencia-web" | "referencia-dueno" | "propio"; titulo: string; url?: string; fotoUrl?: string };
 
 /**
  * Una decoración pegada a la estructura sin ser hija de un ancla (los ojos sobre un racimo, la calabaza en el hueco de
@@ -1030,6 +1032,12 @@ function construirFabrica(): ItemBiblioteca[] {
     items.push(conjunto
       ? { id: b.id, tipo: "conjunto", nombre: b.nombre, descripcion: descripcionBase(b), ocasiones: [...b.ocasiones], fuente, contenido: { tipo: "conjunto", conjunto } }
       : itemDePieza({ id: b.id, nombre: b.nombre, descripcion: descripcionBase(b), ocasiones: b.ocasiones, fuente, pieza: piezaDeBase(b) }));
+  }
+  // Fotos de referencia del dueño (Pinterest), leídas con el formato de la IA y armadas por el compilador.
+  for (const r of REFERENCIAS_DUENO) {
+    const fuente: FuenteItem = { tipo: "referencia-dueno", titulo: `Referencias del dueño · foto ${r.numero} del lote 1` };
+    items.push(itemPerezoso({ id: r.id, tipo: "escena", nombre: r.nombre, ocasiones: [...r.ocasiones], fuente }, `${r.nota} Fidelidad a la foto: ${r.fidelidad}/5.`,
+      () => ({ tipo: "escena", escena: compilarLectura(r.lectura).escena })));
   }
   return items;
 }
