@@ -164,6 +164,59 @@ export async function embeberTexto(
   return valores;
 }
 
+/**
+ * Un embedding de UNA imagen (gemini-embedding-2 es multimodal: la imagen y el texto comparten espacio; el modelo
+ * acepta una imagen por llamada). Es la rama de imagen de la búsqueda por foto del taller (`superficie`
+ * «taller_biblioteca»); queda registrado con la capacidad `embedding_imagen` y el tamaño de la imagen enviada.
+ * `mime` es el de los bytes (jpeg, png o webp). Vector de 768 dimensiones, ya L2-normalizado, como el de texto.
+ */
+export async function embeberImagen(
+  bytes: Uint8Array,
+  mime: string,
+  telemetria?: ContextoTelemetriaIA,
+): Promise<number[]> {
+  if (bytes.byteLength === 0) throw new Error("La imagen está vacía.");
+  const cliente = getGeminiClient("embedding");
+  if (!cliente) throw new Error("No hay GEMINI_API_KEY configurada.");
+  const data = Buffer.from(bytes).toString("base64");
+
+  let intento = 0;
+  const respuesta = await conReintento(
+    async () => {
+      intento += 1;
+      const inicio = Date.now();
+      const registro = (resultado: Parameters<typeof registrarGemini>[0]["resultado"]) =>
+        registrarGemini({
+          flujo: "armador_decoracion",
+          capacidad: "embedding_imagen",
+          modelo: MODELO_EMBEDDING,
+          inicio,
+          resultado,
+          bytesImagenEntrada: bytes.byteLength,
+          contexto: { superficie: "taller_biblioteca", ...telemetria, intento },
+        });
+      try {
+        const resultado = await cliente.models.embedContent({
+          model: MODELO_EMBEDDING,
+          contents: [{ parts: [{ inlineData: { mimeType: mime, data } }] }],
+          config: { outputDimensionality: DIMENSIONES_EMBEDDING },
+        });
+        registro("ok");
+        return resultado;
+      } catch (error) {
+        registro(resultadoTelemetria(error));
+        throw error;
+      }
+    },
+    { esReintentable },
+  );
+
+  const valores = respuesta.embeddings?.[0]?.values;
+  if (!valores || valores.length === 0) throw new Error("Gemini no devolvió un embedding para la imagen dada.");
+  validarEmbedding(valores);
+  return valores;
+}
+
 /** Computes one optional vector for a turn; lexical retrieval remains the fallback. */
 export async function embeddingOpcional(
   query: string,

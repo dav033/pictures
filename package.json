@@ -59,6 +59,7 @@
     "ia:test-patron-color-prompt": "tsx --conditions=react-server scripts/test/test-patron-color-prompt.ts",
     "ia:test-armado-bouquet-prompt": "tsx --conditions=react-server scripts/test/test-armado-bouquet-prompt.ts",
     "ia:test-armado-guirnalda-prompt": "tsx --conditions=react-server scripts/test/test-armado-guirnalda-prompt.ts && tsx --conditions=react-server scripts/test/test-armado-arco-prompt.ts",
+    "taller:test-biblioteca-foto": "tsx --conditions=react-server --test src/lib/taller/filtros-taxonomia.test.ts src/lib/taller/buscar-foto.test.ts src/lib/taller/normalizar-foto.test.ts",
     "plan:test-proporcion-referencia": "tsx --conditions=react-server --test src/lib/plan/proporcion-referencia.test.ts",
     "ia:test-flux-seed": "tsx --conditions=react-server --test src/lib/ia/kagutsuchi/semilla-flux.test.ts",
     "ia:test-amaterasu-chat-python": "tsx --conditions=react-server --test src/lib/ia/amaterasu/chat-python.test.ts",

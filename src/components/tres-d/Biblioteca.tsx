@@ -616,7 +616,7 @@ function fuenteCorta(item: ItemBiblioteca): string {
   return item.id.startsWith("vista:") ? "De tu escena" : item.propio ? "Tu biblioteca" : "Del taller";
 }
 
-const TarjetaCompacta = memo(function TarjetaCompacta({ item, resumen, mini, onAbrir }: { item: ItemBiblioteca; resumen: ResumenItem | undefined; mini: string | undefined; onAbrir: (item: ItemBiblioteca) => void }) {
+const TarjetaCompacta = memo(function TarjetaCompacta({ item, resumen, mini, etiqueta, onAbrir }: { item: ItemBiblioteca; resumen: ResumenItem | undefined; mini: string | undefined; etiqueta: string | null; onAbrir: (item: ItemBiblioteca) => void }) {
   const sub = `${fuenteCorta(item)}${resumen ? ` · ${resumen.globos} globos` : ""}`;
   const arrastrar = useContext(ArrastreDecoracionContexto);
   const apretada = useRef<{ x: number; y: number } | null>(null);
@@ -645,18 +645,21 @@ const TarjetaCompacta = memo(function TarjetaCompacta({ item, resumen, mini, onA
         <Miniatura3d item={item} url={mini} className="h-[72px] w-full rounded-lg" />
         <span className="line-clamp-2">{item.nombre}</span>
         <span className="truncate text-[11px] font-normal text-taller-suave">{sub}</span>
+        {etiqueta && <span className="truncate text-[11px] font-normal text-taller-acento" title={`Celebración y temática: ${etiqueta}`}>{etiqueta}</span>}
       </button>
     </li>
   );
-}, (a, b) => a.resumen === b.resumen && a.mini === b.mini && a.onAbrir === b.onAbrir && a.item.id === b.item.id && a.item.nombre === b.item.nombre);
+}, (a, b) => a.resumen === b.resumen && a.mini === b.mini && a.etiqueta === b.etiqueta && a.onAbrir === b.onAbrir && a.item.id === b.item.id && a.item.nombre === b.item.nombre);
 
 /** Tarjetas por página en el panel (24: abrir el panel no debe pintar cientos de tarjetas). */
 const POR_PAGINA_PANEL = 24;
 
 /** La grilla de la biblioteca en el panel «Añadir» (3 columnas, miniaturas 3D del motor, de a 24). */
-export function GrillaCompacta({ visibles, resumenes, huellas, onAbrir, vacio }: {
+export function GrillaCompacta({ visibles, resumenes, huellas, onAbrir, vacio, etiquetaDe }: {
   visibles: readonly ItemBiblioteca[]; resumenes: ReadonlyMap<string, ResumenItem>; huellas: ReadonlyMap<string, string>;
   onAbrir: (item: ItemBiblioteca) => void; vacio: string;
+  /** La celebración y temática principales de un item para su tarjeta (`null` si no tiene o aún no carga). */
+  etiquetaDe?: (id: string) => string | null;
 }) {
   const [pagina, setPagina] = useState<{ de: readonly ItemBiblioteca[]; cuantos: number }>({ de: visibles, cuantos: POR_PAGINA_PANEL });
   // Otra búsqueda u otro filtro (otra lista que no empieza igual): vuelve a la primera página.
@@ -679,7 +682,7 @@ export function GrillaCompacta({ visibles, resumenes, huellas, onAbrir, vacio }:
     <>
       {visibles.length === 0 ? <p className="px-1 text-xs text-taller-suave">{vacio}</p> : (
         <ul className="grid grid-cols-3 gap-2">
-          {mostrados.map((i) => <TarjetaCompacta key={i.id} item={i} resumen={resumenes.get(i.id)} mini={minis.get(huellas.get(i.id) ?? "")} onAbrir={onAbrir} />)}
+          {mostrados.map((i) => <TarjetaCompacta key={i.id} item={i} resumen={resumenes.get(i.id)} mini={minis.get(huellas.get(i.id) ?? "")} etiqueta={etiquetaDe?.(i.id) ?? null} onAbrir={onAbrir} />)}
           {hayMas && (
             <li ref={finRef} className="col-span-full flex justify-center">
               <button type="button" onClick={mas} className="min-h-9 rounded-lg px-3 text-xs text-taller-acento hover:bg-taller-encima">Mostrar más ({visibles.length - mostrados.length})</button>

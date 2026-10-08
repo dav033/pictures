@@ -18,7 +18,7 @@ export const ETIQUETAS_FLUJO_IA: Readonly<Record<FlujoIA, string>> = {
 };
 
 export const CAPACIDADES_IA = [
-  "chat_turno", "parser_intencion", "embedding_consulta", "embedding_documento",
+  "chat_turno", "parser_intencion", "embedding_consulta", "embedding_documento", "embedding_imagen",
   "qa_visual", "imagen_generacion", "imagen_generacion_correctiva",
   "analisis_referencia_inventario", "analisis_referencia_auditoria",
   "happie_recomendacion", "happie_conversacion", "rerank_candidatos",

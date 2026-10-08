@@ -11,6 +11,9 @@ import { FondosYMuebles } from "./FondosYMuebles";
 import { MuralesTechoArboles } from "./MuralesTechoArboles";
 import { FormasYLetras } from "./FormasYLetras";
 import { FILTRO_COMPACTO_VACIO, FiltrosCompactos, GrillaCompacta, useBibliotecaFiltrada, type FiltroCompacto } from "./Biblioteca";
+import { FiltrosTaxonomia } from "./FiltrosTaxonomia";
+import { BuscarPorFoto, useSoltarFoto } from "./BuscarPorFoto";
+import { useRefinarBiblioteca } from "./useRefinarBiblioteca";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
 import { DibujoGlobo, FORMATOS_SUELTOS, NUEVAS_DECORACIONES, NUEVAS_ESTRUCTURAS, globoSuelto, type PiezaParaAnadir } from "./nuevas-taller";
 import { MINI, SEG, SEG_ON, TARJETA, coincide } from "./ui-taller";
@@ -86,21 +89,23 @@ export const PanelAnadir = memo(function PanelAnadir({ escena, armada, onEscena,
   const [filtro, setFiltro] = useState<FiltroCompacto>(FILTRO_COMPACTO_VACIO);
   const datos = PESTANAS.find((p) => p.id === pestana) ?? PESTANAS[0]!;
   const biblio = useBibliotecaFiltrada(datos.tipos, texto, filtro);
+  const refinada = useRefinarBiblioteca(biblio.deTipo, biblio.visibles, datos.tipos);
+  const soltar = useSoltarFoto(refinada.foto.buscar);
   const [cuentaMurales, setCuentaMurales] = useState(0);
   const [cuentaFormas, setCuentaFormas] = useState(0);
   const decoracionesNuevas = useMemo(() => (pestana === "decoraciones" ? DECORACIONES_NUEVAS() : []), [pestana]);
   const nuevas = NUEVAS_ESTRUCTURAS.filter((n) => coincide(texto, n.nombre, n.sub, n.descripcion));
   const decosNuevas = decoracionesNuevas.filter((d) => coincide(texto, d.nombre, d.descripcion));
   const globos = FORMATOS_SUELTOS.filter((f) => coincide(texto, f.id, f.nombre, "globo suelto"));
-  const cuenta = biblio.visibles.length + (pestana === "estructuras" ? nuevas.length + cuentaMurales + cuentaFormas
+  const cuenta = refinada.refinados.length + (pestana === "estructuras" ? nuevas.length + cuentaMurales + cuentaFormas
     : pestana === "decoraciones" ? decosNuevas.length + globos.length + contarDecoraciones(texto)
       : pestana === "utileria" ? contarUtileria(texto) : 0);
   const alCuentaMurales = useCallback((n: number) => setCuentaMurales(n), []);
   const alCuentaFormas = useCallback((n: number) => setCuentaFormas(n), []);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex flex-col gap-3 px-4 pb-3 pt-4">
+    <div {...soltar.propiedades} className={`flex min-h-0 flex-1 flex-col ${soltar.arrastrando ? "outline outline-2 -outline-offset-2 outline-dashed outline-taller-resalte" : ""}`}>
+      <div className="flex max-h-[50vh] shrink-0 flex-col gap-3 overflow-y-auto overscroll-contain px-4 pb-3 pt-4">
         {!enHoja && <h2 className="text-[15px] font-semibold">Añadir a la escena</h2>}
         <div className="flex h-[38px] items-center gap-2 rounded-[10px] border border-taller-solitario-borde bg-taller-tarjeta px-3 focus-within:border-taller-resalte">
           <Search className="size-[18px] shrink-0 text-taller-suave" aria-hidden />
@@ -117,6 +122,8 @@ export const PanelAnadir = memo(function PanelAnadir({ escena, armada, onEscena,
           ))}
         </div>
         <FiltrosCompactos filtro={filtro} onFiltro={setFiltro} ocasiones={biblio.ocasiones} colores={biblio.colores} productos={biblio.productos} />
+        <FiltrosTaxonomia filtro={refinada.taxonomia} onFiltro={refinada.onTaxonomia} conteos={refinada.conteos} cargando={refinada.cargandoClasificacion} />
+        <BuscarPorFoto estado={refinada.foto.estado} cuantos={refinada.refinados.length} onFoto={refinada.foto.buscar} onQuitar={refinada.foto.limpiar} />
       </div>
 
       <div id="anadir-contenido" role="tabpanel" aria-labelledby={`anadir-tab-${pestana}`} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-4 pb-4">
@@ -172,9 +179,9 @@ export const PanelAnadir = memo(function PanelAnadir({ escena, armada, onEscena,
         <section className="flex flex-col gap-2" aria-label="De la biblioteca">
           <h3 className="taller-rotulo flex items-baseline justify-between gap-2">
             <span>{pestana === "ideas" ? "Ideas y escenas" : "De la biblioteca"}</span>
-            <span className="font-normal normal-case tracking-normal">{biblio.contando ? "contando…" : pestana === "estructuras" ? "con sus decoraciones" : pestana === "ideas" ? "con su enlace y foto" : `${biblio.visibles.length}`}</span>
+            <span className="font-normal normal-case tracking-normal">{biblio.contando ? "contando…" : pestana === "estructuras" ? "con sus decoraciones" : pestana === "ideas" ? "con su enlace y foto" : `${refinada.refinados.length}`}</span>
           </h3>
-          <GrillaCompacta visibles={biblio.visibles} resumenes={biblio.resumenes} huellas={biblio.huellas} onAbrir={onFicha} vacio={datos.vacio} />
+          <GrillaCompacta visibles={refinada.refinados} resumenes={biblio.resumenes} huellas={biblio.huellas} onAbrir={onFicha} vacio={refinada.conFoto ? "Ningún parecido a tu foto en esta pestaña." : datos.vacio} etiquetaDe={refinada.etiquetaDe} />
         </section>
         <p className="text-xs leading-snug text-taller-suave">Arrastra una tarjeta al visor: se marca en verde dónde puede ir. O tócala y elige dónde.</p>
       </div>

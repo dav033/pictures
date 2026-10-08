@@ -27,11 +27,11 @@ afterEach(async () => {
   globalThis.__telemetriaAgenteCore = [];
 });
 
-test("catálogos mantienen ocho flujos y doce capacidades sin duplicados", () => {
+test("catálogos mantienen ocho flujos y trece capacidades sin duplicados", () => {
   assert.equal(FLUJOS_IA.length, 8);
   assert.equal(new Set(FLUJOS_IA).size, 8);
-  assert.equal(CAPACIDADES_IA.length, 12);
-  assert.equal(new Set(CAPACIDADES_IA).size, 12);
+  assert.equal(CAPACIDADES_IA.length, 13);
+  assert.equal(new Set(CAPACIDADES_IA).size, 13);
 });
 
 test("flujo desconocido falla antes de contaminar métricas", () => {
