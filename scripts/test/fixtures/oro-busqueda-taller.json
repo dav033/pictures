@@ -1,0 +1,1480 @@
+{
+ "version": 1,
+ "descripcion": "Oro de la búsqueda del taller (REQ-002 paso 7): 40 consultas en la voz del dueño con los items que de verdad responden, y las 13 fotos del dueño como consultas por imagen. Los ids salen de data/taller/fichas.jsonl (la prueba comprueba que existen). Criterio: grado 2 = el item (o la pieza derivada «id~parte») que es justo lo pedido; grado 1 = sirve como alternativa. Cada consulta lista como máximo 10 ids, así que donde hay más candidatos es una muestra y el recall@k máximo es menor que 1.",
+ "grados": {
+  "2": "exacto",
+  "1": "aceptable"
+ },
+ "carpetaFotos": "pictures-workspace/referencias-usuario/lote-01/ (fuera del repo; aquí solo el nombre del archivo)",
+ "consultas": [
+  {
+   "id": "Q01",
+   "categoria": "estructura-ocasion-color",
+   "texto": "columna orgánica dorada para grado",
+   "relevantes": [
+    {
+     "id": "referencia:graduacion-columnas-uvas~columna-organica",
+     "grado": 2
+    },
+    {
+     "id": "referencia:graduacion-columnas-uvas~columna-organica-2",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:columna-cine-negro-rojo-oro",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:columna-champana-inclinada",
+     "grado": 2
+    },
+    {
+     "id": "idea:graduacion~torre",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:columna-bienvenida-crema-negro-oro",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:par-columnas-blanco-negro-oro",
+     "grado": 2
+    },
+    {
+     "id": "referencia:graduacion-columnas-uvas",
+     "grado": 1
+    },
+    {
+     "id": "idea:graduacion",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-feliz-cumpleanos-organico",
+     "grado": 1
+    }
+   ],
+   "nota": "Orgánica + dorado + ocasión grado. La columna derivada es exacta; la escena entera que la contiene es solo aceptable."
+  },
+  {
+   "id": "Q02",
+   "categoria": "estructura-material-color",
+   "texto": "arco de link-o-loon blanco",
+   "relevantes": [
+    {
+     "id": "idea:arco-acuatico",
+     "grado": 1
+    },
+    {
+     "id": "idea:arco-acuatico~arco",
+     "grado": 1
+    },
+    {
+     "id": "idea:arco-sirenita",
+     "grado": 1
+    },
+    {
+     "id": "idea:arco-sirenita~arco",
+     "grado": 1
+    },
+    {
+     "id": "idea:arco-teteros",
+     "grado": 1
+    },
+    {
+     "id": "idea:arco-feliz-dia",
+     "grado": 1
+    },
+    {
+     "id": "idea:arco-navideno-foil",
+     "grado": 1
+    }
+   ],
+   "nota": "AMBIGUA: no hay ningún arco de Link-O-Loon blanco; solo arcos con eslabones LOL de otros colores (azules, rosados, verdes). Todo es aceptable (grado 1): mide si el sistema entiende el material aunque falte el color."
+  },
+  {
+   "id": "Q03",
+   "categoria": "decoracion-formato",
+   "texto": "flores de tubito para pared",
+   "relevantes": [
+    {
+     "id": "idea:flores-unidas",
+     "grado": 2
+    },
+    {
+     "id": "idea:flor-colorida",
+     "grado": 2
+    },
+    {
+     "id": "decoracion:flor_lazos_rosados",
+     "grado": 2
+    },
+    {
+     "id": "decoracion:flor_lazos_dorados",
+     "grado": 2
+    },
+    {
+     "id": "idea:flores-de-corazones",
+     "grado": 2
+    },
+    {
+     "id": "idea:flor-navidena",
+     "grado": 1
+    },
+    {
+     "id": "idea:flores-navidenas",
+     "grado": 1
+    },
+    {
+     "id": "decoracion:flor_burbujas",
+     "grado": 1
+    }
+   ],
+   "nota": "Flores hechas de tubito (T-260) para colgar en la pared. «Flores unidas de pared» es la más exacta; la navideña lleva resortes de tubito."
+  },
+  {
+   "id": "Q04",
+   "categoria": "tema-decoracion",
+   "texto": "guirnalda con hojas de monstrera",
+   "relevantes": [
+    {
+     "id": "referencia:guirnalda-love-monstera",
+     "grado": 2
+    },
+    {
+     "id": "referencia:guirnalda-diagonal-monstera",
+     "grado": 2
+    },
+    {
+     "id": "referencia:guirnalda-esquina-armario-palmas",
+     "grado": 1
+    }
+   ],
+   "nota": "Con una errata a propósito («monstrera»). Solo hay dos guirnaldas con monstera; la de palmas es parecida (hoja tropical)."
+  },
+  {
+   "id": "Q05",
+   "categoria": "ocasion-color",
+   "texto": "algo para baby shower azul pastel",
+   "relevantes": [
+    {
+     "id": "idea:centro-de-mesa-nino",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-bebito",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:arco-menta-azul-blanco",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-nino",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-baby-shower-nino-luna",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-baby-shower-pato",
+     "grado": 1
+    },
+    {
+     "id": "idea:revelacion-de-genero",
+     "grado": 1
+    },
+    {
+     "id": "idea:una-tierna-fiesta-en-tonos-pasteles",
+     "grado": 1
+    },
+    {
+     "id": "idea:bouquet-baby-shower",
+     "grado": 1
+    }
+   ],
+   "nota": "Pedido abierto: el azul pastel debe ser protagonista (Pastel Mate Azul / Pastel Dusk Azul). Las columnas de niño con azul fuerte son aceptables."
+  },
+  {
+   "id": "Q06",
+   "categoria": "estructura-decoracion",
+   "texto": "pared de cuartetos con florecitas",
+   "relevantes": [
+    {
+     "id": "celebra:pared_trenzas_rosada",
+     "grado": 2
+    },
+    {
+     "id": "idea:malla-flor",
+     "grado": 1
+    },
+    {
+     "id": "celebra:malla_flor_diagonales",
+     "grado": 1
+    },
+    {
+     "id": "idea:lime-citrus",
+     "grado": 1
+    },
+    {
+     "id": "idea:lime-citrus~pared",
+     "grado": 1
+    },
+    {
+     "id": "idea:primaveral",
+     "grado": 1
+    }
+   ],
+   "nota": "«Cuartetos» = trenzas de cuartetos. La pared de trenzas de Celebra es el fondo de la «malla con flores orgánicas» (las flores van aparte). Las mallas con flores son aceptables aunque sean de eslabones."
+  },
+  {
+   "id": "Q07",
+   "categoria": "estructura",
+   "texto": "palmera",
+   "relevantes": [
+    {
+     "id": "idea:palmera",
+     "grado": 2
+    },
+    {
+     "id": "idea:palmera-1",
+     "grado": 2
+    },
+    {
+     "id": "referencia:guirnalda-esquina-armario-palmas",
+     "grado": 1
+    },
+    {
+     "id": "idea:hojas-dorado-verde-lima",
+     "grado": 1
+    }
+   ],
+   "nota": "Consulta de una palabra. Las dos palmeras de globos son lo exacto; las hojas de palma o tropicales solo parecidas."
+  },
+  {
+   "id": "Q08",
+   "categoria": "ocasion-tema",
+   "texto": "halloween con arañas",
+   "relevantes": [
+    {
+     "id": "escena:halloween_aro_ojos",
+     "grado": 2
+    },
+    {
+     "id": "escena:halloween_guirnalda_arana",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-arana",
+     "grado": 2
+    },
+    {
+     "id": "idea:aro-de-aranas",
+     "grado": 2
+    },
+    {
+     "id": "idea:telarana",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-arana",
+     "grado": 2
+    },
+    {
+     "id": "idea:arana",
+     "grado": 1
+    },
+    {
+     "id": "decoracion:arana_articulada",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-arana-2",
+     "grado": 1
+    },
+    {
+     "id": "idea:arco-halloween-de-varios-tamanos",
+     "grado": 1
+    }
+   ],
+   "nota": "Hay decenas de piezas de Halloween con araña; el oro lista solo las que la tienen como protagonista (el nombre lo dice). El recall@5 no puede llegar a 1."
+  },
+  {
+   "id": "Q09",
+   "categoria": "estructura-ocasion",
+   "texto": "letras de globos XV",
+   "relevantes": [
+    {
+     "id": "idea:arco-mis-15-anos",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-mis-quince-anos",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-15-anos",
+     "grado": 1
+    },
+    {
+     "id": "idea:centro-de-mesa-mis-quince",
+     "grado": 1
+    }
+   ],
+   "nota": "AMBIGUA: no hay letras «XV» de globos en la biblioteca; solo lo de quince años (arco o columna con el 15). Todo es aceptable (grado 1); el dueño probablemente quiere el número 15 o letras metalizadas."
+  },
+  {
+   "id": "Q10",
+   "categoria": "decoracion",
+   "texto": "globo burbuja con plumas",
+   "relevantes": [
+    {
+     "id": "decoracion:burbuja_plumas",
+     "grado": 2
+    },
+    {
+     "id": "decoracion:burbuja_confeti_dorado",
+     "grado": 1
+    },
+    {
+     "id": "decoracion:burbuja_r5_pastel",
+     "grado": 1
+    }
+   ],
+   "nota": "Una sola pieza exacta (la única con plumas); las otras burbujas rellenas son parecidas."
+  },
+  {
+   "id": "Q11",
+   "categoria": "estructura-color",
+   "texto": "colunma espiral pastel",
+   "relevantes": [
+    {
+     "id": "celebra:columna_espiral_pastel",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-unicornio",
+     "grado": 2
+    },
+    {
+     "id": "celebra:columna_espiral_azul_dorada",
+     "grado": 1
+    },
+    {
+     "id": "idea:cruz-pink",
+     "grado": 1
+    },
+    {
+     "id": "idea:cruz",
+     "grado": 1
+    }
+   ],
+   "nota": "Con errata a propósito («colunma»). Espiral pastel: la de Celebra y la columna del unicornio; otras espirales de un solo color son aceptables."
+  },
+  {
+   "id": "Q12",
+   "categoria": "medida-estructura",
+   "texto": "una columna de 2 metros",
+   "relevantes": [
+    {
+     "id": "celebra:columna_espiral_pastel",
+     "grado": 2
+    },
+    {
+     "id": "escena:pared_fondo_columnas~columna-izq",
+     "grado": 2
+    },
+    {
+     "id": "idea:corazon-polka",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-bautismo",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-tejida",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-emoji-amor",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-foil-luna",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-hello-kitty",
+     "grado": 1
+    },
+    {
+     "id": "idea:futbol-arreglo",
+     "grado": 1
+    }
+   ],
+   "nota": "Columnas de 1,9 a 2,1 m de alto (campo medidas.altoCm). Hay muchas más (tazmania, rock star…): el oro es una muestra y baja el recall máximo. Mide si el sistema usa la medida."
+  },
+  {
+   "id": "Q13",
+   "categoria": "medida-estructura",
+   "texto": "un arco de 3 metros",
+   "relevantes": [
+    {
+     "id": "celebra:arco_tramos_rosados",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-trenza-dos-colores",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-floral",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-polka-azul",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:arco-naranja-azul-naval-racimos",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-organico-aguamarina",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-muneco-de-nieve",
+     "grado": 2
+    },
+    {
+     "id": "celebra:arco_azul_linea_plata",
+     "grado": 1
+    },
+    {
+     "id": "idea:arco-regalitos-fucsia",
+     "grado": 1
+    },
+    {
+     "id": "base-organica:arco-cromado-negro-oro-plata",
+     "grado": 1
+    }
+   ],
+   "nota": "Arcos de 2,9 a 3,1 m de ancho (grado 2); de 3,1 a 3,5 m aceptables."
+  },
+  {
+   "id": "Q14",
+   "categoria": "fuente",
+   "texto": "columnas de la revista Celebra",
+   "relevantes": [
+    {
+     "id": "celebra:columna_espiral_pastel",
+     "grado": 2
+    },
+    {
+     "id": "celebra:columna_espiral_azul_dorada",
+     "grado": 2
+    },
+    {
+     "id": "celebra:columna_espiral_roja_azul",
+     "grado": 2
+    },
+    {
+     "id": "celebra:columna_bloques_pirata",
+     "grado": 2
+    },
+    {
+     "id": "celebra:columna_franjas_alternando_tamanos",
+     "grado": 2
+    },
+    {
+     "id": "celebra:base_cuartetos_satin_rosado",
+     "grado": 1
+    }
+   ],
+   "nota": "Fuente = revista Celebra (13 items). La base de 4 cuartetos es una columna parcial."
+  },
+  {
+   "id": "Q15",
+   "categoria": "fuente",
+   "texto": "las guirnaldas de Pinterest que pasó el dueño",
+   "relevantes": [
+    {
+     "id": "referencia:guirnalda-love-monstera",
+     "grado": 2
+    },
+    {
+     "id": "referencia:guirnalda-esquina-armario-palmas",
+     "grado": 2
+    },
+    {
+     "id": "referencia:guirnalda-diagonal-monstera",
+     "grado": 2
+    },
+    {
+     "id": "referencia:frozen-let-it-go",
+     "grado": 2
+    },
+    {
+     "id": "referencia:guirnalda-feston-vino-rosa",
+     "grado": 2
+    },
+    {
+     "id": "referencia:dino-jungla-mesa",
+     "grado": 1
+    },
+    {
+     "id": "referencia:medio-arco-oro-rosa-confeti",
+     "grado": 1
+    }
+   ],
+   "nota": "Fuente = referencia-dueno (lote 1, 13 fotos de Pinterest). Se piden las guirnaldas; los otros arcos y medios arcos del lote son aceptables."
+  },
+  {
+   "id": "Q16",
+   "categoria": "tema",
+   "texto": "frozen",
+   "relevantes": [
+    {
+     "id": "referencia:frozen-let-it-go",
+     "grado": 2
+    },
+    {
+     "id": "referencia:frozen-let-it-go~guirnalda-organica",
+     "grado": 1
+    },
+    {
+     "id": "referencia:frozen-let-it-go~metalizado",
+     "grado": 1
+    },
+    {
+     "id": "referencia:frozen-let-it-go~metalizado-2",
+     "grado": 1
+    },
+    {
+     "id": "referencia:frozen-let-it-go~metalizado-3",
+     "grado": 1
+    }
+   ],
+   "nota": "Un solo item entero exacto; sus partes (la guirnalda y las letras LET IT GO) son aceptables. Mide si el sistema encuentra una palabra de tema poco frecuente."
+  },
+  {
+   "id": "Q17",
+   "categoria": "tema",
+   "texto": "fiesta de dinosaurios",
+   "relevantes": [
+    {
+     "id": "referencia:dino-jungla-mesa",
+     "grado": 2
+    },
+    {
+     "id": "referencia:dino-menta-mesa",
+     "grado": 1
+    }
+   ],
+   "nota": "AMBIGUA: la ficha de la foto 10 (dino-menta-mesa) no menciona dinosaurios, solo el nombre del id; se deja como aceptable."
+  },
+  {
+   "id": "Q18",
+   "categoria": "tema",
+   "texto": "unicornio pa una niña",
+   "relevantes": [
+    {
+     "id": "idea:columna-unicornio",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-unicornio",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-unicornio~espiral",
+     "grado": 1
+    },
+    {
+     "id": "idea:centro-de-mesa-unicornio~base",
+     "grado": 1
+    }
+   ],
+   "nota": "Informal («pa»). Los derivados (partes) son aceptables, no exactos."
+  },
+  {
+   "id": "Q19",
+   "categoria": "tema",
+   "texto": "columna de hello kity",
+   "relevantes": [
+    {
+     "id": "idea:columna-hello-kitty",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-hello-kitty~lila",
+     "grado": 1
+    }
+   ],
+   "nota": "Con errata a propósito («kity»)."
+  },
+  {
+   "id": "Q20",
+   "categoria": "tema",
+   "texto": "algo de granja con vaca",
+   "relevantes": [
+    {
+     "id": "idea:columna-granja",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-granja~base",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-granja~vaca-cabeza",
+     "grado": 1
+    }
+   ],
+   "nota": "Solo una columna con vaca; sus partes son aceptables."
+  },
+  {
+   "id": "Q21",
+   "categoria": "tema",
+   "texto": "decoración de fútbol",
+   "relevantes": [
+    {
+     "id": "idea:centro-de-mesa-futbol",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-espiral-futbol",
+     "grado": 2
+    },
+    {
+     "id": "idea:futbolmania",
+     "grado": 2
+    },
+    {
+     "id": "idea:malla-futbol",
+     "grado": 2
+    },
+    {
+     "id": "idea:mural-cancha-de-futbol",
+     "grado": 2
+    },
+    {
+     "id": "idea:decoracion-mundialista",
+     "grado": 2
+    },
+    {
+     "id": "idea:futbol-arreglo",
+     "grado": 2
+    },
+    {
+     "id": "idea:la-pasion-del-futbol",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-futbol~columna",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-espiral-futbol~columna",
+     "grado": 1
+    }
+   ],
+   "nota": "Ocho escenas con fútbol como tema; hay además muchos derivados con balones."
+  },
+  {
+   "id": "Q22",
+   "categoria": "tema",
+   "texto": "cumple de sirena",
+   "relevantes": [
+    {
+     "id": "idea:cola-de-sirena",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-sirenita",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-acuatico",
+     "grado": 1
+    },
+    {
+     "id": "idea:cola-de-sirena~cola",
+     "grado": 1
+    },
+    {
+     "id": "idea:arco-sirenita~arco",
+     "grado": 1
+    }
+   ],
+   "nota": "El arco acuático es del mar pero sin sirena: aceptable."
+  },
+  {
+   "id": "Q23",
+   "categoria": "ocasion-tema",
+   "texto": "primera comunión con cruz",
+   "relevantes": [
+    {
+     "id": "idea:cruz-celestial",
+     "grado": 2
+    },
+    {
+     "id": "idea:cruz-dorada",
+     "grado": 2
+    },
+    {
+     "id": "idea:cruz-pink",
+     "grado": 2
+    },
+    {
+     "id": "idea:cruz",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-mi-primera-comunion",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-primera-comunion",
+     "grado": 1
+    },
+    {
+     "id": "idea:centro-de-mesa-primera-comunion",
+     "grado": 1
+    },
+    {
+     "id": "idea:primera-comunion-nino",
+     "grado": 1
+    }
+   ],
+   "nota": "Cruces de globos (columnas en espiral) para bautizo y comunión."
+  },
+  {
+   "id": "Q24",
+   "categoria": "ocasion-estructura",
+   "texto": "árbol de navidad con esferas",
+   "relevantes": [
+    {
+     "id": "idea:arbol-de-navidad-chris-horne",
+     "grado": 2
+    },
+    {
+     "id": "idea:arbol-de-navidad-terra",
+     "grado": 2
+    },
+    {
+     "id": "idea:arbol-de-navidad-terra~arbol",
+     "grado": 2
+    },
+    {
+     "id": "idea:arbol-de-navidad",
+     "grado": 1
+    },
+    {
+     "id": "idea:arbol-de-navidad-2",
+     "grado": 1
+    },
+    {
+     "id": "idea:arbol-de-navidad-con-regalos",
+     "grado": 1
+    },
+    {
+     "id": "idea:arbol-de-navidad-graffiti-invierno",
+     "grado": 1
+    }
+   ],
+   "nota": "Árboles con esferas explícitas: Chris Horne (esferas de colores) y Terra (esferas y moño). Los demás árboles de Navidad son aceptables."
+  },
+  {
+   "id": "Q25",
+   "categoria": "ocasion-forma",
+   "texto": "corazón de globos rojos para San Valentín",
+   "relevantes": [
+    {
+     "id": "idea:corazon-organico",
+     "grado": 2
+    },
+    {
+     "id": "idea:bouquet-corazon",
+     "grado": 2
+    },
+    {
+     "id": "idea:corazon-love",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-corazon",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-corazon-1",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-san-valentin",
+     "grado": 2
+    },
+    {
+     "id": "idea:corazon-en-malla",
+     "grado": 2
+    },
+    {
+     "id": "idea:san-valentin",
+     "grado": 1
+    },
+    {
+     "id": "idea:centro-de-mesa-cristal",
+     "grado": 1
+    },
+    {
+     "id": "idea:marco-para-fotos-san-valentin",
+     "grado": 1
+    }
+   ],
+   "nota": "San Valentín = ocasión «amor». Hay decenas de piezas con corazones; se piden corazones rojos como forma protagonista."
+  },
+  {
+   "id": "Q26",
+   "categoria": "ocasion",
+   "texto": "centro de mesa para el día de la madre",
+   "relevantes": [
+    {
+     "id": "idea:centro-de-mesa-para-mama",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-feliz-dia-mami",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-corazon-1",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-corazon-reflex",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-corazones",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-corazon",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-feliz-dia",
+     "grado": 1
+    },
+    {
+     "id": "idea:bouquet-flores-feliz-dia-mama",
+     "grado": 1
+    },
+    {
+     "id": "idea:feliz-dia-mama-reflex-graffiti",
+     "grado": 1
+    }
+   ],
+   "nota": "«Feliz Día Mami» está marcado como cumpleaños en la ocasión, aunque por el nombre es del día de la madre."
+  },
+  {
+   "id": "Q27",
+   "categoria": "ocasion-estructura-color",
+   "texto": "arco blanco y dorado para una boda",
+   "relevantes": [
+    {
+     "id": "base-organica:arco-asimetrico-oro-perlado",
+     "grado": 2
+    },
+    {
+     "id": "idea:encanto-organico",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:aro-dorado-nude-palo-de-rosa",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-organica-encanto-dorado",
+     "grado": 1
+    },
+    {
+     "id": "referencia:medio-arco-oro-rosa-confeti",
+     "grado": 1
+    },
+    {
+     "id": "idea:mi-boda",
+     "grado": 1
+    }
+   ],
+   "nota": "Pocos arcos blancos y dorados; el oro perlado es dorado de un solo color y el aro Encanto es blanco y dorado."
+  },
+  {
+   "id": "Q28",
+   "categoria": "color",
+   "texto": "todo en menta y blanco",
+   "relevantes": [
+    {
+     "id": "base-organica:arco-menta-azul-blanco",
+     "grado": 2
+    },
+    {
+     "id": "referencia:dino-menta-mesa",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:arco-ombre-coral-menta",
+     "grado": 1
+    }
+   ],
+   "nota": "Solo tres items con «menta» en el nombre."
+  },
+  {
+   "id": "Q29",
+   "categoria": "color",
+   "texto": "rojo y dorado clásico",
+   "relevantes": [
+    {
+     "id": "referencia:portal-rojo-orbes",
+     "grado": 2
+    },
+    {
+     "id": "idea:bouquet-corazon",
+     "grado": 1
+    },
+    {
+     "id": "idea:feliz-navidad-cristal-rojo-dorado-verde-lima",
+     "grado": 1
+    },
+    {
+     "id": "idea:feliz-navidad-dorado-cristal-rojo-plata",
+     "grado": 1
+    },
+    {
+     "id": "base-organica:columna-cine-negro-rojo-oro",
+     "grado": 1
+    },
+    {
+     "id": "idea:arco-organico-amor",
+     "grado": 1
+    }
+   ],
+   "nota": "El portal rojo con orbes dorados es el único donde rojo y dorado son los dos protagonistas."
+  },
+  {
+   "id": "Q30",
+   "categoria": "utileria-ocasion",
+   "texto": "platos y banderines de halloween",
+   "relevantes": [
+    {
+     "id": "utileria:banderin_halloween",
+     "grado": 2
+    },
+    {
+     "id": "utileria:platos_halloween",
+     "grado": 2
+    },
+    {
+     "id": "idea:escenario-halloween~banderin",
+     "grado": 2
+    },
+    {
+     "id": "escena:halloween_marco_mesas~fiesta-plato-happy",
+     "grado": 2
+    },
+    {
+     "id": "escena:halloween_arco_calabazas~fiesta-banderin-arco",
+     "grado": 2
+    },
+    {
+     "id": "escena:halloween_marco_mesas~fiesta-banderin-mesa-alta",
+     "grado": 2
+    },
+    {
+     "id": "escena:halloween_marco_mesas~fiesta-banderin-mesa-baja",
+     "grado": 1
+    },
+    {
+     "id": "utileria:guirnalda_recortes",
+     "grado": 1
+    },
+    {
+     "id": "utileria:vasos",
+     "grado": 1
+    },
+    {
+     "id": "utileria:servilletas",
+     "grado": 1
+    }
+   ],
+   "nota": "Utilería del taller y los banderines y platos derivados de las escenas de Halloween (mismas piezas). El resto de la vajilla es aceptable."
+  },
+  {
+   "id": "Q31",
+   "categoria": "formato",
+   "texto": "globos gigantes de 36 pulgadas",
+   "relevantes": [
+    {
+     "id": "idea:columna-feliz-cumpleanos-r-36",
+     "grado": 2
+    },
+    {
+     "id": "idea:gigante-diversion",
+     "grado": 2
+    },
+    {
+     "id": "idea:gigante-diversion~gigante",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-feliz-cumpleanos-r-36~r36",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-feliz-cumpleanos-r-40",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-espiral-futbol~remate",
+     "grado": 1
+    },
+    {
+     "id": "idea:christmas~r36-crema",
+     "grado": 1
+    }
+   ],
+   "nota": "Formato R-36. Otros items traen un R-36 suelto pero no es protagonista; no se listan."
+  },
+  {
+   "id": "Q32",
+   "categoria": "formato",
+   "texto": "link-o-loon 660 largos",
+   "relevantes": [
+    {
+     "id": "idea:arbolito-navidad-con-lol660",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-nochebuena",
+     "grado": 2
+    },
+    {
+     "id": "idea:bebe-1-ano",
+     "grado": 1
+    },
+    {
+     "id": "idea:el-duende",
+     "grado": 1
+    },
+    {
+     "id": "idea:banner-feliz-cumpleanos",
+     "grado": 1
+    }
+   ],
+   "nota": "Formato LOL-660 (globo largo). Los dos primeros lo usan como material principal (lazos y fuste)."
+  },
+  {
+   "id": "Q33",
+   "categoria": "estructura-tema",
+   "texto": "pared de malla con corazones",
+   "relevantes": [
+    {
+     "id": "idea:mural-corazones-clasicos",
+     "grado": 2
+    },
+    {
+     "id": "idea:malla-link-o-loon-r-amor-en-fucsia-y-lila",
+     "grado": 2
+    },
+    {
+     "id": "idea:pared-corazon",
+     "grado": 1
+    },
+    {
+     "id": "idea:mural-animal-print",
+     "grado": 1
+    },
+    {
+     "id": "idea:corazon-en-malla",
+     "grado": 1
+    }
+   ],
+   "nota": "Mallas de Link-O-Loon con corazones."
+  },
+  {
+   "id": "Q34",
+   "categoria": "estructura",
+   "texto": "globos colgando del techo",
+   "relevantes": [
+    {
+     "id": "escena:techo_racimos",
+     "grado": 2
+    },
+    {
+     "id": "idea:lluvia-de-globos",
+     "grado": 2
+    },
+    {
+     "id": "idea:eventos-corporativos",
+     "grado": 2
+    },
+    {
+     "id": "idea:techo",
+     "grado": 1
+    },
+    {
+     "id": "idea:decoracion-mesa",
+     "grado": 1
+    }
+   ],
+   "nota": "Estructuras de techo y colgantes."
+  },
+  {
+   "id": "Q35",
+   "categoria": "ocasion",
+   "texto": "decoración de año nuevo",
+   "relevantes": [
+    {
+     "id": "idea:arco-ano-nuevo",
+     "grado": 2
+    },
+    {
+     "id": "idea:decoracion-feliz-ano-nuevo",
+     "grado": 2
+    },
+    {
+     "id": "idea:grado-y-feliz-ano",
+     "grado": 2
+    },
+    {
+     "id": "utileria:gorritos",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:arco-cromado-negro-oro-plata",
+     "grado": 1
+    },
+    {
+     "id": "base-organica:arco-l-cromado-negro-oro-plata",
+     "grado": 1
+    },
+    {
+     "id": "idea:grado-y-feliz-ano~ramo",
+     "grado": 1
+    }
+   ],
+   "nota": "Ocasión «año nuevo» (en algunas fichas aparece sin tilde)."
+  },
+  {
+   "id": "Q36",
+   "categoria": "fuente-estructura",
+   "texto": "los topiarios de las ideas de Sempertex",
+   "relevantes": [
+    {
+     "id": "idea:topiario",
+     "grado": 2
+    },
+    {
+     "id": "idea:topiario-reflex",
+     "grado": 2
+    },
+    {
+     "id": "idea:futbolmania",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-organica-feliz-cumpleanos-terra",
+     "grado": 2
+    },
+    {
+     "id": "idea:topiario-reflex-dorado-rosa-plata",
+     "grado": 2
+    },
+    {
+     "id": "idea:corazon-tejido",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-feliz-cumpleanos",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-cumpleanos",
+     "grado": 2
+    },
+    {
+     "id": "idea:san-valentin",
+     "grado": 1
+    }
+   ],
+   "nota": "Fuente idea-sempertex + palabra «topiario» en el nombre. Casi todo el catálogo es de esa fuente, así que la fuente casi no discrimina."
+  },
+  {
+   "id": "Q37",
+   "categoria": "decoracion-ocasion",
+   "texto": "ojos saltones para halloween",
+   "relevantes": [
+    {
+     "id": "decoracion:ojos_saltones",
+     "grado": 2
+    },
+    {
+     "id": "decoracion:ojo_salton",
+     "grado": 2
+    },
+    {
+     "id": "decoracion:ojos_venas",
+     "grado": 2
+    },
+    {
+     "id": "decoracion:ojo_venas",
+     "grado": 2
+    },
+    {
+     "id": "idea:halloween-2~ojos-1",
+     "grado": 2
+    },
+    {
+     "id": "escena:halloween_aro_ojos",
+     "grado": 1
+    },
+    {
+     "id": "idea:centro-de-mesa-halloween~ojo-1",
+     "grado": 1
+    },
+    {
+     "id": "idea:centro-de-mesa-halloween~ojo-2",
+     "grado": 1
+    },
+    {
+     "id": "idea:centro-de-mesa-halloween~ojo-3",
+     "grado": 1
+    }
+   ],
+   "nota": "Decoraciones con ojos (propias del taller)."
+  },
+  {
+   "id": "Q38",
+   "categoria": "decoracion-ocasion",
+   "texto": "calabaza con sombrero de bruja",
+   "relevantes": [
+    {
+     "id": "decoracion:calabaza_bruja",
+     "grado": 2
+    },
+    {
+     "id": "decoracion:calabaza_grande",
+     "grado": 1
+    },
+    {
+     "id": "idea:calabaza",
+     "grado": 1
+    },
+    {
+     "id": "escena:halloween_arco_calabazas",
+     "grado": 1
+    },
+    {
+     "id": "idea:bouquet-tenebroso",
+     "grado": 1
+    }
+   ],
+   "nota": "Una sola decoración exacta."
+  },
+  {
+   "id": "Q39",
+   "categoria": "decoracion",
+   "texto": "figura de pollito o gallina",
+   "relevantes": [
+    {
+     "id": "decoracion:figura_pollito",
+     "grado": 2
+    },
+    {
+     "id": "decoracion:figura_gallina",
+     "grado": 2
+    },
+    {
+     "id": "decoracion:figura_pajaro",
+     "grado": 1
+    },
+    {
+     "id": "decoracion:figura_ranita",
+     "grado": 1
+    }
+   ],
+   "nota": "Figuras de animalitos del taller."
+  },
+  {
+   "id": "Q40",
+   "categoria": "decoracion-tema",
+   "texto": "orbe dorado con flecos",
+   "relevantes": [
+    {
+     "id": "decoracion:orbe_flecos_dorado",
+     "grado": 2
+    },
+    {
+     "id": "referencia:portal-rojo-orbes~orbe-flecos-dorado-4",
+     "grado": 2
+    },
+    {
+     "id": "referencia:portal-rojo-orbes",
+     "grado": 1
+    }
+   ],
+   "nota": "Decoración exacta, su copia derivada en la referencia del dueño y la referencia entera (aceptable)."
+  }
+ ],
+ "fotos": [
+  {
+   "id": "F01",
+   "numero": 1,
+   "archivo": "01-cd2d98075aa567bde95e6cf2bb9bb350.jpg",
+   "esperado": "referencia:dino-jungla-mesa",
+   "parecidos": [
+    "referencia:guirnalda-esquina-armario-palmas",
+    "referencia:dino-menta-mesa"
+   ],
+   "nota": "Guirnalda verde y dorada sobre cortina con luces y mesa."
+  },
+  {
+   "id": "F02",
+   "numero": 2,
+   "archivo": "02-64c05e72b410c021f3f392bd029856f4.jpg",
+   "esperado": "referencia:happy-birthday-azul-dorado-redondo",
+   "parecidos": [
+    "referencia:happy-birthday-lentejuelas-arco-asimetrico",
+    "referencia:medio-arco-oro-rosa-confeti"
+   ],
+   "nota": "Medio arco azul marino y dorado con panel redondo."
+  },
+  {
+   "id": "F03",
+   "numero": 3,
+   "archivo": "03-e8c815ec1258362586128ed0274b7827.jpg",
+   "esperado": "referencia:happy-birthday-lentejuelas-arco-asimetrico",
+   "parecidos": [
+    "referencia:happy-birthday-azul-dorado-redondo",
+    "referencia:medio-arco-oro-rosa-confeti",
+    "base-organica:arco-asimetrico-oro-perlado"
+   ],
+   "nota": "Arco asimétrico azul marino y dorado con lentejuelas."
+  },
+  {
+   "id": "F04",
+   "numero": 4,
+   "archivo": "04-f1665cf51ff6b8fad3585d72a5564d98.jpg",
+   "esperado": "referencia:graduacion-columnas-uvas",
+   "parecidos": [
+    "base-organica:columna-champana-inclinada",
+    "base-organica:columna-cine-negro-rojo-oro"
+   ],
+   "nota": "Columnas libres azul marino y dorado con uvas."
+  },
+  {
+   "id": "F05",
+   "numero": 5,
+   "archivo": "05-3cc7d174a3b0cec0ddd037d9484d1a8b.jpg",
+   "esperado": "referencia:arcos-chiara-tropical",
+   "parecidos": [
+    "idea:arco-organico-tropical",
+    "idea:arco-marimonda",
+    "idea:arco-flores-rosadas-y-amarillas"
+   ],
+   "nota": "Arcos chiara con columna orgánica fucsia, naranja y crema."
+  },
+  {
+   "id": "F06",
+   "numero": 6,
+   "archivo": "06-35986dce900c273d30573af88e4240c1.jpg",
+   "esperado": "referencia:portal-rojo-orbes",
+   "parecidos": [
+    "idea:techo",
+    "decoracion:orbe_flecos_dorado"
+   ],
+   "nota": "Portal rojo de columnas clásicas con orbes dorados."
+  },
+  {
+   "id": "F07",
+   "numero": 7,
+   "archivo": "07-ed646e77c786929f77fafb55a49c6a95.jpg",
+   "esperado": "referencia:guirnalda-love-monstera",
+   "parecidos": [
+    "referencia:guirnalda-diagonal-monstera",
+    "referencia:guirnalda-esquina-armario-palmas"
+   ],
+   "nota": "Guirnalda verde y blush con monstera y «love»."
+  },
+  {
+   "id": "F08",
+   "numero": 8,
+   "archivo": "08-58450b45122a9c29cedfdc27bf865df5.jpg",
+   "esperado": "referencia:guirnalda-esquina-armario-palmas",
+   "parecidos": [
+    "referencia:guirnalda-love-monstera",
+    "referencia:guirnalda-diagonal-monstera"
+   ],
+   "nota": "Guirnalda en esquina sobre un armario con palmas."
+  },
+  {
+   "id": "F09",
+   "numero": 9,
+   "archivo": "09-66a0e6bf03c9939875144f97b1884e0f.jpg",
+   "esperado": "referencia:guirnalda-diagonal-monstera",
+   "parecidos": [
+    "referencia:guirnalda-love-monstera",
+    "referencia:guirnalda-esquina-armario-palmas"
+   ],
+   "nota": "Guirnalda en diagonal verde y blush con monstera."
+  },
+  {
+   "id": "F10",
+   "numero": 10,
+   "archivo": "10-4c65c45e3f50a5532c3e389bb4b54ee6.jpg",
+   "esperado": "referencia:dino-menta-mesa",
+   "parecidos": [
+    "base-organica:arco-menta-azul-blanco",
+    "base-organica:arco-ombre-coral-menta"
+   ],
+   "nota": "Medio arco menta, blanco y verde con letrero."
+  },
+  {
+   "id": "F11",
+   "numero": 11,
+   "archivo": "11-eda391e114a575622540f0b6f9ee5ad8.jpg",
+   "esperado": "referencia:frozen-let-it-go",
+   "parecidos": [
+    "idea:garland-grado",
+    "idea:blue-tide-nacional-2025"
+   ],
+   "nota": "Guirnalda Frozen azul, lila y plata."
+  },
+  {
+   "id": "F12",
+   "numero": 12,
+   "archivo": "12-7e9fcb860051ffe4356c8d0c83dda909.jpg",
+   "esperado": "referencia:guirnalda-feston-vino-rosa",
+   "parecidos": [
+    "base-organica:marco-blanco-rojo-durazno-flores",
+    "referencia:medio-arco-oro-rosa-confeti",
+    "idea:christmas"
+   ],
+   "nota": "Guirnalda en festón vino, rosa, durazno y dorado."
+  },
+  {
+   "id": "F13",
+   "numero": 13,
+   "archivo": "13-de6953d64c4b5d0f508dc617d222f35c.jpg",
+   "esperado": "referencia:medio-arco-oro-rosa-confeti",
+   "parecidos": [
+    "referencia:happy-birthday-lentejuelas-arco-asimetrico",
+    "base-organica:arco-asimetrico-oro-perlado",
+    "referencia:happy-birthday-azul-dorado-redondo"
+   ],
+   "nota": "Medio arco dorado, rosa y confeti."
+  }
+ ]
+}
