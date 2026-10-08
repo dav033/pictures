@@ -23,7 +23,11 @@ import type { SolidoEscenografia } from "./escenografia";
  * - `techo`: colgada con su borde de arriba `cuelgaCm` por debajo del techo, en (x, z), con su hilo hasta el techo;
  *   `volteada` la pone cabeza abajo (una flor que mira al piso);
  * - `ancla`: colgada de un ancla de otra pieza (como `colocarEn`: su +y local mira hacia la normal del ancla). Con
- *   `cada` > 0 se repite en el ancla `ancla`, `ancla + cada`, `ancla + 2·cada`… (flores a lo largo de una columna).
+ *   `cada` > 0 se repite en el ancla `ancla`, `ancla + cada`, `ancla + 2·cada`… (flores a lo largo de una columna);
+ * - `libre`: suelta en el salón, con su origen (el de su espacio local: el centro del ojo, del cuerpo de la araña, el
+ *   pie del tronco…) en (x, y, z) del mundo, de frente como en una pared (una decoración mira al salón) y girada
+ *   `giroGrados` sobre la vertical. Es para lo que va pegado a otra pieza sin ser un ancla suya (los ojos sobre un
+ *   racimo, la calabaza en el hueco de un arco, la araña sobre una guirnalda) o apoyado en la escenografía.
  * `armarEscena` lo deja todo en coordenadas del mundo, con los materiales sumados y lo de cada pieza por separado.
  */
 export type ParedSala = "fondo" | "izquierda" | "derecha";
@@ -41,7 +45,8 @@ export type Colocacion =
   | { en: "piso"; xCm: number; zCm: number; giroGrados: number }
   | { en: "pared"; pared: ParedSala; aLoLargoCm: number; alturaCm: number }
   | { en: "techo"; xCm: number; zCm: number; cuelgaCm: number; giroGrados: number; volteada: boolean }
-  | { en: "ancla"; padreId: string; ancla: number; cada: number; giroGrados: number };
+  | { en: "ancla"; padreId: string; ancla: number; cada: number; giroGrados: number }
+  | { en: "libre"; xCm: number; yCm: number; zCm: number; giroGrados: number };
 
 export type LugarColocacion = Colocacion["en"];
 
@@ -167,6 +172,8 @@ export function marcoDePared(sala: Sala, pared: ParedSala): { centro: Vec3; norm
  * (centro de la base, de la espalda o de la cara de arriba) y luego se gira y se traslada.
  */
 function transformacionDe(colocacion: Exclude<Colocacion, { en: "ancla" }>, caja: Caja, sala: Sala): Transformacion {
+  // Suelta: su origen va al punto pedido (no se corre por la caja), girada sobre la vertical.
+  if (colocacion.en === "libre") return { m: giroY(colocacion.giroGrados), t: { x: colocacion.xCm, y: colocacion.yCm, z: colocacion.zCm } };
   const cx = (caja.min.x + caja.max.x) / 2, cz = (caja.min.z + caja.max.z) / 2;
   const componer = (previa: Matriz, apoyo: Vec3, giro: Matriz, destino: Vec3): Transformacion => {
     // v ↦ giro·(previa·v − apoyo) + destino
@@ -224,15 +231,15 @@ const HILO = { radioCm: 0.25, hex: "#d9d9de" };
  * guarda las piezas ya armadas por su JSON, para no rehacer un arco orgánico al mover otra pieza.
  */
 /**
- * Una decoración se orienta según dónde va, no según cómo quedó guardada: en una pared siempre de frente (mirando
- * al salón); colgada de un ancla, en su espacio propio (+y), que `colocarEn` gira hacia fuera del ancla. Así no
+ * Una decoración se orienta según dónde va, no según cómo quedó guardada: en una pared o suelta, siempre de frente
+ * (mirando al salón); colgada de un ancla, en su espacio propio (+y), que `colocarEn` gira hacia fuera del ancla. Así no
  * se queda mirando al techo al cambiarla por otra predefinida o al pasarla a una pared.
  */
 function orientada(nodo: NodoEscena): Pieza {
   const { pieza, colocacion } = nodo;
   if (pieza.tipo !== "decoracion") return pieza;
   // Las de Halloween que van de pie (calabazas, árbol, ramo, fantasma) quedan derechas en el piso y del techo.
-  const deFrente = colocacion.en === "pared" ? true : colocacion.en === "ancla" ? false : Boolean(pieza.deFrente) || esDePie(pieza.decoracion);
+  const deFrente = colocacion.en === "pared" || colocacion.en === "libre" ? true : colocacion.en === "ancla" ? false : Boolean(pieza.deFrente) || esDePie(pieza.decoracion);
   if (deFrente === Boolean(pieza.deFrente)) return pieza;
   const { deFrente: _anterior, ...resto } = pieza;
   void _anterior;
@@ -344,7 +351,8 @@ export function duplicarNodo(escena: Escena, id: string): Escena {
   const corrida: Colocacion = c.en === "piso" ? { ...c, xCm: c.xCm + 60 }
     : c.en === "pared" ? { ...c, aLoLargoCm: c.aLoLargoCm + 60 }
       : c.en === "techo" ? { ...c, xCm: c.xCm + 60 }
-        : { ...c, ancla: c.ancla + 1 };
+        : c.en === "libre" ? { ...c, xCm: c.xCm + 60 }
+          : { ...c, ancla: c.ancla + 1 };
   const copia: NodoEscena = { id: idNuevo(escena, original.id.replace(/-\d+$/, "")), nombre: `${original.nombre} (copia)`, pieza: structuredClone(original.pieza), colocacion: corrida };
   const indice = escena.nodos.indexOf(original);
   return { ...escena, nodos: [...escena.nodos.slice(0, indice + 1), copia, ...escena.nodos.slice(indice + 1)] };
@@ -379,6 +387,7 @@ export function piezaEnIngles(pieza: Pieza, caja: Caja): string {
     case "organico": return `an organic balloon piece of mixed-size balloons ${alto} tall`;
     case "escenografia": return `party props (backdrop panels, tables or rug) ${ancho} wide`;
     case "decoracion": return decoracionEnIngles(pieza.decoracion);
+    case "globo": return `a single large round balloon ${metrosEn(pieza.infladoCm)} across`;
   }
 }
 
@@ -397,7 +406,7 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     const c = nodo.colocacion;
     const x = (hecho.caja.min.x + hecho.caja.max.x) / 2;
     const lado = x < -escena.sala.anchoCm * 0.12 ? "on the left" : x > escena.sala.anchoCm * 0.12 ? "on the right" : "in the center";
-    const lugar = c.en === "piso" ? `standing ${lado}` : c.en === "pared" ? LUGAR_EN[c.pared] : c.en === "techo" ? "hanging from the ceiling" : `attached to the ${escena.nodos.find((n) => n.id === c.padreId)?.pieza.tipo.replace("_", " ") ?? "structure"}`;
+    const lugar = c.en === "piso" ? `standing ${lado}` : c.en === "pared" ? LUGAR_EN[c.pared] : c.en === "techo" ? "hanging from the ceiling" : c.en === "libre" ? `set on the arrangement ${lado}` : `attached to the ${escena.nodos.find((n) => n.id === c.padreId)?.pieza.tipo.replace("_", " ") ?? "structure"}`;
     const frase = piezaEnIngles(nodo.pieza, hecho.caja);
     const clave = `${nodo.pieza.tipo}|${frase}|${c.en}`;
     const previo = vistos.get(clave);
@@ -441,7 +450,7 @@ export type OpcionesMover = {
 /**
  * Mueve una pieza `delta` (cm, en el mundo) sobre su superficie: en el piso y en el techo, en (x, z) —y en el
  * techo, `delta.y` la sube o la baja—; en una pared, a lo largo de ella y en altura (lo que se aleja de la pared
- * no cuenta). Lo colgado de un ancla no se mueve así (ver `pasarDeAncla`). Cada coordenada que cambia cae en el
+ * no cuenta); suelta, en (x, y, z). Lo colgado de un ancla no se mueve así (ver `pasarDeAncla`). Cada coordenada que cambia cae en el
  * imán y luego dentro de la sala: la caja de la pieza no pasa de las paredes, el piso ni el techo.
  */
 export function moverNodo(escena: Escena, id: string, delta: Vec3, opciones: OpcionesMover = {}): Escena {
@@ -455,7 +464,15 @@ export function moverNodo(escena: Escena, id: string, delta: Vec3, opciones: Opc
   const nuevo = (actual: number, d: number, min: number, max: number) => (Math.abs(d) < 1e-9 ? actual : limitar(imanar(actual + d, iman), min, max));
   const c = nodo.colocacion;
   let colocacion: Colocacion;
-  if (c.en === "pared") {
+  if (c.en === "libre") {
+    // Su caja se corre lo mismo que su origen: el origen se limita para que la caja no salga de la sala.
+    const rango = (eje: "x" | "y" | "z", actual: number, min: number, max: number): [number, number] =>
+      (caja ? [actual + min - caja.min[eje], actual + max - caja.max[eje]] : [min, max]);
+    const [x0, x1] = rango("x", c.xCm, -sala.anchoCm / 2, sala.anchoCm / 2);
+    const [y0, y1] = rango("y", c.yCm, 0, sala.altoCm);
+    const [z0, z1] = rango("z", c.zCm, -sala.fondoCm / 2, sala.fondoCm / 2);
+    colocacion = { ...c, xCm: nuevo(c.xCm, delta.x, x0, x1), yCm: nuevo(c.yCm, delta.y, y0, y1), zCm: nuevo(c.zCm, delta.z, z0, z1) };
+  } else if (c.en === "pared") {
     const marco = marcoDePared(sala, c.pared);
     const aLo = delta.x * marco.derecha.x + delta.z * marco.derecha.z;
     const medioLargo = c.pared === "fondo" ? medio("x") : medio("z");
@@ -506,6 +523,9 @@ export function desplazamientoEntre(sala: Sala, antes: Colocacion, despues: Colo
   }
   if (antes.en === "techo" && despues.en === "techo" && antes.giroGrados === despues.giroGrados && antes.volteada === despues.volteada) {
     return { x: despues.xCm - antes.xCm, y: antes.cuelgaCm - despues.cuelgaCm, z: despues.zCm - antes.zCm };
+  }
+  if (antes.en === "libre" && despues.en === "libre" && antes.giroGrados === despues.giroGrados) {
+    return { x: despues.xCm - antes.xCm, y: despues.yCm - antes.yCm, z: despues.zCm - antes.zCm };
   }
   if (antes.en === "pared" && despues.en === "pared" && antes.pared === despues.pared) {
     const { derecha } = marcoDePared(sala, antes.pared);

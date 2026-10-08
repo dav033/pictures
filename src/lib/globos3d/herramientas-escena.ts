@@ -67,7 +67,7 @@ const CATALOGO_IDS = CATALOGO_DECORACIONES.map((d) => d.id) as [string, ...strin
 
 const NOMBRE_TIPO: Readonly<Record<TipoPieza, string>> = {
   columna: "columna", arco: "arco", pared_malla: "pared de malla", pared_trenzas: "pared de trenzas", organico: "pieza orgánica",
-  decoracion: "decoración", arco_organico: "arco orgánico", guirnalda: "guirnalda", escenografia: "escenografía",
+  decoracion: "decoración", arco_organico: "arco orgánico", guirnalda: "guirnalda", escenografia: "escenografía", globo: "globo suelto",
 };
 
 // ----------------------------------------------------------------------------------------------------------
@@ -315,6 +315,7 @@ function medidasDe(p: Pieza): string {
     case "organico": return "pieza orgánica armada";
     case "decoracion": return `${p.decoracion.tipo}`;
     case "escenografia": return `escenografía (${p.elementos.length} elementos, sin globos)`;
+    case "globo": return `${p.formatoId} · ${r0(p.infladoCm)} cm`;
   }
 }
 
@@ -331,6 +332,7 @@ function dondeTexto(c: Colocacion, escena: Escena): string {
   if (c.en === "piso") return `piso x=${r0(c.xCm)} z=${r0(c.zCm)} giro=${r0(c.giroGrados)}°`;
   if (c.en === "pared") return `pared ${c.pared} a_lo_largo=${r0(c.aLoLargoCm)} altura=${r0(c.alturaCm)}`;
   if (c.en === "techo") return `techo x=${r0(c.xCm)} z=${r0(c.zCm)} cuelga=${r0(c.cuelgaCm)} giro=${r0(c.giroGrados)}°${c.volteada ? " volteada" : ""}`;
+  if (c.en === "libre") return `suelta x=${r0(c.xCm)} y=${r0(c.yCm)} z=${r0(c.zCm)} giro=${r0(c.giroGrados)}°`;
   const padre = escena.nodos.find((n) => n.id === c.padreId);
   return `colgada de «${padre?.id ?? c.padreId}» ancla=${c.ancla} cada=${c.cada} giro=${r0(c.giroGrados)}°`;
 }
@@ -577,6 +579,8 @@ function aplicarPropiedades(base: Pieza, props: Propiedades, notas: string[]): P
     case "escenografia":
       // No es globo: no tiene colores Sempertex que cambiar.
       return base;
+    case "globo":
+      return props.colores ? recolorearEnOrden(base, props.colores, notas) : base;
   }
 }
 

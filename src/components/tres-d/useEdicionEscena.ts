@@ -116,6 +116,8 @@ export function useEdicionEscena(opciones: Opciones) {
         nueva = girarNodo(d.escena, nodo.id, (tecla === "q" ? 1 : -1) * (e.shiftKey ? 45 : 15));
       } else if (tecla === "PageUp" || tecla === "PageDown") {
         if (c.en === "pared" || c.en === "techo") nueva = mover(por(ARRIBA, tecla === "PageUp" ? paso : -paso));
+        // Suelta: Re Pág / Av Pág la traen al frente o la llevan al fondo (↑/↓ ya la suben y la bajan).
+        else if (c.en === "libre") nueva = mover({ x: 0, y: 0, z: tecla === "PageUp" ? paso : -paso });
         else { e.preventDefault(); return; }
       } else if (tecla === "ArrowUp" || tecla === "ArrowDown" || tecla === "ArrowLeft" || tecla === "ArrowRight") {
         const signo = tecla === "ArrowUp" || tecla === "ArrowRight" ? 1 : -1;
@@ -125,7 +127,10 @@ export function useEdicionEscena(opciones: Opciones) {
           const visor = visorRef.current;
           if (!visor) return;
           const { adelante, derecha } = visor.ejesCamara();
-          if (c.en === "pared") {
+          if (c.en === "libre") {
+            // Suelta: ←/→ por el eje de la sala más parecido a la derecha de la cámara, ↑/↓ en altura.
+            nueva = mover(lateral ? por(ejeMasCercano(derecha), signo * paso) : por(ARRIBA, signo * paso));
+          } else if (c.en === "pared") {
             // En la pared: ←/→ a lo largo (hacia donde se ve la derecha en pantalla), ↑/↓ en altura.
             const largo = marcoDePared(d.escena.sala, c.pared).derecha;
             const hacia = Math.sign(largo.x * derecha.x + largo.z * derecha.z) || 1;
@@ -181,7 +186,8 @@ export function useEdicionEscena(opciones: Opciones) {
       const toque = visor.piezaEn(e.clientX, e.clientY);
       if (!toque || toque.nodo !== nodo.id) return;
       // Se arrastra en el plano de su superficie que pasa por donde se tocó: la pieza sigue al puntero.
-      const normal = nodo.colocacion.en === "pared" ? marcoDePared(d.escena.sala, nodo.colocacion.pared).normal : ARRIBA;
+      // Suelta: en el plano de frente (x, y), como en la pared del fondo.
+      const normal = nodo.colocacion.en === "pared" ? marcoDePared(d.escena.sala, nodo.colocacion.pared).normal : nodo.colocacion.en === "libre" ? { x: 0, y: 0, z: 1 } : ARRIBA;
       arrastre = { id: nodo.id, ids: [...descendientes(d.escena, nodo.id)], inicio: d.escena, armada: d.armada, colocacion: nodo.colocacion, punto: toque.punto, normal, ultima: null, puntero: e.pointerId };
       // Antes que la cámara (este oyente va en captura): así no gira mientras se arrastra.
       visor.orbitar(false);
@@ -196,7 +202,7 @@ export function useEdicionEscena(opciones: Opciones) {
       if (a) {
         const p = visor.puntoEnPlano(e.clientX, e.clientY, a.punto, a.normal);
         if (!p) return;
-        const plano = a.colocacion.en !== "pared";
+        const plano = a.colocacion.en === "piso" || a.colocacion.en === "techo";
         const delta = { x: p.x - a.punto.x, y: plano ? 0 : p.y - a.punto.y, z: p.z - a.punto.z };
         const nueva = moverNodo(a.inicio, a.id, delta, { armada: a.armada ?? undefined, iman: !e.altKey });
         const colocacion = nueva.nodos.find((n) => n.id === a.id)?.colocacion ?? a.colocacion;

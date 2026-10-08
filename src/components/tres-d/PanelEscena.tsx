@@ -25,11 +25,11 @@ const TARJETA = "flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-b
 
 const NOMBRE_TIPO: Readonly<Record<Pieza["tipo"], string>> = {
   columna: "Columna", arco: "Arco", pared_malla: "Pared de malla", pared_trenzas: "Pared de trenzas", organico: "Orgánico",
-  decoracion: "Decoración", arco_organico: "Arco orgánico", guirnalda: "Guirnalda", escenografia: "Escenografía",
+  decoracion: "Decoración", arco_organico: "Arco orgánico", guirnalda: "Guirnalda", escenografia: "Escenografía", globo: "Globo suelto",
 };
 
 const LUGARES: ReadonlyArray<{ id: LugarColocacion; nombre: string }> = [
-  { id: "piso", nombre: "En el piso" }, { id: "pared", nombre: "En una pared" }, { id: "techo", nombre: "Del techo" }, { id: "ancla", nombre: "En otra pieza" },
+  { id: "piso", nombre: "En el piso" }, { id: "pared", nombre: "En una pared" }, { id: "techo", nombre: "Del techo" }, { id: "ancla", nombre: "En otra pieza" }, { id: "libre", nombre: "Suelta (x, y, z)" },
 ];
 
 /** Dónde está una pieza, en palabras. */
@@ -38,6 +38,7 @@ function dondeEsta(nodo: NodoEscena, escena: Escena): string {
   if (c.en === "piso") return "en el piso";
   if (c.en === "pared") return NOMBRE_PARED[c.pared].replace("Pared", "en la pared");
   if (c.en === "techo") return `colgada del techo a ${m(c.cuelgaCm)}`;
+  if (c.en === "libre") return "suelta en el salón";
   return `en «${escena.nodos.find((n) => n.id === c.padreId)?.nombre ?? "?"}»`;
 }
 
@@ -58,6 +59,7 @@ function coordenadas(c: Colocacion): string {
   if (c.en === "piso") return `x ${m(c.xCm)} · z ${m(c.zCm)} · giro ${c.giroGrados}°`;
   if (c.en === "pared") return `a lo largo ${m(c.aLoLargoCm)} · altura ${m(c.alturaCm)}`;
   if (c.en === "techo") return `x ${m(c.xCm)} · z ${m(c.zCm)} · cuelga ${m(c.cuelgaCm)} · giro ${c.giroGrados}°`;
+  if (c.en === "libre") return `x ${m(c.xCm)} · y ${m(c.yCm)} · z ${m(c.zCm)} · giro ${c.giroGrados}°`;
   return `ancla ${c.ancla + 1}${c.cada > 0 ? `, 1 de cada ${c.cada}` : ""} · giro ${c.giroGrados}°`;
 }
 
@@ -178,7 +180,11 @@ function EditorNodo({ nodo, escena, armada, onNodo }: { nodo: NodoEscena; escena
     if (lugar === "piso") onNodo({ colocacion: { en: "piso", xCm: limitar(cx, sala.anchoCm / 2), zCm: limitar(cz, sala.fondoCm / 2), giroGrados: 0 } });
     else if (lugar === "pared") onNodo({ colocacion: { en: "pared", pared: "fondo", aLoLargoCm: limitar(cx, sala.anchoCm / 2), alturaCm: 0 } });
     else if (lugar === "techo") onNodo({ colocacion: { en: "techo", xCm: limitar(cx, sala.anchoCm / 2), zCm: limitar(cz, sala.fondoCm / 2), cuelgaCm: 40, giroGrados: 0, volteada: nodo.pieza.tipo === "decoracion" } });
-    else if (padres[0]) onNodo({ colocacion: { en: "ancla", padreId: padres[0].id, ancla: 0, cada: 0, giroGrados: 0 } });
+    else if (lugar === "libre") {
+      // Donde está ahora: su origen pasa al centro de su caja (y luego se afina con los deslizadores).
+      const cy = caja ? Math.round((caja.min.y + caja.max.y) / 2) : Math.round(sala.altoCm / 2);
+      onNodo({ colocacion: { en: "libre", xCm: limitar(cx, sala.anchoCm / 2), yCm: Math.max(0, Math.min(sala.altoCm, cy)), zCm: limitar(cz, sala.fondoCm / 2), giroGrados: 0 } });
+    } else if (padres[0]) onNodo({ colocacion: { en: "ancla", padreId: padres[0].id, ancla: 0, cada: 0, giroGrados: 0 } });
   };
 
   return (
@@ -225,6 +231,15 @@ function EditorNodo({ nodo, escena, armada, onNodo }: { nodo: NodoEscena; escena
             <label className="flex items-center gap-2 text-sm text-texto" htmlFor="techo-volteada">
               <input id="techo-volteada" type="checkbox" checked={c.volteada} onChange={(e) => onNodo({ colocacion: { ...c, volteada: e.target.checked } })} /> Cabeza abajo (mirando al piso)
             </label>
+          </>
+        )}
+        {c.en === "libre" && (
+          <>
+            <Deslizador id="libre-x" etiqueta="Izquierda ↔ derecha" valor={c.xCm} min={-Math.round(sala.anchoCm / 2)} max={Math.round(sala.anchoCm / 2)} paso={1} texto={m(c.xCm)} onCambio={(v) => onNodo({ colocacion: { ...c, xCm: v } })} />
+            <Deslizador id="libre-y" etiqueta="Altura" valor={c.yCm} min={0} max={Math.round(sala.altoCm)} paso={1} texto={m(c.yCm)} onCambio={(v) => onNodo({ colocacion: { ...c, yCm: v } })} />
+            <Deslizador id="libre-z" etiqueta="Fondo ↔ frente" valor={c.zCm} min={-Math.round(sala.fondoCm / 2)} max={Math.round(sala.fondoCm / 2)} paso={1} texto={m(c.zCm)} onCambio={(v) => onNodo({ colocacion: { ...c, zCm: v } })} />
+            <Deslizador id="libre-giro" etiqueta="Giro" valor={c.giroGrados} min={-180} max={180} paso={5} texto={`${c.giroGrados}°`} onCambio={(v) => onNodo({ colocacion: { ...c, giroGrados: v } })} />
+            <p className="text-[0.7rem] text-texto-suave">De frente al salón, pegada a lo que tenga delante o detrás (un racimo, un arco, la mesa).</p>
           </>
         )}
         {c.en === "ancla" && (() => {
@@ -384,6 +399,7 @@ function EditorPieza({ pieza, onPieza }: { pieza: Pieza; onPieza: (p: Pieza) => 
         </>
       )}
       {pieza.tipo === "organico" && <p className="text-[0.7rem] text-texto-suave">Pieza orgánica armada: muévela con «Dónde va» y cambia sus colores con «Colores de la escena».</p>}
+      {pieza.tipo === "globo" && <p className="text-[0.7rem] text-texto-suave">Un {pieza.formatoId} suelto de {m(pieza.infladoCm)}: cambia su color con «Colores de la escena».</p>}
       {pieza.tipo === "escenografia" && <p className="text-[0.7rem] text-texto-suave">Escenografía (no son globos ni cuentan en los materiales): muévela con «Dónde va».</p>}
     </section>
   );

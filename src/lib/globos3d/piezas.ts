@@ -1,4 +1,5 @@
 import { formatoPorId } from "./formatos";
+import { centroCuerpo } from "./geometria";
 import type { Vec3 } from "./modulos";
 import { armarColumna, type PatronColumna } from "./columnas";
 import { armarArco, type FormaArco } from "./arcos";
@@ -35,7 +36,12 @@ export type Pieza =
   /** Guirnalda clásica: trenza de cuartetos en festón, recta o sobre una curva libre. */
   | { tipo: "guirnalda"; guirnalda: OpcionesGuirnalda }
   /** Escenografía (no es globo ni cotiza): paneles de fondo, pared de lentejuelas, mesas, tapete (ver `escenografia.ts`). */
-  | { tipo: "escenografia"; elementos: ElementoEscenografia[] };
+  | { tipo: "escenografia"; elementos: ElementoEscenografia[] }
+  /**
+   * Un globo suelto (el R-24 de remate encima de un arco): el centro de su cuerpo en el origen y el cuerpo hacia +y
+   * (nudo abajo). Cotiza como un globo.
+   */
+  | { tipo: "globo"; formatoId: string; infladoCm: number; codigo: string };
 
 export type TipoPieza = Pieza["tipo"];
 
@@ -127,6 +133,12 @@ export function armarPieza(pieza: Pieza): PiezaArmada {
     }
     case "escenografia":
       return conCaja({ globos: [], tubos: [], flores: [], anclas: [], materiales: [], solidos: armarEscenografia(pieza.elementos) });
+    case "globo": {
+      const formato = formatoPorId(pieza.formatoId);
+      if (!formato) throw new Error(`Formato desconocido: ${pieza.formatoId}`);
+      const globo: GloboDePieza = { formatoId: formato.id, infladoCm: pieza.infladoCm, codigo: pieza.codigo, nudo: { x: 0, y: -centroCuerpo("redondo", pieza.infladoCm), z: 0 }, direccion: { x: 0, y: 1, z: 0 }, cuelloExtraCm: 0 };
+      return conCaja({ globos: [globo], tubos: [], flores: [], anclas: [], materiales: materialesPorFormato([globo]) });
+    }
     case "decoracion": {
       const armada = armarDecoracion(pieza.decoracion);
       if (!pieza.deFrente) return conCaja({ globos: armada.globos, tubos: armada.tubos, flores: [], anclas: [], materiales: armada.materiales });

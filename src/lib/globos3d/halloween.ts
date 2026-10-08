@@ -37,7 +37,11 @@ export type EstiloOjo = {
   venas: { hex: string; cantidad: number } | null;
 };
 
-export type PropiedadesOjo = { globo: ParteGlobo; estilo: EstiloOjo; /** Hacia dónde mira la pupila (0° = derecha, 90° = arriba). */ miradaGrados: number };
+export type PropiedadesOjo = {
+  globo: ParteGlobo; estilo: EstiloOjo; /** Hacia dónde mira la pupila (0° = derecha, 90° = arriba). */ miradaGrados: number;
+  /** Ceja impresa de ojo bravo (los de la copa de la foto 4): baja hacia el centro de la cara; `lado` es el del ojo visto de frente. */
+  ceja?: { hex: string; lado: "izquierdo" | "derecho" } | null;
+};
 
 export type PropiedadesRacimoOjos = { ojos: ParteGlobo[]; estilo: EstiloOjo };
 
@@ -100,6 +104,13 @@ export type PropiedadesArbolTrenzado = {
   /** La base orgánica: globos grandes y acentos pequeños en ciclo. */
   base: { grandes: ParteGlobo; acentos: ParteGlobo[] };
   ojos: boolean;
+  /**
+   * Solo las ramas, para un tronco de globos que ya está (el árbol orgánico de la foto 4): sin base, tronco de
+   * tubitos, cintas, copa ni ojos. Nacen a `radioTroncoCm` del eje (la cara del tronco), de a dos por altura
+   * (`alturasCm`, de arriba abajo: la de arriba se levanta como brazos); `ramas` dice cuántas y `alturaCm` (el alto
+   * del árbol) su largo.
+   */
+  soloRamas?: { radioTroncoCm: number; alturasCm: number[] } | null;
 };
 
 export type PropiedadesFantasma = { altoCm: number; hex: string; hexCara: string; cola: { vueltas: number; largoCm: number } | null };
@@ -196,6 +207,11 @@ function trazo(puntos: ReadonlyArray<[number, number]>, anchoInicio: number, anc
   return [...ida, ...vuelta.reverse()];
 }
 
+/** La ceja de un ojo bravo sobre un globo de radio `r` (`s` = 1 el ojo de la derecha de quien mira, −1 el de la izquierda). */
+function cejaBrava(r: number, s: number, hex: string): CapaEstampado {
+  return { hex, puntos: trazo([[s * 0.55 * r, 0.55 * r], [0, 0.42 * r], [-s * 0.45 * r, 0.22 * r]], r * 0.2, r * 0.12) };
+}
+
 /** Gira en el plano de la decoración (sobre su eje y, el que mira a quien ve). */
 function girarEnPlano(figura: FiguraHalloween, grados: number): FiguraHalloween {
   if (!grados) return figura;
@@ -288,15 +304,17 @@ function figura(globos: GloboDecoracion[], tubos: TuboDecoracion[]): FiguraHallo
 }
 
 /** Un ojo: el globo mira hacia quien ve (nudo detrás) y lleva lo impreso en la punta. */
-function unOjo(parte: ParteGlobo, estilo: EstiloOjo, centro: Vec3, miradaGrados: number, direccion: Vec3 = AL_FRENTE): GloboDecoracion {
+function unOjo(parte: ParteGlobo, estilo: EstiloOjo, centro: Vec3, miradaGrados: number, direccion: Vec3 = AL_FRENTE, ceja: PropiedadesOjo["ceja"] = null): GloboDecoracion {
   const r = parte.infladoCm / 2;
   const fuerza = estilo.iris ? 0.16 : 0.2;
   const mirada: [number, number] = [r2(fuerza * Math.cos(rad(miradaGrados))), r2(fuerza * Math.sin(rad(miradaGrados)))];
-  return globoEn(parte, centro, direccion, { frente: ARRIBA, estampado: { en: "punta", capas: capasOjo(r, estilo, mirada) } });
+  const capas = capasOjo(r, estilo, mirada);
+  if (ceja) capas.push(cejaBrava(r, ceja.lado === "derecho" ? 1 : -1, ceja.hex));
+  return globoEn(parte, centro, direccion, { frente: ARRIBA, estampado: { en: "punta", capas } });
 }
 
 export function armarOjo(p: PropiedadesOjo): FiguraHalloween {
-  return figura([unOjo(p.globo, p.estilo, P(0, 0, 0), p.miradaGrados)], []);
+  return figura([unOjo(p.globo, p.estilo, P(0, 0, 0), p.miradaGrados, AL_FRENTE, p.ceja)], []);
 }
 
 /**
@@ -495,56 +513,62 @@ export function armarArbolTrenzado(p: PropiedadesArbolTrenzado): FiguraHalloween
   const H = Math.max(120, p.alturaCm);
   const globos: GloboDecoracion[] = [], tubos: TuboDecoracion[] = [];
   const t = p.tronco, g = t.grosorCm;
-
-  // Base orgánica: dos vueltas de globos grandes y acentos pequeños metidos entre ellos.
+  // Solo las ramas: el tronco (de globos) ya está y aquí no va nada más.
+  const solo = p.soloRamas ?? null;
   const grande = p.base.grandes, rg = grande.infladoCm / 2;
   const acento = (i: number) => p.base.acentos[i % Math.max(1, p.base.acentos.length)] ?? grande;
-  for (let k = 0; k < 7; k++) {
-    const a = (2 * Math.PI * k) / 7 + 0.2;
-    globos.push(globoEn(grande, P(Math.cos(a) * rg * 2.2, Math.sin(a) * rg * 1.7, rg), P(Math.cos(a), Math.sin(a), 0.35)));
-  }
-  for (let k = 0; k < 4; k++) {
-    const a = (2 * Math.PI * k) / 4 + 0.6;
-    globos.push(globoEn(grande, P(Math.cos(a) * rg * 1.1, Math.sin(a) * rg * 0.9, rg * 2.4), P(Math.cos(a), Math.sin(a), 0.8)));
-  }
-  for (let k = 0; k < 12; k++) {
-    const a = (2 * Math.PI * k) / 12 + 0.45;
-    const parte = acento(k);
-    const lejos = k % 2 === 0 ? rg * 3.05 : rg * 1.95;
-    globos.push(globoEn(parte, P(Math.cos(a) * lejos, Math.sin(a) * lejos * 0.85, k % 2 === 0 ? parte.infladoCm * 0.5 : rg * 2.1), P(Math.cos(a), Math.sin(a), 0.6)));
+  const z0 = rg * 2.2, copaZ = H - 30, z1 = copaZ - 8;
+  const radioTronco = solo ? Math.max(g, solo.radioTroncoCm) : g * 1.15;
+
+  if (!solo) {
+    // Base orgánica: dos vueltas de globos grandes y acentos pequeños metidos entre ellos.
+    for (let k = 0; k < 7; k++) {
+      const a = (2 * Math.PI * k) / 7 + 0.2;
+      globos.push(globoEn(grande, P(Math.cos(a) * rg * 2.2, Math.sin(a) * rg * 1.7, rg), P(Math.cos(a), Math.sin(a), 0.35)));
+    }
+    for (let k = 0; k < 4; k++) {
+      const a = (2 * Math.PI * k) / 4 + 0.6;
+      globos.push(globoEn(grande, P(Math.cos(a) * rg * 1.1, Math.sin(a) * rg * 0.9, rg * 2.4), P(Math.cos(a), Math.sin(a), 0.8)));
+    }
+    for (let k = 0; k < 12; k++) {
+      const a = (2 * Math.PI * k) / 12 + 0.45;
+      const parte = acento(k);
+      const lejos = k % 2 === 0 ? rg * 3.05 : rg * 1.95;
+      globos.push(globoEn(parte, P(Math.cos(a) * lejos, Math.sin(a) * lejos * 0.85, k % 2 === 0 ? parte.infladoCm * 0.5 : rg * 2.1), P(Math.cos(a), Math.sin(a), 0.6)));
+    }
+
+    // Tronco: tubitos torcidos en espiral, de lo alto de la base a la copa.
+    const n = Math.max(2, Math.min(8, Math.round(t.tubitos)));
+    for (let k = 0; k < n; k++) {
+      const puntos: Vec3[] = [];
+      for (let i = 0; i <= 28; i++) {
+        const u = i / 28, a = (2 * Math.PI * k) / n + 2 * Math.PI * ((z1 - z0) / 70) * u;
+        puntos.push(P(radioTronco * Math.cos(a), radioTronco * Math.sin(a), z0 + (z1 - z0) * u));
+      }
+      tubos.push(tubito(t, puntos));
+    }
+    // Tubitos dorados enrollados por fuera, más abiertos en el medio.
+    if (p.cintas) {
+      p.cintas.codigos.forEach((codigo, k) => {
+        const puntos: Vec3[] = [];
+        const desde = z0 + 8, hasta = z1 - 4;
+        for (let i = 0; i <= 36; i++) {
+          const u = i / 36, a = Math.PI * k + 2 * Math.PI * ((hasta - desde) / 42) * u;
+          const radio = radioTronco + g * 0.9 + 9 * Math.sin(Math.PI * u);
+          puntos.push(P(radio * Math.cos(a), radio * Math.sin(a), desde + (hasta - desde) * u));
+        }
+        tubos.push(tubito({ formatoId: p.cintas!.formatoId, grosorCm: p.cintas!.grosorCm, codigo }, puntos));
+      });
+    }
   }
 
-  // Tronco: tubitos torcidos en espiral, de lo alto de la base a la copa.
-  const z0 = rg * 2.2, copaZ = H - 30, z1 = copaZ - 8;
-  const n = Math.max(2, Math.min(8, Math.round(t.tubitos)));
-  const radioTronco = g * 1.15;
-  for (let k = 0; k < n; k++) {
-    const puntos: Vec3[] = [];
-    for (let i = 0; i <= 28; i++) {
-      const u = i / 28, a = (2 * Math.PI * k) / n + 2 * Math.PI * ((z1 - z0) / 70) * u;
-      puntos.push(P(radioTronco * Math.cos(a), radioTronco * Math.sin(a), z0 + (z1 - z0) * u));
-    }
-    tubos.push(tubito(t, puntos));
-  }
-  // Tubitos dorados enrollados por fuera, más abiertos en el medio.
-  if (p.cintas) {
-    p.cintas.codigos.forEach((codigo, k) => {
-      const puntos: Vec3[] = [];
-      const desde = z0 + 8, hasta = z1 - 4;
-      for (let i = 0; i <= 36; i++) {
-        const u = i / 36, a = Math.PI * k + 2 * Math.PI * ((hasta - desde) / 42) * u;
-        const radio = radioTronco + g * 0.9 + 9 * Math.sin(Math.PI * u);
-        puntos.push(P(radio * Math.cos(a), radio * Math.sin(a), desde + (hasta - desde) * u));
-      }
-      tubos.push(tubito({ formatoId: p.cintas!.formatoId, grosorCm: p.cintas!.grosorCm, codigo }, puntos));
-    });
-  }
   // Ramas trenzadas de a dos, a un lado y al otro: las de arriba se levantan como brazos.
   const ramas = Math.max(2, Math.min(6, Math.round(p.ramas)));
   for (let i = 0; i < ramas; i++) {
     const s = i % 2 === 0 ? 1 : -1;
-    const nivel = ramas === 1 ? 1 : 1 - Math.floor(i / 2) / Math.max(1, Math.ceil(ramas / 2) - 1);
-    const h = z0 + (z1 - z0) * (0.3 + 0.62 * nivel);
+    const par = Math.floor(i / 2);
+    const nivel = ramas === 1 ? 1 : 1 - par / Math.max(1, Math.ceil(ramas / 2) - 1);
+    const h = solo?.alturasCm.length ? solo.alturasCm[Math.min(par, solo.alturasCm.length - 1)]! : z0 + (z1 - z0) * (0.3 + 0.62 * nivel);
     const largo = H * (0.22 + 0.12 * nivel);
     const inicio = 8 + 12 * nivel, curva = 25 + 45 * nivel;
     const eje = (u: number) => {
@@ -575,6 +599,7 @@ export function armarArbolTrenzado(p: PropiedadesArbolTrenzado): FiguraHalloween
       tubos.push(tubito({ ...t, grosorCm: g * 0.8 }, [P(s * fin.x, 0, fin.z), P(s * (fin.x + Math.cos(a) * 9), 0, fin.z + Math.sin(a) * 9)]));
     }
   }
+  if (solo) return figura(globos, tubos);
 
   // Copa: racimo alargado de globitos alrededor de lo alto del tronco.
   const copa = p.copa, rcopa = copa.infladoCm / 2;
@@ -594,7 +619,7 @@ export function armarArbolTrenzado(p: PropiedadesArbolTrenzado): FiguraHalloween
       const capas: CapaEstampado[] = [
         { hex: "#1b120d", puntos: circulo(-s * 0.12 * ro, -0.08 * ro, 0.3 * ro) },
         { hex: "#ffffff", puntos: circulo(-s * 0.12 * ro - 0.1 * ro, 0.04 * ro, 0.07 * ro, undefined, 12) },
-        { hex: "#1b120d", puntos: trazo([[s * 0.55 * ro, 0.55 * ro], [0, 0.42 * ro], [-s * 0.45 * ro, 0.22 * ro]], ro * 0.2, ro * 0.12) },
+        cejaBrava(ro, s, "#1b120d"),
       ];
       globos.push(globoEn(ojo, P(s * ro * 1.05, rcopa * 1.6 + ro * 0.6, copaZ - rcopa * 1.2), AL_FRENTE, { frente: ARRIBA, estampado: { en: "punta", capas } }));
     }

@@ -20,7 +20,7 @@ const MAX_LLAMADAS = 24;
 const TOPE_POR_HORA = 60;
 let ventana = { desde: Date.now(), usadas: 0 };
 
-const TIPOS: readonly TipoPieza[] = ["columna", "arco", "pared_malla", "pared_trenzas", "organico", "decoracion", "arco_organico", "guirnalda", "escenografia"];
+const TIPOS: readonly TipoPieza[] = ["columna", "arco", "pared_malla", "pared_trenzas", "organico", "decoracion", "arco_organico", "guirnalda", "escenografia", "globo"];
 const Hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const Numero = z.number().finite();
 
@@ -29,6 +29,7 @@ const ColocacionSchema: z.ZodType<Colocacion> = z.discriminatedUnion("en", [
   z.object({ en: z.literal("pared"), pared: z.enum(["fondo", "izquierda", "derecha"]), aLoLargoCm: Numero, alturaCm: Numero }),
   z.object({ en: z.literal("techo"), xCm: Numero, zCm: Numero, cuelgaCm: Numero, giroGrados: Numero, volteada: z.boolean() }),
   z.object({ en: z.literal("ancla"), padreId: z.string().min(1).max(80), ancla: Numero, cada: Numero, giroGrados: Numero }),
+  z.object({ en: z.literal("libre"), xCm: Numero, yCm: Numero, zCm: Numero, giroGrados: Numero }),
 ]);
 
 /** La pieza la arma el taller (que ya valida sus datos al armar): aquí basta con que sea un objeto de un tipo conocido. */
