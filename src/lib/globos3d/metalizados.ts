@@ -415,12 +415,23 @@ export function armarMetalizado(m: OpcionesMetalizado): MetalizadoArmado {
     });
     tubos.push({ formatoId: "papel", grosorCm: 0.35, codigo: "papel", puntos, cerrado: false, papel: { hex: m.cinta.hex } });
   }
-  const productos: ProductoDePieza[] = m.producto ? [{ nombre: m.producto.nombre, url: m.producto.url, cantidad: 1 }] : [];
+  // Todo metalizado es un producto: el de la tienda si se sabe; si no, uno genérico (se compra uno igual, no ese
+  // exacto), uno por globo (las letras de «LOVE» son cuatro).
+  const productos: ProductoDePieza[] = m.producto ? [{ nombre: m.producto.nombre, url: m.producto.url, cantidad: 1 }] : [productoGenerico(m, piezas.length)];
   if (m.acostado) {
     // Acostado: girado para mirar arriba (+y): (x, y, z) → (x, −z, y).
     for (const e of elementos) if (e.forma === "panel") e.en = { origen: { x: 0, y: 0, z: 0 }, ejeX: { x: 1, y: 0, z: 0 }, ejeY: { x: 0, y: 0, z: -1 } };
   }
   return { elementos, tubos, productos, altoCm: alto + base, anchoCm: Math.round(anchoTotal * 10) / 10 };
+}
+
+/** El producto genérico de un metalizado que no es uno del catálogo de la tienda (`generico`, sin url). */
+function productoGenerico(m: OpcionesMetalizado, globos: number): ProductoDePieza {
+  const f = m.forma;
+  const nombre = f.tipo === "letras"
+    ? `Genérico: letras metalizadas ${COLORES_METALIZADO[m.color].nombre.toLowerCase()} ${m.pulgadas}" («${f.texto.toUpperCase()}», una por letra)`
+    : `Genérico: metalizado ${nombreMetalizado(m)}`;
+  return { nombre, url: "", cantidad: Math.max(1, globos), generico: true };
 }
 
 /** Nombre corto del metalizado: «Número 2 dorado mate 32"». */

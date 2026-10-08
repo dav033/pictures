@@ -263,7 +263,7 @@ function listaEnTexto(item: ItemBiblioteca, p: ProductosDeItem): string {
   for (const g of p.globos) lineas.push(`${g.cantidad} × ${g.nombreOficial} — ${g.producto.nombre}${g.producto.estado === "verificado" ? ` — ${g.producto.url}` : " (sin verificar)"}${g.impresos ? ` (${g.impresos} de ellos impresos: ver abajo)` : ""}`);
   for (const [seccion, titulo] of [["impresos", "GLOBOS IMPRESOS"], ["metalizados", "METALIZADOS"]] as const) {
     const de = p.tienda.filter((t) => t.seccion === seccion);
-    if (de.length) { lineas.push("", titulo); for (const t of de) lineas.push(`${t.cantidad} × ${t.nombre} (${t.detalle}) — ${t.url}`); }
+    if (de.length) { lineas.push("", titulo); for (const t of de) lineas.push(`${t.cantidad} × ${t.nombre} (${t.detalle})${t.url ? ` — ${t.url}` : ""}`); }
   }
   if (p.utileria.length) { lineas.push("", "UTILERÍA"); for (const u of p.utileria) lineas.push(`${u.cantidad} × ${u.nombre}${u.variante ? ` (${u.variante})` : ""}${u.url ? ` — ${urlTienda(u.url)}` : ""}`); }
   if (p.escenografia.length) { lineas.push("", "ESCENOGRAFÍA (no es producto de la tienda)"); for (const e of p.escenografia) lineas.push(`${e.cantidad} × ${e.nombre}`); }
@@ -332,10 +332,12 @@ export function TablaProductos({ item, productos }: { item: ItemBiblioteca; prod
               <thead className={cabeza}><tr className="border-b border-borde"><th className={th}>Cantidad</th><th className={th}>Producto en la tienda</th><th className={th}>Sección</th><th className={th}>En la escena</th></tr></thead>
               <tbody className={cuerpo}>
                 {productos.tienda.map((t) => (
-                  <tr key={t.url} className={fila}>
+                  <tr key={t.url || t.nombre} className={fila}>
                     <td className={celdaCantidad}>{t.cantidad}</td>
                     <td className={celda}>
-                      <a href={t.url} target="_blank" rel="noreferrer" className="text-texto underline decoration-dotted underline-offset-2 hover:text-acento">{t.nombre}</a>
+                      {t.url
+                        ? <a href={t.url} target="_blank" rel="noreferrer" className="text-texto underline decoration-dotted underline-offset-2 hover:text-acento">{t.nombre}</a>
+                        : <span className="text-texto">{t.nombre}</span>}
                       <span className="block text-[0.7rem] text-texto-suave">{t.detalle}</span>
                     </td>
                     <td className={`${celda} text-xs text-texto`}>{t.seccion === "impresos" ? "Globos impresos" : "Metalizados"}</td>

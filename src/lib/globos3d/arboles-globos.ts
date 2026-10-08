@@ -106,7 +106,7 @@ function armarTronco(t: TroncoArbol, globos: GloboDecoracion[], anclas: ArbolArm
     for (let k = 0; k < n; k++) {
       const a = Math.PI / 2 + (k * 2 * Math.PI) / n;
       const radial = v(Math.cos(a), 0, Math.sin(a));
-      globos.push(globoEn(fb.id, db, t.base.codigo, redondo(v(radial.x * rho, db / 2, radial.z * rho)), unitario(v(radial.x, 0.25, radial.z))));
+      globos.push({ ...globoEn(fb.id, db, t.base.codigo, redondo(v(radial.x * rho, db / 2, radial.z * rho)), unitario(v(radial.x, 0.25, radial.z))), parte: "tronco/base" });
     }
     y0 = db * 0.75;
   }
@@ -136,7 +136,7 @@ function armarTronco(t: TroncoArbol, globos: GloboDecoracion[], anclas: ArbolArm
     for (let q = 0; q < 4; q++) {
       const a = nv.giro + (q * Math.PI) / 2;
       const radial = mas(por(lado, Math.cos(a)), por(fuera, Math.sin(a)));
-      globos.push(globoEn(f.id, r1(nv.d), codigo, redondo(mas(p, por(radial, nv.d * RADIO_TRENZA_POR_DIAMETRO))), unitario(mas(radial, por(T, 0.12)))));
+      globos.push({ ...globoEn(f.id, r1(nv.d), codigo, redondo(mas(p, por(radial, nv.d * RADIO_TRENZA_POR_DIAMETRO))), unitario(mas(radial, por(T, 0.12)))), parte: "tronco" });
     }
     if (k % 3 === 1) anclas.push({ posicion: redondo(mas(p, por(fuera, nv.d * (RADIO_TRENZA_POR_DIAMETRO + 0.5)))), normal: fuera });
   });
@@ -156,7 +156,7 @@ function armarTronco(t: TroncoArbol, globos: GloboDecoracion[], anclas: ArbolArm
         const a = a0.giro + (q * Math.PI) / 2;
         const radial = mas(por(lado, Math.cos(a)), por(fuera, Math.sin(a)));
         if (cuenta++ % cada !== 0) continue;
-        globos.push(globoEn(fa.id, da, t.acento.codigo, redondo(mas(p, por(radial, d * (RADIO_TRENZA_POR_DIAMETRO + 0.5) + da * 0.1))), radial));
+        globos.push({ ...globoEn(fa.id, da, t.acento.codigo, redondo(mas(p, por(radial, d * (RADIO_TRENZA_POR_DIAMETRO + 0.5) + da * 0.1))), radial), parte: "tronco/acento" });
       }
     }
   }
@@ -189,7 +189,7 @@ function armarPalmera(c: CopaPalmera, punta: Vec3, tangente: Vec3, dPunta: numbe
       const ang = subida - (subida + caida) * t ** 1.4;
       p = mas(p, por(mas(por(horizontal, Math.cos(ang)), v(0, Math.sin(ang), 0)), largo / pasos));
     }
-    tubos.push({ formatoId: fh.id, grosorCm: grosor, codigo: c.hojas.codigos[k % c.hojas.codigos.length]!, puntos, cerrado: false });
+    tubos.push({ formatoId: fh.id, grosorCm: grosor, codigo: c.hojas.codigos[k % c.hojas.codigos.length]!, puntos, cerrado: false, parte: "hojas" });
     const medio = puntos[Math.floor(pasos / 2)]!;
     anclas.push({ posicion: medio, normal: unitario(mas(horizontal, v(0, 0.6, 0))) });
   }
@@ -204,7 +204,7 @@ function armarPalmera(c: CopaPalmera, punta: Vec3, tangente: Vec3, dPunta: numbe
       const a = (k * 2 * Math.PI) / m + 0.2;
       const radial = v(Math.cos(a), 0, Math.sin(a));
       const centro = mas(nace, v(radial.x * (rho + dPunta * 0.55), -dc * 0.55, radial.z * (rho + dPunta * 0.55)));
-      globos.push(globoEn(fc.id, dc, c.cocos.codigo, redondo(centro), unitario(v(radial.x, -1, radial.z))));
+      globos.push({ ...globoEn(fc.id, dc, c.cocos.codigo, redondo(centro), unitario(v(radial.x, -1, radial.z))), parte: "cocos" });
     }
   }
 }
@@ -244,7 +244,7 @@ function armarCopaRacimos(c: CopaRacimos, punta: Vec3, dPunta: number, globos: G
     for (let q = 0; q < 4; q++) {
       const a = (q * Math.PI) / 2 + k;
       const radial = mas(por(e1, Math.cos(a)), por(e2, Math.sin(a)));
-      globos.push(globoEn(f.id, d, codigo, redondo(mas(p, por(radial, rho))), unitario(mas(por(n, 0.75), por(radial, 0.66)))));
+      globos.push({ ...globoEn(f.id, d, codigo, redondo(mas(p, por(radial, rho))), unitario(mas(por(n, 0.75), por(radial, 0.66)))), parte: "copa" });
     }
     if (k % 2 === 0) anclas.push({ posicion: redondo(mas(p, por(n, d * 0.55))), normal: n });
   });
@@ -268,7 +268,7 @@ function armarCopaRacimos(c: CopaRacimos, punta: Vec3, dPunta: number, globos: G
       if (elegidos.some((e) => Math.hypot(e.p.x - x.p.x, e.p.y - x.p.y, e.p.z - x.p.z) < d * 1.3)) continue;
       elegidos.push(x);
     }
-    for (const x of elegidos) globos.push(globoEn(ff.id, df, c.frutas.codigo, redondo(x.p), x.n));
+    for (const x of elegidos) globos.push({ ...globoEn(ff.id, df, c.frutas.codigo, redondo(x.p), x.n), parte: "copa/frutas" });
   }
 }
 

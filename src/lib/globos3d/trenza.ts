@@ -54,6 +54,8 @@ export type OpcionesTrenza = {
   recorrido: readonly Punto2[];
   /** «paso»: un cuarteto cada paso desde el inicio (columna). «extremos»: reparte para tocar ambos extremos (arco). */
   reparto: "paso" | "extremos";
+  /** La parte de sus globos (ver `partes-estructuras.ts`): «trenza» si no se dice (un festón dice «feston»). */
+  parte?: string;
 };
 
 function rotarY(v: Vec3, angulo: number): Vec3 {
@@ -154,6 +156,7 @@ export function armarTrenza(opciones: OpcionesTrenza): TrenzaArmada {
         direccion: mundo(rotarY(g.direccion, angulo)),
         codigo: colorDe(patron, colores, nivel, g.indice),
         nivel,
+        parte: opciones.parte ?? "trenza",
       });
     }
     for (const h of huecosLocales) {

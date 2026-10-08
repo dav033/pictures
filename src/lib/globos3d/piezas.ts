@@ -23,6 +23,7 @@ import { armarMural, type OpcionesMural } from "./murales";
 import { armarTecho, type OpcionesTecho } from "./techo";
 import { armarArbolGlobos, type OpcionesArbolGlobos } from "./arboles-globos";
 import { aplicarRepintes, type Repinte } from "./repintes";
+import { parteDeTramo } from "./partes-estructuras";
 
 /**
  * Una **pieza**: cualquier cosa que sabe armar el taller, descrita solo con datos (JSON) para poder guardarla,
@@ -144,8 +145,6 @@ function conCaja(p: Omit<PiezaArmada, "caja">): PiezaArmada {
   return { ...p, caja: cajaDe(p.globos, p.tubos, p.solidos) };
 }
 
-/** La parte de un globo orgánico: su tramo («columna», «trazo», «espiral», «pata_izquierda»…), en minúsculas y con «/» por «_». */
-const parteOrganica = (tramo: string) => tramo.toLowerCase().replace(/_/g, "/");
 
 export function armarPieza(pieza: Pieza): PiezaArmada {
   const base = armarPiezaBase(pieza);
@@ -182,8 +181,10 @@ function armarPiezaBase(pieza: PiezaBase): PiezaArmada {
     }
     case "organico": {
       const resultado = armarOrganico(pieza.opciones);
+      // La parte de cada globo, por su tramo (ver `partes-estructuras.ts`): «pata/izquierda», «columna/relleno»…
+      const tramos = new Map(pieza.opciones.tramos.map((t) => [t.id, t]));
       const flores = pieza.flores ? repartirFlores(resultado.anclas, pieza.flores) : null;
-      const globos: GloboDePieza[] = resultado.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.confeti ? { confeti: true } : {}), parte: parteOrganica(g.tramo) }));
+      const globos: GloboDePieza[] = resultado.globos.map((g) => ({ formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.confeti ? { confeti: true } : {}), parte: parteDeTramo(tramos.get(g.tramo) ?? { id: g.tramo, nombre: "" }, g.tamano === "relleno") }));
       return conCaja({
         globos, tubos: [],
         flores: flores ? flores.racimos.flatMap((r) => r.flores.map((f) => ({ tipo: f.tipo, hex: f.hex, diametroCm: f.diametroCm, posicion: f.posicion, normal: f.normal }))) : [],
@@ -198,7 +199,7 @@ function armarPiezaBase(pieza: PiezaBase): PiezaArmada {
       const formato = formatoPorId(g.formatoId);
       if (!formato) throw new Error(`Formato desconocido: ${g.formatoId}`);
       const trenza = armarTrenza({ formato, infladoCm: g.infladoCm, patron: g.patron, colores: g.colores, recorrido: recorridoGuirnalda(g), reparto: "extremos" });
-      const globos: GloboDePieza[] = trenza.globos.map((x) => ({ formatoId: formato.id, infladoCm: g.infladoCm, codigo: x.codigo, nudo: x.nudo, direccion: x.direccion, cuelloExtraCm: x.cuelloExtraCm }));
+      const globos: GloboDePieza[] = trenza.globos.map((x) => ({ formatoId: formato.id, infladoCm: g.infladoCm, codigo: x.codigo, nudo: x.nudo, direccion: x.direccion, cuelloExtraCm: x.cuelloExtraCm, ...(x.parte ? { parte: x.parte } : {}) }));
       return conCaja({ globos, tubos: [], flores: [], anclas: trenza.anclas.map((a) => ({ posicion: a.posicion, normal: a.normal })), materiales: materialesPorFormato(globos) });
     }
     case "escenografia":

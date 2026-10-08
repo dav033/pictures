@@ -261,6 +261,13 @@ export function centroDe(g: GloboDecoracion): Vec3 {
   return { x: g.nudo.x + g.direccion.x * l, y: g.nudo.y + g.direccion.y * l, z: g.nudo.z + g.direccion.z * l };
 }
 
+/** La parte de los globos de un carácter: «letras/a», «letras/2», «letras/ñ» (sin tilde, en minúscula); lo demás, «letras». */
+export function parteDeCaracter(caracter: string | undefined): string {
+  const c = (caracter ?? "").toLowerCase();
+  const limpio = c === "ñ" ? c : c.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  return /^[a-z0-9ñ]$/.test(limpio) ? `letras/${limpio}` : "letras";
+}
+
 export function armarLetras(o: OpcionesLetras): LetrasArmadas {
   const formato = formatoPorId(o.formatoId);
   if (!formato) throw new Error(`Formato desconocido: ${o.formatoId}`);
@@ -289,7 +296,7 @@ export function armarLetras(o: OpcionesLetras): LetrasArmadas {
           const normal = p(-m.tangente.y, m.tangente.x);
           return { x: m.punto.x + normal.x * abre * Math.cos(a), y: m.punto.y + normal.y * abre * Math.cos(a), z: abre * Math.sin(a) };
         });
-        tubos.push({ formatoId: formato.id, grosorCm: g, codigo: colorLetra(o, t.caracter, k), puntos, cerrado: t.cerrado });
+        tubos.push({ formatoId: formato.id, grosorCm: g, codigo: colorLetra(o, t.caracter, k), puntos, cerrado: t.cerrado, parte: parteDeCaracter(texto.caracteres[t.caracter]) });
       }
     });
     if (texto.omitidos.length) avisos.push(`No sé escribir «${texto.omitidos.join("")}»: se dejó fuera.`);
@@ -317,7 +324,7 @@ export function armarLetras(o: OpcionesLetras): LetrasArmadas {
           // En las uniones de dos trazos (y donde se cruzan) no se repite el globo.
           if (centros.some((x) => Math.hypot(x.x - c.x, x.y - c.y) < d * 0.86)) continue;
           centros.push(c);
-          globos.push(globoEn(formato.id, d, colorLetra(o, t.caracter, globos.length), c));
+          globos.push({ ...globoEn(formato.id, d, colorLetra(o, t.caracter, globos.length), c), parte: parteDeCaracter(texto.caracteres[t.caracter]) });
         }
       }
     });
@@ -343,7 +350,7 @@ export function armarLetras(o: OpcionesLetras): LetrasArmadas {
       const c = centroDe(globo);
       if (centros.some((x) => (x.trazo !== k || x.nivel !== g.nivel) && Math.hypot(x.x - c.x, x.y - c.y, x.z - c.z) < d * 0.84)) continue;
       centros.push({ ...c, trazo: k, nivel: g.nivel });
-      globos.push({ ...globo, codigo: colorLetra(o, t.caracter, o.patron === "alternado" ? g.nivel : globos.length) });
+      globos.push({ ...globo, codigo: colorLetra(o, t.caracter, o.patron === "alternado" ? g.nivel : globos.length), parte: parteDeCaracter(texto.caracteres[t.caracter]) });
     }
   });
   if (texto.omitidos.length) avisos.push(`No sé escribir «${texto.omitidos.join("")}»: se dejó fuera.`);
