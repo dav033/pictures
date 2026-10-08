@@ -77,6 +77,7 @@ const NOMBRE_TIPO: Readonly<Record<TipoPieza, string>> = {
   columna: "columna", arco: "arco", pared_malla: "pared de malla", pared_trenzas: "pared de trenzas", organico: "pieza orgánica",
   decoracion: "decoración", arco_organico: "arco orgánico", guirnalda: "guirnalda", escenografia: "escenografía", globo: "globo suelto",
   forma: "forma de globos", letras: "letras de globos", metalizado: "globo metalizado",
+  mural: "mural pixelado", techo: "decoración de techo", arbol_globos: "palmera o árbol de globos",
 };
 
 // ----------------------------------------------------------------------------------------------------------
@@ -356,6 +357,9 @@ function medidasDe(p: Pieza): string {
     case "forma": return nombreForma(p.forma);
     case "letras": return `«${p.letras.texto}» · ${r0(p.letras.altoCm)} cm de alto · ${p.letras.tecnica}`;
     case "metalizado": return `${nombreMetalizado(p.metalizado)} (foil, no es látex)`;
+    case "mural": return `mural ${p.mural.matriz.filas[0]?.length ?? 0}×${p.mural.matriz.filas.length} celdas · ${p.mural.disposicion} · ${p.mural.grande.formatoId}`;
+    case "techo": return `techo: ${p.techo.elementos.map((e) => e.tipo).join(", ")}`;
+    case "arbol_globos": return `${p.arbol.copa.tipo === "palmera" ? "palmera" : "árbol de racimos"} · tronco ${r0(p.arbol.tronco.altoCm)} cm`;
   }
 }
 
@@ -641,6 +645,9 @@ function aplicarPropiedades(base: Pieza, props: Propiedades, notas: string[]): P
     case "globo":
     case "forma":
     case "letras":
+    case "mural":
+    case "techo":
+    case "arbol_globos":
       return props.colores ? recolorearEnOrden(base, props.colores, notas) : base;
   }
 }

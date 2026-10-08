@@ -8,6 +8,7 @@ import { ACTIVO, BOTON, Deslizador, INACTIVO } from "./PanelFlor";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
 import { UtileriaFiesta } from "./UtileriaFiesta";
 import { FormasYLetras } from "./FormasYLetras";
+import { MuralesTechoArboles } from "./MuralesTechoArboles";
 
 /** Las predefinidas por grupo, con su miniatura: no cambian, se calculan una vez. */
 const GRUPOS = decoracionesPorGrupo().map((g) => ({ ...g, decoraciones: g.decoraciones.map((d) => ({ ...d, miniatura: miniaturaDecoracion(d.decoracion) })) }));
@@ -164,6 +165,8 @@ export function DecoracionesPequenas({ escena, onEscena, armada, seleccion = nul
           </div>
         );
       })}
+      {/* Murales pixelados, decoraciones de techo y palmeras y árboles de globos. */}
+      <MuralesTechoArboles escena={escena} onEscena={onEscena} onSeleccion={onSeleccion} />
       {/* Siluetas rellenas, volúmenes y letras de globos (ideas de sempertex.com). */}
       <FormasYLetras escena={escena} onEscena={onEscena} onSeleccion={onSeleccion} />
       {/* Banderines, platos, vasos… (productos Sempertex de fiesta, no globos). */}

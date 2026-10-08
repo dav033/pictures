@@ -27,6 +27,7 @@ const NOMBRE_TIPO: Readonly<Record<Pieza["tipo"], string>> = {
   columna: "Columna", arco: "Arco", pared_malla: "Pared de malla", pared_trenzas: "Pared de trenzas", organico: "Orgánico",
   decoracion: "Decoración", arco_organico: "Arco orgánico", guirnalda: "Guirnalda", escenografia: "Escenografía", globo: "Globo suelto",
   forma: "Forma de globos", letras: "Letras de globos", metalizado: "Globo metalizado",
+  mural: "Mural pixelado", techo: "Decoración de techo", arbol_globos: "Palmera o árbol",
 };
 
 const LUGARES: ReadonlyArray<{ id: LugarColocacion; nombre: string }> = [

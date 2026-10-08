@@ -5,6 +5,9 @@ import { decoracionEnIngles, type MaterialDecoracion } from "./figuras";
 import { esDePie } from "./halloween";
 import { formaEnIngles } from "./formas";
 import { metalizadoEnIngles } from "./metalizados";
+import { muralEnIngles } from "./murales";
+import { techoEnIngles } from "./techo";
+import { arbolEnIngles } from "./arboles-globos";
 import { sumarMateriales } from "./mezcla";
 import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
@@ -496,6 +499,9 @@ export function piezaEnIngles(pieza: Pieza, caja: Caja): string {
     case "forma": return `${formaEnIngles(pieza.forma)} ${alto} tall`;
     case "letras": return `the balloon lettering "${pieza.letras.texto}" ${alto} tall`;
     case "metalizado": return metalizadoEnIngles(pieza.metalizado);
+    case "mural": return `${muralEnIngles(pieza.mural)} ${ancho} wide and ${alto} tall`;
+    case "techo": return techoEnIngles(pieza.techo);
+    case "arbol_globos": return `${arbolEnIngles(pieza.arbol)} ${alto} tall`;
   }
 }
 

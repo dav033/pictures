@@ -123,7 +123,7 @@ export function clasePieza(p: Pieza): ClasePieza {
 const BASE_ID: Readonly<Record<Pieza["tipo"], string>> = {
   columna: "columna", arco: "arco", pared_malla: "pared", pared_trenzas: "pared-trenzas", organico: "organico", decoracion: "decoracion",
   arco_organico: "arco-organico", guirnalda: "guirnalda", escenografia: "escenografia", globo: "globo",
-  forma: "forma", letras: "letras", metalizado: "metalizado",
+  forma: "forma", letras: "letras", metalizado: "metalizado", mural: "mural", techo: "techo", arbol_globos: "arbol",
 };
 
 /** Base de id legible para una pieza nueva en una escena («columna», «arco-organico», «decoracion»…). */

@@ -18,6 +18,9 @@ import { armarForma, type OpcionesForma } from "./formas";
 import { armarLetras, type OpcionesLetras } from "./letras";
 import { armarMetalizado, type OpcionesMetalizado } from "./metalizados";
 import { aplicarImpresos, type ImpresoEnPieza } from "./impresos-catalogo";
+import { armarMural, type OpcionesMural } from "./murales";
+import { armarTecho, type OpcionesTecho } from "./techo";
+import { armarArbolGlobos, type OpcionesArbolGlobos } from "./arboles-globos";
 
 /**
  * Una **pieza**: cualquier cosa que sabe armar el taller, descrita solo con datos (JSON) para poder guardarla,
@@ -62,7 +65,19 @@ type PiezaBase =
    * Globo metalizado (foil): número, letra, corazón, estrella, redondo… parado de frente, con la base en y = 0 (o
    * flotando sobre su cinta). No es látex: no da materiales; su producto de la tienda va en `productos`. Ver `metalizados.ts`.
    */
-  | { tipo: "metalizado"; metalizado: OpcionesMetalizado };
+  | { tipo: "metalizado"; metalizado: OpcionesMetalizado }
+  /**
+   * Mural pixelado: una matriz de colores (cada celda, un globo en su sitio real) en malla de R-5/R-9/R-12 (uno o dos
+   * tamaños) o de Link-O-Loon, de frente y apoyado en y = 0. Ver `murales.ts`.
+   */
+  | { tipo: "mural"; mural: OpcionesMural }
+  /**
+   * Decoración de techo: red de racimos o malla, festones en catenaria de punto a punto, tiras colgantes y globos de
+   * helio contra el techo. Su espacio local tiene el techo en y = 0 y todo cuelga por debajo. Ver `techo.ts`.
+   */
+  | { tipo: "techo"; techo: OpcionesTecho }
+  /** Palmera (tronco de cuartetos que se curva, hojas de tubito, cocos) o árbol con copa de racimos. Ver `arboles-globos.ts`. */
+  | { tipo: "arbol_globos"; arbol: OpcionesArbolGlobos };
 
 /**
  * Cualquier pieza puede llevar **globos impresos** de la tienda (`impresos`, ver `impresos-catalogo.ts`): se eligen
@@ -186,6 +201,18 @@ function armarPiezaBase(pieza: PiezaBase): PiezaArmada {
     case "metalizado": {
       const m = armarMetalizado(pieza.metalizado);
       return conCaja({ globos: [], tubos: m.tubos, flores: [], anclas: [], materiales: [], solidos: armarEscenografia(m.elementos), ...(m.productos.length ? { productos: m.productos } : {}) });
+    }
+    case "mural": {
+      const m = armarMural(pieza.mural);
+      return conCaja({ globos: m.globos, tubos: m.tubos, flores: [], anclas: m.anclas, materiales: m.materiales });
+    }
+    case "techo": {
+      const t = armarTecho(pieza.techo);
+      return conCaja({ globos: t.globos, tubos: t.tubos, flores: [], anclas: t.anclas, materiales: t.materiales, ...(t.escenografia.length ? { solidos: armarEscenografia(t.escenografia) } : {}) });
+    }
+    case "arbol_globos": {
+      const a = armarArbolGlobos(pieza.arbol);
+      return conCaja({ globos: a.globos, tubos: a.tubos, flores: [], anclas: a.anclas, materiales: a.materiales });
     }
     case "decoracion": {
       const armada = armarDecoracion(pieza.decoracion);
