@@ -8,6 +8,8 @@
  *   ... test-armado-escena-dorado.ts --escribir     (solo cuando el cambio de forma es lo que se quería: se revisa el diff del JSON)
  *
  * La foto se sacó del motor de la rama principal (251c58bd) y no debe cambiar por funciones nuevas que son opcionales.
+ * Re-escrita una vez (2026-10-09) por las pasadas de proporciones de la lectura de fotos de main (compilar-lectura: puntas, montones al pie,
+ * fondos en el piso, apoyo del racimo, colgado delante): cambiaron 15 nodos de 11 escenas «referencia:…», los mismos con y sin las ramas del salón.
  */
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
