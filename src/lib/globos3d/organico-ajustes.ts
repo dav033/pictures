@@ -1,4 +1,4 @@
-import { formatoDeFijo, mezclaEn, type ColorOrganico, type GloboFijo, type OpcionesOrganico, type PuntoGrosor, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "./organico";
+import { fijoEnFormato, mezclaEn, type ColorOrganico, type GloboFijo, type OpcionesOrganico, type PuntoGrosor, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "./organico";
 import { formatoPorId } from "./formatos";
 import { opcionesArcoOrganico } from "./formas-escena";
 import { piezaDeGenerador } from "./generadores-organicos";
@@ -77,7 +77,7 @@ function fijosTrasCambio(t: ParametrosTrazoOrganico, f: string, zona: ZonaOrgani
     return enZona(zona, m.t, g.y, rango, g.x);
   };
   const quitar = new Set<GloboFijo>();
-  const delFormato = t.fijos.filter((g) => formatoDeFijo(g) === f);
+  const delFormato = t.fijos.filter((g) => fijoEnFormato(g, f));
   if (soloAhi && zona !== "todo") for (const g of delFormato) if (!dentro(g)) quitar.add(g);
   if (k < 1) {
     const enZonaOrdenados = delFormato.filter((g) => !quitar.has(g) && dentro(g)).sort((a, b) => a.x - b.x);

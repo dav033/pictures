@@ -165,16 +165,18 @@ prueba("«quitar R-36» y «solo R-12 y R-5» quitan el gigante dibujado como R-
   const t = trazoDe(quitado.pieza as Organico);
   assert.deepEqual(t.fijos, [{ formatoId: "R-24", codigo: "005", x: 100, y: 150 }], "se queda el R-24 de verdad");
   const solo = trazoDe(ajustarTrazo(p, p.generador!, { tamanos: ["R-24", "R-12"] }));
-  assert.equal(solo.fijos?.length, 0 + 1, "con R-24 pedido pero no R-36, el gigante bajado se va y el R-24 verdadero se queda");
-  assert.equal(solo.fijos![0]!.codigo, "005");
+  assert.equal(solo.fijos?.length, 2, "«solo R-24 y R-12» deja el gigante dibujado como R-24 (así sale en el inventario) y el R-24 verdadero");
   const sinR36 = trazoDe(ajustarTrazo(p, p.generador!, { tamanos: ["R-12", "R-5"] }));
   assert.equal(sinR36.fijos, undefined);
 });
 
-prueba("«menos R-24» no toca el gigante dibujado como R-24: es de los R-36", () => {
-  const p = pieza(trazo({ fijos: [GIGANTE_BAJADO] }));
+prueba("«quitar R-24» también quita el gigante dibujado como R-24 (el inventario lo muestra como R-24); un R-12 fijo no se toca", () => {
+  const p = pieza(trazo({ fijos: [GIGANTE_BAJADO, { formatoId: "R-12", codigo: "005", x: 20, y: 105 }] }));
   const r = ajustarTamanos(p, { cambios: [{ formato: "R-24", accion: "quitar" }] }, []);
-  assert.deepEqual(trazoDe(r.pieza as Organico).fijos, [GIGANTE_BAJADO]);
+  assert.deepEqual(trazoDe(r.pieza as Organico).fijos, [{ formatoId: "R-12", codigo: "005", x: 20, y: 105 }]);
+  // Y lo cuentan igual «quitar R-36» y «solo R-12 y R-5».
+  assert.equal(trazoDe(ajustarTamanos(p, { cambios: [{ formato: "R-36", accion: "quitar" }] }, []).pieza as Organico).fijos?.length, 1);
+  assert.deepEqual(trazoDe(ajustarTrazo(p, p.generador!, { tamanos: ["R-12", "R-5"] })).fijos, [{ formatoId: "R-12", codigo: "005", x: 20, y: 105 }]);
 });
 
 console.log(`test-trazo-edicion-fijos: ${pruebas} pruebas ok`);

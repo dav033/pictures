@@ -1,4 +1,4 @@
-import { formatoDeFijo, type ColorOrganico } from "./organico";
+import { fijoEnFormato, type ColorOrganico } from "./organico";
 import type { Pieza } from "./piezas";
 import { FLORES_ARTIFICIALES, type OpcionesFlores, type TipoFlorArtificial } from "./flores-artificiales";
 import { fallar } from "./herramientas-escena-colores";
@@ -80,7 +80,7 @@ export function ajustarTrazo(pieza: Extract<Pieza, { tipo: "organico" }>, g: Ext
     // La mezcla propia de cada tramo y los globos fijos son de la mezcla de antes: con «solo estos tamaños» mandan los pedidos.
     t.puntos = t.puntos.map((q) => { const sin = { ...q }; delete sin.pesos; return sin; });
     if (t.fijos) {
-      const quedan = t.fijos.filter((f) => (mezcla[formatoDeFijo(f)] ?? 0) > 0);
+      const quedan = t.fijos.filter((f) => Object.keys(mezcla).some((formato) => (mezcla[formato] ?? 0) > 0 && fijoEnFormato(f, formato)));
       if (quedan.length) t.fijos = quedan; else delete t.fijos;
     }
   }

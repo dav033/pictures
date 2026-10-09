@@ -153,8 +153,12 @@ export type GloboFijo = {
   formatoPedidoId?: string;
 };
 
-/** El formato por el que se cuenta un fijo en la mezcla: el que pidió la foto (un gigante dorado dibujado como R-24 sigue siendo un R-36). */
-export const formatoDeFijo = (f: GloboFijo): string => f.formatoPedidoId ?? f.formatoId;
+/**
+ * ¿Un fijo cuenta como `formato` al EDITAR? Sí por el formato con que se dibuja (el que ve el inventario: un gigante dorado
+ * dibujado como R-24 aparece como R-24) y también por el que pidió la foto (es un R-36). Así «quitar R-24» y «quitar R-36» lo
+ * quitan los dos, y «solo R-24» lo deja y «solo R-12 y R-5» lo quita.
+ */
+export const fijoEnFormato = (f: GloboFijo, formato: string): boolean => f.formatoId === formato || f.formatoPedidoId === formato;
 
 export type TamanoOrganico = "grande" | "mediano" | "relleno";
 
