@@ -173,11 +173,13 @@ prueba("contrato de la ruta: selección, pregunta, verificación registrada, 12 
     /nombre === PREGUNTAR_USUARIO/, /verificarCambios\(antesDelPaso, escena\)/, /decidir\("regla:escena_ia_verificacion"/, /decidir\("herramienta:escena_ia"/, /pregunta: \{ texto: pregunta\.pregunta, opciones: pregunta\.opciones \}/]) {
     assert.match(ruta, re);
   }
-  const ui = readFileSync(new URL("../../src/components/tres-d/AsistenteEscena.tsx", import.meta.url), "utf8");
-  assert.match(ui, /construirCuerpoEscenaIA\(\{ escena: antes, mensaje: limpio, historial, seleccion, foto \}\)/);
+  // La IA vive en el panel lateral (D-021): el hook arma el cuerpo con la pieza elegida y la tarjeta de pregunta saca las opciones.
+  const ui = readFileSync(new URL("../../src/components/tres-d/ia/useAsistenteIA.ts", import.meta.url), "utf8");
+  assert.match(ui, /construirCuerpoEscenaIA\(\{[\s\S]*?seleccion: envio\.alcance\.seleccion, foto: envio\.foto/);
+  const tarjeta = readFileSync(new URL("../../src/components/tres-d/ia/TarjetaPregunta.tsx", import.meta.url), "utf8");
   const cuerpo = readFileSync(new URL("../../src/lib/globos3d/cuerpo-escena-ia.ts", import.meta.url), "utf8");
   assert.match(cuerpo, /seleccion: seleccion \? \{ id: seleccion\.id/);
-  assert.match(ui, /OpcionesPregunta/);
+  assert.match(tarjeta, /pregunta\.opciones\.map/);
 });
 
 console.log(`\n${pruebas} pruebas OK`);

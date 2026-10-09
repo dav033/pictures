@@ -32,6 +32,7 @@ import type { ItemBiblioteca } from "@/lib/globos3d/biblioteca";
 import type { SeleccionIA } from "@/lib/globos3d/cuerpo-escena-ia";
 import { Ayuda } from "./AyudaTaller";
 import { MenuMas } from "./MenuMas";
+import { ALTURAS, HojaMovil, type AlturaHoja } from "./HojaMovil";
 import { BannerVerAntes } from "./ia/BannerVerAntes";
 import { PanelIA } from "./ia/PanelIA";
 import { PestanasLaterales, type PestanaLateral } from "./ia/PestanasLaterales";
@@ -78,11 +79,7 @@ function useEsAncho() {
 }
 
 type Panel = "anadir" | "piezas" | "plantillas" | "sala";
-type AlturaHoja = "cerrada" | "media" | "alta";
 type PestanaHoja = "anadir" | "piezas" | "pieza" | "ia" | "parametros" | "partes";
-const ALTURAS: readonly AlturaHoja[] = ["cerrada", "media", "alta"];
-/** Alto de la hoja del teléfono (el visor sigue a pantalla completa debajo). */
-const ALTURA_HOJA: Readonly<Record<AlturaHoja, string>> = { cerrada: "h-auto", media: "h-[44dvh]", alta: "h-[78dvh]" };
 
 const PANELES: ReadonlyArray<{ id: Panel; nombre: string; icono: ReactNode }> = [
   { id: "anadir", nombre: "Añadir", icono: <Plus className="size-5" aria-hidden /> },
@@ -200,7 +197,6 @@ export function Taller3D() {
   const [hoja, setHoja] = useState<AlturaHoja>("media");
   const [pestanaHoja, setPestanaHoja] = useState<PestanaHoja>("piezas");
   const [hojasVistas, setHojasVistas] = useState<ReadonlySet<PestanaHoja>>(() => new Set<PestanaHoja>());
-  const deslizarHoja = useRef<number | null>(null);
   const [alturaMovil, setAlturaMovil] = useState(false);
 
   // El visor se crea una vez (three.js se carga solo en el navegador).
@@ -874,28 +870,9 @@ export function Taller3D() {
           <button type="button" onClick={() => visor?.verDesde("3d")} aria-label="Encuadrar todo" className={`grid size-11 place-items-center rounded-xl ${FLOTANTE}`}><Scan className="size-5" aria-hidden /></button>
         </div>
       )}
-      {/* Hoja inferior con asa y pestañas. */}
-      <section aria-label="Paneles del taller"
-        onFocusCapture={(e) => { if (e.target instanceof HTMLTextAreaElement || (e.target instanceof HTMLInputElement && e.target.type !== "range" && e.target.type !== "checkbox")) setHoja("alta"); }}
-        className={`absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-[20px] border-t border-taller-borde bg-taller-panel shadow-[0_-10px_30px_var(--sombra)] ${ALTURA_HOJA[hoja]}`}>
-        <div onPointerDown={(e) => { deslizarHoja.current = e.clientY; }} onPointerCancel={() => { deslizarHoja.current = null; }}
-          onPointerUp={(e) => { const inicio = deslizarHoja.current; deslizarHoja.current = null; if (inicio === null) return; const dy = e.clientY - inicio; if (Math.abs(dy) < 8) cambiarAltura(hoja === "alta" ? -1 : 1); else cambiarAltura(dy < 0 ? 1 : -1); }}
-          className="flex h-6 shrink-0 cursor-row-resize touch-none items-center justify-center" role="button" tabIndex={0} aria-label={hoja === "alta" ? "Achicar el panel" : "Agrandar el panel"}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); cambiarAltura(hoja === "alta" ? -1 : 1); } if (e.key === "ArrowUp") cambiarAltura(1); if (e.key === "ArrowDown") cambiarAltura(-1); }}>
-          <span className="h-1 w-10 rounded-full bg-taller-borde" aria-hidden />
-        </div>
-        {hoja !== "cerrada" && (
-          <div className={`flex min-h-0 flex-1 flex-col overflow-hidden max-lg:[&_input[type=range]]:min-h-11 max-lg:[&_input[type=checkbox]]:size-5 max-lg:[&_summary]:min-h-11`}>{contenidoHoja}</div>
-        )}
-        <nav aria-label="Secciones" className="flex shrink-0 border-t border-taller-linea pb-[max(6px,env(safe-area-inset-bottom))]">
-          {pestanasHoja.map((p) => (
-            <button key={p.id} type="button" onClick={() => elegirPestanaHoja(p.id)} aria-current={pestanaVista === p.id ? "page" : undefined}
-              className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium ${pestanaVista === p.id ? "text-taller-acento" : "text-taller-medio"}`}>
-              {p.icono}{p.nombre}
-            </button>
-          ))}
-        </nav>
-      </section>
+      <HojaMovil hoja={hoja} alCambiarAltura={cambiarAltura} alEscribir={() => setHoja("alta")} pestanas={pestanasHoja} activa={pestanaVista} alElegir={elegirPestanaHoja}>
+        {contenidoHoja}
+      </HojaMovil>
     </>
   );
 

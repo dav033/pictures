@@ -39,6 +39,8 @@ export function deshacerTurno(actual: Escena, diff: DiffEscena): ResultadoDeshac
       if (c.tipo === "cambiada") conservadas.push({ id: c.id, nombre: c.nombre, motivo: "quitada" });
       continue;
     }
+    // Ya está como antes del turno (se deshizo con Ctrl+Z): no hay nada que revertir ni que conservar.
+    if (c.tipo === "cambiada" && c.antes && sonIguales(ahora, c.antes)) continue;
     if (!c.despues || !sonIguales(ahora, c.despues)) { conservadas.push({ id: c.id, nombre: ahora.nombre, motivo: "editada" }); continue; }
     if (c.tipo === "nueva") {
       const dependen = nodos.some((n) => n.id !== c.id && !idsNuevas.has(n.id) && "padreId" in n.colocacion && n.colocacion.padreId === c.id);
@@ -61,7 +63,7 @@ export function deshacerTurno(actual: Escena, diff: DiffEscena): ResultadoDeshac
   let sala = actual.sala;
   if (diff.sala) {
     if (sonIguales(actual.sala, diff.sala.despues)) { sala = diff.sala.antes; revertidas.push("sala"); }
-    else conservadas.push({ id: "sala", nombre: "Sala", motivo: "sala" });
+    else if (!sonIguales(actual.sala, diff.sala.antes)) conservadas.push({ id: "sala", nombre: "Sala", motivo: "sala" });
   }
 
   if (!revertidas.length) return { escena: actual, revertidas, conservadas };
@@ -73,7 +75,7 @@ export function textoDeshacerTurno(r: ResultadoDeshacerTurno, nombreTurno: strin
   const volvieron = r.revertidas.length;
   const partes = [volvieron
     ? `Deshice ${nombreTurno}: ${volvieron} ${volvieron === 1 ? "cambio vuelto" : "cambios vueltos"} atrás.`
-    : `No había nada que deshacer de ${nombreTurno}.`];
+    : r.conservadas.length ? `No deshice nada en ${nombreTurno}.` : `No había nada que deshacer en ${nombreTurno}.`];
   for (const c of r.conservadas.slice(0, 3)) partes.push(`Conservé «${c.nombre}» como está: ${MOTIVO_TEXTO[c.motivo]}.`);
   if (r.conservadas.length > 3) partes.push(`Conservé otras ${r.conservadas.length - 3} piezas editadas por ti.`);
   return partes.join(" ");

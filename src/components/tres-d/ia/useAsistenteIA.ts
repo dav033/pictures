@@ -16,7 +16,7 @@ import { historialParaModelo, siguienteNumero, tiempoTipico, type AmbitoTurno, t
 import { RONDAS_AUTOMATICAS, useRefinadoFoto } from "../useRefinadoFoto";
 
 /** Cuánto se queda marcado en el visor lo que acaba de cambiar la IA. */
-const DESTELLO_MS = 3500;
+const DESTELLO_MS = 5000;
 
 export type Marca = { id: string; nueva: boolean };
 /** Lo que está haciendo la IA ahora: el pedido, la fase y los pasos que ya dio. */
@@ -159,7 +159,7 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
       destacar(r.revertidas.filter((x) => x !== "sala").map((x) => ({ id: x, nueva: false })));
     }
     setAntesId(null);
-    setTurnos((t) => t.map((x) => (x.id === id ? { ...x, estado: r.revertidas.length ? "deshecho" : x.estado, nota: textoDeshacerTurno(r, `el turno ${turno.numero}`) } : x)));
+    setTurnos((t) => t.map((x) => (x.id === id ? { ...x, estado: r.revertidas.length || !r.conservadas.length ? "deshecho" : x.estado, nota: textoDeshacerTurno(r, `el turno ${turno.numero}`) } : x)));
   };
 
   const verAntes = (id: string | null) => setAntesId((actual) => (actual === id ? null : id));

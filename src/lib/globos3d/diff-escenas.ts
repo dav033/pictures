@@ -188,7 +188,7 @@ export function lineasDeDiff(d: DiffEscena): LineaDiff[] {
     else if (c.tipo === "quitada") lineas.push({ id: c.id, signo: "−", titulo: c.nombre, detalle: c.globosAntes ? `${c.globosAntes} globos` : "" });
     else {
       const visibles = c.campos.slice(0, MAX_CAMPOS);
-      for (const campo of visibles) lineas.push({ id: c.id, signo: "~", titulo: c.nombre, detalle: `${campo.etiqueta} ${campo.antes} → ${campo.despues}` });
+      for (const campo of visibles) lineas.push({ id: c.id, signo: "~", titulo: c.nombre, detalle: campo.clase === "globos" ? `${campo.etiqueta}: ${campo.antes} → ${campo.despues} globos` : `${campo.etiqueta} ${campo.antes} → ${campo.despues}` });
       if (c.campos.length > visibles.length) lineas.push({ id: c.id, signo: "~", titulo: c.nombre, detalle: `+${c.campos.length - visibles.length} ajustes más` });
       if (!c.campos.length) lineas.push({ id: c.id, signo: "~", titulo: c.nombre, detalle: "ajustes" });
     }

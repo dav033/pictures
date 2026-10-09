@@ -51,7 +51,7 @@ export function TarjetaTurno({ turno, ambitoActual, viendoAntes, hayPieza, alDes
         <span className="flex-1" />
         <span>{diff && delta !== 0 && turno.estado !== "deshecho" ? textoGlobos(delta) : ETIQUETA_ESTADO[turno.estado]}</span>
       </header>
-      {turno.respuesta && <p className="mb-1.5 whitespace-pre-line break-words text-[13px] leading-snug">{turno.respuesta}</p>}
+      {turno.respuesta && turno.respuesta !== turno.pregunta?.texto && <p className="mb-1.5 whitespace-pre-line break-words text-[13px] leading-snug">{turno.respuesta}</p>}
       {turno.nota && <p role="status" className={`mb-1.5 text-xs ${fallo ? "text-taller-peligro" : "text-taller-texto-2"}`}>{turno.nota}</p>}
       {lineas.length > 0 && (
         <ul className="mb-1.5 grid gap-0.5" aria-label="Cambios en la escena">
