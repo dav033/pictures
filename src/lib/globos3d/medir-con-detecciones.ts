@@ -4,6 +4,7 @@ import { ejeMedido, globosDe, largosDelEje, mediana, normalEnPunto, percentil, p
 import { medirTamanos, repartoDe } from "./medir-tamanos";
 import type { Escalon } from "./mezcla-lectura";
 import { FONDOS_CON_SUPERFICIE } from "./fondos-familias";
+import { escalaPorMesas, escalaReconciliada } from "./escala-por-muebles";
 import { medirFondos, type FondoDetectado } from "./medir-fondos";
 
 export type { FondoDetectado } from "./medir-fondos";
@@ -285,7 +286,7 @@ export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDe
       piezas[i] = m.pieza;
       notas.push(...m.notas);
     });
-    escala = escalaCorregida(l, escalas, notas) ?? l.escala;
+    escala = escalaCorregida(l, escalas, notas, escalaPorMesas(fondos)) ?? l.escala;
   }
   const valida = LecturaFotoSchema.safeParse({ ...l, escala, piezas });
   if (!valida.success) {
@@ -296,9 +297,11 @@ export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDe
 }
 
 /** La escala de la foto que dan las guirnaldas (la mediana), si se aparta más del `DESVIO_ESCALA` de la leída. */
-function escalaCorregida(l: LecturaFoto, escalas: readonly number[], notas: string[]): LecturaFoto["escala"] | undefined {
+function escalaCorregida(l: LecturaFoto, escalas: readonly number[], notas: string[], mesas: number | null): LecturaFoto["escala"] | undefined {
   if (!escalas.length) return undefined;
-  const cm = Math.min(ESCALA_MAXIMA_CM, Math.max(ESCALA_MINIMA_CM, Math.round(mediana(escalas))));
+  const deGlobos = Math.round(mediana(escalas));
+  const cm = Math.min(ESCALA_MAXIMA_CM, Math.max(ESCALA_MINIMA_CM, Math.round(escalaReconciliada(deGlobos, mesas, l.escala.altoImagenCm))));
+  if (mesas !== null) notas.push(`Escala: ${deGlobos} cm por los globos y ${Math.round(mesas)} cm por la mesa detectada (de medida conocida): ${cm} cm.`);
   if (Math.abs(cm - l.escala.altoImagenCm) / l.escala.altoImagenCm <= DESVIO_ESCALA) return undefined;
   notas.push(`Escala por los globos detectados: ${cm} cm de alto de foto (la leída era ${l.escala.altoImagenCm}).`);
   return { altoImagenCm: cm, referencia: `${l.escala.referencia} · medida con los globos`.slice(0, 80) };

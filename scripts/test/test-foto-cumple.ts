@@ -35,6 +35,9 @@ import { piezaDeMueble } from "../../src/lib/globos3d/mobiliario-pieza";
 import { coloresPorParte } from "../../src/lib/globos3d/colores-por-parte";
 import { TABLA_SEMPERTEX } from "../../src/lib/plan/referencia-sempertex";
 import { globosDe } from "../../src/lib/globos3d/medir-geometria";
+import { escalaPorMesas, escalaReconciliada } from "../../src/lib/globos3d/escala-por-muebles";
+import { medirTamanos } from "../../src/lib/globos3d/medir-tamanos";
+import { centroDe } from "../../src/lib/globos3d/letras";
 
 let pruebas = 0, fallos = 0;
 const prueba = (nombre: string, fn: () => void) => {
@@ -311,6 +314,81 @@ prueba("8 · ningún montón de piso atraviesa la pared del fondo ni los costado
   // La lectura del registro (escala 303) ya no deja el montón de la derecha 19 cm dentro de la pared.
   const r = compilarLectura(medidaDelRegistro);
   for (const n of r.escena.nodos.filter((x) => x.id.startsWith("racimo-piso"))) assert.ok(cajaDe(r.escena, n.id).min.z >= -r.escena.sala.fondoCm / 2 - 0.5, n.id);
+});
+
+// ---------------------------------------------------------------------------------------------------------- 9
+prueba("9 · la foto con las detecciones reconstruidas mide ~300 cm de alto (no 480): los globos chicos no son el R-12", () => {
+  const escalaDeGlobos = Number(/(\d+) cm por los globos/.exec(medida.notas.join(" | "))?.[1]);
+  const final = compilarLectura(medida.lectura);
+  assert.ok(final.escena.nodos.length > 5);
+  assert.ok(medida.lectura.escala.altoImagenCm >= 255 && medida.lectura.escala.altoImagenCm <= 345, `${medida.lectura.escala.altoImagenCm} cm: ${medida.notas.filter((n) => /Escala/.test(n)).join(" | ")}`);
+  assert.ok(escalaDeGlobos >= 220 && escalaDeGlobos <= 320, `los globos solos: ${escalaDeGlobos} cm`);
+  // Los globos de la guirnalda forman tres tamaños (≈ 5, 9 y 12 % del alto), no unos chicos partidos en dos y medianos y grandes juntos.
+  const guirnalda = cruda.piezas.find((p) => p.tipo === "guirnalda_organica")!;
+  const t = medirTamanos(guirnalda.mezcla, globosDe(detecciones, cruda.aspecto).filter((g) => g.y < 0.75), cruda.pisoY, true);
+  assert.ok(Math.abs(t.reparto.medianos - 55) <= 12 && t.reparto.chicos < 35, JSON.stringify(t.reparto));
+  assert.deepEqual(t.escalones, ["chicos", "medianos", "grandes"]);
+  assert.ok(t.escalaCm! > 230 && t.escalaCm! < 320, `${t.escalaCm}`);
+});
+
+prueba("9 · solo las mesas de altura conocida dan escala: pasteles, cortina, rótulo y corazones no la mueven", () => {
+  assert.ok(Math.abs(escalaPorMesas(fondos)! - 318) < 5, `${escalaPorMesas(fondos)}`);
+  assert.equal(escalaPorMesas(fondos.filter((f) => f.id !== "mesa_postres")), null, "sin la mesa no hay escala por muebles");
+  const solo = medirConDetecciones(cruda, detecciones, fondos.filter((f) => f.id === "mesa_postres"));
+  assert.equal(solo.lectura.escala.altoImagenCm, medida.lectura.escala.altoImagenCm, "la escala es la misma con o sin pasteles, cortina y rótulo detectados");
+  const enormes: FondoDetectado[] = [...fondos, { box_2d: [100, 100, 150, 200], id: "pastel" }, { box_2d: [10, 10, 990, 990], id: "cortina_luces" }];
+  assert.equal(medirConDetecciones(cruda, detecciones, enormes).lectura.escala.altoImagenCm, medida.lectura.escala.altoImagenCm);
+});
+
+prueba("9 · globos y mesa: de acuerdo valen los dos; si no, manda la mediana con la del lector (un fallo no manda)", () => {
+  assert.equal(Math.round(escalaReconciliada(251, 318, 260)), 283);
+  assert.equal(escalaReconciliada(472, 318, 260), 318, "los globos a 472 (grupos mal puestos) pierden contra la mesa y el lector");
+  assert.equal(escalaReconciliada(251, null, 260), 251, "sin mesa, los globos como siempre");
+});
+
+// ---------------------------------------------------------------------------------------------------------- 10
+const GUIRNALDA_ARCO = medidaDelRegistro.piezas.find((p) => p.tipo === "guirnalda_organica")!;
+const letrasDeFoil = (texto = "Happy Birthday"): PiezaLeida => ({ tipo: "metalizado", texto, cursiva: false, x: 0.5, y: 0.46, alto: 0.1, colores: [color("Reflex Dorado", "#d8b668", 100, "cromado")] });
+
+prueba("10 · las letras de foil de un rótulo van delante de los globos del arco que las tapan, todas a la misma profundidad", () => {
+  const c = compilarLectura(lectura([GUIRNALDA_ARCO, letrasDeFoil()]));
+  const letras = c.escena.nodos.filter((n) => n.id.startsWith("metalizado"));
+  assert.equal(letras.length, 2, "Happy y Birthday");
+  const armada = armarEscena(c.escena);
+  const globos = armada.porNodo.find((n) => n.id === "guirnalda-organica")!.globos.map((g) => ({ c: centroDe(g), r: g.infladoCm / 2 }));
+  const cajas = letras.map((n) => armada.porNodo.find((x) => x.id === n.id)!.caja);
+  for (const caja of cajas) {
+    const tapan = globos.filter((g) => g.c.x + g.r > caja.min.x && g.c.x - g.r < caja.max.x && g.c.y + g.r > caja.min.y && g.c.y - g.r < caja.max.y);
+    assert.ok(Math.max(...tapan.map((g) => g.c.z + g.r)) <= caja.min.z + 0.6, `las letras (z desde ${caja.min.z}) quedan delante de los globos que las cruzan`);
+  }
+  assert.ok(Math.abs(cajas[0]!.min.z - cajas[1]!.min.z) < 1, "la misma profundidad");
+  assert.ok(c.notas.some((n) => /va delante de ellos/.test(n)), c.notas.join(" | "));
+  // Y sin globos detrás (un rótulo suelto) no se mueve nada.
+  const sola = compilarLectura(lectura([letrasDeFoil()]));
+  assert.ok(!sola.notas.some((n) => /va delante de ellos/.test(n)));
+});
+
+prueba("10 · un rótulo de foil que cabe entre los brazos del arco queda dentro de su abertura", () => {
+  const c = compilarLectura(lectura([GUIRNALDA_ARCO, letrasDeFoil("Hola")]));
+  const armada = armarEscena(c.escena);
+  const globos = armada.porNodo.find((n) => n.id === "guirnalda-organica")!.globos.map((g) => ({ c: centroDe(g), r: g.infladoCm / 2 }));
+  const caja = armada.porNodo.find((n) => n.id.startsWith("metalizado"))!.caja;
+  const banda = globos.filter((g) => g.c.y + g.r > caja.min.y && g.c.y - g.r < caja.max.y);
+  const izq = banda.filter((g) => g.c.x < (caja.min.x + caja.max.x) / 2), der = banda.filter((g) => g.c.x >= (caja.min.x + caja.max.x) / 2);
+  assert.ok(caja.min.x >= Math.max(...izq.map((g) => g.c.x + g.r)) - 0.6 || izq.length === 0, "no pisa el brazo izquierdo");
+  assert.ok(caja.max.x <= Math.min(...der.map((g) => g.c.x - g.r)) + 0.6 || der.length === 0, "no pisa el brazo derecho");
+});
+
+prueba("10 · un «Happy Birthday» leído como nombre de acrílico (cursiva) o neón sigue en cursiva: no se vuelve letras de foil", () => {
+  for (const id of ["rotulo_acrilico", "neon_cursiva"]) {
+    const c = compilarLectura(lectura([GUIRNALDA_ARCO, fondoDe(id, { texto: "Happy Birthday", x: 0.5, yBase: 0.5, ancho: 0.44, alto: 0.12, colores: [color("Reflex Dorado", "#d8b668", 100, "cromado")] })]));
+    assert.ok(!c.escena.nodos.some((n) => n.pieza.tipo === "metalizado"), `${id}: sin letras de foil`);
+    const n = c.escena.nodos.find((x) => x.pieza.tipo === "escenografia" && x.pieza.mueble?.id === id)!;
+    assert.equal(n.pieza.tipo === "escenografia" ? n.pieza.mueble?.opciones?.texto : "", "Happy Birthday");
+    const armada = armarEscena(c.escena);
+    const letrero = armada.porNodo.find((x) => x.id === n.id)!;
+    assert.ok(letrero.solidos.some((s) => s.motivo?.texto === "Happy Birthday" || s.rotulo?.texto === "Happy Birthday"), `${id}: el texto en cursiva sigue en el sólido`);
+  }
 });
 
 console.log(`test-foto-cumple: ${pruebas} pruebas ok, ${fallos} con fallas`);

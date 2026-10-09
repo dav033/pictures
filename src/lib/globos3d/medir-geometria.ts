@@ -108,20 +108,28 @@ export function normalEnPunto(eje: readonly P[], i: number): P {
 }
 
 /**
- * k-medias en una dimensión (log del diámetro); centros de menor a mayor. Los centros iniciales salen del punto más lejano de los
- * que ya hay (empezando por la mediana): con cuantiles, un escalón raro (tres gigantes entre setenta globos) no recibía centro y
- * dos centros caían en el mismo escalón común.
+ * k-medias en una dimensión (log del diámetro); centros de menor a mayor. Se prueba con tres arranques y se queda el de menor costo.
+ * El principal pone los centros iniciales en el punto más lejano de los que ya hay (empezando por la mediana): con cuantiles solos, un
+ * escalón raro (tres gigantes entre setenta globos) no recibía centro y dos centros caían en el mismo escalón común.
  */
 export function kMedias1D(v: readonly number[], k: number): number[] {
-  let centros = [mediana(v)];
-  while (centros.length < k) {
-    const lejano = v.reduce((m, x) => (Math.min(...centros.map((c) => Math.abs(x - c))) > Math.min(...centros.map((c) => Math.abs(m - c))) ? x : m), v[0]!);
-    centros.push(lejano);
-  }
-  for (let it = 0; it < 30; it++) {
-    const grupos: number[][] = centros.map(() => []);
-    for (const x of v) grupos[centros.reduce((m, c, i) => (Math.abs(x - c) < Math.abs(x - centros[m]!) ? i : m), 0)]!.push(x);
-    centros = grupos.map((g, i) => (g.length ? g.reduce((s, x) => s + x, 0) / g.length : centros[i]!));
-  }
-  return centros.sort((a, b) => a - b);
+  const refinar = (inicio: number[]): { centros: number[]; costo: number } => {
+    let centros = inicio;
+    for (let it = 0; it < 30; it++) {
+      const grupos: number[][] = centros.map(() => []);
+      for (const x of v) grupos[centros.reduce((m, c, i) => (Math.abs(x - c) < Math.abs(x - centros[m]!) ? i : m), 0)]!.push(x);
+      centros = grupos.map((g, i) => (g.length ? g.reduce((s, x) => s + x, 0) / g.length : centros[i]!));
+    }
+    const costo = v.reduce((s, x) => s + Math.min(...centros.map((c) => (x - c) ** 2)), 0);
+    return { centros, costo };
+  };
+  // El de siempre: la mediana y los más lejanos. Con él solo, una nube con dos modos y una cola (chicos, medianos y unos grandes) caía en un óptimo malo
+  // (partía los chicos en dos y juntaba los medianos con los grandes); por eso también se prueba desde los cuantiles y desde puntos parejos, y se queda el de menor costo.
+  const lejanos = [mediana(v)];
+  while (lejanos.length < k) lejanos.push(v.reduce((m, x) => (Math.min(...lejanos.map((c) => Math.abs(x - c))) > Math.min(...lejanos.map((c) => Math.abs(m - c))) ? x : m), v[0]!));
+  const ordenado = [...v].sort((a, b) => a - b);
+  const cuantiles = Array.from({ length: k }, (_, i) => ordenado[Math.min(ordenado.length - 1, Math.floor(((i + 0.5) * ordenado.length) / k))]!);
+  const parejos = Array.from({ length: k }, (_, i) => ordenado[0]! + ((i + 0.5) * (ordenado[ordenado.length - 1]! - ordenado[0]!)) / k);
+  const mejor = [lejanos, cuantiles, parejos].map(refinar).reduce((m, r) => (r.costo < m.costo - 1e-12 ? r : m));
+  return mejor.centros.sort((a, b) => a - b);
 }
