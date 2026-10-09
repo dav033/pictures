@@ -1,23 +1,28 @@
 import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
-import { conRegistro } from "@/lib/registro/servidor";
-import { tomarCupoEscenaIA } from "@/lib/globos3d/cupo-escena-ia";
-import { atenderSimilitud, origenCoincideConHost } from "@/lib/globos3d/similitud-refinado";
+import { contextoActual, conRegistro, decidir } from "@/lib/registro/servidor";
+import { tomarCupoSimilitud } from "@/lib/globos3d/cupo-escena-ia";
+import { atenderSimilitud } from "@/lib/globos3d/refinado/similitud-servidor";
 import { embeberImagen } from "@/lib/rag/embeddings";
 import { normalizarFotoA } from "@/lib/taller/normalizar-foto";
 
 /**
- * Taller 3D → criterio de aceptación del refinado con la foto (REQ-001 paso 9): qué tanto se parecen a la foto la captura
- * de la escena de antes y la de después de una ronda, con embeddings de imagen (gemini-embedding-2). La lógica vive en
- * `@/lib/globos3d/similitud-refinado` (probada sin red).
+ * Taller 3D → criterio de aceptación del refinado con la foto (REQ-001 paso 9): decide si una ronda se queda (estructura de la
+ * escena y parecido con la foto por embeddings de imagen, gemini-embedding-2) y deja la decisión en el registro. La lógica vive
+ * en `@/lib/globos3d/refinado/similitud-servidor` (probada sin red).
  */
 export const POST = conRegistro("/api/escena-ia/similitud", atenderPOST, { vista: "3d" });
 
 function atenderPOST(request: Request) {
   return atenderSimilitud(request, {
     autenticado: isAuthenticatedRequest,
-    mismoOrigen: (request) => isSameOriginRequest(request) || origenCoincideConHost(request),
-    cupo: tomarCupoEscenaIA,
+    mismoOrigen: isSameOriginRequest,
+    cupo: tomarCupoSimilitud,
     normalizar: normalizarFotoA,
     embeber: embeberImagen,
+    contexto: () => {
+      const actual = contextoActual();
+      return { requestId: actual?.solicitud, correlationId: actual?.conversacion ?? actual?.solicitud };
+    },
+    registrar: decidir,
   });
 }

@@ -11,7 +11,9 @@ import type { LecturaFoto } from "../../src/lib/globos3d/lectura-foto";
 import { encuadreDeLectura } from "../../src/lib/globos3d/encuadre-foto";
 import { distanciaFormatos, escalonesDe, globosOrganicosPorFormato, type Escalones } from "../../src/lib/globos3d/mezcla-escena";
 import { pesosDeLectura } from "../../src/lib/globos3d/mezcla-lectura";
-import { refinarConFoto, pedirRondaHttp, type ResultadoRefinado } from "../../src/lib/globos3d/refinar-foto-cliente";
+import { refinarConFoto, type ResultadoRefinado } from "../../src/lib/globos3d/refinado/bucle";
+import { crearEvaluadorDeRonda } from "../../src/lib/globos3d/refinado/evaluador";
+import { pedirRondaHttp, pedirVeredictoHttp } from "../../src/components/tres-d/refinado-http";
 import { embeberImagen } from "../../src/lib/rag/embeddings";
 import { normalizarFoto } from "../../src/lib/taller/normalizar-foto";
 import type { CapturadorSinCabeza } from "./lib-captura-sin-cabeza";
@@ -41,6 +43,8 @@ export type ResultadoRefinadoEval = {
   /** Lo que costó cada llamada a la ruta (una por ronda hecha). */
   costesPorRonda: number[];
   costeEmbeddingsUsd: number;
+  /** Con el criterio de aceptación: el veredicto del servidor de cada ronda evaluada (parecido medido, motivo y coste). */
+  veredictos: Array<{ ronda: number; aceptada: boolean; motivo: string | null; antes: number | null; despues: number | null }>;
   escenaFinal: Escena;
 };
 
@@ -104,7 +108,7 @@ export async function vectorDeFoto(original: Uint8Array): Promise<number[]> {
  * Corre el refinado sobre la escena armada de la foto: mide antes, hasta 2 rondas con la captura sin cabeza y la ruta real
  * del servidor, y mide después de cada ronda. `parar(gasto de esta foto)` se consulta antes de cada ronda (tope de gasto).
  */
-export async function evaluarRefinado(entrada: { escena: Escena; foto: { mime: string; base64: string }; lectura: LecturaFoto; metaMezcla: Record<string, number> | null; original: Uint8Array; urlBase: string; capturador: CapturadorSinCabeza; carpeta: string; prefijo: string; maxRondas?: number; parar: (gastoDeEstaFoto: number) => boolean }): Promise<ResultadoRefinadoEval> {
+export async function evaluarRefinado(entrada: { escena: Escena; foto: { mime: string; base64: string }; lectura: LecturaFoto; metaMezcla: Record<string, number> | null; original: Uint8Array; urlBase: string; capturador: CapturadorSinCabeza; carpeta: string; prefijo: string; maxRondas?: number; parar: (gastoDeEstaFoto: number) => boolean; criterio?: boolean }): Promise<ResultadoRefinadoEval> {
   let embeddings = 0;
   const contexto: ContextoMedida = { capturador: entrada.capturador, vectorFoto: await vectorDeFoto(entrada.original), meta: entrada.metaMezcla, lectura: entrada.lectura, carpeta: entrada.carpeta, prefijo: entrada.prefijo, contarEmbeddings: () => { embeddings += 1; } };
   embeddings += 1;
@@ -121,6 +125,8 @@ export async function evaluarRefinado(entrada: { escena: Escena; foto: { mime: s
         if (r.ok) { const c = r.datos.uso?.costeEstimadoUsd ?? 0; costeRondasUsd += c; costesPorRonda.push(r3(c)); }
         return r;
       },
+      // Con `criterio` la ronda pasa por el mismo veredicto del servidor que en el taller (la foto ya viene a 1024 px).
+      ...(entrada.criterio ? { evaluar: crearEvaluadorDeRonda({ capturar: entrada.capturador.capturar, reducirFoto: async (f) => f, veredicto: pedirVeredictoHttp({}, entrada.urlBase.replace(/\/$/, "")) }) } : {}),
       alProgreso: ({ ronda }) => console.log(`    ronda ${ronda}…`),
       signal: control.signal,
       ...(entrada.maxRondas !== undefined ? { maxRondas: entrada.maxRondas } : {}),
@@ -132,5 +138,5 @@ export async function evaluarRefinado(entrada: { escena: Escena; foto: { mime: s
     rondas.push({ ronda: r.ronda, diferencias: r.resultado.diferencias, significativas: r.resultado.significativas, cambios: r.cambios.length, respuesta: r.respuesta, motivo: r.resultado.motivo, despues: despuesDeRonda });
   }
   const despues = rondas.length ? rondas[rondas.length - 1]!.despues : antes;
-  return { antes, despues, rondas, motivo: resultado.motivo, ...(resultado.error ? { error: resultado.error } : {}), costeRondasUsd: r3(costeRondasUsd), costesPorRonda, costeEmbeddingsUsd: r3(embeddings * COSTE_EMBEDDING_USD), escenaFinal: resultado.escena };
+  return { antes, despues, rondas, motivo: resultado.motivo, ...(resultado.error ? { error: resultado.error } : {}), costeRondasUsd: r3(costeRondasUsd), costesPorRonda, costeEmbeddingsUsd: r3(embeddings * COSTE_EMBEDDING_USD + resultado.evaluaciones.reduce((suma, e) => suma + e.veredicto.costeEstimadoUsd, 0)), veredictos: resultado.evaluaciones.map((e) => ({ ronda: e.ronda, aceptada: e.veredicto.aceptada, motivo: e.veredicto.motivo, antes: e.veredicto.similitud?.antes ?? null, despues: e.veredicto.similitud?.despues ?? null })), escenaFinal: resultado.escena };
 }

@@ -6,7 +6,7 @@ import type { Escena } from "@/lib/globos3d/escena";
 import { cabecerasConversacion } from "@/lib/registro/cliente";
 import { construirCuerpoEscenaIA, mensajeDelPedido, type SeleccionIA, type TurnoIA } from "@/lib/globos3d/cuerpo-escena-ia";
 import { EncuadreSchema, type Encuadre } from "@/lib/globos3d/encuadre-foto";
-import { resumenDeRefinado, type RondaHecha } from "@/lib/globos3d/refinar-foto-cliente";
+import { resumenDeRefinado, type RondaHecha } from "@/lib/globos3d/refinado/bucle";
 import { BOTON, INACTIVO } from "./PanelFlor";
 import { BotonFotoIA, MiniaturaFotoIA } from "./ControlFotoIA";
 import { useFotoAdjunta, type FotoAdjuntaEstado } from "./useFotoAdjunta";

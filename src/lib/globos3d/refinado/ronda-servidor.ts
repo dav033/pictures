@@ -3,12 +3,12 @@ import type { Part } from "@google/genai";
 import { TOPE_BYTES_FOTO } from "@/lib/taller/buscar-foto";
 import { motivoFotoInvalida } from "@/lib/taller/escena-desde-foto";
 import { paraGoogleSchema } from "@/lib/ia/nucleo/esquema-google";
-import type { Escena } from "./escena";
-import { FotoCuerpoSchema } from "./escena-ia-foto";
-import { resumenEscena, type DeclaracionHerramienta, type ResultadoHerramienta } from "./herramientas-escena";
-import { LecturaFotoSchema, type LecturaFoto } from "./lectura-foto";
-import { lineaDePiezaLeida } from "./modelar-desde-foto";
-import { MAX_RONDAS_REFINAR, ReporteSchema, reporteDe, type ReporteComparacion } from "./refinado-ronda";
+import type { Escena } from "../escena";
+import { FotoCuerpoSchema } from "../escena-ia-foto";
+import { resumenEscena, type DeclaracionHerramienta, type ResultadoHerramienta } from "../herramientas-escena";
+import { LecturaFotoSchema, type LecturaFoto } from "../lectura-foto";
+import { lineaDePiezaLeida } from "../modelar-desde-foto";
+import { MAX_RONDAS_REFINAR, ReporteSchema, reporteDe, type ReporteComparacion } from "./ronda";
 
 /**
  * **Refinado contra la foto** (REQ-001 paso 9). Después de que la IA arma la escena desde una foto, el navegador captura la
@@ -17,7 +17,7 @@ import { MAX_RONDAS_REFINAR, ReporteSchema, reporteDe, type ReporteComparacion }
  * colores, piezas que faltan o sobran, escala) con la herramienta `reportar_comparacion` y las corrige con las herramientas
  * de siempre. Son a lo más `MAX_RONDAS_REFINAR` rondas, automáticas y cada una con su deshacer; se paran cuando el modelo
  * no ve diferencias significativas, cuando no cambió nada o cuando el usuario las detiene. Aquí: el cuerpo, el mensaje al
- * modelo, la herramienta de reporte y la decisión de seguir o parar. Todo puro y sin red (las pruebas no tocan Gemini). Que la ronda se quede o se descarte lo decide el navegador (`aceptacion-ronda.ts`).
+ * modelo, la herramienta de reporte y la decisión de seguir o parar. Todo puro y sin red (las pruebas no tocan Gemini). Que la ronda se quede o se descarte lo decide el servidor en `/api/escena-ia/similitud` (`similitud-servidor.ts`).
  */
 
 /** Vueltas del modelo con herramientas en una ronda (menos que en un pedido normal: la ronda corrige, no arma de cero). */
@@ -37,10 +37,12 @@ export const HERRAMIENTAS_REFINAR: readonly string[] = ["ver_escena", "ver_pieza
 export const declaracionesDeRefinado = (todas: readonly DeclaracionHerramienta[]): DeclaracionHerramienta[] => [...todas.filter((d) => HERRAMIENTAS_REFINAR.includes(d.name)), DECLARACION_REPORTAR];
 
 /** La captura de la escena: JPEG de a lo más ~1024 px (el navegador la reduce); el servidor le pone tope al tamaño. */
-const TOPE_BYTES_CAPTURA = 1.5 * 1024 * 1024;
+export const TOPE_BYTES_CAPTURA = 1.5 * 1024 * 1024;
+/** Largo máximo del base64 de una imagen de 1024 px (captura o foto reducida). */
+export const MAX_BASE64_CAPTURA = Math.ceil((TOPE_BYTES_CAPTURA * 4) / 3) + 8;
 export const CapturaCuerpoSchema = z.object({
   mime: z.literal("image/jpeg"),
-  base64: z.string().min(100).max(Math.ceil((TOPE_BYTES_CAPTURA * 4) / 3) + 8).regex(/^[A-Za-z0-9+/]+={0,2}$/),
+  base64: z.string().min(100).max(MAX_BASE64_CAPTURA).regex(/^[A-Za-z0-9+/]+={0,2}$/),
 });
 
 export const RefinarCuerpoSchema = z.object({

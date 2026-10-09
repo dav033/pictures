@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 /**
- * Lo puro y liviano del refinado contra la foto (REQ-001 paso 9), que usan por igual el servidor (`escena-ia-refinar.ts`, la
- * ruta) y el navegador (`refinar-foto-cliente.ts`): el tope de rondas, el reporte de diferencias que escribe el modelo y la
+ * Lo puro y liviano del refinado contra la foto (REQ-001 paso 9), que usan por igual el servidor (`ronda-servidor.ts`, la
+ * ruta) y el navegador (`bucle.ts`): el tope de rondas, el reporte de diferencias que escribe el modelo y la
  * decisión de seguir o parar. Sin dependencias del servidor, para no cargarlo en el bundle del taller.
  */
 

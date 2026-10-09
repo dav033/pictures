@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cabecerasConversacion } from "@/lib/registro/cliente";
-import { pedirRondaHttp, refinarConFoto, type EntradaRefinado, type ResultadoRefinado, type RondaHecha } from "@/lib/globos3d/refinar-foto-cliente";
-import { crearEvaluadorDeRonda, pedirSimilitudHttp } from "@/lib/globos3d/aceptacion-ronda";
-import { MAX_RONDAS_REFINAR } from "@/lib/globos3d/refinado-ronda";
+import { refinarConFoto, type EntradaRefinado, type ResultadoRefinado, type RondaHecha } from "@/lib/globos3d/refinado/bucle";
+import { crearEvaluadorDeRonda } from "@/lib/globos3d/refinado/evaluador";
+import { MAX_RONDAS_REFINAR } from "@/lib/globos3d/refinado/ronda";
+import { pedirRondaHttp, pedirVeredictoHttp, reducirFotoParaRevision } from "./refinado-http";
 
 /**
- * Rondas automáticas tras armar desde una foto: una, y solo se queda si mejora (`aceptacion-ronda.ts`: la captura se
- * parece más a la foto que la de antes y la estructura no empeora). En la evaluación (07, 09, 12, 13) las rondas sin
+ * Rondas automáticas tras armar desde una foto: una, y solo se queda si mejora (`refinado/evaluador.ts`: el servidor decide si la
+ * captura se parece más a la foto que la de antes y la estructura no empeora). En la evaluación (07, 09, 12, 13) las rondas sin
  * criterio no mejoraron en promedio, y en una prueba real con la 07 la ronda tapó el «LOVE» detrás de la guirnalda y
  * achicó la silueta; ahora una ronda así se descarta sola. La ruta admite hasta MAX_RONDAS_REFINAR.
  */
@@ -37,7 +38,7 @@ export function useRefinadoFoto(oyentes: { alRonda: (r: RondaHecha) => void; alT
       const { capturarEscenaParaRefinar } = await import("./captura-refinar");
       const resultado = await refinarConFoto(entrada, {
         capturar: capturarEscenaParaRefinar,
-        evaluar: crearEvaluadorDeRonda({ capturar: capturarEscenaParaRefinar, similitud: pedirSimilitudHttp(cabecerasConversacion("3d")) }),
+        evaluar: crearEvaluadorDeRonda({ capturar: capturarEscenaParaRefinar, reducirFoto: reducirFotoParaRevision, veredicto: pedirVeredictoHttp(cabecerasConversacion("3d")) }),
         pedir: (cuerpo, signal) => pedirRondaHttp(cuerpo, signal, cabecerasConversacion("3d")),
         alProgreso: setRefinando,
         alRonda: (r) => oyentesRef.current.alRonda(r),
@@ -47,7 +48,7 @@ export function useRefinadoFoto(oyentes: { alRonda: (r: RondaHecha) => void; alT
       if (resultado.motivo !== "sin_lectura") oyentesRef.current.alTerminar(resultado);
     } catch (e) {
       // Lo que falle fuera del bucle (cargar la captura, por ejemplo) también se le dice al usuario.
-      oyentesRef.current.alTerminar({ rondas: [], escena: entrada.escena, motivo: "error", error: e instanceof Error ? e.message : "no se pudo preparar la captura" });
+      oyentesRef.current.alTerminar({ rondas: [], escena: entrada.escena, motivo: "error", evaluaciones: [], error: e instanceof Error ? e.message : "no se pudo preparar la captura" });
     } finally {
       control.current = null;
       setRefinando(null);

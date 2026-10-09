@@ -24,7 +24,7 @@
  *
  * Uso: NODE_OPTIONS=--use-system-ca npx tsx --conditions=react-server scripts/exp/evaluar-foto-a-escena.ts [--pagar] [--tope-usd 0.3]
  *        [--foto 1,2,9] [--reusar data/exp/evaluar-foto-a-escena-….json (con --refinar: la lectura se reutiliza sin coste)] [--carpeta <dir>]
- *        [--refinar [--url http://127.0.0.1:3014] [--rondas 0|1|2]]
+ *        [--refinar [--url http://127.0.0.1:3014] [--rondas 0|1|2] [--criterio (cada ronda pasa por el veredicto del servidor, como en el taller)]]
  * Salida: data/exp/evaluar-foto-a-escena-<fecha>.json (por foto: lectura, métricas, plantillas, coste) — carpeta ignorada por git.
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -167,7 +167,7 @@ async function main() {
           plantillas, rangoEsperada: plantillas.length ? (rango >= 0 ? rango + 1 : null) : null, top1Esperada: plantillas.length ? plantillas[0]!.id === ref.id : null,
         };
         if (capturador) {
-          const resultado = await evaluarRefinado({ escena: compilada.escena, foto: { mime: "image/jpeg", base64: Buffer.from(normalizada).toString("base64") }, lectura: lectura.lectura, metaMezcla: formatosDeLectura(ref.lectura), original, urlBase, capturador, carpeta: carpetaRefinado, prefijo: String(numero).padStart(2, "0"), ...(maxRondas !== undefined ? { maxRondas } : {}), parar: (gastoDeEstaFoto) => gastado + gastoDeEstaFoto + COSTE_MINIMO_POR_FOTO / 2 > tope });
+          const resultado = await evaluarRefinado({ escena: compilada.escena, foto: { mime: "image/jpeg", base64: Buffer.from(normalizada).toString("base64") }, lectura: lectura.lectura, metaMezcla: formatosDeLectura(ref.lectura), original, urlBase, capturador, carpeta: carpetaRefinado, prefijo: String(numero).padStart(2, "0"), ...(maxRondas !== undefined ? { maxRondas } : {}), criterio: process.argv.includes("--criterio"), parar: (gastoDeEstaFoto) => gastado + gastoDeEstaFoto + COSTE_MINIMO_POR_FOTO / 2 > tope });
           mkdirSync(carpetaRefinado, { recursive: true });
           const archivoEscena = path.join(carpetaRefinado, `${String(numero).padStart(2, "0")}-escena-final.json`);
           writeFileSync(archivoEscena, JSON.stringify(resultado.escenaFinal));

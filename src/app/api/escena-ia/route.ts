@@ -2,19 +2,18 @@ import { FunctionCallingConfigMode, ThinkingLevel, type Content, type Part } fro
 import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { conRegistro, decidir } from "@/lib/registro/servidor";
-import { DECLARACIONES_ESCENA, MAX_NODOS, TIPOS_PIEZA, idsDeEscena } from "@/lib/globos3d/herramientas-escena";
+import { DECLARACIONES_ESCENA, MAX_NODOS, idsDeEscena } from "@/lib/globos3d/herramientas-escena";
+import { EscenaSchema } from "@/lib/globos3d/esquema-escena";
 import { aplicarHerramientaAsincrona } from "@/lib/globos3d/escena-ia-biblioteca";
 import { seccionVocabularioEscena } from "@/lib/globos3d/prompt-escena";
-import type { Colocacion, Escena } from "@/lib/globos3d/escena";
-import type { Pieza } from "@/lib/globos3d/piezas";
 import { REGLAS_AGENTE, SeleccionSchema, seleccionValida, textoSeleccion } from "@/lib/globos3d/escena-ia-agente";
 import { PREGUNTAR_USUARIO, preguntaDe, type PreguntaUsuario } from "@/lib/globos3d/herramientas-escena-extra";
 import { verificarCambios } from "@/lib/globos3d/verificacion-escena";
 import { tomarCupoEscenaIA, TOPE_POR_HORA } from "@/lib/globos3d/cupo-escena-ia";
 import { FotoCuerpoSchema, REGLAS_FOTO, aplicarModeladoDeFoto, prepararFotoAdjunta, type FotoPreparada } from "@/lib/globos3d/escena-ia-foto";
 import { MODELAR_DESDE_FOTO } from "@/lib/globos3d/herramientas-escena-foto";
-import { MAX_PASOS_REFINAR, RefinarCuerpoSchema, REPORTAR_COMPARACION, aplicarReporte, declaracionesDeRefinado, prepararRefinado, reglasDeRonda } from "@/lib/globos3d/escena-ia-refinar";
-import { decidirRonda, type ReporteComparacion } from "@/lib/globos3d/refinado-ronda";
+import { MAX_PASOS_REFINAR, RefinarCuerpoSchema, REPORTAR_COMPARACION, aplicarReporte, declaracionesDeRefinado, prepararRefinado, reglasDeRonda } from "@/lib/globos3d/refinado/ronda-servidor";
+import { decidirRonda, type ReporteComparacion } from "@/lib/globos3d/refinado/ronda";
 import { encuadreDeLectura } from "@/lib/globos3d/encuadre-foto";
 import { modelarFotoReal } from "@/lib/taller/modelar-foto-real";
 import { normalizarFotoA } from "@/lib/taller/normalizar-foto";
@@ -28,7 +27,7 @@ import { normalizarFotoA } from "@/lib/taller/normalizar-foto";
  * visión y la arma la escena antes de que hable el modelo (escena-ia-foto.ts). Cada herramienta aplicada (o rechazada) y la respuesta final quedan con
  * `decidir(...)` en el registro de la conversación; la llamada al modelo la audita `getGeminiClient`.
  *
- * Refinado (REQ-001 paso 9, escena-ia-refinar.ts): tras armar la escena desde una foto, el navegador captura la escena 3D con
+ * Refinado (REQ-001 paso 9, refinado/ronda-servidor.ts): tras armar la escena desde una foto, el navegador captura la escena 3D con
  * la cámara de la foto y la manda de vuelta con `refinar` (foto + captura + lectura + ronda, a lo más 2): el modelo compara
  * las dos imágenes, reporta las diferencias (reportar_comparacion) y las corrige con las herramientas de siempre; la
  * respuesta dice si hace falta otra ronda. Cada ronda queda en el registro con `decidir`.
@@ -41,34 +40,6 @@ import { normalizarFotoA } from "@/lib/taller/normalizar-foto";
 
 const MAX_PASOS = 12;
 const MAX_LLAMADAS = 40;
-
-const Hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
-const Numero = z.number().finite();
-const Vec = z.object({ x: Numero, y: Numero, z: Numero });
-
-const ColocacionSchema: z.ZodType<Colocacion> = z.discriminatedUnion("en", [
-  z.object({ en: z.literal("piso"), xCm: Numero, zCm: Numero, giroGrados: Numero }),
-  z.object({ en: z.literal("pared"), pared: z.enum(["fondo", "izquierda", "derecha"]), aLoLargoCm: Numero, alturaCm: Numero }),
-  z.object({ en: z.literal("techo"), xCm: Numero, zCm: Numero, cuelgaCm: Numero, giroGrados: Numero, volteada: z.boolean() }),
-  z.object({ en: z.literal("ancla"), padreId: z.string().min(1).max(80), ancla: Numero, cada: Numero, giroGrados: Numero, omitir: z.array(Numero).max(400).optional() }),
-  z.object({ en: z.literal("libre"), xCm: Numero, yCm: Numero, zCm: Numero, giroGrados: Numero }),
-  z.object({ en: z.literal("sobre"), padreId: z.string().min(1).max(80), puntoCm: Vec, normal: Vec, giroGrados: Numero }),
-]);
-
-/**
- * La pieza la arma el taller (que ya valida sus datos al armar): aquí basta con que sea un objeto de un tipo conocido.
- * Todos los tipos: una escena con formas, letras, metalizados, murales, techo o árboles (las de la biblioteca) también vale.
- */
-const PiezaSchema = z.custom<Pieza>((v) => typeof v === "object" && v !== null && (TIPOS_PIEZA as readonly unknown[]).includes((v as { tipo?: unknown }).tipo), "Pieza desconocida");
-
-const EscenaSchema: z.ZodType<Escena> = z.object({
-  sala: z.object({
-    anchoCm: Numero.min(100).max(3000), fondoCm: Numero.min(100).max(3000), altoCm: Numero.min(100).max(1500),
-    tonos: z.object({ piso: Hex, paredes: Hex, techo: Hex }),
-    mostrar: z.object({ piso: z.boolean(), fondo: z.boolean(), laterales: z.boolean(), techo: z.boolean() }),
-  }),
-  nodos: z.array(z.object({ id: z.string().min(1).max(80), nombre: z.string().max(120), pieza: PiezaSchema, colocacion: ColocacionSchema })).max(MAX_NODOS),
-});
 
 const CuerpoSchema = z.object({
   escena: EscenaSchema,

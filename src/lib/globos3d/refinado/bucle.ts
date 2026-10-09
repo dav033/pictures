@@ -1,8 +1,8 @@
-import type { Escena } from "./escena";
-import { construirCuerpoRefinar, type FotoAdjuntaIA } from "./cuerpo-escena-ia";
-import { MAX_RONDAS_REFINAR, type ResultadoRonda } from "./refinado-ronda";
-import type { Encuadre } from "./encuadre-foto";
-import type { Rechazo, Veredicto } from "./aceptacion-refinado";
+import type { Escena } from "../escena";
+import { construirCuerpoRefinar, type FotoAdjuntaIA } from "../cuerpo-escena-ia";
+import { MAX_RONDAS_REFINAR, type ResultadoRonda } from "./ronda";
+import type { Encuadre } from "../encuadre-foto";
+import { MENSAJE_RECHAZO, type MotivoRechazo, type Veredicto } from "./motivos";
 
 /**
  * El bucle de refinado del navegador (REQ-001 paso 9): después de armar la escena desde una foto, hasta
@@ -10,8 +10,9 @@ import type { Rechazo, Veredicto } from "./aceptacion-refinado";
  * pedido se inyectan (las pruebas no tocan ni el visor ni la IA). Cada ronda entrega su escena anterior para el deshacer;
  * el usuario detiene el bucle con la señal (`signal`) y se detiene también cuando el servidor dice que ya no hace falta
  * otra ronda, cuando una ronda falla o cuando no llegó la lectura de la foto. Una ronda con cambios solo se aplica si pasa el
- * criterio de aceptación (`evaluar`, ver `aceptacion-ronda.ts`): si no mejora la escena, se descarta sin tocar la escena ni
- * el deshacer y el bucle termina con `rechazada`.
+ * criterio de aceptación (`evaluar`, ver `evaluador.ts`; la decisión la toma el servidor): si no mejora la escena, se descarta sin
+ * tocar la escena ni el deshacer y el bucle termina con `rechazada`. El pedido real va en
+ * `components/tres-d/refinado-http.ts`.
  */
 
 export type AccionRefinado = { herramienta: string; resumen: string; consulta: boolean };
@@ -40,16 +41,17 @@ export type EntradaRefinado = {
   encuadre: Encuadre | null;
 };
 
-/** Lo que necesita el criterio de aceptación para juzgar una ronda con cambios (ver `aceptacion-ronda.ts`). */
+/** Lo que necesita el criterio de aceptación para juzgar una ronda con cambios (ver `evaluador.ts`). */
 export type ContextoEvaluacion = {
+  ronda: number;
   antes: Escena;
   despues: Escena;
   /** La captura de la escena de antes, ya tomada para pedir la ronda. */
   capturaAntes: FotoAdjuntaIA;
   foto: FotoAdjuntaIA;
+  /** La lectura de la foto tal como la devolvió el servidor (opaca para el navegador; el servidor la valida y decide con ella). */
+  lectura: unknown;
   encuadre: Encuadre;
-  /** La ronda reportó piezas sobrantes: bajar el total de globos es lo que se pidió. */
-  permiteReducir: boolean;
   signal: AbortSignal;
 };
 
@@ -60,7 +62,7 @@ export type DependenciasRefinado = {
   /** Antes de cada ronda (la barra muestra «Comparando con la foto… ronda 1/2»). */
   alProgreso?: (p: { ronda: number; total: number; fase?: "comparando" | "revisando" }) => void;
   /**
-   * El criterio de aceptación (P-016): decide si la ronda mejoró la escena. Sin él se aceptan todas las rondas (la
+   * El criterio de aceptación (P-016): decide si la ronda mejoró la escena (el servidor lo decide y lo registra). Sin él se aceptan todas las rondas (la
    * evaluación sin cabeza y las pruebas); en el taller siempre va. Una ronda rechazada no se aplica: la escena
    * anterior sigue y el deshacer no recibe nada.
    */
@@ -71,35 +73,49 @@ export type DependenciasRefinado = {
   maxRondas?: number;
 };
 
-export type ResultadoRefinado = { rondas: RondaHecha[]; escena: Escena; motivo: MotivoFinRefinado; error?: string; rechazo?: Rechazo };
+/** El veredicto del servidor sobre una ronda, con la ronda a la que corresponde (rechazada o no). */
+export type EvaluacionRonda = { ronda: number; veredicto: Veredicto };
+
+export type ResultadoRefinado = {
+  rondas: RondaHecha[];
+  escena: Escena;
+  motivo: MotivoFinRefinado;
+  error?: string;
+  /** Por qué se descartó la ronda cuando `motivo` es `rechazada`; `resumenDeRefinado` lo convierte en una frase. */
+  rechazo?: MotivoRechazo;
+  /** Los veredictos de cada ronda evaluada, con el parecido medido y lo que costó (lo leen las evaluaciones pagadas). */
+  evaluaciones: EvaluacionRonda[];
+};
 
 /** Corre las rondas. Nunca lanza: lo que sale mal queda en `motivo` (y `error`) con lo hecho hasta ahí. */
 export async function refinarConFoto(entrada: EntradaRefinado, deps: DependenciasRefinado): Promise<ResultadoRefinado> {
   const total = Math.min(deps.maxRondas ?? MAX_RONDAS_REFINAR, MAX_RONDAS_REFINAR);
   const rondas: RondaHecha[] = [];
+  const evaluaciones: EvaluacionRonda[] = [];
   let actual = entrada.escena;
-  if (!entrada.encuadre || !entrada.lectura) return { rondas, escena: actual, motivo: "sin_lectura" };
+  const fin = (motivo: MotivoFinRefinado, extra: { error?: string; rechazo?: MotivoRechazo } = {}): ResultadoRefinado => ({ rondas, escena: actual, motivo, evaluaciones, ...extra });
+  if (!entrada.encuadre || !entrada.lectura) return fin("sin_lectura");
   for (let ronda = 1; ronda <= total; ronda++) {
-    if (deps.signal.aborted) return { rondas, escena: actual, motivo: "detenido" };
+    if (deps.signal.aborted) return fin("detenido");
     deps.alProgreso?.({ ronda, total });
     let captura: FotoAdjuntaIA;
     try {
       captura = await deps.capturar(actual, entrada.encuadre);
     } catch (e) {
-      return { rondas, escena: actual, motivo: "error", error: e instanceof Error ? e.message : "No se pudo capturar la escena." };
+      return fin("error", { error: e instanceof Error ? e.message : "No se pudo capturar la escena." });
     }
-    if (deps.signal.aborted) return { rondas, escena: actual, motivo: "detenido" };
+    if (deps.signal.aborted) return fin("detenido");
     const r = await deps.pedir(construirCuerpoRefinar({ escena: actual, ronda, foto: entrada.foto, captura, lectura: entrada.lectura }), deps.signal);
     // Una ronda que llega después de detener no se aplica.
-    if (deps.signal.aborted) return { rondas, escena: actual, motivo: "detenido" };
-    if (!r.ok) return { rondas, escena: actual, motivo: "error", error: r.error };
+    if (deps.signal.aborted) return fin("detenido");
+    if (!r.ok) return fin("error", { error: r.error });
     const cambios = r.datos.acciones.filter((a) => !a.consulta);
     if (cambios.length > 0 && deps.evaluar) {
       deps.alProgreso?.({ ronda, total, fase: "revisando" });
-      const permiteReducir = r.datos.refinar.diferencias.some((d) => d.aspecto === "piezas_sobrantes" && d.significativa);
-      const veredicto = await deps.evaluar({ antes: actual, despues: r.datos.escena, capturaAntes: captura, foto: entrada.foto, encuadre: entrada.encuadre, permiteReducir, signal: deps.signal });
-      if (deps.signal.aborted) return { rondas, escena: actual, motivo: "detenido" };
-      if (!veredicto.aceptada) return { rondas, escena: actual, motivo: "rechazada", rechazo: veredicto.rechazo };
+      const veredicto = await deps.evaluar({ ronda, antes: actual, despues: r.datos.escena, capturaAntes: captura, foto: entrada.foto, lectura: entrada.lectura, encuadre: entrada.encuadre, signal: deps.signal });
+      if (deps.signal.aborted) return fin("detenido");
+      evaluaciones.push({ ronda, veredicto });
+      if (!veredicto.aceptada) return fin("rechazada", { rechazo: veredicto.motivo ?? "sin_comparacion" });
     }
     if (cambios.length > 0) {
       const hecha: RondaHecha = { ronda, antes: actual, escena: r.datos.escena, respuesta: r.datos.respuesta, cambios, resultado: r.datos.refinar };
@@ -107,9 +123,9 @@ export async function refinarConFoto(entrada: EntradaRefinado, deps: Dependencia
       actual = r.datos.escena;
       deps.alRonda?.(hecha);
     }
-    if (r.datos.refinar.terminar) return { rondas, escena: actual, motivo: r.datos.refinar.motivo === "continua" ? "ultima_ronda" : r.datos.refinar.motivo };
+    if (r.datos.refinar.terminar) return fin(r.datos.refinar.motivo === "continua" ? "ultima_ronda" : r.datos.refinar.motivo);
   }
-  return { rondas, escena: actual, motivo: "ultima_ronda" };
+  return fin("ultima_ronda");
 }
 
 /** Una línea para el usuario de cómo terminó el refinado. */
@@ -121,25 +137,7 @@ export function resumenDeRefinado(r: ResultadoRefinado): string {
     case "ultima_ronda": return `Comparé con la foto y corregí en ${hechas} ronda${hechas === 1 ? "" : "s"} (el máximo). Puedes pedir más ajustes.`;
     case "detenido": return hechas ? `Detuve la comparación con la foto tras ${hechas} ronda${hechas > 1 ? "s" : ""}.` : "Detuve la comparación con la foto.";
     case "error": return `${hechas ? `Corregí ${hechas} ronda${hechas > 1 ? "s" : ""}, pero ` : ""}no pude seguir comparando con la foto${r.error ? `: ${r.error}` : "."}`;
-    case "rechazada": return `La comparación no mejoró; dejé la versión anterior${r.rechazo?.detalle ? ` (${r.rechazo.detalle})` : ""}.`;
+    case "rechazada": return MENSAJE_RECHAZO[r.rechazo ?? "no_mejora"];
     case "sin_lectura": return "";
-  }
-}
-
-const esRespuestaRonda = (v: unknown): v is RespuestaRonda =>
-  typeof v === "object" && v !== null && "escena" in v && typeof (v as { respuesta?: unknown }).respuesta === "string" && Array.isArray((v as { acciones?: unknown }).acciones)
-  && typeof (v as { refinar?: unknown }).refinar === "object" && (v as { refinar?: unknown }).refinar !== null;
-
-/** El pedido real de una ronda: `fetch` a `/api/escena-ia` con las cabeceras de la conversación (`origen` solo fuera del navegador, como la evaluación). */
-export async function pedirRondaHttp(cuerpo: Record<string, unknown>, signal: AbortSignal, cabeceras: Record<string, string>, origen = ""): Promise<{ ok: true; datos: RespuestaRonda } | { ok: false; error: string }> {
-  try {
-    const r = await fetch(`${origen}/api/escena-ia`, { method: "POST", headers: { "Content-Type": "application/json", ...cabeceras }, body: JSON.stringify(cuerpo), signal });
-    const datos: unknown = await r.json().catch(() => null);
-    if (r.ok && esRespuestaRonda(datos)) return { ok: true, datos };
-    // Una ronda a medias (la IA se cortó) vuelve con la escena pero sin decisión: no se sigue.
-    if (r.ok && typeof datos === "object" && datos !== null && "escena" in datos) return { ok: false, error: "La IA se cortó a mitad de la comparación." };
-    return { ok: false, error: typeof datos === "object" && datos !== null && "error" in datos && typeof datos.error === "string" ? datos.error : "No pude comparar con la foto ahora." };
-  } catch (e) {
-    return { ok: false, error: e instanceof DOMException && e.name === "AbortError" ? "Detenido." : "No pude comparar con la foto: revisa la conexión." };
   }
 }
