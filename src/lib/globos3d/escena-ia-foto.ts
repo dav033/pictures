@@ -69,8 +69,8 @@ export async function prepararFotoAdjunta(foto: FotoCuerpo, escena: Escena, deps
   const aplicada = armada !== null;
   const resumenAccion = aplicada ? `Armé en la escena lo que leí de la foto: ${piezasEnTexto(armada.nodos.length)}${modelado.omitidas.length ? `; ${modelado.omitidas.length} cosas de la foto no son del taller y no se armaron` : ""}.` : null;
   const estado = aplicada
-    ? `YA SE ARMÓ en la escena (${armada.nodos.map((n) => n.id).join(", ")}). Compárala con la foto y corrige solo diferencias claras.`
-    : "NO se aplicó todavía (la sala ya tiene piezas): llama modelar_desde_foto con el modo que pida el usuario.";
+    ? `YA SE ARMÓ en la escena (${armada.nodos.map((n) => n.id).join(", ")}). Ya está contra la pared del fondo, a la altura que tiene en la foto: NO la muevas ni cambies su altura aunque el pedido diga «en la pared del fondo».`
+    : "NO se aplicó todavía (la sala ya tiene piezas): llama modelar_desde_foto con el modo que pida el usuario. Las piezas quedan contra la pared del fondo, a la altura de la foto.";
   return {
     ok: true, modelado, imagen: { inlineData: { mimeType: "image/jpeg", data: Buffer.from(normalizada).toString("base64") } },
     escena: armada ?? escena, aplicada, texto: resumenParaAgente(modelado, estado), resumenAccion,
@@ -89,6 +89,7 @@ export function aplicarModeladoDeFoto(escena: Escena, foto: FotoPreparada | null
 
 export const REGLAS_FOTO = `FOTO ADJUNTA: el mensaje trae una foto de una decoración y su lectura (piezas, colores, medidas, posiciones) ya calculada por un lector de visión; tú también ves la foto.
 - Si el Estado dice «YA SE ARMÓ», la escena ya tiene lo leído. Después de tu respuesta el taller captura la escena 3D con la cámara de la foto y te la devuelve junto a la foto para comparar y corregir en hasta 2 rondas automáticas (tamaños, silueta, grosor, colores): aquí NO afines de memoria. Míralo con ver_escena y corrige solo lo que la lectura dice claramente distinto de la foto (un color o una pieza que no coincide); si se ve bien, no cambies nada. Responde corto.
-- Si dice «NO se aplicó», llama modelar_desde_foto una vez: modo «reemplazar» si piden hacerla o rehacerla como la foto, «sumar» si piden agregarla a lo que hay; si dudas, «sumar».
+- Si dice «NO se aplicó», tu PRIMER paso es llamar modelar_desde_foto una vez: modo «reemplazar» si piden hacerla o rehacerla como la foto («arma esta decoración», «hazla como la foto»), «sumar» si piden agregarla a lo que hay; si dudas, «sumar». NUNCA armes tú la decoración de la foto con agregar_pieza: ya está calculada con sus medidas y su altura.
+- Dónde va: lo leído de la foto ya queda contra la pared del fondo, a la altura que tiene en la foto (una guirnalda de arriba, arriba). «En la pared del fondo» ya está cumplido: NO muevas ni bajes las piezas de la foto a menos que el usuario pida una altura o un lugar distintos con palabras claras.
 - NUNCA agregues piezas que no se ven en la foto. Lo que figura en «No se arman» (torta, letreros de luz, muebles…) no se hace: dilo en la respuesta.
 - Si una plantilla de la biblioteca tiene parecido alto (0,9 o más), menciónala por su nombre y ofrécela; no la insertes sin que la pidan.`;

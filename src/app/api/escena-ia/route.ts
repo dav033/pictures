@@ -1,4 +1,4 @@
-import { ThinkingLevel, type Content, type Part } from "@google/genai";
+import { FunctionCallingConfigMode, ThinkingLevel, type Content, type Part } from "@google/genai";
 import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { conRegistro, decidir } from "@/lib/registro/servidor";
@@ -163,6 +163,8 @@ async function atenderPOST(request: Request) {
   ];
   const declaraciones = refinar ? declaracionesDeRefinado(DECLARACIONES_ESCENA)
     : adjunta ? DECLARACIONES_ESCENA : DECLARACIONES_ESCENA.filter((d) => d.name !== MODELAR_DESDE_FOTO);
+  // Con foto y la sala ya con piezas, el primer paso del modelo TIENE que ser aplicar la foto (o preguntar): si no, armaba la decoración por su cuenta con agregar_pieza y quedaba abajo de la pared.
+  const forzarFoto = Boolean(adjunta && !adjunta.aplicada);
   const maxPasos = refinar ? MAX_PASOS_REFINAR : MAX_PASOS;
   const reglasExtra = adjunta ? `\n\n${REGLAS_FOTO}` : refinar ? `\n\n${reglasDeRonda(refinar.ronda)}` : "";
   if (seleccion) decidir("regla:escena_ia_seleccion", "pieza elegida en el editor que viaja con el pedido", { seleccion, valida: seleccionValida(inicial, seleccion) });
@@ -176,7 +178,7 @@ async function atenderPOST(request: Request) {
       const r = await cliente.models.generateContent({
         model: MODELO_CHAT,
         contents,
-        config: { systemInstruction: `${SISTEMA}\n\n${REGLAS_AGENTE}${reglasExtra}`, tools: [{ functionDeclarations: [...declaraciones] }], thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, abortSignal: request.signal },
+        config: { systemInstruction: `${SISTEMA}\n\n${REGLAS_AGENTE}${reglasExtra}`, tools: [{ functionDeclarations: [...declaraciones] }], ...(forzarFoto && pasos === 0 ? { toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.ANY, allowedFunctionNames: [MODELAR_DESDE_FOTO, PREGUNTAR_USUARIO] } } } : {}), thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, abortSignal: request.signal },
       });
       tokens.entrada += r.usageMetadata?.promptTokenCount ?? 0;
       tokens.salida += r.usageMetadata?.candidatesTokenCount ?? 0;

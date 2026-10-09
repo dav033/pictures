@@ -104,7 +104,7 @@ export function AsistenteEscena({ escena, onEscena, compacta = false, seleccion 
     },
     alTerminar: (r) => {
       setRespuesta((anterior) => [anterior, resumenDeRefinado(r)].filter(Boolean).join(" "));
-      if (r.motivo === "error") setError(null);
+      if (r.motivo === "error") setError(r.error ? `No pude comparar con la foto: ${r.error}` : "No pude comparar con la foto.");
       setVueltas((v) => v + 1);
     },
   });

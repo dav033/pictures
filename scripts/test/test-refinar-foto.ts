@@ -114,6 +114,29 @@ await prueba("un foil de la foto va por delante de la pared (no tapado por los g
   if (foil.colocacion.en === "libre") assert.ok(foil.colocacion.zCm > -250 + 40, "delante de la pared del fondo");
 });
 
+/** Una lectura como la que devuelve Gemini de la foto 07 (sin piso a la vista), de una corrida real. */
+const LECTURA_GEMINI_07: LecturaFoto = {
+  resumen: "Guirnalda orgánica verde y durazno en arco sobre la pared, con monstera y un «love» de foil.", aspecto: 1, escala: { altoImagenCm: 220, referencia: "carrito de servicio de 80 cm" }, pisoY: null, sala: { pared: "#efeeea", piso: "#d8d4cc" },
+  piezas: [
+    { tipo: "guirnalda_organica", puntos: [{ x: 0.11, y: 0.31, grosor: 0.28 }, { x: 0.28, y: 0.22, grosor: 0.3 }, { x: 0.52, y: 0.25, grosor: 0.24 }, { x: 0.75, y: 0.32, grosor: 0.28 }, { x: 0.9, y: 0.55, grosor: 0.32 }], tamanos: {}, mezcla: { grandes: 35, medianos: 40, chicos: 25, diametroGrande: 0.22, diametroMediano: 0.14, diametroChico: 0.06 }, racimos: 0.5, follaje: ["monstera"], colores: [{ nombre: "verde esmeralda", hex: "#0f5a38", peso: 50, acabado: "brillante" }, { nombre: "durazno", hex: "#f1d3b3", peso: 50, acabado: "mate" }] },
+    { tipo: "metalizado", texto: "love", cursiva: true, x: 0.46, y: 0.51, alto: 0.28, colores: [{ nombre: "oro rosa", hex: "#e09d73", peso: 100, acabado: "cromado" }] },
+    { tipo: "otro", descripcion: "carrito dorado con botella y piñas" },
+  ],
+};
+await prueba("regresión: una guirnalda de la foto queda ARRIBA en la pared (a su altura de la foto), con la lectura a mano y con una de Gemini sin piso", () => {
+  for (const [nombre, lectura] of [["a mano 07", LECTURA_7], ["Gemini 07 sin pisoY", LECTURA_GEMINI_07]] as const) {
+    const c = compilarLectura(lectura);
+    const guirnaldaNodo = c.escena.nodos.find((n) => n.pieza.tipo === "organico")!;
+    assert.equal(guirnaldaNodo.colocacion.en, "pared", nombre);
+    const alturaCm = guirnaldaNodo.colocacion.en === "pared" ? guirnaldaNodo.colocacion.alturaCm : -1;
+    assert.ok(alturaCm >= 50, `${nombre}: la guirnalda no queda en el piso de la pared (alturaCm ${alturaCm})`);
+    const caja = armarEscena(c.escena).porNodo.find((n) => n.id === guirnaldaNodo.id)!.caja;
+    assert.ok((caja.min.y + caja.max.y) / 2 > c.escena.sala.altoCm / 2, `${nombre}: el centro de la guirnalda en la mitad de arriba (${Math.round((caja.min.y + caja.max.y) / 2)} de ${c.escena.sala.altoCm})`);
+    const foil = c.escena.nodos.find((n) => n.pieza.tipo === "metalizado")!;
+    assert.ok(foil.colocacion.en === "libre" && foil.colocacion.yCm >= 60, `${nombre}: el foil cuelga a media pared`);
+  }
+});
+
 console.log("Encuadre y cámara");
 await prueba("el encuadre de la lectura: escala, proporción y altura del centro de la imagen sobre el piso", () => {
   assert.deepEqual(encuadreDeLectura(LECTURA_7), { aspecto: 0.97, altoCm: 260, centroYCm: 143 });
@@ -393,6 +416,33 @@ try {
     assert.equal((await pedirRuta(cuerpoRuta({ refinar: { ...cuerpoValido, ronda: 3 } }))).status, 400);
     assert.equal((await pedirRuta(cuerpoRuta({ refinar: { ...cuerpoValido, captura: { mime: "image/jpeg", base64: Buffer.from("no soy una imagen ".repeat(10)).toString("base64") } } }))).status, 400);
     assert.equal(peticiones.length, 0);
+  });
+  await prueba("con la sala ya con piezas, el primer paso del modelo es aplicar la foto (no armarla él con agregar_pieza) y lo leído queda arriba; la respuesta permite comparar", async () => {
+    reiniciarCupoEscenaIA();
+    const peticiones = modeloDeMentira([], (p) => {
+      if (p.generationConfig?.responseJsonSchema !== undefined) return [{ text: JSON.stringify(LECTURA_GEMINI_07) }];
+      const yaLlamo = p.contents.some((c) => c.parts.some((x) => x.functionResponse));
+      return yaLlamo ? [{ text: "Listo, armé la foto." }] : [{ functionCall: { name: "modelar_desde_foto", args: { modo: "reemplazar" } } }];
+    });
+    const r = await pedirRuta({ escena: escena7, mensaje: "arma esta decoración de la foto en la pared del fondo", historial: [], seleccion: null, foto: { mime: "image/jpeg", base64: b64 } });
+    assert.equal(r.status, 200);
+    const datos = await r.json() as { escena: Escena; foto: { aplicada: boolean; lectura: LecturaFoto; encuadre: { aspecto: number } } };
+    const delModelo = peticiones.filter((p) => p.generationConfig?.responseJsonSchema === undefined);
+    const forzada = (delModelo[0] as unknown as { toolConfig?: { functionCallingConfig?: { mode?: string; allowedFunctionNames?: string[] } } }).toolConfig?.functionCallingConfig;
+    assert.equal(forzada?.mode, "ANY");
+    assert.deepEqual(forzada?.allowedFunctionNames, ["modelar_desde_foto", "preguntar_usuario"]);
+    assert.equal((delModelo[1] as unknown as { toolConfig?: unknown }).toolConfig, undefined, "solo el primer paso es forzado");
+    assert.ok(sistemaDe(delModelo[0]!).includes("NUNCA armes tú la decoración") && sistemaDe(delModelo[0]!).includes("NO muevas"));
+    assert.equal(datos.foto.aplicada, true, "la barra puede arrancar la comparación");
+    assert.equal(datos.foto.lectura.pisoY, null);
+    const organica = datos.escena.nodos.find((n) => n.pieza.tipo === "organico")!;
+    assert.ok(organica.colocacion.en === "pared" && organica.colocacion.alturaCm >= 50, "arriba en la pared");
+  });
+  await prueba("con la sala vacía no se fuerza nada (ya se armó sola) y la respuesta permite comparar", async () => {
+    reiniciarCupoEscenaIA();
+    const peticiones = modeloDeMentira([], (p) => [{ text: p.generationConfig?.responseJsonSchema !== undefined ? JSON.stringify(LECTURA_7) : "Listo." }]);
+    await pedirRuta({ escena: { sala: escena7.sala, nodos: [] }, mensaje: "como la foto", historial: [], seleccion: null, foto: { mime: "image/jpeg", base64: b64 } });
+    assert.ok(peticiones.every((p) => (p as unknown as { toolConfig?: unknown }).toolConfig === undefined));
   });
   await prueba("armar desde la foto devuelve la lectura y el encuadre para comparar después (y que se armó)", async () => {
     reiniciarCupoEscenaIA();

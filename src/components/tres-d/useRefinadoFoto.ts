@@ -41,6 +41,9 @@ export function useRefinadoFoto(oyentes: { alRonda: (r: RondaHecha) => void; alT
         maxRondas: RONDAS_AUTOMATICAS,
       });
       if (resultado.motivo !== "sin_lectura") oyentesRef.current.alTerminar(resultado);
+    } catch (e) {
+      // Lo que falle fuera del bucle (cargar la captura, por ejemplo) también se le dice al usuario.
+      oyentesRef.current.alTerminar({ rondas: [], escena: entrada.escena, motivo: "error", error: e instanceof Error ? e.message : "no se pudo preparar la captura" });
     } finally {
       control.current = null;
       setRefinando(null);
