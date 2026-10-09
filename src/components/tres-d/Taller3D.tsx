@@ -839,6 +839,14 @@ export function Taller3D() {
           </>
         )}
       </div>
+      {/* Acceso directo y con texto al render con IA (en escritorio vive en la barra superior). */}
+      <div className="pointer-events-none absolute inset-x-3 z-20 flex justify-center" style={{ top: "calc(max(12px, env(safe-area-inset-top)) + 52px)" }}>
+        <button type="button" onClick={() => setDialogo("imagen")} disabled={!listo}
+          title={solitario.activo ? "Foto realista con IA de esta pieza sola" : "Foto realista con IA de la escena"}
+          className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full border border-taller-primario bg-taller-primario px-5 text-sm font-semibold text-taller-sobre-primario shadow-[0_8px_24px_var(--sombra)] disabled:cursor-not-allowed disabled:opacity-45">
+          <WandSparkles className="size-5" aria-hidden />Generar render con IA
+        </button>
+      </div>
       {renombrando && !esAncho && (
         <div className="absolute inset-x-3 top-16 z-30">
           <input autoFocus defaultValue={nombreEscena} aria-label="Nombre de la escena" maxLength={120}
