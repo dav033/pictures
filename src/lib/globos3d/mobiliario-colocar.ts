@@ -1,5 +1,7 @@
 import { armarEscena, type Colocacion, type Escena } from "./escena";
 import { muebleDe } from "./mobiliario-catalogo";
+import { esGrupoDeSillas, mesaDePieza } from "./mobiliario-conjunto";
+import { superficieSuperior } from "./mobiliario-superficie";
 import { retiroDe, type FondoCatalogo } from "./mobiliario-tipos";
 
 /**
@@ -21,7 +23,8 @@ export function esquivarEnElPiso(escena: Escena, x: number, z: number, anchoCm: 
   const armada = armarEscena(escena);
   const ocupadas = escena.nodos.flatMap((n) => {
     const hecho = armada.porNodo.find((h) => h.id === n.id);
-    return n.colocacion.en === "piso" && hecho && hecho.copias > 0 ? [hecho.caja] : [];
+    // Las sillas de una mesa (un grupo `sobre` ella) también ocupan el piso.
+    return (n.colocacion.en === "piso" || (n.colocacion.en === "sobre" && esGrupoDeSillas(n.pieza))) && hecho && hecho.copias > 0 ? [hecho.caja] : [];
   });
   const libre = (cx: number) => !ocupadas.some((c) => cx + anchoCm / 2 + AIRE_CM > c.min.x && cx - anchoCm / 2 - AIRE_CM < c.max.x && z + fondoCm / 2 + AIRE_CM > c.min.z && z - fondoCm / 2 - AIRE_CM < c.max.z);
   const limite = Math.max(0, escena.sala.anchoCm / 2 - anchoCm / 2);
@@ -39,6 +42,12 @@ export function esquivarEnElPiso(escena: Escena, x: number, z: number, anchoCm: 
 export function mesaParaApoyar(escena: Escena): { x: number; y: number; z: number } | null {
   const armada = armarEscena(escena);
   for (const nodo of [...escena.nodos].reverse()) {
+    // Una mesa paramétrica da el centro útil de su tapa (en una media luna o una U no es el centro de su caja).
+    const param = mesaDePieza(nodo.pieza);
+    if (param && param.tipo !== "coctel" && nodo.colocacion.en === "piso") {
+      const s = superficieSuperior(nodo, armada);
+      if (s) return { x: Math.round(s.centro.x), y: Math.round(s.altoCm), z: Math.round(s.centro.z) };
+    }
     const id = nodo.pieza.tipo === "escenografia" ? nodo.pieza.mueble?.id : undefined;
     const m = id ? muebleDe(id) : undefined;
     const esMesa = (m?.grupo === "mesa" && !/_sillas$|^mesa_coctel|^mesa_centro|^carrito|^mesa_hex|^mesas_nido/.test(m.id)) || id === "mesa_mantel";

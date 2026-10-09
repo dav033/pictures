@@ -119,7 +119,7 @@ export const esDeEstaEscena = (t: Pick<TurnoPanel, "clave" | "ambito">, clave: s
 const NOMBRE_HERRAMIENTA: Readonly<Record<string, string>> = {
   ver_escena: "Miró la escena", ver_pieza: "Miró una pieza", buscar_en_escena: "Buscó en la escena", listar_colores: "Miró los colores", contar_globos: "Contó globos",
   seleccionar_grupo: "Eligió un grupo de piezas", usar_preset: "Partió de una escena armada", agregar_pieza: "Agregó una pieza", agregar_del_catalogo: "Agregó del catálogo",
-  agregar_mobiliario: "Agregó mobiliario", mover_pieza: "Movió una pieza", girar_pieza: "Giró una pieza", cambiar_pieza: "Cambió una pieza", quitar_pieza: "Quitó una pieza",
+  agregar_mobiliario: "Agregó mobiliario", agregar_mesas: "Agregó mesas con sillas", cambiar_sillas: "Cambió las sillas", cambiar_mesas: "Cambió las mesas", mover_pieza: "Movió una pieza", girar_pieza: "Giró una pieza", cambiar_pieza: "Cambió una pieza", quitar_pieza: "Quitó una pieza",
   duplicar_pieza: "Copió una pieza", reemplazar_pieza: "Reemplazó una pieza", cambiar_sala: "Cambió la sala", poner_sobre: "Colgó una decoración", mover_sobre: "Movió una decoración",
   separar_copia: "Separó una copia", recolorear_escena: "Cambió colores", ajustar_tamanos: "Ajustó tamaños de globos", editar_globos: "Cambió globos por formato o color",
   buscar_en_biblioteca: "Buscó en la biblioteca", insertar_de_biblioteca: "Puso una idea de la biblioteca", alinear: "Alineó piezas", distribuir: "Repartió piezas",

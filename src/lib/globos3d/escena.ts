@@ -14,6 +14,8 @@ import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
 import { fraseDeEscenografia, propsEnIngles } from "./escenografia-ingles";
 import { avisoDeEscenografia } from "./mobiliario-pieza";
+import { esGrupoDeSillas, unidadesDeEscenografia } from "./mobiliario-conjunto";
+import { MAX_NODOS } from "./limites-escena";
 import { PREFIJO_SALA, PREFIJO_UTILERIA, colorDeGloboEnIngles, coloresEnIngles, enLista, tonoEnIngles } from "./render-ia";
 import { contornoEnIngles, huecosEnIngles } from "./silueta-ia";
 import { referenciaPorCodigo } from "../plan/referencia-sempertex";
@@ -403,7 +405,8 @@ function crearArmador(escena: Escena, cache?: Map<string, PiezaArmada>, sembrado
           const marcoPadre = delPadre.puestas[0]?.marco;
           if (!marcoPadre) resultado = vacio(nodo, `«${padre.nombre}» no quedó puesta: «${nodo.nombre}» no tiene dónde apoyarse.`);
           else {
-            const marco = marcoSobre(armada, c, marcoPadre, cuerposDe(delPadre));
+            // Las sillas de una mesa paramétrica van en el marco de la mesa (sus puestos ya están en él): no se apoyan en globos.
+            const marco = esGrupoDeSillas(nodo.pieza) ? marcoPadre : marcoSobre(armada, c, marcoPadre, cuerposDe(delPadre));
             const puesta = aplicar(armada, marco);
             resultado = { id: nodo.id, nombre: nodo.nombre, copias: 1, ...puesta, materiales: sumarMateriales(armada.materiales), avisos: [], puestas: [{ caja: puesta.caja, marco, ancla: null }] };
           }
@@ -481,6 +484,11 @@ export function idNuevo(escena: Escena, base: string): string {
 export function duplicarNodo(escena: Escena, id: string): Escena {
   const original = escena.nodos.find((n) => n.id === id);
   if (!original) return escena;
+  // Unas sillas de mesa no se duplican solas (quedarían dos grupos en la misma mesa): se duplica su mesa, que se lleva las sillas.
+  if (esGrupoDeSillas(original.pieza) && original.colocacion.en === "sobre") {
+    const padre = escena.nodos.find((n) => n.id === (original.colocacion as { padreId: string }).padreId);
+    return padre && padre.id !== original.id && !esGrupoDeSillas(padre.pieza) ? duplicarNodo(escena, padre.id) : escena;
+  }
   const c = original.colocacion;
   const corrida: Colocacion = c.en === "piso" ? { ...c, xCm: c.xCm + 60 }
     : c.en === "pared" ? { ...c, aLoLargoCm: c.aLoLargoCm + 60 }
@@ -491,12 +499,23 @@ export function duplicarNodo(escena: Escena, id: string): Escena {
             : { ...c, ancla: c.ancla + 1 };
   const copia: NodoEscena = { id: idNuevo(escena, original.id.replace(/-\d+$/, "")), nombre: `${original.nombre} (copia)`, pieza: structuredClone(original.pieza), colocacion: corrida };
   const indice = escena.nodos.indexOf(original);
-  return { ...escena, nodos: [...escena.nodos.slice(0, indice + 1), copia, ...escena.nodos.slice(indice + 1)] };
+  // Las sillas de una mesa paramétrica se mueven con ella: la copia de la mesa se lleva una copia de sus sillas.
+  const sillas = escena.nodos.find((n) => n.colocacion.en === "sobre" && n.colocacion.padreId === original.id && esGrupoDeSillas(n.pieza));
+  const juntas: NodoEscena[] = [copia];
+  if (sillas) {
+    const nueva = { ...escena, nodos: [...escena.nodos, copia] };
+    juntas.push({ id: idNuevo(nueva, `sillas-${copia.id}`), nombre: sillas.nombre.replace(`(${original.id})`, `(${copia.id})`), pieza: structuredClone(sillas.pieza), colocacion: { ...sillas.colocacion, padreId: copia.id } as Colocacion });
+  }
+  // Una mesa con sillas son dos piezas: si no caben las dos en el tope, no se duplica (la escena no valdría al volver del servidor).
+  if (juntas.length > 1 && escena.nodos.length + juntas.length > MAX_NODOS) return escena;
+  return { ...escena, nodos: [...escena.nodos.slice(0, indice + 1), ...juntas, ...escena.nodos.slice(indice + 1)] };
 }
 
 /** Quita un nodo; lo que colgaba de él (o iba sobre él) pasa al piso donde estaba, para no perderlo. */
 export function quitarNodo(escena: Escena, id: string, armada?: EscenaArmada): Escena {
-  const nodos = escena.nodos.filter((n) => n.id !== id).map((n): NodoEscena => {
+  // Las sillas de una mesa paramétrica son parte de ella: se van con la mesa (no pasan al piso como una decoración).
+  const suyas = (n: NodoEscena) => n.colocacion.en === "sobre" && n.colocacion.padreId === id && esGrupoDeSillas(n.pieza);
+  const nodos = escena.nodos.filter((n) => n.id !== id && !suyas(n)).map((n): NodoEscena => {
     if ((n.colocacion.en !== "ancla" && n.colocacion.en !== "sobre") || n.colocacion.padreId !== id) return n;
     const caja = armada?.porNodo.find((x) => x.id === n.id)?.caja;
     return { ...n, colocacion: { en: "piso", xCm: caja ? Math.round((caja.min.x + caja.max.x) / 2) : 0, zCm: caja ? Math.round((caja.min.z + caja.max.z) / 2) : 0, giroGrados: 0 } };
@@ -577,9 +596,11 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     if (!hecho || hecho.copias === 0) continue;
     const c = nodo.colocacion;
     if (nodo.pieza.tipo === "escenografia") {
-      escenografia += hecho.copias;
+      // Un grupo de sillas cuenta cada silla (24 sillas de 6 mesas son 24, no 6).
+      const unidades = hecho.copias * unidadesDeEscenografia(nodo.pieza);
+      escenografia += unidades;
       const en = fraseDeEscenografia(nodo.pieza);
-      if (en) escenografiaPorNombre.set(en, (escenografiaPorNombre.get(en) ?? 0) + hecho.copias);
+      if (en) escenografiaPorNombre.set(en, (escenografiaPorNombre.get(en) ?? 0) + unidades);
       continue;
     }
     const x = (hecho.caja.min.x + hecho.caja.max.x) / 2;

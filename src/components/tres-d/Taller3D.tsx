@@ -599,7 +599,7 @@ export function Taller3D() {
 
   const inspector = armadaEscena ? (
     <Inspector escena={escenaVista} armada={armadaEscena} nodo={nodoEnVivo} copia={copiaElegida?.copia ?? null}
-      onNodo={ponNodo} onSeleccion={elegir} onEditarSola={(id) => { if (solitario.activo) setSeleccion(id); else void entrarSolitario(id); }}
+      onNodo={ponNodo} onEscena={(e, agrupar) => cambiarVista(e, agrupar ? { agrupar } : undefined)} onSeleccion={elegir} onEditarSola={(id) => { if (solitario.activo) setSeleccion(id); else void entrarSolitario(id); }}
       onDuplicar={(id) => void duplicar(id)} onEliminar={(id) => void pedirEliminar(id)} confirmarEliminar={confirmarEliminar}
       onConfirmarEliminar={(con) => { const c = confirmarEliminar; if (!c || con === null) { setConfirmarEliminar(null); return; } void eliminar(c.id, con); }}
       onColgarOtra={colgarEn} onEditarSostiene={(id) => void editarSostiene(id)} paletaEscena={paleta} biblioteca={biblioteca} nombreEscena={nombreEscena}

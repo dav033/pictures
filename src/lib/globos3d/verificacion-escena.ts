@@ -1,6 +1,7 @@
 import type { Escena, NodoEscena } from "./escena";
 import { armarPieza, type PiezaArmada } from "./piezas";
 import { inventarioDe } from "./partes-globos";
+import { contarMobiliario } from "./mobiliario-conjunto-escena";
 
 /**
  * **Verificación automática** de lo que hizo la IA de escena (2026-10-08): tras cada vuelta con herramientas que
@@ -94,6 +95,9 @@ export function verificarCambios(antes: Escena, despues: Escena, max = 8): strin
   const resto = t.nuevos.length + t.cambiados.length - mostradas;
   if (resto > 0) lineas.push(`- y ${resto} piezas más tocadas.`);
   if (JSON.stringify(antes.sala) !== JSON.stringify(despues.sala)) lineas.push("- cambió la sala.");
+  // Las mesas y sillas que de verdad hay, leídas de las piezas (un grupo de sillas es una pieza con muchas sillas): nunca del nombre.
+  const ma = contarMobiliario(antes), md = contarMobiliario(despues);
+  if (ma.mesas !== md.mesas || ma.sillas !== md.sillas) lineas.push(`- mobiliario (leído de las piezas): mesas ${ma.mesas} → ${md.mesas}, sillas ${ma.sillas} → ${md.sillas}.`);
   lineas.push("En la respuesta final di estos números (antes → después), no estimaciones.");
   return lineas.join("\n");
 }

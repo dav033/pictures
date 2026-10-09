@@ -1,5 +1,6 @@
 "use client";
 
+import { esGrupoDeSillas } from "@/lib/globos3d/mobiliario-conjunto";
 import { useCallback, useEffect, useRef, type RefObject } from "react";
 import {
   armarEscena, armarNodoSuelto, descendientes, girarNodo, idNuevo, quitarNodo,
@@ -44,7 +45,7 @@ const LUGARES_VALIDOS = "una columna, un arco, un aro, una guirnalda, una pared 
 const LUGARES_SALA = "el piso, una pared o el techo (lo marcado en verde)";
 
 /** Lo colgado de un ancla o apoyado sobre otra pieza: se puede coger con el ratón y mover por la superficie. */
-const colgada = (n: NodoEscena | undefined): n is NodoEscena => n !== undefined && (n.colocacion.en === "ancla" || n.colocacion.en === "sobre");
+const colgada = (n: NodoEscena | undefined): n is NodoEscena => n !== undefined && (n.colocacion.en === "ancla" || n.colocacion.en === "sobre") && !esGrupoDeSillas(n.pieza);
 
 function escribiendo(objetivo: EventTarget | null): boolean {
   return objetivo instanceof HTMLElement && (objetivo.isContentEditable || Boolean(objetivo.closest("input, textarea, select, [contenteditable='true'], [role='menu']")));

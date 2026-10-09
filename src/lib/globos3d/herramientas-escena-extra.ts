@@ -4,6 +4,7 @@ import type { Escena } from "./escena";
 import { HERRAMIENTAS_DISPOSICION } from "./herramientas-escena-disposicion";
 import { HERRAMIENTA_FOTO, MODELAR_DESDE_FOTO } from "./herramientas-escena-foto";
 import { HERRAMIENTAS_GRUPOS, type HerramientaExtra } from "./herramientas-escena-grupos";
+import { HERRAMIENTAS_MESAS } from "./herramientas-escena-mesas";
 import { HERRAMIENTAS_MOBILIARIO } from "./herramientas-escena-mobiliario";
 import { HERRAMIENTAS_PINTAR } from "./herramientas-escena-pintar";
 import { HERRAMIENTAS_REMATE } from "./herramientas-escena-remate";
@@ -17,6 +18,7 @@ import { HERRAMIENTAS_REMATE } from "./herramientas-escena-remate";
  * - remate (herramientas-escena-remate.ts): poner_remate, el globo de arriba de las columnas;
  * - pintar (herramientas-escena-pintar.ts): pintar_en_malla, una letra o figura pintada dentro de una pared de globos;
  * - mobiliario (herramientas-escena-mobiliario.ts): agregar_mobiliario, sillas, mesas y fondos que no son globos (en fila o alrededor de una mesa);
+ * - mesas (herramientas-escena-mesas.ts): agregar_mesas, cambiar_sillas, cambiar_mesas, N mesas de cualquier tipo con M sillas cada una, desacopladas;
  * - foto (herramientas-escena-foto.ts): modelar_desde_foto, aplica la foto adjunta leída por la IA de visión (la atiende la ruta);
  * - preguntar_usuario: la ruta corta el turno y el taller muestra la pregunta con sus opciones como botones.
  */
@@ -45,7 +47,7 @@ const PREGUNTAR: HerramientaExtra = {
   },
 };
 
-export const HERRAMIENTAS_EXTRA: Readonly<Record<string, HerramientaExtra>> = { ...HERRAMIENTAS_GRUPOS, ...HERRAMIENTAS_DISPOSICION, ...HERRAMIENTAS_REMATE, ...HERRAMIENTAS_PINTAR, ...HERRAMIENTAS_MOBILIARIO, [PREGUNTAR_USUARIO]: PREGUNTAR, [MODELAR_DESDE_FOTO]: HERRAMIENTA_FOTO };
+export const HERRAMIENTAS_EXTRA: Readonly<Record<string, HerramientaExtra>> = { ...HERRAMIENTAS_GRUPOS, ...HERRAMIENTAS_DISPOSICION, ...HERRAMIENTAS_REMATE, ...HERRAMIENTAS_PINTAR, ...HERRAMIENTAS_MOBILIARIO, ...HERRAMIENTAS_MESAS, [PREGUNTAR_USUARIO]: PREGUNTAR, [MODELAR_DESDE_FOTO]: HERRAMIENTA_FOTO };
 export const NOMBRES_EXTRA = Object.keys(HERRAMIENTAS_EXTRA);
 
 /** Las declaraciones para Gemini de las herramientas extra (mismo formato que `DECLARACIONES_ESCENA`). */
