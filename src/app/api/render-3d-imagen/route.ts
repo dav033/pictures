@@ -1,13 +1,15 @@
 import { z } from "zod";
 import { conRegistro, decidir } from "@/lib/registro/servidor";
-import { generarConSempertexFlux } from "@/lib/ia/kagutsuchi/flux";
+import sharp from "sharp";
+import { generarConFluxFiel, generarConSempertexFlux } from "@/lib/ia/kagutsuchi/flux";
 import { aligerarImagenGenerada } from "@/lib/generacion/imagen-liviana";
-import { AMBIENTE_POR_DEFECTO, MAX_DESCRIPCION, promptRender3d, type AmbienteRender } from "@/lib/globos3d/render-ia";
+import { AMBIENTE_POR_DEFECTO, MAX_DESCRIPCION, STRENGTH_FIEL_MOBILIARIO, TAMANO_BASE_FIEL, promptRender3d, promptRender3dFiel, usaCaminoFiel, type AmbienteRender } from "@/lib/globos3d/render-ia";
 import { TOPE_FOTOS_POR_HORA } from "@/lib/globos3d/foto-realista";
 
 /**
  * Taller 3D → foto con IA. Recibe la captura del visor (JPEG o PNG) y una descripción corta de la decoración, y
- * devuelve una foto realista hecha con FLUX base por `/edit` (la captura es la base que se conserva). Nada se
+ * devuelve una foto realista hecha con FLUX base por `/edit` (la captura es la base que se conserva); si la escena trae mesas y sillas y el lugar
+ * es el del visor, por el camino fiel (FLUX.1 imagen-a-imagen con `strength`, que conserva mesas, disposición y cámara). Nada se
  * guarda en el servidor: la imagen vuelve al navegador. Cada llamada cuesta ~US$0,05 en fal; tope por instancia
  * de 30 imágenes por hora para que un clic repetido no dispare el gasto.
  */
@@ -38,11 +40,22 @@ async function atenderPOST(request: Request) {
 
   const partes = render.match(/^data:(image\/(?:png|jpeg));base64,([\s\S]*)$/);
   if (!partes) return Response.json({ error: "La captura no tiene formato válido." }, { status: 400 });
-  const prompt = promptRender3d(descripcion, ambiente as AmbienteRender);
-  decidir("regla:render_3d_prompt", "texto e imagen base que van a FLUX desde el taller 3D", { prompt, largo: prompt.length, ambiente, aspecto, bytesCaptura: Math.round((partes[2]!.length * 3) / 4) });
+  const fiel = usaCaminoFiel(descripcion, ambiente as AmbienteRender);
+  const prompt = fiel ? promptRender3dFiel(descripcion, ambiente as AmbienteRender) : promptRender3d(descripcion, ambiente as AmbienteRender);
+  decidir("regla:render_3d_prompt", "texto e imagen base que van a FLUX desde el taller 3D", { prompt, largo: prompt.length, ambiente, aspecto, camino: fiel ? "flux1_i2i_fiel" : "flux2_edit", ...(fiel ? { strength: STRENGTH_FIEL_MOBILIARIO } : {}), bytesCaptura: Math.round((partes[2]!.length * 3) / 4) });
 
   ventana.usadas += 1;
   try {
+    if (fiel) {
+      const { ancho, alto } = TAMANO_BASE_FIEL[aspecto];
+      const base = await sharp(Buffer.from(partes[2]!, "base64")).resize(ancho, alto, { fit: "fill" }).png().toBuffer();
+      const hecha = await generarConFluxFiel(prompt, {
+        imagen: { base64: base.toString("base64"), mime: "image/png", ancho, alto }, strength: STRENGTH_FIEL_MOBILIARIO,
+        signal: request.signal, telemetria: { superficie: "taller-3d" },
+      });
+      const liviana = await aligerarImagenGenerada(hecha);
+      return Response.json({ imagen: `data:${liviana.mime};base64,${liviana.base64}`, prompt });
+    }
     const imagen = await generarConSempertexFlux(prompt, aspecto, [], {
       loras: [],
       guidanceScale: 3.5,

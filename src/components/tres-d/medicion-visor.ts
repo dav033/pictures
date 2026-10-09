@@ -28,7 +28,7 @@ export type VisorMedible = {
   /** Cuántas mallas visibles hay de cada clase de geometría (para saber qué suma llamadas de dibujo). */
   desglose?: () => Record<string, number>;
   /** La captura para la IA (JPEG en data URL), para comparar la imagen antes y después de un cambio. */
-  capturar?: () => string;
+  capturar?: (opciones?: { escenaEntera?: boolean }) => string;
 };
 
 type Registro = {

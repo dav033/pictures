@@ -6,6 +6,7 @@ import { fallar } from "./herramientas-escena-colores";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
 import { hexDeColor } from "./mobiliario-colores";
 import { colocacionPorDefecto } from "./mobiliario-colocar";
+import { comprobarNombreMueble } from "./descripcion-mobiliario";
 import { muebleDe } from "./mobiliario-catalogo";
 import { puestosAlrededor, puestosEnFila, type Puesto } from "./mobiliario-disposicion";
 import { ACABADOS_MUEBLE, admiteRotulo, conTextoPieza, opcionesDeMueble, piezaDeEntrada, piezaDeMueble, portadorDeRotulo, type OpcionesGuardadas, type PiezaEscenografia } from "./mobiliario-pieza";
@@ -78,6 +79,10 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
   const a = MobiliarioSchema.parse(argumentos ?? {});
   const entrada = FONDOS_CATALOGO.find((f) => f.id === a.id) ?? fallar(`No hay «${a.id}» en el catálogo de mobiliario.`);
   const notas: string[] = [];
+  const veredicto = comprobarNombreMueble(entrada, a.nombre);
+  if (veredicto.tipo === "error") fallar(veredicto.error);
+  if (veredicto.tipo === "corregido") notas.push(veredicto.aviso);
+  const nombreBase = veredicto.tipo === "corregido" ? veredicto.nombre : a.nombre ?? entrada.nombre;
   const mueble = entrada.clase === "mueble" ? entrada : undefined;
   if (mueble) comprobarAcabadoPropio(mueble, a.acabado);
   if (!mueble && (a.ancho_cm || a.fondo_cm || a.alto_cm || a.colores || a.acabado)) notas.push(`«${entrada.nombre}» es un fondo de foto: va con sus medidas y colores de catálogo (el mobiliario sí cambia de medida y color).`);
@@ -102,11 +107,12 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
   sitios.forEach((sitio, i) => {
     const id = idNuevo(actual, a.id.replace(/_/g, "-"));
     const colocacion: Colocacion = sitio.colocacion ?? (sitio.puesto ? { en: "piso", xCm: sitio.puesto.x, zCm: sitio.puesto.z, giroGrados: sitio.puesto.giroGrados } : sola());
-    const nodo: NodoEscena = { id, nombre: `${a.nombre ?? entrada.nombre}${sitios.length > 1 ? ` ${i + 1}` : ""}`, pieza, colocacion };
+    const nodo: NodoEscena = { id, nombre: `${nombreBase}${sitios.length > 1 ? ` ${i + 1}` : ""}`, pieza, colocacion };
     actual = { ...actual, nodos: [...actual.nodos, nodo] };
     nuevos.push(nodo);
   });
-  const resumen = `Agregué ${nuevos.length} «${entrada.nombre}» de ${textoMedidas(real)}${mueble ? "" : " (medidas del catálogo)"}: ${nuevos.map((x) => x.id).join(", ")}. Es escenografía (no cotiza).`;
+  const asientos = mueble?.asientos ? ` Trae ${mueble.asientos} ${mueble.asientos === 1 ? "asiento" : "asientos"} cada una${mueble.asiento ? "" : " (fijos: no se pueden cambiar)"}.` : "";
+  const resumen = `Agregué ${nuevos.length} «${entrada.nombre}» de ${textoMedidas(real)}${mueble ? "" : " (medidas del catálogo)"}: ${nuevos.map((x) => x.id).join(", ")}. Es escenografía (no cotiza).${asientos}`;
   return { escena: actual, resumen: [resumen, ...new Set(notas)].join(" ") };
 }
 

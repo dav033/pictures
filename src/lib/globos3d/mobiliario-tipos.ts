@@ -51,6 +51,8 @@ export type MuebleCatalogo = EntradaComun & {
   seguirPrimero?: boolean;
   /** Es un asiento suelto: se puede repartir en fila o alrededor de una mesa. */
   asiento?: boolean;
+  /** Cuántos asientos trae el conjunto armado (la mesa con sus sillas): es lo que cuenta la verificación, nunca el nombre que ponga el modelo. */
+  asientos?: number;
   /** Lleva un texto (el neón, el nombre de acrílico). */
   conTexto?: boolean;
   /** El texto con que se arma y se muestra si no se pide otro (solo con `conTexto`). */

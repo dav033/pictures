@@ -18,6 +18,8 @@ type Entrada = {
   cache: Map<string, PiezaArmada>;
   /** El navegador ya hidrató: antes no se lee ni se guarda nada. */
   cargada: boolean;
+  /** Cada vez que la IA (o deshacer/rehacer un turno) deja la escena así: para que el nombre de la escena la siga. */
+  alAplicar?: (escena: Escena) => void;
 };
 
 /**
@@ -25,10 +27,10 @@ type Entrada = {
  * lleva la identidad de la escena en que se hizo: al abrir una plantilla, una sala vacía o una idea de la biblioteca la escena
  * cambia de identidad y los turnos de antes dejan de actuar sobre ella, hasta que Ctrl+Z la devuelve), los pasos nombrados del historial y Esc para volver de «Ver antes».
  */
-export function useIATaller({ escena, cambiar, ambito, clave, cache, cargada }: Entrada) {
+export function useIATaller({ escena, cambiar, ambito, clave, cache, cargada, alAplicar }: Entrada) {
   const [guardada] = useState(() => (typeof window === "undefined" ? [] : leerConversacion()));
   const nombres = useNombresDePasos();
-  const aplicar = useCallback((nueva: Escena, etiqueta: string) => { nombres.nombrar(nueva, etiqueta); cambiar(nueva); }, [nombres, cambiar]);
+  const aplicar = useCallback((nueva: Escena, etiqueta: string) => { nombres.nombrar(nueva, etiqueta); cambiar(nueva); alAplicar?.(nueva); }, [nombres, cambiar, alAplicar]);
   const ia = useAsistenteIA({ escena, ambito, clave, cache, aplicar, inicial: guardada });
 
   useEffect(() => {

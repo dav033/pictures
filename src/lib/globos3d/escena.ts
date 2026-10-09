@@ -14,6 +14,8 @@ import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
 import { fraseDeEscenografia, propsEnIngles } from "./escenografia-ingles";
 import { avisoDeEscenografia } from "./mobiliario-pieza";
+import { muebleDeMesa, muebleDeNodo } from "./descripcion-mobiliario";
+import { mobiliarioEnIngles, type CentroDeMesa } from "./mobiliario-ingles";
 import { PREFIJO_SALA, PREFIJO_UTILERIA, colorDeGloboEnIngles, coloresEnIngles, enLista, tonoEnIngles } from "./render-ia";
 import { contornoEnIngles, huecosEnIngles } from "./silueta-ia";
 import { referenciaPorCodigo } from "../plan/referencia-sempertex";
@@ -85,7 +87,12 @@ export type Colocacion =
   | { en: "techo"; xCm: number; zCm: number; cuelgaCm: number; giroGrados: number; volteada: boolean }
   | { en: "ancla"; padreId: string; ancla: number; cada: number; giroGrados: number; /** Anclas del reparto que se saltan. */ omitir?: number[] }
   | { en: "libre"; xCm: number; yCm: number; zCm: number; giroGrados: number }
-  | { en: "sobre"; padreId: string; puntoCm: Vec3; normal: Vec3; giroGrados: number };
+  /**
+   * `encima`: apoyada sobre una superficie horizontal de la pieza de debajo (el centro de una mesa): lo que va «de pie» (un ramo, una
+   * burbuja) queda de pie y la pieza gira con la de debajo. Sin él, `sobre` se arma como siempre (las decoraciones de la biblioteca
+   * ya vienen orientadas por sus autores).
+   */
+  | { en: "sobre"; padreId: string; puntoCm: Vec3; normal: Vec3; giroGrados: number; encima?: boolean };
 
 export type LugarColocacion = Colocacion["en"];
 export type ColocacionSobre = Extract<Colocacion, { en: "sobre" }>;
@@ -191,9 +198,10 @@ export const puntoALocal = (marco: MarcoPieza, p: Vec3): Vec3 => vectorALocal(ma
  * El marco de un ancla, igual que `colocarEn` de `decoraciones.ts`: y local = normal; x local horizontal (o a lo
  * largo de x si la normal es vertical) y `giroGrados` sobre la normal.
  */
-function marcoDeAncla(ancla: AnclaDePieza, giroGrados: number): Transformacion {
+function marcoDeAncla(ancla: AnclaDePieza, giroGrados: number, ejeX?: Vec3): Transformacion {
   const n = normalizar(ancla.normal);
-  const auxiliar: Vec3 = Math.abs(n.y) < 0.9 ? { x: 0, y: 1, z: 0 } : { x: 1, y: 0, z: 0 };
+  // Con la normal vertical no hay «horizontal» que sirva de guía: x del mundo o, en un `sobre` con `encima`, el x de la pieza de debajo (gira con ella).
+  const auxiliar: Vec3 = Math.abs(n.y) < 0.9 ? { x: 0, y: 1, z: 0 } : ejeX ?? { x: 1, y: 0, z: 0 };
   const xL = normalizar({ x: auxiliar.y * n.z - auxiliar.z * n.y, y: auxiliar.z * n.x - auxiliar.x * n.z, z: auxiliar.x * n.y - auxiliar.y * n.x });
   const zL = { x: n.y * xL.z - n.z * xL.y, y: n.z * xL.x - n.x * xL.z, z: n.x * xL.y - n.y * xL.x };
   const c = Math.cos(rad(giroGrados)), s = Math.sin(rad(giroGrados));
@@ -305,7 +313,9 @@ function orientada(nodo: NodoEscena): Pieza {
   const { pieza, colocacion } = nodo;
   if (pieza.tipo !== "decoracion") return pieza;
   // Las de Halloween que van de pie (calabazas, árbol, ramo, fantasma) quedan derechas en el piso y del techo.
-  const deFrente = colocacion.en === "pared" || colocacion.en === "libre" ? true : colocacion.en === "ancla" || colocacion.en === "sobre" ? false : Boolean(pieza.deFrente) || esDePie(pieza.decoracion);
+  // `encima` (el centro de una mesa): lo que va de pie queda de pie. Cualquier otro `sobre`, como en un ancla.
+  const encimaDePie = colocacion.en === "sobre" && colocacion.encima === true && esDePie(pieza.decoracion);
+  const deFrente = colocacion.en === "pared" || colocacion.en === "libre" || encimaDePie ? true : colocacion.en === "ancla" || colocacion.en === "sobre" ? false : Boolean(pieza.deFrente) || esDePie(pieza.decoracion);
   if (deFrente === Boolean(pieza.deFrente)) return pieza;
   const { deFrente: _anterior, ...resto } = pieza;
   void _anterior;
@@ -323,7 +333,7 @@ function marcoSobre(armada: PiezaArmada, c: ColocacionSobre, marcoPadre: MarcoPi
   const n = Math.hypot(girada.x, girada.y, girada.z) > 1e-9 ? normalizar(girada) : { x: 0, y: 0, z: 1 };
   const { min, max } = armada.caja;
   const radio = Math.max(Math.abs(min.x), Math.abs(max.x), Math.abs(min.z), Math.abs(max.z));
-  const base = marcoDeAncla({ posicion: p, normal: n }, c.giroGrados);
+  const base = marcoDeAncla({ posicion: p, normal: n }, c.giroGrados, c.encima ? girar(marcoPadre.m, { x: 1, y: 0, z: 0 }) : undefined);
   let espalda = ESPALDAS.get(armada);
   if (!espalda) { espalda = espaldaDe(armada); ESPALDAS.set(armada, espalda); }
   // Lo justo para que su espalda (cada globo, cada tubito) toque los globos de debajo; sin globos debajo, por su caja.
@@ -569,6 +579,9 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
 
   type Entrada = { id: string; x: number; frase: string; clase: string; copias: number; padreId: string | null };
   const sueltas: Entrada[] = [], pegadas: Entrada[] = [];
+  // Las mesas y sillas son lo principal de la escena (`mobiliarioEnIngles`), no «party props»; lo que va encima de una mesa se dice «encima de la mesa N».
+  const mesas = new Set(escena.nodos.filter((n) => muebleDeMesa(n) !== null).map((n) => n.id));
+  const centros: CentroDeMesa[] = [];
   // La escenografía (paneles, mesas, tapete) no es decoración de globos: va junta en una frase, sin numerar.
   let escenografia = 0;
   const escenografiaPorNombre = new Map<string, number>();
@@ -577,6 +590,8 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     if (!hecho || hecho.copias === 0) continue;
     const c = nodo.colocacion;
     if (nodo.pieza.tipo === "escenografia") {
+      const grupo = muebleDeNodo(nodo)?.entrada.grupo;
+      if (grupo === "mesa" || grupo === "asiento") continue;
       escenografia += hecho.copias;
       const en = fraseDeEscenografia(nodo.pieza);
       if (en) escenografiaPorNombre.set(en, (escenografiaPorNombre.get(en) ?? 0) + hecho.copias);
@@ -589,6 +604,7 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     const silueta = deFrente && (nodo.pieza.tipo === "organico" || nodo.pieza.tipo === "arco_organico") && hecho.copias === 1 ? contornoEnIngles(hecho.globos) : "";
     const pieza = piezaEnIngles(nodo.pieza, hecho.caja);
     const frase = [`${pieza}${silueta ? ` (${silueta})` : ""}`, lugar, coloresDe(nodo.pieza, hecho)].filter(Boolean).join(", ");
+    if (c.en === "sobre" && mesas.has(c.padreId)) { centros.push({ mesaId: c.padreId, frase: frase.replace(/^(an?|the) /, "") }); continue; }
     const entrada = { id: nodo.id, x, frase, clase: claseDe(pieza), copias: hecho.copias, padreId: c.en === "ancla" || c.en === "sobre" ? c.padreId : null };
     (entrada.padreId ? pegadas : sueltas).push(entrada);
   }
@@ -605,8 +621,11 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     const texto = igual === undefined ? s.frase : `the same as (${igual})`;
     return `(${i + 1}) ${s.copias > 1 ? `${s.copias} × ` : ""}${texto}`;
   });
+  const mobiliario = mobiliarioEnIngles(escena, armada, centros);
+  const conMobiliario = mobiliario !== "";
   const partes = [
     total ? `A balloon decoration in a room. Exactly ${total} separate ${total === 1 ? "piece" : "pieces"}: ${[...conteo].map(([clase, n]) => `${n} × ${clase}`).join(", ")}` : "A balloon decoration in a room",
+    mobiliario,
     items.length ? `From left to right: ${items.join("; ")}` : "",
     ...pegadas.map((p) => {
       const padre = numero.get(p.padreId ?? "");
@@ -627,7 +646,9 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
   ].filter(Boolean);
   const ambiente = escena.sala.ambiente;
   const conAmbiente = ambiente?.piso === "madera" || ambiente?.luces || ambiente?.ventana;
-  if (sala.length) partes.push(`${PREFIJO_SALA} ${enLista(sala)}, all ${conAmbiente ? "" : "plain and "}empty${conAmbiente ? `, ${MARCA_LUZ_CALIDA}` : ""}`);
+  // Con mesas y sillas la sala es lisa pero no «vacía»: decirlo así es lo que hacía a FLUX borrar el mobiliario.
+  const estado = conMobiliario ? (conAmbiente ? "" : ", all plain") : `, all ${conAmbiente ? "" : "plain and "}empty`;
+  if (sala.length) partes.push(`${PREFIJO_SALA} ${enLista(sala)}${estado}${conAmbiente ? `, ${MARCA_LUZ_CALIDA}` : ""}`);
   return partes.filter(Boolean).join(". ");
 }
 
