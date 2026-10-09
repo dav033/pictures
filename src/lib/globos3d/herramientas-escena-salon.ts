@@ -24,6 +24,7 @@ const TEXTO_ZONAS = "mesa_principal (mesa de los novios con sillas detrás, mira
 const ArmarSchema = z.object({
   invitados: z.number().int().min(0).max(MAX_INVITADOS_SALON).optional().describe("cuántos invitados; las mesas salen de ahí. 0 o sin decir: solo las zonas, sin mesas de invitados"),
   mesa: Mesa.optional().describe("redonda8 (redonda con 8 sillas, por defecto), redonda10 (redonda de 1,8 m con 10 sillas) o imperial (larga con 10 sillas)"),
+  sillas_por_mesa: z.number().int().optional().describe("sillas por mesa («mesas de 4 personas» = 4): redondas de 2 a 12, imperial par de 4 a 20; las sillas se reparten parejo y las mesas salen de invitados ÷ sillas"),
   ancho_cm: z.number().optional().describe("ancho del salón (300–3000). Si no dices ancho ni fondo: se usa la sala actual si caben las mesas, y si no se arma la más chica que cabe"),
   fondo_cm: z.number().optional().describe("fondo del salón (300–3000)"),
   zonas: z.array(Zona).max(5).optional().describe(`zonas a armar (todas con 60 o más invitados; con menos, fondo_fotos y mesa_postres): ${TEXTO_ZONAS}`),
@@ -34,6 +35,7 @@ const ArmarSchema = z.object({
 const AjustarSchema = z.object({
   invitados: z.number().int().min(1).max(MAX_INVITADOS_SALON).optional().describe("nuevo total de invitados: agrega o quita mesas del final de la cuadrícula; las de adelante no se mueven"),
   mesa: Mesa.optional().describe("cambia el tipo de todas las mesas de invitados (redonda8, redonda10, imperial), con sus colores"),
+  sillas_por_mesa: z.number().int().optional().describe("sillas por mesa («mesas de 4 personas» = 4): redondas de 2 a 12, imperial par de 4 a 20; cambia las sillas de todas las mesas del salón; las mesas se recalculan de invitados ÷ sillas"),
   ancho_cm: z.number().optional().describe("nuevo ancho de la sala (300–3000); cada zona se corre con su pared"),
   fondo_cm: z.number().optional().describe("nuevo fondo de la sala (300–3000)"),
   agregar_zonas: z.array(Zona).max(5).optional().describe(`zonas que faltan y se arman (no se quita ninguna): ${TEXTO_ZONAS}`),
@@ -65,7 +67,7 @@ export const HERRAMIENTAS_SALON: Readonly<Record<string, HerramientaExtra>> = {
     aplicar: (escena, argumentos) => {
       const a = ArmarSchema.parse(argumentos ?? {});
       const notas: string[] = [];
-      const r = armarSalon(escena, { invitados: a.invitados, mesa: a.mesa, anchoCm: a.ancho_cm, fondoCm: a.fondo_cm, zonas: a.zonas, colores: coloresDeMuebles(a.colores, notas), reemplazar: a.reemplazar }, notas);
+      const r = armarSalon(escena, { invitados: a.invitados, mesa: a.mesa, sillas: a.sillas_por_mesa, anchoCm: a.ancho_cm, fondoCm: a.fondo_cm, zonas: a.zonas, colores: coloresDeMuebles(a.colores, notas), reemplazar: a.reemplazar }, notas);
       const perdidos = centrosPerdidos(escena, r.escena);
       if (perdidos) notas.push(`${perdidos} centro(s) de mesa del salón anterior se fueron con sus mesas: vuelve a ponerlos con decorar_mesas.`);
       return { escena: r.escena, resumen: unir(r.resumen, notas) };
@@ -76,9 +78,9 @@ export const HERRAMIENTAS_SALON: Readonly<Record<string, HerramientaExtra>> = {
     descripcion: "Cambia un salón ya armado SIN rehacerlo ni tocar tus piezas: más o menos invitados (agrega o quita mesas del final), otro tipo de mesa, sala más grande o más chica, o una zona que faltaba. Sirve para «ahora son 60», «mejor mesas imperiales», «el salón de 12 × 18», «agrega la pista».",
     aplicar: (escena, argumentos) => {
       const a = AjustarSchema.parse(argumentos ?? {});
-      if (a.invitados === undefined && !a.mesa && a.ancho_cm === undefined && a.fondo_cm === undefined && !a.agregar_zonas?.length) fallar("Dime qué cambiar: invitados, mesa, ancho_cm, fondo_cm o agregar_zonas.");
+      if (a.invitados === undefined && !a.mesa && a.sillas_por_mesa === undefined && a.ancho_cm === undefined && a.fondo_cm === undefined && !a.agregar_zonas?.length) fallar("Dime qué cambiar: invitados, mesa, sillas_por_mesa, ancho_cm, fondo_cm o agregar_zonas.");
       const notas: string[] = [];
-      const r = ajustarSalon(escena, { invitados: a.invitados, mesa: a.mesa, anchoCm: a.ancho_cm, fondoCm: a.fondo_cm, agregarZonas: a.agregar_zonas }, notas);
+      const r = ajustarSalon(escena, { invitados: a.invitados, mesa: a.mesa, sillas: a.sillas_por_mesa, anchoCm: a.ancho_cm, fondoCm: a.fondo_cm, agregarZonas: a.agregar_zonas }, notas);
       return { escena: sincronizarCentros(escena, r.escena, notas), resumen: unir(r.resumen, notas) };
     },
   },

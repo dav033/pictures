@@ -42,7 +42,9 @@ const PiezaSchema = z.custom<Pieza>((v) => {
 const RegistroSalonSchema = z.object({
   invitados: z.number().int().min(0).max(1000),
   mesa: z.enum(TIPOS_MESA_SALON),
+  sillas: z.number().int().min(2).max(20).optional(),
   profundidadFondoCm: z.number().finite().min(0).max(3000),
+  variante: z.number().int().min(0).max(1000).optional(),
   piezas: z.record(z.string().min(1).max(80), z.object({
     zona: z.enum([...ZONAS_SALON, "mesas"]),
     rol: z.enum(["mesa", "ancla", "silla", "adorno", "adoptada"]),

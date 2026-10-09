@@ -50,22 +50,48 @@ function acento(c: ContextoFondo, delanteCm = 110): Adorno {
   return { base: "foil", nombre: `${NOMBRE_ACENTO[forma]} de foil`, pieza: estructura(c, "metalizado", { forma_metalizado: forma, color_metalizado: "oro", pulgadas: forma === "flor" ? 27 : 32 }), colocacion: enPiso(c.f.xCm, c.f.zCm + delanteCm) };
 }
 
-/** El texto de las letras de foil: el foil trae solo 0–9 y A–Z, así que sin acentos (Sofía → SOFIA, Begoña → BEGONA), sin espacios ni signos y hasta 12. */
-export function textoDeFoil(texto: string, notas: string[]): string | null {
-  const plano = texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/\s+/g, "");
-  const limpio = plano.replace(/[^0-9A-Z]/g, "");
-  if (!limpio) { notas.push(`El texto «${texto}» no tiene letras ni números que el foil traiga: no puse letras.`); return null; }
-  const final = limpio.slice(0, 12);
-  const cambios = [plano !== texto.toUpperCase().replace(/\s+/g, "") && "sin acentos", limpio.length !== plano.length && "sin signos", limpio.length > 12 && "recortado a 12"].filter(Boolean);
-  if (cambios.length) notas.push(`Las letras de foil van como «${final}» (${cambios.join(", ")}): el foil trae solo 0–9 y A–Z.`);
-  return final;
+/** Una palabra para el foil: el foil trae solo 0–9 y A–Z, así que sin acentos (Sofía → SOFIA, Begoña → BEGONA) ni signos. */
+const limpiarPalabra = (p: string) => p.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^0-9A-Z]/g, "");
+const MAX_LETRAS_FOIL = 24;
+
+/** Dónde acaba, hacia el frente, lo que arma la composición de pie en el piso (su z más grande, con lo que sobresale de su base). */
+function frenteDeLaComposicion(c: ContextoFondo, piezas: readonly Adorno[]): number {
+  const frentes = piezas.flatMap((a) => (a.colocacion.en === "piso" ? [a.colocacion.zCm + armarPieza(a.pieza).caja.max.z] : []));
+  return frentes.length ? Math.max(...frentes) : c.f.zCm + ARCO_FONDO_DELANTE_CM;
 }
 
-/** Las letras o el número de foil que pidió el usuario, de pie delante del centro del fondo (en cualquier composición); `null` si no pidió texto. */
-function letrasDeFoil(c: ContextoFondo): Adorno | null {
-  const texto = c.texto?.trim() ? textoDeFoil(c.texto, c.notas) : null;
-  if (!texto) return null;
-  return { base: "foil", nombre: /^\d+$/.test(texto) ? "Número de foil" : "Letras de foil", pieza: estructura(c, "metalizado", { color_metalizado: "oro", texto, ...(texto.length > 1 ? { forma_metalizado: "letras" } : {}) }), colocacion: enPiso(c.f.xCm, c.f.zCm + 110) };
+/**
+ * Las letras o el número de foil que pidió el usuario, de pie delante de TODO lo de la composición (a su frente más la mitad de lo
+ * que miden de fondo), en cualquier composición; `null` si no pidió texto. Caben entre las piezas de los lados y dentro de la sala:
+ * si no caben todas las palabras se dejan las primeras que sí (palabras enteras), y si ni la primera cabe se recorta por letras. El foil no
+ * trae acentos ni signos: se dice.
+ */
+function letrasDeFoil(c: ContextoFondo, composicion: readonly Adorno[]): Adorno | null {
+  const crudo = c.texto?.trim();
+  if (!crudo) return null;
+  const palabras = crudo.split(/\s+/).map(limpiarPalabra).filter(Boolean);
+  if (!palabras.length) { c.notas.push(`El texto «${crudo}» no tiene letras ni números que el foil traiga: no puse letras.`); return null; }
+  const disponible = Math.max(60, Math.min(c.anchoSalaCm - 160, 2 * separacion(c)));
+  const medir = (texto: string) => {
+    const pieza = estructura(c, "metalizado", { color_metalizado: "oro", texto, ...(texto.length > 1 ? { forma_metalizado: "letras" } : {}) });
+    const { min, max } = armarPieza(pieza).caja;
+    return { pieza, ancho: max.x - min.x, atrasCm: min.z, fondoCm: max.z - min.z };
+  };
+  let texto = "", medida = medir(palabras[0]!.slice(0, 1));
+  for (let k = palabras.length; k >= 1 && !texto; k--) {
+    const t = palabras.slice(0, k).join("");
+    if (t.length <= MAX_LETRAS_FOIL && (medida = medir(t)).ancho <= disponible) texto = t;
+  }
+  for (let t = palabras[0]!.slice(0, MAX_LETRAS_FOIL); !texto && t.length >= 1; t = t.slice(0, -1)) if ((medida = medir(t)).ancho <= disponible || t.length === 1) texto = t;
+  const completo = palabras.join("");
+  const enteras = palabras.some((_, i) => palabras.slice(0, i + 1).join("") === texto);
+  const cambios = [
+    /[̀-ͯ]/.test(crudo.normalize("NFD")) && "sin acentos",
+    crudo.replace(/\s+/g, "").normalize("NFD").replace(/[̀-ͯ]/g, "").length !== completo.length && "sin signos",
+    texto !== completo && `${enteras ? "solo las primeras palabras" : "recortado por letras"}, lo que cabe en ${Math.round(disponible)} cm`,
+  ].filter(Boolean);
+  if (cambios.length) c.notas.push(`Las letras de foil van como «${texto}» (${cambios.join(", ")}): el foil trae solo 0–9 y A–Z.`);
+  return { base: "foil", nombre: /^\d+$/.test(texto) ? "Número de foil" : "Letras de foil", pieza: medida.pieza, colocacion: enPiso(c.f.xCm, frenteDeLaComposicion(c, composicion) + 25 - medida.atrasCm) };
 }
 
 /** Lo que cabe en la sala: el borde a 80 cm de cada pared lateral. */
@@ -104,13 +130,11 @@ function racimosLaterales(c: ContextoFondo, altoCm: number, grosorCm: number, se
 /** La separación del centro a las columnas o racimos de los lados. */
 const separacion = (c: ContextoFondo) => c.f.anchoCm / 2 + 110;
 
-function paredYLetras(c: ContextoFondo, letras: Adorno | null): Adorno[] {
+function paredYLetras(c: ContextoFondo): Adorno[] {
   const { f } = c;
   const ancho = Math.min(560, c.anchoSalaCm - 160, f.anchoCm + 200), alto = Math.min(280, c.altoSalaCm - 50);
-  const foil = letras ?? acento(c);
   return [
     { base: "pared", nombre: "Pared de globos del fondo", pieza: estructura(c, "pared_trenzas", { ancho_cm: ancho, alto_cm: alto, colores: c.nombres.slice(0, 3) }), colocacion: enPared(f.xCm, 0) },
-    foil,
     ...racimosLaterales(c, 130, 65, separacion(c)),
   ];
 }
@@ -195,16 +219,16 @@ function aroYRamos(c: ContextoFondo): Adorno[] {
 
 /** Las piezas de la composición elegida para el fondo de fotos, con las letras de foil si pidieron texto o, si no, la figura de foil del tema (salvo en las que ya la llevan). */
 export function adornosDelFondo(c: ContextoFondo): Adorno[] {
-  const letras = letrasDeFoil(c);
-  const marca = (delanteCm?: number) => letras ?? acento(c, delanteCm);
+  const con = (piezas: Adorno[], delanteCm?: number): Adorno[] => [...piezas, letrasDeFoil(c, piezas) ?? acento(c, delanteCm)];
+  const conLetras = (piezas: Adorno[]): Adorno[] => { const letras = letrasDeFoil(c, piezas); return letras ? [...piezas, letras] : piezas; };
   switch (c.composicion.fondo) {
-    case "arco_columnas": return [...arcoYColumnas(c), ...(letras ? [letras] : [])];
-    case "pared_letras": return paredYLetras(c, letras);
-    case "paneles_guirnalda": return [...guirnaldaYRacimos(c), marca()];
-    case "semiarco_racimos": return [...semiarcoYRacimos(c), marca()];
-    case "columnas_techo": return [...columnasAltas(c), marca()];
-    case "mural": return [...muralYRacimos(c), marca(140)];
-    case "figuras": return [...figuras(c), ...(letras ? [letras] : [])];
-    case "aro_ramos": return [...aroYRamos(c), marca(150)];
+    case "arco_columnas": return conLetras(arcoYColumnas(c));
+    case "pared_letras": return con(paredYLetras(c));
+    case "paneles_guirnalda": return con(guirnaldaYRacimos(c));
+    case "semiarco_racimos": return con(semiarcoYRacimos(c));
+    case "columnas_techo": return con(columnasAltas(c));
+    case "mural": return con(muralYRacimos(c), 140);
+    case "figuras": return conLetras(figuras(c));
+    case "aro_ramos": return con(aroYRamos(c), 150);
   }
 }

@@ -30,8 +30,12 @@ export type RegistroSalon = {
   /** Los invitados que se pidieron (no los que caben). */
   invitados: number;
   mesa: TipoMesaSalon;
+  /** Sillas por mesa pedidas (`sillas_por_mesa`); si falta, las de siempre del tipo de mesa. */
+  sillas?: number;
   /** Lo que ocupa el fondo de fotos desde la pared (cm): más que lo de siempre si el usuario tenía decoración delante del panel. */
   profundidadFondoCm: number;
+  /** La composición del fondo que se pidió («otra opción» = la siguiente): `planificar_evento` con `reemplazar` sigue desde ahí. */
+  variante?: number;
   piezas: Record<string, PiezaSalon>;
 };
 

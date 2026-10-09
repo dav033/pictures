@@ -13,13 +13,12 @@ import { zonasDeEscena } from "./salon-zonas";
  * Si el salón no llevaba centros, no se pone ninguno: no se decora lo que nadie pidió decorar.
  */
 
-const muebleDe = (n: NodoEscena): string | undefined => (n.pieza.tipo === "escenografia" ? n.pieza.mueble?.id : undefined);
-
 /** Quita esos centros de la escena. */
 const sinCentros = (escena: Escena, ids: ReadonlySet<string>): Escena => ({ ...escena, nodos: escena.nodos.filter((n) => !ids.has(n.id)) });
 
 function volverAApoyar(antes: Escena, despues: Escena, notas: string[]): Escena {
-  const cambiadas = new Set(despues.nodos.filter((n) => { const previa = antes.nodos.find((x) => x.id === n.id); return previa && muebleDe(previa) !== muebleDe(n); }).map((n) => n.id));
+  // Cambió la mesa si cambió de mueble o de medidas o de sillas (otro tamaño de tapa, otra altura).
+  const cambiadas = new Set(despues.nodos.filter((n) => { const previa = antes.nodos.find((x) => x.id === n.id); return previa && JSON.stringify(previa.pieza) !== JSON.stringify(n.pieza); }).map((n) => n.id));
   const afectados = centrosDe(despues).filter((c) => cambiadas.has(padreDeCentro(c) ?? ""));
   if (!afectados.length) return despues;
   const armada = armarEscena(despues);

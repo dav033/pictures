@@ -15,11 +15,38 @@ export const TIPOS_MESA_SALON = ["redonda8", "redonda10", "imperial"] as const;
 export type TipoMesaSalon = (typeof TIPOS_MESA_SALON)[number];
 
 /** Cada tipo de mesa de invitados: el conjunto del catálogo (mesa con sillas en una sola pieza) y lo que ocupa con las sillas. */
-export const MESAS_SALON: Readonly<Record<TipoMesaSalon, { mueble: string; puestos: number; anchoCm: number; fondoCm: number; altoCm: number }>> = {
+export type MedidasMesa = { mueble: string; puestos: number; anchoCm: number; fondoCm: number; altoCm: number };
+export const MESAS_SALON: Readonly<Record<TipoMesaSalon, MedidasMesa>> = {
   redonda8: { mueble: "mesa_redonda_sillas", puestos: 8, anchoCm: 270, fondoCm: 270, altoCm: 90 },
   redonda10: { mueble: "mesa_redonda10_sillas", puestos: 10, anchoCm: 300, fondoCm: 300, altoCm: 90 },
   imperial: { mueble: "mesa_imperial_sillas", puestos: 10, anchoCm: 360, fondoCm: 198, altoCm: 90 },
 };
+
+/** Cuántas sillas admite cada forma de mesa: las redondas, de 2 a 12; la imperial, un número par de 4 a 20 (una en cada cabecera y el resto por pares a los lados). */
+export const SILLAS_POR_MESA = { redonda: { min: 2, max: 12 }, imperial: { min: 4, max: 20 } } as const;
+/** Lo que le suman las sillas a cada lado de la mesa (cm): lo mismo que `ALREDEDOR_SILLAS_CM` del catálogo, para que mesa y conjunto midan igual. */
+const ALREDEDOR_SILLAS_CM = 60;
+
+/** Por qué no vale ese número de sillas para ese tipo de mesa, o `null` si vale. */
+export function falloDeSillas(mesa: TipoMesaSalon, sillas: number): string | null {
+  const r = mesa === "imperial" ? SILLAS_POR_MESA.imperial : SILLAS_POR_MESA.redonda;
+  if (!Number.isInteger(sillas) || sillas < r.min || sillas > r.max) return `sillas_por_mesa = ${sillas} está fuera de rango: en mesas ${mesa === "imperial" ? "imperiales va de 4 a 20 (par)" : "redondas va de 2 a 12"}.`;
+  if (mesa === "imperial" && sillas % 2 !== 0) return `Una mesa imperial lleva un número par de sillas (una en cada cabecera y el resto por pares a los lados): ${sillas} no vale; prueba ${sillas - 1} o ${sillas + 1}.`;
+  return null;
+}
+
+/**
+ * Las medidas de la mesa de invitados: las de siempre, o las que salen de un número de sillas. Redonda: el diámetro de la mesa crece
+ * 15 cm por silla (150 cm con 8 y 180 con 10, como las del catálogo) y las sillas van repartidas parejo por su circunferencia;
+ * imperial: 60 cm de largo por cada par de sillas de los lados (240 cm con 10) y las dos de las cabeceras.
+ */
+export function medidasDeMesa(mesa: TipoMesaSalon, sillas?: number): MedidasMesa {
+  const base = MESAS_SALON[mesa];
+  if (sillas === undefined || sillas === base.puestos) return base;
+  if (mesa === "imperial") return { ...base, puestos: sillas, anchoCm: Math.max(120, 30 * (sillas - 2)) + 2 * ALREDEDOR_SILLAS_CM };
+  const diametro = 15 * sillas + 150;
+  return { ...base, puestos: sillas, anchoCm: diametro, fondoCm: diametro };
+}
 
 /** Aire entre los conjuntos de mesas (cm): más que el pasillo mínimo de 90 cm para que quepa una silla echada atrás. */
 export const PASILLO_CM = 91;
@@ -70,6 +97,8 @@ export type ElementoSalon = {
   anchoCm: number;
   fondoCm: number;
   altoCm: number;
+  /** Solo en las mesas de invitados con un número de sillas distinto al de siempre. */
+  sillas?: number;
   xCm: number;
   zCm: number;
   giroGrados: number;
@@ -79,6 +108,8 @@ export type ParamsSalon = {
   /** 0: solo las zonas, sin mesas de invitados. */
   invitados: number;
   mesa: TipoMesaSalon;
+  /** Sillas por mesa si no son las de siempre del tipo de mesa (ver `medidasDeMesa`). */
+  sillas?: number;
   zonas: readonly ZonaSalon[];
   /** Sala fija (la pedida o la que ya hay). Si falta, la más chica que cabe con proporción de salón (largo : ancho entre 0,7 y 1,8). */
   sala?: { anchoCm: number; fondoCm: number };
@@ -111,15 +142,15 @@ export type DistribucionSalon = {
 /** La pista de baile: 0,2 m² por invitado (la mitad baila con ~0,4 m² cada uno), entre 3 y 4,5 m de diámetro. */
 export const diametroPista = (invitados: number): number => Math.min(450, Math.max(300, Math.round((Math.sqrt((invitados * 0.2 * 4) / Math.PI) * 100) / 10) * 10));
 
-export const mesasNecesarias = (invitados: number, mesa: TipoMesaSalon): number => (invitados > 0 ? Math.ceil(invitados / MESAS_SALON[mesa].puestos) : 0);
+export const mesasNecesarias = (invitados: number, mesa: TipoMesaSalon, sillas?: number): number => (invitados > 0 ? Math.ceil(invitados / medidasDeMesa(mesa, sillas).puestos) : 0);
 
 /** Los tramos de [a, b] que quedan al quitar [x0, x1]. */
 const sinTramo = (tramos: ReadonlyArray<readonly [number, number]>, x0: number, x1: number): Array<[number, number]> =>
   tramos.flatMap(([a, b]): Array<[number, number]> => (x1 <= a || x0 >= b ? [[a, b]] : [...(x0 > a ? [[a, x0] as [number, number]] : []), ...(x1 < b ? [[x1, b] as [number, number]] : [])]));
 
 /** Los sitios de mesa de una sala, fila por fila: en cada fila, lo que deja libre lo bloqueado, con las mesas repartidas parejo en cada tramo. */
-function celdasLibres(anchoSala: number, mesa: TipoMesaSalon, z0: number, z1: number, bloqueos: readonly RectCm[]): Celda[] {
-  const { anchoCm, fondoCm } = MESAS_SALON[mesa];
+function celdasLibres(anchoSala: number, mesa: MedidasMesa, z0: number, z1: number, bloqueos: readonly RectCm[]): Celda[] {
+  const { anchoCm, fondoCm } = mesa;
   const filas = Math.floor((z1 - z0 + PASILLO_CM) / (fondoCm + PASILLO_CM));
   const celdas: Celda[] = [];
   for (let j = 0; j < filas; j++) {
@@ -148,7 +179,7 @@ function planear(anchoSala: number, fondoSala: number, p: ParamsSalon): Plan {
   const sinLugar: ZonaSalon[] = [];
   const zFondo = -fondoSala / 2;
   const profundidad = p.profundidadFondoCm ?? PROFUNDIDAD_FONDO_CM;
-  const mesa = MESAS_SALON[p.mesa];
+  const mesa = medidasDeMesa(p.mesa, p.sillas);
 
   const anchoPanel = Math.min(ANCHO_PANEL_MAX_CM, anchoSala - 200);
   const conFondo = tiene("fondo_fotos") && anchoPanel >= 150;
@@ -205,7 +236,7 @@ function planear(anchoSala: number, fondoSala: number, p: ParamsSalon): Plan {
     } else sinLugar.push("mesa_postres");
   }
 
-  return { zonas, celdas: celdasLibres(anchoSala, p.mesa, zCampo, zFinCampo, bloqueos), sinLugar };
+  return { zonas, celdas: celdasLibres(anchoSala, mesa, zCampo, zFinCampo, bloqueos), sinLugar };
 }
 
 const redondear50 = (n: number) => Math.ceil(n / 50) * 50;
@@ -226,13 +257,13 @@ function derivarSala(p: ParamsSalon, necesarias: number): { anchoCm: number; fon
 
 /** Distribuye el salón. Determinista: los mismos parámetros dan siempre lo mismo. */
 export function distribuirSalon(p: ParamsSalon): DistribucionSalon {
-  const necesarias = mesasNecesarias(p.invitados, p.mesa);
+  const necesarias = mesasNecesarias(p.invitados, p.mesa, p.sillas);
   const sala = p.sala ? { anchoCm: p.sala.anchoCm, fondoCm: p.sala.fondoCm } : derivarSala(p, necesarias);
   const { zonas, celdas, sinLugar } = planear(sala.anchoCm, sala.fondoCm, p);
   const colocadas = Math.min(necesarias, celdas.length);
-  const mesa = MESAS_SALON[p.mesa];
+  const mesa = medidasDeMesa(p.mesa, p.sillas);
   const mesas: ElementoSalon[] = celdas.slice(0, colocadas).map((c, k) => ({
-    id: `salon-mesa-${String(k + 1).padStart(2, "0")}`, zona: null, rol: "mesa", mueble: mesa.mueble, anchoCm: mesa.anchoCm, fondoCm: mesa.fondoCm, altoCm: mesa.altoCm, xCm: c.xCm, zCm: c.zCm, giroGrados: 0,
+    id: `salon-mesa-${String(k + 1).padStart(2, "0")}`, zona: null, rol: "mesa", mueble: mesa.mueble, anchoCm: mesa.anchoCm, fondoCm: mesa.fondoCm, altoCm: mesa.altoCm, ...(p.sillas !== undefined && p.sillas !== MESAS_SALON[p.mesa].puestos ? { sillas: p.sillas } : {}), xCm: c.xCm, zCm: c.zCm, giroGrados: 0,
   }));
   return { sala, elementos: [...zonas, ...mesas], celdas, mesasNecesarias: necesarias, capacidad: celdas.length, faltan: necesarias - colocadas, sinLugar };
 }

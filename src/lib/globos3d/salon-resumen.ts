@@ -1,5 +1,5 @@
 import type { Escena } from "./escena";
-import { MESAS_SALON } from "./salon-evento";
+import { medidasDeMesa } from "./salon-evento";
 import { registroVivo } from "./salon-registro";
 import { zonasDeEscena, zonasPresentes } from "./salon-zonas";
 
@@ -10,7 +10,7 @@ export function resumenDeSalon(escena: Escena): string {
   const registro = registroVivo(escena);
   const z = zonasDeEscena(escena);
   const partes: string[] = [];
-  if (registro) partes.push(`${z.mesas.length} mesas de ${MESAS_SALON[registro.mesa].puestos}`);
+  if (registro) partes.push(`${z.mesas.length} mesas de ${medidasDeMesa(registro.mesa, registro.sillas).puestos}`);
   if (z.mesaPrincipal) partes.push(`mesa principal con ${z.mesaPrincipal.sillas.length} sillas`);
   if (z.pista) partes.push(`pista de ${metros(z.pista.x1 - z.pista.x0)}`);
   const otras = zonasPresentes(escena).filter((zona) => zona === "mesa_postres" || zona === "fondo_fotos" || zona === "entrada");

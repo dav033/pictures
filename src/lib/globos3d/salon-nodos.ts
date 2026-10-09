@@ -46,7 +46,7 @@ function nombreDe(e: ElementoSalon, ranura: number | undefined): string {
 export function nodoDeElemento(e: ElementoSalon, paleta: PaletaSalon, id: string, ranura?: number): NodoEscena {
   const m = muebleDe(e.mueble) ?? fallar(`Falta «${e.mueble}» en el catálogo de mobiliario.`);
   const acabado = e.zona === "pista" ? "brillante" as const : undefined;
-  const opciones = opcionesDeMueble(m, { anchoCm: e.anchoCm, fondoCm: e.fondoCm, altoCm: e.altoCm, colores: coloresDe(e, paleta), ...(acabado ? { acabado } : {}) });
+  const opciones = opcionesDeMueble(m, { anchoCm: e.anchoCm, fondoCm: e.fondoCm, altoCm: e.altoCm, colores: coloresDe(e, paleta), ...(acabado ? { acabado } : {}), ...(e.sillas !== undefined ? { sillas: e.sillas } : {}) });
   return { id, nombre: nombreDe(e, ranura), pieza: piezaDeMueble(m, opciones), colocacion: { en: "piso", xCm: Math.round(e.xCm), zCm: Math.round(e.zCm), giroGrados: e.giroGrados } };
 }
 

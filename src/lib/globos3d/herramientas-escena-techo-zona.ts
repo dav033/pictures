@@ -69,9 +69,9 @@ function zonaPedida(escena: Escena, a: z.infer<typeof TechoZonaSchema>, notas: s
 
 /**
  * Cuánto cuelga una decoración de techo (cm desde el techo): lo del 72 % del alto de la sala (o `libreCm`, el alto libre pedido) solo en
- * salas altas; en una baja, pegada al techo. La usan la herramienta y quien reajusta los techos cuando cambia el alto de la sala.
+ * salas altas; en una baja, pegada al techo.
  */
-export function cuelgaDeTecho(altoSalaCm: number, altoPiezaCm: number, libreCm?: number): number {
+function cuelgaDeTecho(altoSalaCm: number, altoPiezaCm: number, libreCm?: number): number {
   const objetivo = libreCm ?? (altoSalaCm > 400 ? altoSalaCm * 0.72 : altoSalaCm - altoPiezaCm);
   return Math.min(Math.max(0, altoSalaCm - 40), Math.max(0, altoSalaCm - objetivo - altoPiezaCm));
 }

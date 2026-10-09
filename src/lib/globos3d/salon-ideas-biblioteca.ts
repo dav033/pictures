@@ -43,9 +43,8 @@ function candidatas(tipo: string, tematica: string | undefined): ItemBiblioteca[
 }
 
 /** Pasa las piezas puestas a la paleta del evento; `null` si alguna no se deja recolorear. */
-function recolorearIdea(escena: Escena, ids: readonly string[], paleta: readonly string[]): Escena | null {
+function recolorearIdea(escena: Escena, ids: readonly string[], paleta: readonly string[], notas: string[]): Escena | null {
   try {
-    const notas: string[] = [];
     return { ...escena, nodos: escena.nodos.map((n) => (ids.includes(n.id) ? { ...n, pieza: recolorearConPaleta(n.pieza, paleta, notas, "uso").pieza } : n)) };
   } catch { return null; }
 }
@@ -72,12 +71,14 @@ export function ponerIdeasDeBiblioteca(escena: Escena, zonas: ZonasSalon, p: { t
     const x = signo * (alLado ? lado + fila * 140 : Math.min(lado, actual.sala.anchoCm / 2 - 100)), z = fondo.zCm + (alLado ? 70 : 230 + fila * 150);
     const puesta = insertarEnEscena(actual, item, enPiso(fondo.xCm + x, z));
     // Con los colores del evento, no los de la biblioteca (esos globos van a la lista de compra); si no se puede recolorear, no se pone.
-    const recoloreada = recolorearIdea(puesta.escena, puesta.ids, paleta);
+    const avisos: string[] = [];
+    const recoloreada = recolorearIdea(puesta.escena, puesta.ids, paleta, avisos);
     if (!recoloreada) { notas.push(`«${item.nombre}» no se pudo pasar a los colores del evento: no la puse.`); return; }
     const caja = armarEscena(recoloreada).porNodo.filter((n) => puesta.ids.includes(n.id) && n.copias > 0);
     if (caja.some((n) => n.caja.max.y > actual.sala.altoCm || n.caja.min.x < -actual.sala.anchoCm / 2 || n.caja.max.x > actual.sala.anchoCm / 2)) { notas.push(`«${item.nombre}» no cabe en la sala: no la puse.`); return; }
     actual = puesta.ids.reduce((e, id) => anotarPieza(e, id, { zona: "fondo_fotos", rol: "adorno" }), recoloreada);
     puestas += 1;
+    notas.push(...avisos);
     notas.push(`Idea de la biblioteca: «${item.nombre}» (${item.id}), en los colores del evento.`);
   });
   if (!puestas) notas.push("Ninguna idea de la biblioteca cupo o se pudo pasar a los colores del evento: quedó solo la composición.");

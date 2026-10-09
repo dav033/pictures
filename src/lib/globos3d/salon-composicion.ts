@@ -17,7 +17,7 @@ export type EntradaSalon = "arco" | "columnas";
 export const ACENTOS_FONDO = ["corazon", "estrella", "nube", "luna", "flor", "redondo"] as const;
 export type AcentoFondo = (typeof ACENTOS_FONDO)[number];
 
-export type Composicion = { fondo: ArquetipoFondo; figura: FiguraFondo; acento: AcentoFondo; entrada: EntradaSalon; semilla: number };
+export type Composicion = { fondo: ArquetipoFondo; figura: FiguraFondo; acento: AcentoFondo; entrada: EntradaSalon; semilla: number; /** Se pidió una variante más allá de las opciones que hay: repite desde la primera. */ vuelta: boolean };
 export type PedidoComposicion = { tipo: string; tematica?: string; colores?: readonly string[]; estilo?: string; texto?: string; variante?: number };
 
 type Eleccion = { fondo: ArquetipoFondo; figura?: FiguraFondo; acento?: AcentoFondo };
@@ -94,15 +94,19 @@ function eleccionTematica(tematica: string | undefined, tipo: string): Eleccion 
   return tipo === "halloween" || tipo === "graduacion" ? POR_CELEBRACION[tipo] ?? null : null;
 }
 
-/** Lo que se ofrece después de lo que pide el tema o la ocasión cuando piden «otra opción» (`variante` 1, 2, 3…). */
-const OTRAS_OPCIONES: readonly Eleccion[] = [
-  { fondo: "aro_ramos", acento: "flor" }, { fondo: "paneles_guirnalda" }, { fondo: "semiarco_racimos" }, { fondo: "pared_letras" },
-  { fondo: "columnas_techo" }, { fondo: "mural" }, { fondo: "figuras", figura: "nube" },
-];
+/** Lo que se ofrece después de lo que pide el tema o la ocasión cuando piden «otra opción» (`variante` 1, 2, 3…): solo lo que va con esa ocasión (a una boda no le toca una nube ni a Halloween un aro de flores). */
+const ARO: Eleccion = { fondo: "aro_ramos", acento: "flor" }, PANELES: Eleccion = { fondo: "paneles_guirnalda" }, SEMIARCO: Eleccion = { fondo: "semiarco_racimos" };
+const LETRAS: Eleccion = { fondo: "pared_letras" }, TECHO: Eleccion = { fondo: "columnas_techo" }, MURAL: Eleccion = { fondo: "mural" }, NUBE: Eleccion = { fondo: "figuras", figura: "nube" };
+const OTRAS_POR_OCASION: Readonly<Record<string, readonly Eleccion[]>> = {
+  boda: [ARO, PANELES, SEMIARCO, TECHO], quince: [ARO, PANELES, SEMIARCO, LETRAS], bautizo: [NUBE, PANELES, SEMIARCO, ARO], baby_shower: [NUBE, PANELES, SEMIARCO, ARO],
+  corporativo: [MURAL, LETRAS, TECHO, SEMIARCO], graduacion: [LETRAS, TECHO, ARO, MURAL], halloween: [TECHO, MURAL, SEMIARCO, LETRAS],
+};
+const OTRAS_POR_DEFECTO: readonly Eleccion[] = [ARO, PANELES, SEMIARCO, LETRAS, TECHO, MURAL, NUBE];
 
 /**
  * La composición de un pedido. Con `variante` 0 (la primera) manda el tema o la ocasión, y es la misma cada vez que se pide lo mismo;
  * con 1, 2, 3… sale otra distinta para el mismo pedido (la variante entra también en la semilla, así que cambian los modelos y la entrada).
+ * Cuando se acaban las opciones da la vuelta y repite desde la primera: `vuelta` lo dice.
  */
 export function composicionDe(p: PedidoComposicion): Composicion {
   const pedido = plegar([p.tipo, p.tematica ?? "", ...(p.colores ?? []), p.estilo ?? "", p.texto ?? ""].join("|"));
@@ -112,10 +116,10 @@ export function composicionDe(p: PedidoComposicion): Composicion {
   const pool = POR_OCASION[p.tipo] ?? POR_OCASION.otro!;
   const principal = eleccionTematica(p.tematica, p.tipo) ?? pool[base % pool.length]!;
   const clave = (e: Eleccion) => `${e.fondo}/${e.figura ?? ""}`;
-  const opciones = [principal, ...pool, ...OTRAS_OPCIONES].filter((e, i, todas) => todas.findIndex((x) => clave(x) === clave(e)) === i);
+  const opciones = [principal, ...pool, ...(OTRAS_POR_OCASION[p.tipo] ?? OTRAS_POR_DEFECTO)].filter((e, i, todas) => todas.findIndex((x) => clave(x) === clave(e)) === i);
   const elegida = opciones[variante % opciones.length]!;
   const figura = elegida.figura ?? FIGURAS_POR_SEMILLA[(semilla >>> 8) % FIGURAS_POR_SEMILLA.length]!;
   const acento = elegida.acento ?? ACENTOS_FONDO[(semilla >>> 4) % ACENTOS_FONDO.length]!;
   const entrada: EntradaSalon = p.tipo === "boda" || p.tipo === "quince" || p.tipo === "corporativo" ? "arco" : (semilla >>> 16) % 2 === 0 ? "arco" : "columnas";
-  return { fondo: elegida.fondo, figura, acento, entrada, semilla };
+  return { fondo: elegida.fondo, figura, acento, entrada, semilla, vuelta: variante >= opciones.length };
 }
