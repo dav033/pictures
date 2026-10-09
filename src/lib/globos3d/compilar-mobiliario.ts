@@ -2,9 +2,11 @@ import type { Colocacion } from "./escena";
 import type { AcabadoEscenografia } from "./escenografia";
 import { muebleDe } from "./mobiliario-catalogo";
 import { puestosAlrededor, puestosEnFila } from "./mobiliario-disposicion";
-import { MAX_TEXTO_MUEBLE, opcionesDeMueble, piezaDeMueble } from "./mobiliario-pieza";
+import { hexDeColor } from "./mobiliario-colores";
+import { conTextoPieza, MAX_TEXTO_MUEBLE, opcionesDeMueble, piezaDeMueble } from "./mobiliario-pieza";
 import type { MuebleCatalogo } from "./mobiliario-tipos";
 import type { ColorLeido, PiezaLeida } from "./lectura-foto";
+import { acabadoRotuloLeido, avisoDeTexto } from "./rotulos";
 import type { Pieza } from "./piezas";
 
 /**
@@ -16,6 +18,12 @@ import type { Pieza } from "./piezas";
  */
 
 export type FondoLeido = Extract<PiezaLeida, { tipo: "fondo" }>;
+
+/** El color de las letras de un fondo leído (`colorTexto`: nombre o #hex) o undefined si no vino o no se reconoce (queda dicho). */
+export function tintaLeida(p: Pick<FondoLeido, "id" | "colorTexto">, notas: string[]): string | undefined {
+  if (!p.colorTexto) return undefined;
+  try { return hexDeColor(p.colorTexto, notas); } catch { notas.push(`${p.id.replace(/_/g, " ")}: no reconocí el color del texto «${p.colorTexto}»; usé el que se lee sobre el fondo.`); return undefined; }
+}
 export type NodoMobiliario = { base: string; nombre: string; pieza: Pieza; colocacion: Colocacion };
 /** La medida de lo leído, ya en cm de la sala (`muroZ`: dónde está la pared del fondo). */
 export type MedidaLeida = { anchoCm: number; altoCm: number; xCm: number; yBaseCm: number; muroZ: number };
@@ -63,15 +71,27 @@ export function mobiliarioLeido(p: FondoLeido, medida: MedidaLeida, notas: strin
   const idBase = p.id.replace(/_/g, "-");
   const cuantos = Math.max(1, p.cantidad ?? 1);
   const pared = mueble.lugar === "pared";
-  if (pared && cuantos > 1) notas.push(`${mueble.nombre}: los de pared van de uno en uno; puse solo uno de los ${cuantos} leídos.`);
-  const n = pared ? 1 : cuantos;
+  // Lo que flota en el aire (el nombre de acrílico delante de un aro) también va de uno en uno.
+  const flota = mueble.flotaCm !== undefined;
+  if ((pared || flota) && cuantos > 1) notas.push(`${mueble.nombre}: los ${pared ? "de pared" : "que flotan"} van de uno en uno; puse solo uno de los ${cuantos} leídos.`);
+  const n = pared || flota ? 1 : cuantos;
   const t = medidasDe(mueble, medida, n > 1, notas);
-  const colores = p.colores.slice(0, mueble.coloresDe.length).map((c) => c.hex);
-  const acabado = p.colores[0] ? ACABADO[p.colores[0].acabado] : undefined;
-  const pieza = piezaDeMueble(mueble, opcionesDeMueble(mueble, { ...t, colores, ...(acabado ? { acabado } : {}), ...(mueble.conTexto && p.texto ? { texto: p.texto.slice(0, MAX_TEXTO_MUEBLE) } : {}) }));
-  if (mueble.conTexto && p.texto && p.texto.length > MAX_TEXTO_MUEBLE) notas.push(`${mueble.nombre}: el texto leído pasa de ${MAX_TEXTO_MUEBLE} letras; quedó «${p.texto.slice(0, MAX_TEXTO_MUEBLE)}».`);
+  const tinta = tintaLeida(p, notas);
+  // El color del texto aparte (colorTexto) es el de las letras del nombre de acrílico (su color 1) o la luz de un neón (su color 2); si la foto
+  // no lo dice, los colores leídos. El material del nombre de acrílico sale del acabado de las letras con la misma regla que el de un panel.
+  const iTinta = mueble.acabadosPropios ? 0 : mueble.conTexto ? 1 : -1;
+  const colores = p.colores.slice(0, mueble.coloresDe.length).map((c, i) => (i === iTinta && tinta ? tinta : c.hex));
+  const acabado = mueble.acabadosPropios ? (acabadoRotuloLeido(p.acabadoTexto ?? p.colores[0]?.acabado) === "acrilico_espejo" ? "metal" as const : "mate" as const) : p.colores[0] ? ACABADO[p.colores[0].acabado] : undefined;
+  if (p.acabadoTexto && mueble.conTexto && !mueble.acabadosPropios) notas.push(`${mueble.nombre}: el acabado del texto (${p.acabadoTexto}) no aplica a un letrero de luz: lo ignoré.`);
+  const sinRotulo = piezaDeMueble(mueble, opcionesDeMueble(mueble, { ...t, colores, ...(acabado ? { acabado } : {}), ...(mueble.conTexto && p.texto ? { texto: p.texto.slice(0, MAX_TEXTO_MUEBLE) } : {}) }));
+  // Un marco con un nombre: el texto leído es su rótulo, con el color y el acabado que se leyeron en las letras (sin color, el que se lee sobre la tela).
+  const pieza = mueble.rotulable && p.texto && sinRotulo.tipo === "escenografia" ? conTextoPieza(sinRotulo, { texto: p.texto, acabado: acabadoRotuloLeido(p.acabadoTexto), ...(tinta ? { color: tinta } : {}) }) : sinRotulo;
+  const avisoTexto = (mueble.conTexto || mueble.rotulable) && p.texto ? avisoDeTexto(p.texto, mueble.lineasTexto ?? (mueble.rotulable ? 3 : 1)) : null;
+  if (avisoTexto) notas.push(`${mueble.nombre}: ${avisoTexto}`);
   const nodo = (i: number, colocacion: Colocacion): NodoMobiliario => ({ base: idBase, nombre: n > 1 ? `${mueble.nombre} ${i + 1}` : mueble.nombre, pieza, colocacion });
   if (pared) return [nodo(0, { en: "pared", pared: "fondo", aLoLargoCm: r0(medida.xCm), alturaCm: r0(Math.max(0, medida.yBaseCm)) })];
+  // En el aire: a la altura que se lee (si la foto no la da, la de siempre) y delante del aro, a su retiro.
+  if (flota) return [nodo(0, { en: "libre", xCm: r0(medida.xCm), yCm: r0(medida.yBaseCm > 20 ? medida.yBaseCm : mueble.flotaCm!), zCm: medida.muroZ + (mueble.retiroCm ?? 120), giroGrados: 0 })];
   const mesa = n > 1 && mueble.asiento ? mesaDelGrupo(mesas, medida.xCm, medida.anchoCm) : null;
   if (mesa) {
     const puestos = puestosAlrededor({ cx: mesa.x, cz: mesa.z, anchoCm: mesa.anchoCm, fondoCm: mesa.fondoCm, cantidad: n, holguraCm: t.fondoCm / 2 + 8, frenteCm: t.anchoCm });

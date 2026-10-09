@@ -1,0 +1,215 @@
+/**
+ * La letra de los rótulos DE VERDAD (Great Vibes, `public/fonts/`) dibujada por Chromium sin cabeza con el código del taller: se
+ * empaqueta `rotulo-visor.ts` + `fuente-rotulos.ts` con esbuild (ya está: lo usa tsx) y corre en una página. Sin red: la letra se sirve
+ * del disco. Lo que prueba:
+ * - antes de cargar la letra no se dibuja con otra: el texto queda «pendiente» y el visor pone una marca gris;
+ * - cargada, el texto sale con la proporción que estima el taller sin lienzo (`aspectoEstimado`, 14 % o menos de diferencia) y cada
+ *   texto cuesta pocos triángulos (la cifra queda en la salida);
+ * - si la letra falla (404) no hay letra de reemplazo: estado «fallo», marca roja, aviso en la consola, el texto no se rasteriza.
+ *
+ *   npx tsx scripts/test/test-rotulos-letra.ts
+ */
+import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { build } from "esbuild";
+import { chromium, type Page } from "playwright";
+import { aspectoEstimado } from "../../src/lib/globos3d/rotulos";
+
+const RAIZ = resolve(__dirname, "../..");
+const FUENTE = join(RAIZ, "public/fonts/great-vibes-5.3.0-latin-400.woff2");
+const TEXTOS = ["Isabella", "David y Dayan", "Let's Party", "Mia 15", "David\ny\nDayan", "Let's\nParty", "Feliz cumple\nValentina"];
+
+type Medida = { texto: string; aspecto: number; triangulos: number; ms: number; trianguloVinilo: number; msVinilo: number };
+
+async function empaquetar(): Promise<string> {
+  const carpeta = mkdtempSync(join(tmpdir(), "rotulos-letra-"));
+  const entrada = join(carpeta, "entrada.ts");
+  writeFileSync(entrada, `export * from ${JSON.stringify(join(RAIZ, "src/components/tres-d/rotulo-visor"))};\nexport * from ${JSON.stringify(join(RAIZ, "src/components/tres-d/fuente-rotulos"))};\nexport { crearEscenografiaVisor } from ${JSON.stringify(join(RAIZ, "src/components/tres-d/escenografia-visor"))};\nexport { armarEscenografia } from ${JSON.stringify(join(RAIZ, "src/lib/globos3d/escenografia"))};\n`);
+  try {
+    const r = await build({ entryPoints: [entrada], bundle: true, write: false, format: "iife", globalName: "Rot", platform: "browser", alias: { "@": join(RAIZ, "src") }, nodePaths: [join(RAIZ, "node_modules")], logLevel: "silent" });
+    return r.outputFiles[0]!.text;
+  } finally {
+    rmSync(carpeta, { recursive: true, force: true });
+  }
+}
+
+/** Una página con el código del taller y la letra servida del disco (o con 404 si `sinLetra`). */
+async function abrir(navegador: Awaited<ReturnType<typeof chromium.launch>>, codigo: string, sinLetra: boolean | "una-vez"): Promise<{ pagina: Page; consola: string[]; pedidos: { letra: number } }> {
+  const pedidos = { letra: 0 };
+  const pagina = await navegador.newPage();
+  const consola: string[] = [];
+  pagina.on("console", (m) => { if (m.type() === "warning" || m.type() === "error") consola.push(m.text()); });
+  let fallosPendientes = sinLetra === "una-vez" ? 1 : 0;
+  await pagina.route("http://rotulos.test/**", (ruta) => {
+    const url = new URL(ruta.request().url());
+    if (url.pathname === "/") return ruta.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><body></body>" });
+    if (url.pathname === "/fonts/great-vibes-5.3.0-latin-400.woff2") pedidos.letra++;
+    if (url.pathname === "/fonts/great-vibes-5.3.0-latin-400.woff2" && sinLetra !== true && fallosPendientes-- <= 0) return ruta.fulfill({ status: 200, contentType: "font/woff2", body: readFileSync(FUENTE) });
+    return ruta.fulfill({ status: 404, body: "no" });
+  });
+  await pagina.goto("http://rotulos.test/");
+  await pagina.evaluate("window.__name = (f) => f;");
+  await pagina.addScriptTag({ content: codigo });
+  return { pagina, consola, pedidos };
+}
+
+async function main() {
+  const codigo = await empaquetar();
+  const navegador = await chromium.launch({ headless: true });
+  try {
+    // ---- con la letra
+    const { pagina } = await abrir(navegador, codigo, false);
+    const antes = await pagina.evaluate((textos) => {
+      const R = (window as unknown as { Rot: { estadoFuenteRotulos: () => string; rasterizarTexto: (t: string) => unknown } }).Rot;
+      return { estado: R.estadoFuenteRotulos(), rasteriza: R.rasterizarTexto(textos[0]!) };
+    }, TEXTOS);
+    assert.equal(antes.rasteriza, "pendiente", "antes de cargar la letra el texto queda pendiente: no se dibuja con otra");
+    assert.ok(antes.estado === "pendiente" || antes.estado === "cargando", antes.estado);
+
+    const medidas: Medida[] = await pagina.evaluate(async (textos) => {
+      const R = (window as unknown as { Rot: { cargarFuenteRotulos: () => Promise<boolean>; rasterizarTexto: (t: string) => { ancho: number; alto: number } | string | null; crearRotulosVisor: (e: () => unknown, o: object) => { malla: (s: unknown) => { geometry: { index: { count: number } | null; attributes: { position: { count: number } } } } | null; liberar: () => void } } }).Rot;
+      if (!(await R.cargarFuenteRotulos())) throw new Error("la letra no cargó");
+      const visor = R.crearRotulosVisor(() => null, {});
+      return textos.map((texto) => {
+        const t0 = performance.now();
+        const m = R.rasterizarTexto(texto);
+        if (typeof m !== "object" || m === null) throw new Error(`sin tinta: ${texto}`);
+        const solido = (acabado: string) => ({ forma: "caja", tamano: { x: 200, y: 200, z: 2 }, hex: "#ffffff", acabado: "mate", rotulo: { texto, color: "#000000", acabado, altoCm: 40, yCm: 100 } });
+        const vinilo = visor.malla(solido("vinilo"))!.geometry;
+        const msVinilo = Math.round(performance.now() - t0);
+        const g = visor.malla(solido("acrilico_mate"))!.geometry;
+        return { texto, aspecto: m.ancho / m.alto, triangulos: (g.index ? g.index.count : g.attributes.position.count) / 3, ms: Math.round(performance.now() - t0), trianguloVinilo: (vinilo.index ? vinilo.index.count : vinilo.attributes.position.count) / 3, msVinilo };
+      });
+    }, TEXTOS);
+    for (const m of medidas) {
+      const estimado = aspectoEstimado(m.texto);
+      const diferencia = Math.abs(m.aspecto - estimado) / m.aspecto;
+      console.log(`  ${JSON.stringify(m.texto).padEnd(28)} proporción ${m.aspecto.toFixed(2)} (estimada ${estimado.toFixed(2)}, ${(diferencia * 100).toFixed(1)} %) · acrílico ${m.triangulos} triángulos (${m.ms} ms con vinilo y acrílico) · vinilo ${m.trianguloVinilo} triángulos (${m.msVinilo} ms)`);
+      assert.ok(diferencia <= 0.14, `la estimación sin lienzo de ${JSON.stringify(m.texto)} se aparta ${(diferencia * 100).toFixed(1)} %`);
+      assert.ok(m.triangulos > 100 && m.triangulos < 12000, `${m.triangulos} triángulos`);
+      assert.equal(m.trianguloVinilo, 2, "un vinilo es una placa de dos triángulos");
+    }
+    console.log("  ✓ con la letra cargada: proporciones estimadas y triángulos por texto");
+
+    // ---- el visor avisa (una vez) cuando la letra llega, para rehacer lo que dibujó como marca
+    const pagina2 = await abrir(navegador, codigo, false);
+    const aviso = await pagina2.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { cargarFuenteRotulos: () => Promise<boolean>; crearRotulosVisor: (e: () => unknown, o: object) => { malla: (s: unknown) => { geometry: { type: string } } | null } } }).Rot;
+      let avisos = 0;
+      const visor = R.crearRotulosVisor(() => null, { alFuenteLista: () => { avisos++; } });
+      const solido = { forma: "caja", tamano: { x: 200, y: 200, z: 2 }, hex: "#ffffff", acabado: "mate", rotulo: { texto: "Ana", color: "#000000", acabado: "vinilo", altoCm: 40, yCm: 100 } };
+      const antes = visor.malla(solido)!.geometry.type;
+      visor.malla(solido);
+      await R.cargarFuenteRotulos();
+      await new Promise((r) => setTimeout(r, 50));
+      return { antes, avisos, despues: visor.malla(solido)!.geometry.type };
+    });
+    assert.equal(aviso.antes, "BoxGeometry", "antes de que llegue la letra: una marca");
+    assert.equal(aviso.avisos, 1, "el visor avisa una sola vez que la letra llegó");
+    assert.notEqual(aviso.despues, "BoxGeometry", "y con la letra ya dibuja las letras");
+
+    // ---- el letrero de neón usa la misma letra: sin ella no hay texto (no uno con otra letra) y con ella, la calcomanía
+    const pagNeon = await abrir(navegador, codigo, false);
+    const neon = await pagNeon.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { cargarFuenteRotulos: () => Promise<boolean>; crearEscenografiaVisor: (e: () => unknown, o: object) => { piezas: (s: unknown[]) => { children: unknown[] }[] }; armarEscenografia: (e: object[]) => unknown[] } }).Rot;
+      let avisos = 0;
+      const visor = R.crearEscenografiaVisor(() => null, { alFuenteLista: () => { avisos++; } });
+      const solidos = R.armarEscenografia([{ forma: "caja", centro: { x: 0, y: 30, z: 0 }, tamano: { x: 120, y: 60, z: 1.6 }, hex: "#101014", acabado: "satinado", motivo: { dibujo: "texto", texto: "Mia 15", hex: "#ff4fa3", estilo: "neon" } }]);
+      const antes = visor.piezas(solidos)[0]!.children.length;
+      await R.cargarFuenteRotulos();
+      await new Promise((r) => setTimeout(r, 50));
+      return { antes, avisos, despues: visor.piezas(solidos)[0]!.children.length };
+    });
+    assert.equal(neon.antes, 0, "antes de que llegue la letra el neón no dibuja su texto");
+    assert.equal(neon.avisos, 1, "y el visor avisa para rehacerlo");
+    assert.equal(neon.despues, 1, "con la letra, la calcomanía del texto");
+    console.log("  ✓ el letrero de neón espera la letra de los rótulos");
+
+    // ---- sin la letra: no hay letra de reemplazo
+    const falla = await abrir(navegador, codigo, true);
+    const resultado = await falla.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { cargarFuenteRotulos: () => Promise<boolean>; estadoFuenteRotulos: () => string; rasterizarTexto: (t: string) => unknown; crearRotulosVisor: (e: () => unknown, o: object) => { malla: (s: unknown) => { geometry: { type: string }; material: { color: { getHex: () => number } } } | null } } }).Rot;
+      const cargo = await R.cargarFuenteRotulos();
+      const visor = R.crearRotulosVisor(() => null, {});
+      const solido = { forma: "caja", tamano: { x: 200, y: 200, z: 2 }, hex: "#ffffff", acabado: "mate", rotulo: { texto: "Ana", color: "#000000", acabado: "vinilo", altoCm: 40, yCm: 100 } };
+      const marca = visor.malla(solido);
+      return { cargo, estado: R.estadoFuenteRotulos(), tinta: R.rasterizarTexto("Ana"), geometria: marca?.geometry.type, color: marca?.material.color.getHex() };
+    });
+    assert.equal(resultado.cargo, false);
+    assert.equal(resultado.estado, "fallo");
+    assert.equal(resultado.tinta, null, "no se rasteriza el texto con la letra del sistema");
+    assert.equal(resultado.geometria, "BoxGeometry", "en su lugar, una marca");
+    assert.equal(resultado.color, 0xd94b4b, "roja");
+    assert.ok(falla.consola.some((l) => l.includes("[rótulos]")), `avisa en la consola: ${falla.consola.join(" | ")}`);
+    console.log("  ✓ sin la letra: marca roja y aviso, nunca otra letra");
+
+    // ---- un fallo no se recuerda: la captura para la IA para con un error y, al volver la red, la siguiente sale bien
+    const una = await abrir(navegador, codigo, "una-vez");
+    const reintento = await una.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { exigirLetraDeRotulos: (s: object[]) => Promise<void>; estadoFuenteRotulos: () => string; prepararRotulos: (s: object[]) => Promise<boolean> } }).Rot;
+      const conRotulo = [{ rotulo: { texto: "Ana" } }], neon = [{ motivo: { estilo: "neon" } }];
+      const sinNada = await R.prepararRotulos([{}]);
+      let error = "";
+      try { await R.exigirLetraDeRotulos(conRotulo); } catch (e) { error = e instanceof Error ? e.message : String(e); }
+      const estadoTrasFallo = R.estadoFuenteRotulos();
+      await R.exigirLetraDeRotulos(neon);
+      return { sinNada, error, estadoTrasFallo, estadoFinal: R.estadoFuenteRotulos() };
+    });
+    assert.equal(reintento.sinNada, true, "sin rótulos no hace falta la letra");
+    assert.match(reintento.error, /No se pudo cargar la letra de los rótulos/, "la captura falla con un error claro, no con una marca roja");
+    assert.equal(reintento.estadoTrasFallo, "fallo");
+    assert.equal(reintento.estadoFinal, "lista", "el fallo no se recuerda: el siguiente intento carga (y un letrero de neón también la pide)");
+    console.log("  ✓ un fallo no dura hasta recargar: la captura para con error y el siguiente intento carga la letra");
+
+    // ---- la captura del visor vivo (la de «Imagen con IA»): espera la letra, rehace lo dibujado como marca y, si no carga, para con error
+    const viva = await abrir(navegador, codigo, false);
+    const captura = await viva.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { letraParaCapturar: (h: boolean, r: () => void, c: () => Promise<void>) => Promise<void> } }).Rot;
+      let rehechos = 0, cuadros = 0;
+      const rehacer = () => { rehechos++; }, cuadro = async () => { cuadros++; };
+      await R.letraParaCapturar(false, rehacer, cuadro);
+      const sinRotulos = { rehechos, cuadros };
+      await R.letraParaCapturar(true, rehacer, cuadro);
+      const primera = { rehechos, cuadros };
+      await R.letraParaCapturar(true, rehacer, cuadro);
+      return { sinRotulos, primera, segunda: { rehechos, cuadros } };
+    });
+    assert.deepEqual(captura.sinRotulos, { rehechos: 0, cuadros: 0 }, "sin rótulos ni neones no espera nada");
+    assert.deepEqual(captura.primera, { rehechos: 1, cuadros: 1 }, "con rótulos y la letra sin cargar: la carga, rehace lo que era marca y espera un cuadro");
+    assert.deepEqual(captura.segunda, { rehechos: 1, cuadros: 2 }, "con la letra ya lista no rehace nada (solo el cuadro)");
+    const malaViva = await abrir(navegador, codigo, true);
+    const mala = await malaViva.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { letraParaCapturar: (h: boolean, r: () => void, c: () => Promise<void>) => Promise<void> } }).Rot;
+      let rehechos = 0, error = "";
+      try { await R.letraParaCapturar(true, () => { rehechos++; }, async () => undefined); } catch (e) { error = e instanceof Error ? e.message : String(e); }
+      return { rehechos, error };
+    });
+    assert.match(mala.error, /No se pudo cargar la letra de los nombres/, "sin letra la captura para con un error que se le muestra a la persona");
+    assert.equal(mala.rehechos, 0, "y no rehace nada (no hay con qué)");
+    console.log("  ✓ la captura del visor vivo espera la letra y, si no carga, para con error");
+
+    // ---- el visor no martilla la carga cuando falló: dentro de la espera no vuelve a pedir la letra
+    const martillo = await abrir(navegador, codigo, true);
+    const pedidosAntes = await martillo.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { cargarFuenteRotulos: () => Promise<boolean>; crearRotulosVisor: (e: () => unknown, o: object) => { letraLista: () => boolean } } }).Rot;
+      await R.cargarFuenteRotulos();
+      return R.crearRotulosVisor(() => null, {}).letraLista();
+    });
+    assert.equal(pedidosAntes, false);
+    await martillo.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { crearRotulosVisor: (e: () => unknown, o: object) => { letraLista: () => boolean } } }).Rot;
+      const visor = R.crearRotulosVisor(() => null, {});
+      for (let i = 0; i < 20; i++) visor.letraLista();
+      await new Promise((r) => setTimeout(r, 100));
+    });
+    assert.equal(martillo.pedidos.letra, 1, "20 consultas seguidas tras el fallo no piden la letra de nuevo (espera de 5 s)");
+    console.log("  ✓ tras un fallo el visor espera antes de reintentar");
+    console.log("test-rotulos-letra: ok");
+  } finally {
+    await navegador.close();
+  }
+}
+
+main().catch((e) => { console.error(e); process.exit(1); });

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { vistaRenderDe, vistaPorForma, esVistaRender, type VistaRender } from "@/lib/taller/vista-render";
 import { crearResolverItems, salaNeutra } from "./captura-items";
 import { mostrarArmada } from "./armada-visor";
+import { exigirLetraDeRotulos } from "./fuente-rotulos";
 import type { EscenaGlobos } from "./escena-globos";
 import { armarEscena, type AmbienteSala, type Escena, type EscenaArmada } from "@/lib/globos3d/escena";
 import type { Encuadre } from "@/lib/globos3d/encuadre-foto";
@@ -77,6 +78,7 @@ export function CapturaRender({ item, vista }: { item: string | null; vista: str
         if (!encontrado) return publicar(fallo(`Item desconocido: ${id}`));
         const t1 = performance.now();
         const armada = resolver.armar(encontrado);
+        await exigirLetraDeRotulos(armada.solidos);
         const vistaUsada = esVistaRender(vistaPedida) ? vistaPedida : vistaPorForma(vistaRenderDe(encontrado), cajaDe(armada));
         const t2 = performance.now();
         const v = await obtenerVisor();
@@ -102,6 +104,7 @@ export function CapturaRender({ item, vista }: { item: string | null; vista: str
       const publicar = (estado: EstadoCaptura): EstadoCaptura => { if (vivo) window.__captura = estado; return estado; };
       try {
         const armada = armarEscena(escena);
+        await exigirLetraDeRotulos(armada.solidos);
         const v = await obtenerVisor();
         if (!vivo) { v.destruir(); visor = null; throw new Error("Página desmontada"); }
         mostrarArmada(v, armada, { ...salaNeutra(armada.sala), ...(ambiente ? { ambiente } : {}) });

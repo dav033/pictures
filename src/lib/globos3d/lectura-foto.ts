@@ -17,11 +17,13 @@ import { RACIMOS_PREDEFINIDOS } from "./racimos-globos";
 const Fraccion = z.number().min(-0.2).max(1.2);
 const Tamano = z.number().min(0.005).max(2);
 
+const AcabadoLeido = z.enum(["mate", "brillante", "cromado", "perla", "cristal", "confeti"]);
+
 export const ColorLeidoSchema = z.object({
   nombre: z.string().min(2).max(40).describe("color en español o inglés, como lo diría un decorador: «azul marino», «dorado», «blush», «verde esmeralda», «blanco perla»"),
   hex: z.string().regex(/^#[0-9a-fA-F]{6}$/).describe("el color medido en la foto, en la parte iluminada del globo"),
   peso: z.number().min(0).max(100).describe("cuánto se ve de este color en la pieza (los pesos de una pieza suman ~100)"),
-  acabado: z.enum(["mate", "brillante", "cromado", "perla", "cristal", "confeti"]).describe("mate/brillante = látex normal; cromado = espejo (Reflex); perla = satinado (Silk); cristal = transparente; confeti = transparente con confeti"),
+  acabado: AcabadoLeido.describe("mate/brillante = látex normal; cromado = espejo (Reflex); perla = satinado (Silk); cristal = transparente; confeti = transparente con confeti"),
 });
 export type ColorLeido = z.infer<typeof ColorLeidoSchema>;
 
@@ -94,7 +96,8 @@ export const PiezaLeidaSchema = z.discriminatedUnion("tipo", [
   z.object({
     tipo: z.literal("fondo"),
     id: z.enum(FONDOS_CATALOGO.map((f) => f.id) as [string, ...string[]]),
-    x: Fraccion.describe("centro"), yBase: Fraccion, ancho: Tamano, alto: Tamano, texto: z.string().max(30).optional().describe("letrero o neón: lo que dice"),
+    x: Fraccion.describe("centro"), yBase: Fraccion, ancho: Tamano, alto: Tamano, texto: z.string().max(30).optional().describe("lo que dice (letrero, neón, nombre en cursiva)"),
+    colorTexto: z.string().max(30).optional().describe("color de las letras del texto"), acabadoTexto: AcabadoLeido.optional().describe("acabado de las letras (cromado = acrílico espejo)"),
     cantidad: z.number().int().min(1).max(12).optional().describe("cuántos iguales en fila (sillas…): el ancho es el de todos juntos; si falta, 1"), ...Comun,
   }),
   z.object({

@@ -11,6 +11,7 @@ export type { FondoCatalogo, FondoFijo, MuebleCatalogo } from "./mobiliario-tipo
  * - panel redondo (con aro de otro color), media luna, arcos tipo chiara (2–3 arcos escalonados), pared de lentejuelas;
  * - pedestales (juego de cilindros de alturas distintas, mate, satinados o dorados), mesa con mantel, tapete;
  * - cortina de tela con luces y letrero (un tablero con texto).
+ * Panel redondo, arcos chiara, pared de lentejuelas, letrero y marco con tela admiten un rótulo en cursiva (`rotulos.ts`): lo lleva su último elemento (en los arcos, el más grande).
  * `FONDOS_CATALOGO` (al final) junta estos fondos fijos con el mobiliario paramétrico de `mobiliario-catalogo.ts` (sillas, mesas,
  * sofás, aros metálicos…): un solo registro, con `clase: "fondo" | "mueble"`, para el panel «Añadir», la lectura de fotos y la IA.
  * Todo apoyado en el piso (y = 0) y de frente (+z), centrado en x = 0. No cotiza (escenografía).
@@ -90,16 +91,20 @@ export function letrero(o: { texto: string; anchoCm: number; altoCm: number; hex
 
 /** Los de las fotos, listos para poner (y luego cambiar de color o medida). */
 const FONDOS_BASE: readonly FondoFijo[] = [
-  { clase: "fondo", id: "panel_redondo", nombre: "Panel redondo", descripcion: "Panel circular de 1,5 m con aro dorado (el fondo de «Happy Birthday»).", lugar: "piso", elementos: () => panelRedondo({ diametroCm: 150, alturaCentroCm: 110, hex: "#f3e7cf", aro: { hex: "#d8b25a", anchoCm: 4 } }) },
+  { clase: "fondo", id: "panel_redondo", rotulable: true, nombre: "Panel redondo", descripcion: "Panel circular de 1,5 m con aro dorado (el fondo de «Happy Birthday»).", lugar: "piso", elementos: () => panelRedondo({ diametroCm: 150, alturaCentroCm: 110, hex: "#f3e7cf", aro: { hex: "#d8b25a", anchoCm: 4 } }) },
   { clase: "fondo", id: "media_luna", nombre: "Media luna", descripcion: "Panel de media luna azul marino de 1,8 m, para poner detrás de un panel redondo.", lugar: "piso", elementos: () => mediaLuna({ diametroCm: 180, hex: "#1c2f5e" }) },
-  { clase: "fondo", id: "arcos_chiara", nombre: "Arcos chiara", descripcion: "Tres arcos de medio punto escalonados (azul, crema y rosa).", lugar: "piso", elementos: () => arcosChiara({ arcos: [{ anchoCm: 120, altoCm: 210, hex: "#3d8fd6", xCm: -15 }, { anchoCm: 105, altoCm: 190, hex: "#f2dcc4", xCm: 5 }, { anchoCm: 80, altoCm: 165, hex: "#d6336c", xCm: 15 }] }) },
-  { clase: "fondo", id: "lentejuelas", nombre: "Pared de lentejuelas", descripcion: "Panel de shimmer dorado de 2,4 × 2,4 m.", lugar: "piso", elementos: () => [paredLentejuelas({ anchoCm: 240, altoCm: 240, hex: "#d4af5a" })] },
+  { clase: "fondo", id: "arcos_chiara", rotulable: "mayor", nombre: "Arcos chiara", descripcion: "Tres arcos de medio punto escalonados (azul, crema y rosa).", lugar: "piso", elementos: () => arcosChiara({ arcos: [{ anchoCm: 120, altoCm: 210, hex: "#3d8fd6", xCm: -15 }, { anchoCm: 105, altoCm: 190, hex: "#f2dcc4", xCm: 5 }, { anchoCm: 80, altoCm: 165, hex: "#d6336c", xCm: 15 }] }) },
+  { clase: "fondo", id: "lentejuelas", rotulable: true, nombre: "Pared de lentejuelas", descripcion: "Panel de shimmer dorado de 2,4 × 2,4 m.", lugar: "piso", elementos: () => [paredLentejuelas({ anchoCm: 240, altoCm: 240, hex: "#d4af5a" })] },
   { clase: "fondo", id: "pedestales", nombre: "Pedestales", grupo: "decorado", descripcion: "Tres cilindros de alturas distintas (azul, blanco y dorado), para la torta y los dulces.", lugar: "piso", retiroCm: 120, elementos: () => pedestales({ cilindros: [{ diametroCm: 55, altoCm: 70, hex: "#1f3366" }, { diametroCm: 50, altoCm: 85, hex: "#f4f1ea" }, { diametroCm: 45, altoCm: 100, hex: "#c9a14a", acabado: "metal" }] }) },
   { clase: "fondo", id: "mesa_mantel", nombre: "Mesa con mantel", grupo: "mesa", descripcion: "Mesa de 1,8 m con mantel blanco hasta el piso.", lugar: "piso", retiroCm: 120, elementos: () => mesaConMantel({ anchoCm: 180, fondoCm: 75, altoCm: 75, mantel: "#f7f6f2" }) },
   { clase: "fondo", id: "tapete_redondo", nombre: "Tapete", descripcion: "Tapete claro de 2 × 1,6 m frente al montaje.", lugar: "piso", retiroCm: 120, elementos: () => tapete({ anchoCm: 200, fondoCm: 160, hex: "#e9e2d6" }) },
   { clase: "fondo", id: "cortina_luces", nombre: "Cortina con luces", descripcion: "Cortina blanca de 2,5 × 2,4 m con luces de hada.", lugar: "pared", elementos: () => cortina({ anchoCm: 250, altoCm: 240, hex: "#f6f4ef", luces: true }) },
-  { clase: "fondo", id: "letrero", nombre: "Letrero", descripcion: "Tablero de madera con un nombre (cámbiale el texto).", lugar: "pared", alturaParedCm: 150, elementos: () => letrero({ texto: "Asher", anchoCm: 90, altoCm: 40, hex: "#e9dcc3", tinta: "#2f4a35" }) },
+  { clase: "fondo", id: "letrero", rotulable: true, nombre: "Letrero", descripcion: "Tablero de madera con un nombre (cámbiale el texto).", lugar: "pared", alturaParedCm: 150, elementos: () => letrero({ texto: "Asher", anchoCm: 90, altoCm: 40, hex: "#e9dcc3", tinta: "#2f4a35" }) },
 ];
 
 /** Fondos de las fotos y mobiliario de eventos (`mobiliario-catalogo.ts`): todo lo que no es globo y se pone en la escena. */
 export const FONDOS_CATALOGO: readonly FondoCatalogo[] = [...FONDOS_BASE, ...CATALOGO_MOBILIARIO];
+
+const POR_ID: ReadonlyMap<string, FondoCatalogo> = new Map(FONDOS_CATALOGO.map((f) => [f.id, f]));
+/** La entrada del catálogo de fondos y mobiliario con ese id, si la hay. */
+export const entradaDeCatalogo = (id: string): FondoCatalogo | undefined => POR_ID.get(id);

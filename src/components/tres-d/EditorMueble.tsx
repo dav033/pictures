@@ -1,8 +1,11 @@
 "use client";
 
 import { muebleDe } from "@/lib/globos3d/mobiliario-catalogo";
-import { limitesDeMueble, MAX_TEXTO_MUEBLE, piezaDeMueble, type OpcionesGuardadas, type PiezaEscenografia } from "@/lib/globos3d/mobiliario-pieza";
+import { limitesDeMueble, piezaDeMueble, type OpcionesGuardadas, type PiezaEscenografia } from "@/lib/globos3d/mobiliario-pieza";
+import { avisoDeTexto } from "@/lib/globos3d/rotulos";
 import type { Pieza } from "@/lib/globos3d/piezas";
+import { CampoTexto } from "./CampoTexto";
+import { EditorRotulo } from "./EditorRotulo";
 import { Deslizador } from "./PanelFlor";
 
 const metros = (cm: number) => `${(cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m`;
@@ -21,7 +24,9 @@ export function EditorMueble({ pieza, onPieza }: { pieza: PiezaEscenografia & { 
   const m = muebleDe(pieza.mueble.id);
   if (!m) return null;
   const o = pieza.mueble.opciones;
-  const pon = (cambio: Partial<OpcionesGuardadas>) => onPieza(piezaDeMueble(m, { ...o, ...cambio }));
+  const rotulo = pieza.mueble.rotulo;
+  const pon = (cambio: Partial<OpcionesGuardadas>) => onPieza(piezaDeMueble(m, { ...o, ...cambio }, rotulo));
+  const acabados = m.acabadosPropios ?? ACABADOS;
   const l = limitesDeMueble(m);
   const conFondo = (m.fondo ?? "libre") === "libre" && m.lugar === "piso";
   const color = (i: number) => o.colores[i] ?? m.colores[i] ?? COLOR_OPCIONAL;
@@ -50,17 +55,14 @@ export function EditorMueble({ pieza, onPieza }: { pieza: PiezaEscenografia & { 
           );
         })}
       </div>
-      <label className="flex items-center justify-between gap-2 text-xs text-texto">Material del primer color
-        <select value={o.acabado ?? ""} onChange={(e) => { const { acabado: _viejo, ...resto } = o; onPieza(piezaDeMueble(m, e.target.value ? { ...resto, acabado: ACABADOS.find(([id]) => id === e.target.value)?.[0] } : resto)); }} className="rounded-md bg-superficie-suave px-2 py-1 text-xs">
+      <label className="flex items-center justify-between gap-2 text-xs text-texto">{m.acabadosPropios ? "Material de las letras" : "Material del primer color"}
+        <select value={o.acabado ?? ""} onChange={(e) => { const { acabado: _viejo, ...resto } = o; onPieza(piezaDeMueble(m, e.target.value ? { ...resto, acabado: acabados.find(([id]) => id === e.target.value)?.[0] } : resto, rotulo)); }} className="rounded-md bg-superficie-suave px-2 py-1 text-xs">
           <option value="">Como viene</option>
-          {ACABADOS.map(([id, nombre]) => <option key={id} value={id}>{nombre}</option>)}
+          {acabados.map(([id, nombre]) => <option key={id} value={id}>{nombre}</option>)}
         </select>
       </label>
-      {m.conTexto && (
-        <label className="flex flex-col gap-1 text-xs text-texto">Texto
-          <input type="text" maxLength={MAX_TEXTO_MUEBLE} value={o.texto ?? "Happy Birthday"} onChange={(e) => pon({ texto: e.target.value })} className="rounded-md bg-superficie-suave px-2 py-1.5 text-sm" />
-        </label>
-      )}
+      {m.conTexto && <CampoTexto etiqueta="Texto" valor={o.texto ?? m.textoPorDefecto ?? ""} lineas={m.lineasTexto ?? 1} maxLength={120} aviso={(t) => avisoDeTexto(t, m.lineasTexto ?? 1)} onTexto={(texto) => pon({ texto })} />}
+      {m.rotulable && <EditorRotulo pieza={pieza} onPieza={onPieza} />}
     </div>
   );
 }

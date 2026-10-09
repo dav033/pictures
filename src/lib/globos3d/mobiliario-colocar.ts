@@ -5,7 +5,8 @@ import { retiroDe, type FondoCatalogo } from "./mobiliario-tipos";
 /**
  * Dónde entra por defecto un fondo o mueble que se pone sin decir dónde (el panel «Añadir» y la IA): en el piso, delante
  * de la pared del fondo a su retiro; corrido a un lado si ya hay algo ahí (dos sillas tocadas seguidas no se encaman);
- * y lo que va sobre una mesa (la base de pastel), arriba de la mesa que haya.
+ * y lo que va sobre una mesa (la base de pastel), arriba de la mesa que haya. Lo que flota (el nombre de acrílico, `flotaCm`) va
+ * en el aire, a su altura y a su retiro, sin esquivar nada: es para ponerlo justo delante de un aro o un arco.
  */
 
 /** Cuánto se corre de lado cada intento al esquivar lo que ya está (cm) y el aire que se deja entre piezas. */
@@ -56,6 +57,7 @@ export function colocacionPorDefecto(escena: Escena, f: FondoCatalogo, medidas: 
     if (mesa) return { colocacion: { en: "libre", xCm: mesa.x, yCm: mesa.y, zCm: mesa.z, giroGrados: 0 } };
   }
   const z = Math.round(-escena.sala.fondoCm / 2 + retiroDe(f));
+  if (f.flotaCm !== undefined) return { colocacion: { en: "libre", xCm: 0, yCm: f.flotaCm, zCm: z, giroGrados: 0 } };
   const sitio = esquivarEnElPiso(escena, 0, z, medidas.anchoCm, medidas.fondoCm);
   return sitio
     ? { colocacion: { en: "piso", xCm: sitio.x, zCm: z, giroGrados: 0 } }
