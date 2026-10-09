@@ -3,6 +3,7 @@ import { armarEscena } from "../escena";
 import { armadaCompacta } from "./armada-compacta";
 import { bomDeEscena } from "./bom";
 import { escenaDesdeEspec } from "./espec-a-escena";
+import type { CachePiezasEspec } from "./espec-a-escena";
 import { EspecClienteV1Schema, type EspecClienteV1 } from "./espec-cliente-v1";
 import { especHashDe } from "./hash-espec";
 import type { ResultadoMotorV1 } from "./resultado-motor-v1";
@@ -39,9 +40,20 @@ export { svgDeArmada, type OpcionesVistaSvg } from "./vista2d-svg";
 // Imagen realista (fase 4): la espec contada en inglés para FLUX, sin una palabra del cliente.
 export { descripcionImagenDeEspec, type DescripcionImagen } from "./descripcion-imagen";
 
-export function armarDesdeEspec(entrada: EspecClienteV1): ResultadoMotorV1 {
+// Ediciones del cliente (fase 5): las operaciones puras sobre la espec, sus equivalencias con el chat y el panel, y el plan exacto para el chat.
+export { EdicionEspecV1Schema, EdicionesEspecSchema, OPERACIONES_EDICION, type EdicionEspecV1 } from "./edicion-espec-v1";
+export { aplicarEdicion, aplicarEdiciones, PREFIJO_NO_PUDE, type ContextoEdicion, type ResultadoEdicion, type ResultadoEdiciones } from "./ediciones-espec";
+export { edicionDesdeCambio, edicionDesdePedido, parejaDe, type EdicionesDePedido, type RechazoDePedido } from "./edicion-desde-pedido";
+export { CambioPanelV1Schema, TIPOS_CAMBIO_PANEL, type CambioPanelV1 } from "./cambio-panel-v1";
+export { planActualDesdeEspec } from "./plan-actual-espec";
+export { crearCachePiezas, type CachePiezas } from "./cache-piezas";
+
+/** `cachePiezas`: las piezas ya armadas por su espec; una edición rearma solo las que cambiaron. */
+export type OpcionesArmado = { cachePiezas?: CachePiezasEspec };
+
+export function armarDesdeEspec(entrada: EspecClienteV1, opciones: OpcionesArmado = {}): ResultadoMotorV1 {
   const espec = EspecClienteV1Schema.parse(entrada);
-  const { escena, cache, declaradas, lineasDeFlores, noRepresentables, avisos } = escenaDesdeEspec(espec);
+  const { escena, cache, declaradas, lineasDeFlores, noRepresentables, avisos } = escenaDesdeEspec(espec, opciones.cachePiezas);
   const armada = armarEscena(escena, cache);
   return {
     motor: { id: "globos3d", version: VERSION_MOTOR },

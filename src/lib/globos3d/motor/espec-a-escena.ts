@@ -11,6 +11,7 @@ import {
 import { construirArco, construirColumna, construirGuirnalda, construirPared, construirRacimoPared, construirRamo, construirTecho } from "./constructores-clasicos";
 import { calibrarOrganico, perfilDe } from "./calibracion-organica";
 import { anchoEstimadoCm, distribuir, type ItemDeLayout } from "./layout";
+import { jsonEstable } from "./hash-espec";
 import { SEPARADOR_FLORES } from "./ids-nodos";
 import { DENSIDAD_POR_DEFECTO, medidasDe } from "./medidas-espec";
 import { representacionDe } from "./representable";
@@ -117,7 +118,7 @@ function alturaPared(pieza: PiezaEspec): number {
   return pieza.oficial === "racimo_pared" ? ALTURA_RACIMO_PARED_CM : 0;
 }
 
-type Preparada = { construida: Construida; armada: PiezaArmada; flor: Pieza | null; lineas: BomLinea[] };
+export type Preparada = { construida: Construida; armada: PiezaArmada; flor: Pieza | null; lineas: BomLinea[] };
 
 function prepararPieza(pieza: PiezaEspec, avisos: string[]): Preparada {
   const construida = construirPieza(pieza, avisos);
@@ -133,7 +134,38 @@ const faltantes = (pieza: PiezaEspec, armada: PiezaArmada): PiezaEspec["colores"
 
 type Armada = { espec: PiezaEspec; construida: Construida; armada: PiezaArmada; flor: Pieza | null };
 
-export function escenaDesdeEspec(espec: EspecClienteV1): EscenaDeEspec {
+/** Lo que sale de armar UNA pieza de la espec: depende solo de ella, así que se puede guardar para no rehacerla en la edición siguiente. */
+export type PiezaPreparada = { tipo: "lista"; preparada: Preparada; avisosPieza: string[] } | { tipo: "no_representable"; motivo: string };
+
+/** Una caché de piezas ya armadas por su espec (la ruta de ediciones la usa para rearmar solo lo que cambió). */
+export type CachePiezasEspec = { leer: (clave: string) => PiezaPreparada | undefined; guardar: (clave: string, pieza: PiezaPreparada) => void };
+
+function prepararCompleta(pieza: PiezaEspec): PiezaPreparada {
+  let preparada: Preparada;
+  const avisosPieza: string[] = [];
+  try {
+    preparada = prepararPieza(pieza, avisosPieza);
+    // Una trenza clásica reparte los colores en bandas de dos cuartetos: con más colores que bandas los últimos no llegan a
+    // la lista de materiales. Ningún color del cliente se pierde en silencio: se arma orgánica (que sí los reparte todos).
+    if (faltantes(pieza, preparada.armada).length && ORGANICA_DE_RESPALDO.has(pieza.oficial) && pieza.tamanos === "clasica") {
+      const respaldo: string[] = [];
+      const organica = prepararPieza({ ...pieza, tamanos: "organica_fina" }, respaldo);
+      if (!faltantes(pieza, organica.armada).length) {
+        preparada = organica;
+        avisosPieza.length = 0;
+        avisosPieza.push(...respaldo, `«${pieza.nombre}»: la trenza clásica no alcanza para sus ${pieza.colores.length} colores en ese tamaño; se armó orgánica, con globos de varios tamaños, para que lleve todos.`);
+      }
+    }
+  } catch (error) {
+    if (!(error instanceof ErrorHerramienta)) throw error;
+    return { tipo: "no_representable", motivo: error.message };
+  }
+  const sinColor = faltantes(pieza, preparada.armada);
+  if (sinColor.length) return { tipo: "no_representable", motivo: `${sinColor.length === 1 ? "El color" : "Los colores"} ${sinColor.map((c) => `${c.nombre} (${c.codigo})`).join(", ")} no llegan a la lista de materiales de «${pieza.nombre}»: el armado no los reparte.` };
+  return { tipo: "lista", preparada, avisosPieza };
+}
+
+export function escenaDesdeEspec(espec: EspecClienteV1, cachePiezas?: CachePiezasEspec): EscenaDeEspec {
   const avisos: string[] = [];
   const noRepresentables: NoRepresentable[] = [];
   const declaradas: PiezaEspec[] = [];
@@ -146,30 +178,16 @@ export function escenaDesdeEspec(espec: EspecClienteV1): EscenaDeEspec {
     if (representacion.estado === "fallback") { noRepresentables.push({ piezaId: pieza.id, motivo: representacion.motivo ?? "No se puede representar." }); continue; }
     if (representacion.estado === "declarada") { declaradas.push(pieza); avisos.push(`«${pieza.nombre}» se cuenta de la lista del catálogo y no se dibuja.`); continue; }
     if (representacion.estado === "aproximada" && representacion.motivo) avisos.push(`«${pieza.nombre}»: ${representacion.motivo}`);
-    let preparada: Preparada;
-    const avisosPieza: string[] = [];
-    try {
-      preparada = prepararPieza(pieza, avisosPieza);
-      // Una trenza clásica reparte los colores en bandas de dos cuartetos: con más colores que bandas los últimos no llegan a
-      // la lista de materiales. Ningún color del cliente se pierde en silencio: se arma orgánica (que sí los reparte todos).
-      if (faltantes(pieza, preparada.armada).length && ORGANICA_DE_RESPALDO.has(pieza.oficial) && pieza.tamanos === "clasica") {
-        const respaldo: string[] = [];
-        const organica = prepararPieza({ ...pieza, tamanos: "organica_fina" }, respaldo);
-        if (!faltantes(pieza, organica.armada).length) {
-          preparada = organica;
-          avisosPieza.length = 0;
-          avisosPieza.push(...respaldo, `«${pieza.nombre}»: la trenza clásica no alcanza para sus ${pieza.colores.length} colores en ese tamaño; se armó orgánica, con globos de varios tamaños, para que lleve todos.`);
-        }
-      }
-    } catch (error) {
-      if (!(error instanceof ErrorHerramienta)) throw error;
-      noRepresentables.push({ piezaId: pieza.id, motivo: error.message });
-      continue;
+    // La clave es la pieza entera sin su id: dos piezas iguales con ids distintos (o el mismo plan editado en otra) se arman una vez.
+    const clave = cachePiezas ? jsonEstable({ ...pieza, id: undefined }) : "";
+    let armadaDePieza = cachePiezas?.leer(clave);
+    if (!armadaDePieza) {
+      armadaDePieza = prepararCompleta(pieza);
+      cachePiezas?.guardar(clave, armadaDePieza);
     }
-    const sinColor = faltantes(pieza, preparada.armada);
-    if (sinColor.length) { noRepresentables.push({ piezaId: pieza.id, motivo: `${sinColor.length === 1 ? "El color" : "Los colores"} ${sinColor.map((c) => `${c.nombre} (${c.codigo})`).join(", ")} no llegan a la lista de materiales de «${pieza.nombre}»: el armado no los reparte.` }); continue; }
-    avisos.push(...avisosPieza);
-    const { construida, armada, flor, lineas } = preparada;
+    if (armadaDePieza.tipo === "no_representable") { noRepresentables.push({ piezaId: pieza.id, motivo: armadaDePieza.motivo }); continue; }
+    avisos.push(...armadaDePieza.avisosPieza);
+    const { construida, armada, flor, lineas } = armadaDePieza.preparada;
     if (armada.globos.length > TOPE_GLOBOS_PIEZA) { noRepresentables.push({ piezaId: pieza.id, motivo: `Lleva ${armada.globos.length} globos y el tope por pieza es ${TOPE_GLOBOS_PIEZA}.` }); continue; }
     if (globosDelPlan + armada.globos.length > TOPE_GLOBOS_PLAN) { noRepresentables.push({ piezaId: pieza.id, motivo: `Con esta pieza el plan pasa de ${TOPE_GLOBOS_PLAN} globos.` }); continue; }
     globosDelPlan += armada.globos.length;

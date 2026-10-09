@@ -1,5 +1,7 @@
 import "server-only";
-import { EspecClienteV1Schema, especHashDe, type EspecClienteV1 } from "@/lib/globos3d/motor/v1";
+import type { z } from "zod";
+import { EspecClienteV1Schema, especHashDe, type ConceptoPlan, type EspecClienteV1 } from "@/lib/globos3d/motor/v1";
+import type { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { abrirContextoPlan, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 
 /**
@@ -22,4 +24,16 @@ export function verificarPlanFirmado(plan: PlanFirmado, navegador: string): { es
   // El token firma el hash de la espec: si el navegador la cambió, el hash ya no coincide.
   if (especHashDe(espec.data, version) !== plan.plan_hash) return { codigo: "PLAN_ALTERADO", mensaje: "El plan no corresponde a su aprobación.", estado: 409, motivo: "hash_de_la_espec_distinto" };
   return { espec: espec.data };
+}
+
+/**
+ * El plan vigente que el navegador manda como base (una suma, un rehacer o una edición): lo que comprueba
+ * `verificarPlanFirmado` y, de él, el concepto (título y descripción) que el plan nuevo conserva.
+ */
+export function verificarPlanConConcepto(plan: z.infer<typeof PlanGuiadoSchema>, navegador: string): { espec: EspecClienteV1; concepto: ConceptoPlan } | RechazoPlan {
+  const extra = plan as typeof plan & { espec?: unknown; motor?: { version?: unknown } };
+  const firmado = verificarPlanFirmado({ approval_token: plan.approval_token, plan_hash: plan.plan_hash, espec: extra.espec, motor: extra.motor }, navegador);
+  if ("codigo" in firmado) return firmado;
+  const { concepto } = plan.plan;
+  return { espec: firmado.espec, concepto: { titulo: concepto.titulo, descripcion: concepto.descripcion, ...(concepto.estilo ? { estilo: concepto.estilo } : {}), ...(concepto.ocasion ? { ocasion: concepto.ocasion } : {}) } };
 }

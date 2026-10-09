@@ -874,7 +874,9 @@ export type CambioPlan =
   | { tipo: "agregar-color"; color: string; globo?: GloboParaPlan; /** Solo en estas piezas (pedido por chat: «agrégale dorado a las columnas»). */ estructuraIds?: string[] }
   | { tipo: "reemplazar-color"; color: string; productIdAnterior?: string; estructuraIds?: string[]; globo: GloboParaPlan }
   | { tipo: "tamano-todo"; direccion: 1 | -1 }
-  | { tipo: "quitar-pieza"; estructuraId: string };
+  | { tipo: "quitar-pieza"; estructuraId: string }
+  /** Solo en los planes del motor 3D: la proporción de tamaños de globo de la pieza (más pequeños o más grandes). */
+  | { tipo: "tamano-globos"; estructuraId: string; direccion: 1 | -1; pareja?: boolean };
 
 /** El cambio toca todas las piezas (añadir o cambiar un color en todo el plan, agrandarlo entero). */
 export function cambiaTodasLasPiezas(cambio: CambioPlan): boolean {
@@ -951,6 +953,7 @@ export function describirCambio(plan: PlanGuiado, cambio: CambioPlan, nuevo?: Pl
     }
     case "quitar-color": return `sin ${colorDe(cambio.indice)} en ${pieza}`;
     case "quitar-pieza": return `sin ${pieza}`;
+    case "tamano-globos": return `${pieza} con globos ${cambio.direccion > 0 ? "más grandes" : "más pequeños"}`;
   }
 }
 

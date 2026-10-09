@@ -65,6 +65,8 @@ export function mensajeAjuste(error: unknown): string {
   const mensaje = mensajeFalloPlanEditar(error, RESPALDO_AJUSTE);
   if (mensaje === CATALOGO_ERRORES_UI_V1.SIN_CONEXION.mensaje_usuario) return SIN_CONEXION;
   if (mensaje === MENSAJE_EDICION_LENTA) return MUY_LENTO;
+  // «No pude: …» lo escribe el servidor del 3D para el cliente (D-023): se dice tal cual, salvo que trajera jerga del motor.
+  if (mensaje.startsWith("No pude:")) return JERGA.test(mensaje) ? "No pude: ese cambio no se puede hacer en esta pieza. Tu plan sigue como estaba; prueba con otro ajuste." : mensaje;
   return JERGA.test(mensaje) ? "No pude hacer ese cambio en esta pieza. Tu plan sigue como estaba; prueba con otro ajuste." : mensaje;
 }
 
@@ -242,6 +244,9 @@ export async function ejecutarCambio(cambio: CambioPlan, base: PlanGuiado, depen
     case "quitar-pieza":
       exigir(planSinPieza(base.plan, cambio.estructuraId), "Esa pieza no se puede quitar: tu plan necesita al menos una.");
       return dependencias.quitarPieza(base, cambio.estructuraId);
+    case "tamano-globos":
+      // La proporción de tamaños de globo la mueve el motor 3D; un plan de Python no tiene ese mando.
+      throw new FalloPlanEditar("Este plan no deja cambiar el tamaño de los globos.");
   }
 }
 

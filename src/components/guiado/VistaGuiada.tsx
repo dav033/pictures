@@ -58,7 +58,7 @@ import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-refe
 import { prepararFotoReferencia } from "@/lib/imagen-cliente/preparar-foto";
 import { WidgetGuiadoSchema, type WidgetGuiado } from "@/lib/ia/guiado/widgets";
 import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
-import { coloresFaltantesPlanGuiado, cuerpoPlanGuiado, defectoPlanGuiado, planActualDesdePlan, referenciaDelPlan, resumenPlanGuiado, type ReferenciaDelPlan } from "@/lib/ia/guiado/instruccion-plan";
+import { coloresFaltantesPlanGuiado, cuerpoPlanGuiado, defectoPlanGuiado, referenciaDelPlan, resumenPlanGuiado, type ReferenciaDelPlan } from "@/lib/ia/guiado/instruccion-plan";
 import { cuerpoPlanFoto, lecturaConPiezaNueva, planLlevaPiezaPedida } from "@/lib/ia/guiado/foto-con-pieza";
 import { responderConsultaPlan } from "@/lib/ia/guiado/consulta-plan-chat";
 import type { ColorFotoFaltante } from "@/lib/plan/colores-foto-plan";
@@ -73,10 +73,12 @@ import { abrirConversacionGuiada, registrarAccionGuiada, registrarFalloGuiado, v
 import { AVISO_VERSION_NUEVA, CABECERA_VERSION_APP, RespuestaIncompatibleError, camposInvalidos, clasificarIncompatible, hayVersionNueva, idParaReintento, turnoSinRespuesta } from "./version-pagina";
 import { borrarEstadoGuiado } from "./empezar-de-nuevo";
 import { useMotorGuiada } from "./usarMotorGuiada";
+import { TEXTO_IMAGEN_PLAN_3D, TEXTO_REHECHO_EN_PYTHON } from "./Plan3DEnPreparacion";
 import { pedirImagenPlan3D } from "./imagen-plan-3d";
 import { mensajeErrorImagen } from "./mensaje-error-imagen";
 import { firmaDePlan } from "./motor3d/firma-plan";
-import { TEXTO_EDICION_PLAN_3D, TEXTO_IMAGEN_PLAN_3D, TEXTO_REHECHO_EN_PYTHON } from "./Plan3DEnPreparacion";
+import { crearDependenciasEdicion3d } from "./edicion-motor3d";
+import { planActualDelPlan } from "./plan-actual";
 import type { MotorGuiada } from "@/lib/guiada-motor/tipos";
 import { ConfirmarEmpezarDeNuevo } from "./ConfirmarEmpezarDeNuevo";
 import { borrarImagenesNavegador, guardarImagenNavegador, leerImagenesNavegador } from "./imagenes-navegador";
@@ -123,6 +125,8 @@ const MensajeSchema = z.object({
   notaFoto: z.string().optional(),
   /** La lectura de esta foto ya produjo un plan: «Sí, armémoslo» deja de mostrarse. */
   fotoArmada: z.boolean().optional(),
+  /** Un cambio hecho a un plan del 3D (REQ-007, fase 5): el turno con su espec de antes y de después, para calificarlo. */
+  edicion3d: z.object({ turnoId: z.string(), antes: z.unknown(), despues: z.unknown() }).strict().optional(),
   /** Respuestas rápidas de una pregunta local (sin modelo). */
   rapidas: z.array(z.string().min(1).max(60)).max(8).optional(),
   destacadas: z.array(z.string().min(1).max(60)).max(4).optional(),
@@ -531,7 +535,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     // CRUD por chat (dueño, 2026-10-07). R · «¿qué lleva mi plan?», «¿cuántos globos tiene la columna izquierda?»: se
     // responde con el plan que se ve (las cifras que contó Python), sin modelo y sin cambiar nada.
     if (!archivo && planVigente && !opcionesEnvio.alcance && !opcionesEnvio.reintentar) {
-      const respuesta = responderConsultaPlan(limpio, planVigente.widget.plan);
+      const respuesta = responderConsultaPlan(limpio, planVigente.widget.plan, planActualDelPlan(planVigente.widget.plan, planVigente.widget.motor));
       if (respuesta) {
         setEntrada("");
         agregar([
@@ -618,7 +622,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const base = (opciones.reintentar ? sinUltimoTurnoGuiado(mensajes) : mensajes).filter((mensaje) => mensaje.content.trim().length > 0 || mensaje.widgets?.length || mensaje.referencia);
     const historial = prepararHistorialGuiado(base, `${contenido}${archivo ? "\nAdjunté una foto de inspiración." : ""}`);
     const usoEnvio = opciones.uso ?? uso ?? undefined;
-    const planActual = planVigente ? planActualDesdePlan(planVigente.widget.plan) : null;
+    const planActual = planVigente ? planActualDelPlan(planVigente.widget.plan, planVigente.widget.motor) : null;
     const planAnterior = planActual ?? undefined;
     // Las ideas del último carrusel, en orden: «me quedo con la primera» la elige como «Me gusta esta» (elegir_idea).
     const ideasMostradas = ideasALaVista(mensajes);
@@ -992,7 +996,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
    * La red de un cambio por chat: los mismos `/api/plan-editar` del editor (y, para sumar o mover una pieza, sus modos
    * `agregar_pieza` y `editar_pieza`), cortables con «Detener» además de su propio plazo.
    */
-  function dependenciasEdicionChat(signal?: AbortSignal): DependenciasEdicionChat {
+  function dependenciasEdicionChat(signal?: AbortSignal, del3d?: { turnoId: string }): DependenciasEdicionChat {
     const conSenal: typeof fetch = (entrada, init) => fetch(entrada, { ...init, ...(signal ? { signal: init?.signal ? AbortSignal.any([init.signal, signal]) : signal } : {}) });
     return {
       aplicar: (sobre, edicion) => aplicarEnServidor(sobre, edicion, conSenal),
@@ -1004,27 +1008,28 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       editarPieza: (sobre, cambio) => editarPiezaEnServidor(sobre, cambio, conSenal),
       // La misma búsqueda del selector de «Cambiar»: globos lisos de esa familia en el catálogo firmado del plan.
       buscarGlobos: async (familia, approvalToken, palabra) => (await pedirBusqueda(armarBusqueda({ texto: `globo latex redondo${palabra ? ` ${palabra}` : ""}`, colores: [familia], tamanos: [], limite: LIMITE_MAXIMO, approvalToken }), signal)).candidatos,
+      // Un plan del motor 3D no pasa por Python: el cambio va a `/api/guiada/motor/editar` (REQ-007, fase 5).
+      ...(del3d ? { motor3d: { dependencias: crearDependenciasEdicion3d(signal ? { signal } : {}), turnoId: del3d.turnoId } } : {}),
     };
   }
 
   async function aplicarEdicionChat(pedido: PedidoEdicionPlan, destino: { planMensajeId: string; base: PlanGuiado; mensajeId: string; signal?: AbortSignal }): Promise<void> {
     const { planMensajeId, base, mensajeId, signal } = destino;
-    // Los cambios a un plan del motor 3D son de la fase 5: no se mandan a Python y el plan no se toca.
-    if (planDelMensaje(mensajes.find((mensaje) => mensaje.id === planMensajeId))?.motor === "3d") {
-      registrarAccion("plan.edicion_chat.pendiente_motor_3d", { pedido, mensajeId, plan_hash: base.plan_hash });
-      actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: TEXTO_EDICION_PLAN_3D }));
-      setAnuncio(TEXTO_EDICION_PLAN_3D);
-      return;
-    }
+    // Un plan del motor 3D se cambia en el servidor del 3D (no pasa por Python); el turno lleva el id de este mensaje para calificarlo.
+    const del3d = planDelMensaje(mensajes.find((mensaje) => mensaje.id === planMensajeId))?.motor === "3d";
     const transcurrido = cronometro();
     registrarAccion("plan.edicion_chat.pedir", { pedido, mensajeId, planMensajeId, plan_hash: base.plan_hash });
     setFallo(null);
     setEditandoPlanId(planMensajeId);
     setAnuncio(avisoEdicionChat(pedido));
     try {
-      const hecha = await ejecutarEdicionChat(base, pedido, dependenciasEdicionChat(signal));
+      const hecha = await ejecutarEdicionChat(base, pedido, dependenciasEdicionChat(signal, del3d ? { turnoId: mensajeId } : undefined));
       const publicado = ajustarPlan(planMensajeId, hecha.plan, hecha.cotizacion, { descripcion: hecha.descripcion, baseHash: base.plan_hash });
-      actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: publicado ? hecha.confirmacion : "Tu plan cambió mientras hacía el cambio; pídemelo otra vez sobre el plan nuevo." }));
+      actualizarMensaje(mensajeId, (mensaje) => ({
+        ...mensaje,
+        content: publicado ? hecha.confirmacion : "Tu plan cambió mientras hacía el cambio; pídemelo otra vez sobre el plan nuevo.",
+        ...(publicado && hecha.turno ? { edicion3d: { turnoId: hecha.turno.turnoId, antes: hecha.turno.antes.espec, despues: hecha.turno.despues.espec } } : {}),
+      }));
       registrarAccion(publicado ? "plan.edicion_chat.listo" : "plan.edicion_chat.obsoleta", {
         tipo: pedido.tipo, descripcion: hecha.descripcion, confirmacion: hecha.confirmacion, cambios: hecha.cambios.map((cambio) => cambio.tipo),
         globos: hecha.globos.map((elegido) => ({ product_id: elegido.globo.productId, nombre: elegido.globo.nombre, titulo: elegido.titulo, acabado: elegido.acabado, candidatos: elegido.candidatos, cubreTamanos: elegido.cubreTamanos, variantes: elegido.globo.variantIds.length })),
@@ -1434,7 +1439,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       { id: idPlan, role: "assistant", content: resultado.propuesta.frase, widgets: [{ tipo: "propuesta", propuesta: resultado.propuesta, estado: "resolviendo" }] },
     ]);
     pedirFinal();
-    const planAnterior = vigente ? planActualDesdePlan(vigente.widget.plan) : null;
+    const planAnterior = vigente ? planActualDelPlan(vigente.widget.plan, vigente.widget.motor) : null;
     const idea: IdeaAgregada = { id: decoracion.id, titulo: decoracion.titulo, sumada: Boolean(vigente) };
     try {
       // Un plan que salió de una foto se rehace por el camino de siempre, que conserva la foto y su lectura.
@@ -1796,7 +1801,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const falloPropio = fallo?.mensajeId === mensaje.id ? fallo
       // Tras recargar a mitad de un plan no hay fallo guardado: se deriva para que siempre haya un «Reintentar».
       : !fallo && indice === indiceActivo && propuestaFallida?.tipo === "propuesta" && !cargando
-        ? { titulo: "No pude terminar tu plan", detalle: "Tu conversación sigue guardada.", accion: { tipo: "plan", propuesta: propuestaFallida.propuesta, mensajeId: mensaje.id, ...(planVigente ? { planAnterior: planActualDesdePlan(planVigente.widget.plan) ?? undefined } : {}) }, alternativas: ["otros-colores", "otra-pieza"] } satisfies Fallo
+        ? { titulo: "No pude terminar tu plan", detalle: "Tu conversación sigue guardada.", accion: { tipo: "plan", propuesta: propuestaFallida.propuesta, mensajeId: mensaje.id, ...(planVigente ? { planAnterior: planActualDelPlan(planVigente.widget.plan, planVigente.widget.motor) ?? undefined } : {}) }, alternativas: ["otros-colores", "otra-pieza"] } satisfies Fallo
         : null;
     return <>
       {texto.trim()

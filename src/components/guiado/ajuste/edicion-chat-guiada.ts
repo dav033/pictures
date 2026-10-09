@@ -26,6 +26,8 @@ import {
   type MedidasObjetivo,
   type PlanGuiado,
 } from "./ajuste-plan-guiado";
+import type { TurnoEdicion } from "@/lib/guiada-motor/editar-contrato";
+import { ejecutarEdicionChat3d, type Motor3dDelChat } from "./edicion-chat-3d";
 import { ejecutarCambio, type DependenciasAjuste, type PlanFirmado } from "./ejecutar-ajuste";
 import { globosDeCandidatos, planConImpresos, type GloboCatalogo } from "./selector-globos";
 
@@ -64,6 +66,8 @@ export type DependenciasEdicionChat = Pick<DependenciasAjuste, "aplicar" | "quit
   agregarPieza?: (base: PlanGuiado, pieza: PiezaParaServidor) => Promise<PlanFirmado & { nuevas?: string[] }>;
   /** Mueve o renombra UNA pieza (`/api/plan-editar`, `editar_pieza`). */
   editarPieza?: (base: PlanGuiado, cambio: CambioDePieza) => Promise<PlanFirmado>;
+  /** Un plan del motor 3D: el cambio va a `/api/guiada/motor/editar` y las dependencias de Python no se usan (REQ-007, fase 5). */
+  motor3d?: Motor3dDelChat;
 };
 
 const RESPALDO_PIEZA = "No pude hacer ese cambio en tu plan. Tu plan sigue como estaba.";
@@ -107,6 +111,9 @@ export type EdicionChatHecha = PlanFirmado & {
   globos: GloboElegidoChat[];
   /** La pieza que se sumó («EST_04_GUIRNALDA»), al agregar una. */
   nueva?: string;
+  /** Solo en los planes del 3D: lo que el servidor avisó además de lo hecho, y el turno (id y espec de antes y de después) para calificarlo. */
+  avisos?: string[];
+  turno?: TurnoEdicion;
 };
 
 /** Lo que dice el chat mientras Python rehace el plan. */
@@ -280,6 +287,8 @@ function conParejas(plan: PlanGuiado, ids: readonly string[], cambio: (estructur
  * que esto resuelve.
  */
 export async function ejecutarEdicionChat(base: PlanGuiado, pedido: PedidoEdicionPlan, dependencias: DependenciasEdicionChat): Promise<EdicionChatHecha> {
+  // Un plan del 3D no pasa por Python: ni busca globos en su catálogo ni usa `/api/plan-editar`.
+  if (dependencias.motor3d) return ejecutarEdicionChat3d(base, pedido, dependencias.motor3d);
   const ids = estructurasDeNombres(base, piezasDelPedido(pedido));
   if (!ids) fallo("No encontré esa pieza en tu plan. Tu plan sigue como estaba.");
   const ajuste: DependenciasAjuste = { ...dependencias, buscar: async () => [] };

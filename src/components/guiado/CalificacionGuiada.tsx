@@ -1,6 +1,6 @@
 "use client";
 
-import { acotarPorPartes } from "../feedback-ia/cliente-feedback";
+import { acotarPorPartes, type EscenasTurno } from "../feedback-ia/cliente-feedback";
 import { CalificacionCliente } from "../feedback-ia/CalificacionCliente";
 import { huellaTexto } from "../feedback-ia/huella";
 import { corrigeLaRespuesta, estadoPrevio, pedidoDelTurno, type MensajeChat } from "../feedback-ia/turnos-cliente";
@@ -14,6 +14,8 @@ export type MensajeGuiadoCalificable = MensajeChat & {
   miniatura?: string;
   fotoArmada?: boolean;
   envio?: unknown;
+  /** Un cambio hecho a un plan del 3D (REQ-007, fase 5): la espec de antes y de después de ese turno. */
+  edicion3d?: { turnoId: string; antes: unknown; despues: unknown };
 };
 
 /** Widgets de respuestas guionadas (sin modelo): preguntas fijas, enlaces de compra, pasos ya calculados, la idea elegida. */
@@ -53,6 +55,17 @@ export function estadoGuiadoDelMensaje(m: MensajeGuiadoCalificable): Record<stri
   return Object.keys(partes).length ? acotarPorPartes(partes) : undefined;
 }
 
+/**
+ * El estado de antes y de después de un turno, que va con la calificación. Un cambio a un plan del 3D se hace dentro de la misma
+ * tarjeta: lo de antes y lo de después son las especs que guardó el turno (REQ-007, fase 5); si no, el plan de la respuesta
+ * anterior y el de esta.
+ */
+export function escenasDelTurnoGuiado(mensajes: readonly MensajeGuiadoCalificable[], indice: number): EscenasTurno {
+  const mensaje = mensajes[indice]!;
+  if (mensaje.edicion3d) return { antes: { espec: mensaje.edicion3d.antes }, despues: { espec: mensaje.edicion3d.despues } };
+  return { antes: estadoPrevio(mensajes, indice, (i) => estadoGuiadoDelMensaje(mensajes[i]!)), despues: estadoGuiadoDelMensaje(mensaje) };
+}
+
 type Props = {
   mensajes: readonly MensajeGuiadoCalificable[];
   indice: number;
@@ -75,7 +88,7 @@ export function CalificacionGuiada({ mensajes, indice, listo }: Props) {
       turnoId={mensaje.id}
       pedido={pedidoDelTurno(mensajes, indice)}
       respuesta={mensaje.content}
-      escenas={() => ({ antes: estadoPrevio(mensajes, indice, (i) => estadoGuiadoDelMensaje(mensajes[i]!)), despues: estadoGuiadoDelMensaje(mensaje) })}
+      escenas={() => escenasDelTurnoGuiado(mensajes, indice)}
       corregido={corrigeLaRespuesta(mensajes, indice)}
       ultima={indice === ultimoTurnoGuiadoCalificable(mensajes)}
     />

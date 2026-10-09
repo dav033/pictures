@@ -31,6 +31,8 @@ type Props = {
   fuera: ReadonlySet<string>;
   /** Algo más junto al botón final (p. ej. «En las dos columnas»). */
   extra?: ReactNode;
+  /** Los globos ya a la mano (el catálogo del motor 3D): no se busca en el catálogo de Python. */
+  locales?: readonly GloboCatalogo[];
   onElegir: (globo: GloboCatalogo) => void;
   onCerrar: () => void;
 };
@@ -48,11 +50,11 @@ export function SelectorGlobos(props: Props) {
   return createPortal(<AnimatePresence>{props.abierto && <Hoja key={`selector-${props.sesion}`} {...props} />}</AnimatePresence>, document.body);
 }
 
-function Hoja({ titulo, detalle, accion, approvalToken, ventas, conImpresos, fuera, extra, onElegir, onCerrar }: Props) {
+function Hoja({ titulo, detalle, accion, approvalToken, ventas, conImpresos, fuera, extra, locales, onElegir, onCerrar }: Props) {
   const idTitulo = useId();
   const buscarRef = useRef<HTMLInputElement>(null);
   const [elegido, setElegido] = useState<GloboCatalogo | null>(null);
-  const selector = useSelectorGlobos({ approvalToken, ventas, conImpresos, fuera });
+  const selector = useSelectorGlobos({ approvalToken, ventas, conImpresos, fuera, ...(locales ? { locales } : {}) });
   const presente = useIsPresent();
   const desbordeRef = useRef<string | null>(null);
   // Mientras sale (animación de cierre) ya no bloquea el desplazamiento de la página, como «Modificar esta pieza».
@@ -95,7 +97,7 @@ function Hoja({ titulo, detalle, accion, approvalToken, ventas, conImpresos, fue
         <header className="border-b border-borde-suave px-4 pb-3 pt-4 sm:px-5">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold uppercase tracking-wide text-acento">Catálogo Sempertex</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-acento">{locales ? "Colores Sempertex" : "Catálogo Sempertex"}</p>
               <h2 id={idTitulo} tabIndex={-1} style={{ outline: "none" }} className="text-lg font-semibold leading-snug text-texto outline-none focus:outline-none focus-visible:outline-none">{titulo}</h2>
               <p className="mt-0.5 text-sm text-texto-suave">{detalle}</p>
             </div>

@@ -15,7 +15,7 @@ type Propuesta = z.infer<typeof PropuestaComposicionSchema>;
 type BriefParaEspec = Pick<BriefGuiado, "medida" | "estructura">;
 export type ResultadoEspec = { espec: EspecClienteV1; avisos: string[] };
 
-const LUGAR_POR_OFICIAL: Partial<Record<EstructuraOficialId, LugarEspec>> = {
+export const LUGAR_POR_OFICIAL: Partial<Record<EstructuraOficialId, LugarEspec>> = {
   semiarco: "fondo", semiarco_asimetrico: "fondo", guirnalda: "fondo", pared_densa: "fondo", pared_no_densa: "fondo", pared_organica: "fondo",
   techo_globos: "techo", bouquet: "mesa", centro_mesa: "mesa",
 };

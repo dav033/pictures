@@ -8,6 +8,7 @@ import type { CompraMotor, CotizacionDelMotor } from "./cotizar-bom";
 import type { AsignacionPieza } from "./plan-de-compra";
 import type { EspecClienteV1 } from "./espec-cliente-v1";
 import { lineasDeFlores } from "./flores-espec";
+import { planActualDesdeEspec } from "./plan-actual-espec";
 import { MERMA_PORCENTAJE } from "./merma";
 import { datosDeLinea, proyectarPlan, type ConceptoPlan } from "./proyeccion-plan";
 import type { BomLinea, ResultadoMotorV1 } from "./resultado-motor-v1";
@@ -181,6 +182,8 @@ export function sobreDelMotor(entrada: EntradaSobre): SobreDelMotor {
     motor: resultado.motor,
     espec,
     avisos: resultado.avisos,
+    // El plan tal como lo ve el modelo del chat: exacto, de la espec (no una lectura aproximada del plan de Python).
+    planActual: planActualDesdeEspec(espec, { totalGlobos: resultado.bom.total.reduce((suma, linea) => suma + linea.cantidad, 0) }),
   };
   const valido = SobreMotorSchema.safeParse(sobre);
   if (!valido.success) return { ok: false, motivo: `El sobre del plan no cumple el contrato: ${valido.error.issues.slice(0, 3).map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}` };

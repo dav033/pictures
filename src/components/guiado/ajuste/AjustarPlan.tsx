@@ -36,6 +36,8 @@ type Props = {
   onModificarPieza?: (estructuraId: string) => void;
   /** Las piezas que se pueden abrir así (las arma un motor). */
   modificables?: ReadonlySet<string>;
+  /** Un plan del motor 3D: los colores se eligen de la lámina Sempertex y no del catálogo de Python (REQ-007, fase 5). */
+  catalogo3d?: readonly GloboCatalogo[];
 };
 
 /** Cifra que cuenta hasta su valor nuevo (o salta directo con movimiento reducido). */
@@ -88,7 +90,7 @@ function globoParaPlan(globo: GloboCatalogo): GloboParaPlan {
  * achicar un 10 %) y quitarla. Cada toque lo rehace Python sobre el plan firmado (como la propuesta clásica) y los
  * mandos esperan hasta que llega el plan nuevo: las cifras que se ven son siempre las suyas.
  */
-export function AjustarPlan({ plan, ajuste, ocupado, onSugerencia, onModificarPieza, modificables }: Props) {
+export function AjustarPlan({ plan, ajuste, ocupado, onSugerencia, onModificarPieza, modificables, catalogo3d }: Props) {
   const piezas = useMemo(() => piezasAjustables(plan), [plan]);
   // El «?» de cantidad y % va en la primera pieza con una cifra que se escribe (una sola vez en todo el editor).
   const piezaConAyudaCantidad = piezas.findIndex((pieza) => pieza.colores.some((color) => color.cantidad));
@@ -191,6 +193,7 @@ export function AjustarPlan({ plan, ajuste, ocupado, onSugerencia, onModificarPi
               aLasDos={aLasDos ?? Boolean(pieza.pareja?.iguales)}
               onALasDos={setALasDos}
               ayudaCantidad={posicion === piezaConAyudaCantidad}
+              conTamanoGlobos={Boolean(catalogo3d)}
               onCambiar={(color) => abrirSelector({ modo: "cambiar", color: color.color, etiqueta: color.etiqueta, productId: color.productId, estructuraId: pieza.estructuraId, pareja: pieza.pareja, fuera: new Set([`${color.productId}|${color.color}`]) })}
               {...(onModificarPieza && modificables?.has(pieza.estructuraId) ? { onModificar: () => onModificarPieza(pieza.estructuraId) } : {})}
             />
@@ -209,7 +212,8 @@ export function AjustarPlan({ plan, ajuste, ocupado, onSugerencia, onModificarPi
         approvalToken={plan.approval_token}
         ventas={ventas}
         conImpresos={conImpresos}
-        fuera={seleccion?.fuera ?? new Set()}
+        fuera={catalogo3d ? new Set() : seleccion?.fuera ?? new Set()}
+        {...(catalogo3d ? { locales: catalogo3d } : {})}
         {...(seleccion?.modo === "cambiar" && seleccion.pareja ? { extra: <InterruptorPareja activo={aLasDosSelector} onCambio={setALasDosSelector} pareja={seleccion.pareja.titulo} nota="el mismo globo en las dos" /> } : {})}
         onElegir={elegirGlobo}
         onCerrar={() => setSeleccion(null)}
@@ -369,7 +373,7 @@ function InterruptorPareja({ activo, onCambio, pareja, nota = "quedan iguales" }
   );
 }
 
-function BloquePieza({ plan, pieza, ajuste, bloqueado, aLasDos, onALasDos, onCambiar, onModificar, ayudaCantidad = false }: {
+function BloquePieza({ plan, pieza, ajuste, bloqueado, aLasDos, onALasDos, onCambiar, onModificar, ayudaCantidad = false, conTamanoGlobos = false }: {
   plan: PlanGuiado;
   pieza: PiezaAjustable;
   ajuste: AjustePlanGuiado;
@@ -380,6 +384,8 @@ function BloquePieza({ plan, pieza, ajuste, bloqueado, aLasDos, onALasDos, onCam
   onModificar?: () => void;
   /** Esta pieza lleva el «?» de cantidad y %, en su primer color con cifra escribible. */
   ayudaCantidad?: boolean;
+  /** Un plan del motor 3D: la pieza deja mover la proporción de tamaños de sus globos (más chicos o más grandes). */
+  conTamanoGlobos?: boolean;
 }) {
   const recalculando = recalculandoEn(plan, ajuste.estado, pieza.estructuraId);
   const colorConAyuda = ayudaCantidad ? pieza.colores.findIndex((color) => color.cantidad) : -1;
@@ -429,6 +435,7 @@ function BloquePieza({ plan, pieza, ajuste, bloqueado, aLasDos, onALasDos, onCam
       </ul>
       {pieza.motivoFijo && <p className="mt-1.5 text-xs text-texto-suave">{pieza.motivoFijo}{onModificar ? " Puedes moverlos en «Cambiar la forma»." : ""}</p>}
 
+      {conTamanoGlobos && pieza.modoColores !== "fijo" && <TamanoGlobos pieza={pieza} pareja={pareja} cargando={recalculando} bloqueado={bloqueado} onCambio={aplicar} />}
       {pieza.medidas.length > 0 && <MedidasPieza key={`${plan.plan_hash}-${pieza.estructuraId}`} pieza={pieza} pareja={pareja} cargando={recalculando} bloqueado={bloqueado} onCambio={aplicar} />}
       {onModificar && (
         <button type="button" disabled={bloqueado} onClick={onModificar} className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-xl px-1 text-sm font-medium text-acento hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 disabled:opacity-50">
@@ -574,6 +581,20 @@ function CantidadGlobos({ color, cargando, bloqueado, onCantidad }: { color: Col
         <BotonIcono compacto etiqueta={`Un globo ${nombre} más`} deshabilitado={bloqueado || color.globos >= rango.maximo} onClick={() => onCantidad(color.globos + 1)}><Plus className="size-4" aria-hidden /></BotonIcono>
       </span>
     </span>
+  );
+}
+
+/** Plan del 3D: más globos chicos o más globos grandes en la pieza (la proporción de tamaños de globo). */
+function TamanoGlobos({ pieza, pareja, cargando, bloqueado, onCambio }: { pieza: PiezaAjustable; pareja: boolean; cargando: boolean; bloqueado: boolean; onCambio: (cambio: CambioPlan) => void }) {
+  const conPareja = pareja ? { pareja: true } : {};
+  return (
+    <div role="group" aria-label={`Tamaño de los globos de ${pieza.titulo}`} className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-borde-suave pt-2.5">
+      <span className="text-[0.7rem] font-medium uppercase tracking-wide text-texto-suave">Globos</span>
+      <span className="ml-auto flex gap-1.5">
+        <BotonTexto etiqueta="Globos más pequeños" deshabilitado={bloqueado || cargando} onClick={() => onCambio({ tipo: "tamano-globos", estructuraId: pieza.estructuraId, direccion: -1, ...conPareja })} icono={<Minus className="size-4" aria-hidden />}>Más chicos</BotonTexto>
+        <BotonTexto etiqueta="Globos más grandes" deshabilitado={bloqueado || cargando} onClick={() => onCambio({ tipo: "tamano-globos", estructuraId: pieza.estructuraId, direccion: 1, ...conPareja })} icono={<Plus className="size-4" aria-hidden />}>Más grandes</BotonTexto>
+      </span>
+    </div>
   );
 }
 

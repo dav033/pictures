@@ -16,7 +16,7 @@ import type { Construida, EntradaOrganica } from "./constructores-organicos";
  */
 export type EntradaClasica = EntradaOrganica;
 
-const RANGOS = {
+export const RANGOS_CLASICOS = {
   columna: { alto: [60, 500] },
   arco: { ancho: [100, 500], alto: [100, 350] },
   guirnalda: { ancho: [100, 800] },
@@ -101,7 +101,7 @@ export function construirArco({ espec, medidas, avisos, notas }: EntradaClasica)
     apoyo: "piso",
     pieza: {
       tipo: "arco", formatoId: FORMATO_TRENZA, infladoCm: inflado(FORMATO_TRENZA), forma: "redondo",
-      anchoCm: enCm(medidas.anchoM, undefined, RANGOS.arco.ancho, "El ancho", avisos), altoCm: enCm(medidas.altoM, undefined, RANGOS.arco.alto, "El alto", avisos),
+      anchoCm: enCm(medidas.anchoM, undefined, RANGOS_CLASICOS.arco.ancho, "El ancho", avisos), altoCm: enCm(medidas.altoM, undefined, RANGOS_CLASICOS.arco.alto, "El alto", avisos),
       patron, colores,
     },
   };
@@ -114,14 +114,14 @@ export function construirArco({ espec, medidas, avisos, notas }: EntradaClasica)
  */
 function alturaDeColumna(espec: PiezaEspec, medidas: EntradaClasica["medidas"], avisos: string[]): number {
   const pasoCm = inflado(FORMATO_TRENZA) * PASO_POR_DIAMETRO;
-  if (!espec.capas) return enCm(medidas.altoM, undefined, RANGOS.columna.alto, "El alto", avisos);
+  if (!espec.capas) return enCm(medidas.altoM, undefined, RANGOS_CLASICOS.columna.alto, "El alto", avisos);
   const porCapasCm = espec.capas * pasoCm;
   const pedidoM = espec.medidas.altoM;
   if (pedidoM !== undefined && Math.abs(Math.round(pedidoM * 100) - Math.round(porCapasCm)) > 2 * Math.round(pasoCm)) {
     avisos.push(`Las ${espec.capas} capas de «${espec.nombre}» no cuadran con su alto de ${pedidoM} m: manda el alto.`);
-    return enCm(medidas.altoM, undefined, RANGOS.columna.alto, "El alto", avisos);
+    return enCm(medidas.altoM, undefined, RANGOS_CLASICOS.columna.alto, "El alto", avisos);
   }
-  return enCm(porCapasCm / 100, undefined, RANGOS.columna.alto, "El alto", avisos);
+  return enCm(porCapasCm / 100, undefined, RANGOS_CLASICOS.columna.alto, "El alto", avisos);
 }
 
 /** Cuántos niveles de cuartetos caben en `largoCm` (la misma cuenta de la trenza). */
@@ -135,7 +135,7 @@ export function construirColumna({ espec, medidas, avisos, notas }: EntradaClasi
 }
 
 export function construirGuirnalda({ espec, medidas, avisos, notas }: EntradaClasica): Construida {
-  const anchoCm = enCm(medidas.largoM ?? medidas.anchoM, undefined, RANGOS.guirnalda.ancho, "El largo", avisos);
+  const anchoCm = enCm(medidas.largoM ?? medidas.anchoM, undefined, RANGOS_CLASICOS.guirnalda.ancho, "El largo", avisos);
   const { patron, colores } = patronDeTrenza(enFormato(espec, [FORMATO_TRENZA], notas), nivelesEn(anchoCm, FORMATO_TRENZA));
   return {
     apoyo: "pared",
@@ -155,7 +155,7 @@ export function construirPared({ espec, medidas, avisos, notas }: EntradaClasica
     apoyo: "pared",
     pieza: {
       tipo: "pared_malla", formatoId: FORMATO_PARED, infladoCm: inflado(FORMATO_PARED),
-      anchoCm: enCm(medidas.anchoM, undefined, RANGOS.pared.ancho, "El ancho", avisos), altoCm: enCm(medidas.altoM, undefined, RANGOS.pared.alto, "El alto", avisos),
+      anchoCm: enCm(medidas.anchoM, undefined, RANGOS_CLASICOS.pared.ancho, "El ancho", avisos), altoCm: enCm(medidas.altoM, undefined, RANGOS_CLASICOS.pared.alto, "El alto", avisos),
       patron, colores, union: { infladoCm: inflado("R-5"), codigo: union },
     },
   };
@@ -167,7 +167,7 @@ export function construirTecho({ espec, medidas, avisos, notas }: EntradaClasica
   const colores = delFormato.map((c) => c.codigo);
   const red: ElementoTecho = {
     tipo: "red", tecnica: "racimos", globo: { formatoId: FORMATO_TRENZA, infladoCm: inflado(FORMATO_TRENZA) }, colores,
-    anchoCm: enCm(medidas.anchoM, undefined, RANGOS.techo.ancho, "El ancho", avisos), fondoCm: enCm(medidas.altoM, undefined, RANGOS.techo.fondo, "El fondo", avisos),
+    anchoCm: enCm(medidas.anchoM, undefined, RANGOS_CLASICOS.techo.ancho, "El ancho", avisos), fondoCm: enCm(medidas.altoM, undefined, RANGOS_CLASICOS.techo.fondo, "El fondo", avisos),
     patron: colores.length === 1 ? "un_color" : colores.length === 2 ? "damero" : "alternado",
   };
   return { pieza: { tipo: "techo", techo: { elementos: [red] } }, apoyo: "techo" };
@@ -183,7 +183,7 @@ export function construirRamo({ espec, medidas, avisos, notas }: EntradaClasica)
     tipo: "ramo_helio",
     propiedades: {
       globos: Array.from({ length: unidades }, (_, i) => ({ formatoId: FORMATO_TRENZA, infladoCm: 28, codigo: colores[i % colores.length]! })),
-      alturaCm: enCm(medidas.altoM, undefined, RANGOS.ramo.alto, "El alto", avisos),
+      alturaCm: enCm(medidas.altoM, undefined, RANGOS_CLASICOS.ramo.alto, "El alto", avisos),
       cinta: { hex: "#f3efe6" }, peso: { hex: "#8a8076" },
     },
   };

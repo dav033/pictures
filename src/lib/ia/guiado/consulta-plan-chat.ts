@@ -1,5 +1,6 @@
 import { esEstructuraOficialId, ESTRUCTURAS_OFICIALES } from "@/lib/plan/estructuras-oficiales";
 import { FEMENINAS } from "@/lib/plan/piezas-individuales";
+import type { PlanActualGuiado } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { detectarConsultaPlan, type ConsultaPlan } from "./edicion-plan-chat";
 import { planActualDesdePlan } from "./instruccion-plan";
 
@@ -82,8 +83,9 @@ export type RespuestaConsulta = { consulta: ConsultaPlan; texto: string };
  * La respuesta a una pregunta sobre el plan, con sus cifras; null si el texto no es una pregunta sobre el plan (o pide
  * un cambio, o el precio). Sin piezas nombradas, del plan entero.
  */
-export function responderConsultaPlan(texto: string, plan: PlanLeible): RespuestaConsulta | null {
-  const actual = planActualDesdePlan(plan);
+export function responderConsultaPlan(texto: string, plan: PlanLeible, planActual?: PlanActualGuiado | null): RespuestaConsulta | null {
+  // Un plan del motor 3D trae su proyección exacta; el de Python se lee del plan (`planActualDesdePlan`).
+  const actual = planActual ?? planActualDesdePlan(plan);
   if (!actual) return null;
   const consulta = detectarConsultaPlan(texto, actual);
   if (!consulta) return null;

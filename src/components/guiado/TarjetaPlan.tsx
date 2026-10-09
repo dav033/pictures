@@ -27,7 +27,9 @@ import { colorSempertex } from "./color-sempertex";
 import { fraseAjuste } from "./formato";
 import { DUR, EASE_REBOTE, EASE_SALIDA, RESORTE, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
 import { AjustarPlan } from "./ajuste/AjustarPlan";
+import { globosDelCatalogo3d } from "./ajuste/catalogo-sempertex-3d";
 import { useAjustePlanGuiado, type AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
+import { crearDependenciasEdicion3d } from "./edicion-motor3d";
 import { listaNatural } from "@/lib/ia/guiado/propuesta-composicion";
 import { avisoColoresFoto } from "@/lib/plan/colores-foto-plan";
 import { ajustesDePython } from "@/lib/ia/guiado/ajustes-python";
@@ -127,13 +129,16 @@ export function TarjetaPlan(props: Props) {
   // Al terminar de abrir «Ajustar mi plan», el panel queda a la vista desde su comienzo: la conversación, pegada al
   // final, lo empujaba hacia arriba mientras se desplegaba y lo primero que se veía eran sus últimos mandos.
   const mostrarAjuste = () => filaAjusteRef.current?.scrollIntoView({ block: "start", behavior: reducido ? "auto" : "smooth" });
-  const ajuste = useAjustePlanGuiado({ plan, onPlanAjustado: onPlanAjustado ?? sinAjuste });
+  // Un plan del motor 3D se cambia en el servidor del 3D (REQ-007, fase 5): el panel no pasa por Python.
+  const motor3d = useMemo(() => (es3d ? crearDependenciasEdicion3d() : undefined), [es3d]);
+  const ajuste = useAjustePlanGuiado({ plan, onPlanAjustado: onPlanAjustado ?? sinAjuste, ...(motor3d ? { motor3d } : {}) });
   // Mientras Python rehace el plan (un ajuste del panel o un cambio pedido por chat), el total y los colores muestran su
   // esqueleto y las acciones esperan.
   const recalculando = ajuste.guardando || Boolean(props.recalculandoPorChat);
-  const ajustable = vigente && Boolean(onPlanAjustado) && !es3d;
+  const ajustable = vigente && Boolean(onPlanAjustado);
   // Las piezas que se abren con su dibujo (las arma un motor): «Cambiar la forma» desde «Ajustar mi plan».
-  const modificables = useMemo(() => new Set(piezas.filter((pieza) => piezaModificable(plan, pieza.estructura_id)).map((pieza) => pieza.estructura_id)), [plan, piezas]);
+  // «Modificar esta pieza» (los mandos del diseñador) no existe en un plan 3D: el cliente cambia colores, proporciones y tamaños (D-020).
+  const modificables = useMemo(() => new Set(es3d ? [] : piezas.filter((pieza) => piezaModificable(plan, pieza.estructura_id)).map((pieza) => pieza.estructura_id)), [es3d, plan, piezas]);
   const costeoAbierto = costeoVisible ?? usoCosteo !== null;
   // El uso de este plan o, si todavía no se costeó, el que el cliente ya dijo: no se le vuelve a preguntar.
   const usoMostrado = usoCosteo ?? usoConocido ?? null;
@@ -242,7 +247,7 @@ export function TarjetaPlan(props: Props) {
           const pieza = piezas[indice]!;
           const mezclaReal = plan.estructuras.find((resuelta) => resuelta.estructura_id === pieza.estructura_id)?.mezcla_real;
           // «Modificar» abre la gráfica grande con los mandos del editor de la clásica; solo en el plan vigente.
-          const modificable = ajustable && piezaModificable(plan, pieza.estructura_id);
+          const modificable = ajustable && !es3d && piezaModificable(plan, pieza.estructura_id);
           const abrir = modificable && !bloqueado ? () => setModificando(pieza.estructura_id) : undefined;
           return (
             <FilaPieza
@@ -274,7 +279,7 @@ export function TarjetaPlan(props: Props) {
         })}
       </motion.ul>
       {es3d && (firma3d ? <VistaPlan3DPerezosa firma={firma3d} titulo={plan.plan.concepto.titulo} piezas={piezasVista} /> : <VistaPlanEnPreparacion />)}
-      {ajustable && (
+      {ajustable && !es3d && (
         <ModificarPieza
           plan={plan}
           estructuraId={modificando}
@@ -313,7 +318,8 @@ export function TarjetaPlan(props: Props) {
               ocupado={ocupado || estadoImagen === "cargando"}
               {...(onSugerencia ? { onSugerencia: (texto: string) => { setAjusteAbierto(false); onSugerencia(texto); } } : {})}
               modificables={modificables}
-              onModificarPieza={(estructuraId) => { if (piezaModificable(plan, estructuraId)) setModificando(estructuraId); }}
+              onModificarPieza={(estructuraId) => { if (!es3d && piezaModificable(plan, estructuraId)) setModificando(estructuraId); }}
+              {...(es3d ? { catalogo3d: globosDelCatalogo3d() } : {})}
             />
           </PanelPlegable>
         )}
@@ -408,7 +414,7 @@ export function TarjetaPlan(props: Props) {
           {es3d && <NotaPlan3D />}
           <button
             type="button"
-            disabled={bloqueado || es3d}
+            disabled={bloqueado}
             // «Cambiar algo» abre «Ajustar mi plan», donde están todos los cambios (también los que rehace el asistente).
             onClick={() => { if (ajustable) { setAjusteAbierto(true); filaAjusteRef.current?.scrollIntoView({ block: "start", behavior: reducido ? "auto" : "smooth" }); } onAccion("cambiar"); }}
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-medium text-acento transition-colors hover:bg-acento-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 disabled:opacity-50"

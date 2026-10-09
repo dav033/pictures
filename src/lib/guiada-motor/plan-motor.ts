@@ -7,7 +7,7 @@ import {
   type ConceptoPlan, type EspecClienteV1, type ResultadoCotizacionBom, type ResultadoMotorV1,
 } from "@/lib/globos3d/motor/v1";
 import type { PlanIdeaGuardado } from "@/lib/plan/plan-de-idea";
-import { verificarPlanFirmado, type RechazoPlan } from "./verificar-plan";
+import { verificarPlanConConcepto } from "./verificar-plan";
 import { CuerpoPlanMotorSchema, type CuerpoPlanMotor, type RazonFallback } from "./plan-contrato";
 import type { RespuestaMotor } from "./tipos";
 
@@ -56,13 +56,6 @@ type BaseVerificada = { espec: EspecClienteV1; concepto: ConceptoPlan };
 
 /** Huella (no reversible) del navegador al que se le dio el plan. */
 export const huellaDeNavegador = (usuarioId: string): string => createHash("sha256").update(`globos3d-navegador:${usuarioId}`).digest("hex");
-
-/** El plan vigente que se envía como base: lo que comprueba `verificarPlanFirmado` y el concepto que trae. */
-function verificarBase(base: NonNullable<CuerpoPlanMotor["base"]>, navegador: string): BaseVerificada | RechazoPlan {
-  const firmado = verificarPlanFirmado({ approval_token: base.approval_token, plan_hash: base.plan_hash, espec: (base as { espec?: unknown }).espec, motor: (base as { motor?: { version?: unknown } }).motor }, navegador);
-  if ("codigo" in firmado) return firmado;
-  return { espec: firmado.espec, concepto: { titulo: base.plan.concepto.titulo, descripcion: base.plan.concepto.descripcion, ...(base.plan.concepto.estilo ? { estilo: base.plan.concepto.estilo } : {}), ...(base.plan.concepto.ocasion ? { ocasion: base.plan.concepto.ocasion } : {}) } };
-}
 
 function mayuscula(texto: string): string {
   return texto.charAt(0).toLocaleUpperCase("es") + texto.slice(1);
@@ -127,7 +120,7 @@ async function atender(request: Request, deps: DependenciasPlanMotor, navegador:
   if (bandera.motor !== "3d") return fallo("bandera_python");
   let base: BaseVerificada | null = null;
   if (cuerpo.base) {
-    const verificada = verificarBase(cuerpo.base, navegador);
+    const verificada = verificarPlanConConcepto(cuerpo.base, navegador);
     if ("codigo" in verificada) {
       deps.auditar("regla:motor_guiada", "plan de la guiada: la base que mandó el navegador no se acepta", { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "python", razon: verificada.codigo, motivo: verificada.motivo }, { entrada, motivo: verificada.mensaje });
       return error(verificada.codigo, verificada.mensaje, verificada.estado);

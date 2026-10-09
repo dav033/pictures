@@ -16,6 +16,7 @@ import { ListaMaterialesRequestSchema } from "@/lib/ia/contracts/asistente-guiad
 import { crearDeadlineSignal } from "@/lib/ia/contracts/operational-v1";
 import { llamarPythonListaMateriales } from "@/lib/ia/nucleo/python-adapter";
 import { leerMotorGuiada } from "@/lib/guiada-motor/bandera";
+import { avisoEdicionPlan } from "@/lib/ia/guiado/aviso-edicion-plan";
 import { decidirCotizacionDelCarrusel } from "@/lib/guiada-motor/carrusel";
 import { ErrorIA } from "@/lib/ia/nucleo/tipos";
 import type { ErrorCodeV1 } from "@/lib/ia/contracts/chat-v1";
@@ -235,7 +236,8 @@ async function turnoGuiado(request: Request) {
       decidir("regla:edicion_plan_chat", "cambio del plan vigente pedido por chat (lo aplica la vista con el editor, sin rehacer el plan)", resultado, { entrada: { herramienta: nombre, argsModelo: args, deteccion: deteccionEdicion } });
       if (!resultado.ok) return resultado;
       datos.edicionPlan = resultado.pedido;
-      return { ok: true, cambio: fraseDelPedido(resultado.pedido), aviso: "La interfaz hace este cambio sobre el plan del cliente y conserva todo lo demás (título, medidas, acabados, otros colores y piezas); Python vuelve a contar los globos. Responde con UNA frase corta que diga qué cambias; no digas que ya quedó ni des cantidades ni precios." };
+      const { motor } = await leerMotorGuiada(request);
+      return { ok: true, cambio: fraseDelPedido(resultado.pedido), aviso: avisoEdicionPlan(motor) };
     };
     const herramientasDeEdicion = Object.fromEntries(HERRAMIENTAS_EDICION.map((nombre) => [nombre, (args: Record<string, unknown>) => editarPlan(nombre, args)]));
     const registro = {

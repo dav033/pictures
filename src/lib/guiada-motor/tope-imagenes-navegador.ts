@@ -23,15 +23,27 @@ function limpiarVencidas(mapa: Map<string, Ventana>, ahora: number): void {
   for (const [clave, v] of mapa) if (ahora - v.desde > HORA_MS) mapa.delete(clave);
 }
 
-/** Anota una imagen más de este navegador en su hora en curso, o dice que ya no caben. `ahora` y `tope` se inyectan en las pruebas. */
-export function tomarImagenDeNavegador(navegador: string, ahora: number = Date.now(), tope: number = TOPE_IMAGENES_POR_NAVEGADOR_HORA): TomaDeFoto {
-  const mapa = ventanas();
+function tomarEnVentana(mapa: Map<string, Ventana>, navegador: string, ahora: number, tope: number): TomaDeFoto {
   if (mapa.size >= MAX_NAVEGADORES_EN_MEMORIA) limpiarVencidas(mapa, ahora);
   let ventana = mapa.get(navegador);
   if (!ventana || ahora - ventana.desde > HORA_MS) { ventana = { desde: ahora, usadas: 0 }; mapa.set(navegador, ventana); }
   if (ventana.usadas >= tope) return { ok: false, usadas: ventana.usadas, tope };
   ventana.usadas += 1;
   return { ok: true, usadas: ventana.usadas };
+}
+
+/** Anota una imagen más de este navegador en su hora en curso, o dice que ya no caben. `ahora` y `tope` se inyectan en las pruebas. */
+export function tomarImagenDeNavegador(navegador: string, ahora: number = Date.now(), tope: number = TOPE_IMAGENES_POR_NAVEGADOR_HORA): TomaDeFoto {
+  return tomarEnVentana(ventanas(), navegador, ahora, tope);
+}
+
+/**
+ * El mismo cupo por hora y por navegador para otra ruta (p. ej. los cambios del plan 3D, `/api/guiada/motor/editar`), con su
+ * propio contador por proceso: un navegador que agota su cupo ahí no gasta el de las imágenes, ni al revés.
+ */
+export function crearTopePorNavegador(tope: number): { tomar: (navegador: string, ahora?: number) => TomaDeFoto } {
+  const mapa = new Map<string, Ventana>();
+  return { tomar: (navegador, ahora = Date.now()) => tomarEnVentana(mapa, navegador, ahora, tope) };
 }
 
 /** Devuelve la imagen que no llegó a pedirse (el tope global la negó): el navegador no paga por un cupo que no usó. */

@@ -23,7 +23,7 @@ const FORMATOS_DE_TAMANOS: Readonly<Record<TamanosEspec, readonly string[] | und
   solo_grandes: ["R-18", "R-24"],
 };
 
-const RANGO_ARCO = { ancho: [150, 500], alto: [150, 320] } as const;
+export const RANGO_ARCO = { ancho: [150, 500], alto: [150, 320] } as const;
 
 const semillaDe = (...n: number[]) => (n.reduce((s, x) => (s * 31 + Math.round(x)) % 9973, 7) || 7);
 

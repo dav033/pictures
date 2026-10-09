@@ -19,11 +19,11 @@ type Resultado = { fase: "cargando" } | { fase: "error"; mensaje: string } | { f
  * tocar su chip y, al escribir, lo cargado filtrado al momento y una búsqueda en el catálogo con esa palabra. Todo con
  * la memoria del explorador de la clásica (`pedirBusqueda`): volver a una familia es instantáneo.
  */
-export function useSelectorGlobos({ approvalToken, ventas, conImpresos, fuera }: { approvalToken: string; ventas: readonly ColorCatalogo[]; conImpresos: boolean; fuera: ReadonlySet<string> }) {
+export function useSelectorGlobos({ approvalToken, ventas, conImpresos, fuera, locales }: { approvalToken: string; ventas: readonly ColorCatalogo[]; conImpresos: boolean; fuera: ReadonlySet<string>; /** Los globos ya a la mano (el catálogo del motor 3D): no se pide nada a Python. */ locales?: readonly GloboCatalogo[] }) {
   const [familia, setFamilia] = useState<FamiliaId | null>(null);
   const [texto, setTexto] = useState("");
   const [buscado, setBuscado] = useState("");
-  const [resultado, setResultado] = useState<Resultado>({ fase: "cargando" });
+  const [resultado, setResultado] = useState<Resultado>(locales ? { fase: "listo", globos: [...locales] } : { fase: "cargando" });
   const [intento, setIntento] = useState(0);
   // Las familias de la más vendida a la menos (la venta de una familia: la de su color más vendido).
   const familias = useMemo(() => {
@@ -40,6 +40,7 @@ export function useSelectorGlobos({ approvalToken, ventas, conImpresos, fuera }:
   }, [texto]);
 
   useEffect(() => {
+    if (locales) return;
     const controlador = new AbortController();
     const colores = familia ? familias.find((item) => item.id === familia)?.colores.map((color) => color.valor) ?? [] : [];
     const cuerpo = armarBusqueda({ texto: buscado ? `${CONSULTA} ${buscado}` : CONSULTA, colores, tamanos: [], limite: LIMITE_MAXIMO, approvalToken });
@@ -50,7 +51,7 @@ export function useSelectorGlobos({ approvalToken, ventas, conImpresos, fuera }:
         setResultado({ fase: "error", mensaje: mensajeFalloPlanEditar(error, "No pude cargar los globos del catálogo. Inténtalo de nuevo.") });
       });
     return () => controlador.abort();
-  }, [familia, familias, buscado, approvalToken, conImpresos, intento]);
+  }, [familia, familias, buscado, approvalToken, conImpresos, intento, locales]);
 
   const grupos: GrupoGlobos[] = useMemo(() => {
     if (resultado.fase !== "listo") return [];
@@ -66,6 +67,6 @@ export function useSelectorGlobos({ approvalToken, ventas, conImpresos, fuera }:
     resultado,
     grupos,
     reintentar: () => { setResultado({ fase: "cargando" }); setIntento((valor) => valor + 1); },
-    buscando: resultado.fase === "cargando" || (texto.trim().length >= 3 && texto.trim() !== buscado),
+    buscando: !locales && (resultado.fase === "cargando" || (texto.trim().length >= 3 && texto.trim() !== buscado)),
   };
 }

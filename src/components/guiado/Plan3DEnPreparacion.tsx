@@ -1,18 +1,18 @@
 import { Hourglass } from "lucide-react";
 
 /**
- * Un plan armado por el motor 3D (REQ-007) tiene su vista 3D (fase 3, carpeta `motor3d/`) y su imagen realista (fase 4, por
- * `/api/guiada/motor/imagen`), pero todavía no cambios (fase 5): la tarjeta lo dice con honestidad en vez de mostrar un dibujo
- * que no es el del plan o mandar el plan a Python. `VistaPlanEnPreparacion` queda solo para el plan 3D que no trae su espec
- * firmada (guardado antes de la fase 3): sin ella tampoco hay imagen.
- * Lo que sí tiene: la vista, piezas, globos por color y tamaño, precio, compra e imagen.
+/**
+ * Un plan armado por el motor 3D (REQ-007) tiene su vista 3D (fase 3, carpeta `motor3d/`), su imagen realista (fase 4, por
+ * `/api/guiada/motor/imagen`) y sus cambios (fase 5, por `/api/guiada/motor/editar`): la tarjeta nunca muestra un dibujo que
+ * no es el del plan ni manda el plan a Python. `VistaPlanEnPreparacion` queda solo para el plan 3D que no trae su espec
+ * firmada (guardado antes de la fase 3): sin ella tampoco hay imagen ni cambios.
+ * Lo que sí tiene: la vista, piezas, globos por color y tamaño, precio, compra, imagen y cambios.
  */
 export const TEXTO_VISTA_EN_PREPARACION = "Vista del plan en preparación";
-export const TEXTO_NOTA_PLAN_3D = "Por ahora puedes mirar tu decoración, ver cuántos globos lleva cada pieza, cuánto cuesta, dónde comprarlo y cómo quedaría en una imagen realista. Los cambios a este plan estarán pronto.";
+export const TEXTO_NOTA_PLAN_3D = "Puedes mirar tu decoración, cambiar sus colores, tamaños y piezas, ver cuántos globos lleva cada pieza, cuánto cuesta, dónde comprarlo y cómo quedaría en una imagen realista.";
 
 /** Lo que se le dice al cliente cuando pide la imagen de un plan 3D guardado sin su espec firmada (no hay de dónde armarla). */
 export const TEXTO_IMAGEN_PLAN_3D = "No puedo dibujar este plan como imagen: se guardó antes de que pudiera. Mientras tanto puedes ver sus globos, su precio y dónde comprarlo, o pedirme un plan nuevo.";
-export const TEXTO_EDICION_PLAN_3D = "Los cambios a este plan todavía están en preparación, así que no lo toqué. Si quieres otra cosa, puedo armar un plan nuevo.";
 
 /** Lo que se le dice al cliente cuando su plan del 3D se rehízo entero con el motor de siempre (marcha atrás o un 3D que no pudo). */
 export const TEXTO_REHECHO_EN_PYTHON = "Rehice tu plan completo con el motor de siempre, así que algunas cantidades pueden cambiar un poco.";
@@ -27,7 +27,7 @@ export function VistaPlanEnPreparacion() {
   );
 }
 
-/** Por qué «Cambiar algo» está apagado en un plan del motor 3D (y qué sí se puede hacer). */
+/** Lo que el cliente puede hacer con un plan del motor 3D (y por qué la vista previa puede faltar). */
 export function NotaPlan3D() {
   return <p data-testid="nota-plan-3d" role="note" className="rounded-xl bg-acento-suave px-3 py-2 text-xs text-acento">{TEXTO_NOTA_PLAN_3D}</p>;
 }

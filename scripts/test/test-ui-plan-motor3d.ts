@@ -43,6 +43,13 @@ const sobres: Sobre[] = JSON.parse(execFileSync(process.execPath, ["--conditions
 const sobreDe = (id: string) => sobres.find((s) => s.id === id)!;
 const planPython = PlanGuiadoSchema.parse(JSON.parse(readFileSync("scripts/test/fixtures/plan-guiado-columnas-repetidas.json", "utf8")));
 const entero = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
+/** La etiqueta de apertura del botón que dice `etiqueta` (el último `<button` antes de su texto). */
+const botonCon = (html: string, etiqueta: string): string => {
+  const posicion = html.indexOf(etiqueta);
+  assert.ok(posicion >= 0, `no hay un botón «${etiqueta}»`);
+  const inicio = html.lastIndexOf("<button", posicion);
+  return html.slice(inicio, html.indexOf(">", inicio) + 1);
+};
 
 const propiedades = (plan: PlanGuiado, extra: Record<string, unknown> = {}) => ({
   plan, estadoImagen: "nada", usoCosteo: null, compraAbierta: false, vigente: true, ocupado: false, hechas: [], contextoCompra: {},
@@ -71,12 +78,12 @@ async function main(): Promise<void> {
     assert.ok(t.includes(entero.format(s.globos)) || t.includes(String(s.globos)), `el total de globos (${s.globos})`);
     for (const pieza of plan.plan.estructuras) assert.ok(t.includes(pieza.nombre), `la pieza ${pieza.nombre}`);
     assert.ok(t.includes("2 piezas"), "cuenta las piezas");
-    // Lo que no existe todavía no se ofrece.
-    assert.ok(!t.includes("Ajustar mi plan"), "sin «Ajustar mi plan»");
+    // Los cambios sí (fase 5, D-020: colores, proporciones y tamaños); «Modificar esta pieza» (el diseñador) no; la imagen, todavía no.
+    assert.ok(t.includes("Ajustar mi plan"), "«Ajustar mi plan» está");
     assert.ok(!t.includes("Modificar esta pieza") && !t.includes("Modificar estas piezas"), "sin «Modificar»");
     assert.doesNotMatch(html, /aria-label="Modificar /);
-    assert.doesNotMatch(html, /<button[^>]*disabled=""[^>]*>[^]*?Ver cómo quedaría/, "«Ver cómo quedaría» encendido: la imagen del 3D existe (fase 4)");
-    assert.match(html, /<button[^>]*disabled=""[^>]*>[^]*?Cambiar algo/, "«Cambiar algo» apagado");
+    assert.doesNotMatch(botonCon(html, "Ver cómo quedaría"), /disabled=""/, "«Ver cómo quedaría» encendido: la imagen del 3D existe (fase 4)");
+    assert.doesNotMatch(botonCon(html, "Cambiar algo"), /disabled=""/, "«Cambiar algo» encendido");
     // Lo que sí: ver detalle, costear, comprar, aprender y contratar.
     for (const accion of ["Ver detalle", "Cuánto cuesta", "Comprar", "Aprender a hacerlo", "Contratar decorador"]) assert.ok(t.includes(accion), accion);
     // El dibujo del motor de Python (`GraficaMotorGuiada`) ni se monta.
@@ -342,11 +349,12 @@ async function main(): Promise<void> {
     });
   });
 
-  await caso("VistaGuiada: la imagen y los cambios de un plan 3D no van a Python, y el plan guarda su motor", () => {
+  await caso("VistaGuiada: la imagen de un plan 3D no va a Python, sus cambios van al servidor del 3D y el plan guarda su motor", () => {
     const fuente = readFileSync("src/components/guiado/VistaGuiada.tsx", "utf8");
     assert.match(fuente, /async function verComoQuedaria[\s\S]{0,700}widget\.motor === "3d" && !firmaDePlan\(widget\.plan\)\)[\s\S]{0,200}return;/, "verComoQuedaria se detiene, antes de cualquier ruta, con un plan 3D sin espec firmada");
     assert.match(fuente, /widget\.motor === "3d"\) \{[\s\S]{0,400}pedirImagenPlan3D\(/, "y con espec firmada el plan 3D va por su propia ruta (test-motor3d-imagen-cliente.ts lo prueba entero)");
-    assert.match(fuente, /async function aplicarEdicionChat[\s\S]{0,500}\?\.motor === "3d"[\s\S]{0,400}return;/, "los cambios por chat se detienen antes de /api/plan-editar");
+    assert.match(fuente, /async function aplicarEdicionChat[\s\S]{0,500}const del3d = planDelMensaje\([^\n]*\?\.motor === "3d";/, "los cambios por chat saben si el plan es del 3D");
+    assert.match(fuente, /dependenciasEdicionChat\(signal, del3d \? \{ turnoId: mensajeId \} : undefined\)/, "…y entonces van al servidor del 3D con el id del turno, no a /api/plan-editar");
     assert.match(fuente, /motor=\{widget\.motor\}/, "la tarjeta recibe el motor del plan");
     assert.match(fuente, /colocarPlan\(mensajeId, resultado\.plan, resultado\.cotizacion, Boolean\(foto\), idea, foto\?\.referenciaId, resultado\.motor\)/, "el plan guarda el motor con que se armó");
     assert.doesNotMatch(fuente, /void leerMotorDelPlan\(\)/, "la lectura de la bandera ya no es solo auditoría");
