@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { FormatoGlobo } from "@/lib/globos3d/formatos";
 import { centroCuerpo, contornoCorazon, perfilLink, perfilRedondo, type PuntoPerfil } from "@/lib/globos3d/geometria";
 import type { SolidoEscenografia } from "@/lib/globos3d/escenografia";
@@ -483,7 +484,24 @@ function texturaLentejuelas(hex: string): THREE.CanvasTexture | null {
   return textura;
 }
 
+/** Los materiales de escenografía ya hechos, por acabado y color: cien sólidos del mismo color comparten uno (y un programa de sombreado). Se vacía si cambia el entorno de reflejos. */
+const MATERIALES_ESCENOGRAFIA = new Map<string, THREE.Material>();
+/** Los acabados que llevan una textura propia por sólido: no se comparten. */
+const ACABADOS_SIN_COMPARTIR = new Set(["lentejuelas", "foil", "foil_mate"]);
+
 function materialEscenografia(s: SolidoEscenografia): THREE.Material {
+  if (ACABADOS_SIN_COMPARTIR.has(s.acabado)) return crearMaterialEscenografia(s);
+  const clave = `${s.acabado}|${s.hex}`;
+  let material = MATERIALES_ESCENOGRAFIA.get(clave);
+  if (!material) {
+    material = crearMaterialEscenografia(s);
+    material.userData.compartido = true;
+    MATERIALES_ESCENOGRAFIA.set(clave, material);
+  }
+  return material;
+}
+
+function crearMaterialEscenografia(s: SolidoEscenografia): THREE.Material {
   const color = new THREE.Color(s.hex);
   switch (s.acabado) {
     case "lentejuelas": {
@@ -505,37 +523,104 @@ function materialEscenografia(s: SolidoEscenografia): THREE.Material {
   }
 }
 
-/** Un sólido de escenografía en su sitio: geometría en su marco (cm → m) y el marco puesto con su base de ejes. */
-function solidoEscenografia(s: SolidoEscenografia): THREE.Object3D {
-  let geometria: THREE.BufferGeometry;
-  if (s.forma === "caja") {
-    geometria = new THREE.BoxGeometry(s.tamano.x * CM, s.tamano.y * CM, s.tamano.z * CM);
-  } else if (s.forma === "cilindro") {
-    geometria = new THREE.CylinderGeometry(s.radioArribaCm * CM, s.radioCm * CM, s.altoCm * CM, 64);
-    geometria.translate(0, (s.altoCm / 2) * CM, 0);
-  } else if (s.acabado === "foil" || s.acabado === "foil_mate") {
-    // Un globo metalizado: el contorno inflado como almohada, de z = 0 a z = grosor.
-    geometria = geometriaFoil(s.contorno, s.huecos, s.grosorCm);
-  } else {
-    const forma = new THREE.Shape(s.contorno.map((p) => new THREE.Vector2(p.x * CM, p.y * CM)));
-    for (const hueco of s.huecos) forma.holes.push(new THREE.Path(hueco.map((p) => new THREE.Vector2(p.x * CM, p.y * CM))));
-    // Un bisel fino redondea el canto: al girar, el panel se ve como un tablero cortado y no como una lámina.
-    const bisel = Math.min(0.5, s.grosorCm / 4) * CM;
-    geometria = new THREE.ExtrudeGeometry(forma, { depth: Math.max(0.1 * CM, s.grosorCm * CM - 2 * bisel), bevelEnabled: true, bevelThickness: bisel, bevelSize: bisel, bevelSegments: 2, curveSegments: 24 });
-    geometria.translate(0, 0, bisel);
+/** Cuántos lados lleva un cilindro de `radioCm`: lo fino (una pata, una varilla) con 12 se ve redondo; solo lo ancho necesita más. */
+const segmentosDeCilindro = (radioCm: number) => Math.min(48, Math.max(12, Math.round(10 + radioCm * 0.6)));
+
+/** Las cajas y los cilindros de escenografía son iguales en muchos sólidos (las patas de una mesa, los barrotes de una silla): una sola geometría por medida. */
+const GEOMETRIAS_ESCENOGRAFIA = new Map<string, THREE.BufferGeometry>();
+function geometriaCompartida(clave: string, crear: () => THREE.BufferGeometry): THREE.BufferGeometry {
+  let g = GEOMETRIAS_ESCENOGRAFIA.get(clave);
+  if (!g) {
+    g = crear();
+    g.userData.compartido = true;
+    if (GEOMETRIAS_ESCENOGRAFIA.size > 400) GEOMETRIAS_ESCENOGRAFIA.clear();
+    GEOMETRIAS_ESCENOGRAFIA.set(clave, g);
   }
-  const malla = new THREE.Mesh(geometria, materialEscenografia(s));
-  malla.castShadow = true;
-  malla.receiveShadow = true;
+  return g;
+}
+
+/** La geometría de un sólido en su propio marco (cm → m). */
+function geometriaDeSolido(s: SolidoEscenografia): THREE.BufferGeometry {
+  if (s.forma === "caja") {
+    return geometriaCompartida(`c|${s.tamano.x}|${s.tamano.y}|${s.tamano.z}`, () => new THREE.BoxGeometry(s.tamano.x * CM, s.tamano.y * CM, s.tamano.z * CM));
+  }
+  if (s.forma === "cilindro") {
+    return geometriaCompartida(`y|${s.radioCm}|${s.radioArribaCm}|${s.altoCm}`, () => {
+      const g = new THREE.CylinderGeometry(s.radioArribaCm * CM, s.radioCm * CM, s.altoCm * CM, segmentosDeCilindro(Math.max(s.radioCm, s.radioArribaCm)));
+      g.translate(0, (s.altoCm / 2) * CM, 0);
+      return g;
+    });
+  }
+  if (s.acabado === "foil" || s.acabado === "foil_mate") {
+    // Un globo metalizado: el contorno inflado como almohada, de z = 0 a z = grosor.
+    return geometriaFoil(s.contorno, s.huecos, s.grosorCm);
+  }
+  const forma = new THREE.Shape(s.contorno.map((p) => new THREE.Vector2(p.x * CM, p.y * CM)));
+  for (const hueco of s.huecos) forma.holes.push(new THREE.Path(hueco.map((p) => new THREE.Vector2(p.x * CM, p.y * CM))));
+  // Un bisel fino redondea el canto: al girar, el panel se ve como un tablero cortado y no como una lámina.
+  const bisel = Math.min(0.5, s.grosorCm / 4) * CM;
+  const geometria = new THREE.ExtrudeGeometry(forma, { depth: Math.max(0.1 * CM, s.grosorCm * CM - 2 * bisel), bevelEnabled: true, bevelThickness: bisel, bevelSize: bisel, bevelSegments: 2, curveSegments: 24 });
+  geometria.translate(0, 0, bisel);
+  return geometria;
+}
+
+/** El marco de un sólido (su origen y sus ejes) como matriz, de su espacio a la pieza. */
+function marcoDeSolido(s: SolidoEscenografia): THREE.Matrix4 {
   const ejes = new THREE.Matrix4().makeBasis(
     new THREE.Vector3(s.ejeX.x, s.ejeX.y, s.ejeX.z), new THREE.Vector3(s.ejeY.x, s.ejeY.y, s.ejeY.z), new THREE.Vector3(s.ejeZ.x, s.ejeZ.y, s.ejeZ.z),
   );
-  malla.quaternion.setFromRotationMatrix(ejes);
-  malla.position.set(s.origen.x * CM, s.origen.y * CM, s.origen.z * CM);
+  return new THREE.Matrix4().compose(new THREE.Vector3(s.origen.x * CM, s.origen.y * CM, s.origen.z * CM), new THREE.Quaternion().setFromRotationMatrix(ejes), new THREE.Vector3(1, 1, 1));
+}
+
+/** ¿Echa sombra? Lo fino (varillas, barrotes, aros de alambre) no: la sombra no se nota y cuesta una pasada más de cada uno. */
+function proyectaSombra(s: SolidoEscenografia): boolean {
+  if (s.forma === "cilindro") return Math.max(s.radioCm, s.radioArribaCm) >= 3;
+  if (s.forma === "caja") { const [, medio, grande] = [s.tamano.x, s.tamano.y, s.tamano.z].sort((a, b) => a - b); return medio! * grande! >= 400; }
+  return s.grosorCm >= 1.5;
+}
+
+/** Los sólidos que se pueden juntar con otros del mismo material en una sola malla: sin calcomanía ni textura propia. */
+const sePuedeFusionar = (s: SolidoEscenografia) => !s.motivo && !ACABADOS_SIN_COMPARTIR.has(s.acabado);
+
+/** Un sólido de escenografía en su sitio: geometría en su marco (cm → m) y el marco puesto con su base de ejes. */
+function solidoEscenografia(s: SolidoEscenografia): THREE.Object3D {
+  const malla = new THREE.Mesh(geometriaDeSolido(s), materialEscenografia(s));
+  malla.castShadow = true;
+  malla.receiveShadow = true;
+  marcoDeSolido(s).decompose(malla.position, malla.quaternion, malla.scale);
   // Lo impreso (calavera, «Happy Halloween», lunares…) de la utilería de fiesta, como calcomanía en su cara.
   const calco = calcoMotivo(s);
   if (calco) malla.add(calco);
   return malla;
+}
+
+/**
+ * Toda la escenografía de una pieza en pocas mallas: lo que comparte material (y si echa sombra) se junta en UNA geometría
+ * con cada sólido ya en su sitio. Una silla Tiffany pasa de 17 mallas a 3; ocho sillas y una mesa, de 150 a unas 12.
+ */
+function escenografiaDePieza(solidos: readonly SolidoEscenografia[]): THREE.Object3D[] {
+  const lotes = new Map<string, { material: THREE.Material; sombra: boolean; geometrias: THREE.BufferGeometry[] }>();
+  const salida: THREE.Object3D[] = [];
+  for (const s of solidos) {
+    if (s.oculto) continue;
+    if (!sePuedeFusionar(s)) { salida.push(solidoEscenografia(s)); continue; }
+    const sombra = proyectaSombra(s);
+    const clave = `${s.acabado}|${s.hex}|${sombra ? 1 : 0}`;
+    const lote = lotes.get(clave) ?? { material: materialEscenografia(s), sombra, geometrias: [] };
+    const g = geometriaDeSolido(s).clone();
+    g.applyMatrix4(marcoDeSolido(s));
+    lote.geometrias.push(g.index ? g.toNonIndexed() : g);
+    lotes.set(clave, lote);
+  }
+  for (const { material, sombra, geometrias } of lotes.values()) {
+    const geometria = geometrias.length === 1 ? geometrias[0]! : mergeGeometries(geometrias);
+    if (!geometria) continue;
+    const malla = new THREE.Mesh(geometria, material);
+    malla.castShadow = sombra;
+    malla.receiveShadow = true;
+    salida.push(malla);
+  }
+  return salida;
 }
 
 /** Un globo completo con sus propias geometrías y su material (calidad alta): el globo suelto y lo que no va por instancias. */
@@ -724,6 +809,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const entorno = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   escena.environment = entorno;
   entornoMetal = entorno;
+  MATERIALES_ESCENOGRAFIA.clear();
   // Menos luz de entorno: con la sala completa el látex mate se veía lavado (el rosado 009 salía casi blanco).
   escena.environmentIntensity = 0.55;
 
@@ -971,7 +1057,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     }
     // Escenografía (paneles, mesas, tapete): con su pieza, para elegirla y arrastrarla como a las demás.
     // Lo oculto (amarres internos) sostiene y da su caja, pero no se dibuja.
-    for (const s of c.solidos) if (!s.oculto) grupo.add(solidoEscenografia(s));
+    for (const malla of escenografiaDePieza(c.solidos)) grupo.add(malla);
     modulo.add(grupo);
     return { huella, ref: ref.clone(), base: new THREE.Vector3(), grupo, instancias, caja: null };
   }
