@@ -1,0 +1,167 @@
+{
+ "caso": "oficial-arco_asimetrico",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "9e1b298dd3e877c59a1ba1290a4a3ec57367ed48d09eee8b377ea449b6d357e4",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_ARCO_ASIMETRICO": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "005",
+     "cantidad": 56
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "040",
+     "cantidad": 81
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "970",
+     "cantidad": 49
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "005",
+     "cantidad": 36
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "040",
+     "cantidad": 26
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 35
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 16
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 20
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "005",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "970",
+     "cantidad": 9
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "005",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "970",
+     "cantidad": 1
+    }
+   ],
+   "unidades": 344,
+   "caja": [
+    -181,
+    0,
+    -203,
+    181,
+    235,
+    -117
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "005",
+    "cantidad": 56
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "040",
+    "cantidad": 81
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "970",
+    "cantidad": 49
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "005",
+    "cantidad": 36
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "040",
+    "cantidad": 26
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 35
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 16
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 20
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "005",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "970",
+    "cantidad": 9
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "005",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "970",
+    "cantidad": 1
+   }
+  ],
+  "unidades": 344
+ },
+ "caja": [
+  -181,
+  0,
+  -203,
+  181,
+  235,
+  -117
+ ]
+}

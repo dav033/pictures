@@ -1,0 +1,130 @@
+{
+ "caso": "idea-deco-real-28-aro-blanco-dorado-y-nude",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "1e776c283aa45b0370bacd4fd8c377fac1c5c52553b882636df1df1b88a13f61",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_ARO_CIRCULAR": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "073",
+     "cantidad": 15
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "806",
+     "cantidad": 64
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "970",
+     "cantidad": 37
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "073",
+     "cantidad": 29
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "806",
+     "cantidad": 22
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 31
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "073",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "806",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 6
+    }
+   ],
+   "unidades": 219,
+   "caja": [
+    -101,
+    0,
+    -181,
+    112,
+    207,
+    -136
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "073",
+    "cantidad": 15
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "806",
+    "cantidad": 64
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "970",
+    "cantidad": 37
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "073",
+    "cantidad": 29
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "806",
+    "cantidad": 22
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 31
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "073",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "806",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 6
+   }
+  ],
+  "unidades": 219
+ },
+ "caja": [
+  -101,
+  0,
+  -181,
+  112,
+  207,
+  -136
+ ],
+ "referenciaPython": {
+  "globos": 94
+ }
+}

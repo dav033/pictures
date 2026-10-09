@@ -1,0 +1,30 @@
+{
+ "caso": "idea-deco-real-27-aro-navideno-verde-salvia",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "4272fa2c31c7e861a1cae369458972c9872908511d348d43659681cc08175f28",
+ "noRepresentable": [
+  {
+   "piezaId": "EST_01_ARO_CIRCULAR",
+   "motivo": "El aro parcial (media luna, diagonal) no existe: el motor solo arma el aro entero."
+  }
+ ],
+ "piezas": {},
+ "total": {
+  "lineas": [],
+  "unidades": 0
+ },
+ "caja": [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "referenciaPython": {
+  "globos": 151
+ }
+}

@@ -1,0 +1,80 @@
+{
+ "caso": "idea-deco-real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "a74dabfa01dc8c1f87f9aa3b76542db55d5b499f5c2bc580b90f279d0f2793ad",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_COLUMNA": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "015",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "030",
+     "cantidad": 16
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "041",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "061",
+     "cantidad": 8
+    }
+   ],
+   "unidades": 40,
+   "caja": [
+    -61,
+    0,
+    -183,
+    -15,
+    208,
+    -137
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-12",
+    "codigo": "015",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "030",
+    "cantidad": 16
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "041",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "061",
+    "cantidad": 8
+   }
+  ],
+  "unidades": 40
+ },
+ "caja": [
+  -61,
+  0,
+  -183,
+  -15,
+  208,
+  -137
+ ],
+ "referenciaPython": {
+  "globos": 44
+ }
+}

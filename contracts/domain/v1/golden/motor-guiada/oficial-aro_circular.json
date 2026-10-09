@@ -1,0 +1,127 @@
+{
+ "caso": "oficial-aro_circular",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "5ee0b466558b9b7666edeeae5a59d63742f586129f635b50232f3aec2f01812a",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_ARO_CIRCULAR": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "005",
+     "cantidad": 25
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "040",
+     "cantidad": 19
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "970",
+     "cantidad": 19
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "005",
+     "cantidad": 19
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "040",
+     "cantidad": 23
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 21
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 9
+    }
+   ],
+   "unidades": 147,
+   "caja": [
+    -80,
+    0,
+    -181,
+    80,
+    169,
+    -139
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "005",
+    "cantidad": 25
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "040",
+    "cantidad": 19
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "970",
+    "cantidad": 19
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "005",
+    "cantidad": 19
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "040",
+    "cantidad": 23
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 21
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 9
+   }
+  ],
+  "unidades": 147
+ },
+ "caja": [
+  -80,
+  0,
+  -181,
+  80,
+  169,
+  -139
+ ]
+}

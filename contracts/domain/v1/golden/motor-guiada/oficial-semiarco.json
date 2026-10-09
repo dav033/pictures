@@ -1,0 +1,157 @@
+{
+ "caso": "oficial-semiarco",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "c116ccc5925fff522ccf5c0cff8300ff0d5628f38def943c594576dcba94b701",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_SEMIARCO": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "005",
+     "cantidad": 20
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "040",
+     "cantidad": 31
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "970",
+     "cantidad": 18
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "005",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "040",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 9
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "005",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "040",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "970",
+     "cantidad": 5
+    }
+   ],
+   "unidades": 110,
+   "caja": [
+    -80,
+    0,
+    -189,
+    80,
+    218,
+    -131
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "005",
+    "cantidad": 20
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "040",
+    "cantidad": 31
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "970",
+    "cantidad": 18
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "005",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "040",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 9
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "005",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "040",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "970",
+    "cantidad": 5
+   }
+  ],
+  "unidades": 110
+ },
+ "caja": [
+  -80,
+  0,
+  -189,
+  80,
+  218,
+  -131
+ ]
+}
