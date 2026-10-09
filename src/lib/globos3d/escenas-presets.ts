@@ -417,3 +417,13 @@ export function escenaPredefinida(id: string): Escena {
   const preset = ESCENAS_PREDEFINIDAS.find((p) => p.id === id) ?? ESCENAS_PREDEFINIDAS[0]!;
   return structuredClone(preset.escena);
 }
+
+/** La plantilla con que abría el taller antes (arco, dos columnas y guirnalda): se guardaba sola en el navegador de cualquiera que lo abriera. */
+export const PLANTILLA_DE_PARTIDA = "arco_organico_columnas_guirnalda";
+
+/** ¿La escena es esa plantilla tal cual? Sirve solo para reconocer lo que el taller guardó solo antes de abrir vacío (ver `guardado-escena.ts`). */
+export function esPlantillaAntigua(escena: Escena): boolean {
+  if (!escena.nodos.length) return false;
+  const partida = ESCENAS_PREDEFINIDAS.find((p) => p.id === PLANTILLA_DE_PARTIDA);
+  return partida !== undefined && JSON.stringify(partida.escena.nodos) === JSON.stringify(escena.nodos);
+}

@@ -44,6 +44,7 @@ import { aligerarAdjuntos, claveImagen, imagenesSinMiniatura, type AdjuntosTurno
 import { respetarReintentable, uiErrorDesdeEventoChat, type OrigenError } from "@/lib/estado/estado-error";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 import { nuevaConversacion, obtenerIdConversacion, registrarEventoCliente } from "@/lib/registro/cliente";
+import { CalificacionClasica } from "@/components/ui/shell/CalificacionClasica";
 import {
   CLAVE_GENERACIONES,
   generacionParaRestaurar,
@@ -1903,6 +1904,7 @@ export default function Page() {
                           )}
                         </div>
                       )}
+                      <CalificacionClasica mensajes={mensajes} indice={i} listo={!esUltimoStreaming} conImagen={imagenes.length > 0} />
                     </motion.div>
                   );
                 })}

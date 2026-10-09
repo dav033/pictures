@@ -8,7 +8,7 @@ import { hexDeColor } from "./mobiliario-colores";
 import { colocacionPorDefecto } from "./mobiliario-colocar";
 import { muebleDe } from "./mobiliario-catalogo";
 import { puestosAlrededor, puestosEnFila, type Puesto } from "./mobiliario-disposicion";
-import { ACABADOS_MUEBLE, admiteRotulo, conTextoPieza, opcionesDeMueble, piezaDeEntrada, piezaDeMueble, portadorDeRotulo, type OpcionesGuardadas, type PiezaEscenografia } from "./mobiliario-pieza";
+import { ACABADOS_MUEBLE, admiteRotulo, conTextoPieza, nombreDeMueble, opcionesDeMueble, piezaDeEntrada, piezaDeMueble, portadorDeRotulo, type OpcionesGuardadas, type PiezaEscenografia } from "./mobiliario-pieza";
 import { ACABADOS_ROTULO, avisoDeTexto, caraDe, esAcabadoRotulo, NOMBRE_ACABADO_ROTULO, textoEnUnaLinea, type PedidoRotulo } from "./rotulos";
 import { descripcionConColores, retiroDe, type FondoCatalogo, type MuebleCatalogo } from "./mobiliario-tipos";
 import { esAcabadoMueble, limitesDeMueble, MAX_TEXTO_MUEBLE } from "./mobiliario-pieza";
@@ -279,7 +279,7 @@ export function resumenDeEscenografia(p: PiezaEscenografia): { medidas: string; 
   }
   const acabadoPropio = m.acabadosPropios?.find(([id]) => id === (o.acabado ?? "metal"))?.[1];
   return {
-    medidas: `${m.nombre} · ${textoMedidas(medidasReales(p))}${o.texto ? ` · texto ${JSON.stringify(textoEnUnaLinea(o.texto))}` : ""}${acabadoPropio ? ` · ${acabadoPropio.toLowerCase()}` : ""}${rotulo ? ` · ${dichoRotulo(rotulo)}` : ""}`,
+    medidas: `${nombreDeMueble(m, o)} · ${textoMedidas(medidasReales(p))}${o.texto ? ` · texto ${JSON.stringify(textoEnUnaLinea(o.texto))}` : ""}${acabadoPropio ? ` · ${acabadoPropio.toLowerCase()}` : ""}${rotulo ? ` · ${dichoRotulo(rotulo)}` : ""}`,
     colores: o.colores.map((c, i) => `${m.coloresDe[i] ?? "color"} ${c}`).join(", "),
   };
 }

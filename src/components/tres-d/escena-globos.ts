@@ -13,6 +13,7 @@ import { MEDIR_VISOR, cronometrar, infoDe, registrarVisor, type VisorMedible } f
 import { camaraEstandar, type VistaEstandar } from "./camara-estandar";
 import { crearEntornoEstudio } from "./entorno-estudio";
 import { ambienteActivo, ambienteDe, crearLucesDeSala, lucesDeTecho, materialPiso, texturaTablones, ventanaDerecha } from "./sala-ambiente";
+import { ajustarSombraDelSol } from "./sombra-sala";
 import { CONFETI_PLATA, TOPE_CONFETI, discosConfeti, geometriaConfeti, materialConfeti, tinteDeConfeti, topePorGlobo } from "./confeti-visor";
 import { achatadoDe } from "./deformacion-globo";
 import type { AmbienteSala } from "@/lib/globos3d/escena";
@@ -1052,6 +1053,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     const conPiso = Boolean(datos?.mostrar.piso);
     piso.visible = !conPiso;
     cuadricula.visible = !datos;
+    ajustarSombraDelSol(sol, datos ? { anchoM: datos.anchoCm * CM, fondoM: datos.fondoCm * CM, altoM: datos.altoCm * CM } : null);
     if (!datos) { lucesDeSala.aplicar(false); return true; }
     const ancho = datos.anchoCm * CM, fondo = datos.fondoCm * CM, alto = datos.altoCm * CM;
     const ambiente = ambienteDe(datos.ambiente);

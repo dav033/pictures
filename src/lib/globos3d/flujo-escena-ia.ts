@@ -71,7 +71,8 @@ export async function leerFlujo(cuerpo: ReadableStream<Uint8Array>, alEvento: (e
   separador.cerrar();
 }
 
-export type RespuestaEscenaIA = { estado: number; datos: unknown };
+/** `solicitudId`: la cabecera `x-request-id` de la respuesta (la ata a la auditoría y a la calificación del turno), si la trae. */
+export type RespuestaEscenaIA = { estado: number; datos: unknown; solicitudId?: string };
 
 /**
  * El pedido a la IA de la escena con avance en vivo. `signal` lo cancela («Detener»): el `fetch` lanza `AbortError` y
@@ -92,15 +93,17 @@ export async function pedirEscenaIA(entrada: {
     body: JSON.stringify(cuerpo),
     signal,
   });
+  const idSolicitud = r.headers.get("x-request-id");
+  const solicitud = idSolicitud ? { solicitudId: idSolicitud } : {};
   if (!(r.headers.get("content-type") ?? "").includes(TIPO_NDJSON) || !r.body) {
-    return { estado: r.status, datos: await r.json().catch(() => null) };
+    return { estado: r.status, datos: await r.json().catch(() => null), ...solicitud };
   }
   const salida: { final: RespuestaEscenaIA | null } = { final: null };
   await leerFlujo(r.body, (e) => {
-    if (e.tipo === "final") salida.final = { estado: e.estado, datos: e.cuerpo };
+    if (e.tipo === "final") salida.final = { estado: e.estado, datos: e.cuerpo, ...solicitud };
     else if (e.tipo !== "latido") alEvento?.(e);
   });
-  return salida.final ?? { estado: 502, datos: { error: "La conexión con la IA se cortó antes de terminar." } };
+  return salida.final ?? { estado: 502, datos: { error: "La conexión con la IA se cortó antes de terminar." }, ...solicitud };
 }
 
 /** Cada cuántos ms el servidor manda un latido mientras la IA trabaja. */

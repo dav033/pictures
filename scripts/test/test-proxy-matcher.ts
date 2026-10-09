@@ -10,6 +10,7 @@ for (const [path, shouldMatch] of [
   ["/api/feedback-ia/analisis-cron", false],
   ["/api/feedback-ia", true],
   ["/api/feedback-ia/admin", true],
+  ["/api/guiada/motor", true],
   ["/api/chat", true],
   ["/login", false],
   ["/api/login", false],

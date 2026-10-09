@@ -39,6 +39,7 @@ import { cambiarMobiliario, resumenDeEscenografia } from "./herramientas-escena-
 import { elementosDeEscenografia } from "./mobiliario-pieza";
 import { ACABADOS_ROTULO } from "./rotulos";
 import { HERRAMIENTAS_EXTRA, NOMBRES_EXTRA, declaracionesExtra } from "./herramientas-escena-extra";
+import { MAX_NODOS, SALA_MAXIMA_CM } from "./limites-escena";
 
 /**
  * **Herramientas para que una IA construya la escena** del taller 3D (pestaña «Escena») por function calling.
@@ -84,7 +85,7 @@ export const RANGOS = {
   guirnalda: { ancho_cm: [100, 800], caida_cm: [0, 150] },
   pared_malla: { ancho_cm: [100, 600], alto_cm: [100, 300] },
   pared_trenzas: { ancho_cm: [100, 600], alto_cm: [100, 300] },
-  sala: { ancho_cm: [300, 1200], fondo_cm: [300, 1000], alto_cm: [240, 600] },
+  sala: { ancho_cm: [300, SALA_MAXIMA_CM.ancho], fondo_cm: [300, SALA_MAXIMA_CM.fondo], alto_cm: [240, SALA_MAXIMA_CM.alto] },
 } as const satisfies Record<string, Record<string, Rango>>;
 
 /** Formatos que admite cada pieza de trenza o malla (los de los botones del panel). */
@@ -226,9 +227,9 @@ const ESQUEMAS = {
   quitar_pieza: z.object({ id: IdSchema, quitar_colgadas: z.boolean().optional().describe("true (por defecto): también quita lo que cuelga de ella; false: lo deja en el piso") }),
   duplicar_pieza: z.object({ id: IdSchema, nombre: z.string().min(1).max(60).optional(), donde: DondeSchema.optional() }),
   cambiar_sala: z.object({
-    ancho_cm: z.number().optional().describe("300–1200"),
-    fondo_cm: z.number().optional().describe("300–1000"),
-    alto_cm: z.number().optional().describe("altura al techo, 240–600"),
+    ancho_cm: z.number().optional().describe("300–3000 (un salón de eventos llega a 30 m)"),
+    fondo_cm: z.number().optional().describe("300–3000"),
+    alto_cm: z.number().optional().describe("altura al techo, 240–1000"),
     tono_piso: z.string().optional().describe("color hex del piso (#rrggbb)"),
     tono_paredes: z.string().optional().describe("color hex de las paredes"),
     tono_techo: z.string().optional().describe("color hex del techo"),
@@ -888,8 +889,7 @@ function reubicarSobre(escena: Escena, id: string, vieja: Pieza, nueva: Pieza): 
   };
 }
 
-/** Máximo de piezas de una escena (las de la biblioteca traen varias). */
-export const MAX_NODOS = 150;
+export { MAX_NODOS } from "./limites-escena";
 
 /** ¿El código es el color que se nombra («rosado» → Pastel Mate Rosado)? */
 function usaColor(codigo: string, de: string): boolean {

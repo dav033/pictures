@@ -15,7 +15,7 @@ import { cambiarRotulo, conRotulo, limpiarTexto, MAX_TEXTO_ROTULO, normalizarRot
  * Las opciones vienen de afuera (la escena guardada, la API, la IA): `normalizarOpciones` las deja siempre armables.
  */
 
-export type OpcionesGuardadas = { anchoCm: number; fondoCm: number; altoCm: number; colores: string[]; acabado?: AcabadoEscenografia; texto?: string };
+export type OpcionesGuardadas = { anchoCm: number; fondoCm: number; altoCm: number; colores: string[]; acabado?: AcabadoEscenografia; texto?: string; /** Solo en los conjuntos de mesa con sillas, si no lleva las de siempre. */ sillas?: number };
 export type MuebleDePieza = { id: string; opciones?: OpcionesGuardadas; rotulo?: RotuloEscenografia };
 export type PiezaEscenografia = Extract<Pieza, { tipo: "escenografia" }>;
 
@@ -35,7 +35,7 @@ export const MuebleDePiezaSchema = z.object({
   opciones: z.object({
     anchoCm: z.number().finite().positive().max(3000), fondoCm: z.number().finite().positive().max(3000), altoCm: z.number().finite().positive().max(1500),
     colores: z.array(z.string().regex(HEX)).min(1).max(3),
-    acabado: z.enum(ACABADOS_MUEBLE).optional(), texto: z.string().max(MAX_TEXTO_MUEBLE).optional(),
+    acabado: z.enum(ACABADOS_MUEBLE).optional(), texto: z.string().max(MAX_TEXTO_MUEBLE).optional(), sillas: z.number().int().min(2).max(20).optional(),
   }).optional(),
   rotulo: RotuloSchema.optional(),
 });
@@ -56,6 +56,23 @@ function fondoDe(m: MuebleCatalogo, ancho: number, pedido: number): number {
   }
 }
 
+/** Las sillas de un conjunto de mesa: entero dentro de lo que admite (las imperiales, par); lo que no vale se descarta (lleva las de siempre). */
+function sillasValidas(m: MuebleCatalogo, v: unknown): number | undefined {
+  if (!m.sillas || typeof v !== "number" || !Number.isInteger(v) || v < m.sillas.min || v > m.sillas.max || (m.sillas.par && v % 2 !== 0) || v === m.sillas.porDefecto) return undefined;
+  return v;
+}
+
+/** Cuántas sillas lleva de verdad una mesa con sillas (las de su pieza, o las de siempre del catálogo); `null` si no es de ese tipo. */
+export function sillasDeMueble(m: MuebleCatalogo, opciones?: { sillas?: number }): number | null {
+  return m.sillas ? opciones?.sillas ?? m.sillas.porDefecto : null;
+}
+
+/** El nombre de un mueble como es esa pieza: una mesa con sillas dice las que lleva («Mesa redonda con 4 sillas»), no las del catálogo. */
+export function nombreDeMueble(m: MuebleCatalogo, opciones?: { sillas?: number }): string {
+  const sillas = sillasDeMueble(m, opciones);
+  return sillas === null ? m.nombre : m.nombre.replace(/\d+ sillas/, `${sillas} sillas`);
+}
+
 /** Opciones siempre armables: medidas finitas y dentro de 0,4–2,5 veces el catálogo, fondo según el mueble, colores `#rrggbb` (los que faltan o no valen, de partida), acabado y texto válidos. */
 export function normalizarOpciones(m: MuebleCatalogo, o: Partial<OpcionesGuardadas> | undefined): OpcionesGuardadas {
   const l = limitesDeMueble(m);
@@ -63,8 +80,10 @@ export function normalizarOpciones(m: MuebleCatalogo, o: Partial<OpcionesGuardad
   const pedidos = Array.isArray(o?.colores) ? o.colores : [];
   const cuantos = Math.min(m.coloresDe.length, Math.max(m.colores.length, pedidos.length));
   const colores = Array.from({ length: cuantos }, (_, i) => (typeof pedidos[i] === "string" && HEX.test(pedidos[i]!) ? pedidos[i]!.toLowerCase() : m.colores[i] ?? m.colores[0]!));
+  const sillas = sillasValidas(m, o?.sillas);
   return {
-    anchoCm: ancho, fondoCm: fondoDe(m, ancho, acotar(o?.fondoCm, l.fondo, m.medidas.fondoCm)), altoCm: acotar(o?.altoCm, l.alto, m.medidas.altoCm), colores,
+    anchoCm: ancho, fondoCm: sillas !== undefined && m.fondo === "proporcional" ? m.medidas.fondoCm : fondoDe(m, ancho, acotar(o?.fondoCm, l.fondo, m.medidas.fondoCm)), altoCm: acotar(o?.altoCm, l.alto, m.medidas.altoCm), colores,
+    ...(sillas !== undefined ? { sillas } : {}),
     ...(typeof o?.acabado === "string" && esAcabadoMueble(o.acabado) && (!m.acabadosPropios || m.acabadosPropios.some(([id]) => id === o.acabado)) ? { acabado: o.acabado } : {}),
     ...(m.conTexto && typeof o?.texto === "string" && limpiarTexto(o.texto, m.lineasTexto ?? 1) ? { texto: limpiarTexto(o.texto, m.lineasTexto ?? 1) } : {}),
   };
@@ -120,7 +139,7 @@ export function conTextoPieza(p: PiezaEscenografia, pedido: PedidoRotulo): Pieza
 }
 
 /** Las opciones completas de un mueble: lo pedido y, de lo que falta, medidas y colores de partida (o el primer color, si `seguirPrimero`). */
-export function opcionesDeMueble(m: MuebleCatalogo, pedido: { anchoCm?: number; fondoCm?: number; altoCm?: number; colores?: readonly string[]; acabado?: AcabadoEscenografia; texto?: string } = {}): OpcionesGuardadas {
+export function opcionesDeMueble(m: MuebleCatalogo, pedido: { anchoCm?: number; fondoCm?: number; altoCm?: number; colores?: readonly string[]; acabado?: AcabadoEscenografia; texto?: string; sillas?: number } = {}): OpcionesGuardadas {
   const pedidos = pedido.colores ?? [];
   // Los de partida y, si se piden, los opcionales que vienen después (el vidrio de una mesa hexagonal).
   const cuantos = Math.min(m.coloresDe.length, Math.max(m.colores.length, pedidos.length));

@@ -12,6 +12,7 @@ import { MenuConversacion } from "./MenuConversacion";
 import { TarjetaComparando, TarjetaEnCurso } from "./TarjetaEnCurso";
 import { TarjetaFotoRealista } from "./TarjetaFotoRealista";
 import { TarjetaPregunta } from "./TarjetaPregunta";
+import { CalificacionTurno, turnoCalificable } from "./CalificacionTurno";
 import { BurbujaPedido, TarjetaTurno } from "./TarjetaTurno";
 import type { AsistenteIA } from "./useAsistenteIA";
 
@@ -133,6 +134,7 @@ export function PanelIA({ ia, escena, seleccion, enHoja = false, alFotoRealista,
               <BurbujaPedido pedido={t.pedido} contexto={t.contexto} foto={t.foto} />
               <TarjetaTurno turno={t} estado={ia.estados[t.id]} aviso={ia.avisos[t.id]} esUltimo={i === ia.turnos.length - 1} compacta={enHoja} viendoAntes={ia.antesId === t.id} hayPieza={hayPieza}
                 alDeshacer={ia.deshacer} alRehacer={ia.rehacer} alVerAntes={ia.verAntes} alApuntar={ia.apuntar} alElegir={alElegirPieza} alReintentar={reintentar} />
+              {turnoCalificable(t) && <CalificacionTurno turno={t} estado={ia.estados[t.id]} deshechoConBoton={ia.deshechosConBoton.has(t.id)} datos={ia.datosFeedback} compacta={enHoja} />}
             </div>
           ))}
           {ia.preguntaPendiente && <TarjetaPregunta pregunta={ia.preguntaPendiente} ocupado={ia.ocupado} alResponder={responder} alOtraCosa={() => caja.current?.focus()} />}
