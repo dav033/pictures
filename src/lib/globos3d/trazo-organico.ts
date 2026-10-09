@@ -277,5 +277,29 @@ export function escalarTrazo(p: ParametrosTrazoOrganico, cambio: { anchoCm?: num
   const fx = cambio.anchoCm && ejeX > 1 ? Math.max(0.05, (cambio.anchoCm - (caja.anchoCm - ejeX)) / ejeX) : 1;
   const fy = cambio.altoCm && ejeY > 1 ? Math.max(0.05, (cambio.altoCm - (caja.altoCm - ejeY)) / ejeY) : 1;
   const cx = (Math.max(...xs) + Math.min(...xs)) / 2, y0 = Math.min(...ys);
-  return { ...p, puntos: engrosado.map((q) => ({ x: r1(cx + (q.x - cx) * fx), y: r1(y0 + (q.y - y0) * fy), grosor: q.grosor })) };
+  const enX = (x: number) => r1(cx + (x - cx) * fx), enY = (y: number) => r1(y0 + (y - y0) * fy);
+  // Los puntos conservan su mezcla propia (`pesos`). Un fijo va en su sitio del cuerpo: el punto del eje que tenía más cerca se
+  // estira con el eje y lo que lo separa de él (hacia fuera) crece con el grosor de ese punto, no con el estiramiento del eje.
+  const fijos = p.fijos?.map((f) => {
+    const { punto, u, tramo } = proyectarEnEje(p.puntos, f);
+    const antes = p.puntos[tramo]!.grosor + (p.puntos[tramo + 1]!.grosor - p.puntos[tramo]!.grosor) * u;
+    const despues = engrosado[tramo]!.grosor + (engrosado[tramo + 1]!.grosor - engrosado[tramo]!.grosor) * u;
+    const radial = antes > 0 ? despues / antes : 1;
+    return { ...f, x: r1(enX(punto.x) + (f.x - punto.x) * radial), y: r1(enY(punto.y) + (f.y - punto.y) * radial) };
+  });
+  return { ...p, puntos: engrosado.map((q) => ({ ...q, x: enX(q.x), y: enY(q.y) })), ...(fijos ? { fijos } : {}) };
+}
+
+/** El punto del eje (la polilínea de los puntos del trazo) más cercano a `c`, con su tramo y su fracción `u` dentro de él. */
+function proyectarEnEje(puntos: readonly PuntoTrazo[], c: { x: number; y: number }): { punto: { x: number; y: number }; tramo: number; u: number } {
+  let mejor = { punto: { x: puntos[0]!.x, y: puntos[0]!.y }, tramo: 0, u: 0, d: Infinity };
+  for (let i = 0; i < puntos.length - 1; i++) {
+    const a = puntos[i]!, b = puntos[i + 1]!;
+    const vx = b.x - a.x, vy = b.y - a.y, l2 = vx * vx + vy * vy || 1e-9;
+    const u = Math.max(0, Math.min(1, ((c.x - a.x) * vx + (c.y - a.y) * vy) / l2));
+    const punto = { x: a.x + vx * u, y: a.y + vy * u };
+    const d = Math.hypot(c.x - punto.x, c.y - punto.y);
+    if (d < mejor.d) mejor = { punto, tramo: i, u, d };
+  }
+  return mejor;
 }

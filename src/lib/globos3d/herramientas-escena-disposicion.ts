@@ -178,9 +178,10 @@ export function espejarPieza(p: Pieza): { pieza: Pieza; reflejada: boolean } {
       tramos: p.opciones.tramos.map((t) => ({ ...t, recorrido: t.recorrido.map((v) => ({ ...v, x: -v.x })) })),
       ...(p.opciones.obstaculos ? { obstaculos: p.opciones.obstaculos.map((o) => ({ ...o, base: { ...o.base, x: -o.base.x } })) } : {}),
       ...(p.opciones.vista ? { vista: { ...p.opciones.vista, x: -p.opciones.vista.x } } : {}),
+      ...(p.opciones.fijos ? { fijos: p.opciones.fijos.map((f) => ({ ...f, x: -f.x })) } : {}),
     };
     const generador = p.generador?.tipo === "trazo"
-      ? { tipo: "trazo" as const, trazo: { ...p.generador.trazo, puntos: p.generador.trazo.puntos.map((q) => ({ ...q, x: -q.x })), silueta: siluetaEspejo(p.generador.trazo.silueta) } }
+      ? { tipo: "trazo" as const, trazo: { ...p.generador.trazo, puntos: p.generador.trazo.puntos.map((q) => ({ ...q, x: -q.x })), silueta: siluetaEspejo(p.generador.trazo.silueta), ...(p.generador.trazo.fijos ? { fijos: p.generador.trazo.fijos.map((f) => ({ ...f, x: -f.x })) } : {}) } }
       : p.generador;
     return { pieza: { ...p, opciones, ...(generador ? { generador } : {}) }, reflejada: true };
   }
