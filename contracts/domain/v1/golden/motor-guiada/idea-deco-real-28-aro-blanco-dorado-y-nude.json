@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-28-aro-blanco-dorado-y-nude",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "83833c25afd47374f57a3a9ac5113810e62a4ee6e9511399105eb5d798694a53",
+ "especHash": "dfb1ee0ab738bb81586effb10380ce1623ebcb2bdf2f1ddfe9a0d62dd591effd",
  "noRepresentable": [],
  "piezas": {
   "EST_01_ARO_CIRCULAR": {
@@ -12,22 +12,22 @@
     {
      "formatoId": "R-5",
      "codigo": "073",
-     "cantidad": 15
+     "cantidad": 3
     },
     {
      "formatoId": "R-5",
      "codigo": "806",
-     "cantidad": 64
+     "cantidad": 18
     },
     {
      "formatoId": "R-5",
      "codigo": "970",
-     "cantidad": 37
+     "cantidad": 8
     },
     {
      "formatoId": "R-9",
      "codigo": "073",
-     "cantidad": 29
+     "cantidad": 16
     },
     {
      "formatoId": "R-9",
@@ -37,12 +37,12 @@
     {
      "formatoId": "R-9",
      "codigo": "970",
-     "cantidad": 31
+     "cantidad": 22
     },
     {
      "formatoId": "R-12",
      "codigo": "073",
-     "cantidad": 7
+     "cantidad": 4
     },
     {
      "formatoId": "R-12",
@@ -52,17 +52,17 @@
     {
      "formatoId": "R-12",
      "codigo": "970",
-     "cantidad": 6
+     "cantidad": 4
     }
    ],
-   "unidades": 219,
+   "unidades": 105,
    "caja": [
-    -101,
+    -104,
     0,
-    -181,
-    112,
-    207,
-    -136
+    -182,
+    104,
+    210,
+    -137
    ]
   }
  },
@@ -71,22 +71,22 @@
    {
     "formatoId": "R-5",
     "codigo": "073",
-    "cantidad": 15
+    "cantidad": 3
    },
    {
     "formatoId": "R-5",
     "codigo": "806",
-    "cantidad": 64
+    "cantidad": 18
    },
    {
     "formatoId": "R-5",
     "codigo": "970",
-    "cantidad": 37
+    "cantidad": 8
    },
    {
     "formatoId": "R-9",
     "codigo": "073",
-    "cantidad": 29
+    "cantidad": 16
    },
    {
     "formatoId": "R-9",
@@ -96,12 +96,12 @@
    {
     "formatoId": "R-9",
     "codigo": "970",
-    "cantidad": 31
+    "cantidad": 22
    },
    {
     "formatoId": "R-12",
     "codigo": "073",
-    "cantidad": 7
+    "cantidad": 4
    },
    {
     "formatoId": "R-12",
@@ -111,18 +111,18 @@
    {
     "formatoId": "R-12",
     "codigo": "970",
-    "cantidad": 6
+    "cantidad": 4
    }
   ],
-  "unidades": 219
+  "unidades": 105
  },
  "caja": [
-  -101,
+  -104,
   0,
-  -181,
-  112,
-  207,
-  -136
+  -182,
+  104,
+  210,
+  -137
  ],
  "referenciaPython": {
   "globos": 94

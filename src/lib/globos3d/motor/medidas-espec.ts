@@ -50,6 +50,13 @@ export const TAMANOS_POR_DEFECTO: Readonly<Record<EstructuraOficialId, TamanosEs
   racimo_pared: "clasica",
 };
 
+/**
+ * El grosor del cuerpo (m) de cada pieza orgánica cuando nadie lo dijo. Es el que, con el relleno acotado de
+ * `calibracion-organica.ts`, deja el conteo por metro de Python y de las fotos de referencia (20 a 26 por metro): el
+ * del Taller y la biblioteca (guirnalda 45 cm) no se toca.
+ */
+export const GROSOR_ORGANICO_POR_DEFECTO_M = { guirnalda: 0.55, semiarco: 0.7, semiarcoAsimetrico: 0.72, columna: 0.7, aro: 0.3, arco: 0.7 } as const;
+
 /** Cuántos globos lleva por defecto lo que se cuenta por unidades. */
 export const UNIDADES_POR_DEFECTO: Partial<Record<EstructuraOficialId, number>> = { bouquet: 7, racimo_pared: 9, centro_mesa: 5 };
 

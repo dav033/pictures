@@ -34,7 +34,7 @@ export const CAMPOS_ESTRUCTURA_PLAN = {
   armado_bouquet: { ignorado: "Armado del bouquet por niveles de Python: el ramo del motor es un ramo de helio sencillo." },
   armado_guirnalda: { ignorado: MANDOS_DE_PYTHON },
   armado_arco: { ignorado: MANDOS_DE_PYTHON },
-  armado_columna: { ignorado: "Solo se lee el remate (el globo grande de arriba); " + MANDOS_DE_PYTHON },
+  armado_columna: { ignorado: "Solo se leen el remate (el globo grande de arriba) y, si es por capas de cuartetos de R-12, cuántas son; " + MANDOS_DE_PYTHON },
   armado_guirnalda_organica: { ignorado: MANDOS_DE_PYTHON },
   armado_columna_organica: { ignorado: MANDOS_DE_PYTHON },
   armado_arco_organico: { ignorado: MANDOS_DE_PYTHON },

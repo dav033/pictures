@@ -68,11 +68,13 @@ import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-bluepr
 import { cuerpoGeneracion, fuentesDelPlan, resumenCuerpoGeneracion } from "@/lib/generacion/cuerpo-generacion";
 // De /api/generate interesan la imagen y su aviso de lo no cotizado (el plan que devuelve no trae approval_token y el de
 // la tarjeta sí): `ImagenGeneradaSchema` vive ahora en pedir-imagen.ts, con la recuperación ante cortes.
-import { ErrorImagen, pedirImagenConRecuperacion } from "@/lib/generacion/pedir-imagen";
+import { ErrorImagen, pedirImagenConRecuperacion, type ImagenObtenida } from "@/lib/generacion/pedir-imagen";
 import { abrirConversacionGuiada, registrarAccionGuiada, registrarFalloGuiado, vaciarConversacionGuiada, type EstadoParaInstantanea } from "./registro-guiado";
 import { AVISO_VERSION_NUEVA, CABECERA_VERSION_APP, RespuestaIncompatibleError, camposInvalidos, clasificarIncompatible, hayVersionNueva, idParaReintento, turnoSinRespuesta } from "./version-pagina";
 import { borrarEstadoGuiado } from "./empezar-de-nuevo";
 import { useMotorGuiada } from "./usarMotorGuiada";
+import { pedirImagenPlan3D } from "./imagen-plan-3d";
+import { firmaDePlan } from "./motor3d/firma-plan";
 import { TEXTO_EDICION_PLAN_3D, TEXTO_IMAGEN_PLAN_3D, TEXTO_REHECHO_EN_PYTHON } from "./Plan3DEnPreparacion";
 import type { MotorGuiada } from "@/lib/guiada-motor/tipos";
 import { ConfirmarEmpezarDeNuevo } from "./ConfirmarEmpezarDeNuevo";
@@ -1205,8 +1207,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     if (imagenEnCursoRef.current) return;
     const widget = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
     if (!widget || widget.reemplazado) return;
-    // La imagen de un plan del motor 3D es de la fase 4: no se manda a Python (otro dueño de las cantidades).
-    if (widget.motor === "3d") { registrarAccion("imagen.pendiente_motor_3d", { mensajeId, plan_hash: widget.plan.plan_hash }); setAnuncio(TEXTO_IMAGEN_PLAN_3D); return; }
+    // Un plan del motor 3D sin su espec firmada (guardado antes de la fase 3) no tiene de dónde armar la imagen, y nunca va a Python.
+    if (widget.motor === "3d" && !firmaDePlan(widget.plan)) { registrarAccion("imagen.pendiente_motor_3d", { mensajeId, plan_hash: widget.plan.plan_hash }); setAnuncio(TEXTO_IMAGEN_PLAN_3D); return; }
     const sesion = sesionRef.current;
     imagenEnCursoRef.current = mensajeId;
     setImagenEnCurso(mensajeId);
@@ -1217,31 +1219,37 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     imagenControlRef.current = control;
     const plan = widget.plan;
     try {
-      const referencia = widget.fotoInspiracion ? fotosRef.current.get(mensajeId) : undefined;
-      // El mismo cuerpo que manda la clásica al aprobar (`cuerpoGeneracion`): productos y paquetes del plan, creatividad por
-      // defecto y, si el plan salió de una foto, su lectura (blueprint). Sin la lectura el servidor no tenía la escenografía,
-      // las cajas de cada pieza ni el encuadre de la foto, y FLUX unía las dos columnas en un arco (2026-10-06).
-      // Como en la clásica: el brief de esta conversación (evento, temática, lugar, momento) y las palabras del cliente como
-      // solicitud (la escena y la auditoría); antes iban la descripción que escribió la IA y un brief sin lugar ni momento
-      // (comparador 100, I4). `entradaImagenGuiada` es lo mismo que comprueba test-cuerpo-generacion.
-      const cuerpo = cuerpoGeneracion({
-        plan,
-        ...fuentesDelPlan(plan),
-        ...entradaImagenGuiada(plan, contextoClienteGuiado(brief, textosDelCliente(mensajes))),
-        imagenesReferencia: referencia ? [referencia] : [],
-        blueprint: widget.fotoInspiracion ? lecturaDelPlan(mensajes, mensajeId)?.blueprint : undefined,
-      });
-      registrarAccion("imagen.pedir", { mensajeId, cuerpo: resumenCuerpoGeneracion(cuerpo) });
-      // Producción, 2026-10-07: el servidor hizo la imagen pero en el móvil la respuesta se cortó («NetworkError») y se
-      // vio un error. Cada intento lleva su id; ante un corte se pregunta primero si el servidor ya la tiene (sin pagar
-      // otra) y, solo si no, un reintento silencioso. Cada paso queda en la auditoría.
-      const salida = await pedirImagenConRecuperacion({
-        cuerpo,
-        planHash: plan.plan_hash,
-        senal: control.signal,
-        limiteIntentoMs: LIMITE_IMAGEN_MS,
-        alEvento: (evento, datos) => registrarAccion(evento, { mensajeId, ...datos }),
-      });
+      let salida: ImagenObtenida;
+      if (widget.motor === "3d") {
+        // Un plan del motor 3D se dibuja por su ruta: la captura del visor que el cliente ve + la espec firmada, nunca el cuerpo de Python (otro dueño de las cantidades).
+        salida = await pedirImagenPlan3D({ plan, senal: control.signal, limiteIntentoMs: LIMITE_IMAGEN_MS, alEvento: (evento, datos) => registrarAccion(evento, { mensajeId, ...datos }) });
+      } else {
+        const referencia = widget.fotoInspiracion ? fotosRef.current.get(mensajeId) : undefined;
+        // El mismo cuerpo que manda la clásica al aprobar (`cuerpoGeneracion`): productos y paquetes del plan, creatividad por
+        // defecto y, si el plan salió de una foto, su lectura (blueprint). Sin la lectura el servidor no tenía la escenografía,
+        // las cajas de cada pieza ni el encuadre de la foto, y FLUX unía las dos columnas en un arco (2026-10-06).
+        // Como en la clásica: el brief de esta conversación (evento, temática, lugar, momento) y las palabras del cliente como
+        // solicitud (la escena y la auditoría); antes iban la descripción que escribió la IA y un brief sin lugar ni momento
+        // (comparador 100, I4). `entradaImagenGuiada` es lo mismo que comprueba test-cuerpo-generacion.
+        const cuerpo = cuerpoGeneracion({
+          plan,
+          ...fuentesDelPlan(plan),
+          ...entradaImagenGuiada(plan, contextoClienteGuiado(brief, textosDelCliente(mensajes))),
+          imagenesReferencia: referencia ? [referencia] : [],
+          blueprint: widget.fotoInspiracion ? lecturaDelPlan(mensajes, mensajeId)?.blueprint : undefined,
+        });
+        registrarAccion("imagen.pedir", { mensajeId, cuerpo: resumenCuerpoGeneracion(cuerpo) });
+        // Producción, 2026-10-07: el servidor hizo la imagen pero en el móvil la respuesta se cortó («NetworkError») y se
+        // vio un error. Cada intento lleva su id; ante un corte se pregunta primero si el servidor ya la tiene (sin pagar
+        // otra) y, solo si no, un reintento silencioso. Cada paso queda en la auditoría.
+        salida = await pedirImagenConRecuperacion({
+          cuerpo,
+          planHash: plan.plan_hash,
+          senal: control.signal,
+          limiteIntentoMs: LIMITE_IMAGEN_MS,
+          alEvento: (evento, datos) => registrarAccion(evento, { mensajeId, ...datos }),
+        });
+      }
       if (sesion !== sesionRef.current) return;
       if (salida.via !== "directa") registrarAccion("imagen.llego_tras_corte", { mensajeId, via: salida.via, intentos: salida.intentos });
       // Se ve en el acto; el plan de la tarjeta (con su approval_token) no se toca.

@@ -3,11 +3,11 @@ import { createHash } from "node:crypto";
 import { isAuthenticatedRequest } from "@/lib/auth/request";
 import { exigirEscritura } from "@/lib/feedback-ia/acceso";
 import {
-  EspecClienteV1Schema, armarDesdeEspec, especDesdeIdeaGuardada, especDesdePropuesta, especHashDe, sobreDelMotor, sumarIdeaAEspec,
+  armarDesdeEspec, especDesdeIdeaGuardada, especDesdePropuesta, sobreDelMotor, sumarIdeaAEspec,
   type ConceptoPlan, type EspecClienteV1, type ResultadoCotizacionBom, type ResultadoMotorV1,
 } from "@/lib/globos3d/motor/v1";
-import { abrirContextoPlan, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 import type { PlanIdeaGuardado } from "@/lib/plan/plan-de-idea";
+import { verificarPlanFirmado, type RechazoPlan } from "./verificar-plan";
 import { CuerpoPlanMotorSchema, type CuerpoPlanMotor, type RazonFallback } from "./plan-contrato";
 import type { RespuestaMotor } from "./tipos";
 
@@ -53,26 +53,15 @@ const FRASE_POR_RAZON: Readonly<Record<RazonFallback, string>> = {
 };
 
 type BaseVerificada = { espec: EspecClienteV1; concepto: ConceptoPlan };
-type RechazoBase = { codigo: "APROBACION_INVALIDA" | "PLAN_NO_ES_DEL_MOTOR_3D" | "ESPEC_INVALIDA" | "PLAN_ALTERADO"; mensaje: string; estado: number; motivo: string };
 
 /** Huella (no reversible) del navegador al que se le dio el plan. */
 export const huellaDeNavegador = (usuarioId: string): string => createHash("sha256").update(`globos3d-navegador:${usuarioId}`).digest("hex");
 
-/**
- * El plan vigente que se envía como base: token del motor 3D, firma, navegador y hash de la espec que trae. Nada de esto
- * se toma del navegador sin comprobar.
- */
-function verificarBase(base: NonNullable<CuerpoPlanMotor["base"]>, navegador: string): BaseVerificada | RechazoBase {
-  const contexto = abrirContextoPlan(base.approval_token);
-  if (!contexto || !verificarTokenAprobacion(base.approval_token, base.plan_hash)) return { codigo: "APROBACION_INVALIDA", mensaje: "La aprobación del plan expiró o no corresponde a este plan.", estado: 409, motivo: contexto ? "hash_distinto" : "token_invalido_o_vencido" };
-  if (contexto.backend !== "globos3d") return { codigo: "PLAN_NO_ES_DEL_MOTOR_3D", mensaje: "Este plan lo armó el motor de Python: el motor 3D no lo toca.", estado: 409, motivo: `backend_${contexto.backend}` };
-  if (contexto.navegador !== navegador) return { codigo: "APROBACION_INVALIDA", mensaje: "La aprobación del plan expiró o no corresponde a este plan.", estado: 409, motivo: contexto.navegador === null ? "token_sin_navegador" : "navegador_distinto" };
-  const espec = EspecClienteV1Schema.safeParse((base as { espec?: unknown }).espec);
-  const version = (base as { motor?: { version?: unknown } }).motor?.version;
-  if (!espec.success || typeof version !== "string") return { codigo: "ESPEC_INVALIDA", mensaje: "El plan no trae su especificación.", estado: 400, motivo: "espec_ausente_o_invalida" };
-  // El token firma el hash de la espec: si el navegador la cambió, el hash ya no coincide.
-  if (especHashDe(espec.data, version) !== base.plan_hash) return { codigo: "PLAN_ALTERADO", mensaje: "El plan no corresponde a su aprobación.", estado: 409, motivo: "hash_de_la_espec_distinto" };
-  return { espec: espec.data, concepto: { titulo: base.plan.concepto.titulo, descripcion: base.plan.concepto.descripcion, ...(base.plan.concepto.estilo ? { estilo: base.plan.concepto.estilo } : {}), ...(base.plan.concepto.ocasion ? { ocasion: base.plan.concepto.ocasion } : {}) } };
+/** El plan vigente que se envía como base: lo que comprueba `verificarPlanFirmado` y el concepto que trae. */
+function verificarBase(base: NonNullable<CuerpoPlanMotor["base"]>, navegador: string): BaseVerificada | RechazoPlan {
+  const firmado = verificarPlanFirmado({ approval_token: base.approval_token, plan_hash: base.plan_hash, espec: (base as { espec?: unknown }).espec, motor: (base as { motor?: { version?: unknown } }).motor }, navegador);
+  if ("codigo" in firmado) return firmado;
+  return { espec: firmado.espec, concepto: { titulo: base.plan.concepto.titulo, descripcion: base.plan.concepto.descripcion, ...(base.plan.concepto.estilo ? { estilo: base.plan.concepto.estilo } : {}), ...(base.plan.concepto.ocasion ? { ocasion: base.plan.concepto.ocasion } : {}) } };
 }
 
 function mayuscula(texto: string): string {

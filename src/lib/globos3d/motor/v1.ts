@@ -16,7 +16,7 @@ import type { ResultadoMotorV1 } from "./resultado-motor-v1";
  * doradas de `contracts/domain/v1/golden/motor-guiada/` guardan la versión con que se tomaron y fallan si el motor
  * cambia sin subirla.
  */
-export const VERSION_MOTOR = "1.1.0";
+export const VERSION_MOTOR = "1.2.0";
 
 export type { EspecClienteV1, PiezaEspec } from "./espec-cliente-v1";
 export type { BomLinea, ResultadoMotorV1 } from "./resultado-motor-v1";
@@ -34,6 +34,10 @@ export { POLITICA_PAQUETES, POLITICAS_PAQUETES, planearCompra, type PoliticaPaqu
 export { cotizarBom, type CompraMotor, type CotizacionDelMotor, type DependenciasCotizacion, type FalloCotizacion, type ResultadoCotizacionBom } from "./cotizar-bom";
 export { sobreDelMotor, SobreMotorSchema, type EntradaSobre, type PlanGuiadoMotor, type SobreDelMotor } from "./plan-guiado-desde-motor";
 export type { ConceptoPlan } from "./proyeccion-plan";
+// Vista (fase 3): la armada compacta proyectada a SVG, para el cliente sin WebGL.
+export { svgDeArmada, type OpcionesVistaSvg } from "./vista2d-svg";
+// Imagen realista (fase 4): la espec contada en inglés para FLUX, sin una palabra del cliente.
+export { descripcionImagenDeEspec, type DescripcionImagen } from "./descripcion-imagen";
 
 export function armarDesdeEspec(entrada: EspecClienteV1): ResultadoMotorV1 {
   const espec = EspecClienteV1Schema.parse(entrada);

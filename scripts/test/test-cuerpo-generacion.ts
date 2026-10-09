@@ -245,7 +245,10 @@ caso("las dos vistas llaman a /api/generate con el constructor compartido", () =
   assert.match(guiada, /pedirImagenConRecuperacion\(\{\s*cuerpo,/);
   const pedir = readFileSync(path.join(process.cwd(), "src/lib/generacion/pedir-imagen.ts"), "utf8");
   assert.match(pedir, /const cuerpo = JSON\.stringify\(opciones\.cuerpo\);/);
-  assert.match(pedir, /dep\.fetch\("\/api\/generate", \{[\s\S]{0,200}body: cuerpo,/);
+  // La ruta es /api/generate salvo que el llamador pase otra (el plan del motor 3D, fase 4): el cuerpo se serializa igual.
+  assert.match(pedir, /RUTA_GENERAR_IMAGEN = "\/api\/generate"/);
+  assert.match(pedir, /const ruta = opciones\.ruta \?\? RUTA_GENERAR_IMAGEN;/);
+  assert.match(pedir, /dep\.fetch\(ruta, \{[\s\S]{0,200}body: cuerpo,/);
   assert.match(guiada, /registrarAccion\("imagen\.pedir", \{ mensajeId, cuerpo: resumenCuerpoGeneracion\(cuerpo\) \}\)/);
 });
 

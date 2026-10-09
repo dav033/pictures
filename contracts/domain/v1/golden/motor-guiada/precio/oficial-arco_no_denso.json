@@ -2,59 +2,41 @@
  "caso": "oficial-arco_no_denso",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "ace6cc2fb07fd608008757b6bf91d2385656e5a2423f990bc67878dad26dfa28",
+ "especHash": "9fdded678e1d293edcf8859afbf8475e68eaf119ed9cb9eef7a6e76561782a44",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 33,
-  "cubierta": 33,
+  "objetivo": 8,
+  "cubierta": 8,
   "sinCubrir": 0
  },
  "pedido": [
   {
    "formatoId": "R-5",
    "codigo": "005",
-   "cantidad": 12,
+   "cantidad": 10,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634235781415",
    "variantId": "46594221080871"
   },
   {
-   "formatoId": "R-5",
-   "codigo": "005",
-   "cantidad": 20,
-   "reserva": 0,
-   "paquetes": 1,
-   "productId": "8634235781415",
-   "variantId": "46594221113639"
-  },
-  {
-   "formatoId": "R-5",
-   "codigo": "005",
-   "cantidad": 49,
-   "reserva": 0,
-   "paquetes": 1,
-   "productId": "8634235781415",
-   "variantId": "46594221146407"
-  },
-  {
    "formatoId": "R-9",
    "codigo": "005",
-   "cantidad": 46,
-   "reserva": 4,
+   "cantidad": 11,
+   "reserva": 0,
    "paquetes": 1,
    "productId": "8634235781415",
-   "variantId": "46594221244711"
+   "variantId": "46594221179175"
   },
   {
    "formatoId": "R-12",
    "codigo": "005",
-   "cantidad": 8,
-   "reserva": 4,
+   "cantidad": 6,
+   "reserva": 0,
    "paquetes": 1,
    "productId": "8634235781415",
    "variantId": "46594221277479"
@@ -62,34 +44,34 @@
   {
    "formatoId": "R-18",
    "codigo": "005",
-   "cantidad": 1,
-   "reserva": 5,
+   "cantidad": 4,
+   "reserva": 0,
    "paquetes": 1,
    "productId": "8634235781415",
    "variantId": "46594221474087"
   },
   {
-   "formatoId": "R-5",
-   "codigo": "040",
-   "cantidad": 91,
-   "reserva": 9,
-   "paquetes": 2,
-   "productId": "8634239385895",
-   "variantId": "46594233729319"
+   "formatoId": "R-24",
+   "codigo": "005",
+   "cantidad": 1,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634235781415",
+   "variantId": "46594221539623"
   },
   {
-   "formatoId": "R-9",
+   "formatoId": "R-5",
    "codigo": "040",
-   "cantidad": 12,
+   "cantidad": 6,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239385895",
-   "variantId": "46594233762087"
+   "variantId": "46594233631015"
   },
   {
    "formatoId": "R-9",
    "codigo": "040",
-   "cantidad": 20,
+   "cantidad": 13,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -107,26 +89,35 @@
   {
    "formatoId": "R-18",
    "codigo": "040",
-   "cantidad": 2,
-   "reserva": 4,
+   "cantidad": 1,
+   "reserva": 0,
    "paquetes": 1,
    "productId": "8634239385895",
    "variantId": "46594233991463"
   },
   {
+   "formatoId": "R-24",
+   "codigo": "040",
+   "cantidad": 1,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634239385895",
+   "variantId": "46594234089767"
+  },
+  {
    "formatoId": "R-5",
    "codigo": "970",
-   "cantidad": 49,
+   "cantidad": 9,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634255638823",
-   "variantId": "46594264629543"
+   "variantId": "46594264596775"
   },
   {
    "formatoId": "R-12",
    "codigo": "970",
-   "cantidad": 17,
-   "reserva": 7,
+   "cantidad": 13,
+   "reserva": 0,
    "paquetes": 2,
    "productId": "8634255638823",
    "variantId": "46594264662311"
@@ -134,27 +125,18 @@
   {
    "formatoId": "R-18",
    "codigo": "970",
-   "cantidad": 9,
+   "cantidad": 3,
    "reserva": 0,
-   "paquetes": 2,
+   "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264727847"
   },
   {
-   "formatoId": "R-24",
-   "codigo": "970",
-   "cantidad": 2,
-   "reserva": 0,
-   "paquetes": 1,
-   "productId": "8634255638823",
-   "variantId": "46594264793383"
-  },
-  {
    "formatoId": "R-9",
    "codigo": "970",
-   "cantidad": 59,
-   "reserva": 0,
-   "paquetes": 3,
+   "cantidad": 7,
+   "reserva": 8,
+   "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264858919"
   }

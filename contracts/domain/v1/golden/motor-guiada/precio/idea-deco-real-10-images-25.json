@@ -2,23 +2,23 @@
  "caso": "idea-deco-real-10-images-25",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "c300dd064c8179da1c2ced6ddc05ca89e14cb9cb62117b13305f090c1b636c36",
+ "especHash": "9bde8ff12c02b1d90fe8d14d20b11d2291ae43e2f3520808b611adc4a4370047",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 8,
-  "cubierta": 8,
+  "objetivo": 7,
+  "cubierta": 7,
   "sinCubrir": 0
  },
  "pedido": [
   {
    "formatoId": "R-5",
    "codigo": "040",
-   "cantidad": 3,
-   "reserva": 8,
+   "cantidad": 2,
+   "reserva": 7,
    "paquetes": 1,
    "productId": "8634239385895",
    "variantId": "46594233631015"
@@ -44,7 +44,7 @@
   {
    "formatoId": "R-18",
    "codigo": "040",
-   "cantidad": 2,
+   "cantidad": 1,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -53,7 +53,7 @@
   {
    "formatoId": "R-5",
    "codigo": "981",
-   "cantidad": 6,
+   "cantidad": 3,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634257211687",
@@ -62,7 +62,7 @@
   {
    "formatoId": "R-12",
    "codigo": "981",
-   "cantidad": 3,
+   "cantidad": 6,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634257211687",
@@ -80,7 +80,7 @@
   {
    "formatoId": "R-9",
    "codigo": "981",
-   "cantidad": 4,
+   "cantidad": 1,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634257211687",
@@ -89,16 +89,16 @@
   {
    "formatoId": "R-5",
    "codigo": "640",
-   "cantidad": 25,
+   "cantidad": 8,
    "reserva": 0,
-   "paquetes": 2,
+   "paquetes": 1,
    "productId": "8634259374375",
    "variantId": "46594272821543"
   },
   {
    "formatoId": "R-9",
    "codigo": "640",
-   "cantidad": 4,
+   "cantidad": 10,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634259374375",
@@ -107,7 +107,7 @@
   {
    "formatoId": "R-12",
    "codigo": "640",
-   "cantidad": 5,
+   "cantidad": 7,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634259374375",
@@ -116,7 +116,7 @@
   {
    "formatoId": "R-18",
    "codigo": "640",
-   "cantidad": 1,
+   "cantidad": 2,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634259374375",
@@ -125,7 +125,7 @@
   {
    "formatoId": "R-9",
    "codigo": "390",
-   "cantidad": 1,
+   "cantidad": 2,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634277003559",
@@ -134,7 +134,7 @@
   {
    "formatoId": "R-12",
    "codigo": "390",
-   "cantidad": 2,
+   "cantidad": 1,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634277003559",
@@ -143,7 +143,7 @@
   {
    "formatoId": "R-18",
    "codigo": "390",
-   "cantidad": 2,
+   "cantidad": 1,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634277003559",
@@ -152,16 +152,16 @@
   {
    "formatoId": "R-5",
    "codigo": "406",
-   "cantidad": 18,
+   "cantidad": 5,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634277921063",
-   "variantId": "46594308473127"
+   "variantId": "46594308440359"
   },
   {
    "formatoId": "R-9",
    "codigo": "406",
-   "cantidad": 2,
+   "cantidad": 6,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634277921063",
@@ -170,25 +170,25 @@
   {
    "formatoId": "R-12",
    "codigo": "406",
-   "cantidad": 4,
+   "cantidad": 8,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634277921063",
    "variantId": "46594308702503"
   },
   {
-   "formatoId": "R-18",
+   "formatoId": "R-24",
    "codigo": "406",
    "cantidad": 1,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634277921063",
-   "variantId": "46594308800807"
+   "variantId": "46594308866343"
   },
   {
    "formatoId": "R-12",
    "codigo": "044",
-   "cantidad": 4,
+   "cantidad": 3,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8869949341991",
@@ -197,7 +197,7 @@
   {
    "formatoId": "R-5",
    "codigo": "044",
-   "cantidad": 3,
+   "cantidad": 1,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8869949341991",
@@ -211,6 +211,15 @@
    "paquetes": 1,
    "productId": "8869949341991",
    "variantId": "47466206986535"
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "044",
+   "cantidad": 1,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8869949341991",
+   "variantId": "47466208133415"
   },
   {
    "formatoId": "R-18",

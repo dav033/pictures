@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-08-images-23",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "fe0e8f9b43199da51c18fb6b5b9e89e230ba566f2aec1d8f7d782ace7aaaec98",
+ "especHash": "85f84937db50cbea988a8b91c99f408483f5f45d633fff94d195cdb5781fb1ea",
  "noRepresentable": [],
  "piezas": {
   "EST_01_COLUMNA": {
@@ -12,12 +12,12 @@
     {
      "formatoId": "R-12",
      "codigo": "080",
-     "cantidad": 20
+     "cantidad": 22
     },
     {
      "formatoId": "R-12",
      "codigo": "570",
-     "cantidad": 20
+     "cantidad": 22
     },
     {
      "formatoId": "R-36",
@@ -25,13 +25,13 @@
      "cantidad": 1
     }
    ],
-   "unidades": 41,
+   "unidades": 45,
    "caja": [
     -80,
     0,
     -202,
     5,
-    301,
+    321,
     -117
    ]
   },
@@ -40,12 +40,12 @@
     {
      "formatoId": "R-12",
      "codigo": "080",
-     "cantidad": 20
+     "cantidad": 22
     },
     {
      "formatoId": "R-12",
      "codigo": "570",
-     "cantidad": 20
+     "cantidad": 22
     },
     {
      "formatoId": "R-36",
@@ -53,13 +53,13 @@
      "cantidad": 1
     }
    ],
-   "unidades": 41,
+   "unidades": 45,
    "caja": [
     -4,
     0,
     -202,
     81,
-    301,
+    321,
     -117
    ]
   }
@@ -69,12 +69,12 @@
    {
     "formatoId": "R-12",
     "codigo": "080",
-    "cantidad": 40
+    "cantidad": 44
    },
    {
     "formatoId": "R-12",
     "codigo": "570",
-    "cantidad": 40
+    "cantidad": 44
    },
    {
     "formatoId": "R-36",
@@ -82,14 +82,14 @@
     "cantidad": 2
    }
   ],
-  "unidades": 82
+  "unidades": 90
  },
  "caja": [
   -80,
   0,
   -202,
   81,
-  301,
+  321,
   -117
  ],
  "referenciaPython": {

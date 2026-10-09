@@ -17,6 +17,8 @@ import { z } from "zod";
 
 export const CABECERA_SOLICITUD_IMAGEN = "x-solicitud-imagen";
 export const RUTA_RECUPERAR_IMAGEN = "/api/generate/recuperar";
+/** La ruta que hace la imagen de un plan de Python. Un plan del motor 3D va por la suya, que el llamador pasa en `ruta`. */
+export const RUTA_GENERAR_IMAGEN = "/api/generate";
 
 /** De /api/generate interesan la imagen (PNG, JPEG o WebP) y su aviso de lo no cotizado. */
 export const ImagenGeneradaSchema = z.object({
@@ -63,6 +65,10 @@ export type DependenciasImagen = {
 };
 
 export type OpcionesPedirImagen = {
+  /** Qué ruta hace la imagen; por defecto /api/generate (Python). La recuperación tras un corte es la misma para todas. */
+  ruta?: string;
+  /** Con `false` un corte sin imagen recuperable NO repite la petición (cada intento paga una imagen): el cliente decide con «Reintentar». */
+  reintentoSilencioso?: boolean;
   cuerpo: unknown;
   planHash: string;
   /** Cancelación de fuera (empezar de nuevo, otra conversación): corta todo sin recuperar ni reintentar. */
@@ -132,6 +138,7 @@ export async function pedirImagenConRecuperacion(opciones: OpcionesPedirImagen):
     try { opciones.alEvento?.(evento, datos); } catch { /* El registro nunca cambia el resultado. */ }
   };
   const cuerpo = JSON.stringify(opciones.cuerpo);
+  const ruta = opciones.ruta ?? RUTA_GENERAR_IMAGEN;
 
   async function pedirUna(solicitudId: string): Promise<{ imagen: string; avisoNoCotizado?: string }> {
     const tope = senalConTope(opciones.senal, opciones.limiteIntentoMs);
@@ -143,14 +150,14 @@ export async function pedirImagenConRecuperacion(opciones: OpcionesPedirImagen):
       return new ErrorImagen("red", textoCausa(causa));
     };
     try {
-      const respuesta = await dep.fetch("/api/generate", {
+      const respuesta = await dep.fetch(ruta, {
         method: "POST",
         headers: { "Content-Type": "application/json", [CABECERA_SOLICITUD_IMAGEN]: solicitudId },
         body: cuerpo,
         signal: tope.senal,
       });
       if (!respuesta.ok) {
-        throw new ErrorImagen(statusPasajero(respuesta.status) ? "servidor" : "rechazo", `/api/generate respondió con estado ${respuesta.status}.`, respuesta.status);
+        throw new ErrorImagen(statusPasajero(respuesta.status) ? "servidor" : "rechazo", `${ruta} respondió con estado ${respuesta.status}.`, respuesta.status);
       }
       let datos: unknown;
       try {
@@ -159,7 +166,7 @@ export async function pedirImagenConRecuperacion(opciones: OpcionesPedirImagen):
         throw clasificar(causa);
       }
       const salida = ImagenGeneradaSchema.safeParse(datos);
-      if (!salida.success) throw new ErrorImagen("respuesta_invalida", "La respuesta de /api/generate no trae una imagen válida.", respuesta.status);
+      if (!salida.success) throw new ErrorImagen("respuesta_invalida", `La respuesta de ${ruta} no trae una imagen válida.`, respuesta.status);
       return { imagen: salida.data.imagen, ...(salida.data.avisoNoCotizado ? { avisoNoCotizado: salida.data.avisoNoCotizado } : {}) };
     } catch (causa) {
       throw clasificar(causa);
@@ -218,7 +225,8 @@ export async function pedirImagenConRecuperacion(opciones: OpcionesPedirImagen):
   }
 
   let ultimoError: ErrorImagen | null = null;
-  for (let intento = 1; intento <= 2; intento += 1) {
+  const intentosMaximos = opciones.reintentoSilencioso === false ? 1 : 2;
+  for (let intento = 1; intento <= intentosMaximos; intento += 1) {
     const solicitudId = dep.nuevoId();
     if (intento === 2) avisar("imagen.reintento_silencioso", { solicitudId, porque: ultimoError?.clase ?? null });
     try {

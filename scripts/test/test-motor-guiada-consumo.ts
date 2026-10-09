@@ -79,6 +79,7 @@ const MUTACIONES: Record<keyof typeof CONSUMO, Mutacion> = {
   "piezas.flores.codigo": [conFlores(FLORES), conFlores({ ...FLORES, codigo: "012" })],
   "piezas.flores.centro": [conFlores(FLORES), conFlores({ ...FLORES, centro: "005" })],
   "piezas.unidades": [BOUQUET, sobre(BOUQUET, { unidades: 9 })],
+  "piezas.capas": [COLUMNA, sobre(COLUMNA, { capas: 11 })],
   "piezas.remate.formatoId": [sobre(COLUMNA, { remate: { formatoId: "R-36", codigo: "970" } }), sobre(COLUMNA, { remate: { formatoId: "R-24", codigo: "970" } })],
   "piezas.remate.codigo": [sobre(COLUMNA, { remate: { formatoId: "R-36", codigo: "970" } }), sobre(COLUMNA, { remate: { formatoId: "R-36", codigo: "080" } })],
   "piezas.declarada.materiales.formatoId": [FIGURA, sobre(FIGURA, { declarada: { motivo: "Contada del catálogo.", materiales: [{ formatoId: "R-9", codigo: "061", cantidad: 10 }] } })],

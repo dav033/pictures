@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-30-columna-balon-futbol",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "ce618addfd33cdbea7c9d8887123497f5ffddbc42d858002142792c1e00da32c",
+ "especHash": "464fa59e8d1caf1af7a0a06fd0dfcba1c28704a0729b5114e6bbd0e7234f5439",
  "noRepresentable": [],
  "piezas": {
   "EST_01_COLUMNA": {
@@ -12,57 +12,52 @@
     {
      "formatoId": "R-5",
      "codigo": "005",
-     "cantidad": 7
+     "cantidad": 1
     },
     {
      "formatoId": "R-5",
      "codigo": "031",
-     "cantidad": 57
-    },
-    {
-     "formatoId": "R-5",
-     "codigo": "080",
-     "cantidad": 17
+     "cantidad": 14
     },
     {
      "formatoId": "R-9",
      "codigo": "005",
-     "cantidad": 2
+     "cantidad": 3
     },
     {
      "formatoId": "R-9",
+     "codigo": "031",
+     "cantidad": 15
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "080",
+     "cantidad": 11
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
      "codigo": "031",
      "cantidad": 12
     },
     {
-     "formatoId": "R-9",
+     "formatoId": "R-12",
      "codigo": "080",
-     "cantidad": 13
+     "cantidad": 7
     },
     {
-     "formatoId": "R-12",
-     "codigo": "005",
-     "cantidad": 2
-    },
-    {
-     "formatoId": "R-12",
+     "formatoId": "R-18",
      "codigo": "031",
-     "cantidad": 13
-    },
-    {
-     "formatoId": "R-12",
-     "codigo": "080",
-     "cantidad": 3
-    },
-    {
-     "formatoId": "R-18",
-     "codigo": "005",
-     "cantidad": 3
+     "cantidad": 4
     },
     {
      "formatoId": "R-18",
      "codigo": "080",
-     "cantidad": 3
+     "cantidad": 1
     },
     {
      "formatoId": "R-24",
@@ -70,14 +65,14 @@
      "cantidad": 1
     }
    ],
-   "unidades": 133,
+   "unidades": 72,
    "caja": [
-    -36,
+    -35,
     0,
-    -197,
-    36,
-    216,
-    -123
+    -196,
+    35,
+    219,
+    -124
    ]
   }
  },
@@ -86,57 +81,52 @@
    {
     "formatoId": "R-5",
     "codigo": "005",
-    "cantidad": 7
+    "cantidad": 1
    },
    {
     "formatoId": "R-5",
     "codigo": "031",
-    "cantidad": 57
-   },
-   {
-    "formatoId": "R-5",
-    "codigo": "080",
-    "cantidad": 17
+    "cantidad": 14
    },
    {
     "formatoId": "R-9",
     "codigo": "005",
-    "cantidad": 2
+    "cantidad": 3
    },
    {
     "formatoId": "R-9",
+    "codigo": "031",
+    "cantidad": 15
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "080",
+    "cantidad": 11
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-12",
     "codigo": "031",
     "cantidad": 12
    },
    {
-    "formatoId": "R-9",
+    "formatoId": "R-12",
     "codigo": "080",
-    "cantidad": 13
+    "cantidad": 7
    },
    {
-    "formatoId": "R-12",
-    "codigo": "005",
-    "cantidad": 2
-   },
-   {
-    "formatoId": "R-12",
+    "formatoId": "R-18",
     "codigo": "031",
-    "cantidad": 13
-   },
-   {
-    "formatoId": "R-12",
-    "codigo": "080",
-    "cantidad": 3
-   },
-   {
-    "formatoId": "R-18",
-    "codigo": "005",
-    "cantidad": 3
+    "cantidad": 4
    },
    {
     "formatoId": "R-18",
     "codigo": "080",
-    "cantidad": 3
+    "cantidad": 1
    },
    {
     "formatoId": "R-24",
@@ -144,15 +134,15 @@
     "cantidad": 1
    }
   ],
-  "unidades": 133
+  "unidades": 72
  },
  "caja": [
-  -36,
+  -35,
   0,
-  -197,
-  36,
-  216,
-  -123
+  -196,
+  35,
+  219,
+  -124
  ],
  "referenciaPython": {
   "globos": 60

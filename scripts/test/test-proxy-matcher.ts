@@ -12,6 +12,8 @@ for (const [path, shouldMatch] of [
   ["/api/feedback-ia/admin", true],
   ["/api/guiada/motor", true],
   ["/api/guiada/motor/plan", true],
+  ["/api/guiada/motor/armada", true],
+  ["/api/guiada/motor/imagen", true],
   ["/api/chat", true],
   ["/login", false],
   ["/api/login", false],

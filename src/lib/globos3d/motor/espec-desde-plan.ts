@@ -69,6 +69,17 @@ function remateDe(estructura: EstructuraPlan, porMaterial: ReadonlyArray<Readonl
   return { formatoId, codigo };
 }
 
+/** Los niveles de una columna por capas de cuartetos de R-12 (lo que arma la trenza clásica); otro armado no se traduce. */
+function capasDe(estructura: EstructuraPlan, avisos: string[]): number | undefined {
+  const armado = estructura.armado_columna;
+  if (armado?.modo !== "capas" || !armado.capas.length) return undefined;
+  if (armado.capas.some((capa) => capa.tamano !== 12 || capa.materiales.length !== 4)) {
+    avisos.push(`Las capas de «${estructura.nombre}» no son todas cuartetos de R-12: la columna se arma por su alto.`);
+    return undefined;
+  }
+  return armado.capas.length;
+}
+
 function piezaDe(estructura: EstructuraPlan, copia: number, copias: number, opciones: OpcionesEspecDesdePlan, avisos: string[]): PiezaEspec {
   const oficial = oficialDe(estructura);
   const porMaterial = coloresDeMateriales(estructura, opciones.resolverProducto, avisos);
@@ -76,6 +87,7 @@ function piezaDe(estructura: EstructuraPlan, copia: number, copias: number, opci
   const flores = floresDe(estructura, opciones.resolverProducto, avisos);
   const remate = remateDe(estructura, porMaterial, avisos);
   const { ancho_m: anchoM, alto_m: altoM, largo_m: largoM } = estructura.medidas;
+  const capas = capasDe(estructura, avisos);
   const unidades = POR_UNIDADES.has(oficial) ? estructura.unidades_declaradas ?? UNIDADES_POR_DEFECTO[oficial] : undefined;
   return {
     id: copia === 0 ? estructura.estructura_id : `${estructura.estructura_id}_${SUFIJOS[copia - 1] ?? "Z"}`,
@@ -89,6 +101,7 @@ function piezaDe(estructura: EstructuraPlan, copia: number, copias: number, opci
     ...(estructura.forma ? { forma: estructura.forma } : {}),
     ...(flores ? { flores } : {}),
     ...(remate ? { remate } : {}),
+    ...(capas ? { capas } : {}),
     ...(unidades ? { unidades } : {}),
   };
 }
