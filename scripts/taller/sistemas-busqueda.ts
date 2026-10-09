@@ -1,8 +1,9 @@
 /**
  * Los sistemas de búsqueda que compara `evaluar-busqueda.ts`. Para sumar uno: implementar `SistemaBusqueda` y
- * registrarlo en `SISTEMAS`. El RAG (REQ-002) se enchufa aquí cuando exista `src/lib/taller/buscar.ts`.
+ * registrarlo en `SISTEMAS`. El RAG (REQ-002) es `buscarEnTaller` contra la base de DATABASE_URL (con el flag forzado).
  */
 import { buscarEnBiblioteca } from "../../src/lib/globos3d/herramientas-escena-biblioteca";
+import { buscarEnTaller } from "../../src/lib/taller/buscar";
 import { SistemaNoDisponible, type SistemaBusqueda } from "../../src/lib/taller/evaluar";
 
 /**
@@ -14,14 +15,17 @@ export const sistemaActual: SistemaBusqueda = {
   buscarTexto: (texto, limite) => buscarEnBiblioteca({ texto, limite }).map((item) => item.id),
 };
 
-/** El RAG todavía no existe: el adaptador avisa y el evaluador sigue con los demás. */
+/**
+ * El RAG de producción (`buscarEnTaller`): la base de DATABASE_URL, con el embedding de la consulta (Gemini, centésimas de
+ * centavo por consulta) y el flag forzado, sin depender de TALLER_RAG_ENABLED. Si responde desde la memoria (la base no
+ * contesta) se avisa: comparar la memoria consigo misma no evalúa nada. Por foto, todavía no (falta embeber las fotos del oro).
+ */
 export const sistemaRag: SistemaBusqueda = {
   nombre: "RAG (taller/buscar)",
-  buscarTexto() {
-    throw new SistemaNoDisponible("RAG no disponible: falta src/lib/taller/buscar.ts");
-  },
-  buscarFoto() {
-    throw new SistemaNoDisponible("RAG no disponible: falta src/lib/taller/buscar.ts");
+  async buscarTexto(texto, limite) {
+    const r = await buscarEnTaller({ texto, limite }, { habilitado: true });
+    if (r.fuente !== "rag") throw new SistemaNoDisponible(`RAG no disponible: respondió la memoria (${r.avisos.join(" · ") || "sin aviso"})`);
+    return r.ids;
   },
 };
 
