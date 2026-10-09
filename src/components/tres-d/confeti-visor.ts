@@ -49,14 +49,16 @@ const ESCAMA_BASE_CM = 1;
  * tamaño (la geometría base mide 1 cm de radio). Se reutilizan entre globos del mismo tamaño y variante: no se modifican.
  */
 export function discosConfeti(radio: number, semilla: number, tope: number): readonly THREE.Matrix4[] {
-  const radioCm = radio / CM;
+  // El reparto se calcula SIEMPRE con el radio redondeado a 0,25 cm (el de la clave): lo que sale no depende de qué globo lo pidió primero.
+  const radioCm = Math.round((radio / CM) * 4) / 4;
+  radio = radioCm * CM;
   const variante = semilla % VARIANTES;
-  const clave = `${Math.round(radioCm * 2)}|${variante}|${tope}`;
+  const clave = `${radioCm}|${variante}|${tope}`;
   const hecho = cache.get(clave);
   if (hecho) return hecho;
   const cantidad = cantidadConfeti(radioCm, tope);
   const escala = radioEscamaCm(radioCm) / ESCAMA_BASE_CM;
-  const r = azar(variante + 1 + Math.round(radioCm * 2) * 97);
+  const r = azar(variante + 1 + Math.round(radioCm * 4) * 97);
   const q = new THREE.Quaternion(), giro = new THREE.Quaternion();
   const normal = new THREE.Vector3(), mira = new THREE.Vector3(), eje = new THREE.Vector3(0, 0, 1);
   const unoMas = new THREE.Vector3(escala, escala, escala), posicion = new THREE.Vector3();
