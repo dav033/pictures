@@ -80,7 +80,14 @@ export function mobiliarioLeido(p: FondoLeido, medida: MedidaLeida, notas: strin
   // El color del texto aparte (colorTexto) es el de las letras del nombre de acrílico (su color 1) o la luz de un neón (su color 2); si la foto
   // no lo dice, los colores leídos. El material del nombre de acrílico sale del acabado de las letras con la misma regla que el de un panel.
   const iTinta = mueble.acabadosPropios ? 0 : mueble.conTexto ? 1 : -1;
-  const colores = p.colores.slice(0, mueble.coloresDe.length).map((c, i) => (i === iTinta && tinta ? tinta : c.hex));
+  // Cada color del mueble se llena siempre: el de la tinta con colorTexto aunque la foto traiga menos colores (antes el corte por
+  // los leídos perdía la luz de un neón leído con un solo color). Con colorTexto y menos colores leídos que los del mueble, los
+  // leídos son ambiguos (suelen ser la misma luz): el resto queda con los de catálogo.
+  const ambiguos = iTinta >= 0 && Boolean(tinta) && p.colores.length < mueble.coloresDe.length;
+  if (ambiguos && p.colores.length) notas.push(`${mueble.nombre}: con el color del texto aparte y solo ${p.colores.length} color(es) leído(s), el resto va con los de catálogo.`);
+  // Solo hasta el color de la tinta: lo que la foto no dice queda sin poner (los secundarios siguen al primero, como siempre).
+  const largo = Math.min(mueble.coloresDe.length, Math.max(p.colores.length, tinta && iTinta >= 0 ? iTinta + 1 : 0));
+  const colores = Array.from({ length: largo }, (_, i) => (i === iTinta && tinta ? tinta : ambiguos ? mueble.colores[i]! : p.colores[i]?.hex ?? mueble.colores[i]!));
   const acabado = mueble.acabadosPropios ? (acabadoRotuloLeido(p.acabadoTexto ?? p.colores[0]?.acabado) === "acrilico_espejo" ? "metal" as const : "mate" as const) : p.colores[0] ? ACABADO[p.colores[0].acabado] : undefined;
   if (p.acabadoTexto && mueble.conTexto && !mueble.acabadosPropios) notas.push(`${mueble.nombre}: el acabado del texto (${p.acabadoTexto}) no aplica a un letrero de luz: lo ignoré.`);
   const sinRotulo = piezaDeMueble(mueble, opcionesDeMueble(mueble, { ...t, colores, ...(acabado ? { acabado } : {}), ...(mueble.conTexto && p.texto ? { texto: p.texto.slice(0, MAX_TEXTO_MUEBLE) } : {}) }));
