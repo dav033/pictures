@@ -60,7 +60,7 @@ const SILLA_TIFFANY = mueble({
 });
 
 const MESA_REDONDA_MANTEL = mueble({
-  id: "mesa_redonda_mantel", nombre: "Mesa redonda con mantel", grupo: "mesa",
+  id: "mesa_redonda_mantel", fondo: "igual_ancho", nombre: "Mesa redonda con mantel", grupo: "mesa",
   descripcion: "Mesa redonda de banquete de 1,5 m (8 a 10 puestos) con mantel blanco hasta el piso.",
   medidas: { anchoCm: 164, fondoCm: 164, altoCm: 75 }, colores: ["#f7f6f2"], coloresDe: ["mantel", "sobremantel en rombo (opcional)"],
   armar: (o) => mesaRedondaMantel({ ...o, anchoCm: o.anchoCm - 14, fondoCm: o.fondoCm - 14, tapa: color(o, 0, "tela"), patas: color(o, 0, "tela"), ...(o.colores[1] ? { extra: color(o, 1, "tela") } : {}) }),
@@ -120,12 +120,12 @@ const BASE: readonly MuebleCatalogo[] = [
     medidas: { anchoCm: 120, fondoCm: 38, altoCm: 45 }, colores: ["#8a6a45", "#e8e0d0"], coloresDe: ["estructura", "cojín"], armar: deAsiento(banca, "madera", "tela"),
   }),
   mueble({
-    id: "taburete_alto", nombre: "Taburete alto", grupo: "asiento", asiento: true, retiroCm: RETIRO_SILLAS_CM,
+    id: "taburete_alto", fondo: "igual_ancho", nombre: "Taburete alto", grupo: "asiento", asiento: true, retiroCm: RETIRO_SILLAS_CM,
     descripcion: "Taburete alto de bar de 43 cm (asiento redondo de 34) y 75 cm de alto, patas negras con apoyapiés (el de la mesa cóctel y la barra).",
     medidas: { anchoCm: 43, fondoCm: 43, altoCm: 75 }, colores: ["#2b2b2b", "#8a6a45"], coloresDe: ["patas", "asiento"], armar: tabureteDe,
   }),
   mueble({
-    id: "taburete_bajo", nombre: "Taburete bajo", grupo: "asiento", asiento: true, retiroCm: RETIRO_SILLAS_CM,
+    id: "taburete_bajo", fondo: "igual_ancho", nombre: "Taburete bajo", grupo: "asiento", asiento: true, retiroCm: RETIRO_SILLAS_CM,
     descripcion: "Taburete bajo redondo de 43 cm (asiento de 34) y 45 cm de alto, patas negras y asiento de madera.",
     medidas: { anchoCm: 43, fondoCm: 43, altoCm: 45 }, colores: ["#2b2b2b", "#8a6a45"], coloresDe: ["patas", "asiento"], armar: tabureteDe,
   }),
@@ -152,18 +152,18 @@ const BASE: readonly MuebleCatalogo[] = [
   }),
   MESA_IMPERIAL_MANTEL,
   mueble({
-    id: "mesa_redonda", nombre: "Mesa redonda", grupo: "mesa",
+    id: "mesa_redonda", fondo: "igual_ancho", nombre: "Mesa redonda", grupo: "mesa",
     descripcion: "Mesa redonda de banquete de 1,5 m y 75 cm de alto, sin mantel (tapa clara, pie central gris).",
     medidas: { anchoCm: 150, fondoCm: 150, altoCm: 75 }, colores: ["#f1ede4", "#6f6f6f"], coloresDe: ["tapa", "pie"], armar: deMesa(mesaRedonda, "mate", "metal"),
   }),
   MESA_REDONDA_MANTEL,
   mueble({
-    id: "mesa_coctel", nombre: "Mesa cóctel", grupo: "mesa",
+    id: "mesa_coctel", fondo: "igual_ancho", nombre: "Mesa cóctel", grupo: "mesa",
     descripcion: "Mesa alta de cóctel (periquera) de 60 cm y 110 cm de alto, sin mantel: tapa blanca, pie cromado.",
     medidas: { anchoCm: 60, fondoCm: 60, altoCm: 110 }, colores: ["#f4f1ea", "#c9c9c9"], coloresDe: ["tapa", "pie y base"], armar: deMesa(mesaCoctel, "satinado", "metal"),
   }),
   mueble({
-    id: "mesa_coctel_licra", nombre: "Mesa cóctel con licra", grupo: "mesa",
+    id: "mesa_coctel_licra", fondo: "igual_ancho", nombre: "Mesa cóctel con licra", grupo: "mesa",
     descripcion: "Mesa alta de cóctel de 60 cm y 110 cm de alto con funda de licra blanca ajustada.",
     medidas: { anchoCm: 63, fondoCm: 63, altoCm: 110 }, colores: ["#f7f6f2"], coloresDe: ["funda"], armar: (o) => mesaCoctelLicra({ ...o, anchoCm: o.anchoCm - 3, tapa: color(o, 0, "tela"), patas: color(o, 0, "tela") }),
   }),
@@ -183,12 +183,12 @@ const BASE: readonly MuebleCatalogo[] = [
     medidas: { anchoCm: 100, fondoCm: 55, altoCm: 42 }, colores: ["#8a6a45", "#2b2b2b"], coloresDe: ["tapa", "patas"], armar: deMesa(mesaCentro, "madera", "metal"),
   }),
   mueble({
-    id: "mesa_hexagonal", nombre: "Mesa hexagonal dorada", grupo: "mesa", retiroCm: 100,
+    id: "mesa_hexagonal", fondo: "proporcional", nombre: "Mesa hexagonal dorada", grupo: "mesa", retiroCm: 100,
     descripcion: "Mesa hexagonal de alambre dorado de 50 cm y 60 cm de alto (suelta); con un segundo color lleva vidrio.",
     medidas: { anchoCm: 50, fondoCm: 43, altoCm: 60 }, colores: ["#d4af5a"], coloresDe: ["alambre", "vidrio (opcional)"], armar: deMesaDeUnColor(mesaHexagonal, "metal", "brillante"),
   }),
   mueble({
-    id: "mesas_nido_hexagonales", nombre: "Mesas nido hexagonales", grupo: "mesa", retiroCm: 100,
+    id: "mesas_nido_hexagonales", fondo: "proporcional", nombre: "Mesas nido hexagonales", grupo: "mesa", retiroCm: 100,
     descripcion: "Juego de tres mesas nido hexagonales de alambre dorado (50, 40 y 31 cm) de 70, 62 y 55 cm de alto, corridas en escalón; el ancho es el de todo el juego.",
     medidas: { anchoCm: 127, fondoCm: 45, altoCm: 70 }, colores: ["#d4af5a"], coloresDe: ["alambre", "vidrio (opcional)"], armar: deMesaDeUnColor(mesasNidoHexagonales, "metal", "brillante"),
   }),
@@ -204,22 +204,22 @@ const BASE: readonly MuebleCatalogo[] = [
   }),
 
   mueble({
-    id: "aro_metalico", nombre: "Aro metálico", grupo: "decorado", retiroCm: 30,
+    id: "aro_metalico", fondo: "fijo", nombre: "Aro metálico", grupo: "decorado", retiroCm: 30,
     descripcion: "Aro metálico dorado de 1,5 m con pie (fondo circular para globos o flores), 1,75 m de alto total.",
     medidas: { anchoCm: 150, fondoCm: 34, altoCm: 175 }, colores: ["#d6b25a"], coloresDe: ["metal"], armar: deDecorado((o) => marcoMetalico({ ...o, forma: "aro" }), "metal", "metal"),
   }),
   mueble({
-    id: "aro_hexagonal", nombre: "Marco hexagonal metálico", grupo: "decorado", retiroCm: 30,
+    id: "aro_hexagonal", fondo: "fijo", nombre: "Marco hexagonal metálico", grupo: "decorado", retiroCm: 30,
     descripcion: "Marco hexagonal metálico dorado de 1,4 m de ancho con pie, 1,75 m de alto total.",
     medidas: { anchoCm: 140, fondoCm: 34, altoCm: 175 }, colores: ["#d6b25a"], coloresDe: ["metal"], armar: deDecorado((o) => marcoMetalico({ ...o, forma: "hexagono" }), "metal", "metal"),
   }),
   mueble({
-    id: "arco_metalico", nombre: "Arco metálico", grupo: "decorado", retiroCm: 30,
+    id: "arco_metalico", fondo: "fijo", nombre: "Arco metálico", grupo: "decorado", retiroCm: 30,
     descripcion: "Arco de medio punto metálico dorado de 1,2 × 2,3 m con patines (para cubrir de globos o flores).",
     medidas: { anchoCm: 120, fondoCm: 34, altoCm: 230 }, colores: ["#d6b25a"], coloresDe: ["metal"], armar: deDecorado((o) => marcoMetalico({ ...o, forma: "arco" }), "metal", "metal"),
   }),
   mueble({
-    id: "base_hexagonal", nombre: "Base hexagonal", grupo: "decorado",
+    id: "base_hexagonal", fondo: "proporcional", nombre: "Base hexagonal", grupo: "decorado",
     descripcion: "Base o plinto hexagonal blanco de 80 cm y 60 cm de alto, con tapa (para pastel, flores o una figura).",
     medidas: { anchoCm: 83, fondoCm: 72, altoCm: 60 }, colores: ["#f4f1ea"], coloresDe: ["color"], armar: deDecorado((o) => baseHexagonal({ ...o, anchoCm: o.anchoCm - 3 }), "satinado", "satinado"),
   }),
@@ -239,32 +239,32 @@ const BASE: readonly MuebleCatalogo[] = [
     medidas: { anchoCm: 180, fondoCm: 33, altoCm: 180 }, colores: ["#8a6a45", "#efe7d6"], coloresDe: ["marco", "tela"], armar: deDecorado(biombo, "madera", "tela"),
   }),
   mueble({
-    id: "jarron_pampas", nombre: "Jarrón con pampas", grupo: "decorado", retiroCm: 40,
+    id: "jarron_pampas", fondo: "proporcional", nombre: "Jarrón con pampas", grupo: "decorado", retiroCm: 40,
     descripcion: "Jarrón grande con tallos de pampas de 1,4 m de alto (decoración de piso); el ancho es el de las plumas abiertas.",
     medidas: { anchoCm: 53, fondoCm: 28, altoCm: 132 }, colores: ["#e9dfcd", "#d8c3a0"], coloresDe: ["jarrón", "pampas"], armar: deDecorado(jarronPampas, "mate", "tela"),
   }),
   mueble({
-    id: "lampara_pie", nombre: "Lámpara de pie", grupo: "decorado", retiroCm: 40,
+    id: "lampara_pie", fondo: "igual_ancho", nombre: "Lámpara de pie", grupo: "decorado", retiroCm: 40,
     descripcion: "Lámpara de pie de 1,65 m con pantalla de tela encendida, base y mástil negros.",
     medidas: { anchoCm: 40, fondoCm: 40, altoCm: 165 }, colores: ["#2b2b2b", "#ffe9c0"], coloresDe: ["base y mástil", "pantalla"], armar: deDecorado(lamparaPie, "metal", "llama"),
   }),
   mueble({
-    id: "base_pastel", nombre: "Base de pastel", grupo: "decorado", sobreMesa: true,
+    id: "base_pastel", fondo: "igual_ancho", nombre: "Base de pastel", grupo: "decorado", sobreMesa: true,
     descripcion: "Base de pastel (platón sobre pie) blanca de 32 cm de plato y 18 cm de alto; va sobre una mesa.",
     medidas: { anchoCm: 32, fondoCm: 32, altoCm: 18 }, colores: ["#f4f1ea"], coloresDe: ["color"], armar: deDecorado(basePastel, "brillante", "brillante"),
   }),
   mueble({
-    id: "neon_cursiva", nombre: "Letrero de neón", grupo: "decorado", lugar: "pared", alturaParedCm: 130, conTexto: true,
+    id: "neon_cursiva", fondo: "fijo", nombre: "Letrero de neón", grupo: "decorado", lugar: "pared", alturaParedCm: 130, conTexto: true,
     descripcion: "Letrero de neón en cursiva de 1,2 × 0,6 m sobre acrílico oscuro (texto a elegir, por defecto «Happy Birthday»); va en la pared.",
     medidas: { anchoCm: 120, fondoCm: 2, altoCm: 60 }, colores: ["#101014", "#ff4fa3"], coloresDe: ["tablero", "luz del neón"], armar: deDecorado(neonCursiva, "satinado", "llama"),
   }),
   mueble({
-    id: "columna_griega", nombre: "Columna griega", grupo: "decorado", retiroCm: 40,
+    id: "columna_griega", fondo: "igual_ancho", nombre: "Columna griega", grupo: "decorado", retiroCm: 40,
     descripcion: "Columna griega blanca de 1,1 m de alto con base y capitel de 42 cm de ancho.",
     medidas: { anchoCm: 42, fondoCm: 42, altoCm: 110 }, colores: ["#f4f1ea"], coloresDe: ["color"], armar: deDecorado(columnaGriega, "satinado", "satinado"),
   }),
   mueble({
-    id: "alfombra_redonda", nombre: "Alfombra redonda", grupo: "decorado", retiroCm: 160, seguirPrimero: true,
+    id: "alfombra_redonda", fondo: "igual_ancho", nombre: "Alfombra redonda", grupo: "decorado", retiroCm: 160, seguirPrimero: true,
     descripcion: "Alfombra redonda de tela de 2 m; con un segundo color distinto lleva ribete.",
     medidas: { anchoCm: 200, fondoCm: 200, altoCm: 1 }, colores: ["#e9e2d6", "#e9e2d6"], coloresDe: ["alfombra", "ribete"], armar: deDecorado(alfombraRedonda, "tela", "tela"),
   }),
@@ -273,7 +273,7 @@ const BASE: readonly MuebleCatalogo[] = [
 /** Conjuntos: el mueble con sus sillas en una sola pieza (la mesa de banquete lista para poner). */
 const CONJUNTOS: readonly MuebleCatalogo[] = [
   mueble({
-    id: "mesa_redonda_sillas", nombre: "Mesa redonda con 8 sillas", grupo: "mesa", retiroCm: 190,
+    id: "mesa_redonda_sillas", fondo: "igual_ancho", nombre: "Mesa redonda con 8 sillas", grupo: "mesa", retiroCm: 190,
     descripcion: "Mesa redonda de 1,5 m con mantel blanco y ocho sillas Tiffany doradas alrededor, en una sola pieza (el ancho es el de todo el conjunto, sillas incluidas; el alto, el de las sillas).",
     medidas: { anchoCm: 270, fondoCm: 270, altoCm: 90 }, colores: ["#f7f6f2", "#d6b25a", "#f4efe4"], coloresDe: ["mantel", "sillas", "cojines"],
     armar: (o) => {
@@ -282,7 +282,7 @@ const CONJUNTOS: readonly MuebleCatalogo[] = [
     },
   }),
   mueble({
-    id: "mesa_imperial_sillas", nombre: "Mesa imperial con 10 sillas", grupo: "mesa", retiroCm: 190,
+    id: "mesa_imperial_sillas", fondo: "proporcional", nombre: "Mesa imperial con 10 sillas", grupo: "mesa", retiroCm: 190,
     descripcion: "Mesa larga imperial de 2,4 × 0,9 m con mantel blanco y diez sillas Tiffany (cuatro por lado y una en cada cabecera); el ancho y el fondo son los de todo el conjunto.",
     medidas: { anchoCm: 360, fondoCm: 198, altoCm: 90 }, colores: ["#f7f6f2", "#d6b25a", "#f4efe4"], coloresDe: ["mantel", "sillas", "cojines"],
     armar: (o) => {

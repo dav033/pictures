@@ -29,9 +29,10 @@ export const FondosYMuebles = memo(function FondosYMuebles({ escena, onEscena, o
   if (!visibles.length) return null;
   const poner = (f: FondoCatalogo) => {
     const id = idNuevo(escena, f.id.replace(/_/g, "-"));
-    onEscena({ ...escena, nodos: [...escena.nodos, { id, nombre: f.nombre, pieza: piezaDeEntrada(f), colocacion: colocacionPorDefecto(escena, f, medidasDe(f)) }] });
+    const { colocacion, aviso: sinLugar } = colocacionPorDefecto(escena, f, medidasDe(f));
+    onEscena({ ...escena, nodos: [...escena.nodos, { id, nombre: f.nombre, pieza: piezaDeEntrada(f), colocacion }] });
     onSeleccion?.(id);
-    setAviso(`Listo: «${f.nombre}» quedó en la escena. Arrástralo para moverlo.`);
+    setAviso(sinLugar ?? `Listo: «${f.nombre}» quedó en la escena. Arrástralo para moverlo.`);
   };
   return (
     <section className="flex flex-col gap-2" aria-label="Fondos y muebles">

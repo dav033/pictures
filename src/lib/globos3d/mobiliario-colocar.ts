@@ -8,22 +8,30 @@ import { retiroDe, type FondoCatalogo } from "./mobiliario-tipos";
  * y lo que va sobre una mesa (la base de pastel), arriba de la mesa que haya.
  */
 
-/** Lo que se corre de lado cada intento al esquivar lo que ya está (cm), y cuántos intentos. */
-const PASO_ESQUIVAR_CM = 12, INTENTOS_ESQUIVAR = 14;
+/** Cuánto se corre de lado cada intento al esquivar lo que ya está (cm) y el aire que se deja entre piezas. */
+const PASO_ESQUIVAR_CM = 15, AIRE_CM = 4;
 
-/** Una posición del piso (x, z) libre de otras piezas del piso: la pedida o, si hay algo encima, la primera libre hacia la derecha y luego la izquierda. */
-export function esquivarEnElPiso(escena: Escena, x: number, z: number, anchoCm: number, fondoCm: number): { x: number; z: number } {
-  const ocupa = (cx: number) => escena.nodos.some((n) => n.colocacion.en === "piso" && Math.abs(n.colocacion.xCm - cx) < anchoCm * 0.6 && Math.abs(n.colocacion.zCm - z) < fondoCm * 0.6);
-  const limite = escena.sala.anchoCm / 2 - anchoCm / 2;
-  if (!ocupa(x)) return { x, z };
-  const paso = anchoCm + PASO_ESQUIVAR_CM;
-  for (let i = 1; i <= INTENTOS_ESQUIVAR; i++) {
+/**
+ * Una posición (x) del piso, a la profundidad `z`, donde la caja de la pieza nueva (`anchoCm` × `fondoCm`) no pisa la caja
+ * de ninguna pieza que ya está en el piso: la del centro o, si está ocupada, la libre más cercana a un lado y al otro. null si
+ * no hay lugar en todo el ancho de la sala.
+ */
+export function esquivarEnElPiso(escena: Escena, x: number, z: number, anchoCm: number, fondoCm: number): { x: number; z: number } | null {
+  const armada = armarEscena(escena);
+  const ocupadas = escena.nodos.flatMap((n) => {
+    const hecho = armada.porNodo.find((h) => h.id === n.id);
+    return n.colocacion.en === "piso" && hecho && hecho.copias > 0 ? [hecho.caja] : [];
+  });
+  const libre = (cx: number) => !ocupadas.some((c) => cx + anchoCm / 2 + AIRE_CM > c.min.x && cx - anchoCm / 2 - AIRE_CM < c.max.x && z + fondoCm / 2 + AIRE_CM > c.min.z && z - fondoCm / 2 - AIRE_CM < c.max.z);
+  const limite = Math.max(0, escena.sala.anchoCm / 2 - anchoCm / 2);
+  if (libre(x)) return { x, z };
+  for (let paso = PASO_ESQUIVAR_CM; paso <= escena.sala.anchoCm; paso += PASO_ESQUIVAR_CM) {
     for (const lado of [1, -1]) {
-      const cx = x + lado * paso * Math.ceil(i / 2);
-      if (Math.abs(cx) <= limite && !ocupa(cx)) return { x: Math.round(cx), z };
+      const cx = Math.round(x + lado * paso);
+      if (Math.abs(cx) <= limite && libre(cx)) return { x: cx, z };
     }
   }
-  return { x, z };
+  return null;
 }
 
 /** El centro y lo alto de la mesa de la escena donde va lo que se apoya en una mesa (la más reciente de las mesas puestas en el piso), o null. */
@@ -40,14 +48,16 @@ export function mesaParaApoyar(escena: Escena): { x: number; y: number; z: numbe
   return null;
 }
 
-/** Dónde se pone una entrada del catálogo sin que nadie diga dónde (con las medidas que va a tener, para esquivar y apoyar). */
-export function colocacionPorDefecto(escena: Escena, f: FondoCatalogo, medidas: { anchoCm: number; fondoCm: number }): Colocacion {
-  if (f.lugar === "pared") return { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: f.alturaParedCm ?? 0 };
+/** Dónde se pone una entrada del catálogo sin que nadie diga dónde (con las medidas que va a tener), y un aviso si no hay lugar libre. */
+export function colocacionPorDefecto(escena: Escena, f: FondoCatalogo, medidas: { anchoCm: number; fondoCm: number }): { colocacion: Colocacion; aviso?: string } {
+  if (f.lugar === "pared") return { colocacion: { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: f.alturaParedCm ?? 0 } };
   if (f.clase === "mueble" && f.sobreMesa) {
     const mesa = mesaParaApoyar(escena);
-    if (mesa) return { en: "libre", xCm: mesa.x, yCm: mesa.y, zCm: mesa.z, giroGrados: 0 };
+    if (mesa) return { colocacion: { en: "libre", xCm: mesa.x, yCm: mesa.y, zCm: mesa.z, giroGrados: 0 } };
   }
   const z = Math.round(-escena.sala.fondoCm / 2 + retiroDe(f));
-  const { x } = esquivarEnElPiso(escena, 0, z, medidas.anchoCm, medidas.fondoCm);
-  return { en: "piso", xCm: x, zCm: z, giroGrados: 0 };
+  const sitio = esquivarEnElPiso(escena, 0, z, medidas.anchoCm, medidas.fondoCm);
+  return sitio
+    ? { colocacion: { en: "piso", xCm: sitio.x, zCm: z, giroGrados: 0 } }
+    : { colocacion: { en: "piso", xCm: 0, zCm: z, giroGrados: 0 }, aviso: `No hay lugar libre delante de la pared para «${f.nombre}»: quedó en el centro, encima de otra pieza. Muévela.` };
 }

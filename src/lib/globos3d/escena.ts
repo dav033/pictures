@@ -12,6 +12,7 @@ import { sumarMateriales } from "./mezcla";
 import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
 import { fraseDeEscenografia, propsEnIngles } from "./escenografia-ingles";
+import { avisoDeEscenografia } from "./mobiliario-pieza";
 import { PREFIJO_SALA, PREFIJO_UTILERIA, colorDeGloboEnIngles, coloresEnIngles, enLista, tonoEnIngles } from "./render-ia";
 import { contornoEnIngles, huecosEnIngles } from "./silueta-ia";
 import { referenciaPorCodigo } from "../plan/referencia-sempertex";
@@ -398,6 +399,8 @@ function crearArmador(escena: Escena, cache?: Map<string, PiezaArmada>, sembrado
     } catch (error) {
       resultado = vacio(nodo, `«${nodo.nombre}» no se pudo armar: ${error instanceof Error ? error.message : String(error)}`);
     }
+    const avisoMueble = nodo.pieza.tipo === "escenografia" ? avisoDeEscenografia(nodo.pieza) : null;
+    if (avisoMueble) resultado = { ...resultado, avisos: [...resultado.avisos, `«${nodo.nombre}»: ${avisoMueble}`] };
     enCurso.delete(nodo.id);
     hechos.set(nodo.id, resultado);
     return resultado;

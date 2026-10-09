@@ -10,6 +10,7 @@ import { muebleDe } from "./mobiliario-catalogo";
 import { puestosAlrededor, puestosEnFila, type Puesto } from "./mobiliario-disposicion";
 import { opcionesDeMueble, piezaDeEntrada, piezaDeMueble, type OpcionesGuardadas, type PiezaEscenografia } from "./mobiliario-pieza";
 import { descripcionConColores, retiroDe, type FondoCatalogo } from "./mobiliario-tipos";
+import { esAcabadoMueble, limitesDeMueble, MAX_TEXTO_MUEBLE } from "./mobiliario-pieza";
 import { armarPieza, type Pieza } from "./piezas";
 
 /**
@@ -22,7 +23,6 @@ import { armarPieza, type Pieza } from "./piezas";
 
 const IDS = FONDOS_CATALOGO.map((f) => f.id) as [string, ...string[]];
 const ACABADOS = ["mate", "satinado", "brillante", "tela", "madera", "metal"] as const satisfies readonly AcabadoEscenografia[];
-const esAcabado = (t: string): t is AcabadoEscenografia => (ACABADOS as readonly string[]).includes(t);
 
 const MobiliarioSchema = z.object({
   id: z.enum(IDS).describe(FONDOS_CATALOGO.map((f) => `${f.id}: ${descripcionConColores(f)}`).join(" ")),
@@ -37,7 +37,7 @@ const MobiliarioSchema = z.object({
   alto_cm: z.number().min(1).max(500).optional().describe("alto total; si falta, el del catálogo"),
   colores: z.array(z.string().min(1).max(40)).min(1).max(3).optional().describe("colores en el orden que dice cada mueble en «Colores en orden» (el primero es el principal); nombre común («blanco», «dorado», «azul marino», «rosa») o #rrggbb"),
   acabado: z.enum(ACABADOS).optional().describe("material del color principal (madera, metal, tela, mate, satinado, brillante)"),
-  texto: z.string().min(1).max(40).optional().describe("solo neon_cursiva: lo que dice"),
+  texto: z.string().min(1).max(MAX_TEXTO_MUEBLE).optional().describe("solo neon_cursiva: lo que dice (hasta 24 letras)"),
   x_cm: z.number().optional().describe("izquierda (−) a derecha (+) desde el centro de la sala; el centro de la fila o del mueble"),
   z_cm: z.number().optional().describe("fondo (−) a frente (+); la pared del fondo está en z = −fondo/2"),
   giro_grados: z.number().min(-180).max(180).optional().describe("giro sobre el eje vertical; 0 = de frente al público"),
@@ -55,6 +55,14 @@ function medidasReales(pieza: Pieza): { anchoCm: number; fondoCm: number; altoCm
 }
 const textoMedidas = (m: { anchoCm: number; fondoCm: number; altoCm: number }) => `${r0(m.anchoCm)}×${r0(m.fondoCm)}×${r0(m.altoCm)} cm (ancho×fondo×alto)`;
 
+/** Una medida pedida (cm): mayor que 0 y dentro de lo razonable para ese mueble (0,4–2,5 veces su medida de catálogo); si se pasa, se acota y se dice. */
+function medidaAcotada(valor: number, rango: { min: number; max: number }, etiqueta: string, notas: string[]): number {
+  if (!Number.isFinite(valor) || valor <= 0) return fallar(`${etiqueta} tiene que ser mayor que 0 (me pasaron ${valor}).`);
+  const v = Math.min(rango.max, Math.max(rango.min, valor));
+  if (v !== valor) notas.push(`${etiqueta} ${r0(valor)} cm no es razonable para este mueble (de ${rango.min} a ${rango.max} cm): quedó en ${r0(v)} cm.`);
+  return v;
+}
+
 function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string } {
   const a = MobiliarioSchema.parse(argumentos ?? {});
   const entrada = FONDOS_CATALOGO.find((f) => f.id === a.id) ?? fallar(`No hay «${a.id}» en el catálogo de mobiliario.`);
@@ -62,8 +70,10 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
   const mueble = entrada.clase === "mueble" ? entrada : undefined;
   if (!mueble && (a.ancho_cm || a.fondo_cm || a.alto_cm || a.colores || a.acabado)) notas.push(`«${entrada.nombre}» es un fondo de foto: va con sus medidas y colores de catálogo (el mobiliario sí cambia de medida y color).`);
   if (a.texto && !mueble?.conTexto) notas.push(`«${entrada.nombre}» no lleva texto: lo ignoré.`);
-  const opciones = mueble ? opcionesDeMueble(mueble, {
-    ...(a.ancho_cm ? { anchoCm: a.ancho_cm } : {}), ...(a.fondo_cm ? { fondoCm: a.fondo_cm } : {}), ...(a.alto_cm ? { altoCm: a.alto_cm } : {}),
+  const limites = mueble ? limitesDeMueble(mueble) : undefined;
+  if (mueble && a.fondo_cm !== undefined && mueble.fondo && mueble.fondo !== "libre") notas.push(`«${mueble.nombre}» no cambia de fondo por separado (${mueble.fondo === "igual_ancho" ? "es redondo: su fondo es su ancho" : mueble.fondo === "proporcional" ? "su fondo sale de su ancho" : "su fondo es fijo"}): ignoré fondo_cm.`);
+  const opciones = mueble && limites ? opcionesDeMueble(mueble, {
+    ...(a.ancho_cm ? { anchoCm: medidaAcotada(a.ancho_cm, limites.ancho, "ancho_cm", notas) } : {}), ...(a.fondo_cm ? { fondoCm: medidaAcotada(a.fondo_cm, limites.fondo, "fondo_cm", notas) } : {}), ...(a.alto_cm ? { altoCm: medidaAcotada(a.alto_cm, limites.alto, "alto_cm", notas) } : {}),
     ...(a.colores ? { colores: a.colores.map((c) => hexDeColor(c, notas)) } : {}), ...(a.acabado ? { acabado: a.acabado } : {}), ...(mueble.conTexto && a.texto ? { texto: a.texto } : {}),
   }) : undefined;
   const pieza: Pieza = mueble && opciones ? piezaDeMueble(mueble, opciones) : piezaDeEntrada(entrada);
@@ -71,11 +81,12 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
   const n = a.cantidad ?? 1;
 
   const sitios = repartir(escena, a, entrada, real, n, notas);
+  const sola = () => colocacionSola(escena, a, entrada, real, notas);
   let actual = escena;
   const nuevos: NodoEscena[] = [];
   sitios.forEach((sitio, i) => {
     const id = idNuevo(actual, a.id.replace(/_/g, "-"));
-    const colocacion: Colocacion = sitio.colocacion ?? (sitio.puesto ? { en: "piso", xCm: sitio.puesto.x, zCm: sitio.puesto.z, giroGrados: sitio.puesto.giroGrados } : colocacionSola(escena, a, entrada));
+    const colocacion: Colocacion = sitio.colocacion ?? (sitio.puesto ? { en: "piso", xCm: sitio.puesto.x, zCm: sitio.puesto.z, giroGrados: sitio.puesto.giroGrados } : sola());
     const nodo: NodoEscena = { id, nombre: `${a.nombre ?? entrada.nombre}${sitios.length > 1 ? ` ${i + 1}` : ""}`, pieza, colocacion };
     actual = { ...actual, nodos: [...actual.nodos, nodo] };
     nuevos.push(nodo);
@@ -113,9 +124,9 @@ function repartir(escena: Escena, a: Pedido, entrada: FondoCatalogo, real: { anc
 }
 
 /** El sitio de un solo mueble sin reparto: x y z pedidos mandan; lo que falta, lo de siempre (esquivando lo que ya está, o encima de la mesa). */
-function colocacionSola(escena: Escena, a: Pedido, entrada: FondoCatalogo): Colocacion {
-  const medidas = entrada.clase === "mueble" ? { anchoCm: a.ancho_cm ?? entrada.medidas.anchoCm, fondoCm: a.fondo_cm ?? entrada.medidas.fondoCm } : { anchoCm: 100, fondoCm: 100 };
-  const base = colocacionPorDefecto(escena, entrada, medidas);
+function colocacionSola(escena: Escena, a: Pedido, entrada: FondoCatalogo, real: { anchoCm: number; fondoCm: number }, notas: string[]): Colocacion {
+  const { colocacion: base, aviso } = colocacionPorDefecto(escena, entrada, real);
+  if (aviso && a.x_cm === undefined) notas.push(aviso);
   if (base.en !== "piso") return base;
   return { ...base, xCm: a.x_cm ?? base.xCm, zCm: a.z_cm ?? base.zCm, giroGrados: a.giro_grados ?? 0 };
 }
@@ -131,33 +142,48 @@ const lista = (p: Props, k: string): string[] | undefined => (Array.isArray(p[k]
 /** Lo que `cambiar_pieza` sabe cambiar en un mueble, para el aviso de lo que no. */
 const CAMBIOS_MUEBLE = new Set(["id", "nombre", "ancho_cm", "alto_cm", "fondo_cm", "colores", "acabado", "texto", "reemplazar_colores"]);
 
+/** Por qué una escenografía que no es un mueble no cambia de medida ni de color, y qué hacer. */
+function motivoFija(p: PiezaEscenografia, nombre: string, pedidos: readonly string[]): string {
+  const que = `(${pedidos.join(", ")})`;
+  if (p.utileria || p.productos?.length) return `«${nombre}» es utilería de fiesta (un producto de la tienda): no cambia de medida ni de color desde aquí ${que}.`;
+  if (p.mueble) return `«${nombre}» es un fondo fijo del catálogo: no cambia de medida ni de color ${que}. Quítalo con quitar_pieza y agrega otro con agregar_mobiliario (los muebles sí se cambian).`;
+  return `«${nombre}» es escenografía armada (de una idea o de la biblioteca): no cambia de medida ni de color ${que}. Si hace falta otra, quítala con quitar_pieza.`;
+}
+
 /**
  * `cambiar_pieza` sobre escenografía: medidas (ancho_cm, fondo_cm, alto_cm), colores, acabado y texto de un mueble
- * paramétrico. Un fondo fijo (panel, cortina, pedestales…) o una pieza de la biblioteca no cambia de medida ni de color: error
- * claro en vez de no hacer nada.
+ * paramétrico. Las medidas van de 0,4 a 2,5 veces la del catálogo (lo de más se acota y se avisa; 0 o negativo es error).
+ * Un fondo fijo (panel, cortina, pedestales), la utilería o una pieza de la biblioteca no cambia de medida ni de color:
+ * error claro en vez de no hacer nada.
  */
 export function cambiarMobiliario(base: PiezaEscenografia, props: Props, notas: string[], nombre: string): Pieza {
   const pedidos = Object.keys(props).filter((k) => k !== "id" && k !== "nombre" && props[k] !== undefined);
   const m = base.mueble ? muebleDe(base.mueble.id) : undefined;
   const o = base.mueble?.opciones;
   if (!m || !o) {
-    if (pedidos.length) fallar(`«${nombre}» es un fondo o escenografía fija: no cambia de medida ni de color (${pedidos.join(", ")}). Quítala con quitar_pieza y agrega otra con agregar_mobiliario (los muebles sí se cambian).`);
+    if (pedidos.length) fallar(motivoFija(base, nombre, pedidos));
     return base;
   }
   const fuera = pedidos.filter((k) => !CAMBIOS_MUEBLE.has(k));
   if (fuera.length) notas.push(`Un mueble solo cambia de medidas, colores, acabado y texto: ignoré ${fuera.join(", ")}.`);
+  const limites = limitesDeMueble(m);
+  const medida = (clave: string, rango: { min: number; max: number }, actual: number) => { const v = num(props, clave); return v === undefined ? actual : medidaAcotada(v, rango, clave, notas); };
+  if (num(props, "fondo_cm") !== undefined && m.fondo && m.fondo !== "libre") notas.push(`«${nombre}» no cambia de fondo por separado (${m.fondo === "igual_ancho" ? "es redondo: su fondo es su ancho" : m.fondo === "proporcional" ? "su fondo sale de su ancho" : "su fondo es fijo"}): ignoré fondo_cm.`);
   const colores = lista(props, "colores");
   const acabado = typeof props.acabado === "string" ? props.acabado : undefined;
-  if (acabado && !esAcabado(acabado)) fallar(`El acabado de un mueble va entre ${ACABADOS.join(", ")}, no «${acabado}».`);
-  if (typeof props.texto === "string" && !m.conTexto) notas.push(`«${m.nombre}» no lleva texto: lo ignoré.`);
+  if (acabado && !esAcabadoMueble(acabado)) fallar(`El acabado de un mueble va entre ${ACABADOS.join(", ")}, no «${acabado}».`);
+  if (typeof props.texto === "string" && !m.conTexto) notas.push(`«${nombre}» no lleva texto: lo ignoré.`);
+  if (colores && colores.length > m.coloresDe.length) notas.push(`«${nombre}» lleva ${m.coloresDe.length} color(es) (${m.coloresDe.join(", ")}): ignoré los demás.`);
+  const pedidosHex = colores?.slice(0, m.coloresDe.length).map((c) => hexDeColor(c, notas));
+  // Si todos sus colores eran el primero (la alfombra sin ribete), un solo color pedido los lleva a todos.
+  const siguePrimero = Boolean(m.seguirPrimero) && o.colores.every((c) => c === o.colores[0]) && pedidosHex?.length === 1;
   const nuevas: OpcionesGuardadas = {
     ...o,
-    anchoCm: num(props, "ancho_cm") ?? o.anchoCm, fondoCm: num(props, "fondo_cm") ?? o.fondoCm, altoCm: num(props, "alto_cm") ?? o.altoCm,
-    colores: Array.from({ length: Math.min(m.coloresDe.length, Math.max(o.colores.length, colores?.length ?? 0)) }, (_, i) => (colores?.[i] ? hexDeColor(colores[i]!, notas) : o.colores[i] ?? m.colores[i] ?? m.colores[0]!)),
-    ...(acabado && esAcabado(acabado) ? { acabado } : {}),
+    anchoCm: medida("ancho_cm", limites.ancho, o.anchoCm), fondoCm: medida("fondo_cm", limites.fondo, o.fondoCm), altoCm: medida("alto_cm", limites.alto, o.altoCm),
+    colores: Array.from({ length: Math.min(m.coloresDe.length, Math.max(o.colores.length, pedidosHex?.length ?? 0)) }, (_, i) => pedidosHex?.[i] ?? (siguePrimero ? pedidosHex![0]! : o.colores[i] ?? m.colores[i] ?? m.colores[0]!)),
+    ...(acabado && esAcabadoMueble(acabado) ? { acabado } : {}),
     ...(typeof props.texto === "string" && m.conTexto ? { texto: props.texto } : {}),
   };
-  if (colores && colores.length > m.colores.length) notas.push(`«${m.nombre}» lleva ${m.colores.length} color(es) (${m.coloresDe.join(", ")}): ignoré los demás.`);
   const reemplazos = Array.isArray(props.reemplazar_colores) ? (props.reemplazar_colores as Array<{ de?: unknown; a?: unknown }>) : [];
   for (const r of reemplazos) {
     if (typeof r.de !== "string" || typeof r.a !== "string") continue;

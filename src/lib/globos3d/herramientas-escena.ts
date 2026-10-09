@@ -406,6 +406,9 @@ function medidasCaja(p: Pieza): string {
   } catch { return "sin medidas"; }
 }
 
+/** «, colores X» o nada si la pieza no tiene colores que decir (una escenografía armada). */
+const coloresDicho = (p: Pieza) => { const t = coloresTexto(p); return t ? `, colores ${t}` : ""; };
+
 function coloresTexto(p: Pieza): string {
   if (p.tipo === "escenografia") return resumenDeEscenografia(p)?.colores ?? "";
   if (p.tipo === "arco_organico" || p.tipo === "organico") {
@@ -640,7 +643,7 @@ function textoMetalizado(m: Extract<Pieza, { tipo: "metalizado" }>["metalizado"]
 }
 
 /** Aplica las propiedades pedidas a una pieza (nueva o existente). Solo cambia lo que viene. */
-function aplicarPropiedades(base: Pieza, entrada: Propiedades, notas: string[]): Pieza {
+function aplicarPropiedades(base: Pieza, entrada: Propiedades, notas: string[], nombre?: string): Pieza {
   const t = base.tipo;
   soloPara(entrada, "formato", ["columna", "arco", "guirnalda", "pared_malla", "globo"], t);
   soloPara(entrada, "alto_cm", ["columna", "arco", "arco_organico", "pared_malla", "pared_trenzas", "organico", "forma", "letras", "arbol_globos", "escenografia"], t);
@@ -785,7 +788,7 @@ function aplicarPropiedades(base: Pieza, entrada: Propiedades, notas: string[]):
     }
     case "escenografia":
       // No es globo de látex: no tiene colores Sempertex. Un mueble cambia de medida, color y texto; lo demás avisa.
-      return cambiarMobiliario(base, props, notas, base.mueble?.id ?? "esta pieza");
+      return cambiarMobiliario(base, props, notas, nombre ?? base.mueble?.id ?? "esta pieza");
     case "mural":
     case "techo":
       return props.colores ? recolorearEnOrden(base, props.colores, notas) : base;
@@ -954,7 +957,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       comprobarAltura(pieza, colocacion, escena.sala);
       const nodo: NodoEscena = { id, nombre: a.nombre ?? hecho.nombre, pieza, colocacion };
       const nueva = insertar(escena, nodo);
-      return { escena: nueva, resumen: conNotas(`Agregué «${nodo.nombre}» (id ${id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}, colores ${coloresTexto(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas) };
+      return { escena: nueva, resumen: conNotas(`Agregué «${nodo.nombre}» (id ${id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas) };
     }
 
     case "agregar_del_catalogo": {
@@ -991,7 +994,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
     case "cambiar_pieza": {
       const a = ESQUEMAS.cambiar_pieza.parse(argumentos);
       const nodo = nodoPorId(escena, a.id);
-      let pieza = aplicarPropiedades(nodo.pieza, a, notas);
+      let pieza = aplicarPropiedades(nodo.pieza, a, notas, nodo.nombre);
       // En un mueble el cambio de colores ya lo hizo `aplicarPropiedades` (sus colores son `#rrggbb`, no códigos Sempertex).
       for (const { de, a: hacia } of pieza.tipo === "escenografia" ? [] : a.reemplazar_colores ?? []) {
         const usados = coloresDeDato(pieza);
@@ -1006,7 +1009,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       comprobarAltura(pieza, nodo.colocacion, escena.sala);
       const nodoNuevo: NodoEscena = { ...nodo, pieza, nombre: a.nombre ?? nodo.nombre };
       if (JSON.stringify(nodoNuevo) === JSON.stringify(nodo)) return { escena, resumen: conNotas(`«${nodo.nombre}» ya estaba así: no cambió nada.`, notas) };
-      return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza), resumen: conNotas(`Cambié «${nodoNuevo.nombre}» (${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}, colores ${coloresTexto(pieza)}.`, notas) };
+      return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza), resumen: conNotas(`Cambié «${nodoNuevo.nombre}» (${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}.`, notas) };
     }
 
     case "ajustar_tamanos": {
@@ -1053,7 +1056,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       if (colgadas.length) notas.push(`lo que va en ella (${colgadas.join(", ")}) sigue con ella; revisa que encaje`);
       const nodoNuevo: NodoEscena = { id: nodo.id, nombre, pieza, colocacion };
       const nueva = reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza);
-      return { escena: nueva, resumen: conNotas(`Cambié «${nodo.nombre}» (${NOMBRE_TIPO[nodo.pieza.tipo]}) por «${nombre}» (mismo id ${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}, colores ${coloresTexto(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas) };
+      return { escena: nueva, resumen: conNotas(`Cambié «${nodo.nombre}» (${NOMBRE_TIPO[nodo.pieza.tipo]}) por «${nombre}» (mismo id ${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas) };
     }
 
     case "recolorear_escena": {
@@ -1114,7 +1117,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       const nueva: Escena = { ...base, nodos };
       const raiz = nodos.find((n) => n.id === hecho.raizId);
       const otros = hecho.ids.filter((id) => id !== hecho.raizId);
-      const principal = raiz ? `Principal: ${raiz.id} · «${raiz.nombre}» · ${NOMBRE_TIPO[raiz.pieza.tipo]} · ${medidasDe(raiz.pieza)} · colores ${coloresTexto(raiz.pieza)} · ${dondeTexto(raiz.colocacion, nueva)}.` : "";
+      const principal = raiz ? `Principal: ${raiz.id} · «${raiz.nombre}» · ${NOMBRE_TIPO[raiz.pieza.tipo]} · ${medidasDe(raiz.pieza)}${coloresDicho(raiz.pieza).replace(/^,/, " ·")} · ${dondeTexto(raiz.colocacion, nueva)}.` : "";
       const lista = otros.length ? ` Con ella: ${otros.slice(0, 14).map((id) => { const n = nodos.find((x) => x.id === id)!; return `${id} (${n.pieza.tipo})`; }).join(", ")}${otros.length > 14 ? ` y ${otros.length - 14} más` : ""}.` : "";
       const sala = base !== escena ? " Tomé también su sala." : "";
       return { escena: nueva, resumen: conNotas(`Puse de la biblioteca «${item.nombre}» (${item.id}) como ${hecho.ids.length} pieza${hecho.ids.length === 1 ? "" : "s"} normales y editables.${sala} ${principal}${lista} Para cambiarla usa cambiar_pieza con su id.`, notas) };

@@ -32,6 +32,12 @@ export type MuebleCatalogo = EntradaComun & {
   colores: readonly string[];
   /** Para qué sirve cada color, en ese orden («estructura», «cojín»…). */
   coloresDe: readonly string[];
+  /**
+   * Qué hace el fondo (de frente a atrás) al pedirlo: `libre` (por defecto) lo respeta; `igual_ancho` es redondo (el fondo es el
+   * ancho); `proporcional` sale del ancho (un hexágono); `fijo` no cambia (el pie de un aro, el grosor de un letrero). Lo que no
+   * es `libre` no tiene deslizador de fondo y su `fondoCm` se rehace solo.
+   */
+  fondo?: "libre" | "igual_ancho" | "proporcional" | "fijo";
   /** Los colores que no se piden se parecen al primero (en vez de los de partida). */
   seguirPrimero?: boolean;
   /** Es un asiento suelto: se puede repartir en fila o alrededor de una mesa. */
