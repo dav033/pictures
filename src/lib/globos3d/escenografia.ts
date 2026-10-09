@@ -13,7 +13,7 @@ import type { Punto2 } from "./trenza";
  * Acabados `foil` y `foil_mate`: el papel metalizado de un globo metalizado (espejo o satinado), que el visor infla
  * como almohada (ver `metalizados.ts`).
  */
-export type AcabadoEscenografia = "mate" | "satinado" | "brillante" | "lentejuelas" | "tela" | "madera" | "papel" | "metal" | "llama" | "foil" | "foil_mate";
+export type AcabadoEscenografia = "mate" | "satinado" | "brillante" | "lentejuelas" | "tela" | "madera" | "papel" | "metal" | "llama" | "foil" | "foil_mate" | "acrilico";
 
 /** Los dibujos que sabe estampar el visor en la utilería de fiesta (banderines, platos, bolsas, letreros…). */
 export type DibujoMotivo = "calavera" | "murcielago" | "calabaza" | "fantasma" | "arana" | "telarana" | "sombrero_bruja" | "texto" | "lunares" | "rayas" | "estrellas";

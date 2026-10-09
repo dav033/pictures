@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import { compilarLectura } from "@/lib/globos3d/compilar-lectura";
 import type { LecturaFoto } from "@/lib/globos3d/lectura-foto";
 import { muebleDe } from "@/lib/globos3d/mobiliario-catalogo";
+import { fraseDeEscenografia } from "@/lib/globos3d/escenografia-ingles";
 
 let fallos = 0;
 function prueba(nombre: string, f: () => void) {
@@ -44,6 +45,13 @@ prueba("el neón sobre la pared de lentejuelas va delante del panel (antes queda
   const panel = compilarLectura({ ...base, piezas: [lentejuelas, neon] }).escena.nodos.find((x) => x.id.startsWith("lentejuelas"))!;
   assert.equal(panel.colocacion.en, "piso");
   assert.ok(nodo.colocacion.en === "libre" && panel.colocacion.en === "piso" && nodo.colocacion.zCm > panel.colocacion.zCm, "más cerca del salón que el panel");
+});
+
+prueba("el tablero de acrílico del neón llega a FLUX como «clear acrylic» (no como el casi blanco de su color)", () => {
+  const { nodo } = opcionesDe({ ...base, piezas: [neon] }, "neon_cursiva");
+  assert.ok(nodo.pieza.tipo === "escenografia");
+  const frase = fraseDeEscenografia(nodo.pieza as Parameters<typeof fraseDeEscenografia>[0]);
+  assert.match(frase ?? "", /cursive neon sign in clear acrylic and /);
 });
 
 prueba("sin panel delante, lo colgado sigue en la pared", () => {

@@ -110,6 +110,8 @@ export function materialEscenografia(s: SolidoEscenografia, entorno: THREE.Textu
     case "satinado": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.35 });
     case "tela": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.95, sheen: 0.6, sheenColor: color.clone().lerp(new THREE.Color(0xffffff), 0.3), sheenRoughness: 0.7 });
     case "madera": return new THREE.MeshStandardMaterial({ color, roughness: 0.72 });
+    // Acrílico transparente (el tablero de un neón): casi invisible, con el brillo del canto y del reflejo.
+    case "acrilico": return new THREE.MeshPhysicalMaterial({ color, transparent: true, opacity: 0.14, roughness: 0.06, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, envMap: entorno, envMapIntensity: 0.8, depthWrite: false });
     // Utilería de fiesta: el metal de los cubiertos y bandejas metalizadas, y la llama de una vela (se ve encendida).
     case "metal": return new THREE.MeshStandardMaterial({ color, metalness: 0.85, roughness: 0.25, envMap: entorno, envMapIntensity: 1 });
     case "llama": return new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.4, roughness: 0.6 });

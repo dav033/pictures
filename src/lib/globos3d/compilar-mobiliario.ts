@@ -88,7 +88,7 @@ export function mobiliarioLeido(p: FondoLeido, medida: MedidaLeida, notas: strin
   // Solo hasta el color de la tinta: lo que la foto no dice queda sin poner (los secundarios siguen al primero, como siempre).
   const largo = Math.min(mueble.coloresDe.length, Math.max(p.colores.length, tinta && iTinta >= 0 ? iTinta + 1 : 0));
   const colores = Array.from({ length: largo }, (_, i) => (i === iTinta && tinta ? tinta : ambiguos ? mueble.colores[i]! : p.colores[i]?.hex ?? mueble.colores[i]!));
-  const acabado = mueble.acabadosPropios ? (acabadoRotuloLeido(p.acabadoTexto ?? p.colores[0]?.acabado) === "acrilico_espejo" ? "metal" as const : "mate" as const) : p.colores[0] ? ACABADO[p.colores[0].acabado] : undefined;
+  const acabado = mueble.acabadosPropios ? (acabadoRotuloLeido(p.acabadoTexto ?? p.colores[0]?.acabado) === "acrilico_espejo" ? "metal" as const : "mate" as const) : p.colores[0] && !ambiguos ? ACABADO[p.colores[0].acabado] : undefined;
   if (p.acabadoTexto && mueble.conTexto && !mueble.acabadosPropios) notas.push(`${mueble.nombre}: el acabado del texto (${p.acabadoTexto}) no aplica a un letrero de luz: lo ignoré.`);
   const sinRotulo = piezaDeMueble(mueble, opcionesDeMueble(mueble, { ...t, colores, ...(acabado ? { acabado } : {}), ...(mueble.conTexto && p.texto ? { texto: p.texto.slice(0, MAX_TEXTO_MUEBLE) } : {}) }));
   // Un marco con un nombre: el texto leído es su rótulo, con el color y el acabado que se leyeron en las letras (sin color, el que se lee sobre la tela).

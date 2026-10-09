@@ -255,8 +255,8 @@ const BASE: readonly MuebleCatalogo[] = [
   }),
   mueble({
     id: "neon_cursiva", fondo: "fijo", nombre: "Letrero de neón", grupo: "decorado", lugar: "pared", alturaParedCm: 130, conTexto: true, textoPorDefecto: "Happy Birthday",
-    descripcion: "Letrero de neón en cursiva de 1,2 × 0,6 m sobre acrílico oscuro (texto a elegir, por defecto «Happy Birthday»); va en la pared.",
-    medidas: { anchoCm: 120, fondoCm: 2, altoCm: 60 }, colores: ["#101014", "#ff4fa3"], coloresDe: ["tablero", "luz del neón"], armar: deDecorado(neonCursiva, "satinado", "llama"),
+    descripcion: "Letrero de neón en cursiva de 1,2 × 0,6 m sobre acrílico transparente (o de color: tablero negro con acabado mate) (texto a elegir, por defecto «Happy Birthday»); va en la pared.",
+    medidas: { anchoCm: 120, fondoCm: 2, altoCm: 60 }, colores: ["#f4f6f8", "#ff4fa3"], coloresDe: ["tablero", "luz del neón"], armar: deDecorado(neonCursiva, "acrilico", "llama"),
   }),
   mueble({
     id: "marco_tela", fondo: "fijo", nombre: "Marco con tela", grupo: "decorado", retiroCm: 30, rotulable: true,

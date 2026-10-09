@@ -283,7 +283,7 @@ prueba("el inventario en inglés para FLUX nombra muebles, colores y el texto de
   const texto = escenaEnIngles(c.escena, armarEscena(c.escena));
   assert.match(texto, /banquet table with a floor-length tablecloth in white/);
   assert.match(texto, /3 × Tiffany \(chiavari\) chair in [^,]*#D6B25A/);
-  assert.match(texto, /cursive neon sign on a dark panel in [^,]*reading "Mia 15"/);
+  assert.match(texto, /cursive neon sign in [^,]*reading "Mia 15"/);
 });
 
 prueba("MAYOR 1: ningún deslizador engaña: lo que dice respetar el fondo lo respeta, y lo redondo trae su fondo = ancho", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { muebleDe } from "@/lib/globos3d/mobiliario-catalogo";
-import { limitesDeMueble, piezaDeMueble, type OpcionesGuardadas, type PiezaEscenografia } from "@/lib/globos3d/mobiliario-pieza";
+import { ACABADOS_MUEBLE, limitesDeMueble, NOMBRE_ACABADO_MUEBLE, piezaDeMueble, type OpcionesGuardadas, type PiezaEscenografia } from "@/lib/globos3d/mobiliario-pieza";
 import { avisoDeTexto } from "@/lib/globos3d/rotulos";
 import type { Pieza } from "@/lib/globos3d/piezas";
 import { CampoTexto } from "./CampoTexto";
@@ -9,7 +9,7 @@ import { EditorRotulo } from "./EditorRotulo";
 import { Deslizador } from "./PanelFlor";
 
 const metros = (cm: number) => `${(cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m`;
-const ACABADOS = [["mate", "Mate"], ["satinado", "Satinado"], ["brillante", "Brillante"], ["madera", "Madera"], ["metal", "Metal"], ["tela", "Tela"]] as const;
+const ACABADOS = ACABADOS_MUEBLE.map((a) => [a, NOMBRE_ACABADO_MUEBLE[a]] as const);
 /** El color con que arranca un color opcional (el vidrio, el sobremantel) al añadirlo. */
 const COLOR_OPCIONAL = "#dfe9ee";
 

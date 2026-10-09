@@ -23,7 +23,9 @@ export type PiezaEscenografia = Extract<Pieza, { tipo: "escenografia" }>;
 export const FACTOR_MINIMO = 0.4;
 export const FACTOR_MAXIMO = 2.5;
 export const MAX_TEXTO_MUEBLE = MAX_TEXTO_ROTULO;
-const ACABADOS_MUEBLE = ["mate", "satinado", "brillante", "tela", "madera", "metal"] as const satisfies readonly AcabadoEscenografia[];
+/** Los acabados que puede llevar el color principal de un mueble (la única lista: esquema, herramienta de la IA y editor). */
+export const ACABADOS_MUEBLE = ["mate", "satinado", "brillante", "tela", "madera", "metal", "acrilico"] as const satisfies readonly AcabadoEscenografia[];
+export const NOMBRE_ACABADO_MUEBLE: Readonly<Record<(typeof ACABADOS_MUEBLE)[number], string>> = { mate: "Mate", satinado: "Satinado", brillante: "Brillante", tela: "Tela", madera: "Madera", metal: "Metal", acrilico: "Acrílico transparente" };
 export const esAcabadoMueble = (t: string): t is AcabadoEscenografia => (ACABADOS_MUEBLE as readonly string[]).includes(t);
 const HEX = /^#[0-9a-fA-F]{6}$/;
 

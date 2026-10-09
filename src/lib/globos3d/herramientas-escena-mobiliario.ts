@@ -8,7 +8,7 @@ import { hexDeColor } from "./mobiliario-colores";
 import { colocacionPorDefecto } from "./mobiliario-colocar";
 import { muebleDe } from "./mobiliario-catalogo";
 import { puestosAlrededor, puestosEnFila, type Puesto } from "./mobiliario-disposicion";
-import { admiteRotulo, conTextoPieza, opcionesDeMueble, piezaDeEntrada, piezaDeMueble, portadorDeRotulo, type OpcionesGuardadas, type PiezaEscenografia } from "./mobiliario-pieza";
+import { ACABADOS_MUEBLE, admiteRotulo, conTextoPieza, opcionesDeMueble, piezaDeEntrada, piezaDeMueble, portadorDeRotulo, type OpcionesGuardadas, type PiezaEscenografia } from "./mobiliario-pieza";
 import { ACABADOS_ROTULO, avisoDeTexto, caraDe, esAcabadoRotulo, NOMBRE_ACABADO_ROTULO, textoEnUnaLinea, type PedidoRotulo } from "./rotulos";
 import { descripcionConColores, retiroDe, type FondoCatalogo, type MuebleCatalogo } from "./mobiliario-tipos";
 import { esAcabadoMueble, limitesDeMueble, MAX_TEXTO_MUEBLE } from "./mobiliario-pieza";
@@ -24,7 +24,7 @@ import { armarPieza, type Pieza } from "./piezas";
  */
 
 const IDS = FONDOS_CATALOGO.map((f) => f.id) as [string, ...string[]];
-const ACABADOS = ["mate", "satinado", "brillante", "tela", "madera", "metal"] as const satisfies readonly AcabadoEscenografia[];
+const ACABADOS = ACABADOS_MUEBLE;
 
 const MobiliarioSchema = z.object({
   id: z.enum(IDS).describe(FONDOS_CATALOGO.map((f) => `${f.id}: ${descripcionConColores(f)}`).join(" ")),
@@ -38,7 +38,7 @@ const MobiliarioSchema = z.object({
   fondo_cm: z.number().min(2).max(600).optional().describe("fondo total (de frente a atrás); si falta, el del catálogo"),
   alto_cm: z.number().min(1).max(500).optional().describe("alto total; si falta, el del catálogo"),
   colores: z.array(z.string().min(1).max(40)).min(1).max(3).optional().describe("colores en el orden que dice cada mueble en «Colores en orden» (el primero es el principal); nombre común («blanco», «dorado», «azul marino», «rosa») o #rrggbb"),
-  acabado: z.enum(ACABADOS).optional().describe("material del color principal (madera, metal, tela, mate, satinado, brillante)"),
+  acabado: z.enum(ACABADOS).optional().describe("material del color principal (madera, metal, tela, mate, satinado, brillante, acrilico = transparente: el tablero de un neón)"),
   texto: z.string().min(1).max(MAX_TEXTO_MUEBLE).optional().describe("lo que dice, en cursiva (hasta 24 letras; varias líneas separadas por un salto de línea): neon_cursiva, rotulo_acrilico, y el nombre en vinilo de panel_redondo, arcos_chiara, lentejuelas, letrero o marco_tela"),
   color_texto: z.string().min(1).max(40).optional().describe("solo con texto en un panel, arco, marco o letrero: color de las letras (nombre común o #rrggbb; por defecto el que se lee sobre el fondo)"),
   acabado_texto: z.enum(ACABADOS_ROTULO).optional().describe("solo con texto en un panel, arco, marco o letrero: vinilo (por defecto), acrilico_espejo o acrilico_mate"),

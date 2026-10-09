@@ -1,5 +1,5 @@
 import type { AcabadoRotulo } from "./escenografia";
-import { rotuloArmado, type PiezaEscenografia } from "./mobiliario-pieza";
+import { elementosDeEscenografia, rotuloArmado, type PiezaEscenografia } from "./mobiliario-pieza";
 import { tonoEnIngles } from "./render-ia";
 import { ACABADO_ROTULO_EN, lineasDeRotulo, textoEnUnaLinea } from "./rotulos";
 
@@ -18,7 +18,7 @@ export const ESCENOGRAFIA_EN: Readonly<Record<string, string>> = {
   mesas_nido_hexagonales: "set of three gold wire hexagonal nesting tables", mesa_regalos: "gift table with a floor-length tablecloth and wrapped gift boxes", carrito_dulces: "candy cart with shelves and jars of sweets",
   aro_metalico: "metal ring backdrop stand", aro_hexagonal: "metal hexagon frame backdrop stand", arco_metalico: "metal arch frame stand", base_hexagonal: "hexagonal plinth", peldanos: "set of three display steps",
   escalera_decorativa: "decorative wooden ladder", biombo: "three-panel folding screen", jarron_pampas: "tall vase with pampas grass", lampara_pie: "floor lamp", base_pastel: "cake stand",
-  neon_cursiva: "cursive neon sign on a dark panel", marco_tela: "fabric backdrop panel in a rectangular frame", rotulo_acrilico: "cut-out cursive name sign floating in front of the backdrop", columna_griega: "white Greek column", alfombra_redonda: "round rug",
+  neon_cursiva: "cursive neon sign", marco_tela: "fabric backdrop panel in a rectangular frame", rotulo_acrilico: "cut-out cursive name sign floating in front of the backdrop", columna_griega: "white Greek column", alfombra_redonda: "round rug",
   mesa_redonda_sillas: "round banquet table with a floor-length tablecloth and eight Tiffany chairs around it", mesa_imperial_sillas: "long banquet table with a floor-length tablecloth and ten Tiffany chairs around it",
   sala_lounge: "lounge set (sofa, two armchairs and a coffee table)",
 };
@@ -69,7 +69,10 @@ export function fraseDeEscenografia(p: PiezaEscenografia): string | null {
   }
   if (!o) return letras ? `${nombre}, with ${letras} on it` : nombre;
   const distintos = [...new Set(o.colores.slice(0, 2))];
-  const colores = distintos.length ? ` in ${distintos.map(tonoEnIngles).join(" and ")}` : "";
+  // El material de cada color sale de la pieza armada: un tablero de acrílico es «clear acrylic», no su color (que es casi blanco).
+  const acrilicos = new Set(elementosDeEscenografia(p).filter((e) => e.acabado === "acrilico").map((e) => e.hex.toLowerCase()));
+  const tono = (hex: string) => (acrilicos.has(hex.toLowerCase()) ? "clear acrylic" : tonoEnIngles(hex));
+  const colores = distintos.length ? ` in ${distintos.map(tono).join(" and ")}` : "";
   return `${nombre}${colores}${o.texto ? ` reading ${JSON.stringify(textoEnUnaLinea(o.texto))}` : ""}${letras ? `, with ${letras} on it` : ""}`;
 }
 
