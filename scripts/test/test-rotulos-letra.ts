@@ -21,7 +21,7 @@ const RAIZ = resolve(__dirname, "../..");
 const FUENTE = join(RAIZ, "public/fonts/great-vibes-5.3.0-latin-400.woff2");
 const TEXTOS = ["Isabella", "David y Dayan", "Let's Party", "Mia 15", "David\ny\nDayan", "Let's\nParty", "Feliz cumple\nValentina"];
 
-type Medida = { texto: string; aspecto: number; triangulos: number; ms: number };
+type Medida = { texto: string; aspecto: number; triangulos: number; ms: number; trianguloVinilo: number; msVinilo: number };
 
 async function empaquetar(): Promise<string> {
   const carpeta = mkdtempSync(join(tmpdir(), "rotulos-letra-"));
@@ -74,18 +74,20 @@ async function main() {
         const t0 = performance.now();
         const m = R.rasterizarTexto(texto);
         if (typeof m !== "object" || m === null) throw new Error(`sin tinta: ${texto}`);
-        const solido = { forma: "caja", tamano: { x: 200, y: 200, z: 2 }, hex: "#ffffff", acabado: "mate", rotulo: { texto, color: "#000000", acabado: "vinilo", altoCm: 40, yCm: 100 } };
-        const malla = visor.malla(solido)!;
-        const g = malla.geometry;
-        return { texto, aspecto: m.ancho / m.alto, triangulos: (g.index ? g.index.count : g.attributes.position.count) / 3, ms: Math.round(performance.now() - t0) };
+        const solido = (acabado: string) => ({ forma: "caja", tamano: { x: 200, y: 200, z: 2 }, hex: "#ffffff", acabado: "mate", rotulo: { texto, color: "#000000", acabado, altoCm: 40, yCm: 100 } });
+        const vinilo = visor.malla(solido("vinilo"))!.geometry;
+        const msVinilo = Math.round(performance.now() - t0);
+        const g = visor.malla(solido("acrilico_mate"))!.geometry;
+        return { texto, aspecto: m.ancho / m.alto, triangulos: (g.index ? g.index.count : g.attributes.position.count) / 3, ms: Math.round(performance.now() - t0), trianguloVinilo: (vinilo.index ? vinilo.index.count : vinilo.attributes.position.count) / 3, msVinilo };
       });
     }, TEXTOS);
     for (const m of medidas) {
       const estimado = aspectoEstimado(m.texto);
       const diferencia = Math.abs(m.aspecto - estimado) / m.aspecto;
-      console.log(`  ${JSON.stringify(m.texto).padEnd(28)} proporción ${m.aspecto.toFixed(2)} (estimada ${estimado.toFixed(2)}, ${(diferencia * 100).toFixed(1)} %) · ${m.triangulos} triángulos · ${m.ms} ms`);
+      console.log(`  ${JSON.stringify(m.texto).padEnd(28)} proporción ${m.aspecto.toFixed(2)} (estimada ${estimado.toFixed(2)}, ${(diferencia * 100).toFixed(1)} %) · acrílico ${m.triangulos} triángulos (${m.ms} ms con vinilo y acrílico) · vinilo ${m.trianguloVinilo} triángulos (${m.msVinilo} ms)`);
       assert.ok(diferencia <= 0.14, `la estimación sin lienzo de ${JSON.stringify(m.texto)} se aparta ${(diferencia * 100).toFixed(1)} %`);
       assert.ok(m.triangulos > 100 && m.triangulos < 12000, `${m.triangulos} triángulos`);
+      assert.equal(m.trianguloVinilo, 2, "un vinilo es una placa de dos triángulos");
     }
     console.log("  ✓ con la letra cargada: proporciones estimadas y triángulos por texto");
 

@@ -35,13 +35,13 @@ const entorno = new THREE.Texture();
 /** Las letras de lo que dibujó el visor: la malla hija con la geometría de texto. */
 function letrasDe(objetos: THREE.Object3D[]): THREE.Mesh[] {
   const salida: THREE.Mesh[] = [];
-  for (const o of objetos) o.traverse((h) => { if (h instanceof THREE.Mesh && h.geometry instanceof THREE.ExtrudeGeometry) salida.push(h); });
+  for (const o of objetos) o.traverse((h) => { if (h instanceof THREE.Mesh && h.userData.rotulo === true) salida.push(h); });
   return salida;
 }
 const firma = (m: THREE.Mesh) => {
   const mat = m.material as THREE.MeshStandardMaterial;
   m.geometry.computeBoundingBox();
-  return JSON.stringify({ ancho: Math.round(m.geometry.boundingBox!.max.x * 1e4), s: m.scale.toArray().map((n) => Math.round(n * 1e6)), p: m.position.toArray().map((n) => Math.round(n * 1e6)), c: mat.color.getHexString(), m: mat.metalness, g: m.geometry.attributes.position!.count });
+  return JSON.stringify({ ancho: Math.round(m.geometry.boundingBox!.max.x * 1e4), forma: (mat.alphaMap?.image as { width: number } | undefined)?.width ?? 0, s: m.scale.toArray().map((n) => Math.round(n * 1e6)), p: m.position.toArray().map((n) => Math.round(n * 1e6)), c: mat.color.getHexString(), m: mat.metalness, g: m.geometry.attributes.position!.count });
 };
 const dibujar = (rotulo: RotuloEscenografia, visor = crearEscenografiaVisor(() => entorno, { rasterizar: falso().rasterizar })) => {
   const caja: ElementoEscenografia = { forma: "caja", centro: { x: 0, y: 100, z: 0 }, tamano: { x: 200, y: 200, z: 2 }, hex: "#f7f6f2", acabado: "mate", rotulo };
@@ -62,10 +62,13 @@ prueba("NINGÚN CAMPO HUÉRFANO: cada campo del rótulo cambia lo que dibuja el 
 prueba("el visor dibuja las letras con su tamaño, su altura, su grosor (vinilo fino, acrílico de 6 mm) y su color", () => {
   const vinilo = dibujar({ texto: "Ana", color: "#112233", acabado: "vinilo", altoCm: 30, yCm: 100 });
   cerca(vinilo.scale.y, 0.3, 1e-6, "alto del texto (m)");
-  cerca(vinilo.scale.z, 0.0008, 1e-9, "grosor del vinilo (m)");
+  cerca(vinilo.scale.x, 0.3 * ((24 * 3 + 12) / 40), 1e-6, "ancho del texto (m): alto por la proporción de su tinta");
   cerca(vinilo.position.y, 0, 1e-6, "centrado a 100 cm del borde de abajo de un tablero de 200 cm");
-  cerca(vinilo.position.z, 0.01 + 0.0002, 1e-6, "pegado a la cara de delante");
+  cerca(vinilo.position.z, 0.01 + 0.0003, 1e-6, "pegado a la cara de delante");
   assert.equal((vinilo.material as THREE.MeshStandardMaterial).color.getHexString(), "112233");
+  assert.equal(vinilo.geometry.attributes.position!.count, 4, "un vinilo es una placa de dos triángulos con la forma de las letras por transparencia");
+  assert.ok((vinilo.material as THREE.MeshStandardMaterial).alphaMap, "la forma va en la textura");
+  assert.equal((vinilo.material as THREE.MeshStandardMaterial).polygonOffset, true);
   assert.equal(vinilo.castShadow, false);
   const espejo = dibujar({ texto: "Ana", color: "#d6b25a", acabado: "acrilico_espejo", altoCm: 30, yCm: 100 });
   cerca(espejo.scale.z, 0.006, 1e-9, "grosor del acrílico (m)");
@@ -85,12 +88,12 @@ prueba("la geometría de cada texto es de ESTE visor: se hace una vez, no se com
   const a = falso(), b = falso();
   const visorA = crearEscenografiaVisor(() => entorno, { rasterizar: a.rasterizar }), visorB = crearEscenografiaVisor(() => entorno, { rasterizar: b.rasterizar });
   const caja = (x: number, rotulo: RotuloEscenografia): ElementoEscenografia => ({ forma: "caja", centro: { x, y: 100, z: 0 }, tamano: { x: 100, y: 200, z: 2 }, hex: "#fff", acabado: "mate", rotulo });
-  const r1: RotuloEscenografia = { texto: "Ana", color: "#000000", acabado: "vinilo", altoCm: 20, yCm: 50 };
-  const piezas = visorA.piezas(armarEscenografia([caja(0, r1), caja(200, { ...r1, color: "#ff0000", altoCm: 40 }), caja(400, { ...r1, acabado: "acrilico_mate" })]));
+  const r1: RotuloEscenografia = { texto: "Ana", color: "#000000", acabado: "acrilico_mate", altoCm: 20, yCm: 50 };
+  const piezas = visorA.piezas(armarEscenografia([caja(0, r1), caja(200, { ...r1, color: "#ff0000", altoCm: 40 }), caja(400, { ...r1, acabado: "acrilico_espejo" })]));
   const letras = letrasDe(piezas);
   assert.equal(letras.length, 3);
   assert.deepEqual(a.llamadas, ["Ana"], "tres rótulos con el mismo texto, un solo dibujo del texto");
-  assert.ok(letras.every((l) => l.geometry === letras[0]!.geometry), "la misma geometría");
+  assert.ok(letras.every((l) => l.geometry === letras[0]!.geometry), "la misma geometría (acrílico mate y espejo)");
   assert.equal(letras[0]!.geometry.userData.compartido, true, "marcada compartida: vaciar una pieza no la libera");
   visorA.piezas(armarEscenografia([caja(0, r1)]));
   assert.deepEqual(a.llamadas, ["Ana"], "ni al volver a armar la pieza");
@@ -114,7 +117,29 @@ prueba("la geometría de cada texto es de ESTE visor: se hace una vez, no se com
 const liberarMallas = (objetos: THREE.Object3D[]) => {
   for (const o of objetos) o.traverse((h) => { const f: unknown = h.userData.alLiberar; if (typeof f === "function") { h.userData.alLiberar = undefined; f(); } });
 };
-const cajaConTexto = (texto: string, x = 0): ElementoEscenografia => ({ forma: "caja", centro: { x, y: 100, z: 0 }, tamano: { x: 100, y: 200, z: 2 }, hex: "#fff", acabado: "mate", rotulo: { texto, color: "#000000", acabado: "vinilo", altoCm: 20, yCm: 50 } });
+const cajaConTexto = (texto: string, x = 0): ElementoEscenografia => ({ forma: "caja", centro: { x, y: 100, z: 0 }, tamano: { x: 100, y: 200, z: 2 }, hex: "#fff", acabado: "mate", rotulo: { texto, color: "#000000", acabado: "acrilico_mate", altoCm: 20, yCm: 50 } });
+
+prueba("un vinilo no saca el contorno de su texto: una placa compartida y una textura por texto, que sale con él", () => {
+  const f = falso();
+  const visor = crearEscenografiaVisor(() => entorno, { rasterizar: f.rasterizar });
+  const vinilo = (texto: string, x: number, color = "#000000"): ElementoEscenografia => ({ forma: "caja", centro: { x, y: 100, z: 0 }, tamano: { x: 100, y: 200, z: 2 }, hex: "#fff", acabado: "mate", rotulo: { texto, color, acabado: "vinilo", altoCm: 20, yCm: 50 } });
+  const objetos = visor.piezas(armarEscenografia([vinilo("Ana", 0), vinilo("Ana", 200, "#ff0000"), vinilo("Eva", 400)]));
+  const l = letrasDe(objetos);
+  assert.equal(l.length, 3);
+  assert.ok(l.every((m) => m.geometry === l[0]!.geometry), "una sola placa para todos los vinilos del visor");
+  const mapa = (m: THREE.Mesh) => (m.material as THREE.MeshStandardMaterial).alphaMap!;
+  assert.equal(mapa(l[0]!), mapa(l[1]!), "la misma forma para el mismo texto en otro color");
+  assert.notEqual(mapa(l[0]!), mapa(l[2]!));
+  assert.notEqual(l[0]!.material, l[1]!.material, "pero cada color su material");
+  const datos = (mapa(l[0]!).image as { data: Uint8Array; width: number; height: number });
+  const tinta = Array.from({ length: datos.width * datos.height }, (_, i) => datos.data[i * 2 + 1]!);
+  assert.ok(tinta.some((v) => v === 255) && tinta.some((v) => v === 0), "la textura trae tinta (255) y hueco (0)");
+  assert.ok(Math.abs(datos.width / datos.height - (24 * 3 + 12) / 40) < 0.1, "con la proporción del texto");
+  let sueltas = 0;
+  mapa(l[0]!).addEventListener("dispose", () => { sueltas++; });
+  visor.liberar();
+  assert.equal(sueltas, 1, "la textura es del visor y se libera con él");
+});
 
 prueba("MAYOR 3: una escena con 20 textos distintos en uso no se rehace una y otra vez ni suelta lo que sus mallas usan", () => {
   const f = falso();

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { RotuloEscenografia, SolidoEscenografia } from "@/lib/globos3d/escenografia";
 import { cajaDeTinta, contornosDeMascara, type Mascara } from "@/lib/globos3d/rotulo-contornos";
-import { aspectoEstimado, caraDe, colocarRotulo, type CaraRotulo, GROSOR_ACRILICO_CM, GROSOR_VINILO_CM, lineasDeRotulo } from "@/lib/globos3d/rotulos";
+import { aspectoEstimado, caraDe, colocarRotulo, type CaraRotulo, GROSOR_ACRILICO_CM, lineasDeRotulo } from "@/lib/globos3d/rotulos";
 import { cargarFuenteRotulos, estadoFuenteRotulos, FUENTE_ROTULOS, fuenteDeRotulos, reintentarFuenteRotulos } from "./fuente-rotulos";
 import { colorDeLatex } from "./materiales-visor";
 
@@ -73,12 +73,42 @@ function recortada(m: Mascara): Mascara | null {
   return { datos, ancho, alto };
 }
 
-type TextoListo = { geometria: THREE.BufferGeometry; aspecto: number };
-/** Un texto guardado y cuántas mallas vivas lo usan (cada una avisa al liberarse: `userData.alLiberar`). */
-type TextoGuardado = TextoListo & { usos: number };
+/**
+ * Un texto guardado: su tinta (la máscara de píxeles) y, según se pida, lo que sale de ella: las letras extruidas (acrílico: se saca el
+ * contorno, ~30 ms) o una textura de su forma (vinilo: una placa con la forma por transparencia, casi sin costo). Cuántas mallas vivas
+ * lo usan (cada una avisa al liberarse: `userData.alLiberar`). Es del visor: él suelta todo lo que cuelga de aquí.
+ */
+type TextoGuardado = { mascara: Mascara; aspecto: number; usos: number; letras?: THREE.BufferGeometry | null; forma?: THREE.DataTexture; vinilos: Map<string, THREE.Material> };
 
-/** La geometría de unas letras de alto 1, centradas en x e y y de profundidad 1 (de z = 0 a z = 1). */
-function geometriaDeMascara(m: Mascara): TextoListo | null {
+/** El lado mayor (px) de la textura de un vinilo: lo justo para que el borde no se vea escalonado a su tamaño real. */
+const ALTO_TEXTURA_PX = 384, ANCHO_TEXTURA_PX = 2048;
+
+/** La forma de las letras como textura de dos canales (rojo y verde): la cobertura de cada píxel (promediada al achicar la máscara) va en el verde, que es el que lee `alphaMap`. */
+function texturaDeMascara(m: Mascara): THREE.DataTexture {
+  const k = Math.min(1, ALTO_TEXTURA_PX / m.alto, ANCHO_TEXTURA_PX / m.ancho);
+  const w = Math.max(1, Math.round(m.ancho * k)), h = Math.max(1, Math.round(m.alto * k));
+  const datos = new Uint8Array(w * h * 2);
+  for (let y = 0; y < h; y++) {
+    const y0 = Math.floor((y * m.alto) / h), y1 = Math.max(y0 + 1, Math.floor(((y + 1) * m.alto) / h));
+    for (let x = 0; x < w; x++) {
+      const x0 = Math.floor((x * m.ancho) / w), x1 = Math.max(x0 + 1, Math.floor(((x + 1) * m.ancho) / w));
+      let tinta = 0;
+      for (let j = y0; j < y1; j++) for (let i = x0; i < x1; i++) tinta += m.datos[j * m.ancho + i]!;
+      // La fila 0 de la máscara es la de arriba; la de una textura, la de abajo.
+      const o = ((h - 1 - y) * w + x) * 2;
+      datos[o] = 255; datos[o + 1] = Math.round((255 * tinta) / ((y1 - y0) * (x1 - x0)));
+    }
+  }
+  const t = new THREE.DataTexture(datos, w, h, THREE.RGFormat);
+  t.generateMipmaps = true;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.magFilter = THREE.LinearFilter;
+  t.needsUpdate = true;
+  return t;
+}
+
+/** La geometría de unas letras de alto 1, centradas en x e y y de profundidad 1 (de z = 0 a z = 1); null si no tienen tinta. */
+function geometriaDeMascara(m: Mascara): THREE.BufferGeometry | null {
   const contornos = contornosDeMascara(m);
   if (!contornos.length) return null;
   const punto = (p: { x: number; y: number }) => new THREE.Vector2((p.x - m.ancho / 2) / m.alto, (m.alto / 2 - p.y) / m.alto);
@@ -87,7 +117,7 @@ function geometriaDeMascara(m: Mascara): TextoListo | null {
     for (const hueco of c.huecos) forma.holes.push(new THREE.Path(hueco.map(punto)));
     return forma;
   });
-  return { geometria: new THREE.ExtrudeGeometry(formas, { depth: 1, bevelEnabled: false, curveSegments: 1 }), aspecto: m.ancho / m.alto };
+  return new THREE.ExtrudeGeometry(formas, { depth: 1, bevelEnabled: false, curveSegments: 1 });
 }
 
 export type RotulosVisor = {
@@ -123,6 +153,7 @@ export function crearRotulosVisor(entorno: () => THREE.Texture, opciones: Opcion
   const textos = new Map<string, TextoGuardado>();
   const materiales = new Map<string, THREE.Material>();
   let marca: THREE.BoxGeometry | null = null;
+  let cuadro: THREE.PlaneGeometry | null = null;
   let esperando = false, vivo = true, avisoFallo = false;
 
   /** La letra aún carga: cuando esté lista, el visor rehace lo que dibujó como marca. */
@@ -133,11 +164,17 @@ export function crearRotulosVisor(entorno: () => THREE.Texture, opciones: Opcion
   };
 
   /** Suelta los textos sin uso que pasan del tope, el que lleva más tiempo sin usarse primero (el Map guarda el orden de uso). El recién llegado es el último: no sale. */
+  const soltarTexto = (t: TextoGuardado) => {
+    t.letras?.dispose();
+    t.forma?.dispose();
+    for (const m of t.vinilos.values()) m.dispose();
+    t.vinilos.clear();
+  };
   const podar = () => {
     let sinUso = [...textos].filter(([, t]) => t.usos === 0);
     for (const [clave, t] of sinUso) {
       if (sinUso.length <= MAXIMO_TEXTOS) break;
-      t.geometria.dispose();
+      soltarTexto(t);
       textos.delete(clave);
       sinUso = sinUso.filter(([k]) => k !== clave);
     }
@@ -149,29 +186,47 @@ export function crearRotulosVisor(entorno: () => THREE.Texture, opciones: Opcion
     if (guardado) { textos.delete(clave); textos.set(clave, guardado); return guardado; }
     const mascara = rasterizar(texto);
     if (mascara === "pendiente") return "pendiente";
-    const hecho = mascara ? geometriaDeMascara(mascara) : null;
-    if (!hecho) return null;
-    hecho.geometria.userData.compartido = true;
-    const nuevo = { ...hecho, usos: 0 };
+    if (!mascara) return null;
+    const nuevo: TextoGuardado = { mascara, aspecto: mascara.ancho / mascara.alto, usos: 0, vinilos: new Map() };
     textos.set(clave, nuevo);
     // Se poda al llegar un texto nuevo (no al soltarse una malla): rehacer una escena suelta primero todas sus mallas y las pide de nuevo.
     podar();
     return nuevo;
   };
 
-  const material = (acabado: "vinilo" | "acrilico_espejo" | "acrilico_mate" | "marca" | "falla", hex: string): THREE.Material => {
+  const material = (acabado: "acrilico_espejo" | "acrilico_mate" | "marca" | "falla", hex: string): THREE.Material => {
     const clave = `${acabado}|${hex}`;
     let m = materiales.get(clave);
     if (!m) {
       // El espejo refleja el estudio con fuerza y casi sin brillo propio: las letras toman el color de lo que las rodea, como un espejo.
       if (acabado === "acrilico_espejo") m = new THREE.MeshStandardMaterial({ color: colorDeLatex("metal", hex), metalness: 1, roughness: 0.08, envMap: entorno(), envMapIntensity: 3.2, emissive: colorDeLatex("metal", hex), emissiveIntensity: 0.05 });
       else if (acabado === "acrilico_mate") m = new THREE.MeshStandardMaterial({ color: hex, metalness: 0.05, roughness: 0.4 });
-      else if (acabado === "marca" || acabado === "falla") m = new THREE.MeshBasicMaterial({ color: acabado === "falla" ? 0xd94b4b : 0x9a9a9a, transparent: true, opacity: 0.4 });
-      else m = new THREE.MeshStandardMaterial({ color: hex, roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+      else m = new THREE.MeshBasicMaterial({ color: acabado === "falla" ? 0xd94b4b : 0x9a9a9a, transparent: true, opacity: 0.4 });
       m.userData.compartido = true;
       materiales.set(clave, m);
     }
     return m;
+  };
+
+  /** El material de un vinilo: una placa del color con la forma de las letras por transparencia (la textura del texto, `alphaMap`: el borde se mezcla, no se corta), pegada con un poco de ventaja de profundidad. */
+  const vinilo = (t: TextoGuardado, hex: string): THREE.Material => {
+    let m = t.vinilos.get(hex);
+    if (!m) {
+      t.forma ??= texturaDeMascara(t.mascara);
+      m = new THREE.MeshStandardMaterial({ color: hex, roughness: 0.55, alphaMap: t.forma, transparent: true, depthWrite: false, alphaTest: 0.02, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+      m.userData.compartido = true;
+      t.vinilos.set(hex, m);
+    }
+    return m;
+  };
+
+  /** Las letras extruidas de un texto (acrílico), una sola vez por texto; null si no tienen tinta. */
+  const letras = (t: TextoGuardado): THREE.BufferGeometry | null => {
+    if (t.letras === undefined) {
+      t.letras = geometriaDeMascara(t.mascara);
+      if (t.letras) t.letras.userData.compartido = true;
+    }
+    return t.letras;
   };
 
   /** La marca de un texto que no se pudo dibujar (todavía o nunca): una placa del tamaño que tendría, con la proporción estimada del texto. */
@@ -205,25 +260,40 @@ export function crearRotulosVisor(entorno: () => THREE.Texture, opciones: Opcion
         return typeof document === "undefined" ? null : placa(r, cara, true);
       }
       const colocado = colocarRotulo(cara, r, texto.aspecto);
-      const vinilo = r.acabado === "vinilo";
-      const objeto = new THREE.Mesh(texto.geometria, material(r.acabado, r.color));
+      let objeto: THREE.Mesh;
+      if (r.acabado === "vinilo") {
+        // Una placa del tamaño del texto con su forma por transparencia: dos triángulos en vez de miles, sin sacar el contorno.
+        cuadro ??= new THREE.PlaneGeometry(1, 1);
+        cuadro.userData.compartido = true;
+        objeto = new THREE.Mesh(cuadro, vinilo(texto, r.color));
+        objeto.scale.set(colocado.anchoCm * CM, colocado.altoCm * CM, 1);
+        objeto.position.set(colocado.xCm * CM, colocado.yCm * CM, (colocado.zCm + 0.03) * CM);
+        objeto.castShadow = false;
+      } else {
+        const geometria = letras(texto);
+        if (!geometria) return null;
+        objeto = new THREE.Mesh(geometria, material(r.acabado, r.color));
+        objeto.scale.set(colocado.altoCm * CM, colocado.altoCm * CM, GROSOR_ACRILICO_CM * CM);
+        objeto.position.set(colocado.xCm * CM, colocado.yCm * CM, colocado.zCm * CM);
+        objeto.castShadow = true;
+      }
+      objeto.receiveShadow = true;
+      objeto.userData.rotulo = true;
       // La malla usa este texto hasta que se libere (la pieza se vacía o se rehace): entonces el texto puede salir del caché.
       texto.usos++;
       objeto.userData.alLiberar = () => { texto.usos = Math.max(0, texto.usos - 1); };
-      objeto.scale.set(colocado.altoCm * CM, colocado.altoCm * CM, (vinilo ? GROSOR_VINILO_CM : GROSOR_ACRILICO_CM) * CM);
-      objeto.position.set(colocado.xCm * CM, colocado.yCm * CM, (colocado.zCm + (vinilo ? 0.02 : 0)) * CM);
-      objeto.castShadow = !vinilo;
-      objeto.receiveShadow = true;
       return objeto;
     },
     liberar() {
       vivo = false;
-      for (const t of textos.values()) t.geometria.dispose();
+      for (const t of textos.values()) soltarTexto(t);
       marca?.dispose();
+      cuadro?.dispose();
       for (const m of materiales.values()) m.dispose();
       textos.clear();
       materiales.clear();
       marca = null;
+      cuadro = null;
     },
   };
 }
