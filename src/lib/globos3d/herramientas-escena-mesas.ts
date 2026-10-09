@@ -8,10 +8,10 @@ import { grupoDeSillasDe, sillasDeMesaNodo, textoSillasDeMesa } from "./mobiliar
 import { hexDeColor } from "./mobiliario-colores";
 import { esquivarEnElPiso } from "./mobiliario-colocar";
 import {
-  armarConjuntoMesa, mesaDePedido, mesaDePieza, medidaDeMesa, nombreDeMesa, PLURAL_MESA, sillasDePieza, MANTEL_TEXTO, type PedidoMesa, type PedidoSillas,
+  armarConjuntoMesa, esMesaParametrica, mesaDePedido, mesaDePieza, medidaDeMesa, nombreDeMesa, PLURAL_MESA, sillasDePieza, MANTEL_TEXTO, type PedidoMesa, type PedidoSillas,
 } from "./mobiliario-conjunto";
 import {
-  cambiarMesa, cambiarSillas, conjuntoDe, conjuntosDe, cuadricula, esConjuntoFijo, pasarAConjunto,
+  cambiarMesa, cambiarSillas, conjuntoDe, conjuntosDe, cuadricula, esConjuntoFijo, esMesaDelSalon, pasarAConjunto,
 } from "./mobiliario-conjunto-escena";
 import {
   DISPOSICIONES, FONDO_DEL_ANCHO, MANTELES, MAX_SILLAS_POR_MESA, NOMBRE_MESA, TIPOS_MESA, TIPOS_SILLA, type MesaGuardada,
@@ -89,6 +89,7 @@ const SINGULAR_MESA: Readonly<Record<MesaGuardada["tipo"], string>> = {
   media_luna: "mesa media luna", serpentina: "mesa serpentina", u: "banquete en U",
 };
 
+const cuentaMesas = (n: number) => `${n} ${n === 1 ? "mesa" : "mesas"}`;
 const cuenta = (n: number, singular: string, plural: string) => `${n} ${n === 1 ? singular : plural}`;
 
 function descripcionMesas(mesas: readonly MesaGuardada[]): string {
@@ -157,7 +158,17 @@ export function lineaDeMobiliarioParametrico(escena: Escena, n: NodoEscena): { m
  */
 function mesasDelPedido(escena: Escena, ids: readonly string[] | undefined, notas: string[]): { escena: Escena; mesas: string[] } {
   let actual = escena;
-  const fijos = (ids?.length ? ids.filter((id) => escena.nodos.some((n) => n.id === id && esConjuntoFijo(n))) : escena.nodos.filter(esConjuntoFijo).map((n) => n.id));
+  // Las mesas del salón armado (y sus sillas) no se convierten ni se editan aquí: las recalcula `ajustar_salon`.
+  const aSalon = "se cambian con ajustar_salon (sillas_por_mesa, mesas, mesa), que las recalcula y las centra";
+  const delSalon = new Set<string>();
+  if (ids?.length) {
+    const suyas = ids.filter((id) => esMesaDelSalon(escena, id));
+    if (suyas.length) fallar(`${suyas.slice(0, 4).join(", ")}${suyas.length > 4 ? "…" : ""} ${suyas.length === 1 ? "es una mesa del salón armado" : "son mesas del salón armado"}: sus mesas y sillas ${aSalon}. cambiar_sillas y cambiar_mesas son para mesas de agregar_mesas.`);
+  } else {
+    for (const n of escena.nodos) if ((esConjuntoFijo(n) || esMesaParametrica(n.pieza)) && esMesaDelSalon(escena, n.id)) delSalon.add(n.id);
+    if (delSalon.size) notas.push(`No toqué ${cuentaMesas(delSalon.size)} del salón armado (${[...delSalon].slice(0, 4).join(", ")}${delSalon.size > 4 ? "…" : ""}): ${aSalon}. Aquí solo cambian las mesas que no son del salón.`);
+  }
+  const fijos = (ids?.length ? ids.filter((id) => escena.nodos.some((n) => n.id === id && esConjuntoFijo(n))) : escena.nodos.filter((n) => esConjuntoFijo(n) && !delSalon.has(n.id)).map((n) => n.id));
   for (const id of fijos) {
     // Cada conjunto fijo pasa a ser dos piezas (mesa y sillas): sin lugar en el tope, se queda como estaba.
     if (actual.nodos.length >= MAX_NODOS) { notas.push(`«${id}» no se pudo pasar a mesa con sillas editables: la escena llegó al tope de ${MAX_NODOS} piezas.`); continue; }
@@ -165,8 +176,8 @@ function mesasDelPedido(escena: Escena, ids: readonly string[] | undefined, nota
     if (nueva) { actual = nueva; notas.push(`«${id}» era un conjunto fijo: lo pasé a mesa con sillas editables (mismos colores; la mesa y las sillas se rehacen por su perímetro).`); }
   }
   if (!ids?.length) {
-    const todas = conjuntosDe(actual).map((c) => c.mesa.id);
-    if (!todas.length) return fallar("No hay mesas con sillas editables en la escena. Agrégalas con agregar_mesas.");
+    const todas = conjuntosDe(actual).map((c) => c.mesa.id).filter((id) => !delSalon.has(id));
+    if (!todas.length) return fallar(delSalon.size ? `Las ${cuentaMesas(delSalon.size)} de la escena son del salón armado: ${aSalon}.` : "No hay mesas con sillas editables en la escena. Agrégalas con agregar_mesas.");
     return { escena: actual, mesas: todas };
   }
   const mesas = new Set<string>();

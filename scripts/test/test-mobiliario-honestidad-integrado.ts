@@ -16,6 +16,8 @@ import { aplicarHerramienta, resumenEscena, type ResultadoHerramienta } from "..
 import { productosDe, itemDeEscena } from "../../src/lib/globos3d/biblioteca";
 import { centrosDe, padreDeCentro } from "../../src/lib/globos3d/centros-mesa";
 import { conHonestidad, fallosPendientes, objetivoDe, type Intento } from "../../src/lib/globos3d/honestidad-respuesta";
+import { esDelSalon } from "../../src/lib/globos3d/salon-registro";
+import { pasarAConjunto } from "../../src/lib/globos3d/mobiliario-conjunto-escena";
 import { contarMobiliario, esMesa, sillasDeMesaNodo, textoSillasDeMesa } from "../../src/lib/globos3d/mobiliario-asientos-mesa";
 import { muebleDe } from "../../src/lib/globos3d/mobiliario-catalogo";
 import { nombreSegunEscena } from "../../src/lib/globos3d/nombre-escena";
@@ -212,6 +214,56 @@ prueba("un nombre que miente sobre las sillas se rechaza, y una decoración meti
   const problemas = problemasNuevos(despues, mal);
   assert.equal(problemas.length, 1, "la flor en el piso, bajo el mantel de la mesa paramétrica, es un PROBLEMA");
   assert.match(verificarCambios(despues, mal), /PROBLEMA/);
+});
+
+// ----------------------------------------------------------------------------------------------------------
+console.log("5. Las mesas del salón armado no se convierten: se cambian con ajustar_salon");
+
+const salonYMesasSueltas = (): Escena => {
+  const salon = ok(aplicarHerramienta(vacia(), "armar_salon", { mesas: 4, sillas_por_mesa: 6, mesa: "redonda8", ancho_cm: 1600, fondo_cm: 1400 })).escena;
+  return paso(salon, "agregar_mesas", { cantidad: 2, tipo: "redonda", sillas_por_mesa: 4, x_cm: 0, z_cm: 520 });
+};
+const delSalon = (e: Escena) => e.nodos.filter((n) => esDelSalon(e, n.id) && esMesa(n));
+const foto = (e: Escena, ids: string[]) => JSON.stringify(ids.map((id) => nodo(e, id)));
+
+prueba("con ids de una mesa del salón, cambiar_sillas y cambiar_mesas dan error y mandan a ajustar_salon", () => {
+  const e = salonYMesasSueltas();
+  const suya = delSalon(e).find((n) => /^Mesa \d+$/.test(n.nombre))!;
+  for (const [herramienta, args] of [["cambiar_sillas", { ids: [suya.id], cantidad: 3 }], ["cambiar_mesas", { ids: [suya.id], tipo: "cuadrada" }]] as const) {
+    const r = aplicarHerramienta(e, herramienta, args);
+    assert.equal(r.ok, false, herramienta);
+    assert.match(r.ok ? "" : r.error, /mesa del salón armado.*ajustar_salon \(sillas_por_mesa, mesas/, herramienta);
+  }
+});
+
+prueba("sin ids solo cambian las mesas que no son del salón, y el resumen dice cuáles se saltó y por qué", () => {
+  const e = salonYMesasSueltas();
+  const delSalonAntes = delSalon(e).map((n) => n.id);
+  assert.ok(delSalonAntes.length >= 4);
+  const sueltas = mesasDe(e).filter((n) => !esDelSalon(e, n.id)).map((n) => n.id);
+  assert.equal(sueltas.length, 2);
+  const r = ok(aplicarHerramienta(e, "cambiar_sillas", { cantidad: 2 }));
+  assert.match(r.resumen, /No toqué \d+ mesas del salón armado/);
+  assert.match(r.resumen, /ajustar_salon \(sillas_por_mesa, mesas/);
+  assert.equal(foto(r.escena, delSalonAntes), foto(e, delSalonAntes), "las mesas del salón quedan idénticas");
+  for (const id of sueltas) assert.equal(sillasDeMesaNodo(r.escena, nodo(r.escena, id)).total, 2, id);
+  const m = ok(aplicarHerramienta(e, "cambiar_mesas", { mantel: "corto" }));
+  assert.match(m.resumen, /No toqué \d+ mesas del salón armado/);
+  assert.equal(foto(m.escena, delSalonAntes), foto(e, delSalonAntes));
+});
+
+prueba("si todas las mesas son del salón, sin ids también es un error que apunta a ajustar_salon; sin salón nada cambia", () => {
+  const soloSalon = ok(aplicarHerramienta(vacia(), "armar_salon", { mesas: 4, sillas_por_mesa: 6, mesa: "redonda8", ancho_cm: 1600, fondo_cm: 1400 })).escena;
+  const r = aplicarHerramienta(soloSalon, "cambiar_sillas", { cantidad: 2 });
+  assert.equal(r.ok, false);
+  assert.match(r.ok ? "" : r.error, /son del salón armado.*ajustar_salon/);
+  // El camino bueno: ajustar_salon recalcula las mesas y las sillas.
+  const bien = ok(aplicarHerramienta(soloSalon, "ajustar_salon", { sillas_por_mesa: 4 })).escena;
+  for (const m of delSalon(bien).filter((n) => /^Mesa \d+$/.test(n.nombre))) assert.equal(sillasDeMesaNodo(bien, m).total, 4);
+  // Sin salón, el conjunto fijo de siempre sigue pasando a editable.
+  const fija = { ...vacia(), nodos: [{ id: "f", nombre: "Mesa fija", pieza: piezaDeMueble(muebleDe("mesa_redonda_sillas")!), colocacion: { en: "piso" as const, xCm: 0, zCm: 0, giroGrados: 0 } }] };
+  assert.equal(contarMobiliario(ok(aplicarHerramienta(fija, "cambiar_sillas", { cantidad: 3 })).escena).sillas, 3);
+  assert.equal(pasarAConjunto(soloSalon, delSalon(soloSalon)[0]!.id), null, "la función que convierte también se niega");
 });
 
 console.log(`test-mobiliario-honestidad-integrado: ${pruebas} pruebas ok`);

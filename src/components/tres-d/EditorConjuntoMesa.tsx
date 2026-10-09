@@ -4,7 +4,7 @@ import { Minus, Plus } from "lucide-react";
 import type { Escena, NodoEscena } from "@/lib/globos3d/escena";
 import { MAX_NODOS } from "@/lib/globos3d/limites-escena";
 import { esGrupoDeSillas, mesaDePieza, sillasDePieza } from "@/lib/globos3d/mobiliario-conjunto";
-import { cambiarMesa, cambiarSillas, conjuntoDe, esConjuntoFijo, pasarAConjunto } from "@/lib/globos3d/mobiliario-conjunto-escena";
+import { cambiarMesa, cambiarSillas, conjuntoDe, esConjuntoFijo, esMesaDelSalon, pasarAConjunto } from "@/lib/globos3d/mobiliario-conjunto-escena";
 import {
   DISPOSICIONES, FONDO_DEL_ANCHO, LIMITES_MESA, MANTELES, MAX_SILLAS_POR_MESA, NOMBRE_MESA, TIPOS_MESA, TIPOS_SILLA,
   type DisposicionSillas, type MesaGuardada, type TipoMesa, type TipoSilla,
@@ -35,6 +35,10 @@ const HACIA_FONDO = 180;
  * en ella. Un conjunto fijo de antes (`mesa_redonda_sillas`…) ofrece pasarlo a conjunto editable.
  */
 export function EditorConjuntoMesa({ nodo, escena, onEscena }: { nodo: NodoEscena; escena: Escena; onEscena: (e: Escena, agrupar?: string) => void }) {
+  // Una mesa del salón armado no se pasa a editable: el salón la recalcula (invitados, mesas, sillas por mesa) y la cuenta como suya.
+  if (esMesaDelSalon(escena, nodo.id)) {
+    return <p className="text-xs text-taller-suave">Esta mesa es del salón armado: sus sillas y la cantidad de mesas se cambian pidiéndole a la IA «ajustar el salón» (sillas por mesa, mesas), para que todo el salón se recalcule junto.</p>;
+  }
   if (esConjuntoFijo(nodo)) {
     return (
       <div className="flex flex-col gap-2 text-xs text-taller-suave">

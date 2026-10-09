@@ -1,5 +1,6 @@
 import { armarEscena, idNuevo, puntoALocal, puntoAlMundo, type Escena, type NodoEscena } from "./escena";
 import { grupoDeSillasDe } from "./mobiliario-asientos-mesa";
+import { esDelSalon } from "./salon-registro";
 import { muebleDe } from "./mobiliario-catalogo";
 import { esquivarEnElPiso } from "./mobiliario-colocar";
 import { dentroDelContorno } from "./mobiliario-contornos";
@@ -44,6 +45,15 @@ export const conjuntosDe = (escena: Escena): Conjunto[] => escena.nodos.filter((
 // Los fijos de antes
 // ----------------------------------------------------------------------------------------------------------
 
+/**
+ * ¿Es una mesa (o las sillas de una mesa) que armó el salón de eventos, anotada en su registro? Esas mesas y sus sillas se cambian con
+ * `ajustar_salon` (el salón las recalcula, las centra y las cuenta): convertirlas a mesa editable las dejaría fuera de su registro.
+ */
+export function esMesaDelSalon(escena: Escena, id: string): boolean {
+  const mesaId = conjuntoDe(escena, id)?.mesa.id ?? id;
+  return esDelSalon(escena, mesaId);
+}
+
 const LEGACY: ReadonlySet<string> = new Set(["mesa_redonda_sillas", "mesa_imperial_sillas"]);
 
 /** ¿Es uno de los conjuntos fijos de antes (una sola pieza con sus sillas Tiffany)? */
@@ -56,6 +66,7 @@ export const esConjuntoFijo = (n: NodoEscena): boolean => n.pieza.tipo === "esce
  */
 export function pasarAConjunto(escena: Escena, id: string, notas: string[] = []): Escena | null {
   const nodo = escena.nodos.find((n) => n.id === id);
+  if (esDelSalon(escena, id)) return null;
   const mueble = nodo && nodo.pieza.tipo === "escenografia" ? nodo.pieza.mueble : undefined;
   const fijo = mueble ? LEGACY.has(mueble.id) : false;
   const m = mueble ? muebleDe(mueble.id) : undefined;
