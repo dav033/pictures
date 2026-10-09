@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Sala } from "./escena";
 import type { LecturaFoto } from "./lectura-foto";
+import { FOV_FOTO_GRADOS, PROFUNDIDAD_DE_LA_FOTO_CM } from "./proyeccion-foto";
 
 /**
  * **El encuadre de una foto en la escena** (REQ-001 paso 9): lo que hay que saber para volver a mirar la escena armada
@@ -35,6 +36,30 @@ export function pisoDeLectura(l: LecturaFoto): number {
   if (apoyadas.length) return Math.max(...apoyadas);
   const colgadas = l.piezas.flatMap((p) => ("puntos" in p ? p.puntos.map((q) => q.y + q.grosor / 2) : "y" in p ? [p.y] : []));
   return Math.max(0.5 + ALTURA_DE_LA_CAMARA_CM / l.escala.altoImagenCm, ...colgadas);
+}
+
+/** Fondo (de la pared al frente) de la sala que arma el compilador de la lectura. */
+export const FONDO_SALA_FOTO_CM = 500;
+/** Lo que queda libre entre lo más cercano a la cámara y el borde de la sala. */
+const MARGEN_AL_FRENTE_CM = 30;
+/** Lo más que se acerca algo a la cámara, como fracción de la distancia a la decoración. */
+const FRACCION_MAXIMA_AL_FRENTE = 0.6;
+
+/**
+ * Cuánto más cerca de la cámara (cm, desde el plano de la decoración) está algo apoyado en el piso cuyo pie se ve en la
+ * foto a la altura `yPie`, más abajo que la línea del piso, y cuánto hay que achicar lo que mide en la foto (`factor` < 1:
+ * lo cercano se ve más grande). La cámara de frente a la altura del centro de la imagen, como `camara-foto.ts`. Sin pasarse de
+ * lo que cabe en la sala (`fondoSalaCm`, de la pared al frente, menos la profundidad de la decoración y un margen).
+ */
+export function profundidadEnElPiso(l: LecturaFoto, yPie: number, fondoSalaCm = FONDO_SALA_FOTO_CM): { delanteCm: number; factor: number } {
+  const piso = pisoDeLectura(l);
+  const distancia = l.escala.altoImagenCm / 2 / Math.tan(((FOV_FOTO_GRADOS / 2) * Math.PI) / 180);
+  if (!Number.isFinite(yPie) || !(distancia > 0) || piso <= 0.5 || yPie <= piso) return { delanteCm: 0, factor: 1 };
+  // La línea del piso a la distancia d se ve a (piso − 0,5) × D / d bajo el centro.
+  const cerca = distancia * ((piso - 0.5) / (yPie - 0.5));
+  const cabeEnLaSala = Math.max(0, fondoSalaCm - PROFUNDIDAD_DE_LA_FOTO_CM - MARGEN_AL_FRENTE_CM);
+  const delanteCm = Math.max(0, Math.min(distancia * FRACCION_MAXIMA_AL_FRENTE, distancia - cerca, cabeEnLaSala));
+  return { delanteCm: Math.round(delanteCm), factor: Math.round(((distancia - delanteCm) / distancia) * 1000) / 1000 };
 }
 
 /** El encuadre de la foto leída (el que usa `compilarLectura` para colocar las piezas). */

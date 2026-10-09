@@ -122,15 +122,27 @@ await prueba("se puede quitar lo que la escena tiene de más que la lectura de l
   assert.equal(revisarEstructura(conExtra, escena7, encuadre, referencia7), null, "quitar la pieza de más es lo correcto");
   assert.equal(revisarEstructura(conExtra, sinNodo(sinNodo(conExtra, "extra"), "metalizado"), encuadre, referencia7)?.motivo, "pieza_quitada", "pero no una de las que sí están en la foto");
 });
+/**
+ * El «LOVE» puesto detrás de la guirnalda (a ras de la pared, a la altura de su cuerpo). Dónde queda tapado depende de cómo
+ * se empacan los globos (el relleno tupido cambió el acomodo y dejó un hueco donde antes había globo): se busca el primer
+ * sitio tapado entre varios a lo largo del cuerpo, en vez de fijar uno que dependa de un acomodo exacto.
+ */
+const loveTapado = (): Escena => {
+  for (const y of [200, 230, 250, 215]) for (const x of [-20, 0, 20, -40, 40]) {
+    const e = conLove(escena7, x, y, -245);
+    if (piezasOcultas(e, encuadre).has("metalizado")) return e;
+  }
+  throw new Error("el «LOVE» no queda tapado detrás de la guirnalda en ningún sitio a la altura de su cuerpo");
+};
 await prueba("el «LOVE» detrás de los globos de la guirnalda queda tapado y rechaza la ronda", () => {
-  const tapado = conLove(escena7, -20, 200, -245);
+  const tapado = loveTapado();
   assert.deepEqual([...piezasOcultas(tapado, encuadre)], ["metalizado"]);
   const r = revisarEstructura(escena7, tapado, encuadre);
   assert.equal(r?.motivo, "pieza_oculta");
   assert.match(r?.detalle ?? "", /LOVE/);
 });
 await prueba("lo que ya estaba tapado antes de la ronda no se le reprocha a la ronda", () => {
-  const tapado = conLove(escena7, -20, 200, -245);
+  const tapado = loveTapado();
   assert.equal(revisarEstructura(tapado, tapado, encuadre), null);
 });
 await prueba("el «LOVE» delante de la guirnalda (más cerca de la cámara) se ve", () => {

@@ -45,8 +45,10 @@ console.log("Mezcla de tamaños leída");
 await prueba("el diámetro medido decide el formato con la escala de la foto (0,2 de 260 cm = 52 cm = R-24; 0,1 = 26 cm = R-12)", () => {
   const m: MezclaLeida = { grandes: 40, medianos: 30, chicos: 30, diametroGrande: 0.2, diametroMediano: 0.1, diametroChico: 0.05 };
   assert.deepEqual(pesosDeMezclaLeida(m, 260), { "R-24": 0.4, "R-12": 0.3, "R-5": 0.3 });
-  // La misma foto con otra escala (la foto mide 150 cm de alto): los mismos diámetros dan globos menores.
-  assert.deepEqual(pesosDeMezclaLeida(m, 150), { "R-12": 0.4, "R-5": 0.6 });
+  // La misma foto con otra escala (la foto mide 150 cm de alto): los mismos diámetros dan globos menores. Los diámetros de una
+  // pieza orgánica se pasan a formato con la tabla de lo orgánico (R-24 48 cm, R-18 34, R-12 25, R-9 17, R-5 12): 30 cm es un R-18,
+  // 15 cm un R-9 y 7,5 cm un R-5.
+  assert.deepEqual(pesosDeMezclaLeida(m, 150), { "R-18": 0.4, "R-9": 0.3, "R-5": 0.3 });
 });
 await prueba("sin diámetros, cada escalón usa sus formatos de siempre y los pesos suman 1", () => {
   const w = pesosDeMezclaLeida({ grandes: 50, medianos: 30, chicos: 20, diametroGrande: 0.2 }, 260);
@@ -92,12 +94,14 @@ await prueba("las 5 fotos con mezcla armadas por el compilador cumplen el repart
     assert.ok(distanciaEscalones(hecho, meta) < 0.15, `${n}: ${JSON.stringify(hecho)} contra ${JSON.stringify(meta)}`);
   }
 });
-await prueba("antes de la mezcla una guirnalda con 35 % de grandes salía con 2 %: ahora sale con ≥ 30 %", () => {
+// Con el relleno tupido por escalones (sin huecos entre globos, 2026-10-08) la parte de grandes puede quedar unos puntos
+// bajo la leída: se prefiere el cuerpo lleno. Antes de la mezcla salía con 2 %.
+await prueba("antes de la mezcla una guirnalda con 35 % de grandes salía con 2 %: ahora sale con ≥ 25 %", () => {
   const delgada = structuredClone(LECTURA_7);
   for (const p of delgada.piezas) if (p.tipo === "guirnalda_organica") { p.puntos = p.puntos.map((q) => ({ ...q, grosor: 0.12 })); }
   const compilada = compilarLectura(delgada);
   const e = escalonesDe(globosOrganicosPorFormato(compilada.escena));
-  assert.ok(e.grandes >= 0.3, `grandes ${e.grandes}`);
+  assert.ok(e.grandes >= 0.25, `grandes ${e.grandes}`);
   assert.ok(compilada.notas.some((n) => /se engrosó/.test(n)), "avisa que engrosó el cuerpo");
 });
 await prueba("una lectura sin mezcla ni tamanos se compila como siempre (mezcla de partida)", () => {

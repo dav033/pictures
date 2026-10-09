@@ -57,17 +57,37 @@ const corto = (t: string, n: number) => (t.length > n ? `${t.slice(0, n - 1)}…
 // ----------------------------------------------------------------------------------------------------------
 
 /**
+ * Campos de la lectura que el modelo no escribe: los calcula la detección de globos (`medir-con-detecciones.ts`) y solo
+ * los traen las lecturas a mano. Fuera del esquema de Gemini, que con ellos pasa de su tope de complejidad (la API
+ * rechaza el esquema entero con «invalid argument»; comprobado el 2026-10-09 quitando uno u otro).
+ */
+const SOLO_MEDIDOS = new Set(["coloresPorEscalon", "dominante", "anclas"]);
+
+/** Por encima de estos valores, una enumeración va al esquema de Gemini como texto libre (ver `paraGemini`). */
+export const ENUM_MAXIMO_PARA_GEMINI = 20;
+
+/**
  * Lo que Gemini no digiere del esquema de Zod: `const` de una cadena → `enum` de un valor, y `maxItems` (con `maxItems: 30`
  * en las piezas, cada una con sus colores, rechaza el esquema entero con «invalid argument»; comprobado contra la API real
  * el 2026-10-09). Los topes de cantidad los vuelve a exigir Zod al validar y el prompt los dice.
  */
+
 function paraGemini(nodo: unknown): unknown {
   if (Array.isArray(nodo)) return nodo.map(paraGemini);
   if (nodo === null || typeof nodo !== "object") return nodo;
-  return Object.fromEntries(Object.entries(nodo as Record<string, unknown>).flatMap(([clave, valor]) => (clave === "maxItems" ? [] : clave === "const" ? [["enum", [valor]]] : [[clave, paraGemini(valor)]])));
+  return Object.fromEntries(Object.entries(nodo as Record<string, unknown>).flatMap(([clave, valor]) => {
+    if (clave === "maxItems") return [];
+    if (clave === "const") return [["enum", [valor]]];
+    // Un catálogo largo (los ids de fondos y muebles) va como texto: con él, las enumeraciones del esquema pasan del tope
+    // de Gemini. El prompt lista el catálogo y Zod rechaza un id que no exista (y la lectura se reintenta con el error).
+    if (clave === "enum" && Array.isArray(valor) && valor.length > ENUM_MAXIMO_PARA_GEMINI) return [];
+    if (clave === "properties" && valor && typeof valor === "object") return [[clave, paraGemini(Object.fromEntries(Object.entries(valor as Record<string, unknown>).filter(([k]) => !SOLO_MEDIDOS.has(k))))]];
+    if (clave === "required" && Array.isArray(valor)) return [[clave, valor.filter((k) => !SOLO_MEDIDOS.has(String(k)))]];
+    return [[clave, paraGemini(valor)]];
+  }));
 }
 
-/** El esquema de la lectura en el subconjunto de JSON Schema de Gemini (sin `$schema`, `additionalProperties`, `const` ni `maxItems`). */
+/** El esquema de la lectura en el subconjunto de JSON Schema de Gemini (sin `$schema`, `additionalProperties`, `const`, `maxItems` ni catálogos largos). */
 export function esquemaLecturaParaGemini(): Record<string, unknown> {
   return paraGemini(paraGoogleSchema(ESQUEMA_LECTURA_FOTO)) as Record<string, unknown>;
 }

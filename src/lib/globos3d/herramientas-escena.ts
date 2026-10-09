@@ -29,7 +29,8 @@ import { reemplazarColor } from "./recolorear";
 import { nombreForma, type ColoresForma, type OpcionesForma } from "./formas";
 import { opcionesArcoOrganico } from "./formas-escena";
 import { COLORES_METALIZADO, PULGADAS_METALIZADO, nombreMetalizado } from "./metalizados";
-import { armarPieza, type Pieza, type PiezaArmada, type TipoPieza } from "./piezas";
+import { type Pieza, type PiezaArmada, type TipoPieza } from "./piezas";
+import { CACHE_ARMADO, alturaDePieza, armadaDe } from "./altura-pieza";
 import { armarEscena, descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo, NOMBRE_PARED, type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoEscena, type ParedSala, type Sala } from "./escena";
 import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
 import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, guirnaldaFeston, piezaNueva } from "./escenas-presets";
@@ -340,7 +341,7 @@ const DESCRIPCIONES: Readonly<Record<NombreHerramienta, string>> = {
   reemplazar_pieza: "Cambia una pieza por otra de OTRO tipo en una sola llamada: mismo sitio, mismo id (lo que cuelga de ella se queda) y sus mismos colores si no se pasan otros. Para «no normales, orgánicas»: reemplazar_pieza con tipo columna_organica en cada columna.",
   recolorear_escena: "Recolorea TODAS las piezas (o las de ids) de una vez respetando el patrón de cada una, o cambia un color por otro en todo. Nunca agrega ni quita piezas. Para «todo a rojo y verde» o «cambia el rosado por azul».",
   buscar_en_biblioteca: "Busca en la Biblioteca del taller (escenas, estructuras con sus decoraciones, estructuras, decoraciones, utilería, ideas Sempertex): devuelve una lista corta con id y resumen. No cambia la escena.",
-  ajustar_tamanos: "Edición PRECISA de una pieza orgánica: más/menos/quitar/poner un tamaño de globo (R-36…R-5) en toda la pieza o en una zona (abajo, arriba, inicio, medio, fin, izquierda, derecha: «en la pata izquierda»), con cantidad o porcentaje exactos; colores por tamaño («los R-24 en azul»); más o menos tupida (densidad) y abultada (racimos). Arma la pieza y devuelve cuántos globos de cada tamaño había y cuántos hay. Úsala para «más R-24», «menos globos chicos», «los grandes azules», «más tupida», «más abultada».",
+  ajustar_tamanos: "Edición PRECISA de una pieza orgánica: más/menos/quitar/poner un tamaño de globo (R-36…R-5) en toda la pieza o en una zona (abajo, arriba, inicio, medio, fin, izquierda, derecha: «en la pata izquierda»), con cantidad o porcentaje exactos; colores por tamaño («los R-24 en azul»); más o menos tupida (densidad) y abultada (racimos). Arma la pieza y devuelve cuántos globos de cada tamaño había y cuántos hay. Úsala para «más R-24», «menos globos chicos», «los grandes azules», «más tupida», «más abultada». Los globos fijos de una foto (los gigantes y grandes que ya están en su sitio) cuentan por el tamaño con que se ven en el inventario y también por el que pidió la foto: un gigante dorado dibujado como R-24 sale como R-24 y se quita con «quitar R-24» o con «quitar R-36».",
   ver_pieza: DESCRIPCION_VER_PIEZA,
   buscar_en_escena: DESCRIPCION_BUSCAR_EN_ESCENA,
   editar_globos: DESCRIPCION_EDITAR_GLOBOS,
@@ -385,20 +386,6 @@ function medidasDe(p: Pieza): string {
     case "arbol_globos": return `${p.arbol.copa.tipo === "palmera" ? "palmera" : "árbol de racimos"} · tronco ${r0(p.arbol.tronco.altoCm)} cm`;
     case "modulo": return `${p.modulo} de ${p.formatoId} · ${r0(p.infladoCm)} cm`;
   }
-}
-
-/** Piezas ya armadas por su JSON (para no rehacer un arco orgánico en cada llamada que necesita la geometría). */
-const CACHE_ARMADO = new Map<string, PiezaArmada>();
-
-function armadaDe(p: Pieza): PiezaArmada {
-  const clave = JSON.stringify(p);
-  let armada = CACHE_ARMADO.get(clave);
-  if (!armada) {
-    armada = armarPieza(p);
-    CACHE_ARMADO.set(clave, armada);
-    while (CACHE_ARMADO.size > 300) { const primera = CACHE_ARMADO.keys().next().value; if (primera === undefined) break; CACHE_ARMADO.delete(primera); }
-  }
-  return armada;
 }
 
 /** Los globos de un orgánico por tamaño y color (lo que la IA necesita para «más R-24» o «los grandes azules»). */
@@ -533,9 +520,7 @@ function colocacionDe(donde: Donde, escena: Escena, previa: Colocacion | null, p
 
 function comprobarAltura(pieza: Pieza, c: Colocacion, sala: Sala) {
   if (c.en !== "piso" && c.en !== "pared") return;
-  const porCaja = () => { const { min, max } = armadaDe(pieza).caja; return max.y - min.y; };
-  const alto = pieza.tipo === "columna" ? pieza.alturaCm : pieza.tipo === "arco" || pieza.tipo === "pared_malla" ? pieza.altoCm : pieza.tipo === "arco_organico" ? pieza.arco.altoCm : pieza.tipo === "pared_trenzas" ? pieza.opciones.altoCm
-    : pieza.tipo === "decoracion" || pieza.tipo === "escenografia" || pieza.tipo === "techo" ? 0 : porCaja();
+  const alto = alturaDePieza(pieza);
   const base = c.en === "pared" ? c.alturaCm : 0;
   if ((c.en === "piso" || c.en === "pared") && alto + base > sala.altoCm) fallar(`La pieza mide ${r0(alto)} cm${base ? ` y empieza a ${r0(base)} cm` : ""}: no cabe bajo el techo de ${r0(sala.altoCm)} cm.`);
 }
@@ -1025,7 +1010,9 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       const a = ESQUEMAS.ajustar_tamanos.parse(argumentos);
       const nodo = nodoPorId(escena, a.id);
       const organica = esPiezaOrganica(nodo.pieza) ? nodo.pieza : fallar(`«${nodo.nombre}» es ${NOMBRE_TIPO[nodo.pieza.tipo]}: ajustar_tamanos es para piezas orgánicas (de varios tamaños). Para las demás usa cambiar_pieza.`);
-      const hecho = ajustarTamanos(organica, a, notas);
+      // Lo que cabe de alto bajo el techo: engrosar el cuerpo para llegar a la meta no puede pasarse de ahí.
+      const techoCm = nodo.colocacion.en === "piso" ? escena.sala.altoCm : nodo.colocacion.en === "pared" ? escena.sala.altoCm - nodo.colocacion.alturaCm : undefined;
+      const hecho = ajustarTamanos(organica, a, notas, techoCm);
       comprobarAltura(hecho.pieza, nodo.colocacion, escena.sala);
       const nodoNuevo: NodoEscena = { ...nodo, pieza: hecho.pieza };
       return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, hecho.pieza), resumen: conNotas(`Ajusté «${nodo.nombre}» (${nodo.id}): ${hecho.resumen}`, notas) };

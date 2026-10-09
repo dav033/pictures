@@ -1,4 +1,7 @@
+import { decidir } from "@/lib/registro/servidor";
 import { compilarLectura } from "./compilar-lectura";
+import { detectarGlobos, type Deteccion } from "./detectar-globos-ia";
+import { medirConDetecciones } from "./medir-con-detecciones";
 import { idNuevo, type Escena, type NodoEscena } from "./escena";
 import type { LecturaFoto, PiezaLeida } from "./lectura-foto";
 import { leerFotoConIA, type FotoLectura, type OpcionesLectura, type ResultadoLectura, type UsoModelo } from "./leer-foto-ia";
@@ -28,6 +31,12 @@ export type Modelado = {
 };
 
 export type DependenciasModelado = {
+  /**
+   * La detección de los globos y fondos uno por uno (por defecto `detectarGlobos`, en paralelo con la lectura); con ella la
+   * lectura se mide (`medir-con-detecciones.ts`). `null` = sin detección (la lectura queda como la escribió el modelo). Si se
+   * inyecta `leer` (las pruebas, sin red) y no se dice nada, tampoco hay detección: no se llama a la IA por la puerta de atrás.
+   */
+  detectar?: ((foto: FotoLectura) => Promise<Deteccion>) | null;
   /** Por defecto `leerFotoConIA`. */
   leer?: (foto: FotoLectura, opciones: OpcionesLectura) => Promise<ResultadoLectura>;
   /** Plantillas parecidas (la búsqueda por imagen de la biblioteca); sin ella no hay plantillas. */
@@ -41,11 +50,20 @@ export async function modelarDesdeFoto(foto: FotoLectura, deps: DependenciasMode
   const buscar = deps.plantillas
     ? deps.plantillas(foto).catch((error: unknown): Plantilla[] => { avisos.push(`No se pudo buscar plantillas en la biblioteca: ${error instanceof Error ? error.message : String(error)}`); return []; })
     : Promise.resolve<Plantilla[]>([]);
-  const [leida, plantillas] = await Promise.all([(deps.leer ?? leerFotoConIA)(foto, deps.opciones ?? {}), buscar]);
-  const compilada = compilarLectura(leida.lectura);
+  const detectar = deps.detectar !== undefined ? deps.detectar : deps.leer || deps.opciones?.generar ? null : (f: FotoLectura) => detectarGlobos(f, { signal: deps.opciones?.signal, superficie: deps.opciones?.superficie });
+  const detectando = detectar
+    ? detectar(foto).catch((error: unknown): null => { avisos.push(`No se pudieron detectar los globos uno por uno (la lectura va sin medir): ${error instanceof Error ? error.message : String(error)}`); return null; })
+    : Promise.resolve(null);
+  const [leida, plantillas, deteccion] = await Promise.all([(deps.leer ?? leerFotoConIA)(foto, deps.opciones ?? {}), buscar, detectando]);
+  const medida = deteccion ? medirConDetecciones(leida.lectura, deteccion.globos, deteccion.fondos) : { lectura: leida.lectura, notas: [] };
+  if (deteccion) decidir("regla:foto_medida_con_detecciones", "la lectura de la foto medida con los globos y fondos detectados", { globos: deteccion.globos.length, fondos: deteccion.fondos.length, notas: medida.notas.length, escalaLeidaCm: leida.lectura.escala.altoImagenCm, escalaMedidaCm: medida.lectura.escala.altoImagenCm });
+  const compilada = compilarLectura(medida.lectura);
   return {
-    escena: compilada.escena, lectura: leida.lectura, notas: compilada.notas, omitidas: compilada.omitidas, descartadas: leida.descartadas, plantillas, avisos,
-    uso: { ...leida.uso, costeEstimadoUsd: leida.costeEstimadoUsd, intentos: leida.intentos, modelo: leida.modelo },
+    escena: compilada.escena, lectura: medida.lectura, notas: [...medida.notas, ...compilada.notas], omitidas: compilada.omitidas, descartadas: leida.descartadas, plantillas, avisos,
+    uso: {
+      entrada: leida.uso.entrada + (deteccion?.uso.entrada ?? 0), salida: leida.uso.salida + (deteccion?.uso.salida ?? 0), pensamiento: leida.uso.pensamiento + (deteccion?.uso.pensamiento ?? 0),
+      costeEstimadoUsd: Math.round((leida.costeEstimadoUsd + (deteccion?.costeEstimadoUsd ?? 0)) * 1e5) / 1e5, intentos: leida.intentos, modelo: leida.modelo,
+    },
   };
 }
 
@@ -85,6 +103,11 @@ function coloresDe(p: PiezaLeida): string {
   return "colores" in p ? p.colores.map((c) => `${c.nombre}${c.acabado !== "mate" && c.acabado !== "brillante" ? ` ${c.acabado}` : ""} ${Math.round(c.peso)}%`).join(", ") : "";
 }
 
+/** El tipo de pieza que falta en un `switch`: si se agrega una pieza a la lectura, esto no compila hasta que se cuente aquí. */
+function exhaustivo(p: never): never {
+  throw new Error(`Pieza leída sin línea para el agente: ${JSON.stringify(p)}`);
+}
+
 /** Una línea por pieza leída: tipo, lo que la distingue y sus colores. */
 export function lineaDePiezaLeida(p: PiezaLeida, i: number, altoImagenCm: number): string {
   const cm = (f: number) => `${Math.round(f * altoImagenCm)} cm`;
@@ -92,6 +115,7 @@ export function lineaDePiezaLeida(p: PiezaLeida, i: number, altoImagenCm: number
     switch (p.tipo) {
       case "guirnalda_organica": return `${p.puntos.length} puntos, grosor medio ${cm(p.puntos.reduce((s, q) => s + q.grosor, 0) / p.puntos.length)}${p.follaje?.length ? `, follaje: ${p.follaje.join(", ")}` : ""}`;
       case "columna_organica": return `forma ${p.forma}, alto ${cm(Math.abs(p.yBase - p.yArriba))}`;
+      case "racimo_piso": return `montón de piso de ${cm(p.ancho)} de ancho y ${cm(Math.abs(p.yPie - p.yArriba))} de alto`;
       case "columna_clasica": return `alto ${cm(Math.abs(p.yBase - p.yArriba))}`;
       case "guirnalda_clasica": return `largo ${cm(Math.abs(p.x2 - p.x1))}`;
       case "globo": return `${cm(p.diametro)} de diámetro, ${p.en}`;
@@ -100,6 +124,7 @@ export function lineaDePiezaLeida(p: PiezaLeida, i: number, altoImagenCm: number
       case "metalizado": return `«${p.texto}»${p.cursiva ? " cursiva" : ""}`;
       case "fondo": return `${p.id}${p.texto ? ` «${p.texto}»` : ""}`;
       case "otro": return p.descripcion;
+      default: return exhaustivo(p);
     }
   })();
   const colores = coloresDe(p);

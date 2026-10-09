@@ -1,8 +1,12 @@
 import { TABLA_SEMPERTEX, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
-import { coloresDelFormato, formatoPorId, infladoValido } from "./formatos";
-import { colorDeRescate, sustitutoDeFamilia } from "./colores-formato";
+import { formatoPorId, infladoValido } from "./formatos";
+import { asignarColores } from "./organico-color";
+import { colocarFijos } from "./organico-fijos";
 import { centroCuerpo } from "./geometria";
 import type { GloboColocado, Vec3 } from "./modulos";
+import { crearAzar, vec, suma, resta, escala, punto, cruz, norma, distancia, unitario, limitar, aplastamiento, muestrear, muestraEn, proyectar, interpolarGrosor, mezclaEn, radioEnvoltura, profundidad, rangoS, superficie, estructuraPorCm, type TramoPreparado } from "./organico-geometria";
+export { aplastamiento, crearAzar, estructuraPorCm, largoRecorrido, mezclaEn, profundidad, type TramoPreparado } from "./organico-geometria";
+export { MEZCLA_COLUMNA_GRUESA, MEZCLA_GUIRNALDA, RELLENO_TUPIDO, formaColumna, formaGuirnalda, formaSemiarco, type OpcionesColumna } from "./organico-formas";
 
 /**
  * Generador orgánico 3D (columna, guirnalda, semiarco) sin three.js ni React: dónde va cada globo, de qué
@@ -80,7 +84,13 @@ export type TramoOrganico = {
 };
 
 /** Relleno de huecos: se prueba en este orden; con `trios`, cada relleno intenta llevar dos compañeros. */
-export type RellenoOrganico = { formatoId: string; infladoCm: number; trios: boolean };
+export type RellenoOrganico = {
+  formatoId: string; infladoCm: number; trios: boolean;
+  /** A lo más cuántos globos de este relleno (con sus compañeros): para que los chicos no pasen de lo que pide la mezcla. */
+  maximo?: number;
+  /** Globos por racimito (con `trios`; 3 por omisión, hasta 6): los R-5 de las fotos van en racimitos de 3 a 5. */
+  racimo?: number;
+};
 
 /**
  * Un color de la paleta (código Sempertex de 3 cifras) con su peso relativo. `formatos` limita en qué globos va
@@ -93,7 +103,15 @@ export type RellenoOrganico = { formatoId: string; infladoCm: number; trios: boo
  * en cada grupo de globos que admite los mismos colores, entre esos colores por sus pesos.
  */
 export type FranjaColor = { desde: number; hasta: number };
-export type ColorOrganico = { codigo: string; peso: number; confeti?: boolean; formatos?: readonly string[]; tramos?: readonly string[]; franjas?: readonly FranjaColor[] };
+export type ColorOrganico = {
+  codigo: string; peso: number; confeti?: boolean; formatos?: readonly string[]; tramos?: readonly string[]; franjas?: readonly FranjaColor[];
+  /**
+   * La cuota de este color se cuenta en cada FORMATO por separado (los colores por escalón medidos en una foto: «los R-24,
+   * 89 % dorados»). Sin él, la cuota es sobre todos los globos del tramo y un color que no va en un formato se concentra
+   * en los demás (el Reflex Azul que no viene en R-9 queda en todos los R-24).
+   */
+  porFormato?: boolean;
+};
 
 /** Un obstáculo cilíndrico vertical (un pedestal): `base` es el centro de su cara de abajo. */
 export type Cilindro = { id: string; base: Vec3; radioCm: number; altoCm: number };
@@ -117,7 +135,30 @@ export type OpcionesOrganico = {
   /** Multiplica los globos de estructura por centímetro (1 = envoltura cubierta). */
   densidad?: number;
   pasadasRelajacion?: number;
+  /**
+   * Globos FIJOS (los gigantes y grandes de una foto, donde la foto los tiene): van en ese sitio y con ese color, la
+   * relajación no los mueve ni se quitan, y la estructura del tramo cuenta con ellos (pone uno menos de su formato).
+   * `centro` en el plano del tramo (x, y en cm); se ponen por delante del eje, en la cara que se ve.
+   */
+  fijos?: readonly GloboFijo[];
 };
+
+export type GloboFijo = {
+  /** El formato con que se dibuja (el que se fabrica en su color). */
+  formatoId: string;
+  codigo: string; x: number; y: number;
+  /** Diámetro medido en la foto (cm): sin él, el nominal del formato con su variación. */
+  infladoCm?: number;
+  /** El formato del escalón que pidió la foto, si el color obligó a bajar a otro (un gigante dorado cromado es R-24): de ese formato se descuenta la estructura. */
+  formatoPedidoId?: string;
+};
+
+/**
+ * ¿Un fijo cuenta como `formato` al EDITAR? Sí por el formato con que se dibuja (el que ve el inventario: un gigante dorado
+ * dibujado como R-24 aparece como R-24) y también por el que pidió la foto (es un R-36). Así «quitar R-24» y «quitar R-36» lo
+ * quitan los dos, y «solo R-24» lo deja y «solo R-12 y R-5» lo quita.
+ */
+export const fijoEnFormato = (f: GloboFijo, formato: string): boolean => f.formatoId === formato || f.formatoPedidoId === formato;
 
 export type TamanoOrganico = "grande" | "mediano" | "relleno";
 
@@ -192,242 +233,12 @@ export type ResultadoOrganico = {
   avisos: string[];
 };
 
-// ----------------------------------------------------------------------------------------------------------
-// Utilidades
-// ----------------------------------------------------------------------------------------------------------
-
-/** PRNG mulberry32: rápido, de 32 bits, el mismo en cualquier motor de JS. */
-export function crearAzar(semilla: number): () => number {
-  let a = semilla >>> 0 || 0x9e3779b9;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const vec = (x: number, y: number, z: number): Vec3 => ({ x, y, z });
-const suma = (a: Vec3, b: Vec3): Vec3 => vec(a.x + b.x, a.y + b.y, a.z + b.z);
-const resta = (a: Vec3, b: Vec3): Vec3 => vec(a.x - b.x, a.y - b.y, a.z - b.z);
-const escala = (a: Vec3, k: number): Vec3 => vec(a.x * k, a.y * k, a.z * k);
-const punto = (a: Vec3, b: Vec3): number => a.x * b.x + a.y * b.y + a.z * b.z;
-const cruz = (a: Vec3, b: Vec3): Vec3 => vec(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-const norma = (a: Vec3): number => Math.hypot(a.x, a.y, a.z);
-const distancia = (a: Vec3, b: Vec3): number => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
-const unitario = (a: Vec3, siNulo: Vec3 = vec(0, 1, 0)): Vec3 => {
-  const n = norma(a);
-  return n > 1e-9 ? escala(a, 1 / n) : siNulo;
-};
-const limitar = (x: number, min: number, max: number) => Math.min(max, Math.max(min, x));
-
-/** Aplastamiento de dos cuerpos que se tocan, como fracción del diámetro del menor (negativo: no se tocan). */
-export function aplastamiento(a: { centro: Vec3; infladoCm: number }, b: { centro: Vec3; infladoCm: number }): number {
-  return (a.infladoCm / 2 + b.infladoCm / 2 - distancia(a.centro, b.centro)) / Math.min(a.infladoCm, b.infladoCm);
-}
-
-// ----------------------------------------------------------------------------------------------------------
-// Recorrido: muestreo uniforme y marco que no gira (transporte paralelo)
-// ----------------------------------------------------------------------------------------------------------
-
-type Muestra = { s: number; p: Vec3; t: Vec3; n: Vec3; b: Vec3 };
-
-function catmullRom(p0: Vec3, p1: Vec3, p2: Vec3, p3: Vec3, u: number): Vec3 {
-  const u2 = u * u, u3 = u2 * u;
-  const c = (a: number, b: number, c2: number, d: number) => 0.5 * (2 * b + (-a + c2) * u + (2 * a - 5 * b + 4 * c2 - d) * u2 + (-a + 3 * b - 3 * c2 + d) * u3);
-  return vec(c(p0.x, p1.x, p2.x, p3.x), c(p0.y, p1.y, p2.y, p3.y), c(p0.z, p1.z, p2.z, p3.z));
-}
-
-/** Largo (cm) del recorrido suavizado. */
-export function largoRecorrido(control: readonly Vec3[]): number {
-  const m = muestrear(control, 2);
-  return m[m.length - 1]!.s;
-}
-
-function muestrear(control: readonly Vec3[], pasoCm: number): Muestra[] {
-  if (control.length < 2) throw new Error("El recorrido orgánico necesita al menos dos puntos");
-  const densa: Vec3[] = [control[0]!];
-  for (let i = 0; i < control.length - 1; i++) {
-    const p0 = control[Math.max(0, i - 1)]!, p1 = control[i]!, p2 = control[i + 1]!, p3 = control[Math.min(control.length - 1, i + 2)]!;
-    for (let k = 1; k <= 16; k++) densa.push(catmullRom(p0, p1, p2, p3, k / 16));
-  }
-  const acumulado = [0];
-  for (let i = 1; i < densa.length; i++) acumulado.push(acumulado[i - 1]! + distancia(densa[i]!, densa[i - 1]!));
-  const total = acumulado[acumulado.length - 1]!;
-  if (!(total > 0)) throw new Error("El recorrido orgánico no tiene largo");
-  const n = Math.max(1, Math.ceil(total / pasoCm));
-  const puntos: Array<{ s: number; p: Vec3 }> = [];
-  let j = 1;
-  for (let i = 0; i <= n; i++) {
-    const s = (i * total) / n;
-    while (j < densa.length - 1 && acumulado[j]! < s) j++;
-    const a = densa[j - 1]!, b = densa[j]!;
-    const tramo = acumulado[j]! - acumulado[j - 1]!;
-    const f = tramo > 0 ? limitar((s - acumulado[j - 1]!) / tramo, 0, 1) : 0;
-    puntos.push({ s, p: suma(a, escala(resta(b, a), f)) });
-  }
-  const muestras: Muestra[] = [];
-  for (let i = 0; i < puntos.length; i++) {
-    const antes = puntos[Math.max(0, i - 1)]!.p, despues = puntos[Math.min(puntos.length - 1, i + 1)]!.p;
-    const t = unitario(resta(despues, antes));
-    let nrm: Vec3;
-    if (i === 0) {
-      const ref = Math.abs(t.y) < 0.9 ? vec(0, 1, 0) : vec(1, 0, 0);
-      nrm = unitario(resta(ref, escala(t, punto(ref, t))));
-    } else {
-      const previa = muestras[i - 1]!.n;
-      nrm = unitario(resta(previa, escala(t, punto(previa, t))), previa);
-    }
-    muestras.push({ s: puntos[i]!.s, p: puntos[i]!.p, t, n: nrm, b: cruz(t, nrm) });
-  }
-  return muestras;
-}
-
-type Fases = readonly [number, number, number];
-
-type TramoPreparado = {
-  def: TramoOrganico;
-  muestras: Muestra[];
-  largo: number;
-  paso: number;
-  fases: Fases;
-};
-
-function muestraEn(tp: TramoPreparado, s: number): Muestra {
-  if (s > tp.largo || s < 0) {
-    const extremo = s > tp.largo ? tp.muestras[tp.muestras.length - 1]! : tp.muestras[0]!;
-    const fuera = s > tp.largo ? s - tp.largo : s;
-    return { ...extremo, s, p: suma(extremo.p, escala(extremo.t, fuera)) };
-  }
-  const f = s / tp.paso;
-  const i = Math.min(tp.muestras.length - 2, Math.floor(f));
-  const a = tp.muestras[i]!, b = tp.muestras[i + 1]!;
-  const u = limitar(f - i, 0, 1);
-  const cercana = u < 0.5 ? a : b;
-  return { ...cercana, s: limitar(s, 0, tp.largo), p: suma(a.p, escala(resta(b.p, a.p), u)) };
-}
-
-/** Proyección de un punto sobre el eje del tramo: muestra más cercana, afinada sobre sus dos segmentos. */
-function proyectar(tp: TramoPreparado, c: Vec3): Muestra {
-  let mejor = 0, mejorD = Infinity;
-  for (let i = 0; i < tp.muestras.length; i++) {
-    const d = distancia(tp.muestras[i]!.p, c);
-    if (d < mejorD) { mejorD = d; mejor = i; }
-  }
-  let s = tp.muestras[mejor]!.s;
-  let menor = Infinity;
-  for (const k of [mejor - 1, mejor]) {
-    if (k < 0 || k + 1 >= tp.muestras.length) continue;
-    const a = tp.muestras[k]!.p, b = tp.muestras[k + 1]!.p;
-    const ab = resta(b, a);
-    const f = limitar(punto(resta(c, a), ab) / (punto(ab, ab) || 1), 0, 1);
-    const q = suma(a, escala(ab, f));
-    const d = distancia(q, c);
-    if (d < menor) { menor = d; s = tp.muestras[k]!.s + f * tp.paso; }
-  }
-  return muestraEn(tp, s);
-}
-
-function ruido(f: Fases, s: number, phi: number): number {
-  return (Math.sin(s / 19 + 2 * phi + f[0]) + 0.7 * Math.sin(s / 9 - 3 * phi + f[1]) + 0.5 * Math.sin(s / 31 + phi + f[2])) / 2.2;
-}
-
-function interpolarGrosor(grosor: readonly PuntoGrosor[], t: number): number {
-  const g = [...grosor].sort((a, b) => a.t - b.t);
-  if (g.length === 0) return 20;
-  if (t <= g[0]!.t) return g[0]!.radioCm;
-  for (let i = 1; i < g.length; i++) {
-    const a = g[i - 1]!, b = g[i]!;
-    if (t <= b.t) return a.radioCm + (b.radioCm - a.radioCm) * ((t - a.t) / (b.t - a.t || 1));
-  }
-  return g[g.length - 1]!.radioCm;
-}
-
-/** Pesos normalizados de la mezcla en la fracción `t` (solo los positivos). */
-export function mezclaEn(mezcla: readonly PuntoMezcla[], t: number): Map<string, number> {
-  const m = [...mezcla].sort((a, b) => a.t - b.t);
-  const crudo = new Map<string, number>();
-  if (m.length === 0) return crudo;
-  let a = m[0]!, b = m[0]!, u = 0;
-  if (t >= m[m.length - 1]!.t) { a = b = m[m.length - 1]!; }
-  else if (t > m[0]!.t) {
-    for (let i = 1; i < m.length; i++) if (t <= m[i]!.t) { a = m[i - 1]!; b = m[i]!; u = (t - a.t) / (b.t - a.t || 1); break; }
-  }
-  for (const id of new Set([...Object.keys(a.pesos), ...Object.keys(b.pesos)])) {
-    const w = (a.pesos[id] ?? 0) * (1 - u) + (b.pesos[id] ?? 0) * u;
-    if (w > 0) crudo.set(id, w);
-  }
-  const total = [...crudo.values()].reduce((x, y) => x + y, 0);
-  for (const [id, w] of crudo) crudo.set(id, w / total);
-  return crudo;
-}
-
-function radioEnvoltura(tp: TramoPreparado, s: number, phi: number): number {
-  const base = interpolarGrosor(tp.def.grosor, limitar(s / tp.largo, 0, 1));
-  return base * (1 + limitar(tp.def.irregularidad, 0, 0.3) * ruido(tp.fases, s, phi));
-}
-
-/**
- * A qué distancia del eje va el centro de un globo de radio `r`: con su cara de fuera en la envoltura (`R − r`,
- * corrido por el hundimiento), pero nunca a menos de su propio radio (×1,05). El globo va amarrado por el nudo al
- * armazón del centro y el cuerpo sale hacia fuera, así que su centro no puede meterse en el eje: un globo más ancho
- * que la envoltura sobresale hacia su lado (los grandes de la base abomban la silueta) en vez de tapar toda la
- * sección y no dejar sitio a nadie a su altura.
- */
-export function profundidad(radioEnvolturaCm: number, r: number, hundimiento: number): number {
-  return Math.max(radioEnvolturaCm - r * hundimiento, r * 1.05);
-}
-
-/** Hasta dónde se reparte el tramo: de 0 al largo, más 0,85 radios en cada extremo con tapa. */
-function rangoS(tp: TramoPreparado): { min: number; max: number } {
-  return {
-    min: tp.def.tapas?.inicio ? -0.85 * interpolarGrosor(tp.def.grosor, 0) : 0,
-    max: tp.largo + (tp.def.tapas?.fin ? 0.85 * interpolarGrosor(tp.def.grosor, 1) : 0),
-  };
-}
-
-/**
- * Punto de la envoltura en (`s`, `phi`) y su normal hacia fuera. Dentro del recorrido es un tubo; pasado un extremo
- * con tapa, una media esfera centrada en el extremo (`s` fuera del recorrido es cuánto se avanza sobre ella).
- */
-function superficie(tp: TramoPreparado, s: number, phi: number): { punto: Vec3; normal: Vec3; radio: number; centro: Vec3 } {
-  const m = muestraEn(tp, s);
-  const radial = suma(escala(m.n, Math.cos(phi)), escala(m.b, Math.sin(phi)));
-  const radio = radioEnvoltura(tp, s, phi);
-  if (s > tp.largo || s < 0) {
-    const centro = muestraEn(tp, limitar(s, 0, tp.largo)).p;
-    const fuera = s > tp.largo ? s - tp.largo : s;
-    const seno = limitar(fuera / Math.max(1, radio), -1, 1);
-    const normal = unitario(suma(escala(m.t, seno), escala(radial, Math.sqrt(1 - seno * seno))));
-    return { punto: suma(centro, escala(normal, radio)), normal, radio, centro };
-  }
-  return { punto: suma(m.p, escala(radial, radio)), normal: radial, radio, centro: m.p };
-}
-
-/**
- * Globos de estructura de diámetro `d` por centímetro de recorrido, si la envoltura tiene radio `R`. Cada globo
- * ocupa la huella de un tresbolillo, d²·0,866, sobre la
- * superficie a media profundidad del globo: el cuerpo va con su cara de fuera en la envoltura y su centro a
- * `R − d/2`, así que la superficie que de verdad reparte es la de radio `R − d/4` (y nunca menos de `d/4`, para
- * el globo más ancho que la envoltura, que va casi en el eje). Con una mezcla, cada formato consume su parte:
- * el total por centímetro es la media armónica ponderada por la proporción en número de cada formato.
- * `EMPAQUE` lo calibra: colocando de abajo arriba sin pasar del 12 % de aplastamiento se llena el 76 % del
- * tresbolillo ideal (medido: R-12 a 27 cm en una columna de 64 cm de ancho y 1,9 m → 36 globos, 19 por metro, lo
- * mismo que la trenza de cuartetos de Sempertex con R-12: 5 niveles × 4 = 20 por metro). Lo que no cabe se avisa y
- * lo cubre el relleno.
- */
-const EMPAQUE = 0.76;
-export function estructuraPorCm(d: number, radioCm: number): number {
-  const radioMedio = Math.max(radioCm - d / 4, d / 4);
-  return (EMPAQUE * 2 * Math.PI * radioMedio) / (d * d * 0.866);
-}
 
 // ----------------------------------------------------------------------------------------------------------
 // El armado
 // ----------------------------------------------------------------------------------------------------------
 
-type Interno = {
+export type Interno = {
   formatoId: string;
   d: number;
   r: number;
@@ -440,6 +251,9 @@ type Interno = {
   inclinacion: number;
   tamano: TamanoOrganico;
   racimo: number | null;
+  /** Puesto desde fuera (`opciones.fijos`): no se mueve, no se quita y trae su color. */
+  fijo?: boolean;
+  codigoFijo?: string;
 };
 
 type Hueco = { tramo: number; s: number; c: Vec3; r: number; superficie: Vec3; normal: Vec3 };
@@ -583,6 +397,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
       const a = globos[i]!;
       for (let j = i + 1; j < globos.length; j++) {
         const b = globos[j]!;
+        if (a.fijo && b.fijo) continue;
         const alcance = a.r + b.r;
         const dx = b.c.x - a.c.x, dy = b.c.y - a.c.y, dz = b.c.z - a.c.z;
         if (dx > alcance || dx < -alcance || dy > alcance || dy < -alcance || dz > alcance || dz < -alcance) continue;
@@ -593,12 +408,13 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
         if (exceso <= 0) continue;
         peor = Math.max(peor, (a.r + b.r - dist) / menor);
         const u = unitario(delta, vec(1, 0, 0));
-        const ma = a.d ** 3, mb = b.d ** 3;
+        const ma = a.fijo ? 1e12 : a.d ** 3, mb = b.fijo ? 1e12 : b.d ** 3;
         a.c = suma(a.c, escala(u, (-exceso * mb) / (ma + mb)));
         b.c = suma(b.c, escala(u, (exceso * ma) / (ma + mb)));
       }
     }
     for (const g of globos) {
+      if (g.fijo) continue;
       for (const h of huecos) {
         const delta = resta(g.c, h.c);
         const dist = norma(delta);
@@ -615,6 +431,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
    */
   const atraerEnvoltura = (factor: number) => {
     for (const g of globos) {
+      if (g.fijo) continue;
       const tp = tramos[g.tramo]!;
       const m = proyectar(tp, g.c);
       g.s = m.s;
@@ -650,6 +467,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
         const a = globos[i]!;
         for (let j = i + 1; j < globos.length; j++) {
           const b = globos[j]!;
+          if (a.fijo && b.fijo) continue;
           const alcance = a.r + b.r + ALCANCE_APRIETE;
           const dx = b.c.x - a.c.x, dy = b.c.y - a.c.y, dz = b.c.z - a.c.z;
           if (dx > alcance || dx < -alcance || dy > alcance || dy < -alcance || dz > alcance || dz < -alcance) continue;
@@ -658,7 +476,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
           const falta = dist - a.r - b.r + 0.04 * Math.min(a.d, b.d);
           if (falta <= 0) continue;
           const u = vec(dx / dist, dy / dist, dz / dist);
-          const ma = a.d ** 3, mb = b.d ** 3;
+          const ma = a.fijo ? 1e12 : a.d ** 3, mb = b.fijo ? 1e12 : b.d ** 3;
           const k = 0.3 * falta;
           a.c = suma(a.c, escala(u, (k * mb) / (ma + mb)));
           b.c = suma(b.c, escala(u, (-k * ma) / (ma + mb)));
@@ -720,6 +538,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
   const asentarSueltos = (rayos: readonly Rayo[]) => {
     for (let i = 0; i < globos.length; i++) {
       const g = globos[i]!;
+      if (g.fijo) continue;
       globos.splice(i, 1);
       if (contactos(g.c, g.r) + apoyado(g.c, g.r, g.tramo) < 3) {
         let c = g.c;
@@ -821,7 +640,8 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
   const tamanosRelleno = (): Array<{ formatoId: string; base: number }> => {
     const tamanos: Array<{ formatoId: string; base: number }> = [];
     for (const rel of opciones.relleno) {
-      if (!formatoValido(rel.formatoId)) continue;
+      // Los rellenos en racimitos (los R-5 con tope) no tapan fugas sueltos: irían como puntos regados y pasarían su tope.
+      if (!formatoValido(rel.formatoId) || rel.racimo !== undefined || rel.maximo !== undefined) continue;
       tamanos.push({ formatoId: rel.formatoId, base: infladoValido(formatoPorId(rel.formatoId)!, rel.infladoCm) });
     }
     tamanos.sort((a, b) => b.base - a.base);
@@ -948,7 +768,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
     const tamanos = tamanosRelleno();
     for (let i = globos.length - 1; i >= 0; i--) {
       const g = globos[i]!;
-      if (i >= globos.length || contactos(g.c, g.r) - 1 + apoyado(g.c, g.r, g.tramo) >= 3) continue;
+      if (g.fijo || i >= globos.length || contactos(g.c, g.r) - 1 + apoyado(g.c, g.r, g.tramo) >= 3) continue;
       const propios = rayos.filter((rayo) => cortaRayo(g, rayo) && !globos.some((h) => h !== g && cortaRayo(h, rayo)));
       if (propios.length === 0) continue;
       globos.splice(i, 1);
@@ -1027,6 +847,12 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
   // sitio (son las anclas, repartidas); los medianos se colocan de abajo arriba y cada uno baja hasta el primer sitio
   // libre, como cuando se arma la columna desde la base: así quedan apretados contra los de abajo y no salen los
   // huecos del reparto al azar (que llena poco más de la mitad).
+  // Los fijos van primero, donde los pide la foto; cada uno descuenta el objetivo de su formato pedido.
+  const { montados } = colocarFijos({
+    fijos: opciones.fijos ?? [], tramos, globos, objetivos, nominal, aplastamientoMaximo: LIM, infladoGrandeCm: INFLADO_GRANDE_CM, formatoValido, inflar,
+    proyectar, radioEn: (tp, t) => interpolarGrosor(tp.def.grosor, t),
+  });
+  if (montados > 0) avisos.push(`${montados} globos fijos se montaban sobre otro fijo (la misma foto detectada dos veces): no se pusieron.`);
   const ordenEstructura = [...objetivos.keys()].sort((a, b) => nominal.get(b)! - nominal.get(a)!);
   let sinCupo = 0;
   for (const id of ordenEstructura) {
@@ -1146,7 +972,11 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
       if (sitio) candidatos.push({ p, holgura: sitio.holgura - sitio.hundimiento * r0 });
     }
     candidatos.sort((a, b) => b.holgura - a.holgura || a.p.tramo - b.p.tramo || a.p.s - b.p.s || a.p.phi - b.p.phi);
+    const tope = relleno.maximo ?? Infinity;
+    const porRacimo = Math.min(6, Math.max(3, relleno.racimo ?? 3));
+    let puestos = 0;
     for (const cand of candidatos) {
+      if (puestos >= tope) break;
       const tp = tramos[cand.p.tramo]!;
       const d = inflar(relleno.formatoId, base);
       const sitio = primeraHondura(tp, cand.p.s, cand.p.phi, d);
@@ -1154,6 +984,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
       const racimo = relleno.trios ? racimos++ : null;
       const nuevo: Interno = { formatoId: relleno.formatoId, d, r: d / 2, c: sitio.c, tramo: cand.p.tramo, s: cand.p.s, phi: cand.p.phi, hundimiento: sitio.hundimiento, inclinacion: (azar() - 0.5) * 0.4, tamano: "relleno", racimo };
       globos.push(nuevo);
+      puestos++;
       if (!relleno.trios) continue;
       // Dos compañeros pegados, sobre la misma envoltura: el trío en triángulo (los dos a 60° uno del otro, vistos
       // desde el primero). Si el segundo no cabe a un lado del primero, se prueba al otro.
@@ -1161,6 +992,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
       const rango = rangoS(tp);
       const giro = azar() * Math.PI * 2;
       const companero = (k: number): boolean => {
+        if (puestos >= tope) return false;
         const a = giro + (k * Math.PI) / 3;
         const paso = d * 0.9;
         const s2 = cand.p.s + Math.cos(a) * paso;
@@ -1170,12 +1002,19 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
         const sitio2 = primeraHondura(tp, s2, phi2, d2);
         if (!sitio2) return false;
         globos.push({ ...nuevo, d: d2, r: d2 / 2, c: sitio2.c, s: s2, phi: phi2, hundimiento: sitio2.hundimiento, inclinacion: (azar() - 0.5) * 0.4 });
+        puestos++;
         return true;
       };
-      for (let k = 0; k < 6; k++) {
-        if (!companero(k)) continue;
-        if (!companero(k + 1)) companero(k + 5);
-        break;
+      if (porRacimo === 3) {
+        for (let k = 0; k < 6; k++) {
+          if (!companero(k)) continue;
+          if (!companero(k + 1)) companero(k + 5);
+          break;
+        }
+      } else {
+        // Racimito de más de tres: compañeros alrededor del primero, a 60° uno de otro, hasta completar.
+        let enRacimo = 1;
+        for (let k = 0; k < 6 && enRacimo < porRacimo && puestos < tope; k++) if (companero(k)) enRacimo++;
       }
     }
   }
@@ -1195,7 +1034,8 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
     for (let j = i + 1; j < globos.length; j++) {
       const a = globos[i]!, b = globos[j]!;
       if ((a.r + b.r - distancia(a.c, b.c)) / Math.min(a.d, b.d) > LIM) {
-        globos.splice(a.d < b.d ? i : j, 1);
+        if (a.fijo && b.fijo) continue;
+        globos.splice(a.fijo ? j : b.fijo ? i : a.d < b.d ? i : j, 1);
         quitados++;
         i = -1;
         break;
@@ -1228,109 +1068,12 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
   const azar = crearAzar(opciones.semilla);
   for (let i = 0; i < geometria.usosAzar; i++) azar();
 
-  // 6. Color por cuotas, sin dos iguales pegados cuando se puede.
+  // 6. Color por cuotas, sin dos iguales pegados cuando se puede (ver `organico-color.ts`).
   const referencias = new Map<string, ReferenciaSempertex>(TABLA_SEMPERTEX.referencias.map((r) => [r.codigo, r]));
-  const paleta = opciones.colores.filter((c) => {
-    if (referencias.has(c.codigo) && c.peso > 0) return true;
-    avisos.push(`El color ${c.codigo} no está en la tabla Sempertex (o pesa 0): se quita de la paleta.`);
-    return false;
-  });
-  if (paleta.length === 0) throw new Error("La paleta orgánica no tiene ningún color válido");
-  const avisoSustitucion = new Set<string>();
-  /** El código con que la entrada `e` se sirve en el formato: el suyo, el más parecido de su familia, o ninguno. */
-  const codigoEn = (e: ColorOrganico, formatoId: string): string | null => {
-    if (e.formatos && !e.formatos.includes(formatoId)) return null;
-    const disponibles = coloresDelFormato(formatoId);
-    if (disponibles.some((r) => r.codigo === e.codigo)) return e.codigo;
-    const propia = referencias.get(e.codigo)!;
-    const sustituto = sustitutoDeFamilia(propia, formatoId);
-    const clave = `${e.codigo}|${formatoId}`;
-    if (!avisoSustitucion.has(clave)) {
-      avisoSustitucion.add(clave);
-      avisos.push(sustituto
-        ? `${propia.nombreCompleto} (${e.codigo}) no se fabrica en ${formatoId}: se usa ${sustituto.nombreCompleto} (${sustituto.codigo}).`
-        : `${propia.nombreCompleto} (${e.codigo}) no se fabrica en ${formatoId} y su familia no tiene uno parecido: en ese formato no se usa.`);
-    }
-    return sustituto?.codigo ?? null;
-  };
-  const vecinos: number[][] = globos.map(() => []);
-  for (let i = 0; i < globos.length; i++) {
-    for (let j = i + 1; j < globos.length; j++) {
-      const a = globos[i]!, b = globos[j]!;
-      if (distancia(a.c, b.c) <= a.r + b.r + 2) { vecinos[i]!.push(j); vecinos[j]!.push(i); }
-    }
-  }
-  const entrada: Array<number | null> = globos.map(() => null);
-  const codigos: Array<string | null> = globos.map(() => null), rescate = new Map<number, string>();
-  const pegadoIgual = (i: number, k: number) => vecinos[i]!.some((j) => entrada[j] === k);
-  const conFranjas = paleta.some((e) => e.franjas?.length);
-  /** Fracción del recorrido de su tramo en que cae cada globo (solo hace falta si algún color va por franjas). */
-  const fracciones = conFranjas ? globos.map((g) => { const tp = tramos[g.tramo]!; return limitar(proyectar(tp, g.c).s / tp.largo, 0, 1); }) : [];
-  /** Si la entrada `e` de la paleta puede ir en el globo `i` (por su tramo y su franja). */
-  const vaEnGlobo = (e: ColorOrganico, i: number) => {
-    const id = tramos[globos[i]!.tramo]!.def.id;
-    if (e.tramos && !e.tramos.some((t) => id === t || id.startsWith(`${t}_`))) return false;
-    return !e.franjas?.length || e.franjas.some((f) => fracciones[i]! >= Math.min(f.desde, f.hasta) - 1e-9 && fracciones[i]! <= Math.max(f.desde, f.hasta) + 1e-9);
-  };
-  // Grupos de globos con las mismas entradas posibles: sin `tramos` ni `franjas` en la paleta, uno solo con todos.
-  const grupos = new Map<string, { entradas: number[]; indices: number[] }>();
-  globos.forEach((_, i) => {
-    let entradas = [...paleta.keys()].filter((k) => vaEnGlobo(paleta[k]!, i));
-    // Un globo justo en el borde de dos franjas que no cae en ninguna: los colores de su tramo, sin mirar franjas.
-    if (entradas.length === 0 && conFranjas) entradas = [...paleta.keys()].filter((k) => vaEnGlobo({ ...paleta[k]!, franjas: [] }, i));
-    const clave = entradas.join(",");
-    const grupo = grupos.get(clave) ?? { entradas, indices: [] };
-    grupo.indices.push(i);
-    grupos.set(clave, grupo);
-  });
-  for (const { entradas, indices } of grupos.values()) {
-    if (entradas.length === 0) {
-      avisos.push("Hay globos sin ningún color de la paleta que pueda ir en ellos (revisa `tramos` y `franjas` de los colores): se usa Fashion Blanco (005).");
-      continue;
-    }
-    const pesoTotal = entradas.reduce((acc, k) => acc + paleta[k]!.peso, 0);
-    const exactas = new Map(entradas.map((k) => [k, (paleta[k]!.peso / pesoTotal) * indices.length]));
-    const cuotas = new Map(entradas.map((k) => [k, Math.floor(exactas.get(k)!)]));
-    const sobrante = indices.length - [...cuotas.values()].reduce((a, b) => a + b, 0);
-    [...entradas].sort((a, b) => (exactas.get(b)! - cuotas.get(b)!) - (exactas.get(a)! - cuotas.get(a)!) || a - b).slice(0, sobrante).forEach((k) => { cuotas.set(k, cuotas.get(k)! + 1); });
-    const elegibles = new Map(entradas.map((k) => [k, indices.filter((i) => codigoEn(paleta[k]!, globos[i]!.formatoId) !== null)]));
-    const orden = [...entradas].sort((a, b) => elegibles.get(a)!.length - elegibles.get(b)!.length || a - b);
-    orden.forEach((k, posicion) => {
-      let lista = elegibles.get(k)!.filter((i) => entrada[i] === null);
-      for (let i = lista.length - 1; i > 0; i--) {
-        const j = Math.floor(azar() * (i + 1));
-        [lista[i], lista[j]] = [lista[j]!, lista[i]!];
-      }
-      const exacto = (i: number) => coloresDelFormato(globos[i]!.formatoId).some((r) => r.codigo === paleta[k]!.codigo);
-      lista = [...lista.filter(exacto), ...lista.filter((i) => !exacto(i))];
-      const ultimo = posicion === orden.length - 1;
-      let restante = ultimo ? lista.length : cuotas.get(k)!;
-      for (const pasada of [0, 1]) {
-        for (const i of lista) {
-          if (restante <= 0) break;
-          if (entrada[i] !== null || (pasada === 0 && pegadoIgual(i, k))) continue;
-          entrada[i] = k;
-          restante--;
-        }
-      }
-    });
-  }
-  // Los que no pudo tomar nadie (solo pasa con paletas muy restringidas): la entrada posible con menos vecinos iguales.
-  globos.forEach((g, i) => {
-    if (entrada[i] !== null) return;
-    const posibles = paleta.map((e, k) => ({ k, ok: vaEnGlobo(e, i) && codigoEn(e, g.formatoId) !== null })).filter((x) => x.ok).map((x) => x.k);
-    if (posibles.length === 0) {
-      const { ref, aviso } = colorDeRescate(paleta.filter((e) => vaEnGlobo(e, i)), referencias, g.formatoId);
-      if (ref) rescate.set(i, ref.codigo);
-      if (!avisoSustitucion.has(aviso)) { avisoSustitucion.add(aviso); avisos.push(aviso); }
-      return;
-    }
-    posibles.sort((a, b) => vecinos[i]!.filter((j) => entrada[j] === a).length - vecinos[i]!.filter((j) => entrada[j] === b).length || a - b);
-    entrada[i] = posibles[0]!;
-  });
-  globos.forEach((g, i) => {
-    const k = entrada[i];
-    codigos[i] = k === null || k === undefined ? rescate.get(i) ?? "005" : codigoEn(paleta[k]!, g.formatoId) ?? "005";
+  const { paleta, entrada, codigos } = asignarColores({
+    globos, colores: opciones.colores, avisos, azar,
+    tramoDe: (i) => tramos[globos[i]!.tramo]!.def.id,
+    fraccionDe: (i) => { const tp = tramos[globos[i]!.tramo]!; return limitar(proyectar(tp, globos[i]!.c).s / tp.largo, 0, 1); },
   });
 
   // Salida.
@@ -1411,119 +1154,5 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
       porColor: cuenta((g) => g.codigo),
     },
     avisos,
-  };
-}
-
-// ----------------------------------------------------------------------------------------------------------
-// Formas
-// ----------------------------------------------------------------------------------------------------------
-
-/**
- * Mezcla de una columna orgánica gruesa: grandes (R-24/R-18) de ancla abajo y decrecientes hacia la punta. Parte de
- * `organica_gruesa` del plan (`mezclas.ts`: 9 → 25 %, 12 → 45 %, 18 → 20 %, 24 → 10 %), con los grandes cargados
- * en la base («grandes abajo») en vez de repartidos.
- */
-export const MEZCLA_COLUMNA_GRUESA: readonly PuntoMezcla[] = [
-  { t: 0, pesos: { "R-24": 0.25, "R-18": 0.35, "R-12": 0.4 } },
-  { t: 0.22, pesos: { "R-24": 0.08, "R-18": 0.3, "R-12": 0.5, "R-9": 0.12 } },
-  { t: 0.55, pesos: { "R-18": 0.12, "R-12": 0.5, "R-9": 0.38 } },
-  { t: 1, pesos: { "R-18": 0.03, "R-12": 0.5, "R-9": 0.47 } },
-];
-
-/** Mezcla de una guirnalda baja: más carga donde nace y más fina hacia la punta. */
-export const MEZCLA_GUIRNALDA: readonly PuntoMezcla[] = [
-  { t: 0, pesos: { "R-18": 0.2, "R-12": 0.5, "R-9": 0.3 } },
-  { t: 1, pesos: { "R-18": 0.06, "R-12": 0.47, "R-9": 0.47 } },
-];
-
-/** Relleno de la técnica Sempertex: R-9 en los huecos grandes y tríos de R-5 en el resto. */
-export const RELLENO_TUPIDO: readonly RellenoOrganico[] = [
-  { formatoId: "R-9", infladoCm: 18, trios: false },
-  { formatoId: "R-5", infladoCm: 12, trios: true },
-];
-
-export type OpcionesColumna = {
-  id?: string;
-  nombre?: string;
-  /** Alto total, del piso a la cara de arriba de los globos de la punta. */
-  altoCm: number;
-  radioBaseCm: number;
-  radioMedioCm: number;
-  radioPuntaCm: number;
-  /** Cuánto se corre la punta hacia +x (negativo: hacia -x). */
-  inclinacionCm?: number;
-  /** Amplitud de la S con que serpentea el eje. */
-  serpenteoCm?: number;
-  origen?: Vec3;
-  mezcla?: readonly PuntoMezcla[];
-  irregularidad?: number;
-};
-
-/** Columna orgánica: eje casi vertical del piso a la punta, gruesa abajo y fina arriba. */
-export function formaColumna(o: OpcionesColumna): TramoOrganico {
-  const origen = o.origen ?? vec(0, 0, 0);
-  const inicio = o.radioBaseCm * 0.5;
-  // La tapa de arriba es media esfera del radio de la punta (×0,8): el eje acaba ese tanto por debajo del alto.
-  const fin = o.altoCm - o.radioPuntaCm * 0.8;
-  const recorrido: Vec3[] = [];
-  for (let i = 0; i <= 6; i++) {
-    const f = i / 6;
-    recorrido.push(vec(origen.x + (o.inclinacionCm ?? 0) * f * f + (o.serpenteoCm ?? 0) * Math.sin(Math.PI * 2 * f), origen.y + inicio + (fin - inicio) * f, origen.z));
-  }
-  return {
-    id: o.id ?? "columna",
-    nombre: o.nombre ?? "Columna orgánica",
-    recorrido,
-    grosor: [
-      { t: 0, radioCm: o.radioBaseCm },
-      { t: 0.15, radioCm: o.radioBaseCm },
-      { t: 0.5, radioCm: o.radioMedioCm },
-      { t: 0.9, radioCm: o.radioPuntaCm },
-      { t: 1, radioCm: o.radioPuntaCm * 0.8 },
-    ],
-    mezcla: o.mezcla ?? MEZCLA_COLUMNA_GRUESA,
-    irregularidad: o.irregularidad ?? 0.12,
-    tapas: { fin: true },
-  };
-}
-
-/** Guirnalda: cualquier recorrido 3D, con el grosor que va de `radioInicioCm` a `radioFinCm`. */
-export function formaGuirnalda(o: { id?: string; nombre?: string; puntos: readonly Vec3[]; radioInicioCm: number; radioFinCm: number; mezcla?: readonly PuntoMezcla[]; irregularidad?: number }): TramoOrganico {
-  return {
-    id: o.id ?? "guirnalda",
-    nombre: o.nombre ?? "Guirnalda orgánica",
-    recorrido: o.puntos,
-    grosor: [
-      { t: 0, radioCm: o.radioInicioCm },
-      { t: 0.85, radioCm: o.radioFinCm },
-      { t: 1, radioCm: o.radioFinCm * 0.8 },
-    ],
-    mezcla: o.mezcla ?? MEZCLA_GUIRNALDA,
-    irregularidad: o.irregularidad ?? 0.14,
-    tapas: { fin: true },
-  };
-}
-
-/** Semiarco: sube del piso en `origen` y se curva hasta quedar horizontal a `altoCm`, `anchoCm` más allá (en +x). */
-export function formaSemiarco(o: { id?: string; nombre?: string; anchoCm: number; altoCm: number; radioBaseCm: number; radioPuntaCm: number; origen?: Vec3; mezcla?: readonly PuntoMezcla[]; irregularidad?: number }): TramoOrganico {
-  const origen = o.origen ?? vec(0, 0, 0);
-  const recorrido: Vec3[] = [];
-  for (let i = 0; i <= 8; i++) {
-    const a = (i / 8) * (Math.PI / 2);
-    recorrido.push(vec(origen.x + o.anchoCm * (1 - Math.cos(a)), origen.y + o.radioBaseCm * 0.5 + (o.altoCm - o.radioPuntaCm - o.radioBaseCm * 0.5) * Math.sin(a), origen.z));
-  }
-  return {
-    id: o.id ?? "semiarco",
-    nombre: o.nombre ?? "Semiarco orgánico",
-    recorrido,
-    grosor: [
-      { t: 0, radioCm: o.radioBaseCm },
-      { t: 0.2, radioCm: o.radioBaseCm },
-      { t: 0.9, radioCm: o.radioPuntaCm },
-      { t: 1, radioCm: o.radioPuntaCm * 0.8 },
-    ],
-    mezcla: o.mezcla ?? MEZCLA_COLUMNA_GRUESA,
-    irregularidad: o.irregularidad ?? 0.12,
-    tapas: { fin: true },
   };
 }

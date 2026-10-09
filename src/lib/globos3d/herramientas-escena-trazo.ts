@@ -1,4 +1,4 @@
-import type { ColorOrganico } from "./organico";
+import { fijoEnFormato, type ColorOrganico } from "./organico";
 import type { Pieza } from "./piezas";
 import { FLORES_ARTIFICIALES, type OpcionesFlores, type TipoFlorArtificial } from "./flores-artificiales";
 import { fallar } from "./herramientas-escena-colores";
@@ -73,7 +73,17 @@ export function ajustarTrazo(pieza: Extract<Pieza, { tipo: "organico" }>, g: Ext
   if (ancho !== undefined || alto !== undefined || factor !== undefined) gen = escalarGenerador(gen, { ...(ancho !== undefined && ancho !== caja.anchoCm ? { anchoCm: ancho } : {}), ...(alto !== undefined ? { altoCm: alto } : {}), ...(factor !== undefined ? { grosor: factor } : {}) });
   // «Solo estos tamaños» reemplaza toda la mezcla: también los cambios por zona y el relleno a medida de ajustar_tamanos.
   const t: ParametrosTrazoOrganico = { ...gen.trazo };
-  if (p.tamanos?.length) { delete t.zonas; delete t.relleno; }
+  if (p.tamanos?.length) {
+    const mezcla = mezclaDe(p.tamanos);
+    delete t.zonas;
+    delete t.relleno;
+    // La mezcla propia de cada tramo y los globos fijos son de la mezcla de antes: con «solo estos tamaños» mandan los pedidos.
+    t.puntos = t.puntos.map((q) => { const sin = { ...q }; delete sin.pesos; return sin; });
+    if (t.fijos) {
+      const quedan = t.fijos.filter((f) => Object.keys(mezcla).some((formato) => (mezcla[formato] ?? 0) > 0 && fijoEnFormato(f, formato)));
+      if (quedan.length) t.fijos = quedan; else delete t.fijos;
+    }
+  }
   gen = { tipo: "trazo", trazo: { ...t, ...(p.colores ? { colores: p.colores } : {}), ...(p.tamanos?.length ? { mezcla: mezclaDe(p.tamanos) } : {}), ...(p.racimos !== undefined ? { racimos: Math.min(1, Math.max(0, p.racimos)) } : {}) } };
   const error = validarTrazo(gen.trazo);
   if (error) fallar(error);

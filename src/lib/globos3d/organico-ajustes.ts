@@ -1,8 +1,8 @@
-import { mezclaEn, type ColorOrganico, type OpcionesOrganico, type PuntoGrosor, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "./organico";
+import { fijoEnFormato, mezclaEn, type ColorOrganico, type GloboFijo, type OpcionesOrganico, type PuntoGrosor, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "./organico";
 import { formatoPorId } from "./formatos";
 import { opcionesArcoOrganico } from "./formas-escena";
 import { piezaDeGenerador } from "./generadores-organicos";
-import { CABE_EN_GROSOR, DENSIDAD_TRAZO, INFLADOS_TRAZO, muestrasTrazo, type ParametrosTrazoOrganico } from "./trazo-organico";
+import { CABE_EN_GROSOR, DENSIDAD_TRAZO, INFLADOS_TRAZO, muestrasTrazo, type ParametrosTrazoOrganico, type PuntoTrazo } from "./trazo-organico";
 import { enZona, fraccionesDe, normalizarPesos, puntoEnRecorrido, rangoAltura, type ZonaMezcla, type ZonaOrganica } from "./zonas-organicas";
 import { fallar } from "./herramientas-escena-colores";
 import type { Pieza } from "./piezas";
@@ -47,6 +47,48 @@ export function editar(p: Organico, trazo: (t: ParametrosTrazoOrganico) => Param
 
 const limpiar = (pesos: Record<string, number>) => Object.fromEntries(Object.entries(pesos).filter(([, w]) => w > 0).map(([f, w]) => [f, Math.round(w * 10000) / 10000]));
 
+/**
+ * Los puntos del trazo con el formato × k en su mezcla propia (`pesos`: la de los tramos medidos de una foto); con `quitarDeTodos`,
+ * sin ese formato (la zona lo vuelve a poner donde va). Un punto que se queda sin pesos vuelve a la mezcla de la pieza.
+ */
+function pesoEnPuntos(puntos: readonly PuntoTrazo[], f: string, k: number | null): PuntoTrazo[] {
+  return puntos.map((q) => {
+    if (!q.pesos) return q;
+    const pesos = normalizarPesos(q.pesos);
+    if (k === null) delete pesos[f];
+    else pesos[f] = (pesos[f] ?? 0) > 0 ? pesos[f]! * k : PESO_NUEVO * k;
+    const limpios = limpiar(pesos);
+    const nuevo: PuntoTrazo = { ...q };
+    if (Object.keys(limpios).length) nuevo.pesos = limpios; else delete nuevo.pesos;
+    return nuevo;
+  });
+}
+
+/**
+ * Los globos fijos que quedan tras bajar un formato (k < 1) en una zona: de los de ese formato dentro de la zona se conservan
+ * `k` de ellos, repartidos a lo largo; con `soloAhi`, los de ese formato fuera de la zona se quitan. Con k ≥ 1 no se toca ninguno
+ * (los fijos cuentan en la meta de su formato; la estructura pone los que falten).
+ */
+function fijosTrasCambio(t: ParametrosTrazoOrganico, f: string, zona: ZonaOrganica, k: number, soloAhi: boolean): readonly GloboFijo[] | undefined {
+  if (!t.fijos?.length || (k >= 1 && !soloAhi)) return t.fijos;
+  const { muestras, rango } = muestrasTrazo(t);
+  const dentro = (g: GloboFijo) => {
+    const m = muestras.reduce((mejor, q) => (Math.hypot(q.x - g.x, q.y - g.y) < Math.hypot(mejor.x - g.x, mejor.y - g.y) ? q : mejor), muestras[0]!);
+    return enZona(zona, m.t, g.y, rango, g.x);
+  };
+  const quitar = new Set<GloboFijo>();
+  const delFormato = t.fijos.filter((g) => fijoEnFormato(g, f));
+  if (soloAhi && zona !== "todo") for (const g of delFormato) if (!dentro(g)) quitar.add(g);
+  if (k < 1) {
+    const enZonaOrdenados = delFormato.filter((g) => !quitar.has(g) && dentro(g)).sort((a, b) => a.x - b.x);
+    const quedan = Math.round(enZonaOrdenados.length * k);
+    const conservar = new Set(Array.from({ length: quedan }, (_, j) => Math.floor(((j + 0.5) * enZonaOrdenados.length) / quedan)));
+    enZonaOrdenados.forEach((g, i) => { if (!conservar.has(i)) quitar.add(g); });
+  }
+  const quedan = t.fijos.filter((g) => !quitar.has(g));
+  return quedan.length ? quedan : undefined;
+}
+
 /** El trazo con el peso del formato × k en la zona (si no estaba, entra con PESO_NUEVO × k); `soloAhi` lo quita del resto. */
 function pesoTrazo(t: ParametrosTrazoOrganico, f: string, zona: ZonaOrganica, k: number, soloAhi: boolean): ParametrosTrazoOrganico {
   const base: Record<string, number> = normalizarPesos(t.mezcla);
@@ -67,7 +109,12 @@ function pesoTrazo(t: ParametrosTrazoOrganico, f: string, zona: ZonaOrganica, k:
   if (!Object.keys(mezcla).length) fallar(`Así la pieza se quedaría sin globos fuera de la zona: deja otro tamaño (o usa poner/mas con otro formato antes).`);
   // Una zona con peso 0 sí cuenta (quita el formato ahí): solo se descartan las que no traen nada.
   const zonasLimpias: ZonaMezcla[] = zonas.filter((z) => Object.keys(z.pesos).length).map((z) => ({ zona: z.zona, pesos: Object.fromEntries(Object.entries(z.pesos).map(([x, w]) => [x, Math.round(w * 10000) / 10000])) }));
-  const resto: ParametrosTrazoOrganico = { ...t, mezcla };
+  // La mezcla propia de cada punto manda sobre la de la pieza: el cambio también va ahí.
+  const puntos = zona === "todo" ? pesoEnPuntos(t.puntos, f, k) : soloAhi ? pesoEnPuntos(t.puntos, f, null) : t.puntos;
+  const fijos = fijosTrasCambio(t, f, zona, k, soloAhi);
+  const resto: ParametrosTrazoOrganico = { ...t, puntos, mezcla };
+  delete resto.fijos;
+  if (fijos) resto.fijos = fijos;
   delete resto.zonas;
   return zonasLimpias.length ? { ...resto, zonas: zonasLimpias } : resto;
 }

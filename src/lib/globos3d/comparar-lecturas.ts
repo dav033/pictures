@@ -75,6 +75,7 @@ export function familiaDeColor(c: Pick<ColorLeido, "nombre" | "hex" | "acabado">
   return l > 0.7 ? "rosa" : "fucsia";
 }
 
+/** Las piezas de globos con colores (los fondos y lo que «no es del taller» no cuentan; el montón de piso, sí). */
 const conColores = (p: PiezaLeida): p is PiezaLeida & { colores: ColorLeido[] } => p.tipo !== "fondo" && p.tipo !== "otro" && "colores" in p;
 
 /** Histograma de color de las piezas de globos (cada pieza pesa lo mismo; dentro de ella, por `peso`). */
