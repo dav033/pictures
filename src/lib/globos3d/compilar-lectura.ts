@@ -13,13 +13,14 @@ import { PROFUNDIDAD_DE_LA_FOTO_CM } from "./proyeccion-foto";
 import { columnaClasica } from "./escenas-presets";
 import { decoracionPredefinida } from "./figuras";
 import { reemplazarColor } from "./recolorear";
-import { arcosChiara, cortina, entradaDeCatalogo, letrero, mediaLuna, panelRedondo, pedestales } from "./fondos-escenografia";
+import { arcosChiara, cortina, entradaDeCatalogo, esTelon, letrero, mediaLuna, panelRedondo, pedestales } from "./fondos-escenografia";
 import { mesaConMantel, paredLentejuelas, tapete } from "./escenografia";
 import { conTextoPieza } from "./mobiliario-pieza";
 import { acabadoRotuloLeido, avisoDeTexto, limpiarTexto } from "./rotulos";
 import { mesaLeida, mobiliarioLeido, tintaLeida, type MedidaLeida, type MesaLeida } from "./compilar-mobiliario";
 import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
 import { codigoDeColor, fijosDeAnclas, paletaDeLectura } from "./colores-lectura";
+import { recogerPuntas } from "./puntas-lectura";
 import { colgadoDelanteDePaneles, letrerosDelanteDeGlobos } from "./colgado-delante";
 
 export { codigoDeColor } from "./colores-lectura";
@@ -57,6 +58,23 @@ function seApoyaEnElPiso(q: Extract<PiezaLeida, { tipo: "fondo" }>): boolean {
   // solo vale para lo que se para delante (pedestales, mesas, sillas, un jarrón, una lámpara).
   if ("telon" in e && e.telon) return false;
   return e.clase === "mueble" || e.retiroCm !== undefined;
+}
+
+/** Un montón de piso con el pie a más de esto sobre la línea del piso está en el aire (colgado de un aro), no en el piso. */
+const RACIMO_ALZADO_CM = 20;
+/** Los telones de piso cuyo `alto` es un diámetro (panel redondo, media luna): su pie no se prolonga hasta el piso. */
+const TELONES_DE_DIAMETRO = new Set(["panel_redondo", "media_luna"]);
+/** Un pie a más de esto sobre la línea del piso está tapado (por los pedestales, por los globos): el telón no flota. */
+const PIE_TAPADO_CM = 10;
+
+/**
+ * ¿El fondo es un telón de piso (marco con tela, pared de lentejuelas, arcos, aro) del que la foto enseña solo la parte de arriba?
+ * Se para en el piso aunque su pie quede tapado: lo que la foto mide con seguridad es dónde acaba por ARRIBA, así que se
+ * prolonga hacia el piso (el alto leído es lo visible, no todo el telón) y no se baja entero a ras de piso con su tope más abajo.
+ */
+function telonConPieTapado(q: Extract<PiezaLeida, { tipo: "fondo" }>, pieCm: number): boolean {
+  const e = entradaDeCatalogo(q.id);
+  return pieCm > PIE_TAPADO_CM && esTelon(q.id) && e?.lugar === "piso" && e.flotaCm === undefined && !TELONES_DE_DIAMETRO.has(q.id);
 }
 
 const SILUETA_COLUMNA: Readonly<Record<string, SiluetaTrazo>> = { recta: "columna_recta", racimos: "columna_racimos", s: "columna_s", inclinada: "columna_inclinada" };
@@ -126,7 +144,7 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
           const tramo = pesosDeTramo(p.mezcla, q.mezcla, H);
           return { x: X(q.x), y: Y(q.y), grosor: Math.min(140, Math.max(20, cm(q.grosor))), ...(tramo ? { pesos: tramo } : {}) };
         });
-        const puntos = engrosarParaGrandes(medidos, grosorMinimoDePesos(pesos), notas);
+        const puntos = recogerPuntas(engrosarParaGrandes(medidos, grosorMinimoDePesos(pesos), notas));
         const x0 = r1((Math.min(...puntos.map((q) => q.x)) + Math.max(...puntos.map((q) => q.x))) / 2);
         const fijos = fijosDeAnclas(p, H, notas).map((f) => ({ ...f, x: r1(X(f.x) - x0), y: r1(Y(f.y)) }));
         const trazo = { puntos: puntos.map((q) => ({ ...q, x: r1(q.x - x0) })), mezcla: pesos, colores: paletaDeLectura(p, H, notas), racimos: p.racimos, semilla: 11 + i, ...(fijos.length ? { fijos } : {}) };
@@ -151,7 +169,11 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         const fijos = fijosDeAnclas(p, H, notas).map((f) => ({ ...f, x: r1((f.x - p.x) * l.aspecto * H * factor), y: r1(Math.max(0, (p.yPie - f.y) * H * factor)), ...(f.infladoCm ? { infladoCm: r0(f.infladoCm * factor) } : {}) }));
         const trazo = { silueta: "columna_racimos" as const, puntos, mezcla: pesos, colores: paletaDeLectura({ colores: p.colores, mezcla: p.mezcla, coloresPorEscalon: p.coloresPorEscalon }, H, notas), racimos: p.racimos, semilla: 31 + i, ...(fijos.length ? { fijos } : {}) };
         const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, null, 0, p.mezcla).pieza : piezaDeGenerador({ tipo: "trazo", trazo });
-        poner("racimo-piso", "Racimo de piso", pieza, { en: "piso", xCm: r1(X(p.x) * factor), zCm: r0(muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm - g / 2), giroGrados: 0 });
+        // Si su pie se ve más arriba de la línea del piso, no se apoya en él (un montón colgado de un aro, prendido a la estructura): va a esa altura, en el plano de la decoración.
+        const alzadoCm = Y(p.yPie);
+        poner("racimo-piso", "Racimo de piso", pieza, alzadoCm > RACIMO_ALZADO_CM
+          ? { en: "libre", xCm: X(p.x), yCm: alzadoCm, zCm: muro + PROFUNDIDAD_DE_LA_FOTO_CM, giroGrados: 0 }
+          : { en: "piso", xCm: r1(X(p.x) * factor), zCm: r0(muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm - g / 2), giroGrados: 0 });
         return;
       }
       case "columna_organica": {
@@ -235,7 +257,8 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         const medidaDe = (q: typeof p): MedidaLeida => {
           // Lo apoyado en el piso cuyo pie se ve más abajo que la línea del piso está más cerca de la cámara: se ve más grande de lo que es.
           const { delanteCm, factor } = seApoyaEnElPiso(q) ? profundidadEnElPiso(l, q.yBase) : { delanteCm: 0, factor: 1 };
-          return { anchoCm: r1(cm(q.ancho) * factor), altoCm: r1(cm(q.alto) * factor), xCm: r1(X(q.x) * factor), yBaseCm: Y(q.yBase), muroZ: muro, ...(delanteCm > 0 ? { zFrenteCm: muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm } : {}) };
+          const alto = cm(q.alto) * factor + (telonConPieTapado(q, Y(q.yBase)) ? Y(q.yBase) : 0);
+          return { anchoCm: r1(cm(q.ancho) * factor), altoCm: r1(alto), xCm: r1(X(q.x) * factor), yBaseCm: Y(q.yBase), muroZ: muro, ...(delanteCm > 0 ? { zFrenteCm: muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm } : {}) };
         };
         const medida = medidaDe(p);
         const mesas = l.piezas.flatMap((q) => (q.tipo === "fondo" ? [mesaLeida(q, medidaDe(q))] : [])).filter((m): m is MesaLeida => m !== null);
