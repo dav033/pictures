@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-22-guirnalda-san-valentin",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "fac576c35e0950676c50161b80ef12af8bc191f17349a6aef180e4007080a471",
+ "especHash": "b2ff9ded90971c813252538c8bd939d09535856cf1459c400cf419f874336f4c",
  "noRepresentable": [],
  "piezas": {
   "EST_01_GUIRNALDA": {
@@ -12,82 +12,82 @@
     {
      "formatoId": "R-5",
      "codigo": "011",
-     "cantidad": 31
+     "cantidad": 8
     },
     {
      "formatoId": "R-5",
      "codigo": "015",
-     "cantidad": 4
+     "cantidad": 1
     },
     {
      "formatoId": "R-5",
      "codigo": "110",
-     "cantidad": 11
+     "cantidad": 5
     },
     {
      "formatoId": "R-5",
      "codigo": "806",
-     "cantidad": 10
+     "cantidad": 1
     },
     {
      "formatoId": "R-9",
      "codigo": "011",
-     "cantidad": 9
+     "cantidad": 15
     },
     {
      "formatoId": "R-9",
-     "codigo": "015",
+     "codigo": "110",
      "cantidad": 2
     },
     {
      "formatoId": "R-9",
-     "codigo": "110",
-     "cantidad": 4
-    },
-    {
-     "formatoId": "R-9",
      "codigo": "806",
      "cantidad": 4
     },
     {
      "formatoId": "R-12",
      "codigo": "011",
-     "cantidad": 6
+     "cantidad": 9
     },
     {
      "formatoId": "R-12",
      "codigo": "015",
-     "cantidad": 3
+     "cantidad": 5
     },
     {
      "formatoId": "R-12",
      "codigo": "110",
-     "cantidad": 3
+     "cantidad": 4
     },
     {
      "formatoId": "R-12",
      "codigo": "806",
-     "cantidad": 3
+     "cantidad": 5
     },
     {
      "formatoId": "R-18",
      "codigo": "011",
-     "cantidad": 3
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "110",
+     "cantidad": 1
     },
     {
      "formatoId": "R-18",
      "codigo": "806",
-     "cantidad": 1
+     "cantidad": 2
     }
    ],
-   "unidades": 94,
+   "unidades": 63,
    "caja": [
-    -122,
+    -115,
     200,
     -250,
-    122,
-    284,
-    -198
+    115,
+    276,
+    -194
    ]
   }
  },
@@ -96,83 +96,83 @@
    {
     "formatoId": "R-5",
     "codigo": "011",
-    "cantidad": 31
+    "cantidad": 8
    },
    {
     "formatoId": "R-5",
     "codigo": "015",
-    "cantidad": 4
+    "cantidad": 1
    },
    {
     "formatoId": "R-5",
     "codigo": "110",
-    "cantidad": 11
+    "cantidad": 5
    },
    {
     "formatoId": "R-5",
     "codigo": "806",
-    "cantidad": 10
+    "cantidad": 1
    },
    {
     "formatoId": "R-9",
     "codigo": "011",
-    "cantidad": 9
+    "cantidad": 15
    },
    {
     "formatoId": "R-9",
-    "codigo": "015",
+    "codigo": "110",
     "cantidad": 2
    },
    {
     "formatoId": "R-9",
-    "codigo": "110",
-    "cantidad": 4
-   },
-   {
-    "formatoId": "R-9",
     "codigo": "806",
     "cantidad": 4
    },
    {
     "formatoId": "R-12",
     "codigo": "011",
-    "cantidad": 6
+    "cantidad": 9
    },
    {
     "formatoId": "R-12",
     "codigo": "015",
-    "cantidad": 3
+    "cantidad": 5
    },
    {
     "formatoId": "R-12",
     "codigo": "110",
-    "cantidad": 3
+    "cantidad": 4
    },
    {
     "formatoId": "R-12",
     "codigo": "806",
-    "cantidad": 3
+    "cantidad": 5
    },
    {
     "formatoId": "R-18",
     "codigo": "011",
-    "cantidad": 3
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "110",
+    "cantidad": 1
    },
    {
     "formatoId": "R-18",
     "codigo": "806",
-    "cantidad": 1
+    "cantidad": 2
    }
   ],
-  "unidades": 94
+  "unidades": 63
  },
  "caja": [
-  -122,
+  -115,
   200,
   -250,
-  122,
-  284,
-  -198
+  115,
+  276,
+  -194
  ],
  "referenciaPython": {
   "globos": 59

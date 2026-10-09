@@ -2,9 +2,9 @@
  "caso": "oficial-guirnalda",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "67e45d34f360b36cda8ea1a779b454ad2e399816962aa52276db55b26ecda451",
+ "especHash": "46e9f08e9e94d97959ebc46d0c30a9ac699dcfc8becabec1eda69a4835704ea6",
  "noRepresentable": [],
  "piezas": {
   "EST_01_GUIRNALDA": {
@@ -12,52 +12,52 @@
     {
      "formatoId": "R-5",
      "codigo": "005",
-     "cantidad": 18
+     "cantidad": 2
     },
     {
      "formatoId": "R-5",
      "codigo": "040",
-     "cantidad": 27
+     "cantidad": 8
     },
     {
      "formatoId": "R-5",
      "codigo": "970",
-     "cantidad": 21
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "005",
-     "cantidad": 10
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "040",
-     "cantidad": 4
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "970",
-     "cantidad": 4
-    },
-    {
-     "formatoId": "R-12",
-     "codigo": "005",
-     "cantidad": 6
-    },
-    {
-     "formatoId": "R-12",
-     "codigo": "040",
      "cantidad": 1
     },
     {
-     "formatoId": "R-12",
-     "codigo": "970",
+     "formatoId": "R-9",
+     "codigo": "005",
      "cantidad": 7
     },
     {
-     "formatoId": "R-18",
+     "formatoId": "R-9",
      "codigo": "040",
-     "cantidad": 2
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "005",
+     "cantidad": 1
     },
     {
      "formatoId": "R-18",
@@ -65,14 +65,14 @@
      "cantidad": 2
     }
    ],
-   "unidades": 102,
+   "unidades": 46,
    "caja": [
-    -122,
+    -121,
     200,
     -250,
-    122,
-    273,
-    -199
+    121,
+    278,
+    -196
    ]
   }
  },
@@ -81,52 +81,52 @@
    {
     "formatoId": "R-5",
     "codigo": "005",
-    "cantidad": 18
+    "cantidad": 2
    },
    {
     "formatoId": "R-5",
     "codigo": "040",
-    "cantidad": 27
+    "cantidad": 8
    },
    {
     "formatoId": "R-5",
     "codigo": "970",
-    "cantidad": 21
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "005",
-    "cantidad": 10
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "040",
-    "cantidad": 4
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "970",
-    "cantidad": 4
-   },
-   {
-    "formatoId": "R-12",
-    "codigo": "005",
-    "cantidad": 6
-   },
-   {
-    "formatoId": "R-12",
-    "codigo": "040",
     "cantidad": 1
    },
    {
-    "formatoId": "R-12",
-    "codigo": "970",
+    "formatoId": "R-9",
+    "codigo": "005",
     "cantidad": 7
    },
    {
-    "formatoId": "R-18",
+    "formatoId": "R-9",
     "codigo": "040",
-    "cantidad": 2
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "005",
+    "cantidad": 1
    },
    {
     "formatoId": "R-18",
@@ -134,14 +134,14 @@
     "cantidad": 2
    }
   ],
-  "unidades": 102
+  "unidades": 46
  },
  "caja": [
-  -122,
+  -121,
   200,
   -250,
-  122,
-  273,
-  -199
+  121,
+  278,
+  -196
  ]
 }

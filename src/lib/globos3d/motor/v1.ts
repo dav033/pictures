@@ -16,7 +16,7 @@ import type { ResultadoMotorV1 } from "./resultado-motor-v1";
  * doradas de `contracts/domain/v1/golden/motor-guiada/` guardan la versión con que se tomaron y fallan si el motor
  * cambia sin subirla.
  */
-export const VERSION_MOTOR = "1.1.0";
+export const VERSION_MOTOR = "1.2.0";
 
 export type { EspecClienteV1, PiezaEspec } from "./espec-cliente-v1";
 export type { BomLinea, ResultadoMotorV1 } from "./resultado-motor-v1";

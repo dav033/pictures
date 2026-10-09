@@ -5,10 +5,11 @@ import type { EspecClienteV1, PiezaEspec } from "./espec-cliente-v1";
 import { florDeGlobos, lineasDeFlores } from "./flores-espec";
 import type { BomLinea } from "./resultado-motor-v1";
 import {
-  construirArcoAsimetrico, construirArcoOrganico, construirAro, construirColumnaOrganica, construirGuirnaldaOrganica, construirSemiarco, conDensidad,
+  construirArcoAsimetrico, construirArcoOrganico, construirAro, construirColumnaOrganica, construirGuirnaldaOrganica, construirSemiarco,
   type Construida, type EntradaOrganica,
 } from "./constructores-organicos";
 import { construirArco, construirColumna, construirGuirnalda, construirPared, construirRacimoPared, construirRamo, construirTecho } from "./constructores-clasicos";
+import { calibrarOrganico, perfilDe } from "./calibracion-organica";
 import { anchoEstimadoCm, distribuir, type ItemDeLayout } from "./layout";
 import { SEPARADOR_FLORES } from "./ids-nodos";
 import { DENSIDAD_POR_DEFECTO, medidasDe } from "./medidas-espec";
@@ -69,7 +70,7 @@ function construirPieza(pieza: PiezaEspec, avisos: string[]): Construida {
   const entrada: EntradaOrganica = { espec: pieza, medidas: medidasDe(pieza), avisos, notas: avisos };
   const construida = constructorDe(pieza)(entrada);
   if (construida.pieza.tipo !== "organico" && pieza.densidad === "sencilla") avisos.push(`La densidad ligera de «${pieza.nombre}» no cambia este armado de cuartetos: solo afecta a las piezas orgánicas.`);
-  const densa = conDensidad(construida.pieza, pieza.densidad ?? DENSIDAD_POR_DEFECTO[pieza.oficial] ?? "media");
+  const densa = calibrarOrganico(construida.pieza, pieza.densidad ?? DENSIDAD_POR_DEFECTO[pieza.oficial] ?? "media", perfilDe(pieza.oficial));
   return { ...construida, pieza: conRemate(conHuecosParaFlores(densa, pieza.flores?.cantidad ?? 0), pieza, avisos) };
 }
 

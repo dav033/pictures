@@ -46,6 +46,7 @@ export const CONSUMO = {
   "piezas.flores.codigo": "escena",
   "piezas.flores.centro": "escena",
   "piezas.unidades": "escena",
+  "piezas.capas": "escena",
   "piezas.remate.formatoId": "escena",
   "piezas.remate.codigo": "escena",
   "piezas.declarada.materiales.formatoId": "bom",

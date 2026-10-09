@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
+import { MAX_CAPAS_COLUMNA } from "@/lib/plan/armado-columna";
 import { MAX_PIEZAS_PLAN } from "@/lib/plan/piezas-individuales";
 import { formatoPorId } from "../formatos";
 
@@ -79,6 +80,8 @@ export const PiezaEspecSchema = z.object({
   flores: FloresEspecSchema.nullable().optional(),
   /** Cuántos globos o racimos lleva lo que se cuenta por unidades (el bouquet, el racimo de pared). */
   unidades: z.number().int().min(1).max(999).optional(),
+  /** Los niveles de cuartetos de una columna clásica (las capas del armado de Python): manda sobre el alto. */
+  capas: z.number().int().min(1).max(MAX_CAPAS_COLUMNA).optional(),
   /** El globo de arriba de una columna. */
   remate: z.object({ formatoId: z.enum(FORMATOS_REMATE), codigo: CodigoSchema }).strict().nullable().optional(),
   /** Lo que ningún constructor dibuja: se cuenta de una lista del catálogo, no se dibuja. */

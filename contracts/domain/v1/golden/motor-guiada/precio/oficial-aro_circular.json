@@ -2,49 +2,40 @@
  "caso": "oficial-aro_circular",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "b1889a36a5632668c75363aa7f7dd3c1bc461f80701a779a5173c2d0aa6087cb",
+ "especHash": "4e21b314dad6f529f8c6876947c3624083ed4c4fb8fcff2c1fe09412182faa61",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 12,
-  "cubierta": 12,
+  "objetivo": 7,
+  "cubierta": 7,
   "sinCubrir": 0
  },
  "pedido": [
   {
    "formatoId": "R-5",
    "codigo": "005",
-   "cantidad": 12,
+   "cantidad": 3,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634235781415",
    "variantId": "46594221080871"
   },
   {
-   "formatoId": "R-5",
-   "codigo": "005",
-   "cantidad": 13,
-   "reserva": 0,
-   "paquetes": 1,
-   "productId": "8634235781415",
-   "variantId": "46594221113639"
-  },
-  {
    "formatoId": "R-9",
    "codigo": "005",
-   "cantidad": 19,
+   "cantidad": 22,
    "reserva": 0,
-   "paquetes": 1,
+   "paquetes": 2,
    "productId": "8634235781415",
-   "variantId": "46594221211943"
+   "variantId": "46594221179175"
   },
   {
    "formatoId": "R-12",
    "codigo": "005",
-   "cantidad": 5,
+   "cantidad": 3,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634235781415",
@@ -53,25 +44,25 @@
   {
    "formatoId": "R-5",
    "codigo": "040",
-   "cantidad": 19,
+   "cantidad": 7,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239385895",
-   "variantId": "46594233696551"
+   "variantId": "46594233631015"
   },
   {
    "formatoId": "R-9",
    "codigo": "040",
-   "cantidad": 23,
+   "cantidad": 17,
    "reserva": 0,
-   "paquetes": 2,
+   "paquetes": 1,
    "productId": "8634239385895",
-   "variantId": "46594233762087"
+   "variantId": "46594233794855"
   },
   {
    "formatoId": "R-12",
    "codigo": "040",
-   "cantidad": 7,
+   "cantidad": 4,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -80,8 +71,8 @@
   {
    "formatoId": "R-5",
    "codigo": "970",
-   "cantidad": 19,
-   "reserva": 0,
+   "cantidad": 3,
+   "reserva": 7,
    "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264596775"
@@ -98,9 +89,9 @@
   {
    "formatoId": "R-9",
    "codigo": "970",
-   "cantidad": 21,
-   "reserva": 12,
-   "paquetes": 2,
+   "cantidad": 16,
+   "reserva": 0,
+   "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264858919"
   }

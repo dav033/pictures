@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-19-semiarco-organico-combinaciones-con-reflex-26bbc",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "56244bd37b772e776149c60f20e97c7cffbfcc7382964b5df89d71022d21a667",
+ "especHash": "d99e5b4eab6cd51b32f9a2ea88b77554bfd56d5a945ce702e0e775cfa1c793aa",
  "noRepresentable": [],
  "piezas": {
   "EST_01_GUIRNALDA": {
@@ -12,22 +12,22 @@
     {
      "formatoId": "R-5",
      "codigo": "009",
-     "cantidad": 11
+     "cantidad": 4
     },
     {
      "formatoId": "R-5",
      "codigo": "012",
-     "cantidad": 7
+     "cantidad": 3
     },
     {
      "formatoId": "R-5",
      "codigo": "915",
-     "cantidad": 16
+     "cantidad": 3
     },
     {
      "formatoId": "R-5",
      "codigo": "970",
-     "cantidad": 22
+     "cantidad": 5
     },
     {
      "formatoId": "R-9",
@@ -37,27 +37,32 @@
     {
      "formatoId": "R-9",
      "codigo": "012",
-     "cantidad": 7
+     "cantidad": 5
     },
     {
      "formatoId": "R-9",
      "codigo": "970",
+     "cantidad": 9
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "009",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "012",
      "cantidad": 5
     },
     {
      "formatoId": "R-12",
-     "codigo": "009",
-     "cantidad": 7
-    },
-    {
-     "formatoId": "R-12",
-     "codigo": "012",
+     "codigo": "915",
      "cantidad": 4
     },
     {
      "formatoId": "R-12",
      "codigo": "970",
-     "cantidad": 4
+     "cantidad": 8
     },
     {
      "formatoId": "R-18",
@@ -67,7 +72,12 @@
     {
      "formatoId": "R-18",
      "codigo": "012",
-     "cantidad": 2
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "915",
+     "cantidad": 1
     },
     {
      "formatoId": "R-18",
@@ -75,14 +85,14 @@
      "cantidad": 1
     }
    ],
-   "unidades": 94,
+   "unidades": 63,
    "caja": [
-    -122,
+    -115,
     200,
     -250,
-    122,
-    284,
-    -198
+    115,
+    276,
+    -194
    ]
   }
  },
@@ -91,22 +101,22 @@
    {
     "formatoId": "R-5",
     "codigo": "009",
-    "cantidad": 11
+    "cantidad": 4
    },
    {
     "formatoId": "R-5",
     "codigo": "012",
-    "cantidad": 7
+    "cantidad": 3
    },
    {
     "formatoId": "R-5",
     "codigo": "915",
-    "cantidad": 16
+    "cantidad": 3
    },
    {
     "formatoId": "R-5",
     "codigo": "970",
-    "cantidad": 22
+    "cantidad": 5
    },
    {
     "formatoId": "R-9",
@@ -116,27 +126,32 @@
    {
     "formatoId": "R-9",
     "codigo": "012",
-    "cantidad": 7
+    "cantidad": 5
    },
    {
     "formatoId": "R-9",
     "codigo": "970",
+    "cantidad": 9
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "009",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "012",
     "cantidad": 5
    },
    {
     "formatoId": "R-12",
-    "codigo": "009",
-    "cantidad": 7
-   },
-   {
-    "formatoId": "R-12",
-    "codigo": "012",
+    "codigo": "915",
     "cantidad": 4
    },
    {
     "formatoId": "R-12",
     "codigo": "970",
-    "cantidad": 4
+    "cantidad": 8
    },
    {
     "formatoId": "R-18",
@@ -146,7 +161,12 @@
    {
     "formatoId": "R-18",
     "codigo": "012",
-    "cantidad": 2
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "915",
+    "cantidad": 1
    },
    {
     "formatoId": "R-18",
@@ -154,15 +174,15 @@
     "cantidad": 1
    }
   ],
-  "unidades": 94
+  "unidades": 63
  },
  "caja": [
-  -122,
+  -115,
   200,
   -250,
-  122,
-  284,
-  -198
+  115,
+  276,
+  -194
  ],
  "referenciaPython": {
   "globos": 58

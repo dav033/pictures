@@ -1,6 +1,6 @@
 import { resolverColorFlexible } from "../herramientas-escena-colores";
 import { formatoPorId } from "../formatos";
-import type { PatronColumna } from "../columnas";
+import { PASO_POR_DIAMETRO, type PatronColumna } from "../columnas";
 import type { PatronMalla } from "../paredes";
 import type { Decoracion } from "../figuras";
 import type { Pieza } from "../piezas";
@@ -26,7 +26,6 @@ const RANGOS = {
 } as const;
 
 const FORMATO_TRENZA = "R-12";
-const FORMATO_GUIRNALDA = "R-9";
 const FORMATO_PARED = "LOL-12";
 
 function inflado(formatoId: string): number {
@@ -64,15 +63,16 @@ function cuotas(pesos: readonly number[], total: number): number[] {
 /**
  * El patrón de trenza que da los colores y sus pesos: uno solo, dos o cuatro parejos (los patrones de siempre) y, con
  * otras proporciones, bandas de dos cuartetos que repiten el color según su cuota («salvavidas»: 75 % y 25 % es
- * A, A, A, B). Así el peso que pidió el cliente se nota y se cobra.
+ * A, A, A, B). Así el peso que pidió el cliente se nota y se cobra. Si se sabe cuántos niveles tiene la pieza, las bandas son las
+ * que caben (dos niveles cada una): con menos bandas que colores los últimos no se verían nunca.
  */
-export function patronDeTrenza(colores: readonly ColorConPeso[]): { patron: PatronColumna; colores: string[] } {
+export function patronDeTrenza(colores: readonly ColorConPeso[], niveles?: number): { patron: PatronColumna; colores: string[] } {
   const codigos = colores.map((c) => c.codigo);
   if (codigos.length <= 1) return { patron: "un_color", colores: codigos };
   if (sonParejos(colores) && codigos.length === 2) return { patron: "dos_colores", colores: codigos };
   if (sonParejos(colores) && codigos.length === 4) return { patron: "espiral", colores: codigos };
   if (sonParejos(colores)) return { patron: "salvavidas", colores: codigos };
-  const total = Math.max(RANURAS_DE_BANDAS, codigos.length);
+  const total = Math.max(codigos.length, niveles ? Math.min(RANURAS_DE_BANDAS, Math.ceil(niveles / 2)) : RANURAS_DE_BANDAS);
   const restantes = cuotas(colores.map((c) => c.peso), total);
   const secuencia: string[] = [];
   while (secuencia.length < total) {
@@ -107,22 +107,41 @@ export function construirArco({ espec, medidas, avisos, notas }: EntradaClasica)
   };
 }
 
+/**
+ * El alto de una columna: el de sus medidas o, si trae la lista de capas, el que da exactamente esos niveles de cuartetos
+ * (el plan de Python deja 11 capas en «2 m»). Si el alto pedido se aparta de las capas en más de dos niveles, alguien cambió el alto
+ * y las capas quedaron viejas: manda el alto, para que la edición no se pierda.
+ */
+function alturaDeColumna(espec: PiezaEspec, medidas: EntradaClasica["medidas"], avisos: string[]): number {
+  const pasoCm = inflado(FORMATO_TRENZA) * PASO_POR_DIAMETRO;
+  if (!espec.capas) return enCm(medidas.altoM, undefined, RANGOS.columna.alto, "El alto", avisos);
+  const porCapasCm = espec.capas * pasoCm;
+  const pedidoM = espec.medidas.altoM;
+  if (pedidoM !== undefined && Math.abs(Math.round(pedidoM * 100) - Math.round(porCapasCm)) > 2 * Math.round(pasoCm)) {
+    avisos.push(`Las ${espec.capas} capas de «${espec.nombre}» no cuadran con su alto de ${pedidoM} m: manda el alto.`);
+    return enCm(medidas.altoM, undefined, RANGOS.columna.alto, "El alto", avisos);
+  }
+  return enCm(porCapasCm / 100, undefined, RANGOS.columna.alto, "El alto", avisos);
+}
+
+/** Cuántos niveles de cuartetos caben en `largoCm` (la misma cuenta de la trenza). */
+const nivelesEn = (largoCm: number, formatoId: string): number => Math.max(1, Math.round(largoCm / (inflado(formatoId) * PASO_POR_DIAMETRO)));
+
 export function construirColumna({ espec, medidas, avisos, notas }: EntradaClasica): Construida {
-  const { patron, colores } = patronDeTrenza(enFormato(espec, [FORMATO_TRENZA], notas));
-  const pieza: Pieza = {
-    tipo: "columna", formatoId: FORMATO_TRENZA, infladoCm: inflado(FORMATO_TRENZA),
-    alturaCm: enCm(medidas.altoM, undefined, RANGOS.columna.alto, "El alto", avisos), patron, colores,
-  };
+  const alturaCm = alturaDeColumna(espec, medidas, avisos);
+  const { patron, colores } = patronDeTrenza(enFormato(espec, [FORMATO_TRENZA], notas), nivelesEn(alturaCm, FORMATO_TRENZA));
+  const pieza: Pieza = { tipo: "columna", formatoId: FORMATO_TRENZA, infladoCm: inflado(FORMATO_TRENZA), alturaCm, patron, colores };
   return { pieza, apoyo: "piso" };
 }
 
 export function construirGuirnalda({ espec, medidas, avisos, notas }: EntradaClasica): Construida {
-  const { patron, colores } = patronDeTrenza(enFormato(espec, [FORMATO_GUIRNALDA], notas));
+  const anchoCm = enCm(medidas.largoM ?? medidas.anchoM, undefined, RANGOS.guirnalda.ancho, "El largo", avisos);
+  const { patron, colores } = patronDeTrenza(enFormato(espec, [FORMATO_TRENZA], notas), nivelesEn(anchoCm, FORMATO_TRENZA));
   return {
     apoyo: "pared",
     pieza: {
       tipo: "guirnalda",
-      guirnalda: { formatoId: FORMATO_GUIRNALDA, infladoCm: inflado(FORMATO_GUIRNALDA), patron, colores, anchoCm: enCm(medidas.largoM ?? medidas.anchoM, undefined, RANGOS.guirnalda.ancho, "El largo", avisos), caidaCm: 30, recorrido: null },
+      guirnalda: { formatoId: FORMATO_TRENZA, infladoCm: inflado(FORMATO_TRENZA), patron, colores, anchoCm, caidaCm: 30, recorrido: null },
     },
   };
 }

@@ -2,35 +2,35 @@
  "caso": "idea-deco-real-24-guirnalda-verde-salvia-flores",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "639934f697babebd4529798c2794f9df20368a1b892a8e74e14910b636767e1e",
+ "especHash": "b13912547ba466c314a8f16e1c3366af6294e22c9a2d373d4daa605c29cb8e8b",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 6,
-  "cubierta": 6,
+  "objetivo": 5,
+  "cubierta": 5,
   "sinCubrir": 0
  },
  "pedido": [
   {
-   "formatoId": "R-9",
+   "formatoId": "R-12",
    "codigo": "027",
-   "cantidad": 24,
-   "reserva": 4,
-   "paquetes": 3,
-   "productId": "8634236010791",
-   "variantId": "46594222686503"
-  },
-  {
-   "formatoId": "R-9",
-   "codigo": "027",
-   "cantidad": 48,
-   "reserva": 2,
+   "cantidad": 12,
+   "reserva": 0,
    "paquetes": 1,
    "productId": "8634236010791",
-   "variantId": "46594222719271"
+   "variantId": "46594222752039"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "027",
+   "cantidad": 40,
+   "reserva": 5,
+   "paquetes": 1,
+   "productId": "8634236010791",
+   "variantId": "46594222784807"
   }
  ]
 }

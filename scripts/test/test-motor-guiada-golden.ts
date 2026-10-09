@@ -11,7 +11,8 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { DIRECTORIO_DORADO, registroDe, todosLosCasos, type RegistroDorado } from "../lib/casos-motor-guiada";
-import { VERSION_MOTOR } from "../../src/lib/globos3d/motor/v1";
+import { formatosOrganicosDe } from "../../src/lib/globos3d/herramientas-escena-colores";
+import { armarDesdeEspec, VERSION_MOTOR, type PiezaEspec } from "../../src/lib/globos3d/motor/v1";
 
 const TOLERANCIA_CAJA_CM = 5;
 const casos = todosLosCasos();
@@ -51,4 +52,43 @@ for (const caso of casos) {
   else assert.ok(dorado.noRepresentable.every((n) => n.motivo.length > 10 && n.piezaId in Object.fromEntries(caso.espec.piezas.map((p) => [p.id, 1]))), `${caso.id}: un no representable sin motivo o sin pieza`);
 }
 
-console.log(`test-motor-guiada-golden: ok (${casos.length} casos, ${piezas} piezas, motor ${VERSION_MOTOR})`);
+// La densidad es monótona en las piezas orgánicas: sencilla < media < lujosa (a la inversa, el relleno tapaba lo que la estructura
+// dejaba libre y la pieza ligera salía con más globos que la lujosa: 112 contra 94 en una guirnalda de 2,4 m). Y el relleno chico
+// (R-5) no pasa de un tercio, ni se queda con los colores que solo se fabrican en algunos tamaños (Reflex, cristales).
+const SOLO_ORGANICAS = new Set<PiezaEspec["oficial"]>(["semiarco", "semiarco_asimetrico", "arco_asimetrico", "columna_asimetrica", "aro_circular", "arco_no_denso", "columna_no_densa"]);
+const ORGANICAS_SI_NO_SON_CLASICAS = new Set<PiezaEspec["oficial"]>(["arco", "columna", "guirnalda"]);
+const esOrganica = (p: PiezaEspec) => !p.declarada && (SOLO_ORGANICAS.has(p.oficial) || (ORGANICAS_SI_NO_SON_CLASICAS.has(p.oficial) && p.tamanos !== "clasica"));
+const DENSIDADES = ["sencilla", "media", "lujosa"] as const;
+const TOPE_R5 = 0.34;
+const TOPE_PREMIUM_EN_R5 = 0.5;
+const vistas = new Set<string>();
+let organicas = 0, conPremium = 0;
+for (const caso of casos) {
+  for (const pieza of caso.espec.piezas.filter(esOrganica)) {
+    const clave = JSON.stringify({ ...pieza, id: "", nombre: "", densidad: "" });
+    if (vistas.has(clave)) continue;
+    vistas.add(clave);
+    const conteos = DENSIDADES.map((densidad) => {
+      const r = armarDesdeEspec({ ...caso.espec, piezas: [{ ...pieza, densidad }] });
+      return { densidad, total: r.bom.total.reduce((s, l) => s + l.cantidad, 0), lineas: r.bom.total, noRepresentable: r.noRepresentable.length };
+    });
+    if (conteos.some((c) => c.noRepresentable)) continue;
+    const donde = `${caso.id}/${pieza.id} (${pieza.oficial}, ${pieza.medidas.largoM ?? pieza.medidas.anchoM ?? pieza.medidas.altoM} m)`;
+    const [sencilla, media, lujosa] = conteos as [(typeof conteos)[number], (typeof conteos)[number], (typeof conteos)[number]];
+    assert.ok(sencilla.total < media.total && media.total < lujosa.total, `${donde}: la densidad debe ser monótona y da sencilla ${sencilla.total}, media ${media.total}, lujosa ${lujosa.total}`);
+    for (const c of conteos) {
+      const r5 = c.lineas.filter((l) => l.formatoId === "R-5").reduce((s, l) => s + l.cantidad, 0);
+      assert.ok(r5 / c.total <= TOPE_R5, `${donde} ${c.densidad}: ${r5} de ${c.total} son R-5 (${Math.round((100 * r5) / c.total)} %): el relleno chico pasa del ${TOPE_R5 * 100} %`);
+    }
+    for (const color of pieza.colores.filter((c) => formatosOrganicosDe(c.codigo).length < 5 && formatosOrganicosDe(c.codigo).includes("R-5"))) {
+      const suyas = lujosa.lineas.filter((l) => l.codigo === color.codigo);
+      const total = suyas.reduce((s, l) => s + l.cantidad, 0);
+      const enR5 = suyas.filter((l) => l.formatoId === "R-5").reduce((s, l) => s + l.cantidad, 0);
+      if (total >= 8) { conPremium += 1; assert.ok(enR5 / total <= TOPE_PREMIUM_EN_R5, `${donde}: el color ${color.nombre} (${color.codigo}) va ${enR5} de ${total} en R-5: un acento de 12 cm`); }
+    }
+    organicas += 1;
+  }
+}
+assert.ok(organicas >= 20 && conPremium >= 3, `la prueba de densidad vio ${organicas} piezas orgánicas y ${conPremium} colores premium: debe mirar las de las ideas`);
+
+console.log(`test-motor-guiada-golden: ok (${casos.length} casos, ${piezas} piezas, ${organicas} orgánicas con densidad monótona, motor ${VERSION_MOTOR})`);

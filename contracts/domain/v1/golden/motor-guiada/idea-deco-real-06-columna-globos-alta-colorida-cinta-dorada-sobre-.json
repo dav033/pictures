@@ -2,237 +2,97 @@
  "caso": "idea-deco-real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "d1a0d90e2bd29b1bf7d515b576b68ad027b0cd7c9a0e66d8684909f6c2f7d301",
+ "especHash": "a1e2ea8c844d379642ffe636d30cb32201826dc8a293819d4dcbb195f869156c",
  "noRepresentable": [],
  "piezas": {
   "EST_01_COLUMNA": {
    "lineas": [
     {
-     "formatoId": "R-5",
+     "formatoId": "R-12",
      "codigo": "015",
-     "cantidad": 11
-    },
-    {
-     "formatoId": "R-5",
-     "codigo": "020",
-     "cantidad": 6
-    },
-    {
-     "formatoId": "R-5",
-     "codigo": "030",
-     "cantidad": 16
-    },
-    {
-     "formatoId": "R-5",
-     "codigo": "038",
-     "cantidad": 1
-    },
-    {
-     "formatoId": "R-5",
-     "codigo": "041",
-     "cantidad": 9
-    },
-    {
-     "formatoId": "R-5",
-     "codigo": "061",
-     "cantidad": 1
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "015",
-     "cantidad": 3
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "020",
-     "cantidad": 3
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "030",
-     "cantidad": 2
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "038",
-     "cantidad": 3
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "041",
-     "cantidad": 3
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "061",
-     "cantidad": 2
+     "cantidad": 8
     },
     {
      "formatoId": "R-12",
      "codigo": "020",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "030",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "038",
      "cantidad": 4
     },
     {
      "formatoId": "R-12",
-     "codigo": "030",
-     "cantidad": 1
-    },
-    {
-     "formatoId": "R-12",
-     "codigo": "038",
-     "cantidad": 1
-    },
-    {
-     "formatoId": "R-12",
      "codigo": "041",
-     "cantidad": 2
+     "cantidad": 8
     },
     {
      "formatoId": "R-12",
      "codigo": "061",
-     "cantidad": 3
-    },
-    {
-     "formatoId": "R-18",
-     "codigo": "030",
-     "cantidad": 1
-    },
-    {
-     "formatoId": "R-18",
-     "codigo": "038",
-     "cantidad": 2
-    },
-    {
-     "formatoId": "R-18",
-     "codigo": "061",
-     "cantidad": 1
+     "cantidad": 8
     }
    ],
-   "unidades": 75,
+   "unidades": 44,
    "caja": [
-    -64,
+    -61,
     0,
-    -188,
-    -12,
-    197,
-    -132
+    -183,
+    -15,
+    228,
+    -137
    ]
   }
  },
  "total": {
   "lineas": [
    {
-    "formatoId": "R-5",
+    "formatoId": "R-12",
     "codigo": "015",
-    "cantidad": 11
-   },
-   {
-    "formatoId": "R-5",
-    "codigo": "020",
-    "cantidad": 6
-   },
-   {
-    "formatoId": "R-5",
-    "codigo": "030",
-    "cantidad": 16
-   },
-   {
-    "formatoId": "R-5",
-    "codigo": "038",
-    "cantidad": 1
-   },
-   {
-    "formatoId": "R-5",
-    "codigo": "041",
-    "cantidad": 9
-   },
-   {
-    "formatoId": "R-5",
-    "codigo": "061",
-    "cantidad": 1
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "015",
-    "cantidad": 3
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "020",
-    "cantidad": 3
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "030",
-    "cantidad": 2
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "038",
-    "cantidad": 3
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "041",
-    "cantidad": 3
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "061",
-    "cantidad": 2
+    "cantidad": 8
    },
    {
     "formatoId": "R-12",
     "codigo": "020",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "030",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "038",
     "cantidad": 4
    },
    {
     "formatoId": "R-12",
-    "codigo": "030",
-    "cantidad": 1
-   },
-   {
-    "formatoId": "R-12",
-    "codigo": "038",
-    "cantidad": 1
-   },
-   {
-    "formatoId": "R-12",
     "codigo": "041",
-    "cantidad": 2
+    "cantidad": 8
    },
    {
     "formatoId": "R-12",
     "codigo": "061",
-    "cantidad": 3
-   },
-   {
-    "formatoId": "R-18",
-    "codigo": "030",
-    "cantidad": 1
-   },
-   {
-    "formatoId": "R-18",
-    "codigo": "038",
-    "cantidad": 2
-   },
-   {
-    "formatoId": "R-18",
-    "codigo": "061",
-    "cantidad": 1
+    "cantidad": 8
    }
   ],
-  "unidades": 75
+  "unidades": 44
  },
  "caja": [
-  -64,
+  -61,
   0,
-  -188,
-  -12,
-  197,
-  -132
+  -183,
+  -15,
+  228,
+  -137
  ],
  "referenciaPython": {
   "globos": 44
