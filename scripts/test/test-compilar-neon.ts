@@ -85,6 +85,14 @@ prueba("una mesa hexagonal con la cubierta leída «transparente» queda sin cub
   assert.deepEqual([...opciones.colores].map((c) => c.toLowerCase()), ["#c9a24e"]);
 });
 
+prueba("un tablero leído «acrílico» a secas o con acabado cristal es el acrílico transparente de catálogo", () => {
+  const catalogo = muebleDe("neon_cursiva")!;
+  for (const tablero of [{ nombre: "acrílico", hex: "#ffffff", peso: 20, acabado: "mate" as const }, { nombre: "blanco", hex: "#f0f0f0", peso: 20, acabado: "cristal" as const }]) {
+    const { opciones } = opcionesDe({ ...base, piezas: [{ ...neon, colores: [tablero, BLANCO] }] }, "neon_cursiva");
+    assert.equal(opciones.colores[0], catalogo.colores[0], tablero.nombre);
+  }
+});
+
 prueba("«acrílico rosa» es un color de verdad: el nombre de acrílico sale rosa, no con el dorado de catálogo", () => {
   const rosa = { tipo: "fondo" as const, id: "rotulo_acrilico", x: 0.5, yBase: 0.4, ancho: 0.22, alto: 0.08, texto: "Ana", colores: [{ nombre: "acrílico rosa", hex: "#f4a6c8", peso: 100, acabado: "mate" as const }] };
   const { opciones } = opcionesDe({ ...base, piezas: [rosa] }, "rotulo_acrilico");
@@ -95,7 +103,9 @@ prueba("un nombre de acrílico con una guirnalda que le pasa por detrás va dela
   const ROSA = { nombre: "rosado", hex: "#f4b6c8", peso: 100, acabado: "mate" as const };
   const rotulo = { tipo: "fondo" as const, id: "rotulo_acrilico", x: 0.5, yBase: 0.32, ancho: 0.22, alto: 0.08, texto: "Isabella", colorTexto: "dorado", acabadoTexto: "cromado" as const, colores: [{ nombre: "dorado", hex: "#d6b45a", peso: 100, acabado: "cromado" as const }] };
   const guirnalda = { tipo: "guirnalda_organica" as const, puntos: [{ x: 0.25, y: 0.28, grosor: 0.14 }, { x: 0.5, y: 0.27, grosor: 0.14 }, { x: 0.75, y: 0.28, grosor: 0.14 }], tamanos: {}, racimos: 0.6, colores: [ROSA] };
-  const { escena, notas } = compilarLectura({ ...base, piezas: [rotulo, guirnalda] });
+  for (const grosor of [0.14, 0.2, 0.28]) {
+  const gruesa = { ...guirnalda, puntos: guirnalda.puntos.map((q) => ({ ...q, grosor })) };
+  const { escena, notas } = compilarLectura({ ...base, piezas: [rotulo, gruesa] });
   const armada = armarEscena(escena);
   const letrero = armada.porNodo.find((n) => n.id.startsWith("rotulo-acrilico"))!;
   const cruzan = armada.porNodo.filter((n) => n.id.startsWith("guirnalda")).flatMap((n) => n.globos).filter((g) => {
@@ -103,8 +113,9 @@ prueba("un nombre de acrílico con una guirnalda que le pasa por detrás va dela
     return c.x + r > letrero.caja.min.x && c.x - r < letrero.caja.max.x && c.y + r > letrero.caja.min.y && c.y - r < letrero.caja.max.y;
   });
   assert.ok(cruzan.length > 0, "la guirnalda le pasa por detrás");
-  assert.ok(cruzan.every((g) => centroDe(g).z + g.infladoCm / 2 <= letrero.caja.min.z + 0.5), "ningún globo de los que se le cruzan queda delante");
+  assert.ok(cruzan.every((g) => centroDe(g).z + g.infladoCm / 2 <= letrero.caja.min.z + 0.5), `grosor ${grosor}: ningún globo de los que se le cruzan queda delante`);
   assert.ok(notas.some((n) => /va delante de ellos/.test(n)), notas.join(" | "));
+  }
   assert.ok(!compilarLectura({ ...base, piezas: [rotulo] }).notas.some((n) => /va delante de ellos/.test(n)), "sin globos se queda donde estaba");
 });
 

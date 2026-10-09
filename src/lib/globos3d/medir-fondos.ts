@@ -1,6 +1,6 @@
+import { esTelon } from "./fondos-escenografia";
 import { mismaFamiliaDeFondo } from "./fondos-familias";
 import type { PiezaLeida } from "./lectura-foto";
-import { muebleDe } from "./mobiliario-catalogo";
 
 /**
  * **Los fondos y muebles de la lectura puestos en su caja detectada** (`detectarFondos`, `detectar-globos-ia.ts`): el lector
@@ -81,7 +81,7 @@ export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly Fond
       // medida, o si el fondo es un telón (aro, arco, marco: los globos lo tapan casi siempre); entonces se queda lo
       // leído antes que encoger el fondo hasta esconderlo. Si se quedó corta en las dos y no es un telón, manda la caja.
       const cortoAncho = union.x1 - union.x0 < PARTE_MINIMA_DE_LO_LEIDO * p.ancho, cortoAlto = union.y1 - union.y0 < PARTE_MINIMA_DE_LO_LEIDO * p.alto;
-      if ((cortoAncho !== cortoAlto) || ((cortoAncho || cortoAlto) && Boolean(muebleDe(p.id)?.telon))) {
+      if ((cortoAncho !== cortoAlto) || ((cortoAncho || cortoAlto) && esTelon(p.id))) {
         sinCaja.delete(i);
         notaDe.set(i, `«${p.id}»: la caja detectada (${r3(union.x1 - union.x0)} × ${r3(union.y1 - union.y0)}) es un pedazo de lo leído (${p.ancho} × ${p.alto}): se queda lo leído.`);
         continue;

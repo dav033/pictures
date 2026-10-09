@@ -41,9 +41,18 @@ const entre = (v: number, min: number, max: number) => Math.min(max, Math.max(mi
 const MESA_PARA_SENTARSE = /^(mesa_redonda|mesa_redonda_mantel|mesa_imperial|mesa_imperial_mantel)$/;
 
 const ACABADO: Readonly<Partial<Record<ColorLeido["acabado"], AcabadoEscenografia>>> = { mate: "mate", brillante: "brillante", perla: "satinado", cromado: "metal" };
-/** Un color leído que es «transparente» (el tablero de acrílico de un neón): no es un color, esa parte se queda con la de catálogo.
- * Solo las palabras de transparencia: «acrílico rosa» o «vidrio ahumado» son colores de verdad. */
-const esTransparente = (c: ColorLeido | undefined) => Boolean(c && /transparen|incoloro|clear/i.test(c.nombre));
+/**
+ * Un color leído que no es un color sino un material claro (el tablero de acrílico de un neón): esa parte se queda con la
+ * de catálogo. `"transparente"`: lo dice una palabra de transparencia o el acabado «cristal» (si el catálogo no trae color
+ * para esa parte, va sin ella); `"material"`: solo el nombre del material («acrílico», «vidrio»), que es el de catálogo si lo
+ * hay y si no, el color leído (el vidrio de una mesa hexagonal). «Acrílico rosa» o «vidrio ahumado» son colores de verdad.
+ */
+function claridad(c: ColorLeido | undefined): "transparente" | "material" | null {
+  if (!c) return null;
+  if (c.acabado === "cristal" || /transparen|incoloro|\bclear\b/i.test(c.nombre)) return "transparente";
+  return /^\s*(acr[ií]lico|cristal|vidrio)\s*$/i.test(c.nombre) ? "material" : null;
+}
+const esTransparente = (c: ColorLeido | undefined) => claridad(c) !== null;
 
 /** Medidas finales de un mueble leído: lo leído acotado a 0,5–2,2 veces el catálogo (el ancho, el de catálogo si son varios en fila). */
 function medidasDe(m: MuebleCatalogo, medida: MedidaLeida, enFila: boolean, notas: string[]) {
@@ -95,8 +104,14 @@ export function mobiliarioLeido(p: FondoLeido, medida: MedidaLeida, notas: strin
   // Solo hasta el color de la tinta: lo que la foto no dice queda sin poner (los secundarios siguen al primero, como siempre).
   const largo = Math.min(mueble.coloresDe.length, Math.max(p.colores.length, tinta && iTinta >= 0 ? iTinta + 1 : 0));
   // Un color que el catálogo no trae (la cubierta opcional de una mesa) y se leyó transparente se queda sin poner: los
-  // colores se cortan en el primero que falta, nunca un hueco.
-  const porParte = Array.from({ length: largo }, (_, i): string | undefined => (i === iTinta && tinta ? tinta : ambiguos || esTransparente(p.colores[i]) ? mueble.colores[i] : p.colores[i]?.hex ?? mueble.colores[i]));
+  // colores se cortan en el primero que falta, nunca un hueco. Leído solo como material («vidrio»), queda el color leído.
+  const deParte = (i: number): string | undefined => {
+    const leido = p.colores[i], clara = claridad(leido);
+    if (ambiguos || clara === "transparente") return mueble.colores[i];
+    if (clara === "material") return mueble.colores[i] ?? leido?.hex;
+    return leido?.hex ?? mueble.colores[i];
+  };
+  const porParte = Array.from({ length: largo }, (_, i): string | undefined => (i === iTinta && tinta ? tinta : deParte(i)));
   const hueco = porParte.findIndex((c) => c === undefined);
   const colores = (hueco < 0 ? porParte : porParte.slice(0, hueco)) as string[];
   const acabado = mueble.acabadosPropios ? (acabadoRotuloLeido(p.acabadoTexto ?? p.colores[0]?.acabado) === "acrilico_espejo" ? "metal" as const : "mate" as const) : p.colores[0] && !ambiguos && !esTransparente(p.colores[0]) ? ACABADO[p.colores[0].acabado] : undefined;

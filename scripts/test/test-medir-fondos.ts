@@ -67,6 +67,9 @@ prueba("una caja que es un pedazo de lo leído (el pie del aro que los globos ta
   // Un juego de mesas del que solo se detectó una (corta solo de ancho): se queda lo leído.
   const nido = fondo("mesas_nido_hexagonales", 0.5, 0.8, 0.42, 0.33);
   assert.deepEqual(medirFondos([nido], [{ id: "mesas_nido_hexagonales", box_2d: [480, 420, 800, 584] }], ASPECTO).piezas[0], nido);
+  // Un panel redondo tapado por la guirnalda (telón de fondo fijo) se queda como se leyó.
+  const panel = fondo("panel_redondo", 0.5, 0.85, 0.5, 0.5);
+  assert.deepEqual(medirFondos([panel], [{ id: "panel_redondo", box_2d: [700, 420, 850, 580] }], ASPECTO).piezas[0], panel);
   // Una caja de su tamaño (aunque algo menor) sí lo mide.
   const bien = medirFondos([aro], [{ id: "aro_metalico", box_2d: [60, 330, 620, 640] }], ASPECTO).piezas[0] as Fondo;
   assert.ok(cerca(bien.alto, 0.56) && cerca(bien.ancho, 0.31), JSON.stringify(bien));

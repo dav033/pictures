@@ -108,3 +108,14 @@ export const FONDOS_CATALOGO: readonly FondoCatalogo[] = [...FONDOS_BASE, ...CAT
 const POR_ID: ReadonlyMap<string, FondoCatalogo> = new Map(FONDOS_CATALOGO.map((f) => [f.id, f]));
 /** La entrada del catálogo de fondos y mobiliario con ese id, si la hay. */
 export const entradaDeCatalogo = (id: string): FondoCatalogo | undefined => POR_ID.get(id);
+
+/**
+ * ¿Es un telón, lo que se para contra la pared del fondo y los globos suelen tapar (panel redondo, lentejuelas, arcos,
+ * cortina, letrero; aros, arco, marco con tela, biombo)? Los fondos fijos sin retiro van contra la pared; los muebles lo
+ * dicen con `telon`.
+ */
+export function esTelon(id: string): boolean {
+  const e = entradaDeCatalogo(id);
+  if (!e) return false;
+  return e.clase === "fondo" ? e.retiroCm === undefined : Boolean(e.telon);
+}

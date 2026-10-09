@@ -50,8 +50,8 @@ export function colgadoDelanteDePaneles(escena: Escena, notas: string[]): Escena
 
 /** Los globos que atraviesan el plano del letrero: su parte de atrás a lo más esto delante de su cara (cm). */
 const PEGADOS_AL_LETRERO_CM = 10;
-/** Lo más que se corre un letrero hacia la sala para quedar delante de los globos (cm): más que eso ya no es «encima de la guirnalda». */
-const MAXIMO_ADELANTE_LETRERO_CM = 70;
+/** Lo más que se corre un letrero hacia la sala para quedar delante de los globos (cm): una guirnalda gruesa ronda 80; más ya no es «encima de la guirnalda». */
+const MAXIMO_ADELANTE_LETRERO_CM = 120;
 
 /** Un letrero con texto (el nombre de acrílico, el neón): lo que se lee tiene que verse. */
 const esLetrero = (n: NodoEscena) => n.pieza.tipo === "escenografia" && Boolean(n.pieza.mueble && muebleDe(n.pieza.mueble.id)?.conTexto);
@@ -71,10 +71,16 @@ export function letrerosDelanteDeGlobos(escena: Escena, notas: string[]): Escena
     if (!letreros.includes(n)) return n;
     const c = cajas.get(n.id);
     if (!c) return n;
-    // Los globos cuyo disco cae sobre el letrero (de frente) y que lo atraviesan: su parte de atrás no está más de
-    // `PEGADOS_AL_LETRERO_CM` delante de su cara. Un montón de piso que está metros delante tapa al letrero de verdad, como en
-    // la foto: no lo arrastra hacia la sala.
-    const frente = globos.reduce((m, g) => (g.c.x + g.r > c.min.x && g.c.x - g.r < c.max.x && g.c.y + g.r > c.min.y && g.c.y - g.r < c.max.y && g.c.z - g.r <= c.max.z + PEGADOS_AL_LETRERO_CM ? Math.max(m, g.c.z + g.r) : m), -Infinity);
+    // Los globos cuyo disco cae sobre el letrero (de frente) y que lo atraviesan, capa por capa: primero los que tocan su
+    // cara y después los que tocan a esos (el cuerpo de una guirnalda de 80 cm de grueso entero), sin saltar huecos de más de
+    // `PEGADOS_AL_LETRERO_CM`. Un montón de piso que está metros delante tapa al letrero de verdad, como en la foto: no lo
+    // arrastra hacia la sala.
+    const encima = globos.filter((g) => g.c.x + g.r > c.min.x && g.c.x - g.r < c.max.x && g.c.y + g.r > c.min.y && g.c.y - g.r < c.max.y);
+    let frente = c.max.z;
+    for (let antes = -Infinity; frente > antes;) {
+      antes = frente;
+      frente = encima.reduce((m, g) => (g.c.z - g.r <= antes + PEGADOS_AL_LETRERO_CM ? Math.max(m, g.c.z + g.r) : m), antes);
+    }
     if (!(frente > c.max.z)) return n;
     if (frente - c.max.z > MAXIMO_ADELANTE_LETRERO_CM) {
       notas.push(`«${n.nombre}» queda tapado por globos que van ${Math.round(frente - c.max.z)} cm delante de él: se deja donde está.`);
