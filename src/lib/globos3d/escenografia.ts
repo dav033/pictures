@@ -12,8 +12,10 @@ import type { Punto2 } from "./trenza";
  * - `panel`: un contorno del plano XY (cm), extruido `grosorCm` desde `zCm` hacia +z; `huecos` son ventanas.
  * Acabados `foil` y `foil_mate`: el papel metalizado de un globo metalizado (espejo o satinado), que el visor infla
  * como almohada (ver `metalizados.ts`).
+ * Acabado `pampa` en un `cilindro`: una pluma de hierba de la pampa (el cilindro es su volumen: `altoCm` el largo del penacho y
+ * `radioCm` su semiancho), que el visor dibuja con las hebras translúcidas del follaje (ver `pampa-visor.ts`).
  */
-export type AcabadoEscenografia = "mate" | "satinado" | "brillante" | "lentejuelas" | "tela" | "madera" | "papel" | "metal" | "llama" | "foil" | "foil_mate" | "acrilico";
+export type AcabadoEscenografia = "mate" | "satinado" | "brillante" | "lentejuelas" | "tela" | "madera" | "papel" | "metal" | "llama" | "foil" | "foil_mate" | "acrilico" | "pampa";
 
 /** Los dibujos que sabe estampar el visor en la utilería de fiesta (banderines, platos, bolsas, letreros…). */
 export type DibujoMotivo = "calavera" | "murcielago" | "calabaza" | "fantasma" | "arana" | "telarana" | "sombrero_bruja" | "texto" | "lunares" | "rayas" | "estrellas";

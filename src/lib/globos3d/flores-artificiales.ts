@@ -9,9 +9,12 @@ import { crearAzar, type AnclaHueco, type ApoyoHueco } from "./organico";
  * Tamaños de las flores de tela de decoración más comunes: la cabeza de hortensia mide 15–18 cm, la rosa abierta
  * 6–8 cm y la ramita de gypsophila (nube) unos 10 cm de mata. Unidades: cm.
  */
-export type TipoFlorArtificial = "hortensia" | "rosa" | "gypsophila" | "monstera" | "palma" | "helecho" | "eucalipto" | "hoja_seca";
+export type TipoFlorArtificial = "hortensia" | "rosa" | "gypsophila" | "monstera" | "palma" | "helecho" | "eucalipto" | "hoja_seca" | "pampa";
 
-/** El follaje que no es flor (hojas de las guirnaldas tropicales, de jungla, de boda): se dibuja tendido sobre los globos. */
+/**
+ * El follaje que no es flor (hojas de las guirnaldas tropicales, de jungla, de boda): se dibuja tendido sobre los globos. La
+ * `pampa` no está aquí: sus plumas salen erguidas de entre los globos, con su tallo.
+ */
 export const HOJAS: readonly TipoFlorArtificial[] = ["monstera", "palma", "helecho", "eucalipto", "hoja_seca"];
 export const esHoja = (t: TipoFlorArtificial) => HOJAS.includes(t);
 
@@ -63,11 +66,63 @@ export const FLORES_ARTIFICIALES: Readonly<Record<TipoFlorArtificial, FlorArtifi
     descripcion: "Ramita de hojas redondas verde grisáceo: bodas y bautizos.",
   },
   hoja_seca: {
-    tipo: "hoja_seca", nombre: "Hoja seca / pampa", diametroCm: 32,
+    tipo: "hoja_seca", nombre: "Hoja seca (abanico)", diametroCm: 32,
     colores: [{ id: "dorada", nombre: "dorada", hex: "#c8a24f" }, { id: "beige", nombre: "beige", hex: "#d8c3a0" }],
-    descripcion: "Plumas de pampa u hojas secas pintadas: el acento dorado de las guirnaldas elegantes.",
+    descripcion: "Abanico de hojas de palma secas pintadas: el acento dorado de las guirnaldas elegantes.",
+  },
+  pampa: {
+    tipo: "pampa", nombre: "Pampa (plumas)", diametroCm: 65,
+    colores: [
+      { id: "beige", nombre: "beige", hex: "#c2a67c" },
+      { id: "crema", nombre: "crema", hex: "#e8dcc2" },
+      { id: "blanca", nombre: "blanca", hex: "#f6f1e8" },
+      { id: "dorada", nombre: "dorada", hex: "#c29d57" },
+      { id: "rosa", nombre: "rosa", hex: "#e3b8b0" },
+      { id: "terracota", nombre: "terracota", hex: "#b9714f" },
+    ],
+    descripcion: "Pluma esponjosa de hierba de la pampa en su tallo fino, de 30 a 60 cm: sale de entre los globos de las guirnaldas boho.",
   },
 };
+
+const sinTildes = (t: string) => t.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+
+/** Cómo llaman al follaje en la calle y en las fotos, además del nombre del catálogo (los más largos primero). */
+const ALIAS_FOLLAJE: ReadonlyArray<readonly [string, TipoFlorArtificial]> = [
+  ["pasto de la pampa", "pampa"], ["pasto de pampa", "pampa"], ["hierba de la pampa", "pampa"], ["hierba de pampa", "pampa"], ["pampas grass", "pampa"], ["pampa grass", "pampa"],
+  ["plumas de pampas", "pampa"], ["plumas de pampa", "pampa"], ["pluma de pampa", "pampa"], ["pampas", "pampa"],
+];
+
+/** Separa «pasto de la pampa beige» o «palma dorada» en el nombre del follaje (el del catálogo o uno de sus alias) y el color que lo sigue. */
+export function separarFollaje(pedido: string): { tipo: string; resto: string } {
+  const texto = pedido.trim().toLowerCase().replace(/\s+/g, " ");
+  const limpio = sinTildes(texto);
+  for (const [alias, tipo] of ALIAS_FOLLAJE) {
+    if (limpio === alias || limpio.startsWith(`${alias} `)) return { tipo, resto: limpio.slice(alias.length).trim() };
+  }
+  const [nombre = "", ...resto] = texto.split(" ");
+  // «rosas», «hortensias», «palmas»…: el plural es el mismo follaje.
+  const tipo = [nombre, nombre.replace(/s$/, ""), nombre.replace(/es$/, "")].find((n) => Object.hasOwn(FLORES_ARTIFICIALES, n)) ?? nombre;
+  return { tipo, resto: resto.join(" ") };
+}
+
+/** Cómo llaman a un color de follaje además de su nombre: «natural», «café» y «tostada» son el beige de la pampa. */
+const SINONIMOS_COLOR: Readonly<Record<string, string>> = { natural: "beige", cafe: "beige", marron: "beige", tostada: "beige", arena: "beige", champana: "beige" };
+
+/**
+ * El color de `flor` que nombra `texto`, aunque venga en plural o concordado («doradas», «dorado», «blancas», «rosas», «beiges»,
+ * «natural», «café»); `undefined` si esa flor no viene en ese color.
+ */
+export function colorDeFollaje(flor: FlorArtificial, texto: string): ColorFlor | undefined {
+  const palabra = sinTildes(texto.trim().toLowerCase()).replace(/\s+/g, " ");
+  const claves = new Set<string>();
+  for (const base of [palabra, palabra.replace(/s$/, ""), palabra.replace(/es$/, "")]) {
+    claves.add(base);
+    claves.add(base.replace(/o$/, "a"));
+    const sinonimo = SINONIMOS_COLOR[base];
+    if (sinonimo) claves.add(sinonimo);
+  }
+  return flor.colores.find((c) => claves.has(sinTildes(c.id).replace(/_/g, " ")) || claves.has(sinTildes(c.nombre)));
+}
 
 export type ProporcionFlor = { tipo: TipoFlorArtificial; colorId: string; peso: number };
 
@@ -224,8 +279,13 @@ export function repartirFlores(anclas: readonly AnclaHueco[], opciones: Opciones
 
 const EN_INGLES: Readonly<Record<TipoFlorArtificial, string>> = {
   hortensia: "hydrangeas", rosa: "roses", gypsophila: "baby's breath sprigs", monstera: "monstera leaves", palma: "palm fronds",
-  helecho: "fern fronds", eucalipto: "eucalyptus sprigs", hoja_seca: "dried pampas leaves",
+  helecho: "fern fronds", eucalipto: "eucalyptus sprigs", hoja_seca: "dried palm fans", pampa: "pampas grass plumes",
 };
+
+const COLOR_EN_INGLES: Readonly<Record<string, string>> = { dorada: "gold", beige: "beige", crema: "cream", blanca: "white", rosa: "pink", terracota: "terracotta" };
+
+/** El color que FLUX necesita oír: el dorado y el beige de cualquier follaje, y todos los de la pampa (su color es lo que más se ve). */
+const colorEnIngles = (tipo: TipoFlorArtificial, id: string) => (tipo === "pampa" || id === "dorada" || id === "beige" ? COLOR_EN_INGLES[id] : undefined);
 
 /** Lo que va metido entre los globos, para el texto de FLUX: «Artificial monstera leaves (green) tucked between…». */
 export function follajeEnIngles(flores: ReadonlyArray<{ tipo: TipoFlorArtificial; hex: string }>): string {
@@ -234,7 +294,8 @@ export function follajeEnIngles(flores: ReadonlyArray<{ tipo: TipoFlorArtificial
   for (const f of flores) {
     const color = FLORES_ARTIFICIALES[f.tipo].colores.find((c) => c.hex.toLowerCase() === f.hex.toLowerCase());
     const nombres = porTipo.get(f.tipo) ?? new Set<string>();
-    if (color && (color.id === "dorada" || color.id === "beige")) nombres.add(color.id === "dorada" ? "gold" : "beige");
+    const nombre = color ? colorEnIngles(f.tipo, color.id) : undefined;
+    if (nombre) nombres.add(nombre);
     porTipo.set(f.tipo, nombres);
   }
   const partes = [...porTipo].map(([t, c]) => `${c.size ? `${[...c].join(" and ")} ` : ""}${EN_INGLES[t]}`);

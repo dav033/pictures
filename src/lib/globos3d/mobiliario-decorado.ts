@@ -1,4 +1,5 @@
 import type { ElementoEscenografia, MotivoEscenografia } from "./escenografia";
+import type { Vec3 } from "./modulos";
 import type { Punto2 } from "./trenza";
 import { barra, caja, cilindro, losa, mat, poligono, r1, v, type Material } from "./mobiliario-base";
 import { conRotulo, GROSOR_ACRILICO_CM, limpiarTexto } from "./rotulos";
@@ -109,22 +110,27 @@ export function biombo(o: OpcionesDecorado & { paneles?: number }): ElementoEsce
   ]);
 }
 
-/** Jarrón alto con tallos de pampas: jarrón en dos troncos de cono y plumas abiertas en abanico. */
+/**
+ * Jarrón alto con tallos de pampas: jarrón en dos troncos de cono y plumas abiertas en abanico. Las plumas son cilindros de
+ * acabado `pampa`: el visor las dibuja como el follaje de las guirnaldas (penacho de hebras), no como varillas. Cada tallo
+ * sube en dos tramos que se van abriendo hacia fuera y termina en su pluma, que se inclina un poco más.
+ */
 export function jarronPampas(o: OpcionesDecorado): ElementoEscenografia[] {
   const { anchoCm: ancho, fondoCm: fondo, altoCm: h, principal: jarron, secundario: pampa } = o;
-  // Lo abiertas que van las plumas: proporcional al ancho y al fondo pedidos (53 × 28 cm con las medidas de partida).
-  const vaso = Math.min(h * 0.4, 60), r = ancho * 0.215, kx = ancho / 53, kz = fondo / 28;
+  // Lo abiertas que van las plumas: proporcional al ancho y al fondo pedidos (90 × 50 cm con las medidas de partida; las constantes llevan el abanico sin escalar a esas).
+  const vaso = Math.min(h * 0.4, 60), r = ancho * 0.127, largoRelativo = (h - vaso) / 79.2, kx = ancho / (115 * largoRelativo), kz = fondo / (170 * largoRelativo), radioPluma = 7.5 * (ancho / 90);
   const salida: ElementoEscenografia[] = [cilindro(v(0, 0, 0), r * 0.62, vaso * 0.55, jarron, r), cilindro(v(0, vaso * 0.55, 0), r, vaso * 0.35, jarron, r * 0.55), cilindro(v(0, vaso * 0.9, 0), r * 0.55, vaso * 0.1, jarron, r * 0.7)];
   const tallo = mat("#b89a6e", "mate");
-  const tallos = 11;
+  const tallos = 22;
   for (let k = 0; k < tallos; k++) {
-    const ang = k * 2.39996, inclina = 0.05 + 0.36 * ((k * 0.618) % 1);
+    const ang = k * 2.39996, inclina = 0.12 + 0.9 * ((k * 0.618) % 1);
     const largo = (h - vaso) * (0.7 + 0.3 * (((k * 0.37) % 1)));
-    const dx = Math.cos(ang) * Math.sin(inclina), dz = Math.sin(ang) * Math.sin(inclina) * 0.6, dy = Math.cos(inclina);
-    const base = v(dx * 2, vaso, dz * 2), punta = v((dx * largo + dx * 2) * kx, vaso + dy * largo, (dz * largo + dz * 2) * kz);
-    const pluma = Math.min(34, largo * 0.32);
-    const inicio = v(punta.x - dx * pluma, punta.y - dy * pluma, punta.z - dz * pluma);
-    salida.push(barra(base, inicio, 0.45, tallo), barra(inicio, punta, 3.6, pampa, 0.5));
+    const pluma = Math.min(40, largo * 0.45), tramo = largo - pluma;
+    // Un punto sale de otro `d` cm en la dirección inclinada `a` radianes (el abanico va más corto en el fondo que en el ancho); la pluma se comprime solo la mitad.
+    const avanza = (desde: Vec3, a: number, d: number, ex = kx, ez = kz) => v(desde.x + Math.cos(ang) * Math.sin(a) * d * ex, desde.y + Math.cos(a) * d, desde.z + Math.sin(ang) * Math.sin(a) * 0.85 * d * ez);
+    const base = v(Math.cos(ang) * 2, vaso, Math.sin(ang) * 2);
+    const codo = avanza(base, inclina * 0.5, tramo * 0.55), inicio = avanza(codo, inclina * 0.95, tramo * 0.45), punta = avanza(inicio, inclina * 1.25, pluma, (1 + kx) / 2, (1 + kz) / 2);
+    salida.push(barra(base, codo, 0.45, tallo), barra(codo, inicio, 0.4, tallo), barra(inicio, punta, radioPluma, pampa));
   }
   return salida;
 }

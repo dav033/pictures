@@ -191,7 +191,7 @@ const PropiedadesSchema = z.object({
   silueta: z.enum(IDS_SILUETA).optional().describe("trazo_organico: la silueta (" + SILUETAS_TRAZO.map((x) => `${x.id} = ${x.descripcion}`).join(" ") + ")"),
   puntos: z.array(z.object({ x_cm: z.number(), y_cm: z.number().describe("altura del eje desde el piso"), grosor_cm: z.number().describe("diámetro del cuerpo de globos en ese punto, 20–140") })).min(2).max(40).optional()
     .describe("trazo_organico: en vez de silueta, el recorrido exacto en el plano de la pared (x a la derecha desde el centro de la pieza, y hacia arriba desde el piso), en orden; un extremo con y ≤ grosor/2 nace del piso"),
-  follaje: z.array(z.string().min(3).max(30)).min(1).max(4).optional().describe(`trazo_organico: flores y hojas de tela entre los globos (${TIPOS_FOLLAJE.join(", ")}), con color opcional («monstera», «palma dorada», «rosa marfil», «hoja_seca beige»); el primero es el que más se ve`),
+  follaje: z.array(z.string().min(3).max(30)).min(1).max(4).optional().describe(`trazo_organico: flores y hojas de tela entre los globos (${TIPOS_FOLLAJE.join(", ")}), con color opcional («monstera», «palma dorada», «rosa marfil», «hoja_seca beige», «pampa crema»: las plumas de pampa, también «pampas» o «pasto de la pampa»); el primero es el que más se ve`),
   racimos: z.number().min(0).max(1).optional().describe("trazo_organico: 0 = cuerpo parejo, 1 = muy abultado en racimos (0,35 por defecto)"),
   fondo_cm: z.number().optional().describe("mobiliario (escenografía): fondo total, de frente a atrás"),
   decoracion_id: z.enum(DECORACION_IDS).optional().describe(`decoracion: cuál (${DECORACIONES_PREDEFINIDAS.map((d) => `${d.id} = ${d.nombre}`).join("; ")})`),

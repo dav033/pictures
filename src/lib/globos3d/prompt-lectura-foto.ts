@@ -64,7 +64,7 @@ TAMAÑOS Y COLORES
 - colores: TODOS los que se ven en la pieza (de 1 a 6), cada uno con peso (la suma ronda 100), acabado y el hex medido en la parte iluminada del globo, no en la sombra ni en el reflejo. Pon el nombre como lo diría un decorador y lo más cerca posible de la lista de colores Sempertex de abajo (azul marino, verde esmeralda, blush, dorado, plata, marfil…). Acabado: cromado = espejo (dorado y plata metálicos casi siempre), perla = satinado, cristal = transparente, confeti = transparente con confeti, mate o brillante = látex normal.
 - Los acentos pequeños también cuentan (un dorado del 5 % se pone con peso 5).
 
-FOLLAJE: hojas o flores de tela entre los globos van en "follaje" de la guirnalda: monstera, palma, helecho, eucalipto, hoja_seca (con color: «hoja_seca dorada»), rosa, hortensia, gypsophila.
+FOLLAJE: hojas o flores de tela entre los globos van en "follaje" de la guirnalda: monstera, palma, helecho, eucalipto, hoja_seca (abanico de hojas secas doradas; con color: «hoja_seca dorada»), pampa (las plumas esponjosas color crema, beige o dorado sobre tallos finos que sobresalen de la guirnalda: «pampa beige», «pampa crema»; también teñidas: rosa, terracota, blanca), rosa, hortensia, gypsophila. Si las plumas de pampa están en un jarrón del piso, es el fondo jarron_pampas, no follaje.
 
 Responde SOLO el JSON.`;
 

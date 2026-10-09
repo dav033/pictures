@@ -1,6 +1,6 @@
 import { fijoEnFormato, type ColorOrganico } from "./organico";
 import type { Pieza } from "./piezas";
-import { FLORES_ARTIFICIALES, type OpcionesFlores, type TipoFlorArtificial } from "./flores-artificiales";
+import { FLORES_ARTIFICIALES, colorDeFollaje, separarFollaje, type OpcionesFlores, type TipoFlorArtificial } from "./flores-artificiales";
 import { fallar } from "./herramientas-escena-colores";
 import { escalarGenerador, piezaDeGenerador, type GeneradorOrganico } from "./generadores-organicos";
 import { INFLADOS_TRAZO, MEZCLA_TRAZO, SILUETAS_TRAZO, cajaTrazo, esColumnaTrazo, puntosDeSilueta, validarTrazo, type ParametrosTrazoOrganico, type PuntoTrazo, type SiluetaTrazo } from "./trazo-organico";
@@ -94,18 +94,34 @@ export function ajustarTrazo(pieza: Extract<Pieza, { tipo: "organico" }>, g: Ext
 export const TIPOS_FOLLAJE = Object.keys(FLORES_ARTIFICIALES) as [TipoFlorArtificial, ...TipoFlorArtificial[]];
 
 /**
- * «monstera», «palma dorada», «rosa marfil», «hoja_seca beige»… → las flores y hojas de los huecos, en partes iguales
+ * «monstera», «palma dorada», «rosa marfil», «hoja_seca beige», «pampa crema»… → las flores y hojas de los huecos, en partes iguales
  * (el primero pesa el doble: es el que más se ve). El color es uno de los de esa flor; si falta, el primero.
  */
 export function floresPedidas(lista: readonly string[]): OpcionesFlores {
   const proporcion = lista.map((pedido, i) => {
-    const [tipo, ...resto] = pedido.trim().toLowerCase().replace(/\s+/g, " ").split(" ");
-    const flor = FLORES_ARTIFICIALES[tipo as TipoFlorArtificial] ?? fallar(`Follaje «${pedido}» desconocido: ${TIPOS_FOLLAJE.join(", ")} (con color opcional: «palma dorada»).`);
-    const nombre = resto.join(" ");
-    const color = nombre ? flor.colores.find((c) => c.id === nombre || c.nombre === nombre) ?? fallar(`«${flor.nombre}» viene en ${flor.colores.map((c) => c.nombre).join(", ")}.`) : flor.colores[0]!;
+    const { tipo, resto: nombre } = separarFollaje(pedido);
+    const flor = FLORES_ARTIFICIALES[tipo as TipoFlorArtificial] ?? fallar(`Follaje «${pedido}» desconocido: ${TIPOS_FOLLAJE.join(", ")} (con color opcional: «palma dorada»; la pampa también como «pampas» o «pasto de la pampa»).`);
+    const color = nombre ? colorDeFollaje(flor, nombre) ?? fallar(`«${flor.nombre}» viene en ${flor.colores.map((c) => c.nombre).join(", ")}.`) : flor.colores[0]!;
     return { tipo: flor.tipo, colorId: color.id, peso: i === 0 ? 2 : 1 };
   });
   return { semilla: 9, proporcion, tallosPorRacimo: proporcion.length > 1 ? 2 : 1 };
+}
+
+/**
+ * `floresPedidas` para lo que lee una foto: nunca falla. Un color que esa flor no trae se cambia por el primero (con su nota) y un
+ * follaje que no existe se salta (con su nota): la guirnalda que lo lleva no se pierde por un adorno mal nombrado.
+ */
+export function floresLeidas(lista: readonly string[]): { flores: OpcionesFlores | null; notas: string[] } {
+  const notas: string[] = [], pedidos: string[] = [];
+  for (const pedido of lista) {
+    const { tipo, resto } = separarFollaje(pedido);
+    const flor = FLORES_ARTIFICIALES[tipo as TipoFlorArtificial];
+    if (!flor) { notas.push(`Follaje «${pedido}» desconocido: se omite (hay ${TIPOS_FOLLAJE.join(", ")}).`); continue; }
+    const color = resto ? colorDeFollaje(flor, resto) : undefined;
+    if (resto && !color) notas.push(`«${pedido}»: ${flor.nombre} no viene en «${resto}» (viene en ${flor.colores.map((c) => c.nombre).join(", ")}): se usa ${flor.colores[0]!.nombre}.`);
+    pedidos.push(`${flor.tipo} ${color?.id ?? flor.colores[0]!.id}`);
+  }
+  return { flores: pedidos.length ? floresPedidas(pedidos) : null, notas };
 }
 
 /** Huecos para el follaje: uno cada ~45 cm de trazo (las hojas se ven sueltas, no en montón). */

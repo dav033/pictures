@@ -241,7 +241,7 @@ const BASE: readonly MuebleCatalogo[] = [
   mueble({
     id: "jarron_pampas", fondo: "proporcional", nombre: "Jarrón con pampas", grupo: "decorado", retiroCm: 40,
     descripcion: "Jarrón grande con tallos de pampas de 1,4 m de alto (decoración de piso); el ancho es el de las plumas abiertas.",
-    medidas: { anchoCm: 53, fondoCm: 28, altoCm: 132 }, colores: ["#e9dfcd", "#d8c3a0"], coloresDe: ["jarrón", "pampas"], armar: deDecorado(jarronPampas, "mate", "tela"),
+    medidas: { anchoCm: 90, fondoCm: 50, altoCm: 132 }, colores: ["#e9dfcd", "#d8c3a0"], coloresDe: ["jarrón", "pampas"], armar: deDecorado(jarronPampas, "mate", "pampa"),
   }),
   mueble({
     id: "lampara_pie", fondo: "igual_ancho", nombre: "Lámpara de pie", grupo: "decorado", retiroCm: 40,

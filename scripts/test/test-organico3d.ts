@@ -184,6 +184,12 @@ for (const p of COLUMNA_QUINCE_AZUL.flores.proporcion) {
   assert.ok(Math.abs(real - p.peso / pesoFlores) <= 0.05, `flor ${p.tipo} ${p.colorId}: ${(real * 100).toFixed(0)} %`);
 }
 assert.deepEqual(repartirFlores(organico.anclas, COLUMNA_QUINCE_AZUL.flores), flores, "las flores también son deterministas");
+// La pampa también se reparte en los huecos, con sus colores propios, y sale como follaje que no cotiza.
+const pampas = repartirFlores(organico.anclas, { semilla: 5, tallosPorRacimo: 1, proporcion: [{ tipo: "pampa", colorId: "crema", peso: 2 }, { tipo: "pampa", colorId: "terracota", peso: 1 }, { tipo: "pampa", colorId: "verde", peso: 1 }] });
+assert.equal(pampas.racimos.reduce((a, r) => a + r.flores.length, 0), organico.anclas.length, "una pampa por hueco");
+assert.ok(pampas.avisos.some((a) => /pampa verde/.test(a)), "una pampa verde no existe: se avisa");
+assert.deepEqual(pampas.materiales.map((m) => m.nombre).sort(), ["Pampa (plumas) crema", "Pampa (plumas) terracota"]);
+assert.ok(pampas.materiales.every((m) => m.categoria === "follaje" && !m.cotizaComoGlobo));
 
 // --- Tupida: sin ver a través, globos apretados y flores metidas en los huecos --------------------------------
 type P3 = { x: number; y: number; z: number };

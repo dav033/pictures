@@ -5,6 +5,7 @@ import { geometriaFoil } from "./impresos-visor";
 import { ejePanel, lentejuelasDePanel } from "./lentejuelas-instanciadas";
 import { materialEscenografia } from "./materiales-visor";
 import { crearMotivosVisor } from "./motivos-utileria";
+import { crearTexturaPluma, geometriaPluma, materialPluma } from "./pampa-visor";
 import { crearRotulosVisor, type OpcionesRotulos } from "./rotulo-visor";
 
 /**
@@ -16,6 +17,8 @@ import { crearRotulosVisor, type OpcionesRotulos } from "./rotulo-visor";
  * Todo es de ESTE visor: los materiales que reflejan llevan el entorno de su contexto WebGL, así que los cachés nunca son
  * de módulo (un caché de módulo con el reflejo de otro visor ya liberado sale negro: el defecto del foil tras una captura).
  * `liberar()` suelta lo compartido al destruir el visor; el vaciado de cada pieza no lo toca (`userData.compartido`).
+ *
+ * Las plumas de pampa (acabado `pampa`) comparten la textura de hebras del visor (una por visor, la suelta `liberar()`).
  *
  * Los rótulos en cursiva (`rotulo` de un sólido) son letras extruidas: la geometría de cada texto se hace una vez por visor
  * (`rotulo-visor.ts`) y los materiales (vinilo, acrílico mate o espejo) se comparten por color. Un sólido `oculto` con rótulo
@@ -33,6 +36,7 @@ const segmentosDeCilindro = (radioCm: number) => Math.min(48, Math.max(12, Math.
 
 /** ¿Echa sombra? Lo fino (varillas, barrotes, aros de alambre) no: la sombra no se nota y cuesta una pasada más de cada uno. */
 function proyectaSombra(s: SolidoEscenografia): boolean {
+  if (s.acabado === "pampa") return false;
   if (s.forma === "cilindro") return Math.max(s.radioCm, s.radioArribaCm) >= 3;
   if (s.forma === "caja") { const [, medio, grande] = [s.tamano.x, s.tamano.y, s.tamano.z].sort((a, b) => a - b); return medio! * grande! >= 400; }
   return s.grosorCm >= 1.5;
@@ -66,13 +70,14 @@ export function crearEscenografiaVisor(entorno: () => THREE.Texture, opcionesRot
   const rotulos = crearRotulosVisor(entorno, opcionesRotulos);
   const motivos = crearMotivosVisor();
   let tableroInvisible: THREE.Material | null = null;
+  let texturaPampa: THREE.Texture | null = null;
 
   const material = (s: SolidoEscenografia): THREE.Material => {
     if (ACABADOS_SIN_COMPARTIR.has(s.acabado)) return materialEscenografia(s, entorno());
     const clave = `${s.acabado}|${s.hex}`;
     let m = materiales.get(clave);
     if (!m) {
-      m = materialEscenografia(s, entorno());
+      m = s.acabado === "pampa" ? materialPluma(texturaPampa ??= crearTexturaPluma(), s.hex) : materialEscenografia(s, entorno());
       m.userData.compartido = true;
       materiales.set(clave, m);
     }
@@ -95,6 +100,9 @@ export function crearEscenografiaVisor(entorno: () => THREE.Texture, opcionesRot
   /** La geometría de un sólido en su propio marco (cm → m). */
   const geometriaDeSolido = (s: SolidoEscenografia): THREE.BufferGeometry => {
     if (s.forma === "caja") return compartida(`c|${s.tamano.x}|${s.tamano.y}|${s.tamano.z}`, () => new THREE.BoxGeometry(s.tamano.x * CM, s.tamano.y * CM, s.tamano.z * CM));
+    if (s.forma === "cilindro" && s.acabado === "pampa") {
+      return compartida(`p|${s.radioCm}|${s.altoCm}`, () => geometriaPluma().scale(s.radioCm * CM, s.altoCm * CM, s.radioCm * CM));
+    }
     if (s.forma === "cilindro") {
       return compartida(`y|${s.radioCm}|${s.radioArribaCm}|${s.altoCm}`, () => {
         const g = new THREE.CylinderGeometry(s.radioArribaCm * CM, s.radioCm * CM, s.altoCm * CM, segmentosDeCilindro(Math.max(s.radioCm, s.radioArribaCm)));
@@ -173,6 +181,8 @@ export function crearEscenografiaVisor(entorno: () => THREE.Texture, opcionesRot
       motivos.liberar();
       tableroInvisible?.dispose();
       tableroInvisible = null;
+      texturaPampa?.dispose();
+      texturaPampa = null;
       materiales.clear();
       geometrias.clear();
     },
