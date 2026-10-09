@@ -18,6 +18,7 @@ import { EditorMueble, esMuebleEditable } from "./EditorMueble";
 import { EditorRotulo, esRotulable } from "./EditorRotulo";
 import { ACTIVO, BOTON, Deslizador, INACTIVO, SelectorColor } from "./PanelFlor";
 import { NOMBRE_TIPO } from "./tipos-pieza";
+import { SALA_MAXIMA_CM } from "@/lib/globos3d/limites-escena";
 
 const m = (cm: number) => `${(cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 })} m`;
 const TARJETA = "flex flex-col gap-2 rounded-2xl bg-superficie p-3 ring-1 ring-borde";
@@ -376,9 +377,9 @@ export function EditorSala({ sala, onSala, plegable = true }: { sala: Sala; onSa
   );
   const contenido = (
     <div className="flex flex-col gap-3">
-      <Deslizador id="sala-ancho" etiqueta="Ancho" valor={sala.anchoCm} min={300} max={1200} paso={20} texto={m(sala.anchoCm)} onCambio={(v) => pon({ anchoCm: v })} />
-      <Deslizador id="sala-fondo" etiqueta="Fondo" valor={sala.fondoCm} min={300} max={1000} paso={20} texto={m(sala.fondoCm)} onCambio={(v) => pon({ fondoCm: v })} />
-      <Deslizador id="sala-alto" etiqueta="Alto (al techo)" valor={sala.altoCm} min={240} max={600} paso={10} texto={m(sala.altoCm)} onCambio={(v) => pon({ altoCm: v })} />
+      <Deslizador id="sala-ancho" etiqueta="Ancho" valor={sala.anchoCm} min={300} max={SALA_MAXIMA_CM.ancho} paso={20} texto={m(sala.anchoCm)} onCambio={(v) => pon({ anchoCm: v })} />
+      <Deslizador id="sala-fondo" etiqueta="Fondo" valor={sala.fondoCm} min={300} max={SALA_MAXIMA_CM.fondo} paso={20} texto={m(sala.fondoCm)} onCambio={(v) => pon({ fondoCm: v })} />
+      <Deslizador id="sala-alto" etiqueta="Alto (al techo)" valor={sala.altoCm} min={240} max={SALA_MAXIMA_CM.alto} paso={10} texto={m(sala.altoCm)} onCambio={(v) => pon({ altoCm: v })} />
       <fieldset className="flex flex-col gap-1">
         <legend className="mb-1 text-xs font-semibold text-texto">Qué se ve</legend>
         <div className="grid grid-cols-2 gap-1">

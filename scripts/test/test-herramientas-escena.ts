@@ -244,7 +244,7 @@ prueba("cambiar_sala: medidas, tonos y superficies; no toca las piezas", () => {
   assert.equal(r.escena.sala.tonos.paredes, "#ffeedd");
   assert.equal(r.escena.sala.fondoCm, escena.sala.fondoCm);
   assert.deepEqual(r.escena.nodos, escena.nodos);
-  error(aplicarHerramienta(escena, "cambiar_sala", { alto_cm: 100 }), /fuera de rango: va de 240 a 600/);
+  error(aplicarHerramienta(escena, "cambiar_sala", { alto_cm: 100 }), /fuera de rango: va de 240 a 1000/);
   error(aplicarHerramienta(escena, "cambiar_sala", { alto_cm: 240 }), /no cabe bajo el techo/);
   error(aplicarHerramienta(escena, "cambiar_sala", { tono_piso: "rojo" }), /hex/);
 });

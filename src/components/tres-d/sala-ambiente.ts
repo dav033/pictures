@@ -88,7 +88,9 @@ const LUZ_TECHO = new THREE.Color(1.0, 0.94, 0.8);
 /** Luces empotradas del techo: discos que brillan con un aro oscuro, en filas (una sola malla por instancias). */
 export function lucesDeTecho(ancho: number, fondo: number, alto: number): THREE.Group {
   const grupo = new THREE.Group();
-  const nx = Math.max(2, Math.round(ancho / (1.6))), nz = Math.max(2, Math.round(fondo / 1.6));
+  let nx = Math.max(2, Math.round(ancho / (1.6))), nz = Math.max(2, Math.round(fondo / 1.6));
+  // Un salón grande: las 24 luces se reparten por todo el techo (no las primeras filas de una esquina).
+  if (ancho > 12 || fondo > 10) { nx = Math.max(2, Math.round(Math.sqrt((24 * ancho) / fondo))); nz = Math.max(2, Math.floor(24 / nx)); }
   const total = Math.min(24, nx * nz);
   const disco = new THREE.InstancedMesh(new THREE.CircleGeometry(0.075, 20), new THREE.MeshBasicMaterial({ color: LUZ_TECHO, side: THREE.FrontSide }), total);
   const aro = new THREE.InstancedMesh(new THREE.RingGeometry(0.075, 0.1, 20), new THREE.MeshBasicMaterial({ color: 0x8f8a82, side: THREE.FrontSide }), total);
