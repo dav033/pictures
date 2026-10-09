@@ -44,6 +44,7 @@ import { aligerarAdjuntos, claveImagen, imagenesSinMiniatura, type AdjuntosTurno
 import { respetarReintentable, uiErrorDesdeEventoChat, type OrigenError } from "@/lib/estado/estado-error";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 import { nuevaConversacion, obtenerIdConversacion, registrarEventoCliente } from "@/lib/registro/cliente";
+import { CalificacionClasica } from "@/components/ui/shell/CalificacionClasica";
 import {
   CLAVE_GENERACIONES,
   generacionParaRestaurar,
@@ -66,6 +67,7 @@ import { coloresCliente } from "@/lib/plan/presentacion-cliente";
 import { DialogoEjemplos, GaleriaEjemplos } from "@/components/ui/shell/GaleriaEjemplos";
 import { HojaSeleccion } from "@/components/ui/shell/HojaSeleccion";
 import { volarFoto } from "@/components/ui/shell/vuelo-foto";
+import { BotonVoz } from "@/components/voz/BotonVoz";
 
 type ProveedorId = "gemini";
 const NOMBRE_PROVEEDOR: Record<ProveedorId, string> = {
@@ -1902,6 +1904,7 @@ export default function Page() {
                           )}
                         </div>
                       )}
+                      <CalificacionClasica mensajes={mensajes} indice={i} listo={!esUltimoStreaming} conImagen={imagenes.length > 0} />
                     </motion.div>
                   );
                 })}
@@ -1994,13 +1997,16 @@ export default function Page() {
                       {(planActualAprobado || !planActual) && (
                         <div className="flex flex-col gap-2 sm:flex-row">
                           <label htmlFor="ajuste-imagen" className="sr-only">Ajuste para la imagen</label>
-                          <input
-                            id="ajuste-imagen"
-                            value={ajuste}
-                            onChange={(e) => setAjuste(e.target.value)}
-                            placeholder="Ajuste: “más velas”, “de noche”…"
-                            className="ui-input min-w-0 flex-1"
-                          />
+                          <div className="flex min-w-0 flex-1 items-center gap-1">
+                            <input
+                              id="ajuste-imagen"
+                              value={ajuste}
+                              onChange={(e) => setAjuste(e.target.value)}
+                              placeholder="Ajuste: “más velas”, “de noche”…"
+                              className="ui-input min-w-0 flex-1"
+                            />
+                            <BotonVoz campoId="ajuste-imagen" alTexto={setAjuste} variante="cliente" clase="ui-icon-button size-10" />
+                          </div>
                           {planActualAprobado ? (
                             <button type="button" onClick={aplicarAjusteSobrePropuesta} disabled={!ajuste.trim() || generando} className="ui-button-primary shrink-0">
                               Aplicar ajuste y regenerar

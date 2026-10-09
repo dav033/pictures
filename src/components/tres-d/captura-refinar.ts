@@ -18,7 +18,26 @@ const ESPERA_CUADRO_MS = 150;
 /** Espera a que el navegador pinte un cuadro (o un tiempo corto: una pestaña en segundo plano no pinta). */
 const esperarCuadro = () => new Promise<void>((resolver) => { const reloj = setTimeout(resolver, ESPERA_CUADRO_MS); requestAnimationFrame(() => { clearTimeout(reloj); resolver(); }); });
 
-export async function capturarEscenaParaRefinar(escena: Escena, encuadre: Encuadre, ladoMax = LADO_CAPTURA_REFINAR): Promise<FotoAdjuntaIA> {
+/** Un solo visor fuera de pantalla vivo a la vez (cada uno es un contexto WebGL; el navegador suelta el más viejo —el del taller— al pasar de ~16). */
+let cola: Promise<unknown> = Promise.resolve();
+
+/** Suelta el contexto WebGL del lienzo ya sin uso (`destruir` libera three.js pero no el contexto, que el navegador tarda en recoger). */
+function soltarContexto(lienzo: HTMLCanvasElement): void {
+  try {
+    const gl = lienzo.getContext("webgl2") ?? lienzo.getContext("webgl");
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+  } catch {
+    // El lienzo ya se descarta: no importa si no se pudo.
+  }
+}
+
+export function capturarEscenaParaRefinar(escena: Escena, encuadre: Encuadre, ladoMax = LADO_CAPTURA_REFINAR): Promise<FotoAdjuntaIA> {
+  const hecha = cola.then(() => capturar(escena, encuadre, ladoMax), () => capturar(escena, encuadre, ladoMax));
+  cola = hecha.catch(() => undefined);
+  return hecha;
+}
+
+async function capturar(escena: Escena, encuadre: Encuadre, ladoMax: number): Promise<FotoAdjuntaIA> {
   const { ancho, alto } = medidasCaptura(encuadre.aspecto, ladoMax);
   const lienzo = document.createElement("canvas");
   lienzo.width = ancho;
@@ -40,6 +59,7 @@ export async function capturarEscenaParaRefinar(escena: Escena, encuadre: Encuad
     return { mime: "image/jpeg", base64: datos.slice(datos.indexOf(",") + 1) };
   } finally {
     visor.destruir();
+    soltarContexto(lienzo);
     lienzo.remove();
   }
 }

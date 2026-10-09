@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { DecoracionSempertexSchema, ProveedorSempertexSchema } from "@/lib/biblioteca-sempertex/esquemas";
 import { CotizacionGuiadaSchema, CotizacionPlanGuiadoSchema, PlanGuiadoSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { MOTOR_POR_DEFECTO, MotorGuiadaSchema } from "@/lib/guiada-motor/tipos";
 import { GuiaArmadoSchema } from "./guias-armado";
 
 const PasoPlanSchema = z.object({ orden: z.number().int().positive(), texto: z.string().min(1), globos: z.string().optional() }).strict();
@@ -24,7 +25,9 @@ export const WidgetGuiadoSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("comprar"), decoracion: DecoracionSempertexSchema }).strict(),
   z.object({ tipo: z.literal("propuesta"), propuesta: PropuestaComposicionSchema, estado: z.enum(["resolviendo", "fallo"]).optional() }).strict(),
   z.object({
-    tipo: z.literal("plan"), plan: PlanGuiadoSchema, cotizacion: CotizacionPlanGuiadoSchema.optional(), pasos: z.array(PasoPlanSchema).optional(), fotoInspiracion: z.boolean().optional(),
+    tipo: z.literal("plan"), plan: PlanGuiadoSchema,
+    /** Qué motor armó este plan (REQ-007): se decide al crearlo y sus ediciones e imágenes siguen con él. Los guardados antes de la bandera no lo traen: son de Python. */
+    motor: MotorGuiadaSchema.catch(MOTOR_POR_DEFECTO), cotizacion: CotizacionPlanGuiadoSchema.optional(), pasos: z.array(PasoPlanSchema).optional(), fotoInspiracion: z.boolean().optional(),
     /** Con `fotoInspiracion`: el mensaje que trae la lectura de la foto de la que salió el plan (y sus versiones rehechas). */
     referenciaId: z.string().min(1).max(80).optional(),
     imagen: z.union([z.string().url(), z.string().startsWith("/api/guiada-imagen/")]).optional(), errorImagen: z.boolean().optional(), compraAbierta: z.boolean().optional(),
