@@ -14,6 +14,7 @@ import { sumarMateriales } from "./mezcla";
 import { armarTrenza } from "./trenza";
 import { opcionesArcoOrganico, recorridoGuirnalda, type OpcionesArcoOrganico, type OpcionesGuirnalda } from "./formas-escena";
 import { armarEscenografia, puntosSolido, type ElementoEscenografia, type ProductoDePieza, type SolidoEscenografia } from "./escenografia";
+import { elementosDeEscenografia, type MuebleDePieza } from "./mobiliario-pieza";
 import type { TipoUtileria } from "./utileria-catalogo";
 import { armarForma, type OpcionesForma } from "./formas";
 import { armarLetras, type OpcionesLetras } from "./letras";
@@ -56,7 +57,7 @@ type PiezaBase =
    * La **utilería de fiesta** (banderín, platos, vasos… ver `utileria.ts`) también es escenografía, pero dice qué es
    * (`utileria`) y qué producto Sempertex representa (`productos`): sale en la lista «Productos de fiesta».
    */
-  | { tipo: "escenografia"; elementos: ElementoEscenografia[]; utileria?: TipoUtileria; productos?: ProductoDePieza[]; /** Id de `FONDOS_CATALOGO` de donde sale (un fondo o mueble); sirve para nombrarlo en el inventario de la foto con IA. */ catalogoId?: string }
+  | { tipo: "escenografia"; elementos: ElementoEscenografia[]; utileria?: TipoUtileria; productos?: ProductoDePieza[]; /** De qué entrada de `FONDOS_CATALOGO` sale (y, en un mueble, con qué medidas y colores: ver `mobiliario-pieza.ts`). */ mueble?: MuebleDePieza }
   /**
    * Un globo suelto (el R-24 de remate encima de un arco): el centro de su cuerpo en el origen y el cuerpo hacia +y
    * (nudo abajo). Cotiza como un globo.
@@ -207,7 +208,7 @@ function armarPiezaBase(pieza: PiezaBase): PiezaArmada {
       return conCaja({ globos, tubos: [], flores: [], anclas: trenza.anclas.map((a) => ({ posicion: a.posicion, normal: a.normal })), materiales: materialesPorFormato(globos) });
     }
     case "escenografia":
-      return conCaja({ globos: [], tubos: [], flores: [], anclas: [], materiales: [], solidos: armarEscenografia(pieza.elementos) });
+      return conCaja({ globos: [], tubos: [], flores: [], anclas: [], materiales: [], solidos: armarEscenografia(elementosDeEscenografia(pieza)) });
     case "globo": {
       const formato = formatoPorId(pieza.formatoId);
       if (!formato) throw new Error(`Formato desconocido: ${pieza.formatoId}`);

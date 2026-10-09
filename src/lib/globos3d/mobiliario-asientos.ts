@@ -42,15 +42,16 @@ export function sillaTiffany(o: OpcionesAsiento): ElementoEscenografia[] {
 /** Silla moderna: cáscara de asiento, patas abiertas de varilla, respaldo curvo inclinado. 45 × 48 × 82 cm. */
 export function sillaModerna(o: OpcionesAsiento): ElementoEscenografia[] {
   const { anchoCm: w, fondoCm: d, altoCm: h, estructura: e, cojin } = o;
-  const asiento = r1(h * 0.56), xp = w / 2 - 3, zp = d / 2 - 3;
+  const asiento = r1(h * 0.56), xp = w / 2 - 5, zp = d / 2 - 5, alto = h - asiento;
   const salida: ElementoEscenografia[] = [
     caja(v(0, asiento - 2, 0), v(w, 4, d), cojin),
-    cajaInclinada(v(0, asiento + (h - asiento) * 0.55, -d / 2 + 3), v(w - 3, (h - asiento) * 0.62, 2.8), 9, cojin),
+    // El respaldo, algo echado hacia atrás: su canto de arriba llega al alto total.
+    cajaInclinada(v(0, asiento + alto * 0.5, -d / 2 + 3), v(w - 3, alto * 0.94, 2.8), 7, cojin),
   ];
   for (const sx of [-1, 1]) {
     salida.push(
-      barra(v(sx * (xp + 4), 0, zp + 4), v(sx * xp, asiento - 4, zp), 1.2, e),
-      barra(v(sx * (xp + 4), 0, -zp - 4), v(sx * xp, asiento - 4, -zp), 1.2, e),
+      barra(v(sx * (xp + 3.5), 0, zp + 3.5), v(sx * xp, asiento - 4, zp), 1.2, e),
+      barra(v(sx * (xp + 3.5), 0, -zp - 3.5), v(sx * xp, asiento - 4, -zp), 1.2, e),
       // Los dos soportes del respaldo suben desde las patas de atrás.
       barra(v(sx * xp, asiento - 4, -zp), v(sx * (xp - 2), asiento + (h - asiento) * 0.35, -d / 2 + 2), 1.1, e),
     );
@@ -70,16 +71,16 @@ export function banca(o: OpcionesAsiento): ElementoEscenografia[] {
   return salida;
 }
 
-/** Taburete (alto de barra, o bajo si `altoCm` es menor): asiento redondo, cuatro patas abiertas y aro para los pies. `anchoCm` es el diámetro del asiento. */
+/** Taburete (alto de barra, o bajo si `altoCm` es menor): asiento redondo, cuatro patas abiertas y aro para los pies. `anchoCm` es lo que abren las patas en el piso (el asiento es 9 cm más angosto). */
 export function taburete(o: OpcionesAsiento): ElementoEscenografia[] {
   const { anchoCm: dia, altoCm: h, estructura: e, cojin } = o;
-  const r = dia / 2, asiento = h - 4, pie = r + 3.5, alto = r - 3;
+  const pie = dia / 2 - 1.2, r = pie - 3.5, asiento = h - 4, alto = r - 3;
   const salida: ElementoEscenografia[] = [cilindro(v(0, asiento, 0), r, 4, cojin, r - 0.8)];
-  const angulos = [45, 135, 225, 315].map((g) => (g * Math.PI) / 180);
+  const angulos = [0, 90, 180, 270].map((g) => (g * Math.PI) / 180);
   for (const a of angulos) salida.push(barra(v(Math.cos(a) * pie, 0, Math.sin(a) * pie), v(Math.cos(a) * alto, asiento, Math.sin(a) * alto), 1.2, e));
   // Apoyapiés: un octágono de varillas a 1/3 de la altura (solo si el taburete es alto).
   if (h >= 60) {
-    const y = h * 0.34, rr = pie - (pie - alto) * (y / asiento) + 0.5;
+    const y = h * 0.34, rr = pie - (pie - alto) * (y / asiento);
     for (let i = 0; i < 8; i++) {
       const a0 = (i / 8) * Math.PI * 2, a1 = ((i + 1) / 8) * Math.PI * 2;
       salida.push(barra(v(Math.cos(a0) * rr, y, Math.sin(a0) * rr), v(Math.cos(a1) * rr, y, Math.sin(a1) * rr), 0.8, e));
@@ -103,13 +104,13 @@ export function sofa(o: OpcionesAsiento): ElementoEscenografia[] {
     // Brazos y espaldar.
     caja(v(-(w / 2 - brazo / 2), patas + (h * 0.72 - patas) / 2, 0), v(brazo, h * 0.72 - patas, d), tela),
     caja(v(w / 2 - brazo / 2, patas + (h * 0.72 - patas) / 2, 0), v(brazo, h * 0.72 - patas, d), tela),
-    caja(v(0, patas + (h * 0.8 - patas) / 2, -d / 2 + 8), v(dentro, h * 0.8 - patas, 16), tela),
+    caja(v(0, patas + (h - patas) / 2, -d / 2 + 8), v(dentro, h - patas, 16), tela),
   );
   for (let i = 0; i < plazas; i++) {
     const x = -dentro / 2 + ancho * (i + 0.5);
     salida.push(
       caja(v(x, patas + baseH + 6, 8), v(ancho - 1.5, 12, d - 18), tela),
-      cajaInclinada(v(x, asientoTop + (h - asientoTop) * 0.4, -d / 2 + 22), v(ancho - 2, (h - asientoTop) * 0.8, 14), 12, tela),
+      cajaInclinada(v(x, asientoTop + (h - asientoTop) * 0.46, -d / 2 + 22), v(ancho - 2, (h - asientoTop) * 0.9, 14), 12, tela),
     );
   }
   return salida;

@@ -18,7 +18,7 @@ import { decoracionPredefinida } from "./figuras";
 import { reemplazarColor } from "./recolorear";
 import { arcosChiara, cortina, letrero, mediaLuna, panelRedondo, pedestales } from "./fondos-escenografia";
 import { mesaConMantel, paredLentejuelas, tapete } from "./escenografia";
-import { mobiliarioLeido } from "./compilar-mobiliario";
+import { mesaLeida, mobiliarioLeido, type MedidaLeida } from "./compilar-mobiliario";
 import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
 
 /**
@@ -209,7 +209,9 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         return;
       }
       case "fondo": {
-        const muebles = mobiliarioLeido(p, { anchoCm: cm(p.ancho), altoCm: cm(p.alto), xCm: X(p.x), yBaseCm: Y(p.yBase), muroZ: muro });
+        const medidaDe = (q: typeof p): MedidaLeida => ({ anchoCm: cm(q.ancho), altoCm: cm(q.alto), xCm: X(q.x), yBaseCm: Y(q.yBase), muroZ: muro });
+        const mesa = l.piezas.flatMap((q) => (q.tipo === "fondo" ? [mesaLeida(q, medidaDe(q))] : [])).find((m) => m !== null) ?? null;
+        const muebles = mobiliarioLeido(p, medidaDe(p), notas, mesa);
         if (muebles) { for (const m of muebles) poner(m.base, m.nombre, m.pieza, m.colocacion); return; }
         const hex = (k: number) => p.colores[k]?.hex ?? p.colores[0]!.hex;
         const a = cm(p.alto), w = cm(p.ancho), y0 = Y(p.yBase);
@@ -226,7 +228,7 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
           case "cortina_luces": lugar = "pared"; elementos = cortina({ anchoCm: w, altoCm: a, hex: hex(0), luces: true }); break;
           default: lugar = "pared"; elementos = letrero({ texto: p.texto ?? "", anchoCm: w, altoCm: a, hex: hex(0), tinta: hex(1) });
         }
-        const pieza: Pieza = { tipo: "escenografia", elementos, catalogoId: p.id };
+        const pieza: Pieza = { tipo: "escenografia", elementos, mueble: { id: p.id } };
         poner(p.id.replace(/_/g, "-"), p.id === "letrero" && p.texto ? `Letrero «${p.texto}»` : p.id.replace(/_/g, " "), pieza,
           lugar === "pared" ? { en: "pared", pared: "fondo", aLoLargoCm: X(p.x), alturaCm: p.id === "letrero" ? r0(y0) : 0 } : { en: "piso", xCm: X(p.x), zCm: z, giroGrados: 0 });
         return;

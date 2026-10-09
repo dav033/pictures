@@ -1,3 +1,6 @@
+import type { PiezaEscenografia } from "./mobiliario-pieza";
+import { tonoEnIngles } from "./render-ia";
+
 /**
  * Cómo se llama en inglés cada pieza del catálogo de fondos y mobiliario (`FONDOS_CATALOGO`), para el inventario cerrado
  * que se le manda a FLUX (`escenaEnIngles`): «6 × gold Tiffany chiavari chair» en vez de «party props», que lo dejaba
@@ -17,3 +20,25 @@ export const ESCENOGRAFIA_EN: Readonly<Record<string, string>> = {
   mesa_redonda_sillas: "round banquet table with a floor-length tablecloth and eight Tiffany chairs around it", mesa_imperial_sillas: "long banquet table with a floor-length tablecloth and ten Tiffany chairs around it",
   sala_lounge: "lounge set (sofa, two armchairs and a coffee table)",
 };
+
+/**
+ * La frase de una pieza de escenografía del catálogo para FLUX: su nombre en inglés, con sus colores (nombre y hex) y, en un
+ * letrero con texto, lo que dice. null si no es del catálogo (queda como «other props»).
+ */
+export function fraseDeEscenografia(p: PiezaEscenografia): string | null {
+  const id = p.mueble?.id;
+  const nombre = id ? ESCENOGRAFIA_EN[id] : undefined;
+  if (!id || !nombre) return null;
+  const o = p.mueble?.opciones;
+  if (!o) return nombre;
+  const distintos = [...new Set(o.colores.slice(0, 2))];
+  const colores = distintos.length ? ` in ${distintos.map(tonoEnIngles).join(" and ")}` : "";
+  return `${nombre}${colores}${o.texto ? ` reading "${o.texto}"` : ""}`;
+}
+
+/** Qué son los props de escenografía: lo que se sabe del catálogo («6 × Tiffany chair in …, a round banquet table in …») o, si no, la frase de siempre. */
+export function propsEnIngles(porNombre: ReadonlyMap<string, number>, total: number): string {
+  if (!porNombre.size) return "backdrop panels, tables or rug";
+  const nombrados = [...porNombre.values()].reduce((s, n) => s + n, 0);
+  return [...[...porNombre].map(([nombre, n]) => (n > 1 ? `${n} × ${nombre}` : `a ${nombre}`)), ...(total > nombrados ? ["other props as in the input"] : [])].join(", ");
+}

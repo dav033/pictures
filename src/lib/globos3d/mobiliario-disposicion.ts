@@ -22,24 +22,31 @@ export const cabenEnLado = (largoCm: number, frenteCm: number) => Math.max(1, Ma
  * borde de la mesa al centro del asiento y `frenteCm` lo que ocupa un asiento a lo ancho. Si no caben todos, devuelve
  * los que caben (compara el largo con `cantidad`).
  */
-export function puestosAlrededor(o: { cx: number; cz: number; anchoCm: number; fondoCm: number; cantidad: number; holguraCm: number; frenteCm: number }): Puesto[] {
+export function puestosAlrededor(o: { cx: number; cz: number; anchoCm: number; fondoCm: number; cantidad: number; holguraCm: number; frenteCm: number; /** Cuántos van en las cabeceras (0, 1 o 2) aunque quepan más por los lados; por defecto, solo los que sobran. */ cabeceras?: number }): Puesto[] {
   const { cx, cz, anchoCm, fondoCm, cantidad: n, holguraCm: hol } = o;
   const puesto = (x: number, z: number): Puesto => ({ x: r1(x), z: r1(z), giroGrados: giroHacia(x, z, cx, cz) });
   const largo = Math.max(anchoCm, fondoCm), corto = Math.min(anchoCm, fondoCm);
   if (largo - corto < largo * 0.25) {
     const radio = largo / 2 + hol;
-    return Array.from({ length: n }, (_, i) => { const a = (i / n) * Math.PI * 2; return puesto(cx + Math.sin(a) * radio, cz + Math.cos(a) * radio); });
+    // Alrededor de una mesa redonda caben tantos como asientos de `frenteCm` (más 6 de aire) hay en la circunferencia.
+    const caben = Math.max(1, Math.floor((2 * Math.PI * radio) / (o.frenteCm + 6)));
+    return Array.from({ length: Math.min(n, caben) }, (_, i) => { const a = (i / Math.min(n, caben)) * Math.PI * 2; return puesto(cx + Math.sin(a) * radio, cz + Math.cos(a) * radio); });
   }
   const alX = anchoCm >= fondoCm;
-  // (l, s): l a lo largo de la mesa, s a lo ancho; se pasa a (x, z) según el lado largo.
-  const aMundo = (l: number, s: number) => (alX ? puesto(cx + l, cz + s) : puesto(cx + s, cz + l));
-  const lados = Math.min(n, 2 * cabenEnLado(largo, o.frenteCm));
+  // (l, s): l a lo largo de la mesa, s a lo ancho; se pasa a (x, z) según el lado largo. Cada asiento mira a la mesa
+  // en perpendicular a su lado (`haciaS` = 0: la línea central), no al centro: así quedan derechos y no en abanico.
+  const aMundo = (l: number, s: number, haciaS = s) => {
+    const p = alX ? puesto(cx + l, cz + s) : puesto(cx + s, cz + l);
+    const hacia = alX ? { x: cx + l, z: cz + haciaS } : { x: cx + haciaS, z: cz + l };
+    return { ...p, giroGrados: giroHacia(p.x, p.z, hacia.x, hacia.z) };
+  };
+  const lados = Math.min(n - Math.min(2, o.cabeceras ?? 0), 2 * cabenEnLado(largo, o.frenteCm));
   const cabeceras = Math.min(2, n - lados);
   const salida: Puesto[] = [];
   [1, -1].forEach((lado, k) => {
     const cuantos = k === 0 ? Math.ceil(lados / 2) : Math.floor(lados / 2);
-    for (let i = 0; i < cuantos; i++) salida.push(aMundo(-largo / 2 + (largo * (i + 0.5)) / cuantos, lado * (corto / 2 + hol)));
+    for (let i = 0; i < cuantos; i++) salida.push(aMundo(-largo / 2 + (largo * (i + 0.5)) / cuantos, lado * (corto / 2 + hol), 0));
   });
-  for (let i = 0; i < cabeceras; i++) salida.push(aMundo((i === 0 ? 1 : -1) * (largo / 2 + hol), 0));
+  for (let i = 0; i < cabeceras; i++) salida.push(aMundo((i === 0 ? 1 : -1) * (largo / 2 + hol), 0, 0));
   return salida;
 }

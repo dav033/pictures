@@ -97,10 +97,17 @@ export function mesaHexagonal(o: OpcionesMesa): ElementoEscenografia[] {
   return salida;
 }
 
-/** Juego nido de tres mesas hexagonales de distinto tamaño, corridas en escalón como en las fotos de fiesta. */
+/** Cuánto mide de ancho el juego nido respecto al diámetro de su mesa más grande (las tres corridas en escalón). */
+export const ANCHO_NIDO_POR_DIAMETRO = 2.54;
+
+/**
+ * Juego nido de tres mesas hexagonales de distinto tamaño, corridas en escalón como en las fotos de fiesta. `anchoCm` es
+ * lo que mide todo el juego a lo ancho y `altoCm` la mesa más alta; el fondo sale de las mesas.
+ */
 export function mesasNidoHexagonales(o: OpcionesMesa): ElementoEscenografia[] {
-  const escalones = [{ k: 1, x: -o.anchoCm * 0.95, z: 6 }, { k: 0.8, x: 0, z: 0 }, { k: 0.62, x: o.anchoCm * 0.78, z: -4 }];
-  return escalones.flatMap((e) => trasladarGirar(mesaHexagonal({ ...o, anchoCm: r1(o.anchoCm * e.k), altoCm: r1(o.altoCm * (0.5 + e.k * 0.5)) }), e.x, e.z, 0));
+  const d = o.anchoCm / ANCHO_NIDO_POR_DIAMETRO;
+  const escalones = [{ k: 1, x: -d * 0.95, z: d * 0.12 }, { k: 0.8, x: 0, z: 0 }, { k: 0.62, x: d * 0.78, z: -d * 0.08 }];
+  return escalones.flatMap((e) => trasladarGirar(mesaHexagonal({ ...o, anchoCm: r1(d * e.k), altoCm: r1(o.altoCm * (0.5 + e.k * 0.5)) }), e.x, e.z, 0));
 }
 
 /**
@@ -136,10 +143,14 @@ export function carritoDulces(o: OpcionesMesa): ElementoEscenografia[] {
   return salida;
 }
 
-/** Mesa de regalos: mesa con mantel hasta el piso y una pila de cajas de regalo con moños encima. */
+/** Lo que suben los regalos sobre la mesa (cm). */
+export const ALTO_PILA_REGALOS = 35;
+
+/** Mesa de regalos: mesa con mantel hasta el piso y una pila de cajas de regalo con moños encima. `altoCm` es el total, regalos incluidos. */
 export function mesaRegalos(o: OpcionesMesa): ElementoEscenografia[] {
-  const { anchoCm: w, fondoCm: d, altoCm: h, tapa: mantel, patas: caja1, extra: caja2 = mat("#f0b8c8", "satinado") } = o;
-  const salida = mesaConMantel({ anchoCm: w, fondoCm: d, altoCm: h, mantel: mantel.hex });
+  const { anchoCm: w, fondoCm: d, tapa: mantel, patas: caja1, extra: caja2 = mat("#f0b8c8", "satinado") } = o;
+  const h = Math.min(100, Math.max(55, o.altoCm - ALTO_PILA_REGALOS));
+  const salida = mesaConMantel({ anchoCm: w - 14, fondoCm: d - 2, altoCm: h, mantel: mantel.hex });
   const cinta = mat("#f4f1ea", "satinado");
   const regalos = [
     { x: -0.28, base: 0, ancho: 32, alto: 24, fondo: 26, m: caja1 }, { x: 0, base: 0, ancho: 26, alto: 20, fondo: 24, m: caja2 },

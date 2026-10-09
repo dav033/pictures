@@ -1,39 +1,35 @@
 "use client";
 
-import { memo, useState } from "react";
-import { idNuevo, type Colocacion, type Escena } from "@/lib/globos3d/escena";
-import type { Pieza } from "@/lib/globos3d/piezas";
-import { FONDOS_CATALOGO, type FondoCatalogo } from "@/lib/globos3d/fondos-escenografia";
+import { memo, useMemo, useState } from "react";
+import { idNuevo, type Escena } from "@/lib/globos3d/escena";
+import { FONDOS_CATALOGO } from "@/lib/globos3d/fondos-escenografia";
+import { colocacionPorDefecto } from "@/lib/globos3d/mobiliario-colocar";
+import { piezaDeEntrada } from "@/lib/globos3d/mobiliario-pieza";
+import type { FondoCatalogo } from "@/lib/globos3d/mobiliario-tipos";
 import { useArrastreDesdePanel } from "./arrastre-decoracion";
 import { DibujoFondo } from "./DibujoFondo";
 import { MINI, TARJETA, coincide } from "./ui-taller";
-
-/** Dónde entra por defecto: los de piso, delante de la pared del fondo (a su `retiroCm`); los de pared, a su altura. */
-function colocacionDe(escena: Escena, f: FondoCatalogo): Colocacion {
-  if (f.lugar === "pared") return { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: f.alturaParedCm ?? 0 };
-  return { en: "piso", xCm: 0, zCm: Math.round(-escena.sala.fondoCm / 2 + (f.retiroCm ?? 15)), giroGrados: 0 };
-}
 
 const GRUPOS = [
   { id: "fondo", titulo: "Fondos y tapetes" }, { id: "asiento", titulo: "Sillas y asientos" }, { id: "mesa", titulo: "Mesas" }, { id: "decorado", titulo: "Decorado de pie" },
 ] as const;
 
-const piezaDe = (f: FondoCatalogo): Pieza => ({ tipo: "escenografia", elementos: f.elementos(), catalogoId: f.id });
+const medidasDe = (f: FondoCatalogo) => (f.clase === "mueble" ? f.medidas : { anchoCm: 100, fondoCm: 100, altoCm: 100 });
 
 /**
  * «Fondos y muebles» (pestaña Utilería): los paneles, pedestales, tapete, cortina y letrero de las fotos y el mobiliario de
- * eventos (sillas, mesas, sofás, aros y arcos metálicos, carrito de dulces…), por grupos. Se
- * arrastran al visor (con el ratón) o se tocan y entran en su sitio de siempre; luego se mueven y se recolorean como
- * cualquier pieza de escenografía.
+ * eventos (sillas, mesas, sofás, aros y arcos metálicos, carrito de dulces…), por grupos. Se arrastran al visor (con el
+ * ratón) o se tocan y entran en su sitio de siempre (corridos si ya hay algo ahí, y encima de la mesa lo que va en una); luego
+ * se mueven con el arrastre y los muebles se cambian de medida y color en su inspector, como cualquier pieza.
  */
 export const FondosYMuebles = memo(function FondosYMuebles({ escena, onEscena, onSeleccion, filtro = "" }: { escena: Escena; onEscena: (e: Escena) => void; onSeleccion?: (id: string | null) => void; filtro?: string }) {
   const arrastre = useArrastreDesdePanel();
   const [aviso, setAviso] = useState<string | null>(null);
-  const visibles = FONDOS_CATALOGO.filter((f) => coincide(filtro, f.nombre, f.descripcion, "fondo mueble mobiliario escenografia silla mesa"));
+  const visibles = useMemo(() => FONDOS_CATALOGO.filter((f) => coincide(filtro, f.nombre, f.descripcion, "fondo mueble mobiliario escenografia silla mesa")), [filtro]);
   if (!visibles.length) return null;
   const poner = (f: FondoCatalogo) => {
     const id = idNuevo(escena, f.id.replace(/_/g, "-"));
-    onEscena({ ...escena, nodos: [...escena.nodos, { id, nombre: f.nombre, pieza: piezaDe(f), colocacion: colocacionDe(escena, f) }] });
+    onEscena({ ...escena, nodos: [...escena.nodos, { id, nombre: f.nombre, pieza: piezaDeEntrada(f), colocacion: colocacionPorDefecto(escena, f, medidasDe(f)) }] });
     onSeleccion?.(id);
     setAviso(`Listo: «${f.nombre}» quedó en la escena. Arrástralo para moverlo.`);
   };
@@ -49,10 +45,10 @@ export const FondosYMuebles = memo(function FondosYMuebles({ escena, onEscena, o
             <div className="grid grid-cols-3 gap-2">
               {delGrupo.map((f) => (
                 <button key={f.id} type="button" title={`${f.descripcion}${arrastre.arrastrable ? " Arrástralo al visor o tócalo." : ""}`}
-                  onPointerDown={(e) => arrastre.apretar(e, () => ({ pieza: piezaDe(f), nombre: f.nombre, idBase: f.id.replace(/_/g, "-") }))}
+                  onPointerDown={(e) => arrastre.apretar(e, () => ({ pieza: piezaDeEntrada(f), nombre: f.nombre, idBase: f.id.replace(/_/g, "-") }))}
                   onClick={(e) => { if (!arrastre.fueArrastre(e)) poner(f); }}
                   className={`${TARJETA} cursor-grab select-none active:cursor-grabbing`}>
-                  <span className={MINI} aria-hidden><DibujoFondo elementos={f.elementos()} /></span>
+                  <span className={MINI} aria-hidden><DibujoFondo id={f.id} elementos={f.elementos} /></span>
                   <span>{f.nombre}</span>
                 </button>
               ))}
