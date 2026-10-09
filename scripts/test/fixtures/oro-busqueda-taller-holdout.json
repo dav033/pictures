@@ -1,0 +1,595 @@
+{
+ "version": 1,
+ "descripcion": "Oro de RESERVA (holdout) de la búsqueda del taller (REQ-002): 15 consultas nuevas en la voz del dueño, escritas y validadas ANTES de afinar el buscador con las 40 del oro de desarrollo (oro-busqueda-taller.json) para detectar sobreajuste. Misma forma y mismo criterio (grado 2 = exacto, 1 = aceptable; máximo 10 ids por consulta, así que donde hay más candidatos es una muestra). Los ids salen de data/taller/fichas.jsonl. Los ids de consulta continúan los del oro de desarrollo (Q41-Q55). Sin fotos: las 13 del dueño ya están en el oro de desarrollo.",
+ "grados": {
+  "1": "aceptable",
+  "2": "exacto"
+ },
+ "consultas": [
+  {
+   "id": "Q41",
+   "categoria": "ocasion",
+   "texto": "decoración para un bautizo",
+   "relevantes": [
+    {
+     "id": "idea:bautizo-unisex",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-bautismo",
+     "grado": 2
+    },
+    {
+     "id": "idea:cruz-celestial",
+     "grado": 1
+    },
+    {
+     "id": "idea:cruz-dorada",
+     "grado": 1
+    },
+    {
+     "id": "idea:cruz-pink",
+     "grado": 1
+    },
+    {
+     "id": "idea:cruz",
+     "grado": 1
+    },
+    {
+     "id": "idea:encanto-organico",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-organica-encanto-dorado",
+     "grado": 1
+    },
+    {
+     "id": "idea:dorado-eucalipto-arena",
+     "grado": 1
+    },
+    {
+     "id": "idea:palomas-eucalipto-chocolate-durazno",
+     "grado": 1
+    }
+   ],
+   "nota": "Celebración bautizo: las dos piezas que lo dicen en el nombre son exactas; las cruces y los arreglos clasificados como bautizo (también comunión) son aceptables. Hay más (51 con piezas derivadas): muestra."
+  },
+  {
+   "id": "Q42",
+   "categoria": "tema-estructura",
+   "texto": "columna de cebra",
+   "relevantes": [
+    {
+     "id": "idea:columna-cebra",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-cebra-fucsia",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-cebra-fashion-girl",
+     "grado": 2
+    },
+    {
+     "id": "idea:mural-animal-print",
+     "grado": 1
+    },
+    {
+     "id": "idea:semi-arco-organico-tropical-con-toques-de-animal-print",
+     "grado": 1
+    },
+    {
+     "id": "idea:bouquet-feliz-dia-con-animal-print",
+     "grado": 1
+    }
+   ],
+   "nota": "Tres columnas de cebra; el animal print en otras piezas solo parece."
+  },
+  {
+   "id": "Q43",
+   "categoria": "medida-estructura",
+   "texto": "una columna como de metro y medio",
+   "relevantes": [
+    {
+     "id": "idea:columna-huellita",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-baby-shower-pato",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:columna-recta-multicolor-tierra",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:columna-pastel-pascua",
+     "grado": 2
+    },
+    {
+     "id": "celebra:columna_franjas_alternando_tamanos",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-corazones",
+     "grado": 1
+    },
+    {
+     "id": "celebra:columna_espiral_roja_azul",
+     "grado": 1
+    },
+    {
+     "id": "idea:directo-al-corazon",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-mi-primera-comunion",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-angry-birds",
+     "grado": 1
+    }
+   ],
+   "nota": "Columnas de 1,4 a 1,6 m de alto (altoCm 149-159) son exactas; de 1,35 a 1,65 m aceptables. Hay más: muestra. «Metro y medio» es 1,5 m dicho a la manera del dueño."
+  },
+  {
+   "id": "Q44",
+   "categoria": "medida-estructura",
+   "texto": "un arco de 4 metros de ancho",
+   "relevantes": [
+    {
+     "id": "idea:arco-mis-15-anos",
+     "grado": 2
+    },
+    {
+     "id": "idea:halloween-fantasmal",
+     "grado": 2
+    },
+    {
+     "id": "idea:grado-y-feliz-ano",
+     "grado": 2
+    },
+    {
+     "id": "idea:una-tierna-fiesta-en-tonos-pasteles",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-organico-para-papa",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:arco-asimetrico-oro-perlado",
+     "grado": 2
+    },
+    {
+     "id": "escena:halloween_marco_mesas",
+     "grado": 1
+    },
+    {
+     "id": "idea:ocasiones-especiales-paleta-neutral",
+     "grado": 1
+    }
+   ],
+   "nota": "Arcos de 3,8 a 4,2 m de ancho (anchoCm 381-420) son exactos; los marcos de 3,7 y 4 m aceptables."
+  },
+  {
+   "id": "Q45",
+   "categoria": "fuente-estructura",
+   "texto": "los medios arcos de las fotos del dueño",
+   "relevantes": [
+    {
+     "id": "referencia:happy-birthday-azul-dorado-redondo",
+     "grado": 2
+    },
+    {
+     "id": "referencia:dino-menta-mesa",
+     "grado": 2
+    },
+    {
+     "id": "referencia:medio-arco-oro-rosa-confeti",
+     "grado": 2
+    },
+    {
+     "id": "referencia:arcos-chiara-tropical",
+     "grado": 1
+    },
+    {
+     "id": "referencia:happy-birthday-lentejuelas-arco-asimetrico",
+     "grado": 1
+    },
+    {
+     "id": "referencia:portal-rojo-orbes",
+     "grado": 1
+    },
+    {
+     "id": "referencia:dino-jungla-mesa",
+     "grado": 1
+    }
+   ],
+   "nota": "Fuente referencia-dueno (las 13 fotos del lote): los tres «medio arco» son exactos; los otros arcos del lote aceptables."
+  },
+  {
+   "id": "Q46",
+   "categoria": "fuente-estructura",
+   "texto": "las paredes y mallas de la revista Celebra",
+   "relevantes": [
+    {
+     "id": "celebra:pared_trenzas_rosada",
+     "grado": 2
+    },
+    {
+     "id": "celebra:malla_flor_diagonales",
+     "grado": 2
+    },
+    {
+     "id": "celebra:arco_tramos_rosados",
+     "grado": 1
+    },
+    {
+     "id": "celebra:arco_azul_linea_plata",
+     "grado": 1
+    }
+   ],
+   "nota": "Fuente revista Celebra (13 items): solo dos son pared o malla; los arcos de la misma revista son aceptables."
+  },
+  {
+   "id": "Q47",
+   "categoria": "formato",
+   "texto": "armados con tubito 360",
+   "relevantes": [
+    {
+     "id": "idea:malla-es-una-nina",
+     "grado": 2
+    },
+    {
+     "id": "idea:mar",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-nino",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-emoji-amor",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-feliz-cumpleanos",
+     "grado": 1
+    },
+    {
+     "id": "decoracion:figura_angry_bird",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-cupcake",
+     "grado": 1
+    },
+    {
+     "id": "idea:arco-muneco-de-nieve",
+     "grado": 1
+    },
+    {
+     "id": "decoracion:figura_espantapajaros",
+     "grado": 1
+    },
+    {
+     "id": "decoracion:figura_forky",
+     "grado": 1
+    }
+   ],
+   "nota": "Formato T-360: los dos que más lo usan (32 y 14 tubitos) son exactos; el resto lo trae en menor cantidad. Son los items con T-360 (sin derivados)."
+  },
+  {
+   "id": "Q48",
+   "categoria": "formato-estructura",
+   "texto": "mallas de link-o-loon de 12",
+   "relevantes": [
+    {
+     "id": "idea:mural-bandera-brasil",
+     "grado": 2
+    },
+    {
+     "id": "idea:malla-link-o-loon-r-amor-en-fucsia-y-lila",
+     "grado": 2
+    },
+    {
+     "id": "celebra:malla_flor_diagonales",
+     "grado": 2
+    },
+    {
+     "id": "idea:mural-corazones-clasicos",
+     "grado": 2
+    },
+    {
+     "id": "idea:cumpleano-hawaiano",
+     "grado": 2
+    },
+    {
+     "id": "idea:mural-neon",
+     "grado": 2
+    },
+    {
+     "id": "idea:escenario-halloween",
+     "grado": 1
+    },
+    {
+     "id": "idea:primaveral",
+     "grado": 1
+    },
+    {
+     "id": "idea:malla-flor",
+     "grado": 1
+    }
+   ],
+   "nota": "Formato LOL-12 en pared de malla o mural: todas las mallas que lo traen (por cantidad de LOL-12 los primeros son exactos)."
+  },
+  {
+   "id": "Q49",
+   "categoria": "color",
+   "texto": "todo en violeta y plata",
+   "relevantes": [
+    {
+     "id": "idea:cumpleanos-violeta-y-plata",
+     "grado": 2
+    },
+    {
+     "id": "idea:celebra-con-mama",
+     "grado": 2
+    },
+    {
+     "id": "idea:monstruos-plata-violeta-verde-lima",
+     "grado": 2
+    },
+    {
+     "id": "base-organica:guirnalda-marco-lila-plata",
+     "grado": 1
+    },
+    {
+     "id": "idea:cola-de-sirena",
+     "grado": 1
+    },
+    {
+     "id": "idea:arana-graffiti-invierno-violeta",
+     "grado": 1
+    },
+    {
+     "id": "idea:corazones-modernos-plata-grafitti-invierno",
+     "grado": 1
+    },
+    {
+     "id": "referencia:frozen-let-it-go",
+     "grado": 1
+    },
+    {
+     "id": "idea:aurora-mist-nacional-2025",
+     "grado": 1
+    },
+    {
+     "id": "idea:violeta-rosado-confetti-dorado",
+     "grado": 1
+    }
+   ],
+   "nota": "Paleta violeta + plata como protagonista (lo dice el nombre); el resto la usa junto a otros colores."
+  },
+  {
+   "id": "Q50",
+   "categoria": "decoracion",
+   "texto": "mariposas de globos",
+   "relevantes": [
+    {
+     "id": "idea:columna-mariposa",
+     "grado": 2
+    },
+    {
+     "id": "idea:webinar-aro-organico-merlot-coral-arena~mariposa-merlot",
+     "grado": 2
+    },
+    {
+     "id": "idea:webinar-aro-organico-merlot-coral-arena~mariposa-dorada",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-baby-shower-nina-luna~mariposa-1",
+     "grado": 2
+    },
+    {
+     "id": "idea:webinar-aro-organico-merlot-coral-arena",
+     "grado": 1
+    },
+    {
+     "id": "idea:primaveral",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-baby-shower-nino-luna",
+     "grado": 1
+    }
+   ],
+   "nota": "La mariposa es la pieza (o la decoración derivada) o el tema del item."
+  },
+  {
+   "id": "Q51",
+   "categoria": "ocasion",
+   "texto": "despedida de soltera",
+   "relevantes": [
+    {
+     "id": "idea:centro-de-mesa-copa-despedida-de-soltera",
+     "grado": 2
+    },
+    {
+     "id": "referencia:medio-arco-oro-rosa-confeti",
+     "grado": 2
+    },
+    {
+     "id": "idea:wedding-shower",
+     "grado": 1
+    },
+    {
+     "id": "idea:centro-de-mesa-copa-despedida-de-soltera~columna",
+     "grado": 1
+    },
+    {
+     "id": "referencia:medio-arco-oro-rosa-confeti~guirnalda-organica",
+     "grado": 1
+    }
+   ],
+   "nota": "Celebración despedida-soltera: los dos items clasificados así son exactos; el wedding shower (bridal shower) y las piezas derivadas, aceptables."
+  },
+  {
+   "id": "Q52",
+   "categoria": "tema",
+   "texto": "fiesta del espacio con cohete",
+   "relevantes": [
+    {
+     "id": "idea:cohete",
+     "grado": 2
+    },
+    {
+     "id": "idea:cohete~armazon",
+     "grado": 1
+    },
+    {
+     "id": "idea:cohete~nube",
+     "grado": 1
+    },
+    {
+     "id": "idea:cohete~aletas",
+     "grado": 1
+    }
+   ],
+   "nota": "Temática espacio: solo hay un cohete; sus piezas derivadas parecen."
+  },
+  {
+   "id": "Q53",
+   "categoria": "ocasion",
+   "texto": "decoración para el día del padre",
+   "relevantes": [
+    {
+     "id": "idea:colgante-para-papa",
+     "grado": 2
+    },
+    {
+     "id": "idea:celebrando-a-papa",
+     "grado": 2
+    },
+    {
+     "id": "idea:centro-de-mesa-para-papa",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-papa-super-heroe",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-organico-para-papa",
+     "grado": 2
+    },
+    {
+     "id": "idea:bouquet-sombrero-dia-del-padre",
+     "grado": 2
+    },
+    {
+     "id": "idea:feliz-dia-bigotes-y-padres",
+     "grado": 2
+    },
+    {
+     "id": "idea:columna-bigotes",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-romana-bigotes",
+     "grado": 1
+    },
+    {
+     "id": "idea:centro-de-mesa-del-oeste",
+     "grado": 1
+    }
+   ],
+   "nota": "Celebración dia-del-padre: 12 items; los que dicen «papá» o «padre» en el nombre son exactos."
+  },
+  {
+   "id": "Q54",
+   "categoria": "estructura",
+   "texto": "bouquet con ramo de helio",
+   "relevantes": [
+    {
+     "id": "idea:bouquet",
+     "grado": 2
+    },
+    {
+     "id": "idea:bouquet-baby-shower",
+     "grado": 2
+    },
+    {
+     "id": "idea:bouquet-sombrero-dia-del-padre",
+     "grado": 2
+    },
+    {
+     "id": "idea:bouquet-tenebroso",
+     "grado": 2
+    },
+    {
+     "id": "idea:bouquet-te-amo",
+     "grado": 2
+    },
+    {
+     "id": "idea:bouquet-amor-dorado-rosa",
+     "grado": 2
+    },
+    {
+     "id": "idea:ocasiones-especiales-trufa-y-champana",
+     "grado": 1
+    },
+    {
+     "id": "idea:centro-de-mesa-angel",
+     "grado": 1
+    },
+    {
+     "id": "idea:los-minnions",
+     "grado": 1
+    },
+    {
+     "id": "idea:cartera-fashion",
+     "grado": 1
+    }
+   ],
+   "nota": "Los «bouquet» con ramo de helio son exactos (hay más de una docena, muestra); otros ramos de helio aceptables."
+  },
+  {
+   "id": "Q55",
+   "categoria": "ocasion",
+   "texto": "primer añito del bebé",
+   "relevantes": [
+    {
+     "id": "idea:bebe-1-ano",
+     "grado": 2
+    },
+    {
+     "id": "idea:numero-1-naval",
+     "grado": 2
+    },
+    {
+     "id": "idea:arco-feliz-cumpleanos",
+     "grado": 2
+    },
+    {
+     "id": "idea:bebe-1-ano~uno",
+     "grado": 1
+    },
+    {
+     "id": "idea:arco-feliz-cumpleanos~uno",
+     "grado": 1
+    },
+    {
+     "id": "idea:columna-cupcake",
+     "grado": 1
+    }
+   ],
+   "nota": "Celebración primer-cumpleanos: solo hay tres items; el número 1 derivado y el cupcake con vela 1 parecen."
+  }
+ ],
+ "fotos": []
+}
