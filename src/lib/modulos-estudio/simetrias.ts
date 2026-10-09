@@ -4,17 +4,20 @@ import { MODULOS, armarModulo, moduloPorId, type TipoModulo, type Vec3 } from "@
 /**
  * Las simetrías de un módulo, sacadas de su geometría y no escritas a mano.
  *
- * Dos configuraciones de color son el mismo módulo si una sale de la otra moviendo el módulo como un objeto rígido
- * (girarlo, voltearlo) o mirándolo en un espejo (un globo no tiene lado derecho ni izquierdo). Eso es una isometría
- * de las direcciones nudo → cuerpo que arma `armarModulo`: los cuerpos están todos a la misma distancia del centro,
+ * Dos configuraciones de color son el mismo módulo si una sale de la otra girándolo alrededor de la vertical o mirándolo
+ * en un espejo (un globo no tiene lado derecho ni izquierdo). Voltearlo NO vale: el piso y la cámara fijan qué es arriba, y
+ * «cuarteto rojo y azul» con el azul arriba es otra foto que con el rojo arriba. Es una isometría de las direcciones
+ * nudo → cuerpo que arma `armarModulo` que además conserva la altura (`y`) de cada globo: los cuerpos están todos a la misma distancia del centro,
  * así que dos colocaciones coinciden exactamente cuando se conservan los productos escalares entre cada par de
- * direcciones. Se prueban las `n!` permutaciones (n ≤ 6: 720) y se quedan las que conservan todos los productos.
- * Con ello salen, sin suponer nada, el grupo del dúo (intercambiar los dos), del trío (las 6 del triángulo), del
- * cuarteto (las 8 de las dos parejas cruzadas) y el del quinteto, que es más pobre porque `armarModulo` alterna
+ * direcciones. Se prueban las `n!` permutaciones (n ≤ 6: 720) y se quedan las que conservan todos los productos y la altura de
+ * cada globo. Con ello salen, sin suponer nada, el grupo del dúo (intercambiar los dos), del trío (las 6 del triángulo), del
+ * cuarteto (las 4 de las dos parejas cruzadas, una arriba y otra abajo), del sexteto (las 6 de los dos tríos) y el del quinteto, que es más pobre porque `armarModulo` alterna
  * arriba/abajo con `i % 2` y con cinco globos el 4 y el 0 quedan los dos arriba (solo el espejo que los cambia).
  */
 
 const TOLERANCIA = 1e-6;
+/** Dos globos a la misma altura (y de la dirección) hasta aquí son «la misma altura». */
+const TOLERANCIA_ALTURA = 1e-6;
 
 const producto = (a: Vec3, b: Vec3): number => a.x * b.x + a.y * b.y + a.z * b.z;
 
@@ -43,6 +46,7 @@ function calcularSimetrias(tipo: TipoModulo): readonly (readonly number[])[] {
   const n = d.length;
   const gram = d.map((a) => d.map((b) => producto(a, b)));
   return permutaciones(n).filter((p) => {
+    for (let i = 0; i < n; i++) if (Math.abs(d[p[i]!]!.y - d[i]!.y) > TOLERANCIA_ALTURA) return false;
     for (let i = 0; i < n; i++) for (let j = i; j < n; j++) if (Math.abs(gram[p[i]!]![p[j]!]! - gram[i]![j]!) > TOLERANCIA) return false;
     return true;
   });

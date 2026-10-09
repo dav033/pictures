@@ -59,14 +59,15 @@ export function interpretarSalida(salida: SalidaInterpretacion): Interpretacion 
   if (!salida.tipo) errores.push("No entendí qué módulo quieres: dúo, trío, cuarteto, quinteto o sexteto.");
   if (salida.globos.length === 0) errores.push("No entendí de qué colores lo quieres.");
   for (const g of salida.globos) {
-    const ref = referenciaPedida(g.color, g.acabado) ?? referenciaDelCatalogo(g.color, g.acabado);
+    const { color, acabado } = separarAcabado(g.color, g.acabado);
+    const ref = referenciaPedida(color, acabado) ?? referenciaDelCatalogo(color, acabado);
     if (!ref) {
-      desconocidos.push(g.acabado ? `${g.color} ${g.acabado}` : g.color);
+      desconocidos.push(acabado ? `${color} ${acabado}` : color);
       continue;
     }
     // Pidió un acabado que ese color no tiene (el catálogo cae en otro): se dice, no se oculta.
-    if (plegar(ref.nombre) !== plegar(g.color) && plegar(ref.nombre).includes(plegar(g.color))) avisos.push(`«${g.color}» en ${ref.familia === "reflex" ? "Reflex" : "ese acabado"} es ${ref.nombreCompleto} (${ref.codigo}).`);
-    else if (g.acabado && !acabadoCoincide(g.acabado, ref.familia)) avisos.push(`«${g.color}» no existe en «${g.acabado}»: se usó ${ref.nombreCompleto} (${ref.codigo}).`);
+    if (plegar(ref.nombre) !== plegar(color) && plegar(ref.nombre).includes(plegar(color))) avisos.push(`«${color}» en ${ref.familia === "reflex" ? "Reflex" : "ese acabado"} es ${ref.nombreCompleto} (${ref.codigo}).`);
+    else if (acabado && !acabadoCoincide(acabado, ref.familia)) avisos.push(`«${color}» no existe en «${acabado}»: se usó ${ref.nombreCompleto} (${ref.codigo}).`);
     codigos.push(ref.codigo);
   }
   if (desconocidos.length > 0) errores.push(`Esos colores no están en el catálogo Sempertex: ${desconocidos.join(", ")}.`);
@@ -90,6 +91,19 @@ const FAMILIAS_DE_PALABRA: ReadonlyArray<readonly [RegExp, readonly string[]]> =
 
 const plegar = (texto: string) => texto.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
 
+const PALABRA_ACABADO = /\b(reflex|cromad[oa]s?|metal(?:izad[oa]s?)?|satin(?:ad[oa]s?)?|perlad[oa]s?|silk|pastel|neon|cristal|transparente|translucid[oa]|mate|fashion)\b/;
+
+/** Si el modelo dejó el acabado pegado al color («rojo cristal», «reflex rojo») se separa; si lo único que queda es la palabra, es el color. */
+function separarAcabado(color: string, acabado: string | null): { color: string; acabado: string | null } {
+  if (acabado) return { color, acabado };
+  const plano = plegar(color);
+  // «Cristal» a secas es el globo transparente (390 «Cristal Transparente»), no un color.
+  if (/^(cristal|transparente|cristal transparente|translucido)$/.test(plano)) return { color: "transparente", acabado: "cristal" };
+  const m = PALABRA_ACABADO.exec(plano);
+  const resto = m ? plano.replace(m[0], "").replace(/\s+/g, " ").trim() : "";
+  return m && resto ? { color: resto, acabado: m[0] } : { color, acabado: null };
+}
+
 /**
  * El catálogo nombra distinto a los Reflex («Cristal Rojo», no «Rojo»): «rojo reflex» no es el Rojo de otra familia.
  * Con un acabado dicho, se busca primero en su familia (en orden de preferencia) un color cuyo nombre contenga la palabra
@@ -105,6 +119,10 @@ function referenciaPedida(color: string, acabado: string | null): ReferenciaSemp
     // El nombre exacto gana a uno que solo lo contiene («azul» es el Azul, no el Azul Rey).
     const hallada = deFamilia.find((r) => plegar(r.nombre) === plegar(color)) ?? deFamilia.find((r) => ` ${plegar(r.nombre)} `.includes(palabra));
     if (hallada) return hallada;
+  }
+  // «Cristal» también es el nombre de los Reflex («Cristal Rojo» 915): «rojo cristal» es ese, no un globo transparente rojo.
+  if (/cristal|transparent|translucid/.test(plegar(acabado))) {
+    return TABLA_SEMPERTEX.referencias.find((r) => r.familia === "reflex" && ` ${plegar(r.nombre)} `.includes(" cristal ") && ` ${plegar(r.nombre)} `.includes(palabra)) ?? null;
   }
   return null;
 }

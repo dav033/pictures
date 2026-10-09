@@ -3,6 +3,7 @@ import { aligerarImagenGenerada } from "@/lib/generacion/imagen-liviana";
 import { COSTE_FOTO_USD } from "@/lib/globos3d/foto-realista";
 import { tomarFotoDeLaHora } from "@/lib/globos3d/tope-fotos-hora";
 import { decidir } from "@/lib/registro/servidor";
+import { ASPECTO_RENDER, GUIDANCE_RENDER } from "./captura-estudio";
 import { promptModuloEstudio } from "./prompt-estudio";
 import type { GeneradorRender } from "./puertos";
 
@@ -28,9 +29,9 @@ export const generarRenderFlux: GeneradorRender = async (config, captura, senal)
   decidir("regla:render_modulo_prompt", "texto e imagen base que van a FLUX desde el estudio de módulos", {
     prompt, largo: prompt.length, tipo: config.tipo, formatoId: config.formatoId, colores: config.colores, bytesCaptura: Math.round((captura.base64.length * 3) / 4),
   });
-  const imagen = await generarConSempertexFlux(prompt, "1:1", [], {
+  const imagen = await generarConSempertexFlux(prompt, ASPECTO_RENDER, [], {
     loras: [],
-    guidanceScale: 3.5,
+    guidanceScale: GUIDANCE_RENDER,
     ...(senal ? { signal: senal } : {}),
     telemetria: { superficie: "estudio-modulos" },
     imagenesEdit: [{

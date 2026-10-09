@@ -19,6 +19,9 @@ export type FilaRender = {
   objeto: string | null;
   mime: string | null;
   costeUsd: number | null;
+  /** sha256 de la captura 3D con que se hizo (la mandó el cliente) y huella de la sesión que la pidió; `null` en una reserva. */
+  capturaSha256: string | null;
+  sesion: string | null;
   /** Cuánto lleva la fila como está, medido por quien la guarda (la base, no el reloj de esta instancia). */
   edadMs: number;
 };
@@ -39,7 +42,9 @@ export interface RepositorioRendersModulo {
   /** Una fila lista cuyo objeto ya no está en el almacén vuelve a pendiente para regenerarla. Devuelve la ficha, o `null`. */
   reabrir(clave: string): Promise<string | null>;
   /** La imagen ya está en el almacén: la fila pasa a lista. Solo después de guardar el objeto y solo para el `dueno` vigente. */
-  completar(clave: string, dueno: string, datos: { objeto: string; mime: string; costeUsd: number }): Promise<void>;
+  completar(clave: string, dueno: string, datos: { objeto: string; mime: string; costeUsd: number; capturaSha256: string; sesion: string | null }): Promise<void>;
+  /** Quita una fila LISTA (se descarta el render) y la devuelve para borrar su objeto; `null` si no había una lista. */
+  eliminar(clave: string): Promise<FilaRender | null>;
   /** Quita la fila pendiente (la generación falló) si sigue siendo del `dueno`: no queda nada a medias ni se pisa a otro. */
   liberar(clave: string, dueno: string): Promise<void>;
 }
@@ -50,6 +55,8 @@ export interface AlmacenImagenes {
   guardar(objeto: string, imagen: ObjetoImagen): Promise<void>;
   /** `null` si el objeto no existe. */
   leer(objeto: string): Promise<ObjetoImagen | null>;
+  /** Borrar un objeto que no existe no es un error. */
+  borrar(objeto: string): Promise<void>;
 }
 
 export type CapturaBase = { mime: "image/png" | "image/jpeg"; base64: string };

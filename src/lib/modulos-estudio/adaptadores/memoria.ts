@@ -14,7 +14,7 @@ export function crearRepositorioMemoria(ahora: () => number = () => 0): Reposito
   const nuevaFicha = () => `ficha-${++fichas}`;
   const publica = (f: FilaInterna): FilaRender => ({
     clave: f.clave, tipo: f.tipo, formatoId: f.formatoId, colores: f.colores, version: f.version, estado: f.estado,
-    objeto: f.objeto, mime: f.mime, costeUsd: f.costeUsd, edadMs: ahora() - f.desde,
+    objeto: f.objeto, mime: f.mime, costeUsd: f.costeUsd, capturaSha256: f.capturaSha256, sesion: f.sesion, edadMs: ahora() - f.desde,
   });
   return {
     filas,
@@ -26,7 +26,7 @@ export function crearRepositorioMemoria(ahora: () => number = () => 0): Reposito
       const previa = filas.get(nueva.clave);
       if (previa) return { reservada: false, existente: publica(previa) };
       const dueno = nuevaFicha();
-      filas.set(nueva.clave, { ...nueva, estado: "pendiente", objeto: null, mime: null, costeUsd: null, desde: ahora(), dueno });
+      filas.set(nueva.clave, { ...nueva, estado: "pendiente", objeto: null, mime: null, costeUsd: null, capturaSha256: null, sesion: null, desde: ahora(), dueno });
       return { reservada: true, dueno };
     },
     async reclamarCaducada(clave, edadMinimaMs) {
@@ -39,13 +39,19 @@ export function crearRepositorioMemoria(ahora: () => number = () => 0): Reposito
     async reabrir(clave) {
       const f = filas.get(clave);
       if (!f || f.estado !== "lista") return null;
-      Object.assign(f, { estado: "pendiente", objeto: null, mime: null, costeUsd: null, desde: ahora(), dueno: nuevaFicha() });
+      Object.assign(f, { estado: "pendiente", objeto: null, mime: null, costeUsd: null, capturaSha256: null, sesion: null, desde: ahora(), dueno: nuevaFicha() });
       return f.dueno;
     },
     async completar(clave, dueno, datos) {
       const f = filas.get(clave);
       if (!f || f.estado !== "pendiente" || f.dueno !== dueno) throw new Error(`La reserva de ${clave} ya no es de quien la completa.`);
-      Object.assign(f, { estado: "lista", objeto: datos.objeto, mime: datos.mime, costeUsd: datos.costeUsd, dueno: null });
+      Object.assign(f, { estado: "lista", objeto: datos.objeto, mime: datos.mime, costeUsd: datos.costeUsd, capturaSha256: datos.capturaSha256, sesion: datos.sesion, dueno: null });
+    },
+    async eliminar(clave) {
+      const f = filas.get(clave);
+      if (f?.estado !== "lista") return null;
+      filas.delete(clave);
+      return publica(f);
     },
     async liberar(clave, dueno) {
       const f = filas.get(clave);
@@ -60,5 +66,6 @@ export function crearAlmacenMemoria(): AlmacenImagenes & { objetos: Map<string, 
     objetos,
     async guardar(objeto, imagen) { objetos.set(objeto, { bytes: new Uint8Array(imagen.bytes), mime: imagen.mime }); },
     async leer(objeto) { return objetos.get(objeto) ?? null; },
+    async borrar(objeto) { objetos.delete(objeto); },
   };
 }

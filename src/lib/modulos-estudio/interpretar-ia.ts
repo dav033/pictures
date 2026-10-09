@@ -18,6 +18,12 @@ export class ErrorInterpretacion extends Error {
   }
 }
 
+type EntradaTelemetria = Parameters<typeof registrarGemini>[0];
+/** La telemetría nunca tumba el pedido: si no se puede anotar (taxonomía sin migrar, p. ej.), se sigue. */
+function telemetria(entrada: EntradaTelemetria): void {
+  try { registrarGemini(entrada); } catch (error) { decidir("regla:modulos_interpretar_telemetria", "no se pudo anotar la llamada en la telemetría", { error: error instanceof Error ? error.message.slice(0, 200) : String(error) }); }
+}
+
 export type GenerarJson = (texto: string, signal?: AbortSignal) => Promise<{ texto: string; usage?: GenerateContentResponseUsageMetadata }>;
 
 const generarConGemini: GenerarJson = async (texto, signal) => {
@@ -44,11 +50,11 @@ export async function interpretarPedido(pedido: string, opciones: { generar?: Ge
   try {
     respuesta = await generar(texto, opciones.signal);
   } catch (error) {
-    registrarGemini({ flujo: "armador_decoracion", capacidad: "parser_intencion", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/modulos-interpretar" }, thinkingLevel: "minimal" });
+    telemetria({ flujo: "modulos_estudio", capacidad: "parser_intencion", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/modulos-interpretar" }, thinkingLevel: "minimal" });
     if (error instanceof ErrorInterpretacion) throw error;
     throw new ErrorInterpretacion(error instanceof Error ? error.message : String(error), "modelo");
   }
-  registrarGemini({ flujo: "armador_decoracion", capacidad: "parser_intencion", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: "/api/modulos-interpretar" }, ...(respuesta.usage ? { usage: respuesta.usage } : {}), thinkingLevel: "minimal" });
+  telemetria({ flujo: "modulos_estudio", capacidad: "parser_intencion", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: "/api/modulos-interpretar" }, ...(respuesta.usage ? { usage: respuesta.usage } : {}), thinkingLevel: "minimal" });
   let json: unknown;
   try { json = JSON.parse(respuesta.texto); } catch { json = null; }
   const salida = SalidaInterpretacionSchema.safeParse(json);

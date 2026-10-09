@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { ANGULOS_ESTANDAR, DISTANCIA_MINIMA_RADIOS, FOV_GRADOS, ITERACIONES, OCUPACION_ESTANDAR, type VistaEstandar } from "./camara-estandar-datos";
 
 /**
  * La cámara de los renders estándar de la biblioteca (REQ-002: incrustaciones de imagen, foto ↔ render). Sin estado y sin
@@ -7,22 +8,11 @@ import * as THREE from "three";
  * - `frente`: de frente y apenas desde arriba (paredes, guirnaldas, escenas: así se fotografía una decoración).
  * - `tres-cuartos`: girada y desde arriba (columnas, arcos y piezas libres, para que se vea el volumen).
  */
-export type VistaEstandar = "frente" | "tres-cuartos";
+
+export { OCUPACION_ESTANDAR };
+export type { VistaEstandar };
 
 export const VISTAS_ESTANDAR: readonly VistaEstandar[] = ["frente", "tres-cuartos"];
-
-/** Giro alrededor de la vertical y elevación (grados) de cada vista. */
-const ANGULOS: Readonly<Record<VistaEstandar, { giro: number; elevacion: number }>> = {
-  frente: { giro: 0, elevacion: 12 },
-  "tres-cuartos": { giro: 35, elevacion: 15 },
-};
-
-/** Cuánto del cuadro ocupa, como mucho, lo dibujado (0,74 de la caja; lo dibujado ocupa ~70 %). */
-export const OCUPACION_ESTANDAR = 0.74;
-const FOV_GRADOS = 35;
-const ITERACIONES = 10;
-/** La cámara nunca queda más cerca que esto (en radios de la caja): una pieza larga que apunta a la cámara no la atraviesa. */
-const DISTANCIA_MINIMA_RADIOS = 1.6;
 
 const esquinasDe = (caja: THREE.Box3): THREE.Vector3[] => {
   const { min, max } = caja;
@@ -34,7 +24,7 @@ const esquinasDe = (caja: THREE.Box3): THREE.Vector3[] => {
  * `OCUPACION_ESTANDAR` del cuadro. Determinista: la misma caja y vista dan siempre la misma cámara.
  */
 export function camaraEstandar(caja: THREE.Box3, vista: VistaEstandar): THREE.PerspectiveCamera {
-  const { giro, elevacion } = ANGULOS[vista];
+  const { giro, elevacion } = ANGULOS_ESTANDAR[vista];
   const g = THREE.MathUtils.degToRad(giro), e = THREE.MathUtils.degToRad(elevacion);
   const direccion = new THREE.Vector3(Math.sin(g) * Math.cos(e), Math.sin(e), Math.cos(g) * Math.cos(e));
   const derecha = new THREE.Vector3(0, 1, 0).cross(direccion).normalize();

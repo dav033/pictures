@@ -2,6 +2,7 @@
 
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 import type { ConfigModulo } from "@/lib/modulos-estudio/configuracion";
+import { LADO_CAPTURA, VISTA_CAPTURA } from "@/lib/modulos-estudio/captura-estudio";
 import { SALA_ESTUDIO, armarEstudio, cajaDeGlobo } from "@/lib/modulos-estudio/escena-estudio";
 import { mostrarArmada } from "@/components/tres-d/armada-visor";
 import type { EscenaGlobos } from "@/components/tres-d/escena-globos";
@@ -14,9 +15,6 @@ import type { EscenaGlobos } from "@/components/tres-d/escena-globos";
  */
 export type VisorModuloHandle = { capturar: () => string | null };
 
-/** Lado (px) de la captura guía: FLUX la toma como imagen base; más grande solo alarga la subida. */
-const LADO_CAPTURA = 768;
-
 export function VisorModulo({ config, globoElegido, ref }: { config: ConfigModulo; globoElegido: number | null; ref?: Ref<VisorModuloHandle> }) {
   const lienzoRef = useRef<HTMLCanvasElement>(null);
   const visorRef = useRef<EscenaGlobos | null>(null);
@@ -28,7 +26,7 @@ export function VisorModulo({ config, globoElegido, ref }: { config: ConfigModul
 
   useImperativeHandle(ref, () => ({
     capturar: () => {
-      try { return visorRef.current?.renderEstandar("tres-cuartos", LADO_CAPTURA) ?? null; } catch (causa) { console.error("[estudio-modulos] captura", causa); return null; }
+      try { return visorRef.current?.renderEstandar(VISTA_CAPTURA, LADO_CAPTURA) ?? null; } catch (causa) { console.error("[estudio-modulos] captura", causa); return null; }
     },
   }), []);
 

@@ -1,13 +1,14 @@
 import type { ConfigModulo } from "./configuracion";
+import { versionPipeline } from "./huella-pipeline";
 import { coloresCanonicos } from "./simetrias";
 
 /**
- * Versión del procedimiento que hace la imagen (captura 3D guía + texto de `prompt-estudio.ts` + modelo). Es parte de la
- * clave: si cualquiera de esos cambia, se sube la versión y los renders viejos dejan de servirse (siguen en el almacén,
- * pero ninguna clave nueva los alcanza). La prueba `test-modulos-estudio.ts` guarda la huella del texto de ejemplo y
- * falla si el texto cambió sin subir esta versión.
+ * Versión del procedimiento que hace la imagen: `estudio-v2.<huella>` (ver `huella-pipeline.ts`). La huella sale sola de la
+ * geometría que arma `armarModulo`, la captura 3D (cámara, tamaño, sala, aligerado) y el texto de FLUX, así que cualquier
+ * cambio de esos invalida las claves viejas sin que nadie lo recuerde (los renders viejos siguen en el almacén, pero ninguna
+ * clave nueva los alcanza). Un cambio que ninguna huella ve (otro modelo, p. ej.) sube `VERSION_MANUAL`.
  */
-export const VERSION_PIPELINE = "estudio-v1";
+export const VERSION_PIPELINE = versionPipeline();
 
 /**
  * Clave canónica de un render: `<versión>:<tipo>:<tamaño>:<colores canónicos>`. Los colores son el arreglo de globos
@@ -24,8 +25,13 @@ export function configCanonica(config: ConfigModulo): ConfigModulo {
 
 const EXTENSION: Readonly<Record<string, string>> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
-/** Ruta del objeto en el almacén: `modulos/<versión>/<tipo>/<tamaño>_<colores>.<ext>` (sin `:`, válida en cualquier S3). */
-export function claveObjeto(clave: string, mime: string): string {
+/**
+ * Ruta del objeto en el almacén: `modulos/<versión>/<tipo>/<tamaño>_<colores>[-<ficha>].<ext>` (sin `:`, válida en cualquier S3).
+ * La ficha es la de la reserva que lo generó: cada generación tiene su propio objeto, así que descartar un render no puede
+ * borrar el que otra instancia acaba de guardar para la misma clave.
+ */
+export function claveObjeto(clave: string, mime: string, ficha = ""): string {
   const [version, tipo, formato, colores] = clave.split(":");
-  return `modulos/${version}/${tipo}/${formato}_${colores}.${EXTENSION[mime] ?? "bin"}`;
+  const sufijo = ficha ? `-${ficha.replace(/[^A-Za-z0-9]/g, "").slice(0, 12)}` : "";
+  return `modulos/${version}/${tipo}/${formato}_${colores}${sufijo}.${EXTENSION[mime] ?? "bin"}`;
 }

@@ -1,16 +1,19 @@
 /**
  * Estudio de módulos (REQ-011): dominio y caché. Sin red ni coste: el generador de FLUX es un doble y los adaptadores son
  * los de memoria. Comprueba:
- * - las simetrías salen de la geometría de `armarModulo` (dúo 2, trío 6, cuarteto 8, quinteto 2, sexteto 12);
+ * - las simetrías salen de la geometría de `armarModulo` (dúo 2, trío 6, cuarteto 4, quinteto 2, sexteto 6: sin voltear, el piso fija el arriba);
  * - la clave es canónica: «rojo + azul» = «azul + rojo»; dos colores distintos o otro tamaño/tipo/versión, otra clave;
  * - validación (catálogo, más colores que globos = error, menos = ciclo) y el aviso de formato no fabricado;
- * - el texto de FLUX cambia solo junto con VERSION_PIPELINE (huella);
+ * - la versión del pipeline lleva la huella de la geometría, la captura y el texto de FLUX (cualquier cambio invalida las claves);
  * - el servicio: acierto sin generar, fallo → una generación, dos peticiones simultáneas → una sola, el fallo y el tope
  *   no dejan nada, el objeto perdido se regenera, la reserva muerta se toma, y sin caché el render se devuelve sin guardar.
  */
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import { coloresPorAcabado, resolverConfig, acabadoDe, nombreTipo, FORMATO_POR_DEFECTO, TIPOS_ESTUDIO, type ConfigModulo } from "../../src/lib/modulos-estudio/configuracion";
+import { puedeEscribirCacheModulos } from "../../src/lib/modulos-estudio/puede-escribir";
+import { huellaDeSesion } from "../../src/lib/modulos-estudio/sesion";
+import { crearLimitadorTasa, ipDe } from "../../src/lib/seguridad/limite-tasa";
+import { huellaCaptura, huellaGeometria, huellaTexto, versionPipeline } from "../../src/lib/modulos-estudio/huella-pipeline";
 import { claveObjeto, claveRender, configCanonica, VERSION_PIPELINE } from "../../src/lib/modulos-estudio/clave-render";
 import { coloresCanonicos, GLOBOS_POR_TIPO, simetriasDeModulo } from "../../src/lib/modulos-estudio/simetrias";
 import { promptModuloEstudio } from "../../src/lib/modulos-estudio/prompt-estudio";
@@ -23,7 +26,9 @@ import { reiniciarFotosPorHora, tomarFotoDeLaHora } from "../../src/lib/globos3d
 import { crearClienteAlmacen } from "../../src/lib/almacen/objetos-s3";
 import { interpretarSalida, tamanoDePedido } from "../../src/lib/modulos-estudio/interpretar";
 import { ErrorInterpretacion, interpretarPedido } from "../../src/lib/modulos-estudio/interpretar-ia";
-import { MODULOS } from "../../src/lib/globos3d/modulos";
+import { formatoPorId } from "../../src/lib/globos3d/formatos";
+import { TABLA_SEMPERTEX } from "../../src/lib/plan/referencia-sempertex";
+import { MODULOS, armarModulo } from "../../src/lib/globos3d/modulos";
 
 const REFLEX_ROJO = "915";
 const AZUL_MATE = "040";
@@ -35,6 +40,8 @@ const ok = (resultado: ReturnType<typeof resolverConfig>): ConfigModulo => {
 };
 
 async function principal() {
+  // Si una promesa no se resuelve (un cierre de señal mal hecho), la prueba falla en vez de salir en silencio con código 0.
+  const perro = setTimeout(() => { console.error("[FAIL] test-modulos-estudio: una promesa no se resolvió en 60 s"); process.exit(1); }, 60_000);
   // ---- Los tipos del estudio son exactamente los de modulos.ts; la pareja se llama «Dúo». ----
   assert.deepEqual(TIPOS_ESTUDIO.map((t) => t.id), MODULOS.map((m) => m.id));
   assert.equal(nombreTipo("pareja"), "Dúo");
@@ -43,7 +50,7 @@ async function principal() {
 
   // ---- Simetrías derivadas de la geometría. ----
   const orden = Object.fromEntries(MODULOS.map((m) => [m.id, simetriasDeModulo(m.id).length]));
-  assert.deepEqual(orden, { pareja: 2, trio: 6, cuarteto: 8, quinteto: 2, sexteto: 12 });
+  assert.deepEqual(orden, { pareja: 2, trio: 6, cuarteto: 4, quinteto: 2, sexteto: 6 });
   for (const m of MODULOS) {
     const grupo = simetriasDeModulo(m.id);
     const n = GLOBOS_POR_TIPO[m.id];
@@ -54,6 +61,15 @@ async function principal() {
     // Es un grupo: cerrado por composición.
     for (const a of grupo) for (const b of grupo) assert.ok(conjunto.has(texto(a.map((i) => b[i]!))), `${m.id}: no es cerrado`);
   }
+  // A1: ningún elemento del grupo mueve un globo de arriba a abajo (el piso y la cámara fijan el arriba): las alturas de las
+  // direcciones que arma `armarModulo` se conservan, y el sexteto con las dos mitades cambiadas NO es el mismo módulo.
+  for (const m of MODULOS) {
+    const formato = formatoPorId("R-12")!;
+    const direcciones = armarModulo(m, formato, formato.infladoDecoracionCm).globos.map((g) => g.direccion);
+    for (const p of simetriasDeModulo(m.id)) direcciones.forEach((d, i) => assert.ok(Math.abs(direcciones[p[i]!]!.y - d.y) < 1e-9, `${m.id}: una simetría voltea el globo ${i}`));
+  }
+  assert.notEqual(coloresCanonicos("sexteto", ["915", "040", "915", "040", "915", "040"]).join(), coloresCanonicos("sexteto", ["040", "915", "040", "915", "040", "915"]).join(), "el azul arriba no es el rojo arriba");
+  assert.equal(coloresCanonicos("sexteto", ["915", "040", "915", "040", "915", "040"]).join(), coloresCanonicos("sexteto", ["915", "040", "915", "040", "915", "040"].slice(2).concat(["915", "040"]).slice(0, 6)).join(), "girar el sexteto de dos en dos conserva la altura");
   // El quinteto de `armarModulo` alterna arriba/abajo con i % 2 y con cinco globos el 4 y el 0 quedan los dos arriba:
   // solo el espejo que cambia 0↔4 y 1↔3 (deja el 2) lo deja igual. Un rojo en el globo 0 NO equivale a un rojo en el 1.
   assert.notEqual(coloresCanonicos("quinteto", ["915", "040", "040", "040", "040"]).join(), coloresCanonicos("quinteto", ["040", "915", "040", "040", "040"]).join());
@@ -74,17 +90,18 @@ async function principal() {
   const trios = [[ROJO_MATE, ROJO_MATE, AZUL_MATE], [ROJO_MATE, AZUL_MATE, ROJO_MATE], [AZUL_MATE, ROJO_MATE, ROJO_MATE]]
     .map((c) => claveRender(ok(resolverConfig({ tipo: "trio", colores: c }))));
   assert.equal(new Set(trios).size, 1);
-  // Cuarteto (dos parejas cruzadas): AABB (parejas) ≠ ABAB solo cuando las parejas son las pares y las impares.
-  // Girar un paso intercambia arriba y abajo (volteo), así que ABAB = BABA y AABB = ABBA = BBAA = BAAB.
+  // Cuarteto (dos parejas cruzadas, una arriba y otra abajo): no se puede voltear. ABAB (la pareja de arriba roja, la de
+  // abajo azul) NO es BABA (azul arriba); AABB = ABBA = BBAA = BAAB (solo giros y espejos que conservan la altura).
   const cuarteto = (c: string[]) => claveRender(ok(resolverConfig({ tipo: "cuarteto", colores: c })));
   const [A, B] = [REFLEX_ROJO, AZUL_MATE];
-  assert.equal(cuarteto([A, B, A, B]), cuarteto([B, A, B, A]));
+  assert.notEqual(cuarteto([A, B, A, B]), cuarteto([B, A, B, A]), "el azul arriba no es el rojo arriba");
   assert.equal(cuarteto([A, A, B, B]), cuarteto([B, A, A, B]));
   assert.equal(cuarteto([A, A, B, B]), cuarteto([B, B, A, A]));
   assert.notEqual(cuarteto([A, B, A, B]), cuarteto([A, A, B, B]));
   // La clave sirve de ruta de objeto sin caracteres raros.
   assert.equal(claveObjeto(claveRender(duoA), "image/jpeg"), `modulos/${VERSION_PIPELINE}/pareja/R-12_${AZUL_MATE}_${REFLEX_ROJO}.jpg`);
   assert.ok(!claveObjeto(claveRender(duoA), "image/png").includes(":"));
+  assert.equal(claveObjeto(claveRender(duoA), "image/jpeg", "ficha-3"), `modulos/${VERSION_PIPELINE}/pareja/R-12_${AZUL_MATE}_${REFLEX_ROJO}-ficha3.jpg`, "la ficha de la reserva va en el nombre del objeto");
 
   // ---- Validación y repetición en ciclo. ----
   assert.deepEqual(ok(resolverConfig({ tipo: "pareja", colores: [ROJO_MATE] })).colores, [ROJO_MATE, ROJO_MATE]);
@@ -120,9 +137,28 @@ async function principal() {
   assert.ok(prompt.includes("1 × matte light blue (#01B2E8), opaque matte latex"));
   assert.ok(prompt.includes("Nothing else is in the image"));
   assert.ok(!/furniture, table/.test(prompt.replace("no room, furniture, table", "")), "no pide muebles");
-  const huella = createHash("sha256").update(promptModuloEstudio({ tipo: "cuarteto", formatoId: "R-12", colores: [ROJO_MATE, AZUL_MATE, ROJO_MATE, AZUL_MATE] })).digest("hex").slice(0, 12);
-  const HUELLA_POR_VERSION: Record<string, string> = { "estudio-v1": "11b0b3dec519" };
-  assert.equal(huella, HUELLA_POR_VERSION[VERSION_PIPELINE], `El texto de FLUX cambió (huella ${huella}): sube VERSION_PIPELINE y anota la huella nueva aquí.`);
+  assert.ok(!/knotted together at the center/.test(prompt) && prompt.includes("tied together in one small knot") && prompt.includes("same positions"), "el texto no se contradice: un solo nudo y los globos donde la captura los pone");
+
+  // ---- La versión del pipeline lleva la huella de la geometría, la captura y el texto (A3). ----
+  assert.match(VERSION_PIPELINE, /^estudio-v2\.[0-9a-f]{8}$/);
+  assert.equal(VERSION_PIPELINE, "estudio-v2.6d49bd25", "Cambió la geometría de armarModulo, la captura 3D o el texto de FLUX: es lo esperado si lo cambiaste; las claves viejas dejan de servirse. Anota aquí la versión nueva.");
+  const base = { geometria: huellaGeometria(), captura: huellaCaptura(), texto: huellaTexto() };
+  assert.equal(versionPipeline(base), VERSION_PIPELINE);
+  // Un cambio de 0,02 cm en una sola dirección de un solo módulo cambia la huella (y por ella la versión y todas las claves)...
+  const geometriaMovida = huellaGeometria((modulo, formato, d) => {
+    const armado = armarModulo(modulo, formato, d);
+    return modulo.id === "sexteto" && formato.id === "R-18" ? { ...armado, globos: armado.globos.map((g, i) => (i === 3 ? { ...g, nudo: { ...g.nudo, x: g.nudo.x + 0.02 } } : g)) } : armado;
+  });
+  assert.notEqual(geometriaMovida, base.geometria);
+  assert.notEqual(versionPipeline({ ...base, geometria: geometriaMovida }), VERSION_PIPELINE);
+  assert.notEqual(claveRender(duoA, versionPipeline({ ...base, geometria: geometriaMovida })), claveRender(duoA));
+  // ...pero el ruido de punto flotante por debajo de 0,005 cm no la mueve.
+  assert.equal(huellaGeometria((modulo, formato, d) => {
+    const armado = armarModulo(modulo, formato, d);
+    return { ...armado, globos: armado.globos.map((g) => ({ ...g, nudo: { ...g.nudo, x: g.nudo.x + 1e-9 } })) };
+  }), base.geometria);
+  // El texto de FLUX también: cualquier palabra distinta cambia la versión.
+  assert.notEqual(huellaTexto((c) => `${promptModuloEstudio(c)} Extra.`), base.texto);
 
   // ---- La escena del estudio: un módulo, sin sala dibujada, y la caja de cada globo. ----
   const escena = escenaEstudio(duoA);
@@ -172,7 +208,7 @@ async function principal() {
     assert.equal(llamadas(), 1);
     const fila = repo.filas.get(r1.clave)!;
     assert.equal(fila.estado, "lista");
-    assert.equal(fila.objeto, `modulos/${VERSION_PIPELINE}/pareja/R-12_${AZUL_MATE}_${REFLEX_ROJO}.jpg`);
+    assert.equal(fila.objeto, `modulos/${VERSION_PIPELINE}/pareja/R-12_${AZUL_MATE}_${REFLEX_ROJO}-ficha1.jpg`);
     assert.deepEqual([...fila.colores], [AZUL_MATE, REFLEX_ROJO], "la fila guarda la forma canónica");
     assert.equal(almacen.objetos.size, 1);
     const r2 = await servicio.obtenerOGenerar(duoB, null);
@@ -282,17 +318,173 @@ async function principal() {
     assert.equal(almacen.objetos.size, 0);
   }
 
-  // La generación compartida no hereda la cancelación del primer cliente (se va a guardar para todos).
+  // A6: la señal es de cada llamante. Si el primero cierra la página, el segundo (que comparte la generación) sigue y
+  // el render se guarda; el que canceló recibe el AbortError. La generación no ve ninguna señal.
   {
-    let senalRecibida: AbortSignal | undefined | "sin-llamar" = "sin-llamar";
-    const { servicio } = crear({ generar: async (_c, _cap, senal) => { senalRecibida = senal; return { bytes: jpg(1), mime: "image/jpeg", costeUsd: 0.05 }; } });
-    await servicio.obtenerOGenerar(duoA, captura, new AbortController().signal);
-    assert.equal(senalRecibida, undefined);
+    let senalVista: AbortSignal | undefined | "sin-llamar" = "sin-llamar";
+    let soltar: () => void = () => undefined;
+    const bloqueo = new Promise<void>((r) => { soltar = r; });
+    const { servicio, repo, almacen } = crear({ generar: async (_c, _cap, senal) => { senalVista = senal; await bloqueo; return { bytes: jpg(1), mime: "image/jpeg", costeUsd: 0.05 }; } });
+    const primero = new AbortController();
+    const delPrimero = servicio.obtenerOGenerar(duoA, captura, { senal: primero.signal });
+    const delSegundo = servicio.obtenerOGenerar(duoB, captura);
+    await Promise.resolve();
+    primero.abort();
+    await assert.rejects(delPrimero, (e: unknown) => e instanceof DOMException && e.name === "AbortError");
+    soltar();
+    const segundo = await delSegundo;
+    assert.ok(segundo.origen === "generada" && segundo.guardada, "el segundo recibe y guarda el render aunque el primero se fue");
+    assert.equal(senalVista, undefined, "la generación compartida no recibe la señal de nadie");
+    assert.equal(repo.filas.size, 1);
+    assert.equal(almacen.objetos.size, 1);
+    // Ya cancelada de entrada: ni siquiera arranca.
+    const otro = crear();
     const cancelado = new AbortController();
     cancelado.abort();
-    const otro = crear();
-    await otro.repo.reservar({ clave: otro.servicio.clave(duoB), tipo: "pareja", formatoId: "R-12", colores: [AZUL_MATE, REFLEX_ROJO], version: VERSION_PIPELINE });
-    await assert.rejects(otro.servicio.obtenerOGenerar(duoA, captura, cancelado.signal), /cancel/i);
+    await assert.rejects(otro.servicio.obtenerOGenerar(duoA, captura, { senal: cancelado.signal }), /cancel/i);
+    assert.equal(otro.llamadas(), 0);
+  }
+
+  // A5: el presupuesto de la petición. Con menos de 100 s de los 120 s, no se empieza a generar (409 enseguida) ni se toma
+  // una reserva caducada; el que espera una generación ajena se rinde a los 45 s, no a los 100.
+  {
+    const reloj = { t: 0 };
+    const sinTiempo = crear({ reloj });
+    await assert.rejects(sinTiempo.servicio.obtenerOGenerar(duoA, captura, { inicioMs: -30_000 }), RenderEnCursoError);
+    assert.equal(sinTiempo.llamadas(), 0);
+    assert.equal(sinTiempo.repo.filas.size, 0, "sin tiempo no se reserva nada");
+    const justo = await sinTiempo.servicio.obtenerOGenerar(duoA, captura, { inicioMs: -20_000 });
+    assert.ok(justo.origen === "generada", "con 100 s justos todavía se genera");
+    // Reserva caducada pero a la petición no le quedan 100 s: no la toma.
+    const caducada = crear({ reloj });
+    await caducada.repo.reservar({ clave: caducada.servicio.clave(duoA), tipo: "pareja", formatoId: "R-12", colores: [AZUL_MATE, REFLEX_ROJO], version: VERSION_PIPELINE });
+    reloj.t = 300_000;
+    await assert.rejects(caducada.servicio.obtenerOGenerar(duoA, captura, { inicioMs: 300_000 - 40_000 }), RenderEnCursoError);
+    assert.equal(caducada.llamadas(), 0);
+    // Sin caché configurado también se respeta.
+    const sinCacheSinTiempo = crear({ sinRepo: true, reloj });
+    await assert.rejects(sinCacheSinTiempo.servicio.obtenerOGenerar(duoA, captura, { inicioMs: reloj.t - 60_000 }), RenderEnCursoError);
+    // El que espera una reserva viva se rinde pronto: con el servicio por defecto son 45 s, no 100.
+    const espera = { t: 0 };
+    const reposo = crearRepositorioMemoria(() => espera.t);
+    await reposo.reservar({ clave: claveRender(duoA), tipo: "pareja", formatoId: "R-12", colores: [AZUL_MATE, REFLEX_ROJO], version: VERSION_PIPELINE });
+    const paciente = crearServicioRenders({ repositorio: reposo, almacen: crearAlmacenMemoria(), generar: async () => { throw new Error("no debe generar"); }, ahora: () => espera.t, dormir: async (ms) => { espera.t += ms; } });
+    await assert.rejects(paciente.obtenerOGenerar(duoA, captura), RenderEnCursoError);
+    assert.ok(espera.t >= 45_000 && espera.t < 50_000, `esperó ${espera.t} ms`);
+  }
+
+  // A4: la fila guarda la huella de la captura y de la sesión; descartar borra fila y objeto y deja volver a generar.
+  {
+    const { servicio, repo, almacen, llamadas } = crear();
+    const primera = await servicio.obtenerOGenerar(duoA, captura, { sesion: "sesion-abc" });
+    assert.ok(primera.origen === "generada" && primera.guardada);
+    const fila = repo.filas.get(primera.clave)!;
+    assert.match(fila.capturaSha256 ?? "", /^[0-9a-f]{64}$/);
+    assert.equal(fila.sesion, "sesion-abc");
+    const antes = await servicio.consultar(duoA);
+    assert.ok(antes.estado === "hit");
+    assert.equal(await servicio.descartar(duoB), true, "el equivalente descarta el mismo render");
+    assert.equal(repo.filas.size, 0);
+    assert.equal(almacen.objetos.size, 0, "se borra también el objeto");
+    assert.equal((await servicio.consultar(duoA)).estado, "miss");
+    assert.equal(await servicio.descartar(duoA), false, "descartar lo que no hay no falla");
+    const otra = await servicio.obtenerOGenerar(duoA, captura);
+    assert.ok(otra.origen === "generada" && otra.guardada);
+    assert.equal(llamadas(), 2);
+    // La URL versionada: otra imagen, otra huella.
+    const nueva = await servicio.consultar(duoA);
+    assert.ok(antes.estado === "hit" && nueva.estado === "hit" && antes.huella !== nueva.huella, "la huella del contenido cambia al regenerar");
+    assert.match(nueva.estado === "hit" ? nueva.huella : "", /^[0-9a-f]{16}$/);
+    // Una reserva en curso no se descarta.
+    const enCurso = crear();
+    await enCurso.repo.reservar({ clave: enCurso.servicio.clave(duoA), tipo: "pareja", formatoId: "R-12", colores: [AZUL_MATE, REFLEX_ROJO], version: VERSION_PIPELINE });
+    assert.equal(await enCurso.servicio.descartar(duoA), false);
+    assert.equal(enCurso.repo.filas.size, 1);
+    // Sin caché configurado: descartar dice que no hay caché.
+    await assert.rejects(crear({ sinRepo: true }).servicio.descartar(duoA), CacheCaidoError);
+  }
+
+  // A4: la puerta de las escrituras (POST de generación y DELETE): una sola función.
+  {
+    const entorno = process.env as Record<string, string | undefined>;
+    const guardado = { modo: entorno.MODULOS_ESCRITURA, nodo: entorno.NODE_ENV };
+    const peticion = new Request("http://localhost/api/modulos-render");
+    const con = (modo: string | undefined, nodo: string) => {
+      if (modo === undefined) delete entorno.MODULOS_ESCRITURA; else entorno.MODULOS_ESCRITURA = modo;
+      entorno.NODE_ENV = nodo;
+      return puedeEscribirCacheModulos(peticion);
+    };
+    assert.equal(con(undefined, "production"), false, "en producción, sin variable ni sesión de administración: CERRADA");
+    assert.equal(con("cerrada", "production"), false);
+    assert.equal(con("abierta", "production"), true);
+    assert.equal(con(undefined, "development"), true, "en desarrollo, abierta por defecto");
+    assert.equal(con("cerrada", "development"), false, "y se puede cerrar");
+    assert.equal(con("otra-cosa", "production"), false, "solo abierta abre");
+    if (guardado.modo === undefined) delete entorno.MODULOS_ESCRITURA; else entorno.MODULOS_ESCRITURA = guardado.modo;
+    if (guardado.nodo === undefined) delete entorno.NODE_ENV; else entorno.NODE_ENV = guardado.nodo;
+    // La huella de la sesión no es la cookie.
+    const conCookie = new Request("http://localhost/", { headers: { cookie: "otra=1; session=secreto-de-sesion; x=2" } });
+    const huella = huellaDeSesion(conCookie);
+    assert.match(huella ?? "", /^[0-9a-f]{16}$/);
+    assert.ok(!huella!.includes("secreto"));
+    assert.equal(huellaDeSesion(peticion), null);
+  }
+
+  // A6 (2.ª ronda): cada generación tiene su objeto; un descarte lento no borra el que otra generación guardó para la misma clave.
+  {
+    const { servicio, repo, almacen } = crear();
+    const primera = await servicio.obtenerOGenerar(duoA, captura);
+    const objetoViejo = repo.filas.get(primera.clave)!.objeto!;
+    // Simula la carrera: la fila vieja se elimina, otra instancia genera y guarda la nueva, y RECIÉN después llega el borrado.
+    const eliminada = await repo.eliminar(primera.clave);
+    assert.equal(eliminada?.objeto, objetoViejo);
+    const segunda = await servicio.obtenerOGenerar(duoA, captura);
+    const objetoNuevo = repo.filas.get(segunda.clave)!.objeto!;
+    assert.notEqual(objetoNuevo, objetoViejo, "la nueva generación no reutiliza el nombre del objeto");
+    await almacen.borrar(objetoViejo);
+    assert.equal((await servicio.consultar(duoA)).estado, "hit", "el borrado tardío del objeto viejo no toca el nuevo");
+  }
+
+  // A7 (2.ª ronda): sin caché nadie puede aprovechar el resultado, así que la cancelación de quien lo pidió sí llega a FLUX.
+  {
+    const recibidas: Array<AbortSignal | undefined> = [];
+    const { servicio } = crear({ sinRepo: true, generar: async (_c, _cap, senal) => { recibidas.push(senal); return { bytes: jpg(1), mime: "image/jpeg", costeUsd: 0.05 }; } });
+    const control = new AbortController();
+    await servicio.obtenerOGenerar(duoA, captura, { senal: control.signal });
+    assert.equal(recibidas[0], control.signal);
+  }
+
+  // A2 (2.ª ronda): la huella del texto de FLUX ve TODAS las familias de acabado y los tamaños, no solo unos colores de ejemplo.
+  {
+    const base = huellaTexto();
+    for (const codigo of [...new Map(TABLA_SEMPERTEX.referencias.map((x) => [x.familia, x.codigo])).values()]) {
+      const cambiado = huellaTexto((c) => (c.colores[0] === codigo && c.formatoId === "R-24" ? `${promptModuloEstudio(c)} Cambio.` : promptModuloEstudio(c)));
+      assert.notEqual(cambiado, base, `el texto del color ${codigo} (una referencia de cada familia) en R-24 debe cambiar la huella`);
+    }
+  }
+
+  // A5 (2.ª ronda): el ancla del centro de la pareja cae entre los dos cuerpos, no en el nudo.
+  {
+    const f = formatoPorId("R-12")!;
+    const armado = armarModulo(MODULOS[0]!, f, 25);
+    const natural = armado.globos.map((g) => g.direccion.z * 17.25);
+    assert.ok(Math.abs(armado.anclas[0]!.posicion.z - (natural[0]! + natural[1]!) / 2) < 0.1 && armado.anclas[0]!.posicion.z < -5);
+  }
+
+  // A8: el límite por IP del intérprete.
+  {
+    const limite = crearLimitadorTasa({ max: 20, ventanaMs: 60_000 });
+    for (let i = 0; i < 20; i++) assert.ok(limite.tomar("1.2.3.4", 1_000 + i).ok);
+    const veintiuno = limite.tomar("1.2.3.4", 2_000);
+    assert.ok(!veintiuno.ok && veintiuno.reintentarEnMs > 0 && veintiuno.reintentarEnMs <= 60_000);
+    assert.ok(limite.tomar("5.6.7.8", 2_000).ok, "otra IP tiene su propia cuenta");
+    assert.ok(limite.tomar("1.2.3.4", 61_001).ok, "pasado el minuto vuelve a abrirse");
+    // Con claves inventadas (ventanas vivas) la memoria no crece sin tope: se sueltan las más viejas.
+    const apretado = crearLimitadorTasa({ max: 1, ventanaMs: 60_000 });
+    for (let i = 0; i < 12_000; i++) apretado.tomar(`ip-${i}`, 5_000 + i);
+    assert.ok(apretado.tamano() <= 5_000, `el limitador guarda ${apretado.tamano()} claves`);
+    assert.equal(ipDe(new Request("http://x/", { headers: { "x-forwarded-for": " 9.9.9.9, 10.0.0.1" } })), "9.9.9.9");
+    assert.equal(ipDe(new Request("http://x/")), "sin-ip");
   }
 
   // Ficha de la reserva: quien tardó más que la caducidad no pisa a quien tomó su reserva.
@@ -307,8 +499,8 @@ async function principal() {
     assert.ok(fichaB && a.reservada && fichaB !== a.dueno);
     await repo.liberar("k", a.reservada ? a.dueno : "");
     assert.ok(repo.filas.has("k"), "la ficha vieja no borra la reserva de B");
-    await assert.rejects(repo.completar("k", a.reservada ? a.dueno : "", { objeto: "o", mime: "image/jpeg", costeUsd: 0.05 }), /ya no es de quien/);
-    await repo.completar("k", fichaB!, { objeto: "o", mime: "image/jpeg", costeUsd: 0.05 });
+    await assert.rejects(repo.completar("k", a.reservada ? a.dueno : "", { objeto: "o", mime: "image/jpeg", costeUsd: 0.05, capturaSha256: "h", sesion: null }), /ya no es de quien/);
+    await repo.completar("k", fichaB!, { objeto: "o", mime: "image/jpeg", costeUsd: 0.05, capturaSha256: "h", sesion: null });
     assert.equal(repo.filas.get("k")!.estado, "lista");
   }
 
@@ -318,10 +510,13 @@ async function principal() {
     const almacen = crearAlmacenS3({
       async poner(clave, cuerpo, tipo) { guardado.set(clave, { cuerpo, tipo }); },
       async obtener(clave) { return guardado.get(clave) ?? null; },
+      async borrar(clave) { guardado.delete(clave); },
     });
     await almacen.guardar("modulos/x.jpg", { bytes: jpg(7), mime: "image/jpeg" });
     assert.deepEqual(await almacen.leer("modulos/x.jpg"), { bytes: jpg(7), mime: "image/jpeg" });
     assert.equal(await almacen.leer("modulos/y.jpg"), null);
+    await almacen.borrar("modulos/x.jpg");
+    assert.equal(await almacen.leer("modulos/x.jpg"), null);
   }
 
   // De punta a punta con el cliente S3 REAL (firma SigV4) contra un S3 falso en memoria: el objeto va bajo `modulos/`,
@@ -335,6 +530,7 @@ async function principal() {
       const cabeceras = init?.headers as Record<string, string>;
       peticiones.push({ metodo, ruta: url.pathname, firmada: /^AWS4-HMAC-SHA256 /.test(cabeceras.authorization ?? "") });
       const clave = decodeURIComponent(url.pathname.replace(/^\/decoracion-feedback\//, ""));
+      if (metodo === "DELETE") { bucket.delete(clave); return new Response(null, { status: 204 }); }
       if (metodo === "PUT") { bucket.set(clave, { cuerpo: new Uint8Array(init?.body as Buffer), tipo: cabeceras["content-type"] ?? "" }); return new Response(null, { status: 200 }); }
       const objeto = bucket.get(clave);
       return objeto ? new Response(Buffer.from(objeto.cuerpo), { status: 200, headers: { "content-type": objeto.tipo } }) : new Response(null, { status: 404 });
@@ -345,7 +541,8 @@ async function principal() {
     const servicio = crearServicioRenders({ repositorio: repo, almacen: crearAlmacenS3(cliente), generar: async () => { llamadas++; return { bytes: jpg(9), mime: "image/jpeg", costeUsd: 0.05 }; } });
     const primero = await servicio.obtenerOGenerar(duoA, captura);
     assert.ok(primero.origen === "generada" && primero.guardada);
-    assert.deepEqual([...bucket.keys()], [`modulos/${VERSION_PIPELINE}/pareja/R-12_${AZUL_MATE}_${REFLEX_ROJO}.jpg`]);
+    assert.equal(bucket.size, 1);
+    assert.match([...bucket.keys()][0]!, new RegExp(`^modulos/${VERSION_PIPELINE.replace(".", "\\.")}/pareja/R-12_${AZUL_MATE}_${REFLEX_ROJO}-[A-Za-z0-9]{1,12}\\.jpg$`));
     const segundo = await servicio.obtenerOGenerar(duoB, null);
     assert.ok(segundo.origen === "cache" && segundo.imagen.mime === "image/jpeg" && segundo.imagen.bytes.length === 5);
     assert.equal(llamadas, 1);
@@ -365,6 +562,13 @@ async function principal() {
     assert.equal(pedido.ok && claveRender(pedido.config), claveRender(duoA), "«dúo de reflex rojo con azul mate» es el dúo del ejemplo");
     const inverso = interpretarSalida({ tipo: "pareja", tamano: "R-12", globos: [{ color: "Azul", acabado: "mate" }, { color: "rojo", acabado: "cromado" }] });
     assert.equal(inverso.ok && claveRender(inverso.config), claveRender(duoA));
+    // «Rojo cristal» (A7) es el Reflex Cristal Rojo 915, dicho de cualquier manera; «cristal» solo sigue siendo el cristal.
+    for (const g of [{ color: "rojo", acabado: "cristal" }, { color: "rojo cristal", acabado: null }, { color: "cristal rojo", acabado: null }, { color: "Rojo", acabado: "transparente" }]) {
+      const c = interpretarSalida({ tipo: "pareja", tamano: null, globos: [g] });
+      assert.ok(c.ok && c.config.colores[0] === REFLEX_ROJO, `${g.color} ${g.acabado} debe ser 915`);
+    }
+    const soloCristal = interpretarSalida({ tipo: "pareja", tamano: null, globos: [{ color: "cristal", acabado: null }] });
+    assert.ok(soloCristal.ok && soloCristal.config.colores[0] === "390", "«cristal» a secas es el 390 Cristal Transparente");
     // Un color que el catálogo no tiene se reporta y no se inventa.
     const raro = interpretarSalida({ tipo: "pareja", tamano: null, globos: [{ color: "rojo vino tinto", acabado: null }, { color: "azul", acabado: "mate" }] });
     assert.ok(!raro.ok && raro.desconocidos.includes("rojo vino tinto") && raro.errores.some((e) => e.includes("catálogo")));
@@ -387,6 +591,7 @@ async function principal() {
     assert.ok(!vacio.ok);
   }
 
+  clearTimeout(perro);
   console.log("[PASS] test-modulos-estudio");
 }
 

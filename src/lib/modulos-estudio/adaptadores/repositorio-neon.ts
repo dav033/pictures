@@ -13,16 +13,16 @@ export interface ConsultorPg {
 
 type FilaSql = {
   clave: string; tipo: string; formato_id: string; colores: string[]; version_pipeline: string; estado: EstadoFila;
-  objeto_key: string | null; mime: string | null; coste_usd: string | null; edad_ms: string | number;
+  objeto_key: string | null; mime: string | null; coste_usd: string | null; captura_sha256: string | null; sesion: string | null; edad_ms: string | number;
 };
 
-const COLUMNAS = `clave, tipo, formato_id, colores, version_pipeline, estado, objeto_key, mime, coste_usd,
+const COLUMNAS = `clave, tipo, formato_id, colores, version_pipeline, estado, objeto_key, mime, coste_usd, captura_sha256, sesion,
   (extract(epoch FROM (now() - actualizado_en)) * 1000) AS edad_ms`;
 
 function aFila(r: FilaSql): FilaRender {
   return {
     clave: r.clave, tipo: r.tipo, formatoId: r.formato_id, colores: r.colores, version: r.version_pipeline, estado: r.estado,
-    objeto: r.objeto_key, mime: r.mime, costeUsd: r.coste_usd === null ? null : Number(r.coste_usd), edadMs: Number(r.edad_ms),
+    objeto: r.objeto_key, mime: r.mime, costeUsd: r.coste_usd === null ? null : Number(r.coste_usd), capturaSha256: r.captura_sha256, sesion: r.sesion, edadMs: Number(r.edad_ms),
   };
 }
 
@@ -64,7 +64,7 @@ export function crearRepositorioNeon(db: ConsultorPg): RepositorioRendersModulo 
     async reabrir(clave) {
       const dueno = randomUUID();
       const { rows } = await db.query(
-        `UPDATE modulos_renders SET estado = 'pendiente', objeto_key = NULL, mime = NULL, coste_usd = NULL, completado_en = NULL, actualizado_en = now(), dueno = $2
+        `UPDATE modulos_renders SET estado = 'pendiente', objeto_key = NULL, mime = NULL, coste_usd = NULL, captura_sha256 = NULL, sesion = NULL, completado_en = NULL, actualizado_en = now(), dueno = $2
          WHERE clave = $1 AND estado = 'lista' RETURNING clave`,
         [clave, dueno],
       );
@@ -72,11 +72,20 @@ export function crearRepositorioNeon(db: ConsultorPg): RepositorioRendersModulo 
     },
     async completar(clave, dueno, datos) {
       const { rows } = await db.query(
-        `UPDATE modulos_renders SET estado = 'lista', objeto_key = $2, mime = $3, coste_usd = $4, completado_en = now(), actualizado_en = now(), dueno = NULL
+        `UPDATE modulos_renders SET estado = 'lista', objeto_key = $2, mime = $3, coste_usd = $4, captura_sha256 = $6, sesion = $7, completado_en = now(), actualizado_en = now(), dueno = NULL
          WHERE clave = $1 AND estado = 'pendiente' AND dueno = $5 RETURNING clave`,
-        [clave, datos.objeto, datos.mime, datos.costeUsd, dueno],
+        [clave, datos.objeto, datos.mime, datos.costeUsd, dueno, datos.capturaSha256, datos.sesion],
       );
       if (rows.length === 0) throw new Error(`La reserva de ${clave} ya no es de quien la completa.`);
+    },
+    async eliminar(clave) {
+      const { rows } = await db.query(
+        `DELETE FROM modulos_renders WHERE clave = $1 AND estado = 'lista'
+         RETURNING clave, tipo, formato_id, colores, version_pipeline, estado, objeto_key, mime, coste_usd, captura_sha256, sesion, 0 AS edad_ms`,
+        [clave],
+      );
+      const fila = rows[0] as FilaSql | undefined;
+      return fila ? aFila(fila) : null;
     },
     async liberar(clave, dueno) {
       await db.query(`DELETE FROM modulos_renders WHERE clave = $1 AND estado = 'pendiente' AND dueno = $2`, [clave, dueno]);

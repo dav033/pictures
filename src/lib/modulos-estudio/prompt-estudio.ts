@@ -6,7 +6,7 @@ import type { ConfigModulo } from "./configuracion";
  * Texto para FLUX.2 `/edit` con la captura 3D del módulo como base: una foto de producto de UN solo módulo de globos
  * sobre un fondo continuo neutro. La forma, la posición y la cantidad de globos vienen de la captura; el texto solo
  * pone el realismo del látex, el acabado de cada color y cierra el inventario (nada más en la foto).
- * Si este texto cambia, hay que subir `VERSION_PIPELINE` (clave-render.ts).
+ * Si este texto cambia, la huella del pipeline (huella-pipeline.ts) cambia sola y las claves viejas dejan de servirse.
  */
 
 const NOMBRE_EN: Readonly<Record<string, string>> = {
@@ -44,10 +44,10 @@ export function promptModuloEstudio(config: ConfigModulo): string {
   const total = config.colores.length;
   return [
     `Turn this 3D preview into a real professional studio product photograph of a single ${NOMBRE_EN[config.tipo] ?? "balloon cluster"}.`,
-    `Keep the arrangement exactly as shown: ${total} ${formatoEnIngles(config.formatoId)} latex balloons knotted together at the center, same positions, same overlap and same camera angle; do not add, remove, merge or recolor balloons.`,
+    `The input shows ${total} ${formatoEnIngles(config.formatoId)} latex balloons whose necks are tied together in one small knot, with the balloon bodies touching each other. Keep every balloon exactly where and how it appears in the input (same positions, same contact between bodies, same camera angle); do not add, remove, merge or recolor balloons.`,
     `The balloons: ${colores}.`,
     "Color fidelity: every balloon keeps exactly the color it has in the input image and the hex code given for it; do not darken, desaturate or tint the balloons.",
-    "Make it a real photograph, not a 3D render: natural soft highlights and subtle latex texture, balloons slightly squashed where they touch, tiny real knots at the center.",
+    "Make it a real photograph, not a 3D render: natural soft highlights and subtle latex texture, balloons slightly squashed where they touch, one tiny real knot where the necks are tied.",
     "Background: a seamless, plain, light neutral grey studio backdrop and floor with no horizon line, soft diffused studio lighting and a soft natural contact shadow under the balloons.",
     "Nothing else is in the image: no room, furniture, table, ribbon, string, text, logo, people, props or extra balloons.",
     "Centered composition with comfortable empty space around the balloons; sharp detail, natural depth.",

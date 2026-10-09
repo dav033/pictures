@@ -9,6 +9,7 @@ import { centroCuerpo, nudoCm } from "./geometria";
  * - quinteto: una pareja y un trío entrelazados;
  * - sexteto: dos tríos entrelazados.
  *
+ * La pareja es la excepción en la forma (ver `armarParejaAtada`): un solo nudo y los cuerpos tocándose, en V.
  * Todos los nudos (los «pitones») quedan amarrados juntos en el centro, como en un módulo real, y cada cuerpo
  * sale hacia fuera, repartido en el plano horizontal (como va un módulo dentro de una columna). Si con el
  * cuello normal los cuerpos vecinos se montarían, el nudo NO se mueve: se estira el cuello hasta que los
@@ -57,6 +58,7 @@ export function armarModulo(modulo: Modulo, formato: FormatoGlobo, diametroCm: n
   const n = modulo.globos;
   const natural = centroCuerpo(formato.tipo === "link" ? "link" : "redondo", diametroCm);
   const amarre = nudoCm(diametroCm);
+  if (n === 2) return armarParejaAtada(natural, amarre, diametroCm);
   const direcciones: Vec3[] = [];
   for (let i = 0; i < n; i++) {
     const angulo = (2 * Math.PI * i) / n + (n === 2 ? 0 : Math.PI / n);
@@ -92,6 +94,37 @@ export function armarModulo(modulo: Modulo, formato: FormatoGlobo, diametroCm: n
   }
   const alcance = distancia + diametroCm / 2;
   return { globos, anclas, anchoCm: Math.round(alcance * 2), altoCm: Math.round(diametroCm + 2 * distancia * Math.sin(modulo.inclinacion)) };
+}
+
+/** Cuánto se acercan los cuerpos que se tocan: el látex se aplasta hasta un 12 % del diámetro (dueño, 2026-10-07). */
+const CONTACTO_CUERPOS = 0.88;
+
+/**
+ * La pareja de verdad: los dos cuellos atados en UN solo nudo y los cuerpos apenas tocándose. Un par a 180° dejaba entre los
+ * cuerpos casi medio globo de aire (a 1,45 diámetros de centro a centro) y dos nudos separados. Aquí el cuello no se acorta (no
+ * puede ser menor que el natural): se cierra el ángulo entre los dos globos, en el plano horizontal, con el vértice (el nudo)
+ * hacia el frente (+z) y los cuerpos hacia el fondo, hasta que los centros quedan a `CONTACTO_CUERPOS` diámetros. Los dos pitones
+ * quedan pegados (a medio nudo del centro, uno a cada lado) y se leen como un solo nudo.
+ */
+function armarParejaAtada(natural: number, amarre: number, diametroCm: number): ModuloArmado {
+  const medioNudo = amarre / 2;
+  const seno = Math.min(1, Math.max(0, (CONTACTO_CUERPOS * diametroCm / 2 - medioNudo) / natural));
+  const mitadAngulo = Math.asin(seno);
+  const globos: GloboColocado[] = [1, -1].map((lado, indice) => ({
+    indice,
+    nudo: { x: lado * medioNudo, y: 0, z: 0 },
+    direccion: { x: lado * Math.sin(mitadAngulo), y: 0, z: -Math.cos(mitadAngulo) },
+    cuelloExtraCm: 0,
+    parte: "modulo",
+  }));
+  const alcance = Math.max(...globos.map((g) => Math.hypot(g.nudo.x + g.direccion.x * natural, g.nudo.z + g.direccion.z * natural))) + diametroCm / 2;
+  return {
+    globos,
+    // Los nudos quedan en el origen (como en todo módulo) y el ancla del centro, entre los dos cuerpos.
+    anclas: [{ tipo: "centro", posicion: { x: 0, y: diametroCm * 0.35, z: (globos[0]!.direccion.z + globos[1]!.direccion.z) * natural / 2 }, normal: { x: 0, y: 1, z: 0 } }],
+    anchoCm: Math.round(alcance * 2),
+    altoCm: Math.round(diametroCm),
+  };
 }
 
 /** Lista de materiales del módulo: cuántos globos de cada color (por código Sempertex), en orden de aparición. */

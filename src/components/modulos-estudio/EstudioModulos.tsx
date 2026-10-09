@@ -50,7 +50,7 @@ export function EstudioModulos() {
     return r.ok ? r.avisos : [];
   }, [config]);
   const capturar = useCallback(() => visorRef.current?.capturar() ?? null, []);
-  const { estado, generar, base } = useRenderModulo(config, clave, capturar);
+  const { estado, generar, descartar, base, puedeEscribir } = useRenderModulo(config, clave, capturar);
 
   const urlRender = estado.fase === "guardado" || estado.fase === "lista" ? estado.url : null;
   const vista = urlRender ? vistaElegida ?? "render" : "3d";
@@ -107,7 +107,7 @@ export function EstudioModulos() {
       </section>
 
       <div className="lg:col-start-2 lg:row-start-3">
-        <PanelRender estado={estado} base={base} viendoRender={vista === "render"} onGenerar={generar} onVerRender={() => setVistaElegida("render")} />
+        <PanelRender estado={estado} base={base} puedeEscribir={puedeEscribir} viendoRender={vista === "render"} onGenerar={generar} onVerRender={() => setVistaElegida("render")} onDescartar={descartar} />
       </div>
 
       <section aria-label="Configuración" className="flex flex-col gap-5 rounded-2xl bg-superficie p-4 ring-1 ring-borde lg:col-start-2 lg:row-start-2">

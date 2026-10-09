@@ -7,7 +7,7 @@
  */
 import assert from "node:assert/strict";
 import { FORMATOS_GLOBO, coloresDelFormato, formatoPorId, infladoValido } from "../../src/lib/globos3d/formatos";
-import { altoPerfil, anchoPerfil, centroCuerpo, contornoCorazon, perfilLink, perfilRedondo } from "../../src/lib/globos3d/geometria";
+import { altoPerfil, anchoPerfil, centroCuerpo, contornoCorazon, nudoCm, perfilLink, perfilRedondo } from "../../src/lib/globos3d/geometria";
 import { TABLA_SEMPERTEX } from "../../src/lib/plan/referencia-sempertex";
 import { MODULOS, armarModulo, materialesModulo } from "../../src/lib/globos3d/modulos";
 
@@ -57,6 +57,15 @@ for (const modulo of MODULOS) {
     }
     // Los pitones quedan amarrados juntos en el centro (a menos de 1,5 cm): lo que separa los cuerpos es el cuello.
     for (const g of armado.globos) assert.ok(Math.hypot(g.nudo.x, g.nudo.y, g.nudo.z) <= 1.5, `${modulo.id} ${id}: un nudo quedó lejos del centro`);
+    // La pareja es la de verdad (REQ-011): los dos cuellos atados en UN nudo y los cuerpos apenas tocándose (a 0,88 diámetros, el
+    // 12 % que se aplasta el látex), no dos globos a 180° con casi medio globo de aire entre ellos.
+    if (modulo.id === "pareja" && f.tipo === "redondo") {
+      const distancia = Math.hypot(cuerpos[0]!.x - cuerpos[1]!.x, cuerpos[0]!.y - cuerpos[1]!.y, cuerpos[0]!.z - cuerpos[1]!.z);
+      assert.ok(distancia >= d * 0.87 && distancia <= d * 0.9, `pareja ${id}: los cuerpos no se tocan justo (${(distancia / d).toFixed(2)} diámetros)`);
+      const nudos = armado.globos.map((g) => g.nudo);
+      assert.ok(Math.hypot(nudos[0]!.x - nudos[1]!.x, nudos[0]!.y - nudos[1]!.y, nudos[0]!.z - nudos[1]!.z) <= nudoCm(d) * 1.01, `pareja ${id}: los dos nudos no son uno`);
+      assert.ok(armado.globos.every((g) => g.direccion.z < -0.4), `pareja ${id}: los globos no se abren hacia el fondo desde un vértice`);
+    }
     assert.equal(armado.anclas.length, modulo.globos >= 3 ? modulo.globos + 1 : 1);
     // Cuellos cortos: lo natural es que el cuerpo quede pegado al amarre, sin cuellos largos y finos.
     for (const g of armado.globos) assert.ok(g.cuelloExtraCm <= d * 0.12, `${modulo.id} ${id}: cuello estirado ${g.cuelloExtraCm.toFixed(1)} cm`);
