@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-31-arco-futbol-balones-gigantes",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.0"
+  "version": "1.2.1"
  },
- "especHash": "c0de76c526491140c33fba3b54eb1dd01dd1ff316b9683c585ea709684a9a93d",
+ "especHash": "9578e35d7d037abdc1a0146bf9e73023b06dc2d8f2ae2d48192a2196fede698f",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

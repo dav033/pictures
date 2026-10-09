@@ -2,9 +2,9 @@
  "caso": "oficial-columna",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.0"
+  "version": "1.2.1"
  },
- "especHash": "29f9575f52f81b860ad1f2097a6312efe5e3a287667eba50d97b94102bfdda6e",
+ "especHash": "5414f4bc5dec5b775e7856a1452c5bc3d5a7f6823a66de52bdcc753acf39319b",
  "noRepresentable": [],
  "piezas": {
   "EST_01_COLUMNA": {

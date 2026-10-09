@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-20-semiarcoilusionazul-1200x1200",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.0"
+  "version": "1.2.1"
  },
- "especHash": "512cc52f69aa12b9460273f4c99634674fa2d15202ec1537252074b7de3c2076",
+ "especHash": "75194a91c077c2a177afba872a0918fe2f6df1785dc9f4588709f95ca138c54b",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {

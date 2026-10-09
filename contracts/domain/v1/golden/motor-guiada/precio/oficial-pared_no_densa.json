@@ -2,9 +2,9 @@
  "caso": "oficial-pared_no_densa",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.0"
+  "version": "1.2.1"
  },
- "especHash": "a7de7a55d9ceb698d2355a6972fd32d8af6d534b6f7f6d76f846064270a37b74",
+ "especHash": "f3c2f391f5d9cf03049d434acec8031eb7829815fb74c151a517ba9846024b3e",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

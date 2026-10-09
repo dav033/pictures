@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-30-columna-balon-futbol",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.0"
+  "version": "1.2.1"
  },
- "especHash": "464fa59e8d1caf1af7a0a06fd0dfcba1c28704a0729b5114e6bbd0e7234f5439",
+ "especHash": "49fa2bf719fec623f94c7e9ef868a9e7d601f01943ca20f0ab0e548d632808ba",
  "noRepresentable": [],
  "piezas": {
   "EST_01_COLUMNA": {

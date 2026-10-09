@@ -2,9 +2,9 @@
  "caso": "oficial-columna_asimetrica",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.0"
+  "version": "1.2.1"
  },
- "especHash": "90ab5a89aa0518f650f01284d430b9388e0a73b98032f0ebc74b4ba635fa83da",
+ "especHash": "e052f01241e96f7b4994c0f79f5cf446cffbdca2619a2ad3a957adae5b5cc4ba",
  "noRepresentable": [],
  "piezas": {
   "EST_01_COLUMNA_ASIMETRICA": {

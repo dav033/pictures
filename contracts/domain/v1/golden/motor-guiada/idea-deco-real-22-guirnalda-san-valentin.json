@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-22-guirnalda-san-valentin",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.0"
+  "version": "1.2.1"
  },
- "especHash": "b2ff9ded90971c813252538c8bd939d09535856cf1459c400cf419f874336f4c",
+ "especHash": "6a0766310677b993214667febc80b383a4770b464e54a90aa8892ace3c80920c",
  "noRepresentable": [],
  "piezas": {
   "EST_01_GUIRNALDA": {

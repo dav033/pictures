@@ -2,9 +2,9 @@
  "caso": "oficial-semiarco",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.0"
+  "version": "1.2.1"
  },
- "especHash": "51498c0bddec802893fb75cf3b654321e360d872bb146eac0e3ea47b1f7c7c30",
+ "especHash": "a744b2e82451bdcddb5e1015d51b64a894d8b020d95e3df259c57536738d9d40",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {

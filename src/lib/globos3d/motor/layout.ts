@@ -7,11 +7,15 @@ import type { Apoyo } from "./constructores-organicos";
  * **Dónde va cada pieza en la sala.** El cliente dice un lugar (`centro`, `izquierda`, `derecha`, `fondo`, `techo`,
  * `mesa`), no coordenadas: aquí se reparten en filas dentro de `SALA_INICIAL` según lo que mide cada una. Las piezas
  * del mismo lugar se ponen una al lado de la otra; las de la izquierda y la derecha salen hacia afuera del centro. Si
- * no caben, la sala se ensancha: nada se encima.
+ * hay piezas a los dos lados, entre las dos orillas de adentro queda al menos el ancho de una entrada, y no menos que
+ * lo que ocupa el centro: dos columnas flanquean el claro, no se pegan entre sí. Si no caben, la sala se ensancha:
+ * nada se encima.
  */
 export type ItemDeLayout = { id: string; lugar: LugarEspec; apoyo: Apoyo; anchoCm: number; /** Altura del borde de abajo de lo que cuelga de la pared. */ alturaPared: number };
 
 const SEPARACION_CM = 40;
+/** El claro de una entrada entre dos columnas (lo común es 2 a 2,5 m): con la inclinación hacia adentro, las puntas siguen separadas. */
+const CLARO_ENTRE_LADOS_CM = 240;
 const MARGEN_SALA_CM = 60;
 const Z_PIEZAS_DE_PISO = -160;
 const Z_MESA = 40;
@@ -33,7 +37,8 @@ function filaX(items: readonly ItemDeLayout[]): Map<string, number> {
   const anchoCentro = centro.reduce((suma, i) => suma + i.anchoCm, 0) + SEPARACION_CM * Math.max(0, centro.length - 1);
   let cursor = -anchoCentro / 2;
   for (const i of centro) { x.set(i.id, Math.round(cursor + i.anchoCm / 2)); cursor += i.anchoCm + SEPARACION_CM; }
-  const borde = anchoCentro / 2 + (centro.length ? SEPARACION_CM : 0);
+  const hayAmbosLados = de("izquierda").length > 0 && de("derecha").length > 0;
+  const borde = Math.max(anchoCentro / 2 + (centro.length ? SEPARACION_CM : 0), hayAmbosLados ? CLARO_ENTRE_LADOS_CM / 2 : 0);
   let izquierda = borde;
   for (const i of de("izquierda")) { x.set(i.id, -Math.round(izquierda + i.anchoCm / 2)); izquierda += i.anchoCm + SEPARACION_CM; }
   let derecha = borde;

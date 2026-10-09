@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-12-images-27",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.0"
+  "version": "1.2.1"
  },
- "especHash": "0e65c7a78240168def16e2cff46764051ec816e6eeab534379d2af0e3c020aa2",
+ "especHash": "969bfdeda89951cbba2d702952810f2d8ddabf21bd1329fbe8d03bf2e1341111",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {

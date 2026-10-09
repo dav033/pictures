@@ -2,9 +2,9 @@
  "caso": "oficial-pared_organica",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.0"
+  "version": "1.2.1"
  },
- "especHash": "3a3581a722e1df079c9cacb333e5efdc0cb120785d02b09b4ad444fd08b71409",
+ "especHash": "967047b642adf190714d47c643104815a763f722537edd9750fba33a0318925d",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

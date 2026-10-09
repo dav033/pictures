@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-08-images-23",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.0"
+  "version": "1.2.1"
  },
- "especHash": "85f84937db50cbea988a8b91c99f408483f5f45d633fff94d195cdb5781fb1ea",
+ "especHash": "65cef2a1557255e45421358c762e49931aabcd1e06dd80dda26ca47c4cc92a23",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
