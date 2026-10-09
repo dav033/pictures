@@ -3,8 +3,8 @@ import { INFLADOS_ORGANICOS } from "../estructuras-organicas";
 import { opcionesArcoOrganico } from "../formas-escena";
 import { formaSemiarco, RELLENO_TUPIDO, type OpcionesOrganico } from "../organico";
 import type { Pieza } from "../piezas";
-import type { DensidadEspec, PiezaEspec, TamanosEspec } from "./espec-cliente-v1";
-import { enCm, type MedidasEspec } from "./medidas-espec";
+import type { PiezaEspec, TamanosEspec } from "./espec-cliente-v1";
+import { enCm, GROSOR_ORGANICO_POR_DEFECTO_M, type MedidasEspec } from "./medidas-espec";
 
 /**
  * Las piezas orgánicas (mezcla de tamaños, sin cuartetos): semiarco, arco, arco asimétrico, columna, guirnalda y aro.
@@ -23,9 +23,6 @@ const FORMATOS_DE_TAMANOS: Readonly<Record<TamanosEspec, readonly string[] | und
   solo_grandes: ["R-18", "R-24"],
 };
 
-/** 1 = la envoltura cubierta del todo; menos globos por centímetro cuanto más ligera. */
-const FACTOR_DENSIDAD: Readonly<Record<DensidadEspec, number>> = { sencilla: 0.65, media: 0.85, lujosa: 1 };
-
 const RANGO_ARCO = { ancho: [150, 500], alto: [150, 320] } as const;
 
 const semillaDe = (...n: number[]) => (n.reduce((s, x) => (s * 31 + Math.round(x)) % 9973, 7) || 7);
@@ -41,11 +38,6 @@ const codigosYPesos = (espec: PiezaEspec) => ({
 });
 
 const grosorDe = (m: MedidasEspec, defectoM: number, rango: readonly [number, number], avisos: string[]) => enCm(m.grosorM, defectoM, rango, "El grosor", avisos);
-
-export function conDensidad(pieza: Pieza, densidad: DensidadEspec | undefined): Pieza {
-  if (pieza.tipo !== "organico" || !densidad) return pieza;
-  return { ...pieza, opciones: { ...pieza.opciones, densidad: (pieza.opciones.densidad ?? 1) * FACTOR_DENSIDAD[densidad] } };
-}
 
 /** El espejo de una pieza orgánica sobre el plano x = 0 (el semiarco de la derecha, la columna que se inclina al otro lado). */
 export function espejarOrganico(pieza: Organico): Organico {
@@ -67,7 +59,7 @@ export function construirSemiarco({ espec, medidas, avisos, notas }: EntradaOrga
   const { pieza } = crearEstructura("semiarco_organico", {
     ancho_cm: enCm(medidas.anchoM, undefined, R.ancho_cm, "El ancho", avisos),
     alto_cm: enCm(medidas.altoM, undefined, R.alto_cm, "El alto", avisos),
-    grosor_cm: grosorDe(medidas, espec.oficial === "semiarco_asimetrico" ? 0.72 : 0.6, R.grosor_cm, avisos),
+    grosor_cm: grosorDe(medidas, espec.oficial === "semiarco_asimetrico" ? GROSOR_ORGANICO_POR_DEFECTO_M.semiarcoAsimetrico : GROSOR_ORGANICO_POR_DEFECTO_M.semiarco, R.grosor_cm, avisos),
     colores, pesos, tamanos: tamanosDe(espec),
   }, notas);
   const armada = pieza.tipo === "organico" && espec.lugar === "derecha" ? espejarOrganico(pieza) : pieza;
@@ -81,7 +73,7 @@ export function construirColumnaOrganica({ espec, medidas, avisos, notas }: Entr
   const ancho = medidas.grosorM ?? medidas.anchoM;
   const { pieza } = crearEstructura("columna_organica", {
     alto_cm: enCm(medidas.altoM, undefined, R.alto_cm, "El alto", avisos),
-    grosor_cm: enCm(ancho, 0.7, R.grosor_cm, "El grosor", avisos),
+    grosor_cm: enCm(ancho, GROSOR_ORGANICO_POR_DEFECTO_M.columna, R.grosor_cm, "El grosor", avisos),
     ...(inclinada ? { inclinacion_cm: espec.lugar === "derecha" ? -40 : 40 } : {}),
     colores, pesos, tamanos: tamanosDe(espec),
   }, notas);
@@ -93,7 +85,7 @@ export function construirGuirnaldaOrganica({ espec, medidas, avisos, notas }: En
   const { colores, pesos } = codigosYPesos(espec);
   const { pieza } = crearEstructura("guirnalda_organica", {
     ancho_cm: enCm(medidas.largoM ?? medidas.anchoM, undefined, R.ancho_cm, "El largo", avisos),
-    grosor_cm: grosorDe(medidas, 0.45, R.grosor_cm, avisos),
+    grosor_cm: grosorDe(medidas, GROSOR_ORGANICO_POR_DEFECTO_M.guirnalda, R.grosor_cm, avisos),
     colores, pesos, tamanos: tamanosDe(espec),
   }, notas);
   return { pieza, apoyo: "pared" };
@@ -104,7 +96,7 @@ export function construirAro({ espec, medidas, avisos, notas }: EntradaOrganica)
   const { colores, pesos } = codigosYPesos(espec);
   const { pieza } = crearEstructura("aro_organico", {
     ancho_cm: enCm(medidas.anchoM ?? medidas.altoM, undefined, R.diametro_cm, "El diámetro", avisos),
-    grosor_cm: grosorDe(medidas, 0.3, R.grosor_cm, avisos),
+    grosor_cm: grosorDe(medidas, GROSOR_ORGANICO_POR_DEFECTO_M.aro, R.grosor_cm, avisos),
     colores, pesos, tamanos: tamanosDe(espec),
   }, notas);
   return { pieza, apoyo: "piso" };
@@ -114,7 +106,7 @@ export function construirArcoOrganico({ espec, medidas, avisos, notas }: Entrada
   const { colores, pesos } = codigosYPesos(espec);
   const ancho = enCm(medidas.anchoM, undefined, RANGO_ARCO.ancho, "El ancho", avisos);
   const alto = enCm(medidas.altoM, undefined, RANGO_ARCO.alto, "El alto", avisos);
-  const grosor = grosorDe(medidas, 0.76, RANGOS_ESTRUCTURA.organico.grosor_cm, avisos);
+  const grosor = grosorDe(medidas, GROSOR_ORGANICO_POR_DEFECTO_M.arco, RANGOS_ESTRUCTURA.organico.grosor_cm, avisos);
   const base: Organico = {
     tipo: "organico", flores: null,
     opciones: opcionesArcoOrganico({
@@ -134,7 +126,7 @@ export function construirArcoAsimetrico({ espec, medidas, avisos, notas }: Entra
   const { colores, pesos } = codigosYPesos(espec);
   const ancho = enCm(medidas.anchoM, undefined, RANGO_ARCO.ancho, "El ancho", avisos);
   const alto = enCm(medidas.altoM, undefined, RANGO_ARCO.alto, "El alto", avisos);
-  const grosor = grosorDe(medidas, 0.76, RANGOS_ESTRUCTURA.organico.grosor_cm, avisos);
+  const grosor = grosorDe(medidas, GROSOR_ORGANICO_POR_DEFECTO_M.arco, RANGOS_ESTRUCTURA.organico.grosor_cm, avisos);
   const mitad = Math.max(30, ancho / 2);
   const claveX = mitad * 0.2;
   const pesadaALaIzquierda = espec.lugar !== "derecha";

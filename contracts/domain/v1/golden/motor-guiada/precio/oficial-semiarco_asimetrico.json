@@ -2,49 +2,40 @@
  "caso": "oficial-semiarco_asimetrico",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "4ec9fa57f95be3e1835217116da06ca5107153a7f80101f42f86abcf21789fd8",
+ "especHash": "3ea126cf6a15cdda63eb6d74ab19ae99ea2327e3eb34707457986b7d01d5853d",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 12,
-  "cubierta": 12,
+  "objetivo": 5,
+  "cubierta": 5,
   "sinCubrir": 0
  },
  "pedido": [
   {
    "formatoId": "R-5",
    "codigo": "005",
-   "cantidad": 12,
+   "cantidad": 7,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634235781415",
    "variantId": "46594221080871"
   },
   {
-   "formatoId": "R-5",
-   "codigo": "005",
-   "cantidad": 17,
-   "reserva": 0,
-   "paquetes": 1,
-   "productId": "8634235781415",
-   "variantId": "46594221113639"
-  },
-  {
    "formatoId": "R-9",
    "codigo": "005",
-   "cantidad": 13,
+   "cantidad": 6,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634235781415",
-   "variantId": "46594221211943"
+   "variantId": "46594221179175"
   },
   {
    "formatoId": "R-12",
    "codigo": "005",
-   "cantidad": 6,
+   "cantidad": 4,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634235781415",
@@ -53,34 +44,25 @@
   {
    "formatoId": "R-18",
    "codigo": "005",
-   "cantidad": 1,
+   "cantidad": 2,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634235781415",
    "variantId": "46594221474087"
   },
   {
-   "formatoId": "R-24",
-   "codigo": "005",
-   "cantidad": 1,
-   "reserva": 0,
-   "paquetes": 1,
-   "productId": "8634235781415",
-   "variantId": "46594221539623"
-  },
-  {
    "formatoId": "R-5",
    "codigo": "040",
-   "cantidad": 39,
+   "cantidad": 5,
    "reserva": 0,
-   "paquetes": 2,
+   "paquetes": 1,
    "productId": "8634239385895",
-   "variantId": "46594233696551"
+   "variantId": "46594233631015"
   },
   {
    "formatoId": "R-9",
    "codigo": "040",
-   "cantidad": 6,
+   "cantidad": 7,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -89,7 +71,7 @@
   {
    "formatoId": "R-12",
    "codigo": "040",
-   "cantidad": 3,
+   "cantidad": 6,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -105,27 +87,18 @@
    "variantId": "46594233991463"
   },
   {
-   "formatoId": "R-24",
-   "codigo": "040",
-   "cantidad": 1,
-   "reserva": 0,
-   "paquetes": 1,
-   "productId": "8634239385895",
-   "variantId": "46594234089767"
-  },
-  {
    "formatoId": "R-5",
    "codigo": "970",
-   "cantidad": 21,
-   "reserva": 12,
-   "paquetes": 2,
+   "cantidad": 2,
+   "reserva": 5,
+   "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264596775"
   },
   {
    "formatoId": "R-12",
    "codigo": "970",
-   "cantidad": 10,
+   "cantidad": 8,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634255638823",
@@ -134,16 +107,25 @@
   {
    "formatoId": "R-18",
    "codigo": "970",
-   "cantidad": 4,
+   "cantidad": 1,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264727847"
   },
   {
+   "formatoId": "R-24",
+   "codigo": "970",
+   "cantidad": 1,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634255638823",
+   "variantId": "46594264793383"
+  },
+  {
    "formatoId": "R-9",
    "codigo": "970",
-   "cantidad": 15,
+   "cantidad": 7,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634255638823",

@@ -2,59 +2,59 @@
  "caso": "idea-deco-real-30-columna-balon-futbol",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "ce618addfd33cdbea7c9d8887123497f5ffddbc42d858002142792c1e00da32c",
+ "especHash": "464fa59e8d1caf1af7a0a06fd0dfcba1c28704a0729b5114e6bbd0e7234f5439",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 11,
-  "cubierta": 11,
+  "objetivo": 6,
+  "cubierta": 6,
   "sinCubrir": 0
  },
  "pedido": [
   {
    "formatoId": "R-5",
    "codigo": "031",
-   "cantidad": 12,
+   "cantidad": 14,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634233684263",
-   "variantId": "46594213052711"
-  },
-  {
-   "formatoId": "R-5",
-   "codigo": "031",
-   "cantidad": 45,
-   "reserva": 0,
-   "paquetes": 1,
-   "productId": "8634233684263",
-   "variantId": "46594213118247"
+   "variantId": "46594213085479"
   },
   {
    "formatoId": "R-9",
    "codigo": "031",
-   "cantidad": 12,
+   "cantidad": 15,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634233684263",
-   "variantId": "46594213151015"
+   "variantId": "46594213183783"
   },
   {
    "formatoId": "R-12",
    "codigo": "031",
-   "cantidad": 13,
+   "cantidad": 12,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634233684263",
-   "variantId": "46594213282087"
+   "variantId": "46594213249319"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "031",
+   "cantidad": 4,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634233684263",
+   "variantId": "46594213380391"
   },
   {
    "formatoId": "R-5",
    "codigo": "005",
-   "cantidad": 7,
-   "reserva": 0,
+   "cantidad": 1,
+   "reserva": 6,
    "paquetes": 1,
    "productId": "8634235781415",
    "variantId": "46594221080871"
@@ -62,8 +62,8 @@
   {
    "formatoId": "R-9",
    "codigo": "005",
-   "cantidad": 2,
-   "reserva": 1,
+   "cantidad": 3,
+   "reserva": 0,
    "paquetes": 1,
    "productId": "8634235781415",
    "variantId": "46594221179175"
@@ -71,20 +71,11 @@
   {
    "formatoId": "R-12",
    "codigo": "005",
-   "cantidad": 2,
-   "reserva": 10,
-   "paquetes": 1,
-   "productId": "8634235781415",
-   "variantId": "46594221277479"
-  },
-  {
-   "formatoId": "R-18",
-   "codigo": "005",
    "cantidad": 3,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634235781415",
-   "variantId": "46594221474087"
+   "variantId": "46594221277479"
   },
   {
    "formatoId": "R-24",
@@ -96,27 +87,18 @@
    "variantId": "46594221539623"
   },
   {
-   "formatoId": "R-5",
-   "codigo": "080",
-   "cantidad": 17,
-   "reserva": 0,
-   "paquetes": 1,
-   "productId": "8634239516967",
-   "variantId": "46594235007271"
-  },
-  {
    "formatoId": "R-9",
    "codigo": "080",
-   "cantidad": 13,
+   "cantidad": 11,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239516967",
-   "variantId": "46594235105575"
+   "variantId": "46594235072807"
   },
   {
    "formatoId": "R-12",
    "codigo": "080",
-   "cantidad": 3,
+   "cantidad": 7,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239516967",
@@ -125,7 +107,7 @@
   {
    "formatoId": "R-18",
    "codigo": "080",
-   "cantidad": 3,
+   "cantidad": 1,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239516967",

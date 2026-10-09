@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-17-img-2939-1-600x600",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "eff16019bfdeb2f4c490e08db999c6e8f671d7493325513696c0fcbb05b62e6b",
+ "especHash": "f24694fa9faa9851e4fe8d227ee52b9211572d8ebce514d5853e6fd42e74a168",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -12,32 +12,32 @@
     {
      "formatoId": "R-5",
      "codigo": "009",
-     "cantidad": 9
+     "cantidad": 6
     },
     {
      "formatoId": "R-5",
      "codigo": "620",
-     "cantidad": 12
+     "cantidad": 6
     },
     {
      "formatoId": "R-5",
      "codigo": "968",
-     "cantidad": 42
+     "cantidad": 10
     },
     {
      "formatoId": "R-5",
      "codigo": "970",
-     "cantidad": 23
+     "cantidad": 10
     },
     {
      "formatoId": "R-9",
      "codigo": "009",
-     "cantidad": 6
+     "cantidad": 8
     },
     {
      "formatoId": "R-9",
      "codigo": "620",
-     "cantidad": 5
+     "cantidad": 8
     },
     {
      "formatoId": "R-9",
@@ -47,52 +47,67 @@
     {
      "formatoId": "R-12",
      "codigo": "009",
-     "cantidad": 12
+     "cantidad": 8
     },
     {
      "formatoId": "R-12",
      "codigo": "620",
-     "cantidad": 10
+     "cantidad": 8
     },
     {
      "formatoId": "R-12",
      "codigo": "968",
-     "cantidad": 2
+     "cantidad": 13
     },
     {
      "formatoId": "R-12",
      "codigo": "970",
-     "cantidad": 6
+     "cantidad": 12
     },
     {
      "formatoId": "R-18",
      "codigo": "009",
-     "cantidad": 3
-    },
-    {
-     "formatoId": "R-18",
-     "codigo": "620",
-     "cantidad": 3
-    },
-    {
-     "formatoId": "R-18",
-     "codigo": "968",
      "cantidad": 2
     },
     {
      "formatoId": "R-18",
+     "codigo": "620",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "968",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-18",
      "codigo": "970",
-     "cantidad": 4
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "620",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "968",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "970",
+     "cantidad": 1
     }
    ],
-   "unidades": 152,
+   "unidades": 115,
    "caja": [
-    -144,
+    -147,
     0,
-    -189,
-    144,
-    288,
-    -131
+    -196,
+    147,
+    292,
+    -124
    ]
   }
  },
@@ -101,32 +116,32 @@
    {
     "formatoId": "R-5",
     "codigo": "009",
-    "cantidad": 9
+    "cantidad": 6
    },
    {
     "formatoId": "R-5",
     "codigo": "620",
-    "cantidad": 12
+    "cantidad": 6
    },
    {
     "formatoId": "R-5",
     "codigo": "968",
-    "cantidad": 42
+    "cantidad": 10
    },
    {
     "formatoId": "R-5",
     "codigo": "970",
-    "cantidad": 23
+    "cantidad": 10
    },
    {
     "formatoId": "R-9",
     "codigo": "009",
-    "cantidad": 6
+    "cantidad": 8
    },
    {
     "formatoId": "R-9",
     "codigo": "620",
-    "cantidad": 5
+    "cantidad": 8
    },
    {
     "formatoId": "R-9",
@@ -136,53 +151,68 @@
    {
     "formatoId": "R-12",
     "codigo": "009",
-    "cantidad": 12
+    "cantidad": 8
    },
    {
     "formatoId": "R-12",
     "codigo": "620",
-    "cantidad": 10
+    "cantidad": 8
    },
    {
     "formatoId": "R-12",
     "codigo": "968",
-    "cantidad": 2
+    "cantidad": 13
    },
    {
     "formatoId": "R-12",
     "codigo": "970",
-    "cantidad": 6
+    "cantidad": 12
    },
    {
     "formatoId": "R-18",
     "codigo": "009",
-    "cantidad": 3
-   },
-   {
-    "formatoId": "R-18",
-    "codigo": "620",
-    "cantidad": 3
-   },
-   {
-    "formatoId": "R-18",
-    "codigo": "968",
     "cantidad": 2
    },
    {
     "formatoId": "R-18",
+    "codigo": "620",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "968",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-18",
     "codigo": "970",
-    "cantidad": 4
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "620",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "968",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "970",
+    "cantidad": 1
    }
   ],
-  "unidades": 152
+  "unidades": 115
  },
  "caja": [
-  -144,
+  -147,
   0,
-  -189,
-  144,
-  288,
-  -131
+  -196,
+  147,
+  292,
+  -124
  ],
  "referenciaPython": {
   "globos": 102

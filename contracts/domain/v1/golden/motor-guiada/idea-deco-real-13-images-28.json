@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-13-images-28",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "81a33f7050a81844786d0a296a2c07fd5b92364493a97a966bedf9972e1f89b0",
+ "especHash": "3cddd657a17a5d2d8dc8a5f1912b8cbfbb7712b4f557e743d9d16152d51e71f2",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -12,47 +12,57 @@
     {
      "formatoId": "R-5",
      "codigo": "406",
-     "cantidad": 17
+     "cantidad": 12
     },
     {
      "formatoId": "R-5",
      "codigo": "968",
-     "cantidad": 51
+     "cantidad": 19
     },
     {
      "formatoId": "R-9",
      "codigo": "406",
-     "cantidad": 23
+     "cantidad": 27
     },
     {
      "formatoId": "R-12",
      "codigo": "406",
-     "cantidad": 7
+     "cantidad": 16
     },
     {
      "formatoId": "R-12",
      "codigo": "968",
-     "cantidad": 26
+     "cantidad": 24
     },
     {
      "formatoId": "R-18",
      "codigo": "406",
-     "cantidad": 7
+     "cantidad": 4
     },
     {
      "formatoId": "R-18",
      "codigo": "968",
-     "cantidad": 5
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "406",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "968",
+     "cantidad": 2
     }
    ],
-   "unidades": 136,
+   "unidades": 111,
    "caja": [
-    -142,
+    -146,
     0,
-    -189,
-    142,
-    292,
-    -131
+    -196,
+    146,
+    287,
+    -124
    ]
   }
  },
@@ -61,48 +71,58 @@
    {
     "formatoId": "R-5",
     "codigo": "406",
-    "cantidad": 17
+    "cantidad": 12
    },
    {
     "formatoId": "R-5",
     "codigo": "968",
-    "cantidad": 51
+    "cantidad": 19
    },
    {
     "formatoId": "R-9",
     "codigo": "406",
-    "cantidad": 23
+    "cantidad": 27
    },
    {
     "formatoId": "R-12",
     "codigo": "406",
-    "cantidad": 7
+    "cantidad": 16
    },
    {
     "formatoId": "R-12",
     "codigo": "968",
-    "cantidad": 26
+    "cantidad": 24
    },
    {
     "formatoId": "R-18",
     "codigo": "406",
-    "cantidad": 7
+    "cantidad": 4
    },
    {
     "formatoId": "R-18",
     "codigo": "968",
-    "cantidad": 5
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "406",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "968",
+    "cantidad": 2
    }
   ],
-  "unidades": 136
+  "unidades": 111
  },
  "caja": [
-  -142,
+  -146,
   0,
-  -189,
-  142,
-  292,
-  -131
+  -196,
+  146,
+  287,
+  -124
  ],
  "referenciaPython": {
   "globos": 102

@@ -114,7 +114,7 @@ assert.ok(unidades(flores) >= 15, `las flores se cuentan: ${JSON.stringify(flore
 const sinAncla = armarDesdeEspec(espec(pieza({ id: "EST_01_BOUQUET", oficial: "bouquet", lugar: "mesa", tamanos: "clasica", flores: { cantidad: 2, petalos: 3, codigo: "009" } })));
 assert.ok(sinAncla.avisos.some((a) => a.includes("flores")), "el aviso de flores que no se dibujan");
 // Con los mismos colores, las clásicas y las orgánicas cuentan distinto, pero cuentan.
-assert.ok(globosDe(uno, "EST_01_ARCO_ASIMETRICO") > 150);
+assert.ok(globosDe(uno, "EST_01_ARCO_ASIMETRICO") > 100, "un arco orgánico de 3 m a densidad media pasa de 100 globos (a 17 por metro de cuerpo, con la calibración de 1.2.0)");
 
 // El arco asimétrico es asimétrico y su lado pesado cambia con el lugar; el semiarco de la derecha es el espejo.
 const lado = (id: string, lugar: "centro" | "derecha", oficial: "arco_asimetrico" | "semiarco") => {
@@ -161,6 +161,24 @@ assert.ok(sa.izquierda !== sa.derecha && Math.sign(sa.izquierda - sa.derecha) ==
   assert.equal(new Set(sieteColores.bom.total.map((l) => l.codigo)).size, 6, "las bandas llevan los seis colores");
 }
 
+// 6b. Calibración 1.2.0 de las piezas de cuartetos: las capas del armado, la guirnalda clásica en R-12 y las bandas de color.
+{
+  const total = (r: ReturnType<typeof armarDesdeEspec>, formato: string) => r.bom.total.filter((l) => l.formatoId === formato).reduce((s, l) => s + l.cantidad, 0);
+  const guirnalda = armarDesdeEspec(espec(pieza({ id: "EST_01_GUIRNALDA", oficial: "guirnalda", lugar: "fondo", tamanos: "clasica", medidas: { largoM: 2.4 } })));
+  assert.deepEqual([...new Set(guirnalda.bom.total.map((l) => l.formatoId))], ["R-12"], "la guirnalda clásica sigue la mezcla «clasica» del plan (R-12), no un R-9 fijo");
+  assert.equal(unidades(guirnalda.bom.total), 52, "2,4 m de R-12 son 13 cuartetos con el de la punta (5 por metro)");
+  const columna = (extra: Partial<PiezaEspec>) => armarDesdeEspec(espec(pieza({ id: "EST_01_COLUMNA", oficial: "columna", tamanos: "clasica", medidas: { altoM: 2 }, ...extra })));
+  assert.equal(total(columna({}), "R-12"), 40, "sin capas: el alto manda (10 cuartetos)");
+  assert.equal(total(columna({ capas: 11 }), "R-12"), 44, "con la lista de capas: 11 cuartetos, como el armado de Python");
+  const vieja = columna({ capas: 11, medidas: { altoM: 3 } });
+  assert.ok(total(vieja, "R-12") > 52 && vieja.avisos.some((a) => a.includes("no cuadran")), "si el alto pedido se aparta de las capas, manda el alto y se dice");
+  const seis = (["015", "020", "040", "030", "061", "038"] as const).map((codigo, i) => ({ codigo, nombre: codigo, peso: [0.27, 0.18, 0.18, 0.18, 0.1, 0.09][i]! }));
+  const rainbow = columna({ capas: 11, colores: seis });
+  assert.deepEqual([...new Set(rainbow.bom.total.map((l) => l.formatoId))], ["R-12"], "seis colores en 11 capas: sigue de cuartetos, sin saltar a la gemela orgánica");
+  assert.equal(new Set(rainbow.bom.total.map((l) => l.codigo)).size, 6, "las bandas llevan los seis colores");
+  assert.equal(unidades(rainbow.bom.total), 44);
+}
+
 // 7. Topes y tamaño de la armada.
 {
   const enorme = (i: number) => pieza({ id: `EST_0${i + 1}_ARCO_ASIMETRICO`, oficial: "arco_asimetrico", medidas: { anchoM: 5, altoM: 3.2, grosorM: 1.2 }, densidad: "lujosa" });
@@ -171,9 +189,11 @@ assert.ok(sa.izquierda !== sa.derecha && Math.sign(sa.izquierda - sa.derecha) ==
   assert.ok(r.noRepresentable.length > 0 && r.noRepresentable.every((n) => /tope|pasa de/.test(n.motivo)), "lo que pasa de los topes se dice");
 }
 {
+  // Piezas gruesas y lujosas: con la calibración de 1.2.0 las medidas por defecto ya no llenan 1 000 globos.
+  const grande = { densidad: "lujosa", medidas: { anchoM: 4, altoM: 3, grosorM: 0.9 } } as const;
   const plan = espec(
-    pieza({ id: "EST_01_ARCO_ASIMETRICO", oficial: "arco_asimetrico" }), pieza({ id: "EST_02_ARCO_ASIMETRICO", oficial: "arco_asimetrico", lugar: "izquierda" }), pieza({ id: "EST_03_ARCO_ASIMETRICO", oficial: "arco_asimetrico", lugar: "derecha" }),
-    pieza({ id: "EST_04_SEMIARCO", oficial: "semiarco", lugar: "fondo" }), pieza({ id: "EST_05_COLUMNA_ASIMETRICA", oficial: "columna_asimetrica", lugar: "izquierda" }),
+    pieza({ id: "EST_01_ARCO_ASIMETRICO", oficial: "arco_asimetrico", ...grande }), pieza({ id: "EST_02_ARCO_ASIMETRICO", oficial: "arco_asimetrico", lugar: "izquierda", ...grande }), pieza({ id: "EST_03_ARCO_ASIMETRICO", oficial: "arco_asimetrico", lugar: "derecha", ...grande }),
+    pieza({ id: "EST_04_SEMIARCO", oficial: "semiarco", lugar: "fondo", densidad: "lujosa", medidas: { anchoM: 2.5, altoM: 3, grosorM: 0.9 } }), pieza({ id: "EST_05_COLUMNA_ASIMETRICA", oficial: "columna_asimetrica", lugar: "izquierda", densidad: "lujosa", medidas: { altoM: 3, anchoM: 0.9 } }),
   );
   const r = armarDesdeEspec(plan);
   const globos = r.armada.globos.length / 5;

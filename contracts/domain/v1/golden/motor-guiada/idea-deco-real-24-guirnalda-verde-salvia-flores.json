@@ -2,47 +2,47 @@
  "caso": "idea-deco-real-24-guirnalda-verde-salvia-flores",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "639934f697babebd4529798c2794f9df20368a1b892a8e74e14910b636767e1e",
+ "especHash": "b13912547ba466c314a8f16e1c3366af6294e22c9a2d373d4daa605c29cb8e8b",
  "noRepresentable": [],
  "piezas": {
   "EST_01_GUIRNALDA": {
    "lineas": [
     {
-     "formatoId": "R-9",
+     "formatoId": "R-12",
      "codigo": "027",
-     "cantidad": 72
+     "cantidad": 52
     }
    ],
-   "unidades": 72,
+   "unidades": 52,
    "caja": [
-    -133,
+    -137,
     200,
     -250,
-    133,
-    263,
-    -216
+    137,
+    272,
+    -203
    ]
   }
  },
  "total": {
   "lineas": [
    {
-    "formatoId": "R-9",
+    "formatoId": "R-12",
     "codigo": "027",
-    "cantidad": 72
+    "cantidad": 52
    }
   ],
-  "unidades": 72
+  "unidades": 52
  },
  "caja": [
-  -133,
+  -137,
   200,
   -250,
-  133,
-  263,
-  -216
+  137,
+  272,
+  -203
  ],
  "referenciaPython": {
   "globos": 51

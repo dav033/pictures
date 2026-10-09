@@ -2,40 +2,31 @@
  "caso": "idea-deco-real-22-guirnalda-san-valentin",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "fac576c35e0950676c50161b80ef12af8bc191f17349a6aef180e4007080a471",
+ "especHash": "b2ff9ded90971c813252538c8bd939d09535856cf1459c400cf419f874336f4c",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 8,
-  "cubierta": 8,
+  "objetivo": 6,
+  "cubierta": 6,
   "sinCubrir": 0
  },
  "pedido": [
   {
    "formatoId": "R-5",
    "codigo": "015",
-   "cantidad": 4,
+   "cantidad": 1,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239942951",
    "variantId": "46594236154151"
   },
   {
-   "formatoId": "R-9",
-   "codigo": "015",
-   "cantidad": 2,
-   "reserva": 0,
-   "paquetes": 1,
-   "productId": "8634239942951",
-   "variantId": "46594236252455"
-  },
-  {
    "formatoId": "R-12",
    "codigo": "015",
-   "cantidad": 3,
+   "cantidad": 5,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239942951",
@@ -44,8 +35,8 @@
   {
    "formatoId": "R-5",
    "codigo": "110",
-   "cantidad": 11,
-   "reserva": 8,
+   "cantidad": 5,
+   "reserva": 6,
    "paquetes": 1,
    "productId": "8634302071079",
    "variantId": "46594342027559"
@@ -53,7 +44,7 @@
   {
    "formatoId": "R-9",
    "codigo": "110",
-   "cantidad": 4,
+   "cantidad": 2,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634302071079",
@@ -62,11 +53,20 @@
   {
    "formatoId": "R-12",
    "codigo": "110",
-   "cantidad": 3,
+   "cantidad": 4,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634302071079",
    "variantId": "46594342486311"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "110",
+   "cantidad": 1,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634302071079",
+   "variantId": "46594342551847"
   },
   {
    "formatoId": "R-9",
@@ -80,7 +80,7 @@
   {
    "formatoId": "R-18",
    "codigo": "806",
-   "cantidad": 1,
+   "cantidad": 2,
    "reserva": 0,
    "paquetes": 1,
    "productId": "9661845995815",
@@ -89,7 +89,7 @@
   {
    "formatoId": "R-5",
    "codigo": "806",
-   "cantidad": 10,
+   "cantidad": 1,
    "reserva": 0,
    "paquetes": 1,
    "productId": "9661845995815",
@@ -98,7 +98,7 @@
   {
    "formatoId": "R-12",
    "codigo": "806",
-   "cantidad": 3,
+   "cantidad": 5,
    "reserva": 0,
    "paquetes": 1,
    "productId": "9661845995815",
@@ -107,25 +107,25 @@
   {
    "formatoId": "R-5",
    "codigo": "011",
-   "cantidad": 31,
+   "cantidad": 8,
    "reserva": 0,
-   "paquetes": 2,
+   "paquetes": 1,
    "productId": "9832318828839",
    "variantId": "50030991114535"
   },
   {
    "formatoId": "R-9",
    "codigo": "011",
-   "cantidad": 9,
+   "cantidad": 15,
    "reserva": 0,
    "paquetes": 1,
    "productId": "9832318828839",
-   "variantId": "50030991180071"
+   "variantId": "50030991212839"
   },
   {
    "formatoId": "R-12",
    "codigo": "011",
-   "cantidad": 6,
+   "cantidad": 9,
    "reserva": 0,
    "paquetes": 1,
    "productId": "9832318828839",
@@ -134,7 +134,7 @@
   {
    "formatoId": "R-18",
    "codigo": "011",
-   "cantidad": 3,
+   "cantidad": 1,
    "reserva": 0,
    "paquetes": 1,
    "productId": "9832318828839",

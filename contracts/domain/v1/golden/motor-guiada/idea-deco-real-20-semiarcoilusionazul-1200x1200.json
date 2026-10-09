@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-20-semiarcoilusionazul-1200x1200",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "d1ac6cabed7bc84f0bf3af818a43e42ca2df04877e6b7fc1a5428a85b2d284e9",
+ "especHash": "512cc52f69aa12b9460273f4c99634674fa2d15202ec1537252074b7de3c2076",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -12,67 +12,72 @@
     {
      "formatoId": "R-5",
      "codigo": "040",
-     "cantidad": 24
+     "cantidad": 5
     },
     {
      "formatoId": "R-5",
      "codigo": "044",
-     "cantidad": 42
+     "cantidad": 4
     },
     {
      "formatoId": "R-5",
      "codigo": "640",
-     "cantidad": 19
+     "cantidad": 3
     },
     {
      "formatoId": "R-9",
      "codigo": "040",
-     "cantidad": 12
+     "cantidad": 4
     },
     {
      "formatoId": "R-9",
      "codigo": "044",
-     "cantidad": 15
+     "cantidad": 9
     },
     {
      "formatoId": "R-9",
      "codigo": "640",
-     "cantidad": 7
+     "cantidad": 2
     },
     {
      "formatoId": "R-12",
      "codigo": "040",
-     "cantidad": 7
-    },
-    {
-     "formatoId": "R-12",
-     "codigo": "044",
      "cantidad": 5
     },
     {
      "formatoId": "R-12",
-     "codigo": "640",
-     "cantidad": 2
+     "codigo": "044",
+     "cantidad": 6
     },
     {
-     "formatoId": "R-18",
-     "codigo": "040",
+     "formatoId": "R-12",
+     "codigo": "640",
      "cantidad": 3
     },
     {
      "formatoId": "R-18",
+     "codigo": "040",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-18",
      "codigo": "640",
      "cantidad": 2
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "044",
+     "cantidad": 1
     }
    ],
-   "unidades": 138,
+   "unidades": 45,
    "caja": [
-    -106,
+    -107,
     0,
-    -188,
-    106,
-    198,
-    -132
+    -195,
+    107,
+    199,
+    -125
    ]
   }
  },
@@ -81,68 +86,73 @@
    {
     "formatoId": "R-5",
     "codigo": "040",
-    "cantidad": 24
+    "cantidad": 5
    },
    {
     "formatoId": "R-5",
     "codigo": "044",
-    "cantidad": 42
+    "cantidad": 4
    },
    {
     "formatoId": "R-5",
     "codigo": "640",
-    "cantidad": 19
+    "cantidad": 3
    },
    {
     "formatoId": "R-9",
     "codigo": "040",
-    "cantidad": 12
+    "cantidad": 4
    },
    {
     "formatoId": "R-9",
     "codigo": "044",
-    "cantidad": 15
+    "cantidad": 9
    },
    {
     "formatoId": "R-9",
     "codigo": "640",
-    "cantidad": 7
+    "cantidad": 2
    },
    {
     "formatoId": "R-12",
     "codigo": "040",
-    "cantidad": 7
-   },
-   {
-    "formatoId": "R-12",
-    "codigo": "044",
     "cantidad": 5
    },
    {
     "formatoId": "R-12",
-    "codigo": "640",
-    "cantidad": 2
+    "codigo": "044",
+    "cantidad": 6
    },
    {
-    "formatoId": "R-18",
-    "codigo": "040",
+    "formatoId": "R-12",
+    "codigo": "640",
     "cantidad": 3
    },
    {
     "formatoId": "R-18",
+    "codigo": "040",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-18",
     "codigo": "640",
     "cantidad": 2
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "044",
+    "cantidad": 1
    }
   ],
-  "unidades": 138
+  "unidades": 45
  },
  "caja": [
-  -106,
+  -107,
   0,
-  -188,
-  106,
-  198,
-  -132
+  -195,
+  107,
+  199,
+  -125
  ],
  "referenciaPython": {
   "globos": 44

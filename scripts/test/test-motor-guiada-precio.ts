@@ -10,7 +10,7 @@
  *   con el cruce en vivo, `material_no_disponible` y fallos del servicio como fallos tipados (nunca lanza);
  * - el sobre del plan cumple `PlanGuiadoSchema` y `CotizacionPlanGuiadoSchema`, lleva el token `globos3d` firmado sobre
  *   el hash de la espec, y sus cantidades por pieza, por variante y en total cuadran con la lista del motor;
- * - el carrusel («¿cuánto cuesta?» de una idea) cotiza lo que cuenta el motor: 25 de las 28 ideas; la lista curada queda para el resto;
+ * - el carrusel («¿cuánto cuesta?» de una idea) cotiza lo que cuenta el motor: 26 de las 28 ideas; la lista curada queda para el resto;
  * - los pasos de montaje leen el sobre (la tarjeta, la tabla, la compra y la cotización se prueban en test-ui-plan-motor3d.ts).
  *
  * Run: npx tsx --conditions=react-server scripts/test/test-motor-guiada-precio.ts
@@ -113,7 +113,7 @@ async function main(): Promise<void> {
     }
     console.log(`  fixtures doradas: ${pares.size} pares; ${resueltos.length} resueltos, ${declarados.length} declarados sin_cobertura: ${declarados.join(", ") || "ninguno"}`);
     assert.equal(resueltos.length + declarados.length, pares.size);
-    assert.deepEqual(declarados, ["LOL-12|970 (no_esta_en_la_tienda)", "R-18|038 (talla_no_vendida)"], "los dos huecos: la pared densa por defecto pide el Link Reflex Dorado (la tienda no lo vende) y la columna de la idea 06 pide el Azul Caribe en 18″ (la tienda no lo vende)");
+    assert.deepEqual(declarados, ["LOL-12|970 (no_esta_en_la_tienda)"], "el único hueco: la pared densa por defecto pide el Link Reflex Dorado (la tienda no lo vende). Desde 1.2.0 la columna de la idea 06 se arma con R-12 por bandas de color, y el Azul Caribe en 12″ sí se vende");
   });
 
   await caso("el emparejamiento de títulos: tienda, marca B2B, siglas y variantes del catálogo", () => {
@@ -254,12 +254,17 @@ async function main(): Promise<void> {
         for (const color of p.colores) assert.ok(presentes.has(color.codigo), `${c.id}/${p.id}: falta el color ${color.nombre} (${color.codigo})`);
       }
     }
-    // La idea 06: seis colores en una columna clásica. Antes perdía dos sin decirlo; ahora lleva los seis y lo dice.
+    // La idea 06: seis colores en una columna clásica de 11 capas. Antes perdía dos sin decirlo y luego (1.1.0) se armaba orgánica,
+    // con 75 globos de cuatro tamaños; desde 1.2.0 se queda de cuartetos de R-12, 44 globos en bandas de color, con los seis.
     const idea06 = todos.find((c) => c.id.startsWith("idea-deco-real-06"))!;
     const r06 = resultados.get(idea06.id)!;
     assert.deepEqual(r06.noRepresentable, []);
     assert.equal(new Set((r06.bom.porPieza["EST_01_COLUMNA"] ?? []).map((l) => l.codigo)).size >= 6, true);
-    assert.ok(r06.avisos.some((a) => /orgánica, con globos de varios tamaños, para que lleve todos/.test(a)), `el aviso es verdadero: ${r06.avisos.join(" | ")}`);
+    const lineas06 = r06.bom.porPieza["EST_01_COLUMNA"] ?? [];
+    assert.deepEqual([...new Set(lineas06.map((l) => l.formatoId))], ["R-12"], "la columna de la 06 es de cuartetos de R-12, no la gemela orgánica");
+    assert.equal(lineas06.reduce((s, l) => s + l.cantidad, 0), 44, "11 capas de 4 globos, como el armado de Python");
+    assert.ok(r06.avisos.some((a) => a.includes("bandas")), `el aviso de las bandas: ${r06.avisos.join(" | ")}`);
+    assert.ok(!r06.avisos.some((a) => /se armó orgánica/.test(a)), "ya no se manda a la gemela orgánica");
     // Un color que el armado no reparte no se pierde: la pieza se declara no representable con su motivo.
     const sinLugar = structuredClone(idea06.espec);
     sinLugar.piezas[0]!.colores = [{ codigo: "080", nombre: "negro", peso: 0.99 }, { codigo: "005", nombre: "blanco", peso: 0.01 }];
@@ -405,8 +410,8 @@ async function main(): Promise<void> {
       assert.equal(cot.lineas.reduce((s, l) => s + l.cantidadNecesaria, 0), r.globos, "las cantidades de la cotización son las del motor");
       for (const l of cot.lineas) assert.equal(l.cantidadNecesaria + l.sobrante, l.paquetes * l.unidadesPaquete);
     }
-    assert.equal(cotizadas.length, 25);
-    assert.deepEqual(curadas, ["deco-real-03 (no_representable)", "deco-real-06 (sin_cobertura)", "deco-real-27 (no_representable)"], "el centro de mesa con bouquet, la columna cuyo azul caribe 18″ no se vende y el aro parcial siguen con la lista curada");
+    assert.equal(cotizadas.length, 26);
+    assert.deepEqual(curadas, ["deco-real-03 (no_representable)", "deco-real-27 (no_representable)"], "el centro de mesa con bouquet y el aro parcial siguen con la lista curada; la columna de la 06 (ahora de R-12 por bandas) ya se cotiza con el motor");
     // Una idea sin plan guardado (las figuras 21, 23 y 26) y la lista curada de siempre (merma 0) siguen siendo válidas.
     assert.deepEqual(await cotizarIdeaConMotor("deco-real-21-figura", { planGuardado: planGuardadoDeIdea, crosswalk: async () => cruce, cotizarLista: pythonDoble(cruce).cotizarLista }), { ok: false, razon: "sin_plan_guardado" });
     assert.equal(CotizacionGuiadaSchema.safeParse({ lineas: [{ id: "1", tamano: "x", cantidadNecesaria: 1, disponible: true, varianteId: "1", nombre: "n", precioPaquete: 1, unidadesPaquete: 1, paquetes: 1, subtotal: 1, sobrante: 0 }], total: 1, mermaPorcentaje: 0, incluyeIva: true, complementosSoportados: false }).success, true);

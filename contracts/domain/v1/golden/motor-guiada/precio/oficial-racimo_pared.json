@@ -2,9 +2,9 @@
  "caso": "oficial-racimo_pared",
  "motor": {
   "id": "globos3d",
-  "version": "1.1.0"
+  "version": "1.2.0"
  },
- "especHash": "ccebae834de3784ee56769b24372c07cd0bf07049668c206357ee955b6785d10",
+ "especHash": "05dcbdffcfa9709b1d0f10805629f4e362d20d66d2522f3c8a398501d5f7fec0",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
