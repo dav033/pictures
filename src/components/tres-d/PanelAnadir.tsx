@@ -14,6 +14,7 @@ import { FILTRO_COMPACTO_VACIO, FiltrosCompactos, GrillaCompacta, useBibliotecaF
 import { FiltrosTaxonomia } from "./FiltrosTaxonomia";
 import { BuscarPorFoto, useSoltarFoto } from "./BuscarPorFoto";
 import { useRefinarBiblioteca } from "./useRefinarBiblioteca";
+import { BotonVoz } from "../voz/BotonVoz";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
 import { DibujoGlobo, FORMATOS_SUELTOS, NUEVAS_DECORACIONES, NUEVAS_ESTRUCTURAS, globoSuelto, type PiezaParaAnadir } from "./nuevas-taller";
 import { MINI, SEG, SEG_ON, TARJETA, coincide } from "./ui-taller";
@@ -112,6 +113,7 @@ export const PanelAnadir = memo(function PanelAnadir({ escena, armada, onEscena,
           <label htmlFor="anadir-buscar" className="sr-only">Buscar en todo</label>
           <input id="anadir-buscar" type="search" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Buscar: columna, flor, dorado…" autoComplete="off"
             className="h-full min-w-0 flex-1 bg-transparent text-sm text-taller-texto outline-none placeholder:text-taller-suave [&::-webkit-search-cancel-button]:hidden" />
+          <BotonVoz campoId="anadir-buscar" alTexto={setTexto} variante="taller" ventana="abajo" clase="grid size-6 place-items-center rounded text-taller-suave hover:text-taller-texto disabled:opacity-45" />
           {texto && <button type="button" onClick={() => setTexto("")} aria-label="Borrar la búsqueda" className="grid size-6 place-items-center rounded text-taller-suave hover:text-taller-texto"><X className="size-3.5" aria-hidden /></button>}
           <span className="font-mono text-[11px] text-taller-suave" aria-live="polite" aria-label={`${cuenta} resultados`}>{cuenta}</span>
         </div>

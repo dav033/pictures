@@ -4,6 +4,7 @@ import { useCallback, type ReactNode, type RefObject } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUp, ImagePlus, Square, X } from "lucide-react";
 import { RESORTE } from "./animacion/movimiento";
+import { BotonVoz } from "../voz/BotonVoz";
 
 type Props = {
   valor: string;
@@ -76,6 +77,7 @@ export function Compositor({ valor, onCambiar, onEnviar, placeholder, cargando, 
             </button>
             <input
               ref={textoRef}
+              id="compositor-guiado-mensaje"
               aria-label="Escribe tu mensaje"
               value={valor}
               maxLength={6000}
@@ -88,6 +90,7 @@ export function Compositor({ valor, onCambiar, onEnviar, placeholder, cargando, 
               // que con `outline-none` no se iba y pintaba un rectángulo dentro de la caja; el anillo lo da su focus-within.
               className="compositor-input min-w-0 flex-1 bg-transparent px-1.5 py-2 text-base text-texto placeholder:text-texto-tenue disabled:opacity-60"
             />
+            <BotonVoz campoId="compositor-guiado-mensaje" alTexto={onCambiar} deshabilitado={deshabilitado} variante="cliente" clase="grid size-11 shrink-0 place-items-center rounded-full text-texto-suave transition-colors hover:bg-superficie-2 hover:text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 disabled:opacity-50" />
             <AnimatePresence mode="popLayout" initial={false}>
               {cargando ? (
                 <motion.button
