@@ -5,12 +5,14 @@ import { vistaRenderDe, vistaPorForma, esVistaRender, type VistaRender } from "@
 import { crearResolverItems, salaNeutra } from "./captura-items";
 import { mostrarArmada } from "./armada-visor";
 import type { EscenaGlobos } from "./escena-globos";
-import type { EscenaArmada } from "@/lib/globos3d/escena";
+import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
+import type { Encuadre } from "@/lib/globos3d/encuadre-foto";
+import { capturarEscenaParaRefinar } from "./captura-refinar";
 
 /**
  * **Captura de renders estándar** (REQ-002, paso 3): dado `?item=<id>` (y `&vista=frente|tres-cuartos`), arma el item con el
  * mismo código del taller, lo dibuja una vez con la cámara fija de su tipo y deja el PNG en `window.__captura`. Sin
- * interfaz y sin tocar la escena guardada del taller (no lee ni escribe localStorage). `window.__capturarItem(id, vista?)`
+ * interfaz y sin tocar la escena guardada del taller (no lee ni escribe localStorage). `window.__capturarFoto(escena, encuadre)` da la escena vista desde la cámara de una foto (refinado, REQ-001 paso 9). `window.__capturarItem(id, vista?)`
  * repite el proceso en la misma página, sin recargar three.js: es lo que usa `scripts/taller/capturar-renders.ts`.
  */
 
@@ -20,6 +22,8 @@ declare global {
   interface Window {
     __captura?: EstadoCaptura;
     __capturarItem?: (id: string, vista?: string | null) => Promise<EstadoCaptura>;
+    /** La escena desde la cámara de una foto (JPEG en base64): lo que ve el refinado de «Comparando con la foto». */
+    __capturarFoto?: (escena: Escena, encuadre: Encuadre) => Promise<{ mime: string; base64: string }>;
   }
 }
 
@@ -93,6 +97,7 @@ export function CapturaRender({ item, vista }: { item: string | null; vista: str
     };
 
     window.__capturarItem = capturarItem;
+    window.__capturarFoto = (escena, encuadre) => capturarEscenaParaRefinar(escena, encuadre);
     window.__captura = { listo: false, dataUrl: null, error: null, id: item, vista: null, ms: 0 };
     if (item) void capturarItem(item, vista);
     return () => {
@@ -100,6 +105,7 @@ export function CapturaRender({ item, vista }: { item: string | null; vista: str
       visor?.destruir();
       visor = null;
       delete window.__capturarItem;
+      delete window.__capturarFoto;
     };
   }, [item, vista]);
 

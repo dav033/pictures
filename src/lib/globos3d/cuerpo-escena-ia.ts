@@ -28,3 +28,15 @@ export function construirCuerpoEscenaIA(entrada: { escena: Escena; mensaje: stri
     ...(foto ? { foto: { mime: foto.mime, base64: foto.base64 } } : {}),
   };
 }
+
+/** El pedido de una ronda de comparación con la foto (REQ-001 paso 9): la escena de ahora, la foto, la captura y la lectura que devolvió el servidor. */
+export function construirCuerpoRefinar(entrada: { escena: Escena; ronda: number; foto: FotoAdjuntaIA; captura: FotoAdjuntaIA; lectura: unknown }): Record<string, unknown> {
+  const { escena, ronda, foto, captura, lectura } = entrada;
+  return {
+    escena,
+    mensaje: `Compara la escena con la foto (ronda ${ronda}).`,
+    historial: [],
+    seleccion: null,
+    refinar: { ronda, foto: { mime: foto.mime, base64: foto.base64 }, captura: { mime: captura.mime, base64: captura.base64 }, lectura },
+  };
+}

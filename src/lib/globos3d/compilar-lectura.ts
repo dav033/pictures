@@ -6,9 +6,13 @@ import { coloresDelFormato } from "./formatos";
 import { referenciaPorCodigo } from "../plan/referencia-sempertex";
 import { distanciaLab, resolverColorOrganico, resolverColorFlexible } from "./herramientas-escena-colores";
 import { crearEstructura } from "./herramientas-escena-estructuras";
+import { PULGADAS_METALIZADO, PULGADA_CM } from "./metalizados";
 import { floresPedidas } from "./herramientas-escena-trazo";
 import { piezaDeGenerador } from "./generadores-organicos";
-import { MEZCLA_TRAZO, cajaTrazo, puntosDeSilueta, type SiluetaTrazo } from "./trazo-organico";
+import { cajaTrazo, puntosDeSilueta, type SiluetaTrazo } from "./trazo-organico";
+import { formatoPorDiametro, grosorMinimoDePesos, pesosDeLectura, traeMezcla } from "./mezcla-lectura";
+import { piezaConMezcla } from "./relleno-por-mezcla";
+import { pisoDeLectura } from "./encuadre-foto";
 import { columnaClasica } from "./escenas-presets";
 import { decoracionPredefinida } from "./figuras";
 import { reemplazarColor } from "./recolorear";
@@ -35,6 +39,8 @@ const r0 = (n: number) => Math.round(n);
 const r1 = (n: number) => Math.round(n * 10) / 10;
 const FAMILIA_ACABADO: Readonly<Record<ColorLeido["acabado"], string>> = { mate: "", brillante: "", cromado: "reflex", perla: "silk", cristal: "cristal", confeti: "cristal" };
 const CRISTAL = "390";
+/** Un foil (letras, números) cuelga por delante de la guirnalda y no pegado a la pared: así se ve entero, como en las fotos. */
+const FOIL_DELANTE_DE_LA_PARED_CM = 60;
 
 /** Un color leído → código Sempertex (en los formatos pedidos): por nombre y acabado, si no por el hex medido. */
 export function codigoDeColor(c: ColorLeido, formatos: readonly string[], notas: string[]): string {
@@ -65,26 +71,25 @@ function coloresOrganicos(colores: readonly ColorLeido[], notas: string[]): Colo
   return salida;
 }
 
-function mezclaDe(tamanos: Partial<Record<string, number>>): Record<string, number> {
-  const total = Object.values(tamanos).reduce<number>((s, w) => s + (w ?? 0), 0);
-  if (total <= 0) return { ...MEZCLA_TRAZO };
-  return Object.fromEntries(Object.entries(tamanos).filter(([, w]) => (w ?? 0) > 0).map(([f, w]) => [f, Math.round(((w ?? 0) / total) * 1000) / 1000]));
-}
-
-/** El formato de un globo suelto por su diámetro en cm. */
-function formatoPorDiametro(cm: number): { formatoId: string; infladoCm: number } {
-  const opciones = [{ formatoId: "R-36", infladoCm: 85 }, { formatoId: "R-24", infladoCm: 55 }, { formatoId: "R-18", infladoCm: 42 }, { formatoId: "R-12", infladoCm: 27 }, { formatoId: "R-9", infladoCm: 20 }, { formatoId: "R-5", infladoCm: 12 }];
-  return opciones.reduce((m, o) => (Math.abs(o.infladoCm - cm) < Math.abs(m.infladoCm - cm) ? o : m));
-}
-
 const SILUETA_COLUMNA: Readonly<Record<string, SiluetaTrazo>> = { recta: "columna_recta", racimos: "columna_racimos", s: "columna_s", inclinada: "columna_inclinada" };
+
+/** Cuánto más grueso que el mínimo se deja el cuerpo: las siluetas con nombre afinan las puntas y el motor solo pone un formato donde cabe. */
+const HOLGURA_DEL_CUERPO = 1.2;
+
+/** Los puntos de una guirnalda leída (cm, en el plano de la pared) con el grosor que necesitan sus globos grandes en lo más grueso. */
+function engrosarParaGrandes(puntos: ReadonlyArray<{ x: number; y: number; grosor: number }>, minimo: number | null, notas: string[]) {
+  if (!minimo) return puntos;
+  const meta = Math.min(140, Math.ceil(minimo * HOLGURA_DEL_CUERPO));
+  const maximo = Math.max(...puntos.map((q) => q.grosor));
+  const nuevos = puntos.map((q) => (q.grosor >= maximo * 0.6 && q.grosor < meta ? { ...q, grosor: meta } : q));
+  if (nuevos.some((q, i) => q !== puntos[i])) notas.push(`El cuerpo medía ${Math.round(maximo)} cm en lo más grueso y los globos grandes de la foto piden ${meta} cm: se engrosó lo más grueso.`);
+  return nuevos;
+}
 
 export function compilarLectura(l: LecturaFoto): EscenaCompilada {
   const notas: string[] = [], omitidas: string[] = [];
   const H = l.escala.altoImagenCm;
-  // La línea del piso: la leída o lo más bajo de lo que hay.
-  const bajos = l.piezas.flatMap((p) => ("yBase" in p ? [p.yBase] : "puntos" in p ? p.puntos.map((q) => q.y + q.grosor / 2) : "y" in p ? [p.y] : []));
-  const piso = l.pisoY ?? (bajos.length ? Math.max(...bajos) : 1);
+  const piso = pisoDeLectura(l);
   const X = (x: number) => r1((x - 0.5) * l.aspecto * H);
   const Y = (y: number) => r1(Math.max(0, (piso - y) * H));
   const cm = (f: number) => r1(f * H);
@@ -113,20 +118,29 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
   function compilarPieza(p: PiezaLeida, i: number) {
     switch (p.tipo) {
       case "guirnalda_organica": {
-        const puntos = p.puntos.map((q) => ({ x: X(q.x), y: Y(q.y), grosor: Math.min(140, Math.max(20, cm(q.grosor))) }));
+        const medidos = p.puntos.map((q) => ({ x: X(q.x), y: Y(q.y), grosor: Math.min(140, Math.max(20, cm(q.grosor))) }));
+        const pesos = pesosDeLectura(p, H);
+        const puntos = engrosarParaGrandes(medidos, grosorMinimoDePesos(pesos), notas);
         const x0 = r1((Math.min(...puntos.map((q) => q.x)) + Math.max(...puntos.map((q) => q.x))) / 2);
-        const trazo = { puntos: puntos.map((q) => ({ ...q, x: r1(q.x - x0) })), mezcla: mezclaDe(p.tamanos), colores: coloresOrganicos(p.colores, notas), racimos: p.racimos, semilla: 11 + i };
+        const trazo = { puntos: puntos.map((q) => ({ ...q, x: r1(q.x - x0) })), mezcla: pesos, colores: coloresOrganicos(p.colores, notas), racimos: p.racimos, semilla: 11 + i };
         const flores = p.follaje?.length ? floresPedidas(p.follaje) : null;
         const largo = puntos.slice(1).reduce((s, q, k) => s + Math.hypot(q.x - puntos[k]!.x, q.y - puntos[k]!.y), 0);
-        const pieza = piezaDeGenerador({ tipo: "trazo", trazo }, flores, Math.max(4, Math.min(30, r0(largo / 45))));
+        const huecos = Math.max(4, Math.min(30, r0(largo / 45)));
+        const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, flores, huecos).pieza : piezaDeGenerador({ tipo: "trazo", trazo }, flores, huecos);
         poner("guirnalda-organica", "Guirnalda orgánica", pieza, { en: "pared", pared: "fondo", aLoLargoCm: x0, alturaCm: r0(cajaTrazo(trazo).minY) });
         return;
       }
       case "columna_organica": {
         const silueta = SILUETA_COLUMNA[p.forma]!;
         const alto = Math.max(60, Y(p.yArriba) - Y(p.yBase));
-        const grosor = Math.min(140, Math.max(25, cm(p.grosor)));
-        const pieza = piezaDeGenerador({ tipo: "trazo", trazo: { silueta, puntos: puntosDeSilueta(silueta, { anchoCm: Math.max(grosor, cm(p.ancho)), altoCm: alto, grosorCm: grosor }), mezcla: mezclaDe(p.tamanos), colores: coloresOrganicos(p.colores, notas), racimos: p.racimos, semilla: 21 + i } });
+        const medido = Math.min(140, Math.max(25, cm(p.grosor)));
+        const pesos = pesosDeLectura(p, H);
+        const minimo = grosorMinimoDePesos(pesos);
+        const meta = minimo ? Math.min(140, Math.ceil(minimo * HOLGURA_DEL_CUERPO)) : 0;
+        const grosor = Math.max(medido, meta);
+        if (grosor !== medido) notas.push(`La columna medía ${Math.round(medido)} cm de grosor y los globos grandes de la foto piden ${meta} cm: se engrosó.`);
+        const trazo = { silueta, puntos: puntosDeSilueta(silueta, { anchoCm: Math.max(grosor, cm(p.ancho)), altoCm: alto, grosorCm: grosor }), mezcla: pesos, colores: coloresOrganicos(p.colores, notas), racimos: p.racimos, semilla: 21 + i };
+        const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, null, 14).pieza : piezaDeGenerador({ tipo: "trazo", trazo });
         poner("columna-organica", p.forma === "recta" ? "Columna irregular" : "Columna de forma libre", pieza, { en: "piso", xCm: X(p.x), zCm: muro + 45, giroGrados: 0 });
         return;
       }
@@ -178,7 +192,7 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
       }
       case "metalizado": {
         const alto = cm(p.alto);
-        const pulgadas = alto > 90 ? 40 : alto > 75 ? 34 : alto > 60 ? 32 : alto > 50 ? 27 : 16;
+        const pulgadas = PULGADAS_METALIZADO.reduce((m, t) => (Math.abs(t * PULGADA_CM - alto) < Math.abs(m * PULGADA_CM - alto) ? t : m));
         if (p.cursiva) notas.push(`«${p.texto}» va en letras sueltas: el globo metalizado en letra cursiva no está en el catálogo.`);
         // Cada palabra es una pieza (los metalizados no traen el espacio), una junto a otra y centradas en x.
         const palabras = p.texto.split(/\s+/).filter(Boolean);
@@ -188,7 +202,7 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         palabras.forEach((w, k) => {
           const forma = w.length > 1 ? "letras" : /\d/.test(w) ? "numero" : "letra";
           const hecho = crearEstructura("metalizado", { texto: w, forma_metalizado: forma, pulgadas, colores: [p.colores[0]!.nombre] }, notas);
-          poner("metalizado", hecho.nombre, hecho.pieza, { en: "pared", pared: "fondo", aLoLargoCm: r1(desde + anchos[k]! / 2), alturaCm: Math.max(0, r0(Y(p.y) - alto / 2)) });
+          poner("metalizado", hecho.nombre, hecho.pieza, { en: "libre", xCm: r1(desde + anchos[k]! / 2), yCm: Math.max(0, r0(Y(p.y) - alto / 2)), zCm: muro + FOIL_DELANTE_DE_LA_PARED_CM, giroGrados: 0 });
           desde += anchos[k]! + alto * 0.4;
         });
         return;

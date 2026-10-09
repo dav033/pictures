@@ -1,4 +1,4 @@
-import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
+import type { ColorLeido, LecturaFoto, MezclaLeida, PiezaLeida } from "./lectura-foto";
 
 /**
  * **Referencias del dueño** (lote 1, 2026-10-08): 13 fotos de Pinterest que el dueño pasó para meter al taller sus
@@ -14,6 +14,8 @@ export type ReferenciaDueno = { id: string; numero: number; nombre: string; ocas
 const c = (nombre: string, hex: string, peso: number, acabado: ColorLeido["acabado"] = "mate"): ColorLeido => ({ nombre, hex, peso, acabado });
 const p = (x: number, y: number, grosor: number) => ({ x, y, grosor });
 const otro = (descripcion: string): PiezaLeida => ({ tipo: "otro", descripcion });
+/** La mezcla de tamaños medida en la foto: % de grandes, medianos y chicos, y el diámetro de cada uno en fracción del alto de la imagen. */
+const m = (grandes: number, medianos: number, chicos: number, diametroGrande: number, diametroMediano: number, diametroChico: number): MezclaLeida => ({ grandes, medianos, chicos, diametroGrande, diametroMediano, diametroChico });
 
 const DORADO = (peso: number) => c("dorado", "#c9a24e", peso, "cromado");
 
@@ -43,7 +45,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
       resumen: "Medio arco orgánico azul marino, dorado, crema y confeti dorado sobre un panel redondo, con ramo de helio a la derecha.", aspecto: 0.667,
       escala: { altoImagenCm: 300, referencia: "pedestales de 75 cm" }, pisoY: 0.86, sala: { pared: "#f2e3cf", piso: "#e6e1da" },
       piezas: [
-        { tipo: "guirnalda_organica", puntos: [p(0.11, 0.83, 0.23), p(0.08, 0.62, 0.22), p(0.08, 0.4, 0.2), p(0.14, 0.2, 0.18), p(0.3, 0.1, 0.15), p(0.5, 0.08, 0.12), p(0.68, 0.12, 0.09)], tamanos: { "R-24": 15, "R-18": 25, "R-12": 35, "R-9": 15, "R-5": 10 }, racimos: 0.6,
+        { tipo: "guirnalda_organica", puntos: [p(0.11, 0.83, 0.23), p(0.08, 0.62, 0.22), p(0.08, 0.4, 0.2), p(0.14, 0.2, 0.18), p(0.3, 0.1, 0.15), p(0.5, 0.08, 0.12), p(0.68, 0.12, 0.09)], tamanos: {}, mezcla: m(30, 40, 30, 0.17, 0.095, 0.055), racimos: 0.6,
           colores: [c("azul marino", "#1d2b5c", 45), c("crema", "#ecdcc0", 25), DORADO(20), c("cristal con confeti dorado", "#e8dcc0", 10, "confeti")] },
         { tipo: "fondo", id: "media_luna", x: 0.7, yBase: 0.8, ancho: 0.14, alto: 0.57, colores: [c("azul marino", "#1c2f5e", 100)] },
         { tipo: "fondo", id: "panel_redondo", x: 0.48, yBase: 0.54, ancho: 0.3, alto: 0.3, colores: [c("crema", "#f3e3c3", 80), c("dorado", "#d8b25a", 20)] },
@@ -82,9 +84,9 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
       escala: { altoImagenCm: 340, referencia: "pared de lentejuelas" }, pisoY: 0.88, sala: { pared: "#e7e2d6", piso: "#3a3432" },
       piezas: [
         { tipo: "fondo", id: "lentejuelas", x: 0.53, yBase: 0.75, ancho: 0.44, alto: 0.51, colores: [c("dorado", "#c8a55a", 100)] },
-        { tipo: "columna_organica", forma: "racimos", x: 0.2, yBase: 0.9, yArriba: 0.2, ancho: 0.26, grosor: 0.14, tamanos: { "R-24": 15, "R-18": 35, "R-12": 40, "R-9": 10 }, racimos: 0.8,
+        { tipo: "columna_organica", forma: "racimos", x: 0.2, yBase: 0.9, yArriba: 0.2, ancho: 0.26, grosor: 0.14, tamanos: {}, mezcla: m(25, 45, 30, 0.11, 0.075, 0.045), racimos: 0.8,
           colores: [c("azul marino", "#1e2a5a", 55), c("dorado", "#b79659", 45, "cromado")] },
-        { tipo: "columna_organica", forma: "racimos", x: 0.82, yBase: 0.87, yArriba: 0.19, ancho: 0.3, grosor: 0.15, tamanos: { "R-24": 15, "R-18": 35, "R-12": 40, "R-9": 10 }, racimos: 0.8,
+        { tipo: "columna_organica", forma: "racimos", x: 0.82, yBase: 0.87, yArriba: 0.19, ancho: 0.3, grosor: 0.15, tamanos: {}, mezcla: m(25, 45, 30, 0.11, 0.075, 0.045), racimos: 0.8,
           colores: [c("azul marino", "#1e2a5a", 55), c("dorado", "#b79659", 45, "cromado")] },
         ...([[0.2, 0.32], [0.14, 0.52], [0.22, 0.66], [0.82, 0.27], [0.75, 0.48], [0.86, 0.62]] as const).map(([x, y]): PiezaLeida => ({ tipo: "decoracion", id: "racimo_uvas_dorado", x, y, cantidad: 1, colores: [DORADO(100)] })),
         otro("letrero de neón «Congrats Grad»"),
@@ -132,7 +134,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
       resumen: "Guirnalda orgánica verde esmeralda y blush en arco sobre la pared, con hojas de monstera y letras «love» de foil.", aspecto: 0.97,
       escala: { altoImagenCm: 260, referencia: "carrito de 85 cm" }, pisoY: 1.05, sala: { pared: "#f4f3f0", piso: "#d9d4cc" },
       piezas: [
-        { tipo: "guirnalda_organica", puntos: [p(0.03, 0.34, 0.16), p(0.15, 0.18, 0.15), p(0.32, 0.11, 0.15), p(0.52, 0.12, 0.14), p(0.7, 0.2, 0.15), p(0.86, 0.46, 0.15)], tamanos: { "R-24": 15, "R-18": 20, "R-12": 35, "R-9": 10, "R-5": 20 }, racimos: 0.55,
+        { tipo: "guirnalda_organica", puntos: [p(0.03, 0.34, 0.16), p(0.15, 0.18, 0.15), p(0.32, 0.11, 0.15), p(0.52, 0.12, 0.14), p(0.7, 0.2, 0.15), p(0.86, 0.46, 0.15)], tamanos: {}, mezcla: m(33, 24, 43, 0.2, 0.11, 0.06), racimos: 0.55,
           follaje: ["monstera"], colores: [c("blush", "#f2d5b8", 55), c("verde esmeralda", "#174a35", 45)] },
         { tipo: "metalizado", texto: "love", cursiva: true, x: 0.38, y: 0.53, alto: 0.16, colores: [c("oro rosa", "#e0a070", 100, "cromado")] },
         otro("carrito dorado con botella y piñas"),
@@ -160,7 +162,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
       resumen: "Guirnalda orgánica en arco que baja en diagonal, verde esmeralda y blush, con hojas de monstera sobre un carrito.", aspecto: 1.017,
       escala: { altoImagenCm: 230, referencia: "carrito de 70 cm de ancho" }, pisoY: 1.12, sala: { pared: "#f6f5f2", piso: "#ddd8d0" },
       piezas: [
-        { tipo: "guirnalda_organica", puntos: [p(0.03, 0.32, 0.2), p(0.14, 0.13, 0.18), p(0.3, 0.07, 0.17), p(0.47, 0.12, 0.15), p(0.62, 0.28, 0.16), p(0.76, 0.46, 0.17), p(0.88, 0.72, 0.18)], tamanos: { "R-24": 20, "R-18": 15, "R-12": 35, "R-9": 10, "R-5": 20 }, racimos: 0.6,
+        { tipo: "guirnalda_organica", puntos: [p(0.03, 0.32, 0.2), p(0.14, 0.13, 0.18), p(0.3, 0.07, 0.17), p(0.47, 0.12, 0.15), p(0.62, 0.28, 0.16), p(0.76, 0.46, 0.17), p(0.88, 0.72, 0.18)], tamanos: {}, mezcla: m(40, 27, 33, 0.19, 0.115, 0.06), racimos: 0.6,
           follaje: ["monstera"], colores: [c("blush", "#f3dcc4", 60), c("verde esmeralda", "#0f4a33", 40)] },
         otro("carrito dorado con botella y piñas"),
       ],
@@ -204,7 +206,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
       resumen: "Guirnalda orgánica horizontal vino, rosa viejo, durazno, dorado y crema sobre una mesita.", aspecto: 1.26,
       escala: { altoImagenCm: 230, referencia: "globos de 12 pulgadas" }, pisoY: 1.25, sala: { pared: "#f4f2ef", piso: "#ddd6cc" },
       piezas: [
-        { tipo: "guirnalda_organica", puntos: [p(0.02, 0.21, 0.2), p(0.2, 0.16, 0.22), p(0.4, 0.14, 0.2), p(0.6, 0.15, 0.2), p(0.8, 0.18, 0.2), p(0.98, 0.21, 0.18)], tamanos: { "R-18": 25, "R-12": 35, "R-9": 25, "R-5": 15 }, racimos: 0.4,
+        { tipo: "guirnalda_organica", puntos: [p(0.02, 0.21, 0.2), p(0.2, 0.16, 0.22), p(0.4, 0.14, 0.2), p(0.6, 0.15, 0.2), p(0.8, 0.18, 0.2), p(0.98, 0.21, 0.18)], tamanos: {}, mezcla: m(22, 36, 42, 0.16, 0.085, 0.055), racimos: 0.4,
           colores: [c("vino", "#7b1f2e", 35), c("palo de rosa", "#e7a4a4", 25), c("durazno", "#f6c7a0", 20), DORADO(15), c("crema", "#f7e7c8", 5)] },
         otro("mesita blanca con flores naturales y vasos de cobre"),
       ],
@@ -217,7 +219,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
       resumen: "Guirnalda orgánica en esquina izquierda dorada, rosada y de confeti dorado.", aspecto: 1,
       escala: { altoImagenCm: 250, referencia: "globos de 16 pulgadas" }, pisoY: 1.15, sala: { pared: "#ecebe8", piso: "#d9d4cc" },
       piezas: [
-        { tipo: "guirnalda_organica", puntos: [p(0.97, 0.06, 0.13), p(0.7, 0.04, 0.15), p(0.45, 0.06, 0.16), p(0.22, 0.11, 0.16), p(0.07, 0.26, 0.16), p(0.03, 0.5, 0.15), p(0.05, 0.75, 0.14), p(0.08, 0.9, 0.12)], tamanos: { "R-18": 25, "R-12": 40, "R-9": 20, "R-5": 15 }, racimos: 0.4,
+        { tipo: "guirnalda_organica", puntos: [p(0.97, 0.06, 0.13), p(0.7, 0.04, 0.15), p(0.45, 0.06, 0.16), p(0.22, 0.11, 0.16), p(0.07, 0.26, 0.16), p(0.03, 0.5, 0.15), p(0.05, 0.75, 0.14), p(0.08, 0.9, 0.12)], tamanos: {}, mezcla: m(25, 40, 35, 0.18, 0.1, 0.07), racimos: 0.4,
           colores: [DORADO(35), c("cristal con confeti dorado", "#efe4cc", 25, "confeti"), c("rosado pastel", "#efc0c0", 25), c("durazno", "#f6d2c6", 15)] },
         otro("banderín «She Said Yasss»"), otro("bandejas de comida"),
       ],

@@ -69,7 +69,7 @@ export type OpcionesMetalizado = {
   acostado?: boolean;
 };
 
-const PULGADA_CM = 2.54;
+export const PULGADA_CM = 2.54;
 /** Media del ancho del trazo de los números y letras, sobre el alto. */
 const TRAZO = 0.115;
 

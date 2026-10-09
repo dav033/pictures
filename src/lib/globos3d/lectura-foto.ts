@@ -30,6 +30,20 @@ const Tamanos = z.object({
   "R-12": z.number().min(0).max(100), "R-9": z.number().min(0).max(100), "R-5": z.number().min(0).max(100),
 }).partial().describe("cuántos globos de cada tamaño, en proporción (los grandes de 36\"/24\" que resaltan, los de 12\" de base, los chiquitos de 5\")");
 
+/**
+ * La mezcla de tamaños medida en la foto, por tres escalones y con el diámetro que tiene cada uno en la imagen: es lo que
+ * el compilador usa (por encima de `tamanos`) para elegir los formatos con la escala de la foto. Sin ella, `tamanos`.
+ */
+export const MezclaLeidaSchema = z.object({
+  grandes: z.number().min(0).max(100).describe("% de los globos de esta pieza que son de los grandes (los que más resaltan: 18\", 24\" o 36\")"),
+  medianos: z.number().min(0).max(100).describe("% de los globos medianos (12\" y también 18\" chicos)"),
+  chicos: z.number().min(0).max(100).describe("% de los globos chicos (9\" y 5\")"),
+  diametroGrande: Tamano.describe("diámetro de uno de los globos grandes, en fracción del ALTO de la imagen (mídelo en la foto)"),
+  diametroMediano: Tamano.optional().describe("diámetro de uno mediano, en fracción del alto de la imagen"),
+  diametroChico: Tamano.optional().describe("diámetro de uno chico, en fracción del alto de la imagen"),
+}).describe("mezcla de tamaños medida en la foto: reparto por escalón (suma ~100) y el diámetro de cada uno");
+export type MezclaLeida = z.infer<typeof MezclaLeidaSchema>;
+
 const Punto = z.object({ x: Fraccion, y: Fraccion, grosor: Tamano.describe("diámetro del cuerpo de globos en ese punto, en fracción del alto de la imagen") });
 
 const Comun = {
@@ -41,7 +55,7 @@ export const PiezaLeidaSchema = z.discriminatedUnion("tipo", [
   z.object({
     tipo: z.literal("guirnalda_organica"),
     puntos: z.array(Punto).min(2).max(24).describe("el eje de la guirnalda de un extremo al otro, en orden, con su grosor en cada punto (más grueso donde carga); si un extremo llega al piso, su punto va en el piso"),
-    tamanos: Tamanos, racimos: z.number().min(0).max(1).describe("0 = cuerpo parejo, 1 = muy abultado en racimos"),
+    tamanos: Tamanos, mezcla: MezclaLeidaSchema.optional(), racimos: z.number().min(0).max(1).describe("0 = cuerpo parejo, 1 = muy abultado en racimos"),
     follaje: z.array(z.string().max(30)).max(4).optional().describe("hojas y flores de tela entre los globos: monstera, palma, helecho, eucalipto, hoja_seca, rosa, hortensia, gypsophila (con color opcional: «hoja_seca dorada»)"),
     ...Comun,
   }),
@@ -49,7 +63,7 @@ export const PiezaLeidaSchema = z.discriminatedUnion("tipo", [
     tipo: z.literal("columna_organica"),
     forma: z.enum(["recta", "racimos", "s", "inclinada"]).describe("recta = la silueta de una columna normal; racimos = racimos apilados que se corren de lado; s = ondula; inclinada = se inclina al subir"),
     x: Fraccion.describe("centro de la base"), yBase: Fraccion, yArriba: Fraccion, ancho: Tamano.describe("ancho total de la columna"), grosor: Tamano.describe("diámetro del cuerpo"),
-    tamanos: Tamanos, racimos: z.number().min(0).max(1), ...Comun,
+    tamanos: Tamanos, mezcla: MezclaLeidaSchema.optional(), racimos: z.number().min(0).max(1), ...Comun,
   }),
   z.object({
     tipo: z.literal("columna_clasica"),

@@ -91,6 +91,11 @@ export type EscenaGlobos = {
    */
   renderEstandar: (vista: VistaEstandar, lado: number) => string;
   /**
+   * Render con una cámara dada (la de `camara-foto.ts`: la escena armada de una foto vista desde la cámara de la foto):
+   * JPEG de `ancho` × `alto` px con calidad alta y sin ayudas. No toca la cámara del visor.
+   */
+  renderFoto: (camara: THREE.PerspectiveCamera, ancho: number, alto: number) => string;
+  /**
    * La pieza (su `nodo`) que hay bajo un punto de la pantalla (coordenadas de cliente) y dónde se tocó (cm, en el
    * mundo); `null` si ahí no hay ninguna.
    */
@@ -1760,6 +1765,36 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       pincel.drawImage(lienzo, 0, 0, lado, lado);
       const datos = salida.toDataURL("image/png");
 
+      renderer.setClearColor(0x000000, 0);
+      usarCalidad("editor");
+      cuadricula.visible = cuadriculaVisible;
+      ayudas.visible = true;
+      lienzoAyudas.visible = true;
+      renderer.setPixelRatio(antes.ratio);
+      renderer.setSize(antes.tamano.x, antes.tamano.y, false);
+      return datos;
+    },
+    renderFoto(camaraFija, ancho, alto) {
+      // Al doble y reducido, como `renderEstandar`: los tubos y los cuellos finos salen sin dientes.
+      const antes = { ratio: renderer.getPixelRatio(), tamano: renderer.getSize(new THREE.Vector2()) };
+      usarCalidad("alta");
+      renderer.setPixelRatio(1);
+      renderer.setSize(ancho * 2, alto * 2, false);
+      const cuadriculaVisible = cuadricula.visible;
+      cuadricula.visible = false;
+      ayudas.visible = false;
+      lienzoAyudas.visible = false;
+      renderer.setClearColor(FONDO_ESTANDAR, 1);
+      renderer.shadowMap.needsUpdate = true;
+      renderer.render(escena, camaraFija);
+      const salida = document.createElement("canvas");
+      salida.width = ancho;
+      salida.height = alto;
+      const pincel = salida.getContext("2d");
+      if (!pincel) throw new Error("Sin lienzo 2D");
+      pincel.imageSmoothingQuality = "high";
+      pincel.drawImage(lienzo, 0, 0, ancho, alto);
+      const datos = salida.toDataURL("image/jpeg", 0.88);
       renderer.setClearColor(0x000000, 0);
       usarCalidad("editor");
       cuadricula.visible = cuadriculaVisible;
