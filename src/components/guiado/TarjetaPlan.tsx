@@ -14,6 +14,8 @@ import { FilaPieza } from "./FilaPieza";
 import { IconoEstructura } from "@/components/plan/IconoEstructura";
 import { GraficaMotorGuiada } from "./GraficaMotorGuiada";
 import { NotaPlan3D, VistaPlanEnPreparacion } from "./Plan3DEnPreparacion";
+import { MiniaturaPieza3DPerezosa, VistaPlan3DPerezosa } from "./motor3d/CargaVistaPlan3D";
+import { firmaDePlan } from "./motor3d/firma-plan";
 import { ModificarPieza, piezaModificable } from "./ModificarPieza";
 import { SelectorUsoCosteo, type OrigenUsoCosteo } from "./SelectorUsoCosteo";
 import { leyendaDePieza, motorDePieza } from "./motor-pieza";
@@ -98,6 +100,8 @@ export function TarjetaPlan(props: Props) {
   const { plan, cotizacion, imagen, avisoImagen, estadoImagen, usoCosteo, usoConocido, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes, onSugerencia } = props;
   const ultimoAjuste = ajustes?.at(-1);
   const es3d = props.motor === "3d";
+  // La espec firmada con la que el servidor vuelve a armar la vista 3D; un plan 3D que no la trae (guardado antes) no tiene vista.
+  const firma3d = useMemo(() => (es3d ? firmaDePlan(plan) : null), [es3d, plan]);
   const reducido = useReducedMotion();
   const desglose = useMemo(() => generarPasosPlan(plan), [plan]);
   const piezas = plan.plan.estructuras;
@@ -245,7 +249,7 @@ export function TarjetaPlan(props: Props) {
               recalculando={recalculando}
               ayudaDibujo={!es3d && indice === piezaConAyudaDibujo}
               ayudaTamanos={indice === 0}
-              dibujo={es3d ? <IconoEstructura id={vista.oficial ?? "arco"} className="size-9" /> : <GraficaMotorGuiada plan={plan.plan} version={plan.plan_hash} pieza={pieza} mezclaReal={mezclaReal} colores={tonosPorPieza.get(pieza.estructura_id)} id={vista.oficial ?? "arco"} nombre={pieza.nombre} />}
+              dibujo={es3d ? (firma3d ? <MiniaturaPieza3DPerezosa firma={firma3d} piezaId={pieza.estructura_id} nombre={pieza.nombre} oficial={vista.oficial} /> : <IconoEstructura id={vista.oficial ?? "arco"} className="size-9" />) : <GraficaMotorGuiada plan={plan.plan} version={plan.plan_hash} pieza={pieza} mezclaReal={mezclaReal} colores={tonosPorPieza.get(pieza.estructura_id)} id={vista.oficial ?? "arco"} nombre={pieza.nombre} />}
               {...(abrir ? { onModificar: abrir } : {})}
               {...(modificable ? {
                 accion: (
@@ -266,7 +270,7 @@ export function TarjetaPlan(props: Props) {
           );
         })}
       </motion.ul>
-      {es3d && <VistaPlanEnPreparacion />}
+      {es3d && (firma3d ? <VistaPlan3DPerezosa firma={firma3d} titulo={plan.plan.concepto.titulo} piezas={piezasVista} /> : <VistaPlanEnPreparacion />)}
       {ajustable && (
         <ModificarPieza
           plan={plan}

@@ -34,6 +34,8 @@ export { POLITICA_PAQUETES, POLITICAS_PAQUETES, planearCompra, type PoliticaPaqu
 export { cotizarBom, type CompraMotor, type CotizacionDelMotor, type DependenciasCotizacion, type FalloCotizacion, type ResultadoCotizacionBom } from "./cotizar-bom";
 export { sobreDelMotor, SobreMotorSchema, type EntradaSobre, type PlanGuiadoMotor, type SobreDelMotor } from "./plan-guiado-desde-motor";
 export type { ConceptoPlan } from "./proyeccion-plan";
+// Vista (fase 3): la armada compacta proyectada a SVG, para el cliente sin WebGL.
+export { svgDeArmada, type OpcionesVistaSvg } from "./vista2d-svg";
 
 export function armarDesdeEspec(entrada: EspecClienteV1): ResultadoMotorV1 {
   const espec = EspecClienteV1Schema.parse(entrada);

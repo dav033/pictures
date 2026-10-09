@@ -144,6 +144,7 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
   "src/app/api/taller/buscar-foto/route.ts": "taller 3D: búsqueda por foto en la biblioteca (embedding de imagen con Gemini)",
   "src/app/api/guiada/motor/route.ts": "REQ-007: bandera GUIADA_MOTOR (3d|python) con la que se crea un plan de la guiada; la lectura para un plan nuevo queda en decidir(regla:motor_guiada)",
   "src/app/api/guiada/motor/plan/route.ts": "REQ-007 fase 2: plan de la guiada armado por el motor 3D (sin modelo ni RAG) y cotizado con Python (lista-materiales); el motivo de cada caída a Python queda en decidir(regla:motor_guiada)",
+  "src/app/api/guiada/motor/armada/route.ts": "REQ-007 fase 3: la armada (o el SVG de reserva) del plan 3D para la vista del cliente; solo vuelve a armar la espec firmada, sin modelo, RAG ni Python",
   "src/app/api/feedback-ia/route.ts": "REQ-010: calificación de un turno de la IA (taller y chat del cliente)",
   "src/app/api/feedback-ia/capturas/route.ts": "REQ-010: captura JPEG antes/después de un turno (almacén S3)",
   "src/app/api/feedback-ia/analisis/route.ts": "REQ-010: análisis de huecos a pedido (resumen opcional con Gemini Flash)",

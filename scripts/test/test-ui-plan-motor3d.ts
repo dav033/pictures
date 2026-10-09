@@ -59,13 +59,14 @@ async function main(): Promise<void> {
     }
   });
 
-  await caso("TarjetaPlan con un plan 3D: las cifras del motor, «Vista del plan en preparación» y nada de Python", () => {
+  await caso("TarjetaPlan con un plan 3D: las cifras del motor, su vista 3D por carga perezosa y nada de Python", () => {
     const s = sobreDe("idea-deco-real-07-eb12910e210c94b6184d025127acce95");
     const plan = PlanGuiadoSchema.parse(s.plan);
     const html = renderToStaticMarkup(createElement(TarjetaPlan, propiedades(plan, { cotizacion: CotizacionPlanGuiadoSchema.parse(s.cotizacion), motor: "3d" })));
     const t = texto(html);
-    assert.ok(t.includes(TEXTO_VISTA_EN_PREPARACION), "el marcador de la vista");
-    assert.equal(html.split('data-testid="vista-plan-en-preparacion"').length - 1, 1, "una sola vez por tarjeta, no por pieza");
+    // El sobre trae su espec firmada: la vista 3D llega por carga perezosa (aquí, su esqueleto) y ya no es «en preparación».
+    assert.equal(html.split('data-testid="vista-plan-3d-cargando"').length - 1, 1, "el esqueleto de la vista, una sola vez por tarjeta");
+    assert.ok(!t.includes(TEXTO_VISTA_EN_PREPARACION) && !html.includes('data-testid="vista-plan-en-preparacion"'), "ya no es «en preparación»");
     assert.ok(t.includes(TEXTO_NOTA_PLAN_3D), "la nota honesta");
     assert.ok(t.includes(entero.format(s.globos)) || t.includes(String(s.globos)), `el total de globos (${s.globos})`);
     for (const pieza of plan.plan.estructuras) assert.ok(t.includes(pieza.nombre), `la pieza ${pieza.nombre}`);
@@ -82,10 +83,20 @@ async function main(): Promise<void> {
     assert.ok(!html.includes("plan-armado") && !html.includes("plan-dibujo"), "ninguna vista previa de Python");
   });
 
+  await caso("un plan 3D guardado sin su espec firmada (antes de la fase 3) conserva «Vista del plan en preparación»", () => {
+    const s = sobreDe("idea-deco-real-07-eb12910e210c94b6184d025127acce95");
+    const sinEspec = Object.fromEntries(Object.entries(PlanGuiadoSchema.parse(s.plan)).filter(([clave]) => clave !== "espec"));
+    const html = renderToStaticMarkup(createElement(TarjetaPlan, propiedades(PlanGuiadoSchema.parse(sinEspec), { motor: "3d" })));
+    assert.ok(texto(html).includes(TEXTO_VISTA_EN_PREPARACION), "sin espec no hay de dónde armar la vista");
+    assert.equal(html.split('data-testid="vista-plan-en-preparacion"').length - 1, 1);
+    assert.ok(!html.includes('data-testid="vista-plan-3d-cargando"'));
+  });
+
   await caso("el mismo componente con un plan de Python se pinta como siempre (sin marcador ni nota)", () => {
     const html = renderToStaticMarkup(createElement(TarjetaPlan, propiedades(planPython)));
     const t = texto(html);
     assert.ok(!t.includes(TEXTO_VISTA_EN_PREPARACION) && !t.includes(TEXTO_NOTA_PLAN_3D));
+    assert.ok(!html.includes("vista-plan-3d"), "ninguna vista 3D en un plan de Python");
     assert.ok(t.includes("Ajustar mi plan"), "Python conserva «Ajustar mi plan»");
     assert.doesNotMatch(html, /<button[^>]*disabled=""[^>]*>[^]*?Ver cómo quedaría/);
     const explicito = texto(renderToStaticMarkup(createElement(TarjetaPlan, propiedades(planPython, { motor: "python" }))));
