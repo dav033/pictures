@@ -974,7 +974,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
         if (lote) quitarLote(lote);
         const capacidad = Math.ceil(lista.length * 1.25) + 4;
         const malla = new THREE.InstancedMesh(def.geometria("editor"), def.material("editor"), capacidad);
-        malla.castShadow = !clave.startsWith("confeti|");
+        // Ni el confeti (miles de discos) ni las hebras de la pampa (translúcidas) echan sombra: no se nota y cuesta una pasada más.
+        malla.castShadow = !clave.startsWith("confeti|") && clave !== "flor|pluma";
         malla.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         lote = { def, malla, capacidad, nodos: [], bases: new Float32Array(capacidad * 16), ocultos: new Set() };
         // Con qué pieza va cada copia (para elegirla con un clic).

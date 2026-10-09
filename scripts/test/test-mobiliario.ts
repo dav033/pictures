@@ -439,4 +439,19 @@ prueba("VISUAL: el aro tiene travesaño que une sus patines y las tapas de mante
   assert.ok(tapaR && tapaR.forma === "caja" && tapaR.tamano.x > 240 + 2.2, "la tapa rectangular sobresale de los paños");
 });
 
+prueba("VISUAL: las plumas del jarrón con pampas son plumas de pampa (como el follaje de las guirnaldas), no varillas", () => {
+  const solidos = armado("jarron_pampas").solidos ?? [];
+  const plumas = solidos.filter((s) => s.acabado === "pampa");
+  assert.ok(plumas.length >= 10, `${plumas.length} plumas`);
+  assert.ok(plumas.every((s) => s.forma === "cilindro" && s.altoCm > 20 && s.radioCm >= 4), "cada pluma es un penacho de buen tamaño");
+  const tallos = solidos.filter((s) => s.forma === "cilindro" && s.radioCm < 1);
+  assert.ok(tallos.length >= plumas.length && tallos.every((s) => s.acabado !== "pampa"), "cada pluma lleva su tallo fino");
+  // El acabado que se elige es el del jarrón (el color principal): las plumas siguen siéndolo.
+  const brillante = armarPieza(piezaDeMueble(mueble("jarron_pampas"), { ...opcionesDeMueble(mueble("jarron_pampas")), acabado: "brillante" })).solidos ?? [];
+  assert.equal(brillante.filter((s) => s.acabado === "pampa").length, plumas.length);
+  assert.ok(brillante.some((s) => s.acabado === "brillante"), "el jarrón sí cambia");
+  const caja = armado("jarron_pampas").caja;
+  assert.ok(caja.max.y > 100 && caja.max.y < 160, `alto ${caja.max.y.toFixed(0)} cm`);
+});
+
 console.log(`test-mobiliario: ${pruebas} pruebas ok`);

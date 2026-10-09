@@ -109,22 +109,25 @@ export function biombo(o: OpcionesDecorado & { paneles?: number }): ElementoEsce
   ]);
 }
 
-/** Jarrón alto con tallos de pampas: jarrón en dos troncos de cono y plumas abiertas en abanico. */
+/**
+ * Jarrón alto con tallos de pampas: jarrón en dos troncos de cono y plumas abiertas en abanico. Las plumas son cilindros de
+ * acabado `pampa`: el visor las dibuja como el follaje de las guirnaldas (penacho de hebras), no como varillas.
+ */
 export function jarronPampas(o: OpcionesDecorado): ElementoEscenografia[] {
   const { anchoCm: ancho, fondoCm: fondo, altoCm: h, principal: jarron, secundario: pampa } = o;
   // Lo abiertas que van las plumas: proporcional al ancho y al fondo pedidos (53 × 28 cm con las medidas de partida).
   const vaso = Math.min(h * 0.4, 60), r = ancho * 0.215, kx = ancho / 53, kz = fondo / 28;
   const salida: ElementoEscenografia[] = [cilindro(v(0, 0, 0), r * 0.62, vaso * 0.55, jarron, r), cilindro(v(0, vaso * 0.55, 0), r, vaso * 0.35, jarron, r * 0.55), cilindro(v(0, vaso * 0.9, 0), r * 0.55, vaso * 0.1, jarron, r * 0.7)];
   const tallo = mat("#b89a6e", "mate");
-  const tallos = 11;
+  const tallos = 14;
   for (let k = 0; k < tallos; k++) {
-    const ang = k * 2.39996, inclina = 0.05 + 0.36 * ((k * 0.618) % 1);
+    const ang = k * 2.39996, inclina = 0.05 + 0.33 * ((k * 0.618) % 1);
     const largo = (h - vaso) * (0.7 + 0.3 * (((k * 0.37) % 1)));
     const dx = Math.cos(ang) * Math.sin(inclina), dz = Math.sin(ang) * Math.sin(inclina) * 0.6, dy = Math.cos(inclina);
     const base = v(dx * 2, vaso, dz * 2), punta = v((dx * largo + dx * 2) * kx, vaso + dy * largo, (dz * largo + dz * 2) * kz);
-    const pluma = Math.min(34, largo * 0.32);
+    const pluma = Math.min(40, largo * 0.45);
     const inicio = v(punta.x - dx * pluma, punta.y - dy * pluma, punta.z - dz * pluma);
-    salida.push(barra(base, inicio, 0.45, tallo), barra(inicio, punta, 3.6, pampa, 0.5));
+    salida.push(barra(base, inicio, 0.45, tallo), barra(inicio, punta, 5.2, pampa));
   }
   return salida;
 }

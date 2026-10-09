@@ -15,6 +15,7 @@ import { REFERENCIAS_DUENO } from "@/lib/globos3d/referencias-dueno";
 import { LecturaFotoSchema } from "@/lib/globos3d/lectura-foto";
 import { compilarLectura, codigoDeColor } from "@/lib/globos3d/compilar-lectura";
 import { armarEscena } from "@/lib/globos3d/escena";
+import { FLORES_ARTIFICIALES } from "@/lib/globos3d/flores-artificiales";
 
 assert.equal(REFERENCIAS_DUENO.length, 13);
 for (const r of REFERENCIAS_DUENO) {
@@ -38,6 +39,13 @@ assert.ok(guirnalda.caja.min.y > 150, `la guirnalda va arriba en la pared (${gui
 // Foto 2: el medio arco nace del piso.
 const dos = armarEscena(compilarLectura(REFERENCIAS_DUENO[1]!.lectura).escena);
 assert.ok(dos.porNodo.find((n) => n.id.startsWith("guirnalda-organica"))!.caja.min.y < 8, "el medio arco nace del piso");
+
+// Una lectura con «pampa beige» en el follaje de la guirnalda compila a plumas de pampa en los huecos (no a hojas secas).
+const conPampa = structuredClone(REFERENCIAS_DUENO[0]!.lectura);
+for (const p of conPampa.piezas) if (p.tipo === "guirnalda_organica") p.follaje = ["pampas beige"];
+LecturaFotoSchema.parse(conPampa);
+const floresLeidas = armarEscena(compilarLectura(conPampa).escena).flores;
+assert.ok(floresLeidas.length > 0 && floresLeidas.every((f) => f.tipo === "pampa" && f.hex === FLORES_ARTIFICIALES.pampa.colores.find((c) => c.id === "beige")!.hex), `${floresLeidas.length} flores leídas`);
 
 // Colores.
 const notas: string[] = [];

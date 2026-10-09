@@ -14,8 +14,9 @@ import { conGenerador, escalarGenerador, piezaDeGenerador } from "@/lib/globos3d
 import { armarOrganico, APLASTAMIENTO_MAXIMO } from "@/lib/globos3d/organico";
 import { armarPieza } from "@/lib/globos3d/piezas";
 import { reemplazarColor } from "@/lib/globos3d/recolorear";
-import { crearTrazo, floresPedidas } from "@/lib/globos3d/herramientas-escena-trazo";
-import { follajeEnIngles } from "@/lib/globos3d/flores-artificiales";
+import { DECLARACIONES_ESCENA } from "@/lib/globos3d/herramientas-escena";
+import { crearTrazo, floresPedidas, TIPOS_FOLLAJE } from "@/lib/globos3d/herramientas-escena-trazo";
+import { FLORES_ARTIFICIALES, follajeEnIngles } from "@/lib/globos3d/flores-artificiales";
 
 const colores = [{ codigo: "009", peso: 40 }, { codigo: "570", peso: 35 }, { codigo: "005", peso: 25 }];
 const trazo = (silueta: (typeof SILUETAS_TRAZO)[number]["id"], anchoCm = 260, altoCm = 180, grosorCm = 50): ParametrosTrazoOrganico =>
@@ -85,5 +86,28 @@ assert.ok(hojas.some((f) => f.tipo === "palma" && f.hex === "#c9a14a"), "la palm
 assert.throws(() => floresPedidas(["girasol"]), /desconocido/);
 assert.throws(() => floresPedidas(["monstera azul"]), /viene en/);
 assert.match(follajeEnIngles(hojas), /(monstera leaves and gold palm fronds|gold palm fronds and monstera leaves)/);
+
+// La pampa: «pampa», «pampas», «pasto de la pampa»… son el tipo `pampa` (plumas), no la hoja seca (el abanico dorado).
+for (const pedido of ["pampa", "pampas", "Pampas  Grass", "pasto de la pampa", "hierba de la pampa", "plumas de pampa"]) {
+  const r = floresPedidas([pedido]);
+  assert.deepEqual(r.proporcion.map((p) => [p.tipo, p.colorId]), [["pampa", "crema"]], pedido);
+}
+assert.deepEqual(floresPedidas(["pasto de la pampa beige"]).proporcion.map((p) => [p.tipo, p.colorId]), [["pampa", "beige"]], "el color va tras el alias largo");
+assert.deepEqual(floresPedidas(["pampas rosa", "hoja_seca dorada"]).proporcion.map((p) => [p.tipo, p.colorId]), [["pampa", "rosa"], ["hoja_seca", "dorada"]], "la hoja seca sigue siendo la hoja seca");
+assert.throws(() => floresPedidas(["pasto de la pampa verde"]), /viene en crema, beige/);
+assert.ok(TIPOS_FOLLAJE.includes("pampa"), "la IA de escena ofrece la pampa");
+const declaraciones = JSON.stringify(DECLARACIONES_ESCENA);
+assert.match(declaraciones, /pampa, /, "la IA de escena lee «pampa» entre los follajes");
+assert.match(declaraciones, /pasto de la pampa/);
+const conPampas = crearTrazo({ silueta: "feston", ancho_cm: 300, follaje: ["pasto de la pampa dorada"] }, colores).pieza;
+const pampas = armarPieza(conPampas).flores;
+assert.ok(pampas.length >= 4 && pampas.every((f) => f.tipo === "pampa" && f.hex === FLORES_ARTIFICIALES.pampa.colores.find((c) => c.id === "dorada")!.hex), `${pampas.length} pampas doradas`);
+// El texto de FLUX: plumas de pampa (con su color), no «hojas»; la hoja seca ya no se dice pampa.
+assert.match(follajeEnIngles(pampas), /^Artificial gold pampas grass plumes tucked between the balloons/);
+const crema = armarPieza(crearTrazo({ silueta: "feston", ancho_cm: 300, follaje: ["pampa"] }, colores).pieza).flores;
+assert.match(follajeEnIngles(crema), /cream pampas grass plumes/);
+const secas = armarPieza(crearTrazo({ silueta: "feston", ancho_cm: 300, follaje: ["hoja_seca beige"] }, colores).pieza).flores;
+assert.match(follajeEnIngles(secas), /beige dried palm fans/);
+assert.doesNotMatch(follajeEnIngles(secas), /pampas/);
 
 console.log("test-trazo-organico: ok");
