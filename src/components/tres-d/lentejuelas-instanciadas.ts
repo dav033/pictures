@@ -40,7 +40,7 @@ function colorLentejuela(hex: string): THREE.Color {
   const color = new THREE.Color(hex);
   const hsl = { h: 0, s: 0, l: 0 };
   color.getHSL(hsl);
-  return color.setHSL(hsl.h, Math.min(1, hsl.s * 0.92), Math.max(hsl.l, 0.68));
+  return color.setHSL(hsl.h, Math.min(1, hsl.s * 1.05), Math.max(hsl.l, 0.5));
 }
 
 /** El tablero de detrás: oscuro y cálido, es lo que se ve por las rendijas. */

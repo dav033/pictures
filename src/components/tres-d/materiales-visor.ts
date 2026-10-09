@@ -30,11 +30,11 @@ function azar(semilla: number): () => number {
  */
 export function colorDeLatex(familia: string, hex: string): THREE.Color {
   const color = new THREE.Color(hex);
-  const minimo = familia === "reflex" ? 0.62 : familia === "metal" ? 0.5 : 0;
+  const minimo = familia === "reflex" ? 0.35 : familia === "metal" ? 0.5 : 0;
   if (!minimo) return color;
   const hsl = { h: 0, s: 0, l: 0 };
   color.getHSL(hsl);
-  if (hsl.l < minimo) color.setHSL(hsl.h, Math.min(1, hsl.s * (familia === "reflex" ? 1.5 : 1.1)), minimo);
+  if (hsl.l < minimo) color.setHSL(hsl.h, Math.min(1, hsl.s * 1.1), minimo);
   return color;
 }
 
@@ -44,7 +44,7 @@ export function materialDe(familia: string, hex: string, calidad: Calidad, entor
   switch (familia) {
     case "reflex":
       // El entorno de la escena va atenuado (el látex mate se lavaba); el cromado necesita reflejar más para verse plateado y no negro.
-      return new THREE.MeshPhysicalMaterial({ color, metalness: 1, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05, envMap: entorno, envMapIntensity: 1.3 });
+      return new THREE.MeshPhysicalMaterial({ color, metalness: 1, roughness: 0.12, clearcoat: 0.6, clearcoatRoughness: 0.05, envMap: entorno, envMapIntensity: 1.3 });
     case "metal":
       // Metalizado satinado: más metal y más reflejo que el látex, pero con el brillo difuso (no es espejo como el Reflex).
       return new THREE.MeshPhysicalMaterial({ color, metalness: 0.75, roughness: 0.34, clearcoat: 0.35, clearcoatRoughness: 0.3, envMap: entorno, envMapIntensity: 1.4 });

@@ -1,10 +1,11 @@
 import * as THREE from "three";
 
 /**
- * Entorno de estudio para los materiales que reflejan (cromados, metales, foil, lentejuelas, piso con brillo): una sala
- * cálida y oscura con pocas fuentes de luz fuertes (una caja de luz arriba, una ventana, las luces del techo) y un piso de
- * madera ámbar. Un espejo no refleja «una sala blanca»: refleja zonas oscuras y manchas de luz, y eso es lo que le da
- * volumen. El dorado sale ámbar saturado con reflejos marrones y la plata, gris con contraste, no blanca.
+ * Entorno de estudio para los materiales que reflejan (cromados, metales, foil, lentejuelas, piso con brillo): un cuarto
+ * neutro y oscuro con pocas fuentes de luz fuertes (una caja de luz arriba, una ventana, las luces del techo) y un piso
+ * gris. Un espejo no refleja «una sala blanca»: refleja zonas oscuras y manchas de luz, y eso es lo que le da volumen.
+ * El cuarto es neutro a propósito: el color de un cromado lo pone su propio color, y una sala cálida teñiría de marrón la
+ * plata y el azul. El dorado sale con reflejos oscuros y la plata, gris con contraste, no blanca.
  *
  * Se hornea una vez con PMREM; el látex mate sigue con su entorno suave (`RoomEnvironment`) para que no se lave.
  */
@@ -35,10 +36,10 @@ function texturaCuarto(): THREE.CanvasTexture | null {
   const pincel = lienzo.getContext("2d");
   if (!pincel) return null;
   const degradado = pincel.createLinearGradient(0, 0, 0, 256);
-  degradado.addColorStop(0, "#f1eeea");
-  degradado.addColorStop(0.45, "#bdb9b3");
-  degradado.addColorStop(0.7, "#6a6762");
-  degradado.addColorStop(1, "#98908a");
+  degradado.addColorStop(0, "#f2f2f2");
+  degradado.addColorStop(0.45, "#c4c4c4");
+  degradado.addColorStop(0.7, "#7c7c7c");
+  degradado.addColorStop(1, "#a2a2a2");
   pincel.fillStyle = degradado;
   pincel.fillRect(0, 0, 4, 256);
   const textura = new THREE.CanvasTexture(lienzo);
@@ -53,11 +54,11 @@ export function escenaEstudio(): THREE.Scene {
   cuarto.position.y = 1.2;
   escena.add(cuarto);
   // Piso de madera ámbar y techo cálido.
-  escena.add(superficie(14, 14, 0xa39d96, [0, -1.2, 0], [-Math.PI / 2, 0, 0]));
-  escena.add(superficie(14, 14, 0xe8e5e0, [0, 2.4, 0], [Math.PI / 2, 0, 0]));
+  escena.add(superficie(14, 14, 0xb4b4b4, [0, -1.2, 0], [-Math.PI / 2, 0, 0]));
+  escena.add(superficie(14, 14, 0xe8e8e8, [0, 2.4, 0], [Math.PI / 2, 0, 0]));
   // Caja de luz grande arriba y delante (la luz principal) y otra suave a un lado.
-  escena.add(luz({ ancho: 5, alto: 3, posicion: [-1.5, 2.3, 2.5], color: 0xfff4e6, fuerza: 7 }));
-  escena.add(luz({ ancho: 1.2, alto: 3.5, posicion: [-6, 0.6, 1], color: 0xfff0dc, fuerza: 4 }));
+  escena.add(luz({ ancho: 5, alto: 3, posicion: [-1.5, 2.3, 2.5], color: 0xfffaf2, fuerza: 7 }));
+  escena.add(luz({ ancho: 1.2, alto: 3.5, posicion: [-6, 0.6, 1], color: 0xfff6ea, fuerza: 4 }));
   // Ventana alta y clara a la derecha y luces del techo (puntos brillantes que dan los destellos).
   escena.add(luz({ ancho: 3.5, alto: 2.6, posicion: [6, 1.2, -1.5], color: 0xdbe8ff, fuerza: 5.5 }));
   for (const [x, z] of [[-2, -2], [2, -2], [-2, 1.5], [2, 1.5], [0, -4], [0, 4]] as const) escena.add(luz({ ancho: 0.3, alto: 0.3, posicion: [x, 2.35, z], color: 0xfff1d8, fuerza: 14 }));
