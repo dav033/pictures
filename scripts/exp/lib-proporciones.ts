@@ -11,10 +11,14 @@
  *  - `silueta`: por franjas horizontales, de dónde a dónde va la masa (el largo y la inclinación del tramo de arriba, lo
  *    ancho y lo corrido de la columna) y, por franjas verticales, a qué altura empieza y acaba (la pendiente del trazo);
  *  - `diametro`: el tamaño mediano de los globos y el de los grandes (si la escala o la mezcla los agranda o los achica);
- *  - `fondos`: cuánto se solapa cada fondo detectado con la caja del fondo armado (marco, panel, aro, pedestales).
+ *  - `fondos`: cuánto se solapa cada fondo detectado con la caja del fondo armado (marco, panel, aro, pedestales);
+ *  - `tramo` y `zonasColor` (`lib-zonas.ts`): si el tramo de arriba sube o baja y se adelgaza como en la foto, y si los colores
+ *    van por zonas (blanco a la izquierda, vino en la columna) o mezclados por todas partes.
  */
+import { TOLERANCIA_TRAMO, errorDeZonasDeColor, medirTramo, type MedidaDeTramo } from "./lib-zonas";
 
-export type Disco = { x: number; y: number; r: number };
+/** Un globo como disco; `color` es la palabra del detector (`medir-colores.ts`) con que se compara el color por zonas. */
+export type Disco = { x: number; y: number; r: number; color?: string };
 export type Caja = { x0: number; y0: number; x1: number; y1: number };
 export type FondoMedido = { id: string; caja: Caja };
 
@@ -131,6 +135,10 @@ export type ProporcionesMedidas = {
   diametro: Diametros;
   /** IoU de cada fondo detectado con el mejor fondo armado de su familia; `null` si no se armó ninguno. */
   fondos: Array<{ id: string; iou: number | null; foto: Caja; armado: Caja | null }>;
+  /** La pendiente y el afinado del tramo de arriba (`null` si la foto no tiene un tramo medible). */
+  tramo: MedidaDeTramo | null;
+  /** Qué tan distintos son los colores por zonas, de 0 (los mismos) a 1; `null` sin colores en la foto. */
+  zonasColor: number | null;
   /** De 0 a 1: el promedio de las medidas de arriba, cada una llevada a 0-1 (1 = idéntico). */
   puntaje: number;
 };
@@ -158,10 +166,10 @@ const IOU_CAJA_ES_FONDO = 0.3;
  * Los globos detectados en la foto como discos, sin las cajas que son un fondo del catálogo tomado por un globo (Gemini detecta
  * un pedestal blanco como un globo gigante): no son parte de la masa de globos con que se compara.
  */
-export function discosDeLaFoto(globos: ReadonlyArray<{ x: number; y: number; w: number; h: number; d: number }>, fondos: readonly FondoMedido[]): Disco[] {
+export function discosDeLaFoto(globos: ReadonlyArray<{ x: number; y: number; w: number; h: number; d: number; color?: string }>, fondos: readonly FondoMedido[]): Disco[] {
   return globos
     .filter((g) => !fondos.some((f) => iouDeCajas({ x0: g.x - g.w / 2, x1: g.x + g.w / 2, y0: g.y - g.h / 2, y1: g.y + g.h / 2 }, f.caja) >= IOU_CAJA_ES_FONDO))
-    .map((g) => ({ x: g.x, y: g.y, r: g.d / 2 }));
+    .map((g) => ({ x: g.x, y: g.y, r: g.d / 2, ...(g.color ? { color: g.color } : {}) }));
 }
 
 /** Los fondos con el mismo id juntos en una sola caja (tres pedestales detectados uno por uno son la unión que arma un solo nodo). */
@@ -198,6 +206,8 @@ export function medirProporciones(
     const par = armados.filter((o) => entrada.mismoFondo(o.id, q.id)).map((o) => ({ caja: o.caja, iou: iouDeCajas(q.caja, recorte(o.caja)) })).sort((a, b) => b.iou - a.iou)[0];
     return { id: q.id, iou: par ? redondear(par.iou) : null, foto: q.caja, armado: par?.caja ?? null };
   });
+  const tramo = medirTramo(foto, armado, cajaFoto);
+  const zonasColor = errorDeZonasDeColor(foto, armado, cajaFoto);
   const clamp = (n: number) => Math.min(1, Math.max(0, n));
   const partes = [
     iou,
@@ -205,6 +215,8 @@ export function medirProporciones(
     1 - clamp(silueta.medio / TOLERANCIA_SILUETA),
     1 - clamp(Math.abs(Math.log(Math.max(1e-6, diametro.razon))) / TOLERANCIA_DIAMETRO),
     ...(fondos.length ? [fondos.reduce((s, q) => s + (q.iou ?? 0), 0) / fondos.length] : []),
+    ...(tramo ? [1 - clamp(tramo.error / TOLERANCIA_TRAMO)] : []),
+    ...(zonasColor !== null ? [1 - zonasColor] : []),
   ];
-  return { iou: redondear(iou), bordes, silueta, diametro, fondos, puntaje: redondear(partes.reduce((s, n) => s + n, 0) / partes.length) };
+  return { iou: redondear(iou), bordes, silueta, diametro, fondos, tramo, zonasColor, puntaje: redondear(partes.reduce((s, n) => s + n, 0) / partes.length) };
 }

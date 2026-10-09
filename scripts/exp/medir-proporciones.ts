@@ -16,10 +16,20 @@ import { mismaFamiliaDeFondo } from "../../src/lib/globos3d/fondos-familias";
 import { centroDe } from "../../src/lib/globos3d/letras";
 import { LecturaFotoSchema, type LecturaFoto } from "../../src/lib/globos3d/lectura-foto";
 import { globosDe } from "../../src/lib/globos3d/medir-geometria";
+import { distanciaLab } from "../../src/lib/globos3d/colores-formato";
+import { HEX_DE_COLOR_DETECTADO } from "../../src/lib/globos3d/medir-colores";
+import { referenciaPorCodigo } from "../../src/lib/plan/referencia-sempertex";
 import { medirConDetecciones, type FondoDetectado, type GloboDetectado } from "../../src/lib/globos3d/medir-con-detecciones";
 import { discosDeLaFoto, medirProporciones, type Caja, type Disco, type FondoMedido } from "./lib-proporciones";
 import { camaraNumerica, largoEnPantalla, proyectar } from "../../src/lib/globos3d/proyeccion-foto";
 
+
+/** La palabra del detector cuyo color típico más se parece al del globo armado (por su referencia Sempertex), o undefined si no se conoce. */
+const palabraDeCodigo = (codigo: string): string | undefined => {
+  const hex = referenciaPorCodigo(codigo)?.hexGlobo;
+  if (!hex) return undefined;
+  return Object.entries(HEX_DE_COLOR_DETECTADO).reduce<{ palabra: string; d: number } | null>((m, [palabra, h]) => { const d = distanciaLab(hex, h); return !m || d < m.d ? { palabra, d } : m; }, null)?.palabra;
+};
 
 /** Lo armado, en unidades de alto de la foto: sus globos como discos y los fondos como cajas. */
 export function armadoEnLaFoto(lectura: LecturaFoto): { discos: Disco[]; fondos: FondoMedido[] } {
@@ -29,7 +39,7 @@ export function armadoEnLaFoto(lectura: LecturaFoto): { discos: Disco[]; fondos:
   const armada = armarEscena(escena);
   const discos = armada.globos.flatMap((g) => {
     const p = proyectar(camara, centroDe(g));
-    return p ? [{ ...aImagen(p), r: largoEnPantalla(camara, g.infladoCm / 2, p.prof) / 2 }] : [];
+    return p ? [{ ...aImagen(p), r: largoEnPantalla(camara, g.infladoCm / 2, p.prof) / 2, color: palabraDeCodigo(g.codigo) }] : [];
   });
   const fondos = armada.porNodo.flatMap((n): FondoMedido[] => {
     const pieza = escena.nodos.find((o) => o.id === n.id)?.pieza;

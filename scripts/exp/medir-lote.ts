@@ -42,7 +42,7 @@ async function main() {
   const f2 = (n: number) => n.toFixed(2), s2 = (n: number) => (n >= 0 ? "+" : "") + n.toFixed(2);
   for (const { nombre, medidas: m } of filas) {
     const fondos = m.fondos.map((q) => `${q.id.slice(0, 9)}=${q.iou ?? "-"}`).join(" ");
-    console.log(`${nombre.padEnd(11)} pun=${m.puntaje.toFixed(3)} iou=${f2(m.iou)} borde=${m.bordes.medio.toFixed(3)}(i ${s2(m.bordes.izquierda)} d ${s2(m.bordes.derecha)} a ${s2(m.bordes.arriba)} b ${s2(m.bordes.abajo)}) sil=${m.silueta.medio.toFixed(3)}(anc ${f2(m.silueta.ancho)} cen ${f2(m.silueta.centro)} arr ${f2(m.silueta.arriba)} aba ${f2(m.silueta.abajo)}) diam=${f2(m.diametro.razon)}/${f2(m.diametro.razonGrandes)} | ${fondos}`);
+    console.log(`${nombre.padEnd(11)} pun=${m.puntaje.toFixed(3)} iou=${f2(m.iou)} borde=${m.bordes.medio.toFixed(3)}(i ${s2(m.bordes.izquierda)} d ${s2(m.bordes.derecha)} a ${s2(m.bordes.arriba)} b ${s2(m.bordes.abajo)}) sil=${m.silueta.medio.toFixed(3)}(anc ${f2(m.silueta.ancho)} cen ${f2(m.silueta.centro)} arr ${f2(m.silueta.arriba)} aba ${f2(m.silueta.abajo)}) diam=${f2(m.diametro.razon)}/${f2(m.diametro.razonGrandes)} tramo=${m.tramo ? `der ${s2(m.tramo.derivaFoto)}→${s2(m.tramo.derivaArmado)} afi ${s2(m.tramo.afinadoFoto)}→${s2(m.tramo.afinadoArmado)}` : "-"} zonas=${m.zonasColor ?? "-"} | ${fondos}`);
   }
   const media = (v: number[]) => v.reduce((s, n) => s + n, 0) / v.length;
   for (const quien of ["claude", "gemini"]) console.log(`PROMEDIO ${quien}: puntaje ${media(filas.filter((f) => f.nombre.endsWith(quien)).map((f) => f.medidas.puntaje)).toFixed(3)}`);
