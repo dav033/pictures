@@ -24,12 +24,29 @@ export function formatoPorDiametro(cm: number): { formatoId: string; infladoCm: 
 
 /** Lo que se asume de un escalón cuando el lector no midió su diámetro. */
 const ESCALON_POR_OMISION = { gigantes: { "R-36": 1 }, grandes: { "R-24": 0.5, "R-18": 0.5 }, medianos: { "R-12": 1 }, chicos: { "R-9": 0.6, "R-5": 0.4 } } as const;
-type Escalon = keyof typeof ESCALON_POR_OMISION;
-const ESCALONES: readonly Escalon[] = ["gigantes", "grandes", "medianos", "chicos"];
-const CAMPOS: Readonly<Record<Escalon, { diametro: keyof MezclaLeida; formato: keyof MezclaLeida }>> = {
+export type Escalon = keyof typeof ESCALON_POR_OMISION;
+/** Los escalones de tamaño, de mayor a menor: el vocabulario común de la lectura, la medición y el relleno. */
+export const ESCALONES: readonly Escalon[] = ["gigantes", "grandes", "medianos", "chicos"];
+/** Los formatos de cada escalón por omisión (lo que el lector nombra para su pieza manda sobre esto: ver `escalonDeFormato`). */
+export const FORMATOS_DEL_ESCALON: Readonly<Record<Escalon, readonly string[]>> = Object.fromEntries(ESCALONES.map((e) => [e, Object.keys(ESCALON_POR_OMISION[e])])) as Record<Escalon, string[]>;
+/** Los campos de la `mezcla` leída que describen cada escalón. */
+export const CAMPOS: Readonly<Record<Escalon, { diametro: keyof MezclaLeida; formato: keyof MezclaLeida }>> = {
   gigantes: { diametro: "diametroGigante", formato: "formatoGigante" }, grandes: { diametro: "diametroGrande", formato: "formatoGrande" },
   medianos: { diametro: "diametroMediano", formato: "formatoMediano" }, chicos: { diametro: "diametroChico", formato: "formatoChico" },
 };
+/**
+ * El escalón al que pertenece un formato: el que la `mezcla` de la pieza le nombra (`formatoMediano: "R-9"` hace mediano al R-9)
+ * y, si no, el de por omisión (R-36 gigante, R-24 y R-18 grandes, R-12 mediano, R-9 y R-5 chicos).
+ */
+export function escalonDeFormato(formatoId: string, m?: MezclaLeida): Escalon {
+  const nombrado = m ? ESCALONES.find((e) => m[CAMPOS[e].formato] === formatoId) : undefined;
+  return nombrado ?? ESCALONES.find((e) => FORMATOS_DEL_ESCALON[e].includes(formatoId)) ?? "medianos";
+}
+
+/** Los tres escalones con que se compara lo armado (los gigantes cuentan entre los grandes). */
+export type EscalonTres = "grandes" | "medianos" | "chicos";
+export const escalonTres = (e: Escalon): EscalonTres => (e === "gigantes" ? "grandes" : e);
+
 /** Un formato con menos de esta fracción de los globos no manda en el grosor del cuerpo. */
 const PESO_RELEVANTE = 0.1;
 
@@ -63,11 +80,6 @@ function pesosDeReparto(m: MezclaLeida, reparto: MezclaTramo, altoImagenCm: numb
   return normalizar(acumulado);
 }
 
-/** El formato que el motor orgánico dibuja más cerca de `cm`, por proporción (en escala logarítmica). */
-export function formatoOrganicoPorDiametro(cm: number): string {
-  return INFLADOS_ORGANICOS_CM.reduce((m, o) => (Math.abs(Math.log(o[1] / cm)) < Math.abs(Math.log(m[1] / cm)) ? o : m))[0];
-}
-
 /** Los pesos por formato de una `mezcla` medida (vacío si no trae ningún globo). */
 export function pesosDeMezclaLeida(m: MezclaLeida, altoImagenCm: number): Record<string, number> {
   return pesosDeReparto(m, m, altoImagenCm);
@@ -88,39 +100,15 @@ export function pesosDeTramo(m: MezclaLeida | undefined, tramo: MezclaTramo | un
 }
 
 /**
- * Los diámetros de cada escalón (fracción del alto de la foto) medidos con las cajas de `muestras` (el promedio del alto y
- * del ancho de cada caja, el ancho pasado a fracción del alto con el aspecto); donde no hay cajas, el diámetro leído.
- * Las cajas son lo que el lector mide mejor: los diámetros que escribe a ojo salen ~1,5 veces más grandes.
+ * Diámetro con que se ve cada formato en una guirnalda o columna orgánica de una foto (cm): atados y apretados, como los dibuja
+ * el motor orgánico. Es la tabla con que la medición con los globos detectados saca la escala de la foto y el formato de cada
+ * escalón (`medir-con-detecciones.ts`); `formatoPorDiametro` (sueltos) es para los globos sueltos.
  */
-export function mezclaConMuestras(m: MezclaLeida, aspecto: number): MezclaLeida {
-  if (!m.muestras?.length) return m;
-  const salida: MezclaLeida = { ...m };
-  for (const e of ESCALONES) {
-    const cajas = m.muestras.filter((x) => x.escalon === e && x.box_2d[2]! > x.box_2d[0]! && x.box_2d[3]! > x.box_2d[1]!);
-    if (!cajas.length) continue;
-    const d = cajas.reduce((s, x) => s + ((x.box_2d[2]! - x.box_2d[0]!) + (x.box_2d[3]! - x.box_2d[1]!) * aspecto) / 2 / 1000, 0) / cajas.length;
-    (salida as Record<string, unknown>)[CAMPOS[e].diametro] = Math.round(d * 1000) / 1000;
-  }
-  return salida;
-}
+export const diametroOrganicoCm = (formatoId: string): number | null => INFLADOS_TRAZO[formatoId] ?? null;
 
-/** Diámetro con que se ve suelto cada formato (cm): para sacar la escala de la foto de los globos medidos. */
-export const diametroSueltoCm = (formatoId: string): number | null => INFLADOS_SUELTOS_CM.find(([f]) => f === formatoId)?.[1] ?? null;
-
-/**
- * La escala de la foto (cm por alto de imagen) que dan los propios globos: por cada escalón con formato nombrado y
- * diámetro medido, el diámetro real del formato entre su fracción del alto; la mediana. `null` si no hay ninguno.
- */
-export function escalaDeGlobos(m: MezclaLeida | undefined): number | null {
-  if (!m) return null;
-  const estimaciones = ESCALONES.flatMap((e) => {
-    const formato = m[CAMPOS[e].formato] as string | undefined, diametro = m[CAMPOS[e].diametro] as number | undefined;
-    const real = formato ? diametroSueltoCm(formato) : null;
-    return real && diametro && diametro > 0 ? [real / diametro] : [];
-  }).sort((a, b) => a - b);
-  if (!estimaciones.length) return null;
-  const k = Math.floor(estimaciones.length / 2);
-  return estimaciones.length % 2 ? estimaciones[k]! : (estimaciones[k - 1]! + estimaciones[k]!) / 2;
+/** El formato que el motor orgánico dibuja más cerca de `cm`, por proporción (en escala logarítmica). */
+export function formatoOrganicoPorDiametro(cm: number): string {
+  return INFLADOS_ORGANICOS_CM.reduce((m, o) => (Math.abs(Math.log(o[1] / cm)) < Math.abs(Math.log(m[1] / cm)) ? o : m))[0];
 }
 
 /**

@@ -3,23 +3,34 @@ import sharp from "sharp";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { registrarGemini, resultadoTelemetria } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { decidir } from "@/lib/registro/servidor";
+import { FONDOS_CATALOGO } from "./fondos-escenografia";
 import { costeFlashUsd, type FotoLectura, type UsoModelo } from "./leer-foto-ia";
-import type { GloboDetectado } from "./medir-con-detecciones";
+import { COLORES_DETECCION } from "./medir-colores";
+import type { FondoDetectado, GloboDetectado } from "./medir-con-detecciones";
+import { fundirRepetidas, trozosDelMosaico } from "./mosaico-deteccion";
+
+export { fundirRepetidas, trozosDelMosaico } from "./mosaico-deteccion";
+export type { FondoDetectado } from "./medir-con-detecciones";
 
 /**
- * **Gemini detecta los globos de la foto uno por uno** (una caja `box_2d` y un color por globo): lo que mejor mide el
- * modelo, y con lo que `medir-con-detecciones.ts` corrige la lectura (escala, tamaños, grosor y mezcla de cada tramo,
- * colores). En la foto entera se salta la mitad (los chicos y los tapados), así que se parte en un mosaico de 3 × 3 con
- * solape, cada trozo ampliado, en paralelo; las cajas vuelven a coordenadas de la foto y las repetidas del solape se funden.
- * Solo lee: nunca genera imágenes. Cada trozo queda en la telemetría con su coste (≈ US$0,001).
+ * **Gemini detecta los globos de la foto uno por uno** (una caja `box_2d` y un color por globo) **y los fondos del catálogo**:
+ * lo que mejor mide el modelo, y con lo que `medir-con-detecciones.ts` corrige la lectura (escala, tamaños, grosor y mezcla
+ * de cada tramo, colores, fondos). En la foto entera se salta la mitad de los globos (los chicos y los tapados), así que se
+ * parte en un mosaico de 3 × 3 con solape, cada trozo ampliado, en paralelo; las cajas vuelven a coordenadas de la foto y las
+ * repetidas del solape se funden (`mosaico-deteccion.ts`). La foto se decodifica una sola vez. Solo lee: nunca genera
+ * imágenes. Cada llamada queda en la telemetría con su coste (≈ US$0,001 por trozo).
+ *
+ * La taxonomía de telemetría no tiene una capacidad aparte para esto: va como inventario de análisis de referencias, y
+ * la `superficie` lleva el sufijo `:deteccion` para distinguirla de la lectura de la misma foto.
  */
 
 export const PROPOSITO_DETECCION_GLOBOS = "deteccion_globos_foto";
-const LADOS = 3;
-const SOLAPE = 0.15;
 const LADO_TROZO_PX = 1024;
-const IOU_REPETIDA = 0.4;
-const COLORES_DETECCION = ["dorado", "plateado", "blanco", "negro", "rosa", "fucsia", "rojo", "vino", "naranja", "amarillo", "verde", "azul", "azul marino", "morado", "lila", "nude", "beige", "cafe", "gris", "confeti", "transparente", "otro"] as const;
+const CALIDAD_JPEG = 90;
+const TOKENS_SALIDA_TROZO = 16_000;
+const TOKENS_SALIDA_FONDOS = 4000;
+const TEMPERATURA_DETECCION = 0.5;
+const TEMPERATURA_FONDOS = 0.3;
 
 const PEDIDO = "Detecta TODOS los globos de látex visibles en esta imagen, uno por uno: grandes, medianos y los chiquitos (5 pulgadas), también los parcialmente tapados si se ve al menos media esfera. No cuentes globos de foil (letras, números, figuras). Devuelve una lista JSON de objetos {\"box_2d\": [ymin, xmin, ymax, xmax] normalizado 0-1000, \"color\": el color del globo}. No te saltes ninguno.";
 
@@ -35,86 +46,87 @@ const ESQUEMA = {
   },
 };
 
+export type Deteccion = { globos: GloboDetectado[]; fondos: FondoDetectado[]; uso: UsoModelo; costeEstimadoUsd: number; trozos: number; fallidos: number };
+
 type Caja = [number, number, number, number];
-export type Deteccion = { globos: GloboDetectado[]; uso: UsoModelo; costeEstimadoUsd: number; trozos: number; fallidos: number };
+const SIN_USO: UsoModelo = { entrada: 0, salida: 0, pensamiento: 0 };
+const sumarUso = (a: UsoModelo, b: UsoModelo): UsoModelo => ({ entrada: a.entrada + b.entrada, salida: a.salida + b.salida, pensamiento: a.pensamiento + b.pensamiento });
+const usoDe = (m: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number } | undefined): UsoModelo => ({ entrada: m?.promptTokenCount ?? 0, salida: m?.candidatesTokenCount ?? 0, pensamiento: m?.thoughtsTokenCount ?? 0 });
 
-function iou(a: Caja, b: Caja): number {
-  const y0 = Math.max(a[0], b[0]), x0 = Math.max(a[1], b[1]), y1 = Math.min(a[2], b[2]), x1 = Math.min(a[3], b[3]);
-  const inter = Math.max(0, y1 - y0) * Math.max(0, x1 - x0);
-  const area = (q: Caja) => (q[2] - q[0]) * (q[3] - q[1]);
-  return inter / (area(a) + area(b) - inter || 1);
+/** La lista JSON de lo que respondió el modelo (sin las partes de pensamiento). */
+function jsonDe(partes: ReadonlyArray<{ text?: string; thought?: boolean }> | undefined): unknown {
+  const texto = (partes ?? []).filter((p) => typeof p.text === "string" && p.thought !== true).map((p) => p.text).join("");
+  return JSON.parse(texto || "[]");
 }
 
-/** Funde las cajas repetidas (del solape entre trozos): de mayor a menor, se queda la primera de cada grupo. */
-export function fundirRepetidas(globos: readonly GloboDetectado[]): GloboDetectado[] {
-  const salida: GloboDetectado[] = [];
-  const area = (g: GloboDetectado) => (g.box_2d[2]! - g.box_2d[0]!) * (g.box_2d[3]! - g.box_2d[1]!);
-  for (const g of [...globos].sort((a, b) => area(b) - area(a))) {
-    if (salida.every((f) => iou(g.box_2d as Caja, f.box_2d as Caja) < IOU_REPETIDA)) salida.push(g);
-  }
-  return salida;
+const esCaja = (c: unknown): c is number[] => Array.isArray(c) && c.length === 4 && c.every((n) => typeof n === "number" && Number.isFinite(n));
+
+/** La foto decodificada UNA vez y ya girada según su EXIF: sus píxeles y sus medidas de verdad (los de después de girar). */
+async function decodificar(foto: FotoLectura): Promise<{ data: Buffer; width: number; height: number; channels: 1 | 2 | 3 | 4 }> {
+  const { data, info } = await sharp(foto.bytes).rotate().raw().toBuffer({ resolveWithObject: true });
+  if (!info.width || !info.height) throw new Error("No se pudo leer la foto para detectar los globos.");
+  return { data, width: info.width, height: info.height, channels: info.channels };
 }
 
-/** Los trozos del mosaico (fracciones de la foto), con solape. */
-export function trozosDelMosaico(lados = LADOS, solape = SOLAPE): Array<{ x0: number; y0: number; x1: number; y1: number }> {
-  const paso = 1 / lados;
-  return Array.from({ length: lados * lados }, (_, k) => {
-    const i = Math.floor(k / lados), j = k % lados;
-    return { x0: Math.max(0, j * paso - solape / 2), x1: Math.min(1, (j + 1) * paso + solape / 2), y0: Math.max(0, i * paso - solape / 2), y1: Math.min(1, (i + 1) * paso + solape / 2) };
-  });
-}
-
-/** Detecta los globos de la foto. Lanza solo si no responde ningún trozo; un trozo que falla queda en `fallidos`. */
+/** Detecta los globos y los fondos de la foto. Lanza solo si no responde ningún trozo; un trozo que falla queda en `fallidos`. */
 export async function detectarGlobos(foto: FotoLectura, opciones: { signal?: AbortSignal; superficie?: string } = {}): Promise<Deteccion> {
   const cliente = getGeminiClient(PROPOSITO_DETECCION_GLOBOS);
   if (!cliente) throw new Error("La IA no está configurada en este servidor.");
-  const imagen = sharp(foto.bytes).rotate();
-  const { width = 0, height = 0 } = await imagen.metadata();
-  if (!width || !height) throw new Error("No se pudo leer la foto para detectar los globos.");
+  const superficie = opciones.superficie ? `${opciones.superficie}:deteccion` : "deteccion_globos";
+  const { data, width, height, channels } = await decodificar(foto);
   const trozos = trozosDelMosaico();
-  const resultados = await Promise.all(trozos.map(async (t) => {
-    const inicio = Date.now();
-    const left = Math.floor(t.x0 * width), top = Math.floor(t.y0 * height);
-    const ancho = Math.max(1, Math.floor((t.x1 - t.x0) * width)), alto = Math.max(1, Math.floor((t.y1 - t.y0) * height));
-    try {
-      const bytes = await sharp(foto.bytes).rotate().extract({ left, top, width: ancho, height: alto }).resize({ width: LADO_TROZO_PX }).jpeg({ quality: 90 }).toBuffer();
-      const r = await cliente.models.generateContent({
-        model: MODELO_CHAT,
-        contents: [{ role: "user", parts: [{ inlineData: { mimeType: "image/jpeg", data: bytes.toString("base64") } }, { text: PEDIDO }] }],
-        config: { responseMimeType: "application/json", responseJsonSchema: ESQUEMA, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: 16_000, temperature: 0.5, abortSignal: opciones.signal },
-      });
-      const uso: UsoModelo = { entrada: r.usageMetadata?.promptTokenCount ?? 0, salida: r.usageMetadata?.candidatesTokenCount ?? 0, pensamiento: r.usageMetadata?.thoughtsTokenCount ?? 0 };
-      registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: opciones.superficie ?? "deteccion_globos" }, usage: r.usageMetadata, bytesImagenEntrada: bytes.byteLength, thinkingLevel: "low", finishReason: r.candidates?.[0]?.finishReason });
-      const texto = (r.candidates?.[0]?.content?.parts ?? []).filter((p) => typeof p.text === "string" && p.thought !== true).map((p) => p.text).join("");
-      const crudo: unknown = JSON.parse(texto || "[]");
-      const globos: GloboDetectado[] = (Array.isArray(crudo) ? crudo : []).flatMap((g: unknown) => {
-        const caja = (g as { box_2d?: unknown }).box_2d, color = (g as { color?: unknown }).color;
-        if (!Array.isArray(caja) || caja.length !== 4 || !caja.every((n) => typeof n === "number")) return [];
-        const [a, b, c, d] = caja as number[];
-        // Del trozo a la foto entera.
-        const caja2d: Caja = [Math.round((t.y0 + (a! / 1000) * (t.y1 - t.y0)) * 1000), Math.round((t.x0 + (b! / 1000) * (t.x1 - t.x0)) * 1000), Math.round((t.y0 + (c! / 1000) * (t.y1 - t.y0)) * 1000), Math.round((t.x0 + (d! / 1000) * (t.x1 - t.x0)) * 1000)];
-        return [{ box_2d: caja2d, color: typeof color === "string" ? color : "otro" }];
-      });
-      return { globos, uso, ok: true };
-    } catch (error) {
-      registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: opciones.superficie ?? "deteccion_globos" }, thinkingLevel: "low" });
-      return { globos: [] as GloboDetectado[], uso: { entrada: 0, salida: 0, pensamiento: 0 }, ok: false };
-    }
-  }));
+  const [resultados, fondos] = await Promise.all([
+    Promise.all(trozos.map(async (t) => {
+      const inicio = Date.now();
+      const left = Math.floor(t.x0 * width), top = Math.floor(t.y0 * height);
+      const ancho = Math.max(1, Math.floor((t.x1 - t.x0) * width)), alto = Math.max(1, Math.floor((t.y1 - t.y0) * height));
+      try {
+        const bytes = await sharp(data, { raw: { width, height, channels } }).extract({ left, top, width: ancho, height: alto }).resize({ width: LADO_TROZO_PX }).jpeg({ quality: CALIDAD_JPEG }).toBuffer();
+        const r = await cliente.models.generateContent({
+          model: MODELO_CHAT,
+          contents: [{ role: "user", parts: [{ inlineData: { mimeType: "image/jpeg", data: bytes.toString("base64") } }, { text: PEDIDO }] }],
+          config: { responseMimeType: "application/json", responseJsonSchema: ESQUEMA, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: TOKENS_SALIDA_TROZO, temperature: TEMPERATURA_DETECCION, abortSignal: opciones.signal },
+        });
+        const crudo = jsonDe(r.candidates?.[0]?.content?.parts);
+        registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie }, usage: r.usageMetadata, bytesImagenEntrada: bytes.byteLength, thinkingLevel: "low", finishReason: r.candidates?.[0]?.finishReason });
+        const globos: GloboDetectado[] = (Array.isArray(crudo) ? crudo : []).flatMap((g: unknown) => {
+          const caja = (g as { box_2d?: unknown }).box_2d, color = (g as { color?: unknown }).color;
+          if (!esCaja(caja)) return [];
+          const [a, b, c, d] = caja as Caja;
+          // Del trozo a la foto entera.
+          const caja2d: Caja = [Math.round((t.y0 + (a / 1000) * (t.y1 - t.y0)) * 1000), Math.round((t.x0 + (b / 1000) * (t.x1 - t.x0)) * 1000), Math.round((t.y0 + (c / 1000) * (t.y1 - t.y0)) * 1000), Math.round((t.x0 + (d / 1000) * (t.x1 - t.x0)) * 1000)];
+          return [{ box_2d: caja2d, color: typeof color === "string" ? color : "otro" }];
+        });
+        return { globos, uso: usoDe(r.usageMetadata), ok: true };
+      } catch (error) {
+        registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie }, thinkingLevel: "low" });
+        return { globos: [] as GloboDetectado[], uso: SIN_USO, ok: false };
+      }
+    })),
+    // Los fondos no son imprescindibles: si fallan, la lectura va con los que leyó el modelo.
+    // La foto ya girada (con el mismo sistema de coordenadas que los trozos), no los bytes originales con su EXIF.
+    sharp(data, { raw: { width, height, channels } }).jpeg({ quality: CALIDAD_JPEG }).toBuffer()
+      .then((bytes) => detectarFondos({ bytes, mime: "image/jpeg" }, FONDOS_CATALOGO, { signal: opciones.signal, superficie }))
+      .catch((error: unknown) => {
+        decidir("modelo:deteccion_fondos", "no se pudieron detectar los fondos de la foto", { error: error instanceof Error ? error.message.slice(0, 300) : String(error) });
+        return { fondos: [] as FondoDetectado[], uso: SIN_USO, costeEstimadoUsd: 0 };
+      }),
+  ]);
   const fallidos = resultados.filter((r) => !r.ok).length;
-  if (fallidos === resultados.length) throw new Error("La IA no pudo detectar los globos de la foto.");
-  const uso = resultados.reduce<UsoModelo>((s, r) => ({ entrada: s.entrada + r.uso.entrada, salida: s.salida + r.uso.salida, pensamiento: s.pensamiento + r.uso.pensamiento }), { entrada: 0, salida: 0, pensamiento: 0 });
+  if (fallidos === resultados.length) {
+    decidir("modelo:deteccion_globos", "ningún trozo de la foto respondió: sin detección de globos", { trozos: trozos.length, fallidos }, { entrada: { bytesFoto: foto.bytes.byteLength } });
+    throw new Error("La IA no pudo detectar los globos de la foto.");
+  }
+  const uso = sumarUso(resultados.reduce<UsoModelo>((s, r) => sumarUso(s, r.uso), SIN_USO), fondos.uso);
   const globos = fundirRepetidas(resultados.flatMap((r) => r.globos));
-  decidir("modelo:deteccion_globos", "globos detectados en la foto", { globos: globos.length, trozos: trozos.length, fallidos, tokens: uso, costeEstimadoUsd: costeFlashUsd(uso) }, { entrada: { bytesFoto: foto.bytes.byteLength } });
-  return { globos, uso, costeEstimadoUsd: costeFlashUsd(uso), trozos: trozos.length, fallidos };
+  const costeEstimadoUsd = costeFlashUsd(uso);
+  decidir("modelo:deteccion_globos", "globos y fondos detectados en la foto", { globos: globos.length, fondos: fondos.fondos.map((f) => f.id), trozos: trozos.length, fallidos, tokens: uso, costeEstimadoUsd }, { entrada: { bytesFoto: foto.bytes.byteLength } });
+  return { globos, fondos: fondos.fondos, uso, costeEstimadoUsd, trozos: trozos.length, fallidos };
 }
 
 // ----------------------------------------------------------------------------------------------------------
 // Fondos y muebles
 // ----------------------------------------------------------------------------------------------------------
-
-/** Un fondo o mueble del catálogo detectado en la foto: su caja (0-1000) y su id. */
-export type FondoDetectado = { box_2d: readonly number[]; id: string };
 
 /**
  * Detecta los fondos y muebles del catálogo (pared de lentejuelas, panel redondo, mesa, pedestales…) con su caja, en la
@@ -124,6 +136,7 @@ export async function detectarFondos(foto: FotoLectura, catalogo: ReadonlyArray<
   const cliente = getGeminiClient(PROPOSITO_DETECCION_GLOBOS);
   if (!cliente) throw new Error("La IA no está configurada en este servidor.");
   const inicio = Date.now();
+  const superficie = opciones.superficie ?? "deteccion_fondos";
   const ids = [...catalogo.map((c) => c.id), "otro"];
   const pedido = `Detecta los fondos de escenografía y muebles de la foto (NO los globos) y devuelve cada uno con su box_2d [ymin, xmin, ymax, xmax] normalizado 0-1000 y su id del catálogo. La caja abarca el objeto entero aunque haya globos delante (estima el borde tapado por la forma del objeto). Catálogo: ${catalogo.map((c) => `${c.id}: ${c.descripcion}`).join(" · ")}. Lo que no esté en el catálogo, id "otro".`;
   const esquema = { type: "array", items: { type: "object", properties: { box_2d: { type: "array", items: { type: "integer" }, minItems: 4, maxItems: 4 }, id: { type: "string", enum: ids } }, required: ["box_2d", "id"] } };
@@ -131,19 +144,18 @@ export async function detectarFondos(foto: FotoLectura, catalogo: ReadonlyArray<
     const r = await cliente.models.generateContent({
       model: MODELO_CHAT,
       contents: [{ role: "user", parts: [{ inlineData: { mimeType: foto.mime, data: Buffer.from(foto.bytes).toString("base64") } }, { text: pedido }] }],
-      config: { responseMimeType: "application/json", responseJsonSchema: esquema, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: 4000, temperature: 0.3, abortSignal: opciones.signal },
+      config: { responseMimeType: "application/json", responseJsonSchema: esquema, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: TOKENS_SALIDA_FONDOS, temperature: TEMPERATURA_FONDOS, abortSignal: opciones.signal },
     });
-    const uso: UsoModelo = { entrada: r.usageMetadata?.promptTokenCount ?? 0, salida: r.usageMetadata?.candidatesTokenCount ?? 0, pensamiento: r.usageMetadata?.thoughtsTokenCount ?? 0 };
-    registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: opciones.superficie ?? "deteccion_fondos" }, usage: r.usageMetadata, bytesImagenEntrada: foto.bytes.byteLength, thinkingLevel: "low", finishReason: r.candidates?.[0]?.finishReason });
-    const texto = (r.candidates?.[0]?.content?.parts ?? []).filter((p) => typeof p.text === "string" && p.thought !== true).map((p) => p.text).join("");
-    const crudo: unknown = JSON.parse(texto || "[]");
+    const crudo = jsonDe(r.candidates?.[0]?.content?.parts);
+    const uso = usoDe(r.usageMetadata);
+    registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie }, usage: r.usageMetadata, bytesImagenEntrada: foto.bytes.byteLength, thinkingLevel: "low", finishReason: r.candidates?.[0]?.finishReason });
     const fondos = (Array.isArray(crudo) ? crudo : []).flatMap((f: unknown): FondoDetectado[] => {
       const caja = (f as { box_2d?: unknown }).box_2d, id = (f as { id?: unknown }).id;
-      return Array.isArray(caja) && caja.length === 4 && caja.every((n) => typeof n === "number") && typeof id === "string" && id !== "otro" ? [{ box_2d: caja as number[], id }] : [];
+      return esCaja(caja) && typeof id === "string" && id !== "otro" ? [{ box_2d: caja, id }] : [];
     });
     return { fondos, uso, costeEstimadoUsd: costeFlashUsd(uso) };
   } catch (error) {
-    registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: opciones.superficie ?? "deteccion_fondos" }, thinkingLevel: "low" });
+    registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie }, thinkingLevel: "low" });
     throw error;
   }
 }

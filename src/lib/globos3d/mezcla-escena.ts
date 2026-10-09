@@ -1,6 +1,7 @@
 import type { Escena } from "./escena";
 import { armarPieza, type Pieza } from "./piezas";
 import { inventarioDe } from "./partes-globos";
+import { ESCALONES, FORMATOS_DEL_ESCALON, escalonTres, type EscalonTres } from "./mezcla-lectura";
 
 /**
  * **La mezcla de tamaños de lo orgánico de una escena** (globos por formato y por escalón grande / mediano / chico), para
@@ -11,7 +12,8 @@ import { inventarioDe } from "./partes-globos";
 
 export type Escalones = { grandes: number; medianos: number; chicos: number };
 
-const ESCALON_DE: Readonly<Record<string, keyof Escalones>> = { "R-36": "grandes", "R-24": "grandes", "R-18": "grandes", "R-12": "medianos", "R-9": "chicos", "R-5": "chicos" };
+/** El escalón de cada formato por omisión (el de `mezcla-lectura.ts`, con los gigantes entre los grandes). */
+const ESCALON_DE: Readonly<Record<string, EscalonTres>> = Object.fromEntries(ESCALONES.flatMap((e) => FORMATOS_DEL_ESCALON[e].map((f) => [f, escalonTres(e)])));
 
 /** Los globos de una pieza (una copia) por formato («R-24»: 12). */
 export function globosPorFormatoDe(pieza: Pieza, cuenta: Record<string, number> = {}): Record<string, number> {
@@ -26,10 +28,13 @@ export function globosOrganicosPorFormato(escena: Escena): Record<string, number
   return cuenta;
 }
 
-/** Pesos o cuentas por formato → fracción de cada escalón (suman 1; todo 0 si no hay nada). */
-export function escalonesDe(porFormato: Readonly<Record<string, number>>): Escalones {
+/**
+ * Pesos o cuentas por formato → fracción de cada escalón (suman 1; todo 0 si no hay nada). `escalonDe` dice a qué escalón va
+ * cada formato cuando la pieza lo nombra distinto (un R-9 que el lector llama mediano); por omisión, el de siempre.
+ */
+export function escalonesDe(porFormato: Readonly<Record<string, number>>, escalonDe: (formatoId: string) => EscalonTres | undefined = (f) => ESCALON_DE[f]): Escalones {
   const e: Escalones = { grandes: 0, medianos: 0, chicos: 0 };
-  for (const [f, n] of Object.entries(porFormato)) if (ESCALON_DE[f]) e[ESCALON_DE[f]!] += n;
+  for (const [f, n] of Object.entries(porFormato)) { const k = escalonDe(f); if (k) e[k] += n; }
   const total = e.grandes + e.medianos + e.chicos;
   if (total <= 0) return e;
   return { grandes: e.grandes / total, medianos: e.medianos / total, chicos: e.chicos / total };

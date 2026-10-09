@@ -1,9 +1,9 @@
 import { referenciaPorCodigo } from "../plan/referencia-sempertex";
 import { coloresDelFormato } from "./formatos";
 import { distanciaLab, resolverColorFlexible, resolverColorOrganico } from "./herramientas-escena-colores";
-import type { ColorLeido, ColoresEscalon, MezclaLeida } from "./lectura-foto";
+import type { AnclaLeida, ColorLeido, ColoresEscalon, MezclaLeida } from "./lectura-foto";
 import { formatosDeEscalones } from "./mezcla-lectura";
-import type { ColorOrganico } from "./organico";
+import type { ColorOrganico, GloboFijo } from "./organico";
 import { fraccionesDe } from "./zonas-organicas";
 
 /**
@@ -78,8 +78,12 @@ export function formatoConColor(formatoId: string, codigo: string): string {
   return ESCALERA_GRANDES.slice(desde).find((f) => coloresDelFormato(f).some((r) => r.codigo === codigo)) ?? formatoId;
 }
 
-/** Los globos fijos de las anclas medidas (en coordenadas de la foto: x, y de 0 a 1), con su formato y su código. */
-export function fijosDeAnclas(p: { colores: readonly ColorLeido[]; mezcla?: MezclaLeida; anclas?: ReadonlyArray<{ x: number; y: number; escalon: "gigantes" | "grandes"; color: string }> }, altoImagenCm: number, notas: string[]): Array<{ formatoId: string; codigo: string; x: number; y: number }> {
+/**
+ * Los globos fijos de las anclas medidas (en coordenadas de la foto: x, y de 0 a 1), con su formato, su código y su diámetro
+ * (`infladoCm`: el medido en la foto a su escala). `formatoPedidoId` es el formato del escalón: si el color solo se fabrica en
+ * uno menor, el fijo se dibuja en ese pero sigue ocupando el sitio de un gigante (o un grande) de la estructura.
+ */
+export function fijosDeAnclas(p: { colores: readonly ColorLeido[]; mezcla?: MezclaLeida; anclas?: ReadonlyArray<AnclaLeida> }, altoImagenCm: number, notas: string[]): GloboFijo[] {
   if (!p.anclas?.length) return [];
   const formatos = formatosDeEscalones(p.mezcla, altoImagenCm);
   return p.anclas.flatMap((a) => {
@@ -87,8 +91,13 @@ export function fijosDeAnclas(p: { colores: readonly ColorLeido[]; mezcla?: Mezc
     if (k < 0) return [];
     const c = p.colores[k]!;
     const codigo = codigoDeColor(c, ["R-12"], notas);
-    const formatoId = formatoConColor(formatos[a.escalon][0] ?? "R-18", codigo);
-    return [{ formatoId, codigo: c.acabado === "confeti" || c.acabado === "cristal" ? codigo : codigoDeColor(c, [formatoId], notas), x: a.x, y: a.y }];
+    const pedido = formatos[a.escalon][0] ?? "R-18";
+    const formatoId = formatoConColor(pedido, codigo);
+    return [{
+      formatoId, codigo: c.acabado === "confeti" || c.acabado === "cristal" ? codigo : codigoDeColor(c, [formatoId], notas), x: a.x, y: a.y,
+      ...(a.diametro ? { infladoCm: Math.round(a.diametro * altoImagenCm) } : {}),
+      ...(formatoId !== pedido ? { formatoPedidoId: pedido } : {}),
+    }];
   });
 }
 

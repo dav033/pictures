@@ -8,7 +8,7 @@ import { piezaDeGenerador } from "./generadores-organicos";
 import { cajaTrazo, puntosDeSilueta, type SiluetaTrazo } from "./trazo-organico";
 import { formatoPorDiametro, grosorMinimoDePesos, pesosDeLectura, pesosDeTramo, traeMezcla } from "./mezcla-lectura";
 import { piezaConMezcla } from "./relleno-por-mezcla";
-import { PROFUNDIDAD_FOTO_CM, pisoDeLectura, profundidadEnElPiso } from "./encuadre-foto";
+import { FONDO_SALA_FOTO_CM, PROFUNDIDAD_FOTO_CM, pisoDeLectura, profundidadEnElPiso } from "./encuadre-foto";
 import { columnaClasica } from "./escenas-presets";
 import { decoracionPredefinida } from "./figuras";
 import { reemplazarColor } from "./recolorear";
@@ -73,7 +73,7 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
   const xs = l.piezas.flatMap((p) => ("puntos" in p ? p.puntos.map((q) => q.x) : "x" in p ? [p.x] : "x1" in p ? [p.x1, p.x2] : []));
   const ancho = Math.max(500, r0((Math.max(0.5, ...xs.map((x) => Math.abs(x - 0.5))) * 2 * l.aspecto * H) + 200));
   const altoMax = Math.max(0, ...l.piezas.flatMap((p) => ("puntos" in p ? p.puntos.map((q) => Y(q.y) + cm(q.grosor) / 2) : "yArriba" in p ? [Y(p.yArriba)] : "y" in p ? [Y(p.y) + 30] : [])));
-  const fondo = 500;
+  const fondo = FONDO_SALA_FOTO_CM;
   let escena: Escena = { sala: { ...SALA_INICIAL, anchoCm: ancho, fondoCm: fondo, altoCm: Math.max(280, r0(altoMax + 50)), tonos: { ...SALA_INICIAL.tonos, paredes: l.sala.pared, piso: l.sala.piso }, mostrar: { ...SALA_INICIAL.mostrar } }, nodos: [] };
   const muro = -fondo / 2;
   const poner = (base: string, nombre: string, pieza: Pieza, colocacion: Colocacion) => {
@@ -86,6 +86,8 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
   l.piezas.forEach((p, i) => {
     try {
       compilarPieza(p, i);
+      // Lo que el lector dice que no pudo leer bien o no encaja llega a quien mira las notas (antes se perdía).
+      if ("nota" in p && p.nota) notas.push(`Pieza ${i + 1} (${p.tipo}): ${p.nota}`);
     } catch (error) {
       omitidas.push(`Pieza ${i + 1} (${p.tipo}): ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -106,7 +108,7 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         const flores = p.follaje?.length ? floresPedidas(p.follaje) : null;
         const largo = puntos.slice(1).reduce((s, q, k) => s + Math.hypot(q.x - puntos[k]!.x, q.y - puntos[k]!.y), 0);
         const huecos = Math.max(4, Math.min(30, r0(largo / 45)));
-        const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, flores, huecos).pieza : piezaDeGenerador({ tipo: "trazo", trazo }, flores, huecos);
+        const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, flores, huecos, p.mezcla).pieza : piezaDeGenerador({ tipo: "trazo", trazo }, flores, huecos);
         poner("guirnalda-organica", "Guirnalda orgánica", pieza, { en: "pared", pared: "fondo", aLoLargoCm: x0, alturaCm: r0(cajaTrazo(trazo).minY) });
         return;
       }
@@ -120,7 +122,7 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         // Un montón es una columna de racimos baja y ancha (cerrada arriba, abierta al piso).
         const puntos = puntosDeSilueta("columna_racimos", { anchoCm: r0(Math.max(g, ancho)), altoCm: r0(Math.max(alto, g * 0.8)), grosorCm: r0(g) });
         const trazo = { silueta: "columna_racimos" as const, puntos, mezcla: pesos, colores: paletaDeLectura({ colores: p.colores, mezcla: p.mezcla, coloresPorEscalon: p.coloresPorEscalon }, H, notas), racimos: p.racimos, semilla: 31 + i };
-        const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, null, 0).pieza : piezaDeGenerador({ tipo: "trazo", trazo });
+        const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, null, 0, p.mezcla).pieza : piezaDeGenerador({ tipo: "trazo", trazo });
         poner("racimo-piso", "Racimo de piso", pieza, { en: "piso", xCm: r1(X(p.x) * factor), zCm: r0(muro + PROFUNDIDAD_FOTO_CM + delanteCm - g / 2), giroGrados: 0 });
         return;
       }
@@ -134,7 +136,7 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         const grosor = Math.max(medido, meta);
         if (grosor !== medido) notas.push(`La columna medía ${Math.round(medido)} cm de grosor y los globos grandes de la foto piden ${meta} cm: se engrosó.`);
         const trazo = { silueta, puntos: puntosDeSilueta(silueta, { anchoCm: Math.max(grosor, cm(p.ancho)), altoCm: alto, grosorCm: grosor }), mezcla: pesos, colores: paletaDeLectura({ colores: p.colores, mezcla: p.mezcla }, H, notas), racimos: p.racimos, semilla: 21 + i };
-        const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, null, 14).pieza : piezaDeGenerador({ tipo: "trazo", trazo });
+        const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, null, 14, p.mezcla).pieza : piezaDeGenerador({ tipo: "trazo", trazo });
         poner("columna-organica", p.forma === "recta" ? "Columna irregular" : "Columna de forma libre", pieza, { en: "piso", xCm: X(p.x), zCm: muro + 45, giroGrados: 0 });
         return;
       }

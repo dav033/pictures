@@ -40,19 +40,27 @@ export function pisoDeLectura(l: LecturaFoto): number {
 /** Apertura vertical de la cámara de la foto (grados) y a qué profundidad de la pared se mide la escala (cm hacia el frente). */
 export const FOV_FOTO_GRADOS = 35;
 export const PROFUNDIDAD_FOTO_CM = 40;
+/** Fondo (de la pared al frente) de la sala que arma el compilador de la lectura. */
+export const FONDO_SALA_FOTO_CM = 500;
+/** Lo que queda libre entre lo más cercano a la cámara y el borde de la sala. */
+const MARGEN_AL_FRENTE_CM = 30;
+/** Lo más que se acerca algo a la cámara, como fracción de la distancia a la decoración. */
+const FRACCION_MAXIMA_AL_FRENTE = 0.6;
 
 /**
  * Cuánto más cerca de la cámara (cm, desde el plano de la decoración) está algo apoyado en el piso cuyo pie se ve en la
  * foto a la altura `yPie`, más abajo que la línea del piso, y cuánto hay que achicar lo que mide en la foto (`factor` < 1:
- * lo cercano se ve más grande). La cámara de frente a la altura del centro de la imagen, como `camara-foto.ts`.
+ * lo cercano se ve más grande). La cámara de frente a la altura del centro de la imagen, como `camara-foto.ts`. Sin pasarse de
+ * lo que cabe en la sala (`fondoSalaCm`, de la pared al frente, menos la profundidad de la decoración y un margen).
  */
-export function profundidadEnElPiso(l: LecturaFoto, yPie: number): { delanteCm: number; factor: number } {
+export function profundidadEnElPiso(l: LecturaFoto, yPie: number, fondoSalaCm = FONDO_SALA_FOTO_CM): { delanteCm: number; factor: number } {
   const piso = pisoDeLectura(l);
   const distancia = l.escala.altoImagenCm / 2 / Math.tan(((FOV_FOTO_GRADOS / 2) * Math.PI) / 180);
-  if (piso <= 0.5 || yPie <= piso) return { delanteCm: 0, factor: 1 };
+  if (!Number.isFinite(yPie) || !(distancia > 0) || piso <= 0.5 || yPie <= piso) return { delanteCm: 0, factor: 1 };
   // La línea del piso a la distancia d se ve a (piso − 0,5) × D / d bajo el centro.
   const cerca = distancia * ((piso - 0.5) / (yPie - 0.5));
-  const delanteCm = Math.min(distancia * 0.6, distancia - cerca);
+  const cabeEnLaSala = Math.max(0, fondoSalaCm - PROFUNDIDAD_FOTO_CM - MARGEN_AL_FRENTE_CM);
+  const delanteCm = Math.max(0, Math.min(distancia * FRACCION_MAXIMA_AL_FRENTE, distancia - cerca, cabeEnLaSala));
   return { delanteCm: Math.round(delanteCm), factor: Math.round(((distancia - delanteCm) / distancia) * 1000) / 1000 };
 }
 

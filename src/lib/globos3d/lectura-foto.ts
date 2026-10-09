@@ -30,12 +30,12 @@ const Tamanos = z.object({
   "R-12": z.number().min(0).max(100), "R-9": z.number().min(0).max(100), "R-5": z.number().min(0).max(100),
 }).partial().describe("cuántos globos de cada tamaño, en proporción (los grandes de 36\"/24\" que resaltan, los de 12\" de base, los chiquitos de 5\")");
 
-/**
- * La mezcla de tamaños medida en la foto, por tres escalones y con el diámetro que tiene cada uno en la imagen: es lo que
- * el compilador usa (por encima de `tamanos`) para elegir los formatos con la escala de la foto. Sin ella, `tamanos`.
- */
 const FormatoRedondo = z.enum(["R-36", "R-24", "R-18", "R-12", "R-9", "R-5"]);
 
+/**
+ * La mezcla de tamaños medida en la foto, por escalones y con el diámetro que tiene cada uno en la imagen: es lo que el
+ * compilador usa (por encima de `tamanos`) para elegir los formatos con la escala de la foto. Sin ella, `tamanos`.
+ */
 export const MezclaLeidaSchema = z.object({
   gigantes: z.number().min(0).max(100).optional().describe("% de los globos que son GIGANTES (36\", los que dominan el arco; 0 o sin poner si no hay)"),
   grandes: z.number().min(0).max(100).describe("% de los globos de esta pieza que son de los grandes (18\" o 24\", los que resaltan sin ser gigantes)"),
@@ -49,10 +49,6 @@ export const MezclaLeidaSchema = z.object({
   formatoGrande: FormatoRedondo.optional().describe("formato de los grandes: R-24 o R-18, por proporción con los medianos (R-24 ≈ 2 medianos de 12\" de ancho, R-18 ≈ 1,5)"),
   formatoMediano: FormatoRedondo.optional().describe("formato de los medianos: R-12 (o R-9 si son muy chicos)"),
   formatoChico: FormatoRedondo.optional().describe("formato de los chicos: R-5 (un R-5 mide menos de la mitad de un R-12)"),
-  muestras: z.array(z.object({
-    escalon: z.enum(["gigantes", "grandes", "medianos", "chicos"]),
-    box_2d: z.array(z.number().int().min(0).max(1000)).length(4).describe("[ymin, xmin, ymax, xmax] normalizado 0-1000"),
-  })).max(12).optional().describe("cajas de globos sueltos típicos, 2 o 3 por escalón, de los que están a la altura de la pared (no los del frente en el piso): de ellas se miden los diámetros"),
 }).describe("mezcla de tamaños medida en la foto: reparto por escalón (suma ~100), el diámetro de cada uno y su formato");
 export type MezclaLeida = z.infer<typeof MezclaLeidaSchema>;
 
@@ -73,6 +69,7 @@ const ESCALONES_LEIDOS = ["gigantes", "grandes", "medianos", "chicos"] as const;
 /** Un globo grande o gigante de la foto, uno por uno: va fijo en ese sitio y con ese color (lo mide la detección). */
 export const AnclaLeidaSchema = z.object({
   x: Fraccion, y: Fraccion, escalon: z.enum(["gigantes", "grandes"]), color: z.string().min(1).max(60).describe("nombre de uno de los colores de la pieza"),
+  diametro: Tamano.optional().describe("diámetro medido de este globo, en fracción del ALTO de la imagen: con él se infla como en la foto"),
 });
 export type AnclaLeida = z.infer<typeof AnclaLeidaSchema>;
 /** Los colores de un escalón cuando no son los de toda la pieza («los gigantes dorados, los chicos dorados»). */

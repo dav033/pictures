@@ -6,15 +6,15 @@
  *
  * La foto vive fuera del repo (datos de clientes). Pagado solo con `--pagar` (una lectura ≈ US$0,01–0,03; tope por
  * ejecución `--tope-usd`, por defecto 0,10). Con `--reusar <lectura.json>` no paga: recompila y recaptura (para probar
- * cambios del compilador o de los generadores con la misma lectura).
+ * cambios del compilador, de la medición o de los generadores con la misma lectura); con `--detecciones <det.json>` y
+ * `--fondos <fondos.json>` (lo que escribió una corrida pagada) la lectura se mide con los globos y fondos detectados.
  *
- *   npx tsx --conditions=react-server scripts/exp/iterar-foto.ts --foto <ruta> --salida <dir> [--pagar] [--reusar <lectura.json>] [--url http://127.0.0.1:3016]
+ *   npx tsx --conditions=react-server scripts/exp/iterar-foto.ts --foto <ruta> --salida <dir> [--pagar] [--reusar <lectura.json>] [--detecciones <det.json>] [--fondos <fondos.json>] [--url http://127.0.0.1:3016]
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { ajustarLectura } from "../../src/lib/globos3d/ajustar-lectura";
 import { detectarGlobos } from "../../src/lib/globos3d/detectar-globos-ia";
-import { medirConDetecciones, type GloboDetectado } from "../../src/lib/globos3d/medir-con-detecciones";
+import { medirConDetecciones, type FondoDetectado, type GloboDetectado } from "../../src/lib/globos3d/medir-con-detecciones";
 import { compilarLectura } from "../../src/lib/globos3d/compilar-lectura";
 import { encuadreDeLectura } from "../../src/lib/globos3d/encuadre-foto";
 import { leerFotoConIA } from "../../src/lib/globos3d/leer-foto-ia";
@@ -41,9 +41,7 @@ async function main() {
   let lectura: LecturaFoto;
   let coste = 0;
   if (reusar) {
-    const ajuste = ajustarLectura(LecturaFotoSchema.parse(JSON.parse(readFileSync(reusar, "utf8"))));
-    lectura = ajuste.lectura;
-    for (const n of ajuste.notas) console.log(`ajuste: ${n}`);
+    lectura = LecturaFotoSchema.parse(JSON.parse(readFileSync(reusar, "utf8")));
   } else {
     if (!pagar) throw new Error(`Sin --pagar no se llama a la IA (tope ${tope} USD). Usa --reusar para recompilar gratis.`);
     const normal = await normalizarFoto(readFileSync(foto));
@@ -56,7 +54,8 @@ async function main() {
     coste = leida.costeEstimadoUsd + (deteccion?.costeEstimadoUsd ?? 0);
     if (deteccion) {
       writeFileSync(path.join(salida, "detecciones.json"), JSON.stringify(deteccion.globos));
-      console.log(`detección: ${deteccion.globos.length} globos (${deteccion.fallidos} trozos fallidos), ${deteccion.costeEstimadoUsd} USD`);
+      writeFileSync(path.join(salida, "fondos.json"), JSON.stringify(deteccion.fondos));
+      console.log(`detección: ${deteccion.globos.length} globos y ${deteccion.fondos.length} fondos (${deteccion.fallidos} trozos fallidos), ${deteccion.costeEstimadoUsd} USD`);
     }
     if (coste > tope) console.warn(`OJO: la lectura costó ${coste} USD, más que el tope ${tope}.`);
     lectura = leida.lectura;
@@ -64,8 +63,10 @@ async function main() {
   }
 
   const detecciones = arg("--detecciones") ?? (existsSync(path.join(salida, "detecciones.json")) && !reusar ? path.join(salida, "detecciones.json") : undefined);
+  const archivoFondos = arg("--fondos") ?? (existsSync(path.join(salida, "fondos.json")) && !reusar ? path.join(salida, "fondos.json") : undefined);
   if (detecciones) {
-    const medida = medirConDetecciones(lectura, JSON.parse(readFileSync(detecciones, "utf8")) as GloboDetectado[]);
+    const fondos = archivoFondos ? JSON.parse(readFileSync(archivoFondos, "utf8")) as FondoDetectado[] : [];
+    const medida = medirConDetecciones(lectura, JSON.parse(readFileSync(detecciones, "utf8")) as GloboDetectado[], fondos);
     lectura = medida.lectura;
     for (const n of medida.notas) console.log(`medición: ${n}`);
     writeFileSync(path.join(salida, "lectura-medida.json"), JSON.stringify(lectura, null, 2));
