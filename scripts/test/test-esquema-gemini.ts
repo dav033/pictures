@@ -6,7 +6,8 @@
  * - tamaño del JSON después de adaptarlo a Gemini: 22 KB como máximo;
  * - valores de enumeración: los de hoy (162) más un pequeño margen; los ids de fondos y decoraciones que se agreguen suman aquí;
  * - lo que se repite en las 10 variantes de pieza (los colores) no lleva `describe`: se explica en el prompt, una vez;
- * - todo lo que el esquema dejó de explicar sigue dicho en el prompt (acabados, escalones, formatos, catálogo de fondos).
+ * - todo lo que el esquema dejó de explicar sigue dicho en el prompt (acabados, escalones, formatos, catálogo de fondos, el orden de los
+ *   pesos de coloresPorEscalon, el dominante, las anclas, el ancho y el grosor de una columna, la caída de una guirnalda clásica).
  *
  * Run: npx tsx --conditions=react-server scripts/test/test-esquema-gemini.ts
  */
@@ -54,7 +55,7 @@ prueba("los colores y las notas, que se repiten en cada variante de pieza, no ca
 
 prueba("el prompt dice lo que el esquema ya no explica", () => {
   const prompt = construirPromptLectura();
-  for (const frase of ["cromado = espejo", "perla = satinado", "confeti = transparente con confeti", "parte iluminada del globo", "formatoGigante", "diametroMediano", "FONDOS DEL CATÁLOGO", "DECORACIONES DEL CATÁLOGO", "panel_redondo", "racimos: 0 = cuerpo parejo"]) {
+  for (const frase of ["cromado = espejo", "perla = satinado", "confeti = transparente con confeti", "parte iluminada del globo", "formatoGigante", "diametroMediano", "FONDOS DEL CATÁLOGO", "DECORACIONES DEL CATÁLOGO", "panel_redondo", "racimos: 0 = cuerpo parejo", "centro de la BASE", "lo que ocupa la columna de lado a lado", "de abajo arriba", "la altura del eje del tubo", "cuánto baja su centro", "en el MISMO orden que colores", "el nombre del color que domina ese tramo, tal como va en colores", "los globos grandes y gigantes uno por uno"]) {
     assert.ok(prompt.includes(frase), `falta «${frase}» en el prompt`);
   }
 });
