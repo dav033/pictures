@@ -30,6 +30,7 @@ import type { ConsultorPg } from "../../src/lib/generacion/imagen-recuperable";
 import { armarDesdeEspec, descripcionImagenDeEspec, especHashDe, VERSION_MOTOR, type EspecClienteV1 } from "../../src/lib/globos3d/motor/v1";
 import { promptFotoDeLayout } from "../../src/lib/globos3d/render-ia";
 import { reiniciarFotosPorHora, tomarFotoDeLaHora } from "../../src/lib/globos3d/tope-fotos-hora";
+import { devolverImagenDeNavegador, reiniciarImagenesPorNavegador, TOPE_IMAGENES_POR_NAVEGADOR_HORA, tomarImagenDeNavegador } from "../../src/lib/guiada-motor/tope-imagenes-navegador";
 import { TOPE_FOTOS_POR_HORA } from "../../src/lib/globos3d/foto-realista";
 import { todosLosCasos } from "../lib/casos-motor-guiada";
 
@@ -51,8 +52,9 @@ beforeEach(() => {
   process.env.APP_PASSWORD = CLAVE_APP;
   process.env.GUIADA_MOTOR = "python";
   reiniciarFotosPorHora();
+  reiniciarImagenesPorNavegador();
 });
-afterEach(() => { for (const [clave, valor] of Object.entries(anterior)) { if (valor === undefined) delete process.env[clave]; else process.env[clave] = valor; } reiniciarFotosPorHora(); });
+afterEach(() => { for (const [clave, valor] of Object.entries(anterior)) { if (valor === undefined) delete process.env[clave]; else process.env[clave] = valor; } reiniciarFotosPorHora(); reiniciarImagenesPorNavegador(); });
 
 /** Un cuadrado de color liso, en el formato pedido: la «captura» que mandaría el visor. */
 async function captura(formato: "png" | "jpeg", lado = 1024, ancho = lado): Promise<string> {
@@ -66,7 +68,8 @@ const IMAGEN_FLUX = { base64: Buffer.from("flux-simulado").toString("base64"), m
 
 type Auditoria = { quien: string; que: string; resultado: unknown };
 type Llamada = { prompt: string; ancho: number; alto: number; mime: string; bytes: number };
-function entorno(opciones: { falla?: boolean; almacen?: ConsultorPg | null; tomarFoto?: DependenciasImagen["tomarFoto"] } = {}) {
+/** Con `topeNavegador` por defecto muy alto: las pruebas del cupo global necesitan que un solo navegador llegue a las 30. */
+function entorno(opciones: { falla?: boolean; almacen?: ConsultorPg | null; tomarFoto?: DependenciasImagen["tomarFoto"]; topeNavegador?: number } = {}) {
   const auditorias: Auditoria[] = [];
   const llamadas: Llamada[] = [];
   let armados = 0;
@@ -80,6 +83,8 @@ function entorno(opciones: { falla?: boolean; almacen?: ConsultorPg | null; toma
     },
     aligerar: async (imagen) => ({ ...imagen, bytes: Buffer.from(imagen.base64, "base64"), bytesAntes: 1, bytesDespues: 1, ancho: null, alto: null, resultado: "ya_liviana" }),
     tomarFoto: opciones.tomarFoto ?? (() => tomarFotoDeLaHora()),
+    tomarFotoDeNavegador: (navegador) => tomarImagenDeNavegador(navegador, Date.now(), opciones.topeNavegador ?? 1_000),
+    devolverFotoDeNavegador: devolverImagenDeNavegador,
     almacen: opciones.almacen ? () => opciones.almacen! : null,
     auditar: (quien, que, resultado) => { auditorias.push({ quien, que, resultado }); },
   };
@@ -316,6 +321,43 @@ test("el cupo por hora se respeta: tras el tope, 429 sin llamar a FLUX; y es el 
   assert.ok(e.auditorias.some((a) => a.quien === "regla:render_3d_tope"), "el tope queda en la auditoría");
   // El Taller gasta del mismo contador: con las 30 de esta ruta ya no le quedan.
   assert.equal(tomarFotoDeLaHora().ok, false);
+});
+
+test("el cupo por navegador: pasadas 6 imágenes en la hora, 429 TOPE_DE_IMAGENES_NAVEGADOR sin llamar a FLUX; otro navegador y el cupo global siguen libres", async () => {
+  const e = entorno({ topeNavegador: TOPE_IMAGENES_POR_NAVEGADOR_HORA });
+  assert.equal(TOPE_IMAGENES_POR_NAVEGADOR_HORA, 6);
+  const cuerpo = async (huella = HUELLA) => ({ ...plan(COLUMNA, { navegador: huella }), captura: await captura("jpeg", 512) });
+  for (let i = 0; i < TOPE_IMAGENES_POR_NAVEGADOR_HORA; i += 1) assert.equal((await atenderImagenMotor(pedir(await cuerpo()), e.deps)).status, 200, `imagen ${i + 1}`);
+  const r = await atenderImagenMotor(pedir(await cuerpo()), e.deps);
+  assert.equal(r.status, 429);
+  assert.equal(await codigoDe(r), "TOPE_DE_IMAGENES_NAVEGADOR");
+  assert.equal(e.llamadas.length, TOPE_IMAGENES_POR_NAVEGADOR_HORA, "la 7.ª no llega a FLUX");
+  assert.ok(e.auditorias.some((a) => a.quien === "regla:render_3d_tope"), "el tope por navegador queda en la auditoría");
+  // No gastó cupo global: quedan 30 - 6.
+  let globales = 0;
+  while (tomarFotoDeLaHora().ok) globales += 1;
+  assert.equal(globales, TOPE_FOTOS_POR_HORA - TOPE_IMAGENES_POR_NAVEGADOR_HORA, "la negada no tomó del cupo global");
+  reiniciarFotosPorHora();
+  // Otro navegador (otra identidad y su token) sigue teniendo las suyas.
+  const otraIdentidad = "c3".repeat(16);
+  const otraHuella = huellaDeNavegador(`nav-${otraIdentidad}`);
+  const ok = await atenderImagenMotor(pedir(await cuerpo(otraHuella), [SESION, `feedback_usuario=${otraIdentidad}`]), e.deps);
+  assert.equal(ok.status, 200, "el segundo navegador no paga por el primero");
+});
+
+test("si el cupo global se niega, el navegador recupera su imagen: no paga por un cupo que no usó", async () => {
+  const e = entorno({ topeNavegador: 2, tomarFoto: () => ({ ok: false, usadas: 30, tope: 30 }) });
+  const cuerpo = async () => ({ ...plan(COLUMNA), captura: await captura("jpeg", 512) });
+  for (let i = 0; i < 4; i += 1) assert.equal(await codigoDe(await atenderImagenMotor(pedir(await cuerpo()), e.deps)), "TOPE_DE_IMAGENES", `intento ${i + 1}: el límite que responde es el global, no el del navegador`);
+  assert.equal(e.llamadas.length, 0);
+});
+
+test("la ventana por navegador se renueva pasada la hora", () => {
+  const t0 = 1_000_000;
+  for (let i = 0; i < 6; i += 1) assert.equal(tomarImagenDeNavegador("n1", t0, 6).ok, true);
+  assert.equal(tomarImagenDeNavegador("n1", t0 + 1, 6).ok, false);
+  assert.equal(tomarImagenDeNavegador("n1", t0 + 3_600_001, 6).ok, true, "a la hora siguiente vuelve a tener cupo");
+  assert.equal(tomarImagenDeNavegador("n2", t0, 6).ok, true, "otro navegador, otra cuenta");
 });
 
 test("un cupo cerrado o un contador inyectado: sin cupo no se paga", async () => {

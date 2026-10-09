@@ -9,12 +9,14 @@ import { capturaDesdeSvg, esRechazo, prepararCaptura, type CapturaPreparada } fr
 import { CuerpoImagenSchema, MAX_CARACTERES_CUERPO_IMAGEN } from "./imagen-contrato";
 import { huellaDeNavegador } from "./plan-motor";
 import { promptImagenGuiada } from "./render-ia-guiada";
+import { devolverImagenDeNavegador, tomarImagenDeNavegador } from "./tope-imagenes-navegador";
 import { verificarPlanFirmado, type RechazoPlan } from "./verificar-plan";
 
 /**
  * Lógica de `POST /api/guiada/motor/imagen` (REQ-007, fase 4): «Ver cómo quedaría» de un plan armado por el motor 3D. Es la
  * ruta que PAGA una imagen (FLUX.1 Kontext max, ~US$0,08), así que las comprobaciones baratas van antes del cupo y el cupo
- * antes de la llamada.
+ * antes de la llamada. Hay dos cupos por hora: el de cada navegador (`tope-imagenes-navegador.ts`, 6) y el global de la
+ * instancia (30, compartido con el Taller).
  *
  * Qué manda y qué no:
  * - el plan se prueba como en la ruta de la armada: sesión, mismo origen y token `globos3d` atado a ESTE navegador, con la
@@ -31,7 +33,7 @@ import { verificarPlanFirmado, type RechazoPlan } from "./verificar-plan";
  */
 export const ALMACENAR_IMAGEN_EN_SERVIDOR: boolean = false;
 
-export type CodigoImagenMotor = RechazoPlan["codigo"] | "CUERPO_INVALIDO" | "SESION_REQUERIDA" | "CAPTURA_INVALIDA" | "PLAN_NO_REPRESENTABLE" | "TOPE_DE_IMAGENES" | "NO_SE_PUDO_DIBUJAR";
+export type CodigoImagenMotor = RechazoPlan["codigo"] | "CUERPO_INVALIDO" | "SESION_REQUERIDA" | "CAPTURA_INVALIDA" | "PLAN_NO_REPRESENTABLE" | "TOPE_DE_IMAGENES" | "TOPE_DE_IMAGENES_NAVEGADOR" | "NO_SE_PUDO_DIBUJAR";
 
 export type DependenciasImagen = {
   describir: (espec: EspecClienteV1) => DescripcionImagen;
@@ -42,6 +44,9 @@ export type DependenciasImagen = {
   aligerar: (imagen: ImagenBase64) => Promise<ImagenAligerada>;
   /** El cupo por hora compartido con el Taller y el estudio de módulos. */
   tomarFoto: () => TomaDeFoto;
+  /** El cupo por hora de este navegador (su huella), encima del global: uno solo no puede gastarse el de todos. Se devuelve si el global se niega. */
+  tomarFotoDeNavegador: (navegador: string) => TomaDeFoto;
+  devolverFotoDeNavegador: (navegador: string) => void;
   /** Dónde guardar la imagen para recuperarla tras un corte, o `null` (el servidor no la guarda). */
   almacen: (() => ConsultorPg) | null;
   auditar: (quien: string, que: string, resultado: unknown, extra?: { entrada?: unknown; motivo?: string }) => void;
@@ -108,8 +113,14 @@ async function atender(request: Request, deps: DependenciasImagen, navegador: st
     return error("NO_SE_PUDO_DIBUJAR", "No pude preparar la imagen del plan.", 422);
   }
 
+  const delNavegador = deps.tomarFotoDeNavegador(navegador);
+  if (!delNavegador.ok) {
+    deps.auditar("regla:render_3d_tope", "tope de imágenes por hora de un navegador (imagen del plan 3D de la guiada)", { usadas: delNavegador.usadas, tope: delNavegador.tope }, { entrada });
+    return error("TOPE_DE_IMAGENES_NAVEGADOR", "Ya generaste varias imágenes en esta hora. Inténtalo de nuevo más tarde.", 429);
+  }
   const toma = deps.tomarFoto();
   if (!toma.ok) {
+    deps.devolverFotoDeNavegador(navegador);
     deps.auditar("regla:render_3d_tope", "tope de imágenes por hora (imagen del plan 3D de la guiada)", { usadas: toma.usadas, tope: toma.tope }, { entrada });
     return error("TOPE_DE_IMAGENES", "Se alcanzó el límite de imágenes por hora. Inténtalo más tarde.", 429);
   }
