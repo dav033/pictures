@@ -4,8 +4,8 @@
  * Sin red y sin coste: los sobres vienen de `datos-plan-motor3d.ts` (el motor es solo de servidor) y `fetch` es un doble.
  * - `TarjetaPlan`, `DetalleGlobos`/`TablaGlobosPieza`, `ComprarMateriales` (por `plan-compra`) y `CotizacionPersonalGuiada`
  *   pintan los mismos globos, tamaños, paquetes y total que el motor contó y Python cotizó;
- * - en un plan 3D: «Vista del plan en preparación», sin dibujo de Python, sin «Ajustar», «Modificar» ni «Cambiar algo», y
- *   «Ver cómo quedaría» apagado con una nota honesta; el plan de Python se pinta como siempre;
+ * - en un plan 3D: su vista, sin dibujo de Python, sin «Ajustar», «Modificar» ni «Cambiar algo» (nota honesta), y «Ver cómo
+ *   quedaría» encendido solo si el plan trae su espec firmada (fase 4); el plan de Python se pinta como siempre;
  * - el cliente: la bandera se lee al crear el plan; un plan de foto va por Python; un plan 3D nunca cae a Python;
  * - `VistaGuiada` no manda a Python la imagen ni los cambios de un plan 3D.
  *
@@ -75,7 +75,7 @@ async function main(): Promise<void> {
     assert.ok(!t.includes("Ajustar mi plan"), "sin «Ajustar mi plan»");
     assert.ok(!t.includes("Modificar esta pieza") && !t.includes("Modificar estas piezas"), "sin «Modificar»");
     assert.doesNotMatch(html, /aria-label="Modificar /);
-    assert.match(html, /<button[^>]*disabled=""[^>]*>[^]*?Ver cómo quedaría/, "«Ver cómo quedaría» apagado");
+    assert.doesNotMatch(html, /<button[^>]*disabled=""[^>]*>[^]*?Ver cómo quedaría/, "«Ver cómo quedaría» encendido: la imagen del 3D existe (fase 4)");
     assert.match(html, /<button[^>]*disabled=""[^>]*>[^]*?Cambiar algo/, "«Cambiar algo» apagado");
     // Lo que sí: ver detalle, costear, comprar, aprender y contratar.
     for (const accion of ["Ver detalle", "Cuánto cuesta", "Comprar", "Aprender a hacerlo", "Contratar decorador"]) assert.ok(t.includes(accion), accion);
@@ -88,6 +88,7 @@ async function main(): Promise<void> {
     const sinEspec = Object.fromEntries(Object.entries(PlanGuiadoSchema.parse(s.plan)).filter(([clave]) => clave !== "espec"));
     const html = renderToStaticMarkup(createElement(TarjetaPlan, propiedades(PlanGuiadoSchema.parse(sinEspec), { motor: "3d" })));
     assert.ok(texto(html).includes(TEXTO_VISTA_EN_PREPARACION), "sin espec no hay de dónde armar la vista");
+    assert.match(html, /<button[^>]*disabled=""[^>]*>[^]*?Ver cómo quedaría/, "sin espec firmada tampoco hay de dónde armar la imagen: apagado");
     assert.equal(html.split('data-testid="vista-plan-en-preparacion"').length - 1, 1);
     assert.ok(!html.includes('data-testid="vista-plan-3d-cargando"'));
   });
@@ -343,7 +344,8 @@ async function main(): Promise<void> {
 
   await caso("VistaGuiada: la imagen y los cambios de un plan 3D no van a Python, y el plan guarda su motor", () => {
     const fuente = readFileSync("src/components/guiado/VistaGuiada.tsx", "utf8");
-    assert.match(fuente, /async function verComoQuedaria[\s\S]{0,700}widget\.motor === "3d"[\s\S]{0,200}return;/, "verComoQuedaria se detiene antes de /api/generate");
+    assert.match(fuente, /async function verComoQuedaria[\s\S]{0,700}widget\.motor === "3d" && !firmaDePlan\(widget\.plan\)\)[\s\S]{0,200}return;/, "verComoQuedaria se detiene, antes de cualquier ruta, con un plan 3D sin espec firmada");
+    assert.match(fuente, /widget\.motor === "3d"\) \{[\s\S]{0,400}pedirImagenPlan3D\(/, "y con espec firmada el plan 3D va por su propia ruta (test-motor3d-imagen-cliente.ts lo prueba entero)");
     assert.match(fuente, /async function aplicarEdicionChat[\s\S]{0,500}\?\.motor === "3d"[\s\S]{0,400}return;/, "los cambios por chat se detienen antes de /api/plan-editar");
     assert.match(fuente, /motor=\{widget\.motor\}/, "la tarjeta recibe el motor del plan");
     assert.match(fuente, /colocarPlan\(mensajeId, resultado\.plan, resultado\.cotizacion, Boolean\(foto\), idea, foto\?\.referenciaId, resultado\.motor\)/, "el plan guarda el motor con que se armó");

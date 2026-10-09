@@ -378,7 +378,7 @@ export function TarjetaPlan(props: Props) {
         <motion.div variants={hijoEscalonado} className="mt-4 space-y-2">
           <motion.button
             type="button"
-            disabled={bloqueado || es3d}
+            disabled={bloqueado || (es3d && !firma3d)}
             onClick={() => onAccion("ver")}
             whileTap={bloqueado ? undefined : { scale: 0.97 }}
             transition={RESORTE}

@@ -36,6 +36,8 @@ export { sobreDelMotor, SobreMotorSchema, type EntradaSobre, type PlanGuiadoMoto
 export type { ConceptoPlan } from "./proyeccion-plan";
 // Vista (fase 3): la armada compacta proyectada a SVG, para el cliente sin WebGL.
 export { svgDeArmada, type OpcionesVistaSvg } from "./vista2d-svg";
+// Imagen realista (fase 4): la espec contada en inglés para FLUX, sin una palabra del cliente.
+export { descripcionImagenDeEspec, type DescripcionImagen } from "./descripcion-imagen";
 
 export function armarDesdeEspec(entrada: EspecClienteV1): ResultadoMotorV1 {
   const espec = EspecClienteV1Schema.parse(entrada);
