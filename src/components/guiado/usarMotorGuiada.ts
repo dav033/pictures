@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { MOTOR_POR_DEFECTO, PARA_PLAN_NUEVO, RUTA_MOTOR_GUIADA, RespuestaMotorSchema, type FuenteMotor, type MotorGuiada } from "@/lib/guiada-motor/tipos";
 
 type Fetch = (entrada: string, init?: RequestInit) => Promise<Response>;
@@ -22,24 +22,11 @@ export async function pedirMotorGuiada(opciones: { para?: typeof PARA_PLAN_NUEVO
 }
 
 /**
- * El motor de la guiada (REQ-007, fase 0). Arranca en `python` (nada del primer pintado depende del servidor) y se
- * corrige al leer `/api/guiada/motor`. `alCrearPlan` vuelve a leerlo para un plan nuevo y deja la lectura en la
- * auditoría de la conversación; las fases 1 y 2 ramificarán la creación del plan con su resultado.
+ * La bandera de motor de la guiada (REQ-007, fase 0). No lee nada al montar: nada del primer pintado la usa. `alCrearPlan`
+ * la lee al crear un plan y deja la lectura en la auditoría de la conversación (`bandera` frente a `efectivo`: en la
+ * fase 0 el plan sigue saliendo de Python). Las fases 1 y 2 ramificarán la creación del plan con su resultado.
  */
-export function useMotorGuiada(): { motor: MotorGuiada; alCrearPlan: () => Promise<MotorGuiada> } {
-  const [motor, setMotor] = useState<MotorGuiada>(MOTOR_POR_DEFECTO);
-
-  useEffect(() => {
-    const control = new AbortController();
-    void pedirMotorGuiada({ signal: control.signal }).then((lectura) => { if (!control.signal.aborted) setMotor(lectura.motor); });
-    return () => control.abort();
-  }, []);
-
-  const alCrearPlan = useCallback(async () => {
-    const lectura = await pedirMotorGuiada({ para: PARA_PLAN_NUEVO });
-    setMotor(lectura.motor);
-    return lectura.motor;
-  }, []);
-
-  return { motor, alCrearPlan };
+export function useMotorGuiada(): { alCrearPlan: () => Promise<MotorGuiada> } {
+  const alCrearPlan = useCallback(async () => (await pedirMotorGuiada({ para: PARA_PLAN_NUEVO })).motor, []);
+  return { alCrearPlan };
 }

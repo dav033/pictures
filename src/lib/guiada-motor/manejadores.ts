@@ -3,7 +3,7 @@ import { z } from "zod";
 import { isAuthenticatedRequest } from "@/lib/auth/request";
 import { exigirAdministradorMismoOrigen } from "@/lib/feedback-ia/acceso";
 import { COOKIE_MOTOR } from "./bandera";
-import { MotorGuiadaSchema, PARA_PLAN_NUEVO, type RespuestaMotor } from "./tipos";
+import { MOTOR_EFECTIVO_FASE_0, MotorGuiadaSchema, PARA_PLAN_NUEVO, type RespuestaMotor } from "./tipos";
 
 /** Lógica de `/api/guiada/motor`, con la bandera y la auditoría inyectadas para probarla sin Neon ni registro. */
 export type DependenciasMotor = {
@@ -28,7 +28,7 @@ export async function atenderLecturaMotor(request: Request, deps: DependenciasMo
   if (!isAuthenticatedRequest(request)) return error("SESION_REQUERIDA", "Sesión requerida.", 401);
   const lectura = await deps.leer(request);
   if (new URL(request.url).searchParams.get("para") === PARA_PLAN_NUEVO) {
-    deps.auditar("regla:motor_guiada", "motor con el que se crea el plan de la guiada (bandera de ejecución)", lectura, { entrada: { para: PARA_PLAN_NUEVO } });
+    deps.auditar("regla:motor_guiada", "bandera de motor leída al crear un plan de la guiada y motor con el que realmente se armó", { bandera: lectura.motor, fuente: lectura.fuente, efectivo: MOTOR_EFECTIVO_FASE_0 }, { entrada: { para: PARA_PLAN_NUEVO } });
   }
   return Response.json(lectura, { headers: SIN_CACHE });
 }

@@ -17,6 +17,9 @@ export type FuenteMotor = (typeof FUENTES_MOTOR)[number];
 export const RespuestaMotorSchema = z.object({ motor: MotorGuiadaSchema, fuente: z.enum(FUENTES_MOTOR) }).strict();
 export type RespuestaMotor = z.infer<typeof RespuestaMotorSchema>;
 
+/** Fase 0: el plan se arma siempre con Python, diga lo que diga la bandera. Las fases 1 y 2 sustituyen esta constante por el motor realmente usado. */
+export const MOTOR_EFECTIVO_FASE_0: MotorGuiada = "python";
+
 export const RUTA_MOTOR_GUIADA = "/api/guiada/motor";
 /** `?para=plan_nuevo`: la lectura es para crear un plan y el servidor la deja en la auditoría de la conversación. */
 export const PARA_PLAN_NUEVO = "plan_nuevo";
