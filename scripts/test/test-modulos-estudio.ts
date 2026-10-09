@@ -142,7 +142,7 @@ async function principal() {
 
   // ---- La versión del pipeline lleva la huella de la geometría, la captura y el texto (A3). ----
   assert.match(VERSION_PIPELINE, /^estudio-v2\.[0-9a-f]{8}$/);
-  assert.equal(VERSION_PIPELINE, "estudio-v2.6d49bd25", "Cambió la geometría de armarModulo, la captura 3D o el texto de FLUX: es lo esperado si lo cambiaste; las claves viejas dejan de servirse. Anota aquí la versión nueva.");
+  assert.equal(VERSION_PIPELINE, "estudio-v2.20f73415", "Cambió la geometría de armarModulo, la captura 3D o el texto de FLUX: es lo esperado si lo cambiaste; las claves viejas dejan de servirse. Anota aquí la versión nueva.");
   const base = { geometria: huellaGeometria(), captura: huellaCaptura(), texto: huellaTexto() };
   assert.equal(versionPipeline(base), VERSION_PIPELINE);
   // Un cambio de 0,02 cm en una sola dirección de un solo módulo cambia la huella (y por ella la versión y todas las claves)...
