@@ -1,0 +1,68 @@
+{
+ "caso": "idea-deco-real-29-arco-link-o-loon-fucsia-tulipanes",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "ae802dd1fb43044ee3d8d8c0f52b3e851b78aa609989cc154f8e75dd7c36d9be",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_COLUMNA": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "012",
+     "cantidad": 16
+    }
+   ],
+   "unidades": 16,
+   "caja": [
+    -68,
+    0,
+    -183,
+    -22,
+    88,
+    -137
+   ]
+  },
+  "EST_01_COLUMNA_B": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "012",
+     "cantidad": 16
+    }
+   ],
+   "unidades": 16,
+   "caja": [
+    22,
+    0,
+    -183,
+    68,
+    88,
+    -137
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-12",
+    "codigo": "012",
+    "cantidad": 32
+   }
+  ],
+  "unidades": 32
+ },
+ "caja": [
+  -68,
+  0,
+  -183,
+  68,
+  88,
+  -137
+ ],
+ "referenciaPython": {
+  "globos": 30
+ }
+}

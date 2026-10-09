@@ -1,0 +1,150 @@
+{
+ "caso": "idea-deco-real-18-sddefault",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "d9809a43345f212ff6b0d98a40fc496b385f3b01dd0903706637436f73256a45",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_GUIRNALDA": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "005",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "609",
+     "cantidad": 54
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "970",
+     "cantidad": 16
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "005",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "609",
+     "cantidad": 13
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "609",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "609",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "970",
+     "cantidad": 1
+    }
+   ],
+   "unidades": 112,
+   "caja": [
+    -121,
+    200,
+    -250,
+    121,
+    272,
+    -204
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "005",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "609",
+    "cantidad": 54
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "970",
+    "cantidad": 16
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "005",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "609",
+    "cantidad": 13
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "609",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "609",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "970",
+    "cantidad": 1
+   }
+  ],
+  "unidades": 112
+ },
+ "caja": [
+  -121,
+  200,
+  -250,
+  121,
+  272,
+  -204
+ ],
+ "referenciaPython": {
+  "globos": 37
+ }
+}

@@ -1,0 +1,60 @@
+{
+ "caso": "idea-deco-real-02-34722b3ec9978bfe7439a121c16a1db7",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "a95dca3a268d19fb09852963ced3f86105d32c9e9fe06834d325c55365488d10",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_ARCO": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "061",
+     "cantidad": 60
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "080",
+     "cantidad": 60
+    }
+   ],
+   "unidades": 120,
+   "caja": [
+    -149,
+    0,
+    -183,
+    149,
+    268,
+    -137
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-12",
+    "codigo": "061",
+    "cantidad": 60
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "080",
+    "cantidad": 60
+   }
+  ],
+  "unidades": 120
+ },
+ "caja": [
+  -149,
+  0,
+  -183,
+  149,
+  268,
+  -137
+ ],
+ "referenciaPython": {
+  "globos": 153
+ }
+}

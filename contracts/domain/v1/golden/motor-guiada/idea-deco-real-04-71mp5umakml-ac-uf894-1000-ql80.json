@@ -1,0 +1,200 @@
+{
+ "caso": "idea-deco-real-04-71mp5umakml-ac-uf894-1000-ql80",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "d1046f292a710912a99e94d4873a21cad27efc49fa3d0892dfab162e0654a553",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_SEMIARCO": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "044",
+     "cantidad": 17
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "530",
+     "cantidad": 24
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "931",
+     "cantidad": 20
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "940",
+     "cantidad": 17
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "970",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "044",
+     "cantidad": 10
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "530",
+     "cantidad": 13
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "044",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "530",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "931",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "940",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "044",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "940",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "970",
+     "cantidad": 7
+    }
+   ],
+   "unidades": 152,
+   "caja": [
+    -144,
+    0,
+    -189,
+    144,
+    288,
+    -131
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "044",
+    "cantidad": 17
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "530",
+    "cantidad": 24
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "931",
+    "cantidad": 20
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "940",
+    "cantidad": 17
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "970",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "044",
+    "cantidad": 10
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "530",
+    "cantidad": 13
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "044",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "530",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "931",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "940",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "044",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "940",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "970",
+    "cantidad": 7
+   }
+  ],
+  "unidades": 152
+ },
+ "caja": [
+  -144,
+  0,
+  -189,
+  144,
+  288,
+  -131
+ ],
+ "referenciaPython": {
+  "globos": 101
+ }
+}

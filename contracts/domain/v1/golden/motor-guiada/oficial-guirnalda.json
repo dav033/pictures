@@ -1,0 +1,147 @@
+{
+ "caso": "oficial-guirnalda",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "c4787eb99c67dc6f3e128b294dfcdb297dee352200fa71a58d3aef1c6802ee29",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_GUIRNALDA": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "005",
+     "cantidad": 18
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "040",
+     "cantidad": 27
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "970",
+     "cantidad": 21
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "005",
+     "cantidad": 10
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "040",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "040",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "970",
+     "cantidad": 2
+    }
+   ],
+   "unidades": 102,
+   "caja": [
+    -122,
+    200,
+    -250,
+    122,
+    273,
+    -199
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "005",
+    "cantidad": 18
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "040",
+    "cantidad": 27
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "970",
+    "cantidad": 21
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "005",
+    "cantidad": 10
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "040",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "040",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "970",
+    "cantidad": 2
+   }
+  ],
+  "unidades": 102
+ },
+ "caja": [
+  -122,
+  200,
+  -250,
+  122,
+  273,
+  -199
+ ]
+}

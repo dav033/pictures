@@ -1,0 +1,98 @@
+{
+ "caso": "idea-deco-real-08-images-23",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "87e71a3bce2da0ecf75b095c33f978566910ce3cd388e6d54f0b1cfe7a80bee8",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_COLUMNA": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "080",
+     "cantidad": 20
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "570",
+     "cantidad": 20
+    },
+    {
+     "formatoId": "R-36",
+     "codigo": "080",
+     "cantidad": 1
+    }
+   ],
+   "unidades": 41,
+   "caja": [
+    -80,
+    0,
+    -202,
+    5,
+    301,
+    -117
+   ]
+  },
+  "EST_02_COLUMNA": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "080",
+     "cantidad": 20
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "570",
+     "cantidad": 20
+    },
+    {
+     "formatoId": "R-36",
+     "codigo": "080",
+     "cantidad": 1
+    }
+   ],
+   "unidades": 41,
+   "caja": [
+    -4,
+    0,
+    -202,
+    81,
+    301,
+    -117
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-12",
+    "codigo": "080",
+    "cantidad": 40
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "570",
+    "cantidad": 40
+   },
+   {
+    "formatoId": "R-36",
+    "codigo": "080",
+    "cantidad": 2
+   }
+  ],
+  "unidades": 82
+ },
+ "caja": [
+  -80,
+  0,
+  -202,
+  81,
+  301,
+  -117
+ ],
+ "referenciaPython": {
+  "globos": 90
+ }
+}

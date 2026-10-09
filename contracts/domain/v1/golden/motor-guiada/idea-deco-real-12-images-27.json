@@ -1,0 +1,203 @@
+{
+ "caso": "idea-deco-real-12-images-27",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "b876a2d5263324afea97c0cf6c8bc07636175ac68935be357d83170a7c06ef19",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_SEMIARCO": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "650",
+     "cantidad": 22
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "951",
+     "cantidad": 33
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "981",
+     "cantidad": 9
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "650",
+     "cantidad": 10
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "981",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "650",
+     "cantidad": 9
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "951",
+     "cantidad": 9
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "981",
+     "cantidad": 9
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "650",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "981",
+     "cantidad": 4
+    }
+   ],
+   "unidades": 119,
+   "caja": [
+    -121,
+    0,
+    -191,
+    121,
+    257,
+    -129
+   ]
+  },
+  "EST_02_COLUMNA_ASIMETRICA": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "650",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "951",
+     "cantidad": 13
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "981",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "650",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "981",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "650",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "951",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "981",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "650",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "981",
+     "cantidad": 1
+    }
+   ],
+   "unidades": 38,
+   "caja": [
+    -249,
+    0,
+    -188,
+    -171,
+    99,
+    -132
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "650",
+    "cantidad": 29
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "951",
+    "cantidad": 46
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "981",
+    "cantidad": 12
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "650",
+    "cantidad": 11
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "981",
+    "cantidad": 12
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "650",
+    "cantidad": 11
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "951",
+    "cantidad": 11
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "981",
+    "cantidad": 12
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "650",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "981",
+    "cantidad": 5
+   }
+  ],
+  "unidades": 157
+ },
+ "caja": [
+  -249,
+  0,
+  -191,
+  121,
+  257,
+  -129
+ ],
+ "referenciaPython": {
+  "globos": 109
+ }
+}

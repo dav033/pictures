@@ -1,0 +1,333 @@
+{
+  "$id": "resultado-motor.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "motor": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "const": "globos3d"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "especHash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "armada": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "const": "armada-compacta.v1"
+        },
+        "sala": {
+          "type": "object",
+          "properties": {
+            "anchoCm": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "fondoCm": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "altoCm": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "anchoCm",
+            "fondoCm",
+            "altoCm"
+          ],
+          "additionalProperties": false
+        },
+        "paleta": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^#[0-9a-f]{6}$"
+          }
+        },
+        "globos": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "tubos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "grosorCm": {
+                "type": "number"
+              },
+              "color": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "puntos": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              }
+            },
+            "required": [
+              "grosorCm",
+              "color",
+              "puntos"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "flores": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "piezas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "globos": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                ]
+              },
+              "tubos": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                ]
+              },
+              "flores": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                ]
+              },
+              "caja": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "globos",
+              "tubos",
+              "flores",
+              "caja"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "version",
+        "sala",
+        "paleta",
+        "globos",
+        "tubos",
+        "flores",
+        "piezas"
+      ],
+      "additionalProperties": false
+    },
+    "bom": {
+      "type": "object",
+      "properties": {
+        "porPieza": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "formatoId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 16
+                },
+                "codigo": {
+                  "type": "string",
+                  "pattern": "^\\d{3}$"
+                },
+                "cantidad": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "formatoId",
+                "codigo",
+                "cantidad"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "total": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "formatoId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 16
+              },
+              "codigo": {
+                "type": "string",
+                "pattern": "^\\d{3}$"
+              },
+              "cantidad": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "formatoId",
+              "codigo",
+              "cantidad"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "porPieza",
+        "total"
+      ],
+      "additionalProperties": false
+    },
+    "avisos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "noRepresentable": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "piezaId": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "piezaId",
+          "motivo"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "motor",
+    "especHash",
+    "armada",
+    "bom",
+    "avisos",
+    "noRepresentable"
+  ],
+  "additionalProperties": false
+}

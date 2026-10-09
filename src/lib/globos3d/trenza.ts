@@ -105,7 +105,7 @@ export function armarTrenza(opciones: OpcionesTrenza): TrenzaArmada {
   const { formato, infladoCm, patron, colores, recorrido, reparto } = opciones;
   // La cuerda aprieta el cuarteto: las dos parejas casi no se separan a lo largo del eje.
   const cuarteto = { ...moduloPorId("cuarteto")!, inclinacion: 0.12 };
-  const base = armarModulo(cuarteto, formato, infladoCm);
+  const base = armarModulo(cuarteto, formato, infladoCm, { cerrarHuecos: false });
   const natural = centroCuerpo(formato.tipo === "link" ? "link" : "redondo", infladoCm);
   const radio = infladoCm * RADIO_TRENZA_POR_DIAMETRO;
   // Cuarteto apretado alrededor del eje Y local: cada cuerpo a `radio` del eje, el nudo corrido hacia dentro.

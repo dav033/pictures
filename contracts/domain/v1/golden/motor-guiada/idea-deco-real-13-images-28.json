@@ -1,0 +1,110 @@
+{
+ "caso": "idea-deco-real-13-images-28",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "ae28d6887d959a0e04893d324e36e54feff4929f2f5434473336b07885d0e77a",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_SEMIARCO": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "406",
+     "cantidad": 17
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "968",
+     "cantidad": 51
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "406",
+     "cantidad": 23
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "406",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "968",
+     "cantidad": 26
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "406",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "968",
+     "cantidad": 5
+    }
+   ],
+   "unidades": 136,
+   "caja": [
+    -142,
+    0,
+    -189,
+    142,
+    292,
+    -131
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "406",
+    "cantidad": 17
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "968",
+    "cantidad": 51
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "406",
+    "cantidad": 23
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "406",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "968",
+    "cantidad": 26
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "406",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "968",
+    "cantidad": 5
+   }
+  ],
+  "unidades": 136
+ },
+ "caja": [
+  -142,
+  0,
+  -189,
+  142,
+  292,
+  -131
+ ],
+ "referenciaPython": {
+  "globos": 102
+ }
+}
