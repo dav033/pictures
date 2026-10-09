@@ -1106,7 +1106,7 @@ const escena378 = (): Escena => {
 /** Ideas de fiesta de sempertex.com digitalizadas: lote 05. */
 export const LOTE_05: readonly IdeaDigitalizada[] = [
   idea({
-    numero: 270, slug: "centro-de-mesa-copa-despedida-de-soltera", nombre: "Centro de mesa copa despedida de soltera", ocasiones: ["general"],
+    numero: 270, slug: "centro-de-mesa-copa-despedida-de-soltera", nombre: "Centro de mesa copa despedida de soltera", ocasiones: ["despedida-soltera"],
     fotoUrl: `${CDN}b1a43713d9fdaed99622818c9688a4ca_3e564405-470a-4539-8d72-cf66f42fbdd6.jpg`,
     escena: escena270,
     nota: "Igual: base de un cuarteto R-12 con un globo al frente, dos cuartetos R-9 sin girar entre sí (como en la foto) con R-5 en los huecos, la copa de 4 R-12 abiertos alrededor del cuello del R-24 negro, un collar de 26 perlas R-5 Satín Perla (medido #dae7e0) y 4 moños de T-260 Fashion Rosado (medido #ffc5db) con centro R-5 en la base (se ven 2; los de atrás, por simetría). El fucsia (medido #fe4d9d) queda más cerca del Neón Fucsia 212; va el Fashion más cercano, Rosa 011. Distinto: el globo de la copa mide ~65 cm (el R-24 llega a 61) y la copa impresa no está en el catálogo: va un R-24 Fashion Negro liso; las perlas de la foto cuelgan algo más hacia el frente; los R-5 de relleno de atrás son supuestos.",
@@ -1147,7 +1147,7 @@ export const LOTE_05: readonly IdeaDigitalizada[] = [
     nota: "Igual: base orgánica baja de ~106 cm con 41 R-5 y R-9 en los cuatro colores publicados (Fucsia 012, Lila 050, Pastel Mate Rosado 609 y Reflex Plata 981), tres flores de 5 burbujas de T-260 blanco con centro R-5 plata donde las pone la foto, y el corazón fucsia «Te amo» de pie encima. Distinto: el corazón de la foto es de látex (~67 cm de ancho) y el Corazón 12 solo se fabrica en blanco, rosado, rojo y transparente: va el metalizado «Corazón rosado» de 18\" (45 cm) con «TE ♥ AMO» en blanco; la ficha da R-12 y por tamaño son R-5 y R-9; los globos de atrás son supuestos; la clasificación decía 4 flores y la foto muestra 3.",
   }),
   idea({
-    numero: 280, slug: "centro-de-mesa-del-oeste", nombre: "Centro de mesa del oeste", ocasiones: ["general"],
+    numero: 280, slug: "centro-de-mesa-del-oeste", nombre: "Centro de mesa del oeste", ocasiones: ["dia-del-padre"],
     fotoUrl: `${CDN}CENTRO_DE_MESA_DEL_OESTE.jpg`,
     escena: escena280,
     publicados: [

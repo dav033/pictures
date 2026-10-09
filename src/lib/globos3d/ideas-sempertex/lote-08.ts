@@ -861,7 +861,7 @@ const escena668 = (): Escena => ({
   ],
 });
 const idea668 = idea({
-  id: "idea:huevos-de-pascua-polka", numero: 668, slug: "huevos-de-pascua-polka", nombre: "Huevos de Pascua polka con ramos de helio", ocasiones: ["general"],
+  id: "idea:huevos-de-pascua-polka", numero: 668, slug: "huevos-de-pascua-polka", nombre: "Huevos de Pascua polka con ramos de helio", ocasiones: ["pascua"],
   fotoUrl: FOTO("2cbffc311b9229423c92f96a17232e29_ec4119a8-aa11-4cb8-bd1c-83a26d4aa80f.jpg"), escena: escena668,
   nota: "Igual: dos huevos de pie (R-18 con el nudo arriba: el rosado con tres aros de T-260 fucsia, amarillo y lila; el verde con una cadena de 10 burbujas blancas) y de cada uno un ramo de 3 R-12 de helio con su cinta (amarillo, azul y lila; verde, rosado y naranja) a 1,3–1,8 m, y seis R-9 en el piso, contados en la foto. La idea no publica productos; medidos (el más cercano en su formato): huevos #dd95b1 → Satín Rosado 409 y #8ad495 → Fashion Verde 030; helio amarillo 021, azul Caribe 038, lila Satín Lila 450, verde Lima 031, rosado → Fashion Rosa 011 (Neón Fucsia 212 a 2 ΔE), naranja 061; piso amarillo 021, verde Trébol 029, lila 450, naranja Neón 261, azul 040 y fucsia 012; aros: fucsia 012, Amarillo Miel 021 y Pastel Dusk Lavanda 150. Distinto: todos son de lunares blancos en la foto, pero la tienda solo vende el lunar en Verde Lima y Rojo: el verde de helio va con el Infinity® Polka Blanco Verde Lima y los demás lisos; la cadena blanca de la foto hace zigzag.",
 });
@@ -896,7 +896,7 @@ const escena695 = (): Escena => ({
   ],
 });
 const idea695 = idea({
-  id: "idea:lime-citrus", numero: 695, slug: "lime-citrus", nombre: "Lime Citrus: pared de trenzas y pedestal", ocasiones: ["general"],
+  id: "idea:lime-citrus", numero: 695, slug: "lime-citrus", nombre: "Lime Citrus: pared de trenzas y pedestal", ocasiones: ["fiesta-verano"],
   fotoUrl: FOTO("ideas_de_fiesta_t_o_lime_citrus_3e3a82cb-6648-4d23-b088-0d07f3bd1ef5.jpg"), escena: escena695,
   nota: "Igual: pared de 5 trenzas de cuartetos que alternan grande y chico (R-12 a 24 y 18 cm, ~2,3 × 2,5 m), cada trenza de un color como en la foto —Verde Trébol, Verde Lima, gris verdoso, Arena y Verde Trébol—, con los tres productos que publica la idea, y delante el pedestal de kraft con plato de pie, dos vasos con servilleta verde lima y tres cupcakes; piso verde y pared blanca. Distinto: el verde oscuro mide #069c47 (entre Verde Selva 032 y Metal Verde 530): va el Verde Trébol 029 publicado; la trenza gris no es de un producto publicado (medido #a3aaa5 mate → Satín Plata 481, el no cromado más cercano; el Reflex Plata es cromado); la foto se corta arriba (la altura es supuesta); el estampado de hojas del plato y los vasos no se dibuja (utilería genérica).",
 }, [
@@ -1068,7 +1068,7 @@ const escena712 = (): Escena => ({
   ],
 });
 const idea712 = idea({
-  id: "idea:malla-marina", numero: 712, slug: "malla-marina", nombre: "Malla marina en franjas con ramos de mármol", ocasiones: ["cumpleanos"],
+  id: "idea:malla-marina", numero: 712, slug: "malla-marina", nombre: "Malla marina en franjas con ramos de mármol", ocasiones: ["primer-cumpleanos", "cumpleanos"],
   fotoUrl: FOTO("malla-Marina_d8c14a3b-9709-46b1-a5d2-7ef31d4d5552.jpg"), escena: escena712,
   nota: "Igual: pared de ~1,6 × 2,5 m en cinco franjas de R-12 al tresbolillo con R-5 del mismo color en los huecos —de abajo arriba Fashion Azul, Fashion Aguamarina, Reflex Violeta, Satín Lila y Satín Rosado, los cinco productos que publica la idea— con 14 R-12 Infinity® Graffiti Invierno repartidos como en la foto (4, 3, 2, 3 y 2), y a cada lado un ramo de mármol con varillas lila (5 y 6 globos: Graffiti Invierno, Cielo y Rosa). Distinto: en la foto los mármoles de la pared toman el color de su franja (llevan un globo de color dentro): aquí son el transparente con el impreso; el azul y el aguamarina miden #0284bd y #01b3ba (más cerca de Neón Azul y Azul Caribe): van los publicados; los Graffiti Cielo y Rosa de los ramos no los publica la idea; la cantidad de R-5 de relleno es la del motor de celdas.",
 }, [

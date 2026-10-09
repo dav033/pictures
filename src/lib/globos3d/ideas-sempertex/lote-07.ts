@@ -1104,7 +1104,7 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
     nota: "Igual: de abajo arriba 4 R-5 Verde Trébol 029, la calabaza R-18 Fashion Naranja 061 con cara (41 cm, 113 px a 2,7 px/cm), 4 R-5 verdes, el tallo trenzado de T-260 029 (60 cm a la vista), 4 R-5 negros, 4 R-12 naranjas con el impreso Infinity® Happy Halloween de la tienda (sobre su naranja), 4 R-9 naranjas y la araña de 8 patas articuladas de T-260 negro con cuerpo R-18 y cabeza R-12 con ojos verdes; ~2 m de alto. Colores medidos (no publica productos): naranja #ff7501 → 061, verde #00a125 → 029. Distinto: en la foto el tallo es de tres tubitos torcidos y aquí de dos trenzados; la cabeza de la araña va debajo del cuerpo (en la foto, delante) y las patas suben (en la foto caen a los lados) y la boca roja no se dibuja, así que la columna queda unos 20 cm más alta; el impreso naranja de la foto es otro Halloween (el más parecido de la tienda).",
   }),
   idea({
-    numero: 392, slug: "columna-mi-primera-comunion", nombre: "Columna Mi Primera Comunión", ocasiones: ["bautizo", "primera-comunion"],
+    numero: 392, slug: "columna-mi-primera-comunion", nombre: "Columna Mi Primera Comunión", ocasiones: ["primera-comunion"],
     fotoUrl: FOTO("c3d469550d5115218ab27359389e67b6_5f2169b3-e35e-4f20-836e-e92ae601a9b8.jpg"),
     contenido: () => ESCENA(escena392()),
     nota: "Igual: el armado de la foto con sus tamaños relativos (R-24 de 184 px ≈ 58 cm: 3,17 px/cm; ~1,7 m): cuarteto R-12 de perlas con 2 Infinity® Mi Primera Comunión Palomas alternados, cuarteto Satín Lila 450, 4 R-5 Metal Dorado 570, el tallo de 8 niveles de R-5 Satín Perla (15 cm de ancho), 4 R-5 dorados, un cuarteto de impresos Mi Primera Comunión y el R-24 dorado arriba, con 2 cruces de tubito T-260 Fashion Lila en el tallo. Colores medidos (no publica productos). Distinto: el R-24 de la foto es un cristal dorado impreso con palomas y letras: va liso en Metal Dorado 570 (no hay cristal dorado en la tabla ni ese impreso en R-24); la tienda vende el impreso de comunión sobre blanco (005) y en la foto se ven perlados; faltan los aros de tubito lila de arriba y abajo de cada cruz; el lila medido queda entre Fashion Lila y Satín Lila (se tomó el satinado por el brillo perlado).",
@@ -1116,7 +1116,7 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
     nota: "Igual: el mismo armado de la #392 (R-24 de 164 px ≈ 55 cm: 2,98 px/cm; ~1,8 m): cuarteto R-12 Frambuesa 014, cuarteto Verde Trébol 029, 4 R-5 Fashion Rosado 009, tallo de 10 niveles de R-5 Satín Perla con 2 cruces de T-260 verde, 4 R-5 rosados, cuarteto verde y el R-24 Neón Fucsia 212 arriba. Colores medidos (no publica productos): fucsia del R-24 #ff51bd → 212, verde #019a22 → 029, frambuesa #f6325a → 014. Distinto: los impresos de la foto (lunares blancos sobre frambuesa, destellos blancos sobre verde, «15» con estrellas en el R-24) no están en la tienda: van lisos en su fondo; faltan los aros verdes de tubito del tallo; en la foto los anillos rosados parecen de 5–6 R-5 y aquí son cuartetos.",
   }),
   idea({
-    numero: 399, slug: "columna-organica-encanto-dorado", nombre: "Columna orgánica Encanto Dorado", ocasiones: ["boda", "baby-shower", "bautizo", "primera-comunion"],
+    numero: 399, slug: "columna-organica-encanto-dorado", nombre: "Columna orgánica Encanto Dorado", ocasiones: ["boda", "aniversario", "baby-shower", "bautizo", "primera-comunion"],
     fotoUrl: FOTO("Columna-Org_C3_A1nica-Encanto-Dorado.jpg"),
     publicados: [
       { nombre: "GLOBO REDONDO SATIN BLANCO", url: "/products/globo-para-fiesta-latex-redondo-satin-blanco", formato: "R-12", codigo: "405" },
@@ -1127,7 +1127,7 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
     nota: "Igual: columna orgánica algo torcida de ~1,85 m (las perlas R-12 de 43 px ≈ 25 cm: 1,7 px/cm) en los productos publicados —Satín Blanco 405, Satín Perla 406 y Reflex Dorado 970— con cristales, R-12 y R-9 sobre todo (la foto casi no tiene R-5), el R-24 Reflex Dorado arriba a la derecha y el ramo de 5 R-12 de cristal con helio amarrado en lo alto, con sus cintas. Distinto: el motor orgánico da 63 globos en el cuerpo (la foto muestra ~52 de frente: no se cuentan uno a uno) y la silueta no sigue exactamente la S de la foto; los cristales de la columna se ven color champaña y van en Cristal Transparente 390, y los 5 de helio llevan un impreso dorado que no está en la tienda (van lisos).",
   }),
   idea({
-    numero: 400, slug: "columna-organica", nombre: "Columna orgánica reloj de arena", ocasiones: ["boda"],
+    numero: 400, slug: "columna-organica", nombre: "Columna orgánica reloj de arena", ocasiones: ["boda", "aniversario"],
     fotoUrl: FOTO("1f120d7f649d4350fc6de93b3aa08afd.jpg"),
     publicados: [
       { nombre: "GLOBO REDONDO SATIN ROSADO", url: "/products/globo-para-fiesta-latex-redondo-satin-rosado", formato: "R-12", codigo: "409" },
@@ -1139,7 +1139,7 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
     nota: "Igual: reloj de arena de ~1,85 m (R-24 de 165 px ≈ 55 cm: 3 px/cm): base ancha (77 cm) de R-12 y R-9 de unos 30 cm de alto y cintura de R-5 y R-9 de ~22 cm hasta 1,25 m, en los Satín publicados —Rosado 409, Plata 481, Perla 406 y Blanco 405— con algo de Metal Dorado 570 y cristal, unas ramitas de gypsophila, el R-24 Satín Perla arriba y 4 corazoncitos dorados alrededor de él. Distinto: el motor orgánico da 69 globos (no se cuentan uno a uno); los corazoncitos van como metalizados de 4\" dorado mate sin producto de la tienda (no hay corazón de látex dorado en la tabla) y falta el aro de tubito perla que los sostiene; el dorado y el cristal no están entre los productos publicados (se ven en la foto).",
   }),
   idea({
-    numero: 404, slug: "columna-romana-bigotes", nombre: "Columna romana Bigotes", ocasiones: ["general"],
+    numero: 404, slug: "columna-romana-bigotes", nombre: "Columna romana Bigotes", ocasiones: ["dia-del-padre"],
     fotoUrl: FOTO("COLUMNA_ROMANA_BIGOTES.jpg"),
     publicados: [
       { nombre: "GLOBO INFINITY® BIGOTES Y CORBATINES CRISTAL", url: "/products/globo-para-fiesta-latex-redondo-infinity-bigotes-y-corbatines-fashion-transparente", formato: "R-12", codigo: null },
@@ -1188,7 +1188,7 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
     nota: "Igual: la malla de eslabones turquesa (300 × 175 cm: 112 eslabones de Link-O-Loon 12 a 20 cm con sus parejas de unión de R-5) en la pared, detrás de la mesa con mantel de yute sobre el blanco, con las 10 flores de dos pisos de R-5 en las esquinas de arriba —5 a cada lado, cada una con 5 pétalos, 5 más chicos encima y un centro, en los colores medidos de la foto—, las palmeras en materas negras, el pastel de 3 pisos y los regalos de colores. Distinto: el turquesa medido es Fashion Azul Caribe 038, que no se fabrica en Link-O-Loon: la malla va en Fashion Azul 040; la malla de la foto se ve en cuadrícula (aquí rombos de la técnica de Sempertex); palmeras, pastel y regalos son escenografía sencilla.",
   }),
   idea({
-    numero: 465, slug: "cumpleanos-violeta-y-plata", nombre: "Cumpleaños violeta y plata: mesa de postres", ocasiones: ["bautizo", "primera-comunion"],
+    numero: 465, slug: "cumpleanos-violeta-y-plata", nombre: "Cumpleaños violeta y plata: mesa de postres", ocasiones: ["primera-comunion"],
     fotoUrl: FOTO("4c055bd05c996c70207adfd16dfb5877.jpg"),
     contenido: () => ESCENA(escena465()),
     nota: "Igual: la mesa de postres dorada con la fila de R-12 Reflex Champaña 971 colgados bajo su borde (el color medido entre plata y champaña: #a3998e → 971), las estanterías caladas, el marco de espejo, la torre de macarons, los cake pops, los frascos y las serpentinas lila y plata. Distinto: en la foto se ven 7 globos y la mesa sale cortada a la izquierda: se completan 11 a lo largo; las cintas lila entre los globos, las flores y los postres son escenografía sencilla.",
@@ -1227,7 +1227,7 @@ export const LOTE_07: readonly IdeaDigitalizada[] = [
     nota: "Igual: base de 4 R-12 Fashion Mostaza 023 y 5 R-5 Fashion Fucsia 012, 7 tallos de T-260 (lila, fucsia, naranja, verde lima, amarillo y 2 de cristal) amarrados con un moñito verde a 1 m y las 5 flores de 5 R-5 en las puntas (azul 040 con centro verde lima, rosada 009 con centro violeta, violeta 951 con centro fucsia, amarilla miel 021 con centro naranja y fucsia), ~1,95 m (base de 70 px ≈ 26 cm). Colores medidos (no publica productos). Distinto: los amarillos de la base llevan confeti rosado impreso (no está en la tienda: van lisos); los tallos son rectos de punta a punta pasando por el moño (en la foto se curvan) y los más largos cuentan 2 tubitos.",
   }),
   idea({
-    numero: 521, slug: "encanto-organico", nombre: "Aro Encanto orgánico", ocasiones: ["boda", "baby-shower", "bautizo", "primera-comunion", "navidad"],
+    numero: 521, slug: "encanto-organico", nombre: "Aro Encanto orgánico", ocasiones: ["boda", "aniversario", "baby-shower", "bautizo", "navidad", "primera-comunion"],
     fotoUrl: FOTO("Encanto-org_C3_A1nico.jpg"),
     publicados: [
       { nombre: "GLOBO REDONDO SATIN PLATA", url: "/products/globo-para-fiesta-latex-redondo-satin-plata", formato: "R-12", codigo: "481" },
