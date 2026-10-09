@@ -1,4 +1,6 @@
 import { armarEscena, type Escena, type NodoEscena } from "./escena";
+import { centroDe } from "./letras";
+import { muebleDe } from "./mobiliario-catalogo";
 import { armarPieza } from "./piezas";
 
 /**
@@ -42,6 +44,34 @@ export function colgadoDelanteDePaneles(escena: Escena, notas: string[]): Escena
       ...n,
       colocacion: { en: "libre" as const, xCm: r1(c.min.x - local.min.x), yCm: r1(c.min.y - local.min.y), zCm: r1(frente + SEPARACION_CM - local.min.z), giroGrados: 0 },
     };
+  });
+  return { ...escena, nodos };
+}
+
+/** Un letrero con texto (el nombre de acrílico, el neón): lo que se lee tiene que verse. */
+const esLetrero = (n: NodoEscena) => n.pieza.tipo === "escenografia" && Boolean(n.pieza.mueble && muebleDe(n.pieza.mueble.id)?.conTexto);
+
+/**
+ * **Los letreros con texto que los globos taparían** (el «Isabella» de acrílico sobre un aro cuando la lectura hace pasar la
+ * guirnalda por detrás de él): el letrero va suelto, en el mismo sitio, justo delante de los globos que caen sobre él en la
+ * foto (no delante de toda la guirnalda: solo de los que se le cruzan). Sin giro, como arriba.
+ */
+export function letrerosDelanteDeGlobos(escena: Escena, notas: string[]): Escena {
+  const letreros = escena.nodos.filter((n) => esLetrero(n) && n.colocacion.en !== "piso" && (n.colocacion.en !== "pared" || n.colocacion.pared === "fondo") && (n.colocacion.en !== "libre" || n.colocacion.giroGrados === 0));
+  if (!letreros.length || !escena.nodos.some((n) => n.pieza.tipo !== "escenografia")) return escena;
+  const armada = armarEscena(escena);
+  const globos = armada.porNodo.filter((n) => !letreros.some((l) => l.id === n.id)).flatMap((n) => n.globos.map((g) => ({ c: centroDe(g), r: g.infladoCm / 2 })));
+  const cajas = new Map(armada.porNodo.map((n) => [n.id, n.caja]));
+  const nodos = escena.nodos.map((n) => {
+    if (!letreros.includes(n)) return n;
+    const c = cajas.get(n.id);
+    if (!c) return n;
+    // Los globos cuyo disco cae sobre el letrero (de frente) y que asoman por delante de su cara.
+    const frente = globos.reduce((m, g) => (g.c.x + g.r > c.min.x && g.c.x - g.r < c.max.x && g.c.y + g.r > c.min.y && g.c.y - g.r < c.max.y ? Math.max(m, g.c.z + g.r) : m), -Infinity);
+    if (!(frente > c.max.z)) return n;
+    const local = armarPieza(n.pieza).caja;
+    notas.push(`«${n.nombre}» quedaba detrás de los globos que le pasan por delante: va delante de ellos.`);
+    return { ...n, colocacion: { en: "libre" as const, xCm: r1(c.min.x - local.min.x), yCm: r1(c.min.y - local.min.y), zCm: r1(frente + SEPARACION_CM - local.min.z), giroGrados: 0 } };
   });
   return { ...escena, nodos };
 }

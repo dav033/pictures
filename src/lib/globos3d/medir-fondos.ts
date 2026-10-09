@@ -58,6 +58,9 @@ function cajasDe(p: Fondo, leida: Caja, candidatas: readonly Candidata[]): Candi
   return grupo;
 }
 
+/** Una caja detectada que no llega a esta parte de lo leído (de ancho o de alto) es solo un pedazo del fondo. */
+const PARTE_MINIMA_DE_LO_LEIDO = 0.4;
+
 export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly FondoDetectado[], aspecto: number): { piezas: PiezaLeida[]; notas: string[] } {
   const usados = new Set<FondoDetectado>();
   const salida: PiezaLeida[] = [...piezas];
@@ -72,6 +75,13 @@ export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly Fond
       if (!cajas) continue;
       cajas.forEach((c) => usados.add(c.f));
       const union = { x0: Math.min(...cajas.map((c) => c.caja.x0)), x1: Math.max(...cajas.map((c) => c.caja.x1)), y0: Math.min(...cajas.map((c) => c.caja.y0)), y1: Math.max(...cajas.map((c) => c.caja.y1)) };
+      // Una caja mucho menor que lo leído es un pedazo (el pie de un aro que los globos tapan, una de las mesas del juego):
+      // se queda lo leído antes que encoger el fondo hasta esconderlo detrás de los globos.
+      if (union.x1 - union.x0 < PARTE_MINIMA_DE_LO_LEIDO * p.ancho || union.y1 - union.y0 < PARTE_MINIMA_DE_LO_LEIDO * p.alto) {
+        sinCaja.delete(i);
+        notaDe.set(i, `«${p.id}»: la caja detectada (${r3(union.x1 - union.x0)} × ${r3(union.y1 - union.y0)}) es un pedazo de lo leído (${p.ancho} × ${p.alto}): se queda lo leído.`);
+        continue;
+      }
       const nueva: Fondo = { ...p, x: r3(entre((union.x0 + union.x1) / 2 / aspecto, -0.2, 1.2)), yBase: r3(entre(union.y1, -0.2, 1.2)), ancho: r3(entre(union.x1 - union.x0, 0.005, 2)), alto: r3(entre(union.y1 - union.y0, 0.005, 2)) };
       salida[i] = nueva;
       sinCaja.delete(i);

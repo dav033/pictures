@@ -20,7 +20,7 @@ import { acabadoRotuloLeido, avisoDeTexto, limpiarTexto } from "./rotulos";
 import { mesaLeida, mobiliarioLeido, tintaLeida, type MedidaLeida, type MesaLeida } from "./compilar-mobiliario";
 import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
 import { codigoDeColor, fijosDeAnclas, paletaDeLectura } from "./colores-lectura";
-import { colgadoDelanteDePaneles } from "./colgado-delante";
+import { colgadoDelanteDePaneles, letrerosDelanteDeGlobos } from "./colgado-delante";
 
 export { codigoDeColor } from "./colores-lectura";
 
@@ -273,6 +273,6 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
   }
 
   // Lo colgado de la pared que un panel de fondo (parado delante) taparía va delante del panel.
-  escena = colgadoDelanteDePaneles(escena, notas);
+  escena = letrerosDelanteDeGlobos(colgadoDelanteDePaneles(escena, notas), notas);
   return { escena, notas: [...new Set(notas)], omitidas };
 }

@@ -10,6 +10,8 @@ import { compilarLectura } from "@/lib/globos3d/compilar-lectura";
 import type { LecturaFoto } from "@/lib/globos3d/lectura-foto";
 import { muebleDe } from "@/lib/globos3d/mobiliario-catalogo";
 import { fraseDeEscenografia } from "@/lib/globos3d/escenografia-ingles";
+import { armarEscena } from "@/lib/globos3d/escena";
+import { centroDe } from "@/lib/globos3d/letras";
 
 let fallos = 0;
 function prueba(nombre: string, f: () => void) {
@@ -75,6 +77,23 @@ prueba("un tablero leído «transparente» se queda de acrílico transparente (n
   assert.equal((opciones as { acabado?: string }).acabado, undefined, "sin el mate del «transparente»");
   const frase = fraseDeEscenografia(nodo.pieza as Parameters<typeof fraseDeEscenografia>[0]);
   assert.match(frase ?? "", /clear acrylic/);
+});
+
+prueba("un nombre de acrílico con una guirnalda que le pasa por detrás va delante de los globos que se le cruzan", () => {
+  const ROSA = { nombre: "rosado", hex: "#f4b6c8", peso: 100, acabado: "mate" as const };
+  const rotulo = { tipo: "fondo" as const, id: "rotulo_acrilico", x: 0.5, yBase: 0.32, ancho: 0.22, alto: 0.08, texto: "Isabella", colorTexto: "dorado", acabadoTexto: "cromado", colores: [{ nombre: "dorado", hex: "#d6b45a", peso: 100, acabado: "cromado" as const }] };
+  const guirnalda = { tipo: "guirnalda_organica" as const, puntos: [{ x: 0.25, y: 0.28, grosor: 0.14 }, { x: 0.5, y: 0.27, grosor: 0.14 }, { x: 0.75, y: 0.28, grosor: 0.14 }], tamanos: {}, racimos: 0.6, colores: [ROSA] };
+  const { escena, notas } = compilarLectura({ ...base, piezas: [rotulo, guirnalda] });
+  const armada = armarEscena(escena);
+  const letrero = armada.porNodo.find((n) => n.id.startsWith("rotulo-acrilico"))!;
+  const cruzan = armada.porNodo.filter((n) => n.id.startsWith("guirnalda")).flatMap((n) => n.globos).filter((g) => {
+    const c = centroDe(g), r = g.infladoCm / 2;
+    return c.x + r > letrero.caja.min.x && c.x - r < letrero.caja.max.x && c.y + r > letrero.caja.min.y && c.y - r < letrero.caja.max.y;
+  });
+  assert.ok(cruzan.length > 0, "la guirnalda le pasa por detrás");
+  assert.ok(cruzan.every((g) => centroDe(g).z + g.infladoCm / 2 <= letrero.caja.min.z + 0.5), "ningún globo de los que se le cruzan queda delante");
+  assert.ok(notas.some((n) => /va delante de ellos/.test(n)), notas.join(" | "));
+  assert.ok(!compilarLectura({ ...base, piezas: [rotulo] }).notas.some((n) => /va delante de ellos/.test(n)), "sin globos se queda donde estaba");
 });
 
 prueba("sin panel delante, lo colgado sigue en la pared", () => {

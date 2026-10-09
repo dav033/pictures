@@ -55,6 +55,16 @@ prueba("una pieza suelta sigue tomando solo su caja más cercana", () => {
   assert.ok(cerca((r.piezas[0] as Fondo).ancho, 0.3));
 });
 
+prueba("una caja que es un pedazo de lo leído (el pie del aro que los globos tapan) no encoge el fondo: queda lo leído", () => {
+  const aro = fondo("aro_metalico", 0.5, 0.62, 0.45, 0.57);
+  const r = medirFondos([aro], [{ id: "aro_metalico", box_2d: [450, 380, 620, 620] }], ASPECTO);
+  assert.deepEqual(r.piezas[0], aro);
+  assert.match(r.notas.join(" "), /es un pedazo de lo leído/);
+  // Una caja de su tamaño (aunque algo menor) sí lo mide.
+  const bien = medirFondos([aro], [{ id: "aro_metalico", box_2d: [60, 330, 620, 640] }], ASPECTO).piezas[0] as Fondo;
+  assert.ok(cerca(bien.alto, 0.56) && cerca(bien.ancho, 0.31), JSON.stringify(bien));
+});
+
 console.log("Familias de ids");
 prueba("la mesa leída como mesa_mantel y detectada como mesa_postres_mantel se mide", () => {
   const mesa = fondo("mesa_mantel", 0.5, 0.9, 0.5, 0.3);
