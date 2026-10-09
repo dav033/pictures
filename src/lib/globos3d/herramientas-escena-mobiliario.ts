@@ -1,3 +1,4 @@
+import { avisar, avisosDe, type AvisoUsuario } from "./avisos-usuario";
 import { z } from "zod";
 import { armarEscena, idNuevo, type Colocacion, type Escena, type NodoEscena } from "./escena";
 import type { AcabadoEscenografia } from "./escenografia";
@@ -78,7 +79,7 @@ function medidaAcotada(valor: number, rango: { min: number; max: number }, etiqu
   return v;
 }
 
-function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string } {
+function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string; avisos: AvisoUsuario[] } {
   const a = MobiliarioSchema.parse(argumentos ?? {});
   const entrada = FONDOS_CATALOGO.find((f) => f.id === a.id) ?? fallar(`No hay «${a.id}» en el catálogo de mobiliario.`);
   const notas: string[] = [];
@@ -118,7 +119,7 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
   const trae = mueble ? asientosDeEntrada(mueble, opciones) : 0;
   const asientos = trae ? ` Trae ${trae} ${trae === 1 ? "asiento" : "asientos"} cada una${mueble?.asiento ? "" : " (con el conjunto fijo: otro número de sillas va con agregar_mesas)"}.` : "";
   const resumen = `Agregué ${nuevos.length} «${entrada.nombre}» de ${textoMedidas(real)}${mueble ? "" : " (medidas del catálogo)"}: ${nuevos.map((x) => x.id).join(", ")}. Es escenografía (no cotiza).${asientos}`;
-  return { escena: actual, resumen: [resumen, ...new Set(notas)].join(" ") };
+  return { escena: actual, resumen: [resumen, ...new Set(notas)].join(" "), avisos: avisosDe(notas) };
 }
 
 /** Un sitio del reparto: un puesto del piso, una colocación ya hecha (pared) o «el de siempre» (`porDefecto`). */
@@ -139,7 +140,7 @@ function repartir(escena: Escena, a: Pedido, entrada: FondoCatalogo, real: { anc
       cx: (caja.min.x + caja.max.x) / 2, cz: (caja.min.z + caja.max.z) / 2, anchoCm: caja.max.x - caja.min.x, fondoCm: caja.max.z - caja.min.z,
       cantidad: n, holguraCm: real.fondoCm / 2 + (a.holgura_cm ?? 8), frenteCm: real.anchoCm,
     });
-    if (puestos.length < n) notas.push(`Alrededor de «${mesa.nombre}» solo caben ${puestos.length} de ${n}: puse ${puestos.length}.`);
+    if (puestos.length < n) avisar(notas, `Alrededor de «${mesa.nombre}» solo caben ${puestos.length} de ${n}: puse ${puestos.length}.`, "solo caben", "no caben", "no cupieron");
     return puestos.map((puesto) => ({ puesto }));
   }
   if (disposicion === "fila") {
@@ -152,7 +153,7 @@ function repartir(escena: Escena, a: Pedido, entrada: FondoCatalogo, real: { anc
 /** El sitio de un solo mueble sin reparto: x y z pedidos mandan; lo que falta, lo de siempre (esquivando lo que ya está, o encima de la mesa). */
 function colocacionSola(escena: Escena, a: Pedido, entrada: FondoCatalogo, real: { anchoCm: number; fondoCm: number }, notas: string[]): Colocacion {
   const { colocacion: base, aviso } = colocacionPorDefecto(escena, entrada, real);
-  if (aviso && a.x_cm === undefined) notas.push(aviso);
+  if (aviso && a.x_cm === undefined) avisar(notas, aviso, "no hay lugar", "encima de otra pieza", "muévela");
   if (base.en !== "piso") return base;
   return { ...base, xCm: a.x_cm ?? base.xCm, zCm: a.z_cm ?? base.zCm, giroGrados: a.giro_grados ?? 0 };
 }

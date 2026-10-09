@@ -1,5 +1,5 @@
 import { armarEscena, descendientes, type Escena, type EscenaArmada, type NodoArmado, type NodoEscena } from "./escena";
-import { superficieSuperior } from "./mobiliario-superficie";
+import { puntoEnSuperficie, superficieSuperior } from "./mobiliario-superficie";
 import { muebleDeMesa } from "./descripcion-mobiliario";
 import { CACHE_ARMADO } from "./altura-pieza";
 
@@ -40,13 +40,15 @@ export function problemasDeEscena(escena: Escena, armada?: EscenaArmada): Proble
   for (const mesa of mesas) {
     const cubierta = superficieSuperior(mesa, hecha);
     if (!cubierta) continue;
-    const t = cubierta.topeMundo, tope = cubierta.centro.y;
+    const tope = cubierta.centro.y;
     const propias = descendientes(escena, mesa.id);
     for (const n of escena.nodos) {
       const armado = hecha.porNodo.find((x) => x.id === n.id);
       if (propias.has(n.id) || !esDecoracionSuelta(n, armado)) continue;
       const c = armado.caja;
-      const dentro = c.min.x >= t.minX - MARGEN_CM && c.max.x <= t.maxX + MARGEN_CM && c.min.z >= t.minZ - MARGEN_CM && c.max.z <= t.maxZ + MARGEN_CM;
+      // La huella de la pieza (su caja en el piso) contra la tapa de verdad —su contorno, no la caja que la encierra—: una columna en el hueco de una U o
+      // en la esquina que deja una mesa girada 45° no está sobre la tapa aunque caiga dentro de su caja.
+      const dentro = [[c.min.x, c.min.z], [c.max.x, c.min.z], [c.max.x, c.max.z], [c.min.x, c.max.z]].every(([x, z]) => puntoEnSuperficie(cubierta, x!, z!, MARGEN_CM));
       if (!dentro || c.min.y >= tope - BAJO_LA_CUBIERTA_CM) continue;
       const que = c.max.y <= tope ? "quedó dentro de la mesa, tapada por el mantel: no se ve" : "atraviesa la mesa";
       salida.push({ tipo: "bajo_mesa", nodoId: n.id, mesaId: mesa.id, texto: `«${n.nombre}» (${n.id}) ${que} («${mesa.nombre}», ${mesa.id}; su cubierta está a ${Math.round(tope)} cm del piso y esta pieza empieza a ${Math.round(c.min.y)} cm). Ponla encima con mover_sobre (id = ${n.id}, padre_id = ${mesa.id}).` });

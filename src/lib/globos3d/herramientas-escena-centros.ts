@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { AvisoUsuario } from "./avisos-usuario";
 import { armarEscena, type Escena, type NodoEscena } from "./escena";
 import { centrosDe, centroDeMesa, cosaEncima, GRUPOS_MESA, mesasDeEscena, padreDeCentro, principalDelSalon, ranuraDe, ranurasAlternas, seleccionarMesas, type MesaDeEscena, type Ranura } from "./centros-mesa";
 import { altoDe, crearDiseno, recolorearCentro, reescalarCentro, TIPOS_DISENO } from "./centros-mesa-diseno";
@@ -52,6 +53,10 @@ function agrupar(motivos: ReadonlyArray<readonly [string, string]>): string {
   for (const [id, motivo] of motivos) por.set(motivo, [...(por.get(motivo) ?? []), id]);
   return [...por].map(([motivo, ids]) => `${lista(ids)}: ${motivo}`).join("; ");
 }
+
+/** Las mesas que se saltaron como aviso para el usuario (que el modelo no puede callar): `No quedaron (N): …`. */
+const avisoDeSaltadas = (saltadas: ReadonlyArray<readonly [string, string]>, verbo: string): AvisoUsuario[] =>
+  saltadas.length ? [{ texto: `${verbo} (${saltadas.length}): ${agrupar(saltadas)}.`, palabras: ["no quedaron", "no cambiaron", "no llevan", "no pude", "no cupo", "no cupieron", "no cabe", ...saltadas.map(([id]) => id)] }] : [];
 
 /** El contexto de toda llamada: la escena armada y sus mesas. */
 function contexto(escena: Escena) {
@@ -133,7 +138,7 @@ function decorar(escena: Escena, argumentos: unknown) {
     saltadas.length ? `No quedaron (${saltadas.length}): ${agrupar(saltadas)}.` : "",
     ...new Set(notas),
   ].filter(Boolean).join(" ");
-  return { escena: actual, resumen };
+  return { escena: actual, resumen, avisos: avisoDeSaltadas(saltadas, "No quedaron") };
 }
 
 // ----------------------------------------------------------------------------------------------------------
@@ -182,7 +187,7 @@ function completar(escena: Escena, argumentos: unknown) {
     saltadas.length ? `No quedaron (${saltadas.length}): ${agrupar(saltadas)}.` : "",
     ...new Set(notas),
   ].filter(Boolean).join(" ");
-  return { escena: actual, resumen };
+  return { escena: actual, resumen, avisos: avisoDeSaltadas(saltadas, "No quedaron") };
 }
 
 // ----------------------------------------------------------------------------------------------------------
@@ -230,6 +235,7 @@ function cambiar(escena: Escena, argumentos: unknown) {
   return {
     escena: actual,
     resumen: [`Cambié ${hechos.length} centro${hechos.length === 1 ? "" : "s"} (${queCambio}; ahora de ${alto} cm de alto): ${lista(hechos)}.`, saltadas.length ? `No cambiaron (${saltadas.length}): ${agrupar(saltadas)}.` : "", ...new Set(notas)].filter(Boolean).join(" "),
+    avisos: avisoDeSaltadas(saltadas, "No cambiaron"),
   };
 }
 

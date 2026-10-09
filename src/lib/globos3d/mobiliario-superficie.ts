@@ -34,8 +34,6 @@ export type SuperficieSuperior = {
   angostoCm: number;
   /** El contorno de la tapa en el mundo, (x, z). */
   contorno: Punto2[];
-  /** La caja de la tapa en el mundo (ejes x, z). */
-  topeMundo: { minX: number; maxX: number; minZ: number; maxZ: number };
   /** El marco de la mesa puesta (de ahí salen `local` y la normal de lo que se apoya). */
   marco: MarcoPieza;
   /** La mesa ya trae cosas encima de fábrica (regalos, dulces): no admite un centro sin forzar. */
@@ -45,10 +43,6 @@ export type SuperficieSuperior = {
 const REDONDAS_DEL_CATALOGO = /redonda|coctel|hexagonal/;
 
 const aMundo = (marco: MarcoPieza, x: number, y: number, z: number): Vec3 => puntoAlMundo(marco, { x, y, z });
-const cajaDe = (contorno: readonly Punto2[]) => ({
-  minX: Math.min(...contorno.map((p) => p.x)), maxX: Math.max(...contorno.map((p) => p.x)),
-  minZ: Math.min(...contorno.map((p) => p.y)), maxZ: Math.max(...contorno.map((p) => p.y)),
-});
 
 /**
  * La tapa de una mesa del catálogo armada: entre los sólidos, los que tienen al menos la mitad del área del mayor (la tapa, el sobremantel;
@@ -83,7 +77,7 @@ export function superficieSuperior(nodo: NodoEscena, armada: EscenaArmada): Supe
     return {
       nodoId: nodo.id, forma: parametrica.tipo === "redonda" || parametrica.tipo === "coctel" ? "circulo" : parametrica.tipo === "cuadrada" || parametrica.tipo === "rectangular" ? "rectangulo" : "contorno",
       centro, local: { x: s.centro.x, y: s.altoCm, z: s.centro.y }, altoCm: centro.y, radioUtilCm: s.radioUtilCm, anchoCm: parametrica.anchoCm, fondoCm: parametrica.fondoCm,
-      angostoCm: 2 * s.radioUtilCm, contorno, topeMundo: cajaDe(contorno), marco, deFabricaConCosas: false,
+      angostoCm: 2 * s.radioUtilCm, contorno, marco, deFabricaConCosas: false,
     };
   }
   const t = tapaDelCatalogo(hecho, marco);
@@ -97,7 +91,7 @@ export function superficieSuperior(nodo: NodoEscena, armada: EscenaArmada): Supe
   const angosto = Math.min(t.ancho, t.fondo);
   return {
     nodoId: nodo.id, forma: redonda ? "circulo" : "rectangulo", centro, local: { x: t.cx, y: t.alto, z: t.cz }, altoCm: centro.y, radioUtilCm: Math.round((angosto / 2) * 10) / 10,
-    anchoCm: t.ancho, fondoCm: t.fondo, angostoCm: angosto, contorno, topeMundo: cajaDe(contorno), marco, deFabricaConCosas: tapa.deFabricaConCosas,
+    anchoCm: t.ancho, fondoCm: t.fondo, angostoCm: angosto, contorno, marco, deFabricaConCosas: tapa.deFabricaConCosas,
   };
 }
 

@@ -12,7 +12,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { aplicarHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 import { claveDesconocida, sugerenciaDeClave } from "../../src/lib/globos3d/argumentos-desconocidos";
-import { avisosParaElUsuario, conHonestidad } from "../../src/lib/globos3d/honestidad-respuesta";
+import type { AvisoUsuario } from "../../src/lib/globos3d/avisos-usuario";
+import { conHonestidad } from "../../src/lib/globos3d/honestidad-respuesta";
 import { armarEscena, escenaEnIngles, SALA_INICIAL, type Escena } from "../../src/lib/globos3d/escena";
 import { colgadoDelTecho, descripcionRender3d, promptFotoDeLayout, promptRender3d } from "../../src/lib/globos3d/render-ia";
 import { REGLAS_AGENTE } from "../../src/lib/globos3d/escena-ia-agente";
@@ -28,15 +29,24 @@ const vacia = (): Escena => ({ sala: { ...SALA_INICIAL, anchoCm: 1200, fondoCm: 
 const paso = (e: Escena, herramienta: string, args: Record<string, unknown>): Escena => { const r = aplicarHerramienta(e, herramienta, args); if (!r.ok) assert.fail(`${herramienta}: ${r.error}`); return r.escena; };
 
 console.log("Avisos de herramientas que funcionaron");
-const AVISO = "AVISO DE COLOR (el motor puso el más parecido que sí se fabrica en ese tamaño; dilo al usuario): «Marco»: Ningún color de la paleta se fabrica en R-9: se usa Metal Rojo (515), el más parecido a Reflex Cristal Rojo (915). Si el usuario quiere solo esos colores, quita ese tamaño (ajustar_tamanos, accion quitar: R-9) o dilo en la respuesta.";
-prueba("el aviso se extrae sin la instrucción para el modelo", () => {
-  const [a] = avisosParaElUsuario(`Recoloreé todo.\n${AVISO}`);
-  assert.match(a!, /^«Marco»: Ningún color de la paleta se fabrica en R-9: se usa Metal Rojo \(515\)/);
-  assert.doesNotMatch(a!, /Si el usuario|ajustar_tamanos|dilo al usuario/);
-  assert.deepEqual(avisosParaElUsuario("Quité una pieza."), []);
+const TEXTO_AVISO = "«Marco»: Ningún color de la paleta se fabrica en R-9: se usa Metal Rojo (515), el más parecido a Reflex Cristal Rojo (915).";
+const AVISO: AvisoUsuario = { texto: TEXTO_AVISO, palabras: ["no se fabrica", "más parecid", "sustitu", "515", "915"] };
+prueba("el aviso de color es un dato de la herramienta, sin la instrucción para el modelo", () => {
+  const e = paso(vacia(), "agregar_pieza", { tipo: "arco_organico", colores: ["dorado reflex", "plata reflex"] });
+  const r = aplicarHerramienta(e, "cambiar_pieza", { id: "arco-organico", colores: ["azul reflex", "violeta reflex", "rojo reflex"] });
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.match(r.resumen, /AVISO DE COLOR/, "el resumen para el modelo lo sigue diciendo");
+  assert.equal(r.avisos?.length, 1);
+  assert.match(r.avisos![0]!.texto, /Ningún color de la paleta se fabrica en R-9: se usa/);
+  assert.doesNotMatch(r.avisos![0]!.texto, /Si el usuario|ajustar_tamanos|dilo al usuario/);
+  const sin = conHonestidad("Listo.", [], [], r.avisos);
+  assert.match(sin, /\n\nAviso: «.*»: Ningún color/);
+  assert.equal(conHonestidad("Ojo: ese color no se fabrica en R-9, puse el más parecido.", [], [], r.avisos), "Ojo: ese color no se fabrica en R-9, puse el más parecido.");
+  assert.equal(aplicarHerramienta(e, "ver_escena", {}).ok && (aplicarHerramienta(e, "ver_escena", {}) as { avisos?: unknown }).avisos, undefined);
 });
 prueba("la respuesta que lo calla recibe «Aviso: …»; la que lo dice no se repite", () => {
-  const avisos = avisosParaElUsuario(AVISO);
+  const avisos: AvisoUsuario[] = [{ texto: "«Marco»: Ningún color de la paleta se fabrica en R-9: se usa Metal Rojo (515), el más parecido a Reflex Cristal Rojo (915).", palabras: ["no se fabrica", "más parecid", "sustitu", "515", "915"] }];
   const r = conHonestidad("Listo, recoloreé la escena.", [], [], avisos);
   assert.match(r, /^Listo, recoloreé la escena\.\n\nAviso: «Marco»: Ningún color .*Metal Rojo \(515\)/);
   assert.doesNotMatch(r, /Ojo, no todo salió/, "un aviso no es un fallo");
@@ -46,7 +56,7 @@ prueba("la respuesta que lo calla recibe «Aviso: …»; la que lo dice no se re
 });
 prueba("la ruta junta los avisos de cada herramienta y los pasa a la respuesta final", () => {
   const ruta = readFileSync("src/app/api/escena-ia/route.ts", "utf8");
-  assert.match(ruta, /avisosUsuario\.push\(\.\.\.avisosParaElUsuario\(hecho\.resumen\)\)/);
+  assert.match(ruta, /avisosUsuario\.push\(\.\.\.\("avisos" in hecho \? hecho\.avisos \?\? \[\] : \[\]\)\)/);
   assert.match(ruta, /conHonestidad\(respuesta, fallos, problemas, avisosUsuario\)/);
 });
 

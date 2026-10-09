@@ -1,4 +1,7 @@
+import { colocacionSobreMesa } from "./centro-sobre-mesa";
+import { esCentro } from "./centros-mesa";
 import { armarEscena, idNuevo, puntoALocal, puntoAlMundo, type Escena, type NodoEscena } from "./escena";
+import { avisar } from "./avisos-usuario";
 import { grupoDeSillasDe } from "./mobiliario-asientos-mesa";
 import { esDelSalon } from "./salon-registro";
 import { muebleDe } from "./mobiliario-catalogo";
@@ -17,7 +20,7 @@ import type { PiezaArmada } from "./piezas";
 /**
  * **El conjunto de mesa dentro de una escena** (REQ-012): encontrar la mesa de unas sillas y las sillas de una mesa, cambiar las
  * sillas o la mesa dejando lo demás en su sitio (lo que está sobre la tapa se reubica), pasar a conjunto paramétrico los fijos de
- * antes (`mesa_redonda_sillas`, `mesa_imperial_sillas`), repartir varios conjuntos en cuadrícula y contar mesas y sillas de
+ * antes (`mesa_redonda_sillas`, `mesa_redonda10_sillas`, `mesa_imperial_sillas`), repartir varios conjuntos en cuadrícula y contar mesas y sillas de
  * verdad. Puro: sin red ni React.
  */
 
@@ -54,13 +57,13 @@ export function esMesaDelSalon(escena: Escena, id: string): boolean {
   return esDelSalon(escena, mesaId);
 }
 
-const LEGACY: ReadonlySet<string> = new Set(["mesa_redonda_sillas", "mesa_imperial_sillas"]);
+const LEGACY: ReadonlySet<string> = new Set(["mesa_redonda_sillas", "mesa_redonda10_sillas", "mesa_imperial_sillas"]);
 
 /** ¿Es uno de los conjuntos fijos de antes (una sola pieza con sus sillas Tiffany)? */
 export const esConjuntoFijo = (n: NodoEscena): boolean => n.pieza.tipo === "escenografia" && Boolean(n.pieza.mueble && !n.pieza.mueble.mesa && LEGACY.has(n.pieza.mueble.id));
 
 /**
- * Pasa un conjunto fijo (`mesa_redonda_sillas`, `mesa_imperial_sillas`) a mesa paramétrica con su grupo de sillas, en el mismo
+ * Pasa un conjunto fijo (`mesa_redonda_sillas`, `mesa_redonda10_sillas`, `mesa_imperial_sillas`) a mesa paramétrica con su grupo de sillas, en el mismo
  * sitio y con los mismos colores y medidas de mesa (la mesa conserva el id). Las sillas vuelven a sus 8 o 10 de siempre
  * (4 + 4 + una en cada cabecera en la imperial); la mesa y las sillas miden lo mismo salvo unos milímetros. Null si no es uno de ellos.
  */
@@ -73,11 +76,11 @@ export function pasarAConjunto(escena: Escena, id: string, notas: string[] = [])
   if (!nodo || !mueble || !fijo || !m || mueble.mesa) return null;
   const o = normalizarOpciones(m, mueble.opciones);
   const alto = (o.altoCm * 75) / 90;
-  const mesa = mueble.id === "mesa_redonda_sillas"
+  const mesa = mueble.id.startsWith("mesa_redonda")
     ? normalizarMesa({ tipo: "redonda", anchoCm: Math.max(60, Math.min(o.anchoCm, o.fondoCm) - 120), altoCm: alto, mantel: "piso", colorMantel: o.colores[0] })
     : normalizarMesa({ tipo: "rectangular", anchoCm: Math.max(120, o.anchoCm - 120), fondoCm: Math.max(60, o.fondoCm - 108), altoCm: alto, mantel: "piso", colorMantel: o.colores[0] });
   const hecho = sillasParaMesa(mesa, { cantidad: asientosDeEntrada(m, mueble.opciones), tipo: "tiffany", colorEstructura: o.colores[1], colorCojin: o.colores[2], disposicion: "alrededor" });
-  if (hecho.nota) notas.push(`«${id}»: ${hecho.nota}`);
+  if (hecho.nota) avisar(notas, `«${id}»: ${hecho.nota}`, "no caben", "solo caben", "caben");
   const nodoMesa: NodoEscena = { ...nodo, nombre: nombreDeMesa(mesa), pieza: piezaDeMesa(mesa) };
   const sinMesa = { ...escena, nodos: escena.nodos.map((n) => (n.id === id ? nodoMesa : n)) };
   return hecho.sillas ? conSillasNuevas(sinMesa, nodoMesa, hecho.sillas) : sinMesa;
@@ -105,7 +108,7 @@ export function cambiarSillas(escena: Escena, mesaId: string, pedido: PedidoSill
   const sinSillas = (): Escena => (previo ? { ...escena, nodos: escena.nodos.filter((n) => n.id !== previo.id) } : escena);
   if (!pedido || Math.round(pedido.cantidad) <= 0) return sinSillas();
   const r = sillasParaMesa(mesa, pedido, previo ? sillasDePieza(previo.pieza) : null);
-  if (r.nota) notas.push(`${mesaNodo.nombre}: ${r.nota}`);
+  if (r.nota) avisar(notas, `${mesaNodo.nombre}: ${r.nota}`, "no caben", "solo caben", "caben");
   if (!r.sillas) return sinSillas();
   if (!previo) return conSillasNuevas(escena, mesaNodo, r.sillas);
   const nuevo: NodoEscena = { ...previo, nombre: nombreDeSillas(r.sillas, mesaId), pieza: piezaDeSillas(r.sillas) };
@@ -183,7 +186,27 @@ export function cambiarMesa(escena: Escena, mesaId: string, cambio: Partial<Mesa
   const sillas = grupoDeSillasDe(actual, mesaId);
   const previas = sillas ? sillasDePieza(sillas.pieza) : null;
   if (previas) actual = cambiarSillas(actual, mesaId, { cantidad: previas.pedida }, notas);
-  return reubicarEncima(escena, actual, mesaId, vieja, nueva);
+  return reajustarCentros(reubicarEncima(escena, actual, mesaId, vieja, nueva), mesaId, notas);
+}
+
+/**
+ * Tras cambiar la mesa (tipo, medida, alto), cada centro de mesa se vuelve a poner en el centro de la tapa nueva con la misma función de siempre
+ * (`colocacionSobreMesa`): a su altura y centrado. El que ya no cabe (la tapa quedó más chica) se quita y se avisa, como hace el salón.
+ */
+function reajustarCentros(escena: Escena, mesaId: string, notas: string[]): Escena {
+  const mesa = escena.nodos.find((n) => n.id === mesaId);
+  const centros = escena.nodos.filter((n) => esCentro(n) && n.colocacion.en === "sobre" && n.colocacion.padreId === mesaId);
+  if (!mesa || !centros.length) return escena;
+  const armada = armarEscena(escena, CACHE);
+  const fuera = new Set<string>();
+  const nuevos = new Map<string, NodoEscena>();
+  for (const c of centros) {
+    const giro = c.colocacion.en === "sobre" ? c.colocacion.giroGrados : 0;
+    const colocacion = colocacionSobreMesa(escena, armada, mesa, c.pieza, { giroGrados: giro }, c.id);
+    if ("motivo" in colocacion) { fuera.add(c.id); avisar(notas, `El centro «${c.nombre}» (${c.id}) ya no cabe en «${mesa.nombre}» con la mesa nueva (${colocacion.motivo}): lo quité.`, "ya no cabe", "lo quité", c.id); }
+    else nuevos.set(c.id, { ...c, colocacion });
+  }
+  return { ...escena, nodos: escena.nodos.filter((n) => !fuera.has(n.id)).map((n) => nuevos.get(n.id) ?? n) };
 }
 
 // ----------------------------------------------------------------------------------------------------------

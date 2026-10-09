@@ -1,3 +1,4 @@
+import { avisoDicho, type AvisoUsuario } from "./avisos-usuario";
 import type { ProblemaEscena } from "./problemas-escena";
 
 /**
@@ -14,12 +15,19 @@ export type FalloPendiente = { herramienta: string; error: string; veces: number
 const MAX_ITEMS = 4;
 const MAX_ERROR = 170;
 
-/** La pieza que una llamada toca, de sus argumentos: la estructura o mesa (`padre_id`) y, si no, el `id` de la pieza. */
-export function objetivoDe(argumentos: unknown): string | undefined {
-  if (typeof argumentos !== "object" || argumentos === null) return undefined;
-  const a = argumentos as Record<string, unknown>;
+/** Las herramientas del salón no llevan un id de pieza: su objetivo es la zona que tocan o, si no, el salón (la clave de su registro). */
+const DEL_SALON: ReadonlySet<string> = new Set(["armar_salon", "ajustar_salon", "mover_zona", "quitar_zona", "planificar_evento"]);
+
+/**
+ * La pieza que una llamada toca, de sus argumentos: la estructura o mesa (`padre_id`), el `id` de la pieza o, si pide varias, sus `ids` ordenados (un éxito
+ * sobre otras mesas no cancela el fallo de estas). Las herramientas del salón apuntan a su zona o a «salon».
+ */
+export function objetivoDe(argumentos: unknown, herramienta?: string): string | undefined {
+  const a = typeof argumentos === "object" && argumentos !== null ? argumentos as Record<string, unknown> : {};
+  if (herramienta && DEL_SALON.has(herramienta)) return typeof a.zona === "string" && a.zona ? `salon:${a.zona}` : "salon";
   for (const clave of ["padre_id", "alrededor_de", "id"]) if (typeof a[clave] === "string" && a[clave]) return a[clave] as string;
-  return undefined;
+  const ids = Array.isArray(a.ids) ? a.ids.filter((x): x is string => typeof x === "string" && x !== "") : [];
+  return ids.length ? [...ids].sort().join(",") : undefined;
 }
 
 /**
@@ -69,37 +77,13 @@ const VERBO: Readonly<Record<string, string>> = {
 };
 const verboDe = (herramienta: string) => VERBO[herramienta] ?? herramienta.replace(/_/g, " ");
 
-/**
- * Los avisos que una herramienta EXITOSA le manda decir al usuario («AVISO DE COLOR (…; dilo al usuario): …»): el motor cambió algo por su cuenta
- * (286 R-9 quedaron en Metal Rojo porque el color pedido no se fabrica en ese tamaño) y la respuesta lo calló (2026-10-09). Devuelve el texto del aviso
- * sin la instrucción para el modelo; vacío si el resultado no trae ninguno.
- */
-export function avisosParaElUsuario(resumen: string): string[] {
-  const salida: string[] = [];
-  for (const linea of resumen.split("\n")) {
-    const m = /AVISO[^(:]*\([^)]*dilo[^)]*\):\s*(.+)$/i.exec(linea);
-    if (!m) continue;
-    // Sin el remedio para el modelo («Si el usuario quiere solo esos colores, quita ese tamaño…»).
-    const texto = m[1]!.split(/\s+Si el usuario\b/)[0]!.trim();
-    if (texto) salida.push(texto.length > 320 ? `${texto.slice(0, 319)}…` : texto);
-  }
-  return salida;
-}
-
-/** El aviso ya está en la respuesta: dice que no se fabrica o que se usó el más parecido, o nombra alguno de sus códigos de color. */
-function avisoDicho(respuesta: string, aviso: string): boolean {
-  if (/no se fabrica|m[áa]s parecid|sustitu|reemplaz/i.test(respuesta)) return true;
-  const codigos = aviso.match(/\b\d{3}\b/g) ?? [];
-  return codigos.some((c) => respuesta.includes(c));
-}
-
 const plural = (n: number) => (n === 1 ? "" : ` (${n} veces)`);
 
 /**
  * La respuesta con lo que falló dicho de frente. Sin fallos ni problemas, igual. Con fallos y un texto que no admite nada, se agrega
  * «No pude: …»; con una decoración que quedó dentro de una mesa y el texto sin mencionarla, «Quedó mal: …». Nunca quita lo que dijo el modelo.
  */
-export function conHonestidad(respuesta: string, fallos: readonly FalloPendiente[], problemas: readonly ProblemaEscena[], avisos: readonly string[] = []): string {
+export function conHonestidad(respuesta: string, fallos: readonly FalloPendiente[], problemas: readonly ProblemaEscena[], avisos: readonly AvisoUsuario[] = []): string {
   const partes: string[] = [];
   if (fallos.length && !ADMITE.test(respuesta)) {
     const items = fallos.slice(0, MAX_ITEMS).map((f) => `${verboDe(f.herramienta)}${plural(f.veces)}: ${f.error}`);
@@ -111,7 +95,7 @@ export function conHonestidad(respuesta: string, fallos: readonly FalloPendiente
     const items = sinDecir.slice(0, MAX_ITEMS).map((p) => primeraFrase(p.texto));
     partes.push(`Quedó mal: ${items.join(" · ")}`);
   }
-  const avisosSinDecir = [...new Set(avisos)].filter((a) => !avisoDicho(respuesta, a)).slice(0, MAX_ITEMS);
+  const avisosSinDecir = [...new Map(avisos.map((a) => [a.texto, a])).values()].filter((a) => !avisoDicho(respuesta, a)).map((a) => a.texto.length > 320 ? `${a.texto.slice(0, 319)}…` : a.texto).slice(0, MAX_ITEMS);
   if (!partes.length && !avisosSinDecir.length) return respuesta;
   const ojo = partes.length ? `Ojo, no todo salió como se cuenta: ${partes.join(". ")}`.replace(/\.\.$/, ".") : "";
   const aviso = avisosSinDecir.length ? `Aviso: ${avisosSinDecir.join(" · ")}` : "";

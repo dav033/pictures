@@ -39,7 +39,8 @@ import { comprobarNombreMueble, errorDeNombreConSillas, muebleDeNodo } from "./d
 import { sillasDeMesaNodo } from "./mobiliario-asientos-mesa";
 import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
 import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, guirnaldaFeston, piezaNueva } from "./escenas-presets";
-import { avisosDeColor } from "./avisos-color-escena";
+import { avisosDeColor, avisosDeColorParaElUsuario } from "./avisos-color-escena";
+import type { AvisoUsuario } from "./avisos-usuario";
 import { cambiarMobiliario, resumenDeEscenografia } from "./herramientas-escena-mobiliario";
 import { elementosDeEscenografia } from "./mobiliario-pieza";
 import { ACABADOS_ROTULO } from "./rotulos";
@@ -883,7 +884,7 @@ function colocacionDeLugar(lugar: LugarPieza, pieza: Pieza): Colocacion {
 export const ESQUEMA_BUSCAR_EN_BIBLIOTECA = ESQUEMAS.buscar_en_biblioteca;
 
 export type ResultadoHerramienta =
-  | { ok: true; escena: Escena; resumen: string; consulta: boolean }
+  | { ok: true; escena: Escena; resumen: string; consulta: boolean; /** Avisos para el usuario aunque la herramienta funcionó (ver `avisos-usuario.ts`). */ avisos?: readonly AvisoUsuario[] }
   | { ok: false; escena: Escena; error: string };
 
 /**
@@ -1277,7 +1278,9 @@ export function aplicarHerramienta(escena: Escena, nombre: string, argumentos: u
     if (desconocida) return { ok: false, escena, error: desconocida };
     const hecho = extra ? extra.aplicar(escena, argumentos ?? {}) : ejecutar(escena, nombre as NombreHerramienta, argumentos ?? {});
     const avisoColor = hecho.consulta ? "" : avisosDeColor(escena, hecho.escena);
-    return { ok: true, escena: hecho.escena, resumen: avisoColor && !hecho.resumen.includes(avisoColor) ? `${hecho.resumen} ${avisoColor}` : hecho.resumen, consulta: hecho.consulta ?? false };
+    const propios: readonly AvisoUsuario[] = (hecho as { avisos?: readonly AvisoUsuario[] }).avisos ?? [];
+    const avisos = [...propios, ...(hecho.consulta ? [] : avisosDeColorParaElUsuario(escena, hecho.escena))];
+    return { ok: true, escena: hecho.escena, resumen: avisoColor && !hecho.resumen.includes(avisoColor) ? `${hecho.resumen} ${avisoColor}` : hecho.resumen, consulta: hecho.consulta ?? false, ...(avisos.length ? { avisos } : {}) };
   } catch (error) {
     if (error instanceof z.ZodError) return { ok: false, escena, error: errorDeZod(error) };
     if (error instanceof ErrorHerramienta) return { ok: false, escena, error: error.message };

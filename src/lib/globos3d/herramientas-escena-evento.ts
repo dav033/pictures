@@ -1,3 +1,4 @@
+import { avisosDe, type AvisoUsuario } from "./avisos-usuario";
 import { z } from "zod";
 import { armarEscena, type Escena } from "./escena";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
@@ -66,7 +67,7 @@ export const alcanceDe = (alcance: AlcanceEvento | undefined, invitados: number 
 /** Una figura o letras de foil de la composición del fondo (su id empieza así: lo pone `decorarSalon`). */
 const esFoilDelFondo = (n: { id: string }) => n.id.startsWith("salon-fondo-foil");
 
-function planificar(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string } {
+function planificar(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string; avisos: AvisoUsuario[] } {
   const a = EventoSchema.parse(argumentos ?? {});
   const notas: string[] = [];
   const mesa = a.mesa ?? "redonda8";
@@ -114,6 +115,7 @@ function planificar(escena: Escena, argumentos: unknown): { escena: Escena; resu
     }
   }
   notas.push(...hecho.locales);
+  const avisosDelSalon = avisosDe(hecho.locales);
   const { salon, adoptada } = hecho;
   let decorada = hecho.decorada;
   if (!adoptada) decorada = ponerIdeasDeBiblioteca(decorada, zonasDeEscena(decorada), { tipo: a.tipo_evento, tematica: a.tematica, semilla: composicion.semilla, colores, alFrente: alcance === "solo_decoracion" }, notas);
@@ -123,7 +125,7 @@ function planificar(escena: Escena, argumentos: unknown): { escena: Escena; resu
   const centros = alcance !== "solo_decoracion";
   const final = centros || techos.length ? decorarMesasYTecho(decorada, { colores, estilo, centros, techos }, notas) : decorada;
   const piezasNuevas = final.nodos.length - escena.nodos.length;
-  return { escena: final, resumen: [`Evento ${a.tipo_evento}${a.tematica ? ` «${a.tematica}»` : ""} (${alcance}): ${salon.resumen} Fondo (opción ${variante}): ${NOMBRE_COMPOSICION[composicion.fondo]}. ${piezasNuevas} piezas nuevas con globos ${estilo === "organico" ? "orgánicos" : "clásicos"}.`, ...new Set(notas)].join(" ") };
+  return { escena: final, resumen: [`Evento ${a.tipo_evento}${a.tematica ? ` «${a.tematica}»` : ""} (${alcance}): ${salon.resumen} Fondo (opción ${variante}): ${NOMBRE_COMPOSICION[composicion.fondo]}. ${piezasNuevas} piezas nuevas con globos ${estilo === "organico" ? "orgánicos" : "clásicos"}.`, ...new Set(notas)].join(" ") , avisos: [...avisosDelSalon, ...avisosDe(notas)] };
 }
 
 const NOMBRE_COMPOSICION: Readonly<Record<ArquetipoFondo, string>> = {

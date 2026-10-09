@@ -83,7 +83,8 @@ export function sillasDeMesaNodo(escena: Escena, mesa: NodoEscena): SillasDeMesa
   };
   // Un conjunto fijo del catálogo trae sus sillas dentro y son Tiffany; una silla suelta no es «de» una mesa.
   if (!esMesaParametrica(mesa.pieza) && esMesa(mesa)) sumar("tiffany", asientosPropios(mesa), mesa.id);
-  const grupo = esMesaParametrica(mesa.pieza) ? grupoDeSillasDe(escena, mesa.id) : null;
+  // El grupo de sillas de la mesa se cuenta sea cual sea la mesa: lo que está dibujado es lo que cuenta (`contarMobiliario` suma las mismas piezas).
+  const grupo = esMesa(mesa) ? grupoDeSillasDe(escena, mesa.id) : null;
   const s = grupo ? sillasDePieza(grupo.pieza) : null;
   if (grupo && s) sumar(s.tipo, s.puestos.length, grupo.id);
   return { total: [...tipos.values()].reduce((a, t) => a + t.cantidad, 0), tipos: [...tipos].map(([tipo, t]) => ({ tipo, ...t })), nodos };

@@ -2,7 +2,7 @@ import { colocacionSobreMesa } from "./centro-sobre-mesa";
 import { idNuevo, type Escena, type EscenaArmada, type MarcoPieza, type NodoEscena } from "./escena";
 import { esGrupoDeSillas, mesaDePieza } from "./mobiliario-conjunto";
 import { tapaDeMesa } from "./mobiliario-asientos-mesa";
-import { superficieSuperior, type SuperficieSuperior } from "./mobiliario-superficie";
+import { puntoEnSuperficie, superficieSuperior, type SuperficieSuperior } from "./mobiliario-superficie";
 import type { Pieza } from "./piezas";
 import { registroVivo } from "./salon-registro";
 import { zonasDeEscena } from "./salon-zonas";
@@ -132,7 +132,7 @@ export function ranurasAlternas(mesas: readonly MesaDeEscena[]): Map<string, Ran
 /** Por qué una mesa ya no admite un centro sin forzar: lleva algo encima (regalos, un pastel, otra pieza apoyada), o null. */
 export function cosaEncima(escena: Escena, armada: EscenaArmada, mesa: MesaDeEscena): string | null {
   if (mesa.conCosas) return "ya trae cosas encima de fábrica";
-  const t = mesa.cubierta.topeMundo, cara = mesa.cubierta.centro.y;
+  const cara = mesa.cubierta.centro.y;
   for (const n of escena.nodos) {
     // Las sillas de la mesa (su grupo) y otras mesas no son «algo encima».
     if (n.id === mesa.nodo.id || esCentro(n) || esGrupoDeSillas(n.pieza)) continue;
@@ -141,7 +141,7 @@ export function cosaEncima(escena: Escena, armada: EscenaArmada, mesa: MesaDeEsc
     if (!hecho || hecho.copias === 0 || tapaDeMesa(n)) continue;
     const c = hecho.caja;
     const cx = (c.min.x + c.max.x) / 2, cz = (c.min.z + c.max.z) / 2;
-    if (c.min.y >= cara - 3 && c.min.y <= cara + 4 && cx >= t.minX - 5 && cx <= t.maxX + 5 && cz >= t.minZ - 5 && cz <= t.maxZ + 5) return `lleva «${n.nombre}» encima`;
+    if (c.min.y >= cara - 3 && c.min.y <= cara + 4 && puntoEnSuperficie(mesa.cubierta, cx, cz, 5)) return `lleva «${n.nombre}» encima`;
   }
   return null;
 }

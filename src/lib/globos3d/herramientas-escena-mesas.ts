@@ -3,6 +3,7 @@ import { idNuevo, type Escena, type NodoEscena } from "./escena";
 import { fallar } from "./herramientas-escena-colores";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
 import { MAX_NODOS } from "./limites-escena";
+import { avisar, avisosDe, type AvisoUsuario } from "./avisos-usuario";
 import { errorDeNombreConSillas } from "./descripcion-mobiliario";
 import { grupoDeSillasDe, sillasDeMesaNodo, textoSillasDeMesa } from "./mobiliario-asientos-mesa";
 import { hexDeColor } from "./mobiliario-colores";
@@ -166,12 +167,12 @@ function mesasDelPedido(escena: Escena, ids: readonly string[] | undefined, nota
     if (suyas.length) fallar(`${suyas.slice(0, 4).join(", ")}${suyas.length > 4 ? "…" : ""} ${suyas.length === 1 ? "es una mesa del salón armado" : "son mesas del salón armado"}: sus mesas y sillas ${aSalon}. cambiar_sillas y cambiar_mesas son para mesas de agregar_mesas.`);
   } else {
     for (const n of escena.nodos) if ((esConjuntoFijo(n) || esMesaParametrica(n.pieza)) && esMesaDelSalon(escena, n.id)) delSalon.add(n.id);
-    if (delSalon.size) notas.push(`No toqué ${cuentaMesas(delSalon.size)} del salón armado (${[...delSalon].slice(0, 4).join(", ")}${delSalon.size > 4 ? "…" : ""}): ${aSalon}. Aquí solo cambian las mesas que no son del salón.`);
+    if (delSalon.size) avisar(notas, `No toqué ${cuentaMesas(delSalon.size)} del salón armado (${[...delSalon].slice(0, 4).join(", ")}${delSalon.size > 4 ? "…" : ""}): ${aSalon}. Aquí solo cambian las mesas que no son del salón.`, "ajustar_salon", "del salón", "no toqué");
   }
   const fijos = (ids?.length ? ids.filter((id) => escena.nodos.some((n) => n.id === id && esConjuntoFijo(n))) : escena.nodos.filter((n) => esConjuntoFijo(n) && !delSalon.has(n.id)).map((n) => n.id));
   for (const id of fijos) {
     // Cada conjunto fijo pasa a ser dos piezas (mesa y sillas): sin lugar en el tope, se queda como estaba.
-    if (actual.nodos.length >= MAX_NODOS) { notas.push(`«${id}» no se pudo pasar a mesa con sillas editables: la escena llegó al tope de ${MAX_NODOS} piezas.`); continue; }
+    if (actual.nodos.length >= MAX_NODOS) { avisar(notas, `«${id}» no se pudo pasar a mesa con sillas editables: la escena llegó al tope de ${MAX_NODOS} piezas.`, "tope", "no se pudo"); continue; }
     const nueva = pasarAConjunto(actual, id, notas);
     if (nueva) { actual = nueva; notas.push(`«${id}» era un conjunto fijo: lo pasé a mesa con sillas editables (mismos colores; la mesa y las sillas se rehacen por su perímetro).`); }
   }
@@ -203,7 +204,7 @@ const giroDe = (n: NodoEscena) => (n.colocacion.en === "piso" ? n.colocacion.gir
 
 type Agregar = z.infer<typeof AgregarSchema>;
 
-function agregarMesas(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string } {
+function agregarMesas(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string; avisos: AvisoUsuario[] } {
   const a: Agregar = AgregarSchema.parse(argumentos ?? {});
   const notas: string[] = [];
   const preset = a.preset === "imperial_10" ? { tipo: "rectangular" as const, sillas: 10 } : a.preset === "redonda_8" ? { tipo: "redonda" as const, sillas: 8 } : null;
@@ -237,7 +238,7 @@ function agregarMesas(escena: Escena, argumentos: unknown): { escena: Escena; re
   const libres = Math.max(0, MAX_NODOS - escena.nodos.length);
   const caben = Math.min(cantidad, Math.floor(libres / porConjunto));
   if (caben < 1) fallar(`La escena ya tiene ${escena.nodos.length} piezas y el máximo es ${MAX_NODOS}: no cabe ni una mesa${sillas ? " con sus sillas" : ""}. Quita algo antes.`);
-  if (caben < cantidad) notas.push(`Pediste ${cantidad} mesas pero solo caben ${caben} (la escena admite ${MAX_NODOS} piezas y cada mesa${sillas ? " con sillas usa 2" : " usa 1"}): puse ${caben}.`);
+  if (caben < cantidad) avisar(notas, `Pediste ${cantidad} mesas pero solo caben ${caben} (la escena admite ${MAX_NODOS} piezas y cada mesa${sillas ? " con sillas usa 2" : " usa 1"}): puse ${caben}.`, "solo caben", "no caben", "no cupieron", "tope");
 
   // La celda de cada conjunto: la mesa más lo que sobresalen sus sillas por cada lado, y un pasillo.
   const pasillo = a.separacion_cm ?? 40;
@@ -249,11 +250,11 @@ function agregarMesas(escena: Escena, argumentos: unknown): { escena: Escena; re
   let puntos = rejilla.puntos;
   if (caben === 1 && a.x_cm === undefined) {
     const libre = esquivarEnElPiso(escena, centro.x, centro.z, celdaAncho - pasillo, celdaFondo - pasillo);
-    if (libre) puntos = [{ x: libre.x, z: libre.z }]; else notas.push("No hay un hueco libre para la mesa con sus sillas: quedó en el centro, encima de otra pieza. Muévela.");
+    if (libre) puntos = [{ x: libre.x, z: libre.z }]; else avisar(notas, "No hay un hueco libre para la mesa con sus sillas: quedó en el centro, encima de otra pieza. Muévela.", "hueco", "encima de otra pieza", "no hay lugar");
   }
   const ocupaAncho = rejilla.columnas * celdaAncho - pasillo, ocupaFondo = rejilla.filas * celdaFondo - pasillo;
   if (caben > 1 && (ocupaAncho > escena.sala.anchoCm || ocupaFondo > escena.sala.fondoCm)) {
-    notas.push(`Los ${caben} conjuntos ocupan ${Math.round(ocupaAncho) / 100} × ${Math.round(ocupaFondo) / 100} m y la sala mide ${Math.round(escena.sala.anchoCm) / 100} × ${Math.round(escena.sala.fondoCm) / 100} m: se salen de la sala. Agrándala, pon menos mesas o usa una separacion_cm menor.`);
+    avisar(notas, `Los ${caben} conjuntos ocupan ${Math.round(ocupaAncho) / 100} × ${Math.round(ocupaFondo) / 100} m y la sala mide ${Math.round(escena.sala.anchoCm) / 100} × ${Math.round(escena.sala.fondoCm) / 100} m: se salen de la sala. Agrándala, pon menos mesas o usa una separacion_cm menor.`, "se salen de la sala", "se salen", "no caben");
   }
 
   let actual = escena;
@@ -266,19 +267,19 @@ function agregarMesas(escena: Escena, argumentos: unknown): { escena: Escena; re
       ids: { mesa: idMesa, sillas: idSillas }, mesa, sillas,
       nombre: a.nombre ? `${a.nombre}${caben > 1 ? ` ${i + 1}` : ""}` : caben > 1 ? `${nombreDeMesa(guardada)} ${i + 1}` : undefined, colocacion: { en: "piso", xCm: p.x, zCm: p.z, giroGrados: giro },
     });
-    for (const nota of conjunto.notas) notas.push(nota);
+    for (const nota of conjunto.notas) avisar(notas, nota, "no caben", "solo caben", "caben");
     actual = { ...actual, nodos: [...actual.nodos, ...conjunto.nodos] };
     creadas.push(idMesa);
   });
   const resumen = `Agregué ${resumenDeConjuntos(actual, creadas)}: ${creadas.join(", ")}.`;
-  return { escena: actual, resumen: [resumen, ...new Set(notas)].join(" ") };
+  return { escena: actual, resumen: [resumen, ...new Set(notas)].join(" "), avisos: avisosDe(notas) };
 }
 
 // ----------------------------------------------------------------------------------------------------------
 // cambiar_sillas
 // ----------------------------------------------------------------------------------------------------------
 
-function cambiarSillasTool(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string } {
+function cambiarSillasTool(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string; avisos: AvisoUsuario[] } {
   const a = SillasSchema.parse(argumentos ?? {});
   if (a.cantidad === undefined && !a.tipo_silla && !a.color_silla && a.color_cojin === undefined && !a.disposicion && !a.mirando_a) fallar("No pediste ningún cambio: dime cantidad, tipo_silla, color_silla, color_cojin, disposicion o mirando_a.");
   const notas: string[] = [];
@@ -291,7 +292,7 @@ function cambiarSillasTool(escena: Escena, argumentos: unknown): { escena: Escen
     const mesaNodo = actual.nodos.find((n) => n.id === id)!;
     const previas = grupoDeSillasDe(actual, id);
     if (!previas && (a.cantidad === undefined || a.cantidad === 0)) { sinSillas.push(id); continue; }
-    if (!previas) { nuevosGrupos++; if (nuevosGrupos > sobrantes) { notas.push(`La escena llegó al tope de ${MAX_NODOS} piezas: «${mesaNodo.nombre}» (${id}) se quedó sin sillas.`); continue; } }
+    if (!previas) { nuevosGrupos++; if (nuevosGrupos > sobrantes) { avisar(notas, `La escena llegó al tope de ${MAX_NODOS} piezas: «${mesaNodo.nombre}» (${id}) se quedó sin sillas.`, "sin sillas", "tope"); continue; } }
     const pedido: PedidoSillas = {
       cantidad: a.cantidad ?? sillasDePieza(previas!.pieza)?.pedida ?? 0,
       ...(a.tipo_silla ? { tipo: a.tipo_silla } : {}), ...(a.color_silla ? { colorEstructura: hexDeColor(a.color_silla, notas) } : {}),
@@ -305,14 +306,14 @@ function cambiarSillasTool(escena: Escena, argumentos: unknown): { escena: Escen
   if (sinSillas.length) notas.push(`${cuenta(sinSillas.length, "mesa no tenía", "mesas no tenían")} sillas (${sinSillas.slice(0, 6).join(", ")}${sinSillas.length > 6 ? "…" : ""}): dime cuántas poner con cantidad.`);
   const verbo = a.cantidad === 0 ? "Quité las sillas" : "Cambié las sillas";
   const resumen = `${verbo} de ${cuenta(mesas.length, "mesa", "mesas")}: ${resumenDeConjuntos(actual, mesas)}.`;
-  return { escena: actual, resumen: [resumen, ...new Set(notas)].join(" ") };
+  return { escena: actual, resumen: [resumen, ...new Set(notas)].join(" "), avisos: avisosDe(notas) };
 }
 
 // ----------------------------------------------------------------------------------------------------------
 // cambiar_mesas
 // ----------------------------------------------------------------------------------------------------------
 
-function cambiarMesasTool(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string } {
+function cambiarMesasTool(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string; avisos: AvisoUsuario[] } {
   const a = MesasSchema.parse(argumentos ?? {});
   if (!a.tipo && a.ancho_cm === undefined && a.fondo_cm === undefined && a.alto_cm === undefined && !a.mantel && !a.color_mantel && !a.color_patas && !a.camino) fallar("No pediste ningún cambio: dime tipo, ancho_cm, fondo_cm, alto_cm, mantel, color_mantel, color_patas o camino.");
   const notas: string[] = [];
@@ -335,7 +336,7 @@ function cambiarMesasTool(escena: Escena, argumentos: unknown): { escena: Escena
     actual = cambiarMesa(actual, id, cambio, notas);
   }
   const resumen = `Cambié ${cuenta(mesas.length, "mesa", "mesas")}, con sus sillas y lo que tienen encima en su sitio: ${resumenDeConjuntos(actual, mesas)}.`;
-  return { escena: actual, resumen: [resumen, ...new Set(notas)].join(" ") };
+  return { escena: actual, resumen: [resumen, ...new Set(notas)].join(" "), avisos: avisosDe(notas) };
 }
 
 export const HERRAMIENTAS_MESAS: Readonly<Record<string, HerramientaExtra>> = {
@@ -346,12 +347,12 @@ export const HERRAMIENTAS_MESAS: Readonly<Record<string, HerramientaExtra>> = {
   },
   cambiar_sillas: {
     esquema: SillasSchema,
-    descripcion: "Cambia las sillas de una, varias o todas las mesas de agregar_mesas (ids; sin ids = todas): cantidad (0 las quita), tipo_silla, color, cojín, disposicion (alrededor, un_lado, dos_lados, cabeceras, frente). Reparte por el perímetro real de cada mesa y, si no caben, pone las que caben y lo avisa. Pasa a editables los conjuntos fijos mesa_redonda_sillas y mesa_imperial_sillas.",
+    descripcion: "Cambia las sillas de una, varias o todas las mesas de agregar_mesas (ids; sin ids = todas): cantidad (0 las quita), tipo_silla, color, cojín, disposicion (alrededor, un_lado, dos_lados, cabeceras, frente). Reparte por el perímetro real de cada mesa y, si no caben, pone las que caben y lo avisa. Pasa a editables los conjuntos fijos que NO son del salón. Las mesas de un salón armado no: esas van con ajustar_salon (sillas_por_mesa, mesas).",
     aplicar: cambiarSillasTool,
   },
   cambiar_mesas: {
     esquema: MesasSchema,
-    descripcion: "Cambia el tipo, la medida, el alto, el mantel o los colores de una, varias o todas las mesas de agregar_mesas (ids; sin ids = todas) conservando sus sillas (se vuelven a repartir) y lo que hay sobre la tapa (centros de mesa, torta).",
+    descripcion: "Cambia el tipo, la medida, el alto, el mantel o los colores de una, varias o todas las mesas de agregar_mesas (ids; sin ids = todas) conservando sus sillas (se vuelven a repartir) y lo que hay sobre la tapa (centros de mesa, torta). Las mesas de un salón armado no: esas van con ajustar_salon.",
     aplicar: cambiarMesasTool,
   },
 };
