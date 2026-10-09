@@ -2,6 +2,7 @@
 
 import { useRef, type ReactNode, type RefObject } from "react";
 import { ArrowUp, Home, Image as ImageIcon, Paperclip, Square, X } from "lucide-react";
+import { BotonVoz } from "@/components/voz/BotonVoz";
 import { MenuApp } from "./MenuApp";
 
 export type AdjuntoVisible = { src: string; etiqueta: string };
@@ -138,6 +139,7 @@ export function Compositor({
         />
         <input
           ref={inputRef}
+          id="compositor-mensaje"
           name="mensaje"
           autoComplete="off"
           value={entrada}
@@ -146,6 +148,7 @@ export function Compositor({
           aria-label="Escribe tu mensaje"
           className="compositor-input"
         />
+        <BotonVoz campoId="compositor-mensaje" alTexto={onEntrada} variante="cliente" clase="ui-icon-button size-10" />
         {cargando ? (
           <button type="button" onClick={onCancelar} aria-label="Cancelar respuesta" title="Cancelar respuesta" className="compositor-enviar" data-testid="cancelar-respuesta">
             <Square className="size-3.5 fill-current" aria-hidden="true" />

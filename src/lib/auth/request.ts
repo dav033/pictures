@@ -2,7 +2,7 @@ import "server-only";
 
 import { SESSION_COOKIE, loginOmitidoEnDesarrollo, sessionToken } from "./session";
 
-function cookieValue(request: Request, name: string): string | undefined {
+export function cookieValue(request: Request, name: string): string | undefined {
   const header = request.headers.get("cookie");
   if (!header) return undefined;
   for (const part of header.split(";")) {

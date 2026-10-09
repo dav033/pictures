@@ -91,3 +91,27 @@ test("un fallo de red se convierte en ErrorAlmacen", async () => {
   const cliente = crearClienteAlmacen(CONFIG, async () => { throw new Error("ECONNREFUSED"); });
   await assert.rejects(() => cliente.poner("a.jpg", new Uint8Array([1]), "image/jpeg"), ErrorAlmacen);
 });
+
+test("rechaza claves que se salen del prefijo o están mal formadas", async () => {
+  const { cliente } = almacenFalso([]);
+  for (const mala of ["../otro/x.jpg", "feedback/../x.jpg", "feedback/./x.jpg", "/feedback/x.jpg", "feedback//x.jpg", "feedback/x.jpg/", "", "feedback/\u0000x"]) {
+    await assert.rejects(() => cliente.poner(mala, new Uint8Array([1]), "image/jpeg"), ErrorAlmacen, JSON.stringify(mala));
+    assert.throws(() => cliente.urlFirmada(mala, 60), ErrorAlmacen, JSON.stringify(mala));
+  }
+});
+
+test("listar pide ListObjectsV2 con el prefijo y entiende objetos, entidades XML y paginación", async () => {
+  const xml = `<?xml version="1.0"?><ListBucketResult><IsTruncated>true</IsTruncated><NextContinuationToken>tok+/=</NextContinuationToken>
+    <Contents><Key>feedback/taller/a&amp;b/antes.jpg</Key><LastModified>2026-09-01T10:00:00.000Z</LastModified></Contents>
+    <Contents><Key>feedback/taller/c/antes.jpg</Key><LastModified>2026-10-01T10:00:00.000Z</LastModified></Contents></ListBucketResult>`;
+  const { llamadas, cliente } = almacenFalso([new Response(xml, { status: 200 })]);
+  const pagina = await cliente.listar("feedback/", "token-previo");
+  const url = new URL(llamadas[0].url);
+  assert.equal(url.pathname, "/decoracion-feedback");
+  assert.equal(url.searchParams.get("prefix"), "feedback/");
+  assert.equal(url.searchParams.get("continuation-token"), "token-previo");
+  assert.deepEqual(pagina.objetos.map((o) => o.clave), ["feedback/taller/a&b/antes.jpg", "feedback/taller/c/antes.jpg"]);
+  assert.equal(pagina.objetos[0].modificado.toISOString(), "2026-09-01T10:00:00.000Z");
+  assert.equal(pagina.siguiente, "tok+/=");
+  assert.match(llamadas[0].cabeceras.authorization, /SignedHeaders=host;x-amz-content-sha256;x-amz-date/);
+});

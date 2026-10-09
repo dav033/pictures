@@ -57,6 +57,8 @@ export type ClienteAlmacen = {
   existe(clave: string): Promise<boolean>;
   /** Borrar una clave que no existe no es un error. */
   borrar(clave: string): Promise<void>;
+  /** Hasta 1000 objetos con ese prefijo; `siguiente` es el token para pedir la página que sigue (`null` si no hay más). */
+  listar(prefijo: string, continuacion?: string): Promise<{ objetos: ObjetoListado[]; siguiente: string | null }>;
   /** URL de lectura firmada que caduca en `caducaEnSegundos` (1 a 604800): para que el navegador pida la imagen directo. */
   urlFirmada(clave: string, caducaEnSegundos: number): string;
 };
@@ -127,14 +129,39 @@ export function firmarUrlGet(p: Credenciales & { url: URL; fecha: Date; caducaEn
 const TIEMPO_MAXIMO_MS = 15_000;
 const CADUCIDAD_MAXIMA_S = 604_800;
 
+/** Una clave válida son segmentos no vacíos separados por «/», sin «.» ni «..» ni caracteres de control: así no sale del bucket ni de su prefijo. */
+function validarClave(clave: string): string[] {
+  const segmentos = clave.split("/");
+  const invalido = segmentos.some((segmento) => segmento === "" || segmento === "." || segmento === ".." || /[\u0000-\u001f\u007f]/.test(segmento));
+  if (invalido || clave.length > 512) throw new ErrorAlmacen("Clave de objeto inválida.");
+  return segmentos;
+}
+
 function urlDeObjeto(config: ConfiguracionAlmacen, clave: string): URL {
-  const ruta = clave.split("/").map(codificar).join("/");
+  const ruta = validarClave(clave).map(codificar).join("/");
   return new URL(`${config.endpoint}/${config.bucket}/${ruta}`);
 }
 
+export type ObjetoListado = { clave: string; modificado: Date };
+
+const ENTIDADES_XML: Record<string, string> = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&apos;": "'" };
+const desescaparXml = (texto: string): string => texto.replace(/&(amp|lt|gt|quot|apos);/g, (entidad) => ENTIDADES_XML[entidad]);
+
+/** Lee la respuesta de ListObjectsV2 (solo lo que se usa: clave, fecha, truncado y token). */
+export function leerListado(xml: string): { objetos: ObjetoListado[]; siguiente: string | null } {
+  const objetos = [...xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)].flatMap(([, bloque]) => {
+    const clave = /<Key>([\s\S]*?)<\/Key>/.exec(bloque)?.[1];
+    const fecha = /<LastModified>([\s\S]*?)<\/LastModified>/.exec(bloque)?.[1];
+    const modificado = fecha ? new Date(fecha) : null;
+    return clave && modificado && !Number.isNaN(modificado.getTime()) ? [{ clave: desescaparXml(clave), modificado }] : [];
+  });
+  const truncado = /<IsTruncated>true<\/IsTruncated>/.test(xml);
+  const token = /<NextContinuationToken>([\s\S]*?)<\/NextContinuationToken>/.exec(xml)?.[1];
+  return { objetos, siguiente: truncado && token ? desescaparXml(token) : null };
+}
+
 export function crearClienteAlmacen(config: ConfiguracionAlmacen, llamar: typeof fetch = fetch): ClienteAlmacen {
-  async function enviar(metodo: "PUT" | "GET" | "HEAD" | "DELETE", clave: string, cuerpo?: Uint8Array, tipo?: string): Promise<Response> {
-    const url = urlDeObjeto(config, clave);
+  async function enviar(metodo: "PUT" | "GET" | "HEAD" | "DELETE", url: URL, cuerpo?: Uint8Array, tipo?: string): Promise<Response> {
     const cabeceras = firmarPeticion({ ...config, metodo, url, fecha: new Date(), hashCuerpo: sha256(cuerpo ?? "") });
     try {
       return await llamar(url, {
@@ -152,24 +179,34 @@ export function crearClienteAlmacen(config: ConfiguracionAlmacen, llamar: typeof
 
   return {
     async poner(clave, cuerpo, tipo) {
-      const respuesta = await enviar("PUT", clave, cuerpo, tipo);
+      const respuesta = await enviar("PUT", urlDeObjeto(config, clave), cuerpo, tipo);
       if (!respuesta.ok) throw rechazo("la subida", respuesta);
     },
     async obtener(clave) {
-      const respuesta = await enviar("GET", clave);
+      const respuesta = await enviar("GET", urlDeObjeto(config, clave));
       if (respuesta.status === 404) return null;
       if (!respuesta.ok) throw rechazo("la lectura", respuesta);
       return { cuerpo: new Uint8Array(await respuesta.arrayBuffer()), tipo: respuesta.headers.get("content-type") ?? "application/octet-stream" };
     },
     async existe(clave) {
-      const respuesta = await enviar("HEAD", clave);
+      const respuesta = await enviar("HEAD", urlDeObjeto(config, clave));
       if (respuesta.status === 404) return false;
       if (!respuesta.ok) throw rechazo("la consulta", respuesta);
       return true;
     },
     async borrar(clave) {
-      const respuesta = await enviar("DELETE", clave);
+      const respuesta = await enviar("DELETE", urlDeObjeto(config, clave));
       if (!respuesta.ok && respuesta.status !== 404) throw rechazo("el borrado", respuesta);
+    },
+    async listar(prefijo, continuacion) {
+      const url = new URL(`${config.endpoint}/${config.bucket}`);
+      url.searchParams.set("list-type", "2");
+      url.searchParams.set("max-keys", "1000");
+      url.searchParams.set("prefix", prefijo);
+      if (continuacion) url.searchParams.set("continuation-token", continuacion);
+      const respuesta = await enviar("GET", url);
+      if (!respuesta.ok) throw rechazo("el listado", respuesta);
+      return leerListado(await respuesta.text());
     },
     urlFirmada(clave, caducaEnSegundos) {
       if (!Number.isInteger(caducaEnSegundos) || caducaEnSegundos < 1 || caducaEnSegundos > CADUCIDAD_MAXIMA_S) {

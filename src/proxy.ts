@@ -34,8 +34,9 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Shopify es server-to-server: no trae cookie y usa su propia autenticación HMAC.
+  // Shopify es server-to-server: no trae cookie y usa su propia autenticación HMAC. El cron del análisis de feedback
+  // tampoco trae cookie: su ruta exige `Authorization: Bearer CRON_SECRET` y sin el secreto responde 401.
   matcher: [
-    "/((?!api/login|api/happie/recommend-packages|api/happie/recommend-package|api/happie/webhook|api/rag/webhooks/shopify|login|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api/login|api/happie/recommend-packages|api/happie/recommend-package|api/happie/webhook|api/rag/webhooks/shopify|api/feedback-ia/analisis-cron|login|_next/static|_next/image|favicon.ico).*)",
   ],
 };

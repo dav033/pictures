@@ -7,6 +7,7 @@ import type { SeleccionIA } from "@/lib/globos3d/cuerpo-escena-ia";
 import type { Escena } from "@/lib/globos3d/escena";
 import { costeTexto } from "@/lib/globos3d/turnos-ia";
 import { BotonFotoIA, MiniaturaFotoIA } from "../ControlFotoIA";
+import { BotonVoz } from "../../voz/BotonVoz";
 import type { FotoAdjuntaEstado } from "../useFotoAdjunta";
 import type { AsistenteIA } from "./useAsistenteIA";
 
@@ -116,6 +117,7 @@ export const ComposicionIA = forwardRef<HTMLTextAreaElement, Props>(function Com
             placeholder={fotoIA.foto ? "Di qué hacer con la foto (o envíala tal cual)…" : enHoja ? "Pídele un cambio…" : resuelto.seleccion ? `Pídele un cambio sobre «${resuelto.seleccion.nombre}»…` : "Pídele un cambio… «copia esta columna al otro lado»"}
             className="max-h-[22dvh] min-h-10 min-w-0 flex-1 resize-none bg-transparent py-2 text-base text-taller-texto outline-none placeholder:text-taller-suave disabled:opacity-60 lg:min-h-12 lg:py-0 lg:text-[13px]" />
           <div className="flex items-center gap-2">
+            <BotonVoz campoId="ia-pedido" alTexto={alTexto} deshabilitado={ocupado} variante="taller" clase="inline-grid size-10 shrink-0 place-items-center rounded-lg border border-taller-borde bg-taller-boton text-taller-texto hover:bg-taller-encima disabled:opacity-45 lg:size-9" />
             <BotonFotoIA estado={fotoIA} deshabilitado={ocupado} clase="inline-grid size-10 shrink-0 place-items-center rounded-lg border border-taller-borde bg-taller-boton text-taller-texto hover:bg-taller-encima disabled:opacity-45 lg:size-9" />
             <span className={enHoja ? "sr-only" : "min-w-0 flex-1 truncate text-[11px] text-taller-suave"} aria-live="polite">{pista}</span>
             {ocupado ? (

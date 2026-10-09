@@ -51,6 +51,7 @@ export const INVENTARIO: readonly Punto[] = [
   { id: "gemini-lectura-foto", archivo: "src/lib/globos3d/leer-foto-ia.ts", patron: /\.models\.generateContent\(/, que: "taller 3D: Gemini lee la foto de una decoración (visión, salida JSON; nunca genera imágenes)", envoltorio: "getGeminiClient(\"lectura_foto_escena\") + registrarGemini + decidir por intento", enganche: [GEMINI_CENTRAL, { archivo: "src/lib/globos3d/leer-foto-ia.ts", contiene: /registrarGemini\(/ }, { archivo: "src/lib/globos3d/leer-foto-ia.ts", contiene: /decidir\("modelo:lectura_foto"/ }] },
   { id: "gemini-deteccion-globos", archivo: "src/lib/globos3d/detectar-globos-ia.ts", patron: /\.models\.generateContent\(/, que: "taller 3D: Gemini detecta los globos (mosaico de 3 × 3) y los fondos de la foto con su caja (visión, salida JSON; nunca genera imágenes)", envoltorio: "getGeminiClient(\"deteccion_globos_foto\") (pedido y respuesta de cada trozo) + registrarGemini + decidir del resultado", enganche: [GEMINI_CENTRAL, { archivo: "src/lib/globos3d/detectar-globos-ia.ts", contiene: /registrarGemini\(/ }, { archivo: "src/lib/globos3d/detectar-globos-ia.ts", contiene: /decidir\("modelo:deteccion_globos"/ }] },
   { id: "gemini-interpretar-modulo", archivo: "src/lib/modulos-estudio/interpretar-ia.ts", patron: /\.models\.generateContent\(/, que: "estudio de módulos: Gemini Flash separa las palabras de un pedido («dúo de reflex rojo con azul mate») en JSON (solo texto; nunca genera imágenes)", envoltorio: "getGeminiClient(\"modulos_interpretar\") + registrarGemini + decidir del resultado", enganche: [GEMINI_CENTRAL, { archivo: "src/lib/modulos-estudio/interpretar-ia.ts", contiene: /registrarGemini\(/ }, { archivo: "src/lib/modulos-estudio/interpretar-ia.ts", contiene: /decidir\("modelo:modulos_interpretar"/ }] },
+  { id: "gemini-feedback-resumen", archivo: "src/lib/feedback-ia/resumen-gemini.ts", patron: /\.models\.generateContent\(/, que: "REQ-010: resumen opcional de los huecos recurrentes del feedback (solo texto sobre métricas agregadas, Flash, entrada y salida acotadas, coste máx. US$0,02)", envoltorio: "getGeminiClient(\"feedback_ia_resumen\") + registrarGemini + decidir del resultado", enganche: [GEMINI_CENTRAL, { archivo: "src/lib/feedback-ia/resumen-gemini.ts", contiene: /registrarGemini\(/ }, { archivo: "src/lib/feedback-ia/resumen-gemini.ts", contiene: /decidir\("modelo:feedback_ia_resumen"/ }] },
   { id: "gemini-embedding", archivo: "src/lib/rag/embeddings.ts", patron: /\.models\.embedContent\(/, que: "embeddings de consulta/documento (RAG)", envoltorio: "getGeminiClient(\"embedding\")", enganche: [GEMINI_CENTRAL] },
   // ── @sempertex/agente-core (paquete): adaptador Gemini del ChatPort ──
   { id: "agente-core-cliente", archivo: "packages/agente-core/src/gemini/chat.ts", patron: /new\s+GoogleGenAI|export function crearChatGemini/, que: "ChatPort Gemini (chat clásico, guiado, Amaterasu, venue)", envoltorio: "chatDe()/chatOmoikaneDe() → envolverChatPort(port, { proposito })", enganche: [CHATPORT_CENTRAL] },
@@ -70,6 +71,8 @@ export const INVENTARIO: readonly Punto[] = [
   { id: "herramientas-omoikane", archivo: "src/lib/ia/omoikane/ejecutar.ts", patron: /crearRegistroHerramientas\(/, que: "herramientas del chat clásico (buscar_catalogo_rag, armar_plan, ...)", envoltorio: "registro: envolverRegistroHerramientas(crearRegistroHerramientas(...))", enganche: [{ archivo: "src/lib/ia/omoikane/ejecutar.ts", contiene: /envolverRegistroHerramientas\(/ }] },
   { id: "bucle-chat-clasico", archivo: "src/app/api/chat/route.ts", patron: /ejecutarConversacionStream\(\s*\{/, que: "bucle de tool-calling del chat clásico", envoltorio: "cubierto por herramientas-omoikane + chatOmoikaneDe", enganche: [{ archivo: "src/lib/ia/omoikane/ejecutar.ts", contiene: /envolverRegistroHerramientas\(/ }, CHATPORT_CENTRAL] },
   { id: "herramientas-guiado", archivo: "src/app/api/asistente-guiado/route.ts", patron: /protegerHerramientas\(|ejecutarConversacionStream\(\s*\{/, que: "bucle y herramientas de la vista guiada (guardar_brief_guiado, buscar_decoraciones_sempertex, proponer_composicion, costear_decoracion, ...)", envoltorio: "registro: envolverRegistroHerramientas(protegerHerramientas(registro)) + conRegistro + decidir(...)", enganche: [{ archivo: "src/app/api/asistente-guiado/route.ts", contiene: /envolverRegistroHerramientas\(/ }, CHATPORT_CENTRAL] },
+  // ── Dictado por voz (REQ-009): Whisper propio en el VPS ──
+  { id: "voz-whisper-vps", archivo: "src/lib/voz/config.ts", patron: /VOZ_URL/, que: "dictado por voz: audio → texto con faster-whisper en el VPS (firmado con HMAC, sin coste por llamada; ni audio ni texto se guardan)", envoltorio: "ruta /api/voz/transcribir: auditarLlamadaIa({ proveedor: \"whisper-vps\", proposito: \"dictado_voz\" }, () => transcribirEnVps(...)) con auditarSalida apagado", enganche: [{ archivo: "src/app/api/voz/transcribir/route.ts", contiene: /auditarLlamadaIa\(/ }, { archivo: "src/app/api/voz/transcribir/route.ts", contiene: /proveedor:\s*"whisper-vps"/ }, { archivo: "src/app/api/voz/transcribir/route.ts", contiene: /auditarEntrada:\s*false,\s*auditarSalida:\s*false/ }] },
   // ── Operaciones del Python que ejecutan un modelo (consumidores) ──
   { id: "py-ia-intent-parse", archivo: "src/lib/ia/inari/parse.ts", patron: /llamarPythonIntentParse\(/, que: "parser de intención vía Python", envoltorio: "propositoIa(/ia/intent-parse) = \"parser_intencion\"", enganche: [PYTHON_CENTRAL, PYTHON_IA] },
   { id: "py-ia-happie", archivo: "src/lib/happie/generador-python.ts", patron: /llamarPythonHappieGenerate\(/, que: "Happie vía Python", envoltorio: "envolverFuncionIa en ia-recomendacion/conversacion-webhook (no duplicar en propositoIa)", enganche: [PYTHON_CENTRAL, { archivo: "src/lib/happie/ia-recomendacion.ts", contiene: /envolverFuncionIa\(/ }] },
@@ -95,6 +98,7 @@ const DETECTORES: ReadonlyArray<{ id: string; re: RegExp }> = [
   { id: "fabrica-chatport", re: /export\s+(async\s+)?function\s+crearChat\w*\s*\(/ },
   { id: "bucle-herramientas", re: /\bejecutarConversacion(Stream)?\s*\(\s*\{/ },
   { id: "registro-herramientas", re: /(?<!function\s+)\b(crearRegistroHerramientas|protegerHerramientas)\s*\(/ },
+  { id: "transcripcion-voz", re: /VOZ_URL/ },
   { id: "python-con-modelo", re: /(?<!function\*?\s+)\bllamarPython(IntentParse|HappieGenerate|ReferenceTurn|PatronReferencia|BouquetReferencia|ConteoReferencia|GuirnaldaReferencia|LecturaUnica|FluxGenerate|ChatTurnStream|Embedding)\s*\(/ },
 ];
 
@@ -135,8 +139,13 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
   "src/app/api/render-3d-imagen/route.ts": "taller 3D: foto con IA (FLUX)",
   "src/app/api/modulos-render/route.ts": "estudio de módulos: render con IA (FLUX) con caché por clave canónica (REQ-011)",
   "src/app/api/modulos-interpretar/route.ts": "estudio de módulos: pedido en palabras → configuración (Gemini texto, sin imágenes)",
+  "src/app/api/voz/transcribir/route.ts": "dictado por voz (REQ-009): Whisper en el VPS, proveedor «whisper-vps»",
   "src/app/api/taller/buscar/route.ts": "taller 3D: búsqueda en la biblioteca (RAG; embedding de la consulta con Gemini)",
   "src/app/api/taller/buscar-foto/route.ts": "taller 3D: búsqueda por foto en la biblioteca (embedding de imagen con Gemini)",
+  "src/app/api/feedback-ia/route.ts": "REQ-010: calificación de un turno de la IA (taller y chat del cliente)",
+  "src/app/api/feedback-ia/capturas/route.ts": "REQ-010: captura JPEG antes/después de un turno (almacén S3)",
+  "src/app/api/feedback-ia/analisis/route.ts": "REQ-010: análisis de huecos a pedido (resumen opcional con Gemini Flash)",
+  "src/app/api/feedback-ia/analisis-cron/route.ts": "REQ-010: análisis semanal de huecos desde un cron (resumen opcional con Gemini Flash)",
 };
 
 /** Rutas /api fuera del flujo de decisiones, con el motivo. Una ruta nueva debe clasificarse aquí o arriba. */
@@ -163,6 +172,10 @@ const RUTAS_EXCLUIDAS: Readonly<Record<string, string>> = {
   "src/app/api/admin/ordenes/[numero]/foto/route.ts": "sirve una foto",
   "src/app/api/admin/ordenes/catalogo-buscar/route.ts": "búsqueda admin",
   "src/app/api/admin/ordenes/estadisticas/route.ts": "estadísticas admin",
+  "src/app/api/feedback-ia/admin/route.ts": "REQ-010: listado y exportación del panel (solo administrador, lectura)",
+  "src/app/api/feedback-ia/admin/[id]/route.ts": "REQ-010: detalle de un turno calificado (solo administrador, lectura)",
+  "src/app/api/feedback-ia/admin/imagen/route.ts": "REQ-010: sirve una captura del almacén (solo administrador)",
+  "src/app/api/feedback-ia/admin/sesion/route.ts": "REQ-010: clave de administrador del panel (autenticación: no registrar credenciales)",
 };
 
 /** Código del navegador que llama a rutas del flujo: debe mandar x-conversacion-id. */
