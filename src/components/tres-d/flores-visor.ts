@@ -58,7 +58,7 @@ export function geometriaParteFlor(parte: ParteFlor): THREE.BufferGeometry {
 }
 
 /** Material de cada parte: blanco (el color va por instancia; si el material también lo llevara, se multiplicaría) salvo la hoja de la hortensia. */
-export function materialParteFlor(parte: ParteFlor): THREE.MeshStandardMaterial | THREE.MeshBasicMaterial {
+export function materialParteFlor(parte: ParteFlor): THREE.MeshStandardMaterial | THREE.MeshLambertMaterial {
   if (parte === "pluma") return materialPlumaConTextura();
   if (parte === "hoja") return new THREE.MeshStandardMaterial({ color: 0x3f6b3a, roughness: 0.7 });
   if (parte === "monstera" || parte === "foliolo" || parte === "moneda" || parte === "tallo") return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55, side: THREE.DoubleSide });
@@ -177,8 +177,7 @@ function partesHoja(f: FlorADibujar, semilla: number): PiezaDeFlor[] {
 /**
  * Una pampa: tallo fino y curvo (cuatro tramos) y, al final, el penacho, que sigue la curva y cabecea un poco por su peso. Las pampas
  * de las guirnaldas reales apuntan afuera y arriba, no cuelgan: por eso se necesita la normal del hueco (el marco local va girado
- * hasta ella) para saber dónde queda el arriba del mundo y abrirse hacia allá; el tallo se va enderezando hacia él (menos cuanto más
- * mira el hueco hacia abajo). Arranca 3 cm por debajo del origen para que no se vea cortado entre los globos.
+ * hasta ella) para saber dónde queda el arriba del mundo y abrirse hacia allá; el tallo se va enderezando hacia él. Arranca 3 cm por debajo del origen para que no se vea cortado entre los globos.
  */
 function partesPampa(f: FlorADibujar, semilla: number): PiezaDeFlor[] {
   const r = azar(semilla);
@@ -191,8 +190,8 @@ function partesPampa(f: FlorADibujar, semilla: number): PiezaDeFlor[] {
   const arriba = new THREE.Vector3(0, 1, 0).applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal).invert());
   // Se abre hacia donde queda el arriba del mundo (con algo de azar); en un hueco que mira justo arriba o abajo, hacia cualquier lado.
   const rumbo = Math.hypot(arriba.x, arriba.z) > 0.2 ? Math.atan2(arriba.z, arriba.x) + (r() - 0.5) * 1.6 : r() * Math.PI * 2;
-  // Un hueco que mira hacia abajo no hace giro en U: su pampa cuelga y se endereza poco; uno de lado o hacia arriba, mucho.
-  const enderezo = 0.15 + 0.85 * THREE.MathUtils.clamp(0.5 + 0.9 * arriba.y, 0, 1);
+  // Ninguna pampa cuelga por debajo de la guirnalda: aun en un hueco que mira hacia abajo el tallo se endereza hacia arriba (la mitad); en uno de lado o hacia arriba, del todo.
+  const enderezo = 0.5 + 0.5 * THREE.MathUtils.clamp(0.5 + 0.9 * arriba.y, 0, 1);
   const direccion = (angulo: number, haciaArriba: number) =>
     new THREE.Vector3(Math.sin(angulo) * Math.cos(rumbo), Math.cos(angulo), Math.sin(angulo) * Math.sin(rumbo)).lerp(arriba, haciaArriba).normalize();
   const salida: PiezaDeFlor[] = [];
@@ -206,7 +205,7 @@ function partesPampa(f: FlorADibujar, semilla: number): PiezaDeFlor[] {
     salida.push({ parte: "tallo", local: new THREE.Matrix4().compose(punto, new THREE.Quaternion().setFromUnitVectors(eje, d), new THREE.Vector3(tramo * 1.04, 0.26 * CM, 0.26 * CM)), color: paja });
     punto = punto.clone().addScaledVector(d, tramo);
   }
-  const alto = largo * 0.6, semiancho = largo * 0.14;
+  const alto = largo * 0.55, semiancho = largo * 0.14;
   const cabeceo = d.clone().addScaledVector(arriba, -0.3).normalize();
   const orientacion = new THREE.Quaternion().setFromAxisAngle(cabeceo, r() * Math.PI * 2).multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), cabeceo));
   salida.push({ parte: "pluma", local: new THREE.Matrix4().compose(punto.clone().addScaledVector(cabeceo, -alto * 0.1), orientacion, new THREE.Vector3(semiancho, alto, semiancho)), color });

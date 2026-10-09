@@ -64,15 +64,16 @@ prueba("los sólidos ocultos no se dibujan", () => {
 
 const pluma = (x: number, hex = "#d8c3a0"): SolidoEscenografia =>
   armarEscenografia([{ forma: "cilindro", base: { x, y: 60, z: 0 }, radioCm: 5, altoCm: 34, hex, acabado: "pampa" }])[0]!;
-const mapasDe = (objetos: THREE.Object3D[]) => materialesDe(objetos).map((m) => (m as THREE.MeshBasicMaterial).map);
+const mapasDe = (objetos: THREE.Object3D[]) => materialesDe(objetos).map((m) => (m as THREE.MeshLambertMaterial).map);
 
 prueba("las plumas de pampa de una pieza se juntan en una malla translúcida con la textura de hebras de SU visor", () => {
   const v = crearEscenografiaVisor(() => entornoA);
   const malla = v.piezas([pluma(0), pluma(20), pluma(40)]);
   assert.equal(malla.length, 1, "tres plumas del mismo color, una malla");
-  const [m] = materialesDe(malla) as THREE.MeshBasicMaterial[];
+  const [m] = materialesDe(malla) as THREE.MeshLambertMaterial[];
   assert.ok(m!.transparent && !m!.depthWrite && m!.map, "translúcida, sin escribir profundidad, con textura");
   assert.equal(m!.color.getHexString(), "d8c3a0");
+  assert.ok(m instanceof THREE.MeshLambertMaterial && m.emissive.getHexString() !== "000000", "con luz y su piso de luz propia");
   const otra = v.piezas([pluma(0, "#f6f1e8")]);
   assert.notEqual(materialesDe(otra)[0], m, "otro color, otro material");
   assert.equal(mapasDe(otra)[0], m!.map, "la textura se comparte dentro del visor");

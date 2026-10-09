@@ -443,7 +443,7 @@ prueba("VISUAL: las plumas del jarrón con pampas son plumas de pampa (como el f
   const solidos = armado("jarron_pampas").solidos ?? [];
   const plumas = solidos.filter((s) => s.acabado === "pampa");
   assert.ok(plumas.length >= 10, `${plumas.length} plumas`);
-  assert.ok(plumas.every((s) => s.forma === "cilindro" && s.altoCm > 20 && s.radioCm >= 4), "cada pluma es un penacho de buen tamaño");
+  assert.ok(plumas.every((s) => s.forma === "cilindro" && s.altoCm > 15 && s.radioCm >= 6), "cada pluma es un penacho de buen tamaño");
   const tallos = solidos.filter((s) => s.forma === "cilindro" && s.radioCm < 1);
   assert.ok(tallos.length >= plumas.length && tallos.every((s) => s.acabado !== "pampa"), "cada pluma lleva su tallo fino");
   // El acabado que se elige es el del jarrón (el color principal): las plumas siguen siéndolo.

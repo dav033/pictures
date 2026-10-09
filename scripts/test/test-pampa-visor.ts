@@ -22,7 +22,7 @@ prueba("la textura de hebras es una gota alargada: vacía en las esquinas, firme
   assert.deepEqual(a, b, "la misma semilla da la misma pluma");
   assert.notDeepEqual(a, pixelesPluma(12), "otra semilla, otra pluma");
   for (const [x, y] of [[0, 0], [ANCHO_TEXTURA - 1, 0], [0, ALTO_TEXTURA - 1], [ANCHO_TEXTURA - 1, ALTO_TEXTURA - 1], [0, ALTO_TEXTURA / 2]] as const) assert.equal(alfaDe(a, x, y), 0, `esquina ${x},${y}`);
-  assert.ok(Math.max(alfaDe(a, ANCHO_TEXTURA / 2 - 1, Math.floor(ALTO_TEXTURA / 3)), alfaDe(a, ANCHO_TEXTURA / 2, Math.floor(ALTO_TEXTURA / 3))) > 200, "el raquis central");
+  assert.ok(Math.max(alfaDe(a, ANCHO_TEXTURA / 2 - 1, Math.floor(ALTO_TEXTURA / 3)), alfaDe(a, ANCHO_TEXTURA / 2, Math.floor(ALTO_TEXTURA / 3))) > 80, "el raquis central, tenue");
   let cubierto = 0, firmes = 0;
   for (let i = 3; i < a.length; i += 4) { if (a[i]! > 8) cubierto++; if (a[i]! > 160) firmes++; }
   const total = ANCHO_TEXTURA * ALTO_TEXTURA;
@@ -31,7 +31,7 @@ prueba("la textura de hebras es una gota alargada: vacía en las esquinas, firme
   assert.ok(semianchoPluma(0.4) > semianchoPluma(0.9) && semianchoPluma(0.4) > semianchoPluma(0.05) && semianchoPluma(1) === 0, "más ancha por abajo del medio, afinada en la punta");
 });
 
-prueba("la geometría es de alto 1 sobre +Y, con tres tarjetas cruzadas y sus uv", () => {
+prueba("la geometría es de alto 1 sobre +Y, con cuatro tarjetas cruzadas de dos caras, normales hacia arriba y sus uv", () => {
   const g = geometriaPluma();
   g.computeBoundingBox();
   const caja = g.boundingBox!;
@@ -40,10 +40,12 @@ prueba("la geometría es de alto 1 sobre +Y, con tres tarjetas cruzadas y sus uv
   assert.equal(g.getAttribute("uv").count, g.getAttribute("position").count);
   assert.equal(g.index!.count % 3, 0);
   assert.ok(Math.max(...g.index!.array) < g.getAttribute("position").count, "los índices caen dentro");
-  assert.equal(g.index!.count / 3, 3 * 8 * 2 * 2, "3 tarjetas de 8×2 celdas");
+  assert.equal(g.index!.count / 3, 4 * 8 * 2 * 2 * 2, "4 tarjetas de 8×2 celdas, con las dos caras");
+  const n = g.getAttribute("normal");
+  for (let i = 0; i < n.count; i++) assert.deepEqual([n.getX(i), n.getY(i), n.getZ(i)], [0, 1, 0], "normales fijas hacia +Y local: la pluma no se apaga boca abajo");
 });
 
-const pampa = (extra: Partial<FlorADibujar> = {}): FlorADibujar => ({ tipo: "pampa", hex: "#e8dcc2", diametroCm: 52, ...extra });
+const pampa = (extra: Partial<FlorADibujar> = {}): FlorADibujar => ({ tipo: "pampa", hex: "#e8dcc2", diametroCm: 65, ...extra });
 const mundo = (q: THREE.Quaternion, p: THREE.Vector3) => p.clone().applyQuaternion(q);
 
 prueba("una pampa lleva su tallo curvo y, al final, UNA pluma esponjosa: no es un abanico de hoja seca", () => {
@@ -55,8 +57,8 @@ prueba("una pampa lleva su tallo curvo y, al final, UNA pluma esponjosa: no es u
   assert.ok(seca.every((p) => p.parte === "foliolo"), "la hoja seca sigue siendo el abanico");
   const alto = new THREE.Vector3(), escala = new THREE.Vector3();
   partes.find((p) => p.parte === "pluma")!.local.decompose(alto, new THREE.Quaternion(), escala);
-  assert.ok(escala.y > 0.25 && escala.y < 0.4, `pluma de ${(escala.y * 100).toFixed(0)} cm`);
-  assert.ok(escala.x > 0.04 && escala.x < 0.09, `semiancho ${(escala.x * 100).toFixed(1)} cm`);
+  assert.ok(escala.y > 0.3 && escala.y < 0.42, `pluma de ${(escala.y * 100).toFixed(0)} cm`);
+  assert.ok(escala.x > 0.08 && escala.x < 0.13, `semiancho ${(escala.x * 100).toFixed(1)} cm`);
   assert.deepEqual(partesFlor(pampa(), 7).map((p) => p.local.elements), partes.map((p) => p.local.elements), "determinista");
   assert.notDeepEqual(partesFlor(pampa(), 8).map((p) => p.local.elements), partes.map((p) => p.local.elements), "cada pampa, la suya");
 });
@@ -96,7 +98,9 @@ prueba("la textura es mipmapeada, translúcida y sin canvas", () => {
   assert.equal(t.image.width, ANCHO_TEXTURA);
   assert.equal(t.minFilter, THREE.LinearMipmapLinearFilter);
   const m = materialParteFlor("pluma");
-  assert.ok(m.transparent && !m.depthWrite && m.side === THREE.DoubleSide);
+  assert.ok(m.transparent && !m.depthWrite && m.side === THREE.FrontSide);
+  assert.ok(m instanceof THREE.MeshLambertMaterial, "recibe la luz de la sala (no es un MeshBasic que brilla en lo oscuro)");
+  assert.ok(m.emissive.r > 0 && m.emissive.r <= 0.41, "con un piso de luz propia del 40 %");
   m.dispose();
   t.dispose();
 });

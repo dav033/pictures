@@ -71,7 +71,7 @@ export const FLORES_ARTIFICIALES: Readonly<Record<TipoFlorArtificial, FlorArtifi
     descripcion: "Abanico de hojas de palma secas pintadas: el acento dorado de las guirnaldas elegantes.",
   },
   pampa: {
-    tipo: "pampa", nombre: "Pampa (plumas)", diametroCm: 52,
+    tipo: "pampa", nombre: "Pampa (plumas)", diametroCm: 65,
     colores: [
       { id: "beige", nombre: "beige", hex: "#c2a67c" },
       { id: "crema", nombre: "crema", hex: "#e8dcc2" },
