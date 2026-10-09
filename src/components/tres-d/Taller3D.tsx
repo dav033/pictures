@@ -16,7 +16,7 @@ import { descripcionRender3d, formatoEnIngles } from "@/lib/globos3d/render-ia";
 import { GeneradorIA } from "./GeneradorIA";
 import { PaletaEscena } from "./PaletaEscena";
 import { reemplazarColor } from "@/lib/globos3d/recolorear";
-import { armarEscena, escenaEnIngles, idNuevo, type Escena, type EscenaArmada, type NodoEscena } from "@/lib/globos3d/escena";
+import { armarEscena, escenaEnIngles, idNuevo, SALA_INICIAL, type Escena, type EscenaArmada, type NodoEscena } from "@/lib/globos3d/escena";
 import { ESCENAS_PREDEFINIDAS, escenaPredefinida } from "@/lib/globos3d/escenas-presets";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
 import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdicionEscena";
@@ -151,10 +151,10 @@ export function Taller3D() {
   // La última escena guardada en este navegador (si hay) en vez de la de partida. En el servidor no hay navegador: hasta
   // hidratar (`cargada`) no se pinta nada que dependa de la escena, así lo del servidor y lo del navegador coinciden.
   const [guardadaAlAbrir] = useState(() => (typeof window === "undefined" ? null : leerGuardada()));
-  const historialEscena = useHistorialEscena(() => guardadaAlAbrir?.escena ?? escenaPredefinida("arco_organico_columnas_guirnalda"));
+  const historialEscena = useHistorialEscena(() => guardadaAlAbrir?.escena ?? { sala: structuredClone(SALA_INICIAL), nodos: [] });
   const escenaEdit = historialEscena.escena;
   const setEscenaEdit = historialEscena.cambiar;
-  const [nombreEscena, setNombreEscena] = useState(() => guardadaAlAbrir?.nombre ?? ESCENAS_PREDEFINIDAS.find((p) => p.id === "arco_organico_columnas_guirnalda")?.nombre ?? "Mi escena");
+  const [nombreEscena, setNombreEscena] = useState(() => guardadaAlAbrir?.nombre ?? "Escena nueva");
   const cargada = useSyncExternalStore(sinSuscripcion, () => true, () => false);
   const [ultimoGuardado, setUltimoGuardado] = useState<{ escena: Escena; nombre: string; ok: boolean } | null>(null);
   const guardado = !ultimoGuardado ? (guardadaAlAbrir ? "guardado" : "guardando") : ultimoGuardado.escena !== escenaEdit || ultimoGuardado.nombre !== nombreEscena ? "guardando" : ultimoGuardado.ok ? "guardado" : "sin-guardar";
