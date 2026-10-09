@@ -8,8 +8,8 @@ export const SOLO_GUIADA = process.env.NEXT_PUBLIC_SOLO_GUIADA === "true";
 
 export const RUTA_GUIADA = "/asistente";
 
-// /3d: el taller de globos en 3D, abierto también en producción (dueño, 2026-10-07).
-const PAGINAS_PERMITIDAS = new Set([RUTA_GUIADA, "/login", "/3d"]);
+// /3d: el taller de globos en 3D, abierto también en producción (dueño, 2026-10-07). /3d/modulos: su estudio de módulos (REQ-011).
+const PAGINAS_PERMITIDAS = new Set([RUTA_GUIADA, "/login", "/3d", "/3d/modulos"]);
 
 /** ¿Es una página (no una API, ni un recurso de Next, ni un archivo) que el modo solo-guiada no deja abrir? */
 export function paginaBloqueadaSoloGuiada(pathname: string): boolean {

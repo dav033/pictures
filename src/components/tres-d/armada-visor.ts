@@ -2,7 +2,7 @@ import { formatoPorId, FORMATOS_GLOBO } from "@/lib/globos3d/formatos";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import type { GloboDecoracion, TuboDecoracion } from "@/lib/globos3d/decoraciones";
 import type { EscenaArmada, Sala } from "@/lib/globos3d/escena";
-import type { EscenaGlobos, GloboColocadoEnEscena, TuboEnEscena } from "./escena-globos";
+import type { CajaEnEscena, EscenaGlobos, GloboColocadoEnEscena, TuboEnEscena } from "./escena-globos";
 import { CONFETI_ORO, CONFETI_PLATA } from "./confeti-visor";
 
 /**
@@ -53,8 +53,11 @@ function tuboAVisor(t: TuboDecoracion): TuboEnEscena {
   return { puntos: t.puntos, grosorCm: t.grosorCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion", cerrado: t.cerrado };
 }
 
-/** Dibuja la escena armada (con su sala, o la que se pida) y encuadra. */
-export function mostrarArmada(visor: EscenaGlobos, armada: EscenaArmada, sala: Sala = armada.sala): void {
+/**
+ * Dibuja la escena armada (con su sala, o la que se pida) y encuadra. `opciones.encuadrar: false` deja la cámara donde
+ * está y `opciones.resaltado` marca una caja (no sale en las capturas): los usa el estudio de módulos al elegir un globo.
+ */
+export function mostrarArmada(visor: EscenaGlobos, armada: EscenaArmada, sala: Sala = armada.sala, opciones: { encuadrar?: boolean; resaltado?: CajaEnEscena | null } = {}): void {
   visor.mostrarModulo(
     armada.porNodo.flatMap((n) => {
       const papel = n.globos.some((g) => (g as { confeti?: boolean }).confeti) ? papelDeConfeti(n.globos) : null;
@@ -67,6 +70,8 @@ export function mostrarArmada(visor: EscenaGlobos, armada: EscenaArmada, sala: S
       cilindros: armada.cilindros,
       solidos: armada.porNodo.flatMap((n) => n.solidos.map((x) => ({ ...x, nodo: n.id }))),
       sala,
+      ...(opciones.encuadrar === false ? { encuadrar: false } : {}),
+      ...(opciones.resaltado ? { resaltado: opciones.resaltado } : {}),
     },
   );
 }
