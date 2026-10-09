@@ -9,6 +9,7 @@ import {
   type RespuestaFeedback,
 } from "@/lib/feedback-ia/contrato";
 import type { MotivoId } from "@/lib/feedback-ia/motivos";
+import { huellaTexto } from "./huella";
 
 /**
  * El lado del navegador de la calificación de la IA (REQ-010): arma lo que se manda a POST /api/feedback-ia (respetando los
@@ -81,7 +82,8 @@ export type EntradaArmado = {
   calificacion?: number | null;
   motivos?: readonly MotivoId[] | undefined;
   comentario?: string | undefined;
-  deshecho?: boolean;
+  /** `true` deshecho; `false` lo rehizo (hay que decírselo al servidor); `undefined` no dice nada. */
+  deshecho?: boolean | undefined;
   escenas?: EscenasTurno | undefined;
 };
 
@@ -106,7 +108,7 @@ export function armarEntrada(p: EntradaArmado): EntradaFeedback | null {
     ...(typeof p.calificacion === "number" ? { calificacion: p.calificacion } : {}),
     ...(p.motivos ? { motivos: [...p.motivos] } : {}),
     ...(p.comentario !== undefined && comentario ? { comentario } : {}),
-    ...(p.deshecho ? { deshecho: true } : {}),
+    ...(p.deshecho !== undefined ? { deshecho: p.deshecho } : {}),
     ...(pedido ? { pedido } : {}),
     ...(respuesta ? { respuesta } : {}),
     ...(modelo ? { modelo } : {}),
@@ -116,6 +118,42 @@ export function armarEntrada(p: EntradaArmado): EntradaFeedback | null {
     ...(despues ? { escenaDespues: despues } : {}),
     ...(pasos ? { pasos } : {}),
   };
+}
+
+const bytesDe = (valor: unknown): number => new TextEncoder().encode(JSON.stringify(valor)).length;
+
+/**
+ * Un estado con muchas partes (el plan, la cotización, las ideas, la referencia...) que cabe en el tope: si lo pasa, se sueltan primero
+ * las partes más grandes, y se anota cuáles en `omitido`. Para el taller, que es una sola escena, no se usa (todo o nada).
+ */
+export function acotarPorPartes(estado: Record<string, unknown> | undefined, tope = TOPE_ESCENA_BYTES): Record<string, unknown> | undefined {
+  if (!estado) return undefined;
+  try {
+    const partes = Object.entries(estado).filter(([, v]) => v !== undefined).map(([clave, valor]) => ({ clave, valor, bytes: bytesDe(valor) }));
+    const reservado = 200;
+    let total = partes.reduce((suma, p) => suma + p.bytes + p.clave.length + 4, reservado);
+    const omitidas: string[] = [];
+    const porTamano = [...partes].sort((a, b) => b.bytes - a.bytes);
+    for (const p of porTamano) {
+      if (total <= tope) break;
+      omitidas.push(p.clave);
+      total -= p.bytes + p.clave.length + 4;
+    }
+    const resto = Object.fromEntries(partes.filter((p) => !omitidas.includes(p.clave)).map((p) => [p.clave, p.valor]));
+    return omitidas.length ? { ...resto, omitido: omitidas } : resto;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Una firma de la escena para saber si cambió desde la última vez que se mandó. */
+export function firmaEscena(valor: unknown): string {
+  if (valor === undefined) return "";
+  try {
+    return huellaTexto(JSON.stringify(valor));
+  } catch {
+    return "";
+  }
 }
 
 export const tieneEscenas = (entrada: EntradaFeedback): boolean => entrada.escenaAntes !== undefined || entrada.escenaDespues !== undefined;

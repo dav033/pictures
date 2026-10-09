@@ -58,6 +58,8 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
   const [destello, setDestello] = useState<readonly Marca[]>([]);
   /** Lo que se le dijo a la persona al deshacer o rehacer un turno (no se guarda). */
   const [avisos, setAvisos] = useState<Readonly<Record<string, string>>>({});
+  /** Los turnos que la persona deshizo con el botón «Deshacer turno» (Ctrl+Z no cuenta aquí): solo ellos cuentan como «deshecho» al calificar. */
+  const [deshechosConBoton, setDeshechosConBoton] = useState<ReadonlySet<string>>(() => new Set());
   const control = useRef<AbortController | null>(null);
   /** Escenas, solicitud y pasos de cada turno para calificarlo (REQ-010). */
   const [registroFeedback] = useState(crearRegistroFeedback);
@@ -193,6 +195,7 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
     const r = deshacerTurno(u.escena, turno.diff);
     if (r.revertidas.length) {
       u.aplicar(r.escena, `Deshacer turno ${turno.numero}`);
+      setDeshechosConBoton((s) => new Set(s).add(id));
       destacar(r.revertidas.filter((x) => x !== "sala").map((x) => ({ id: x, nueva: false })));
     }
     setAntesId(null);
@@ -207,6 +210,7 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
     const r = aplicarDiff(u.escena, turno.diff);
     if (r.escena !== u.escena) {
       u.aplicar(r.escena, `Rehacer turno ${turno.numero}`);
+      setDeshechosConBoton((s) => { const n = new Set(s); n.delete(id); return n; });
       destacar(idsParaResaltar(r.diff));
       setTurnos((t) => t.map((x) => (x.id === id ? { ...x, diff: r.diff } : x)));
     }
@@ -228,13 +232,13 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
     return salida;
   }, [turnos, escena, ambito, clave]);
 
-  const borrar = () => { if (control.current) return; registroFeedback.vaciar(); setTurnos([]); setAntesId(null); setDestello([]); setAvisos({}); };
+  const borrar = () => { if (control.current) return; registroFeedback.vaciar(); setDeshechosConBoton(new Set()); setTurnos([]); setAntesId(null); setDestello([]); setAvisos({}); };
   const ultimoTurno = turnos[turnos.length - 1];
   const preguntaPendiente = !enCurso && ultimoTurno?.pregunta && esDeEstaEscena(ultimoTurno, clave, ambito) ? { turnoId: ultimoTurno.id, ...ultimoTurno.pregunta } : null;
 
   return {
     turnos, enCurso, refinando: refinado.refinando, ocupado: enCurso !== null || refinado.refinando !== null,
-    enviar, detener, deshacer, rehacer, verAntes, antesId: escenaAntes ? antesId : null, escenaAntes, borrar, preguntaPendiente, estados, avisos,
+    enviar, detener, deshacer, rehacer, verAntes, antesId: escenaAntes ? antesId : null, escenaAntes, borrar, preguntaPendiente, estados, avisos, deshechosConBoton,
     /** Escenas, solicitud y pasos del turno para calificarlo (REQ-010); `undefined` si es de una sesión anterior. */
     datosFeedback: registroFeedback.leer,
     /** Qué piezas marca el visor: lo que se señala con el cursor y, si no, lo que acaba de cambiar la IA. */

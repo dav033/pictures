@@ -8,11 +8,15 @@
  * - el flujo del taller trae la solicitud; el registro de turnos en memoria; el encuadre de las capturas.
  */
 import assert from "node:assert/strict";
-import { armarEntrada, enviarCaptura, enviarFeedback, escenaAcotada, esIdSeguro } from "../../src/components/feedback-ia/cliente-feedback";
+import { acotarPorPartes, armarEntrada, enviarCaptura, enviarFeedback, escenaAcotada, esIdSeguro } from "../../src/components/feedback-ia/cliente-feedback";
 import { crearControlador, type ConfigCalificacion } from "../../src/components/feedback-ia/controlador-calificacion";
 import { esCorreccion } from "../../src/components/feedback-ia/correccion";
 import { corrigeLaRespuesta, estadoPrevio, pedidoDelTurno, type MensajeChat } from "../../src/components/feedback-ia/turnos-cliente";
-import { pasaADeshecho } from "../../src/components/feedback-ia/useCalificacionIA";
+import { reiniciarRegistros, yaRegistrado } from "../../src/components/feedback-ia/registro-turnos";
+import { cambioDeDeshecho } from "../../src/components/feedback-ia/useCalificacionIA";
+import { turnoDeshechoParaCalificar } from "../../src/components/tres-d/ia/CalificacionTurno";
+import { estadoDeTurno } from "../../src/lib/globos3d/deshacer-turno";
+import { diffEscenas } from "../../src/lib/globos3d/diff-escenas";
 import { encuadreDeEscena } from "../../src/components/tres-d/ia/captura-feedback";
 import { crearRegistroFeedback, pasosDelFlujo } from "../../src/components/tres-d/ia/registro-feedback";
 import { TOPE_ESCENA_BYTES } from "../../src/lib/feedback-ia/contrato";
@@ -21,7 +25,7 @@ import { escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
 import { TIPO_NDJSON, lineaNdjson, pedirEscenaIA } from "../../src/lib/globos3d/flujo-escena-ia";
 
 let pruebas = 0;
-const prueba = async (nombre: string, fn: () => void | Promise<void>) => { await fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
+const prueba = async (nombre: string, fn: () => void | Promise<void>) => { reiniciarRegistros(0); await fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
 
 type Llamada = { ruta: string; cuerpo: Record<string, unknown> | null; campos: Record<string, string> | null };
 const OK = { ok: true, turnoId: "t1", producto: "taller", calificacion: null, creado: true, escenasGuardadas: true, actualizadoEn: "x" };
@@ -59,9 +63,13 @@ function config(buscar: typeof fetch, extra: Partial<ConfigCalificacion> = {}): 
 
 async function main() {
   console.log("Correcciones del cliente");
-  await prueba("«no, eso no» y parecidos corrigen; un «no» suelto o una pregunta no", () => {
-    for (const si of ["No, eso no", "no eso no es lo que pedí", "Eso no", "No es lo que pedí", "no, así no", "Está mal", "te equivocaste", "Deshaz eso", "no me gusta", "¡No, esa no!", "vuelve a como estaba"]) assert.equal(esCorreccion(si), true, si);
-    for (const no of ["no sé", "No tengo foto", "no hay presupuesto", "no", "", "Quiero un arco verde", "¿cuánto cuesta?", "no mucho, unos 50 globos", "perfecto, gracias"]) assert.equal(esCorreccion(no), false, no);
+  await prueba("«no, eso no» y las correcciones claras corrigen", () => {
+    for (const si of ["No, eso no", "no eso no es lo que pedí", "No es lo que pedí", "no, así no", "Está mal", "quedó mal", "te equivocaste", "Deshaz eso", "no me gusta", "No me gusta.", "¡No, esa no!", "vuelve a como estaba", "No, eso no es lo que te pedí", "no era eso", "mal"]) assert.equal(esCorreccion(si), true, si);
+  });
+  await prueba("un «no» suelto, una duda, un elogio o una respuesta NO corrigen (los falsos positivos ensucian los datos)", () => {
+    for (const no of ["no sé", "No tengo foto", "no hay presupuesto", "no", "", "Quiero un arco verde", "¿cuánto cuesta?", "no mucho, unos 50 globos", "perfecto, gracias",
+      "No estoy segura, déjame pensarlo", "¿No es lo mismo en rosa que en lila?", "No, esa me encanta", "No así está perfecto", "Eso no lo sé todavía", "Eso no", "eso no me preocupa tanto", "no, eso no lo sé",
+      "No me gusta tanto el rojo, prefiero el azul", "No es lo que imaginaba pero me gusta", "¿Por qué no me gusta?", "Esa me gusta", "no, gracias", "No era necesario, pero qué bien", "ese es el error del año, jaja"]) assert.equal(esCorreccion(no), false, no);
   });
 
   console.log("Conversación del cliente");
@@ -184,8 +192,8 @@ async function main() {
     const srv = servidorFalso();
     const cfg = config(srv.buscar);
     const c = crearControlador(cfg);
-    c.marcarDeshecho();
-    c.marcarDeshecho();
+    c.fijarDeshecho(true);
+    c.fijarDeshecho(true);
     await c.esperar();
     assert.equal(srv.posts().length, 1);
     assert.equal(srv.posts()[0]?.cuerpo?.deshecho, true);
@@ -323,11 +331,126 @@ async function main() {
     await c.esperar();
     assert.equal(avisos, antes);
   });
-  await prueba("solo el paso a «deshecho» cuenta (un turno que ya llega deshecho no manda nada)", () => {
-    assert.equal(pasaADeshecho(false, true), true);
-    assert.equal(pasaADeshecho(true, true), false);
-    assert.equal(pasaADeshecho(false, false), false);
-    assert.equal(pasaADeshecho(true, false), false);
+  await prueba("solo los cambios cuentan: lo primero que se ve (al montar o al volver a la escena) es el punto de partida", () => {
+    assert.equal(cambioDeDeshecho(undefined, true), "nada", "al montar ya deshecho (o al volver a la escena): no manda nada");
+    assert.equal(cambioDeDeshecho(undefined, false), "nada");
+    assert.equal(cambioDeDeshecho(false, true), "deshizo");
+    assert.equal(cambioDeDeshecho(true, false), "rehizo");
+    assert.equal(cambioDeDeshecho(true, true), "nada");
+    assert.equal(cambioDeDeshecho(false, false), "nada");
+    assert.equal(cambioDeDeshecho(true, undefined), "nada", "turno de otra escena: no se sabe, no se hace nada");
+  });
+  await prueba("rehacer manda deshecho:false; deshacer de nuevo, deshecho:true", async () => {
+    const srv = servidorFalso();
+    const c = crearControlador(config(srv.buscar));
+    c.fijarDeshecho(true);
+    await c.esperar();
+    c.fijarDeshecho(false);
+    await c.esperar();
+    c.fijarDeshecho(true);
+    await c.esperar();
+    assert.deepEqual(srv.posts().map((p) => p.cuerpo?.deshecho), [true, false, true]);
+    assert.equal("escenaAntes" in (srv.posts()[1]?.cuerpo ?? {}), false);
+    const sinHaber = servidorFalso();
+    const d = crearControlador(config(sinHaber.buscar));
+    d.fijarDeshecho(false);
+    await d.esperar();
+    assert.equal(sinHaber.posts().length, 0, "rehacer algo que nunca se marcó deshecho no manda nada");
+  });
+  await prueba("para calificar, «deshecho» es el botón, o un Ctrl+Z que se queda 5 s; en otra escena no se sabe", () => {
+    const base = escenaPredefinida("arco_organico_columnas_guirnalda");
+    const alta = { ...base, nodos: base.nodos.map((n) => (n.id === "columna-izq" && n.pieza.tipo === "columna" ? { ...n, pieza: { ...n.pieza, alturaCm: 220 } } : n)) };
+    const diff = diffEscenas(base, alta);
+    const aplicado = estadoDeTurno(alta, diff);
+    const revertido = estadoDeTurno(base, diff);
+    assert.equal(turnoDeshechoParaCalificar(undefined, true, true), undefined);
+    assert.equal(turnoDeshechoParaCalificar(aplicado, true, true), false, "si hoy está aplicado no está deshecho");
+    assert.equal(turnoDeshechoParaCalificar(revertido, true, false), true, "el botón cuenta al instante");
+    assert.equal(turnoDeshechoParaCalificar(revertido, false, false), false, "Ctrl+Z recién hecho no cuenta");
+    assert.equal(turnoDeshechoParaCalificar(revertido, false, true), true, "Ctrl+Z que se quedó 5 s sí");
+  });
+  await prueba("la escena de después que cambió desde el primer envío se manda UNA vez más (el plan del cliente llega tras el texto)", async () => {
+    const srv = servidorFalso();
+    let despues: Record<string, unknown> = { plan: null };
+    const c = crearControlador(config(srv.buscar, { escenas: () => ({ antes: escena("antes"), despues }) }));
+    c.calificar(5);
+    await c.esperar();
+    c.calificar(6);
+    await c.esperar();
+    assert.equal("escenaAntes" in (srv.posts()[1]?.cuerpo ?? {}), false, "sin cambios no se repite");
+    despues = { plan: { piezas: 3 } };
+    c.calificar(7);
+    await c.esperar();
+    assert.deepEqual(srv.posts()[2]?.cuerpo?.escenaDespues, { plan: { piezas: 3 } });
+    despues = { plan: { piezas: 4 } };
+    c.calificar(8);
+    await c.esperar();
+    assert.equal("escenaAntes" in (srv.posts()[3]?.cuerpo ?? {}), false, "solo una vez más");
+  });
+  await prueba("un turno calificado desde otro navegador (403 TURNO_AJENO) se deja en paz: sin reintentos ni más peticiones", async () => {
+    const srv = servidorFalso(() => Response.json({ error: "x", codigo: "TURNO_AJENO" }, { status: 403 }));
+    const c = crearControlador(config(srv.buscar));
+    c.calificar(5);
+    await c.esperar();
+    assert.equal(c.leer().fase, "ajeno");
+    c.calificar(6);
+    c.enviarPorQue();
+    c.reintentar();
+    await c.esperar();
+    assert.equal(srv.posts().length, 1);
+    assert.equal(c.leer().gracias, false);
+  });
+  await prueba("registrar: cada turno se registra UNA vez, sin nota, sin escenas y sin capturas", async () => {
+    const srv = servidorFalso();
+    const cfg = config(srv.buscar);
+    const c = crearControlador(cfg);
+    await c.registrar();
+    await c.registrar();
+    await crearControlador(cfg).registrar();
+    assert.equal(srv.posts().length, 1);
+    const cuerpo = srv.posts()[0]?.cuerpo ?? {};
+    assert.equal(cuerpo.turnoId, "t1");
+    assert.equal(cuerpo.pedido, "hazla más alta");
+    for (const clave of ["calificacion", "escenaAntes", "escenaDespues", "deshecho", "motivos"]) assert.equal(clave in cuerpo, false, clave);
+    assert.equal(srv.capturas().length, 0);
+    assert.equal(cfg.vistas.capturas, 0);
+    assert.equal(yaRegistrado("taller:t1"), true);
+    assert.equal(c.leer().fase, "libre", "registrar no toca la fila");
+    c.calificar(4);
+    await c.esperar();
+    assert.ok(srv.posts()[1]?.cuerpo?.escenaAntes, "las escenas siguen yendo con la calificación");
+  });
+  await prueba("registrar: un fallo se reintenta al volver a montar; calificar también cuenta como registrado", async () => {
+    let fallar = true;
+    const srv = servidorFalso(() => (fallar ? Response.json({ error: "x", codigo: "BASE_NO_DISPONIBLE" }, { status: 503 }) : Response.json(OK)));
+    const c = crearControlador(config(srv.buscar));
+    await c.registrar();
+    assert.equal(yaRegistrado("taller:t1"), false);
+    fallar = false;
+    await crearControlador(config(srv.buscar)).registrar();
+    assert.equal(srv.posts().length, 2);
+    assert.equal(yaRegistrado("taller:t1"), true);
+    const calificado = crearControlador(config(servidorFalso().buscar, { turnoId: "t9" }));
+    calificado.calificar(5);
+    await calificado.esperar();
+    assert.equal(yaRegistrado("taller:t9"), true);
+  });
+  await prueba("acotar por partes: lo que cabe va entero; si no, se sueltan primero las partes más grandes y se dice cuáles", () => {
+    assert.deepEqual(acotarPorPartes({ plan: { a: 1 }, cotizacion: { total: 5 } }), { plan: { a: 1 }, cotizacion: { total: 5 } });
+    assert.equal(acotarPorPartes(undefined), undefined);
+    const grande = acotarPorPartes({ plan: { a: 1 }, decoraciones: ["x".repeat(500)], cotizacion: { total: 5 } }, 400);
+    assert.deepEqual(grande, { plan: { a: 1 }, cotizacion: { total: 5 }, omitido: ["decoraciones"] });
+    const dos = acotarPorPartes({ pequena: 1, a: "x".repeat(300), b: "y".repeat(250) }, 500);
+    assert.deepEqual(dos?.omitido, ["a"]);
+    assert.ok(dos && "b" in dos && "pequena" in dos);
+  });
+  await prueba("lo que no se sabe no se manda: sin pasos, sin ms ni costes inventados", () => {
+    const e = armarEntrada({ producto: "taller", turnoId: "t1", datos: { pedido: "x", pasos: [], latenciaMs: undefined, costeUsd: null } });
+    assert.ok(e);
+    for (const clave of ["pasos", "latenciaMs", "costeUsd"]) assert.equal(clave in e, false, clave);
+    const conPaso = armarEntrada({ producto: "taller", turnoId: "t1", datos: { pasos: [{ nombre: "ver_escena", ok: false, resumen: "" }] } });
+    assert.equal(conPaso?.pasos?.[0]?.ok, false);
+    assert.equal(conPaso?.pasos?.[0] && "ms" in conPaso.pasos[0], false);
   });
 
   console.log("Taller");

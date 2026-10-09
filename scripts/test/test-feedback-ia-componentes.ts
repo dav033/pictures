@@ -12,9 +12,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { CalificacionIA, VistaCalificacion, textoEstado } from "../../src/components/feedback-ia/CalificacionIA";
 import type { EstadoCalificacion } from "../../src/components/feedback-ia/controlador-calificacion";
 import { MOTIVOS } from "../../src/lib/feedback-ia/motivos";
-import { CalificacionGuiada, esTurnoGuiadoCalificable, estadoGuiadoDelMensaje, type MensajeGuiadoCalificable } from "../../src/components/guiado/CalificacionGuiada";
+import { CalificacionGuiada, esTurnoGuiadoCalificable, estadoGuiadoDelMensaje, ultimoTurnoGuiadoCalificable, type MensajeGuiadoCalificable } from "../../src/components/guiado/CalificacionGuiada";
+import { motivosVisibles } from "../../src/components/feedback-ia/motivos-ui";
 import { CalificacionClasica } from "../../src/components/ui/shell/CalificacionClasica";
-import { CalificacionTurno, turnoCalificable, turnoDeshecho } from "../../src/components/tres-d/ia/CalificacionTurno";
+import { CalificacionTurno, turnoCalificable, turnoRevertido } from "../../src/components/tres-d/ia/CalificacionTurno";
 import { PanelIA } from "../../src/components/tres-d/ia/PanelIA";
 import type { AsistenteIA } from "../../src/components/tres-d/ia/useAsistenteIA";
 import { estadoDeTurno } from "../../src/lib/globos3d/deshacer-turno";
@@ -43,7 +44,7 @@ const turno = (numero: number, cambios: Partial<TurnoPanel> = {}): TurnoPanel =>
 const iaFalsa = (turnos: TurnoPanel[]): AsistenteIA => ({
   turnos, enCurso: null, refinando: null, ocupado: false, enviar: async () => true, detener: sin, deshacer: sin, rehacer: sin, verAntes: sin, antesId: null, escenaAntes: null,
   borrar: sin, preguntaPendiente: null, estados: Object.fromEntries(turnos.filter((t) => t.diff).map((t) => [t.id, estadoDeTurno(alta, t.diff!)])), avisos: {},
-  datosFeedback: () => undefined, marcas: [], apuntar: sin, tiempo: "unos 12 s", costeTotalUsd: 0.0031,
+  datosFeedback: () => undefined, deshechosConBoton: new Set<string>(), marcas: [], apuntar: sin, tiempo: "unos 12 s", costeTotalUsd: 0.0031,
 });
 
 console.log("La escala");
@@ -125,9 +126,8 @@ prueba("solo los turnos con respuesta de la IA se califican", () => {
 });
 prueba("«deshecho» es lo que hay hoy en la escena: ya se pudo deshacer y se puede rehacer", () => {
   const t = turno(1);
-  assert.equal(turnoDeshecho(estadoDeTurno(alta, t.diff!)), false);
-  assert.equal(turnoDeshecho(estadoDeTurno(base, t.diff!)), true);
-  assert.equal(turnoDeshecho(undefined), false);
+  assert.equal(turnoRevertido(estadoDeTurno(alta, t.diff!)), false);
+  assert.equal(turnoRevertido(estadoDeTurno(base, t.diff!)), true);
 });
 prueba("el panel pone la fila bajo la tarjeta de cada turno con respuesta, y no bajo uno que falló", () => {
   const h = html(createElement(PanelIA, { ia: iaFalsa([turno(1), turno(2, { estado: "error", diff: null, respuesta: "" })]), escena: alta, seleccion: null, alFotoRealista: sin, alElegirPieza: sin }));
@@ -140,7 +140,7 @@ prueba("en el teléfono (hoja) la fila también está", () => {
   assert.ok(h.includes("¿Qué tal quedó?"));
 });
 prueba("la tarjeta suelta se dibuja con el tema del taller", () => {
-  const h = html(createElement(CalificacionTurno, { turno: turno(1), estado: undefined, datos: () => undefined, compacta: false }));
+  const h = html(createElement(CalificacionTurno, { turno: turno(1), estado: undefined, deshechoConBoton: false, datos: () => undefined, compacta: false }));
   assert.ok(h.includes("taller-") && h.includes("¿Qué tal quedó?"));
 });
 
@@ -171,11 +171,75 @@ prueba("la fila sale bajo la respuesta terminada y no mientras llega", () => {
   assert.equal(html(createElement(CalificacionGuiada, { mensajes: [...mensajes, { id: "u2", role: "user" as const, content: "Gracias" }], indice: 3, listo: true })), "");
 });
 
+console.log("Teléfono del cliente");
+const vistaCliente = (estado: Partial<EstadoCalificacion> = {}, extra: { resumida?: boolean; conImagen?: boolean } = {}) =>
+  html(createElement(VistaCalificacion, { tema: "cliente", estado: { ...inicial, ...estado }, gestos, ...extra }));
+prueba("solo la última respuesta lleva la escala; las anteriores, una línea con «Calificar» (o su nota)", () => {
+  const vieja = vistaCliente({}, { resumida: true });
+  assert.equal(botonesNota(vieja).length, 0);
+  assert.ok(vieja.includes("Calificar"));
+  const conNota = vistaCliente({ nota: 8 }, { resumida: true });
+  assert.ok(conNota.includes("Tu nota: 8/10") && conNota.includes("Cambiar"));
+  assert.equal(botonesNota(vistaCliente()).length, 10);
+});
+prueba("una respuesta vieja corregida abre solo el «por qué» en una línea, sin la escala", () => {
+  const h = vistaCliente({ deshecho: true, porQueAbierto: true }, { resumida: true });
+  assert.equal(botonesNota(h).length, 0);
+  assert.ok(h.includes("¿Qué falló?"));
+});
+prueba("el «por qué» del cliente es una línea de chips que se desliza, y el comentario va detrás de «Escribir más»", () => {
+  const h = vistaCliente({ deshecho: true, porQueAbierto: true });
+  assert.ok(h.includes("overflow-x-auto"));
+  assert.ok(!h.includes("<textarea"));
+  assert.ok(h.includes("Escribir más"));
+  assert.ok(h.includes("¿Qué falló?"));
+  const conTexto = vistaCliente({ porQueAbierto: true, comentario: "faltó algo" });
+  assert.ok(conTexto.includes("<textarea") && !conTexto.includes("Escribir más"), "si ya hay comentario, la caja se ve");
+  const taller = vista({ porQueAbierto: true });
+  assert.ok(taller.includes("<textarea") && !taller.includes("overflow-x-auto"), "el Taller sigue con el formulario completo");
+});
+prueba("el cliente no ve los motivos del taller; la foto realista solo si el chat produjo una imagen", () => {
+  const ids = (t: "taller" | "cliente", conImagen = false) => motivosVisibles(t, { conImagen }).map((m) => m.id);
+  assert.equal(ids("taller").length, 10);
+  assert.ok(!ids("cliente").includes("mal_colocado") && !ids("cliente").includes("foto_no_coincide"));
+  assert.ok(ids("cliente").includes("lento") && ids("cliente").includes("no_entendio"));
+  assert.ok(ids("cliente", true).includes("foto_no_coincide") && !ids("cliente", true).includes("mal_colocado"));
+  const h = vistaCliente({ porQueAbierto: true });
+  assert.ok(!h.includes("Quedó mal colocado") && !h.includes("La foto realista no coincide") && h.includes("Muy lento"));
+  assert.ok(vistaCliente({ porQueAbierto: true }, { conImagen: true }).includes("La foto realista no coincide"));
+});
+prueba("en el chat guiado solo la última respuesta de la IA lleva la escala", () => {
+  const mensajes = [
+    { id: "u1", role: "user" as const, content: "Quiero un arco" }, guiado({ id: "a1", content: "Primera idea" }),
+    { id: "u2", role: "user" as const, content: "Más sencillo" }, guiado({ id: "a2", content: "Segunda idea" }),
+  ];
+  assert.equal(ultimoTurnoGuiadoCalificable(mensajes), 3);
+  const vieja = html(createElement(CalificacionGuiada, { mensajes, indice: 1, listo: true }));
+  const ultima = html(createElement(CalificacionGuiada, { mensajes, indice: 3, listo: true }));
+  assert.equal(botonesNota(vieja).length, 0);
+  assert.ok(vieja.includes("Calificar"));
+  assert.equal(botonesNota(ultima).length, 10);
+});
+prueba("el estado de un mensaje guiado lleva todos sus widgets y una huella de la foto, nunca la foto; lo muy grande suelta primero lo más pesado", () => {
+  const e = estadoGuiadoDelMensaje({
+    id: "a", role: "assistant", content: "Plan", miniatura: "data:image/jpeg;base64,AAAA",
+    widgets: [{ tipo: "plan", plan: { piezas: 2 } } as { tipo: string }, { tipo: "cotizacion", cotizacion: { total: 10 } } as { tipo: string }, { tipo: "opciones", elegida: "costear" } as { tipo: string }],
+  });
+  assert.deepEqual(e?.plan, { piezas: 2 });
+  assert.deepEqual(e?.cotizacion, { total: 10 });
+  assert.deepEqual(e?.opciones, { elegida: "costear" });
+  assert.match(String(e?.imagenHuella), /^[0-9a-f]{8}$/);
+  assert.ok(!JSON.stringify(e).includes("AAAA"));
+  const pesado = estadoGuiadoDelMensaje({ id: "a", role: "assistant", content: "x", widgets: [{ tipo: "plan", plan: { x: "p".repeat(500_000) } } as { tipo: string }, { tipo: "cotizacion", cotizacion: { total: 1 } } as { tipo: string }] });
+  assert.ok(pesado && !("plan" in pesado) && "cotizacion" in pesado);
+  assert.deepEqual(pesado?.omitido, ["plan"]);
+});
+
 console.log("Chat clásico");
 prueba("califica respuestas de la IA; no el saludo, el análisis de diagnóstico, lo que llega ni lo vacío", () => {
   const mensajes = [{ id: "saludo", role: "assistant" as const, content: "¡Hola!" }, { id: "u1", role: "user" as const, content: "Quiero un arco" }, { id: "a1", role: "assistant" as const, content: "Te propongo esto" },
     { id: "a2", role: "assistant" as const, content: "{json}", analisisReferencias: {} }, { id: "a3", role: "assistant" as const, content: "" }];
-  const fila = (indice: number, listo = true) => html(createElement(CalificacionClasica, { mensajes, indice, listo }));
+  const fila = (indice: number, listo = true) => html(createElement(CalificacionClasica, { mensajes, indice, listo, conImagen: false }));
   assert.ok(fila(2).includes("¿Qué tal quedó?"));
   assert.ok(!fila(2).includes("pl-11"), "sin avatar, sin sangría");
   assert.equal(fila(0), "");

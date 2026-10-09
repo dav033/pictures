@@ -1904,7 +1904,7 @@ export default function Page() {
                           )}
                         </div>
                       )}
-                      <CalificacionClasica mensajes={mensajes} indice={i} listo={!esUltimoStreaming} />
+                      <CalificacionClasica mensajes={mensajes} indice={i} listo={!esUltimoStreaming} conImagen={imagenes.length > 0} />
                     </motion.div>
                   );
                 })}

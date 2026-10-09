@@ -1,6 +1,8 @@
 "use client";
 
+import { acotarPorPartes } from "../feedback-ia/cliente-feedback";
 import { CalificacionCliente } from "../feedback-ia/CalificacionCliente";
+import { huellaTexto } from "../feedback-ia/huella";
 import { corrigeLaRespuesta, estadoPrevio, pedidoDelTurno, type MensajeChat } from "../feedback-ia/turnos-cliente";
 
 /** Lo que esta fila necesita de un mensaje de la vista guiada (el `Mensaje` de `VistaGuiada` lo cumple sin cambios). */
@@ -8,6 +10,10 @@ export type MensajeGuiadoCalificable = MensajeChat & {
   widgets?: readonly { tipo: string }[];
   rapidas?: readonly string[];
   pregunta?: string;
+  referencia?: unknown;
+  miniatura?: string;
+  fotoArmada?: boolean;
+  envio?: unknown;
 };
 
 /** Widgets de respuestas guionadas (sin modelo): preguntas fijas, enlaces de compra, pasos ya calculados, la idea elegida. */
@@ -20,14 +26,31 @@ export function esTurnoGuiadoCalificable(m: MensajeGuiadoCalificable): boolean {
   return m.content.trim().length > 0 || (m.widgets?.some((w) => w.tipo === "plan" || w.tipo === "propuesta") ?? false);
 }
 
-/** Lo que muestra el mensaje como «estado del render» del cliente: su plan, o su propuesta si aún no hay plan. */
+/** El índice de la última respuesta de la IA que se califica (la única que lleva la fila completa). */
+export function ultimoTurnoGuiadoCalificable(mensajes: readonly MensajeGuiadoCalificable[]): number {
+  for (let i = mensajes.length - 1; i >= 0; i -= 1) if (esTurnoGuiadoCalificable(mensajes[i]!)) return i;
+  return -1;
+}
+
+/**
+ * Lo que muestra el mensaje como «estado del render» del cliente: cada widget por su tipo (el plan, la propuesta, la cotización, las
+ * ideas, los ajustes elegidos...), la lectura de la foto y una huella de su imagen (nunca la imagen). Si pesa más que el tope, se
+ * sueltan primero las partes más grandes.
+ */
 export function estadoGuiadoDelMensaje(m: MensajeGuiadoCalificable): Record<string, unknown> | undefined {
-  for (const clave of ["plan", "propuesta"] as const) {
-    const widget = m.widgets?.find((w) => w.tipo === clave);
-    const dato: unknown = widget ? Reflect.get(widget, clave) : undefined;
-    if (dato !== undefined) return { [clave]: dato };
+  const partes: Record<string, unknown> = {};
+  for (const widget of m.widgets ?? []) {
+    const campos = Object.entries(widget).filter(([clave]) => clave !== "tipo");
+    // Un widget que solo trae lo suyo (el plan, la propuesta) va directo bajo su tipo.
+    const datos: unknown = campos.length === 1 && campos[0]![0] === widget.tipo ? campos[0]![1] : Object.fromEntries(campos);
+    const previo = partes[widget.tipo];
+    partes[widget.tipo] = previo === undefined ? datos : [...(Array.isArray(previo) ? previo : [previo]), datos];
   }
-  return undefined;
+  if (m.referencia !== undefined) partes.referencia = m.referencia;
+  if (m.miniatura) partes.imagenHuella = huellaTexto(m.miniatura);
+  if (m.fotoArmada) partes.fotoArmada = true;
+  if (m.envio !== undefined) partes.envio = m.envio;
+  return Object.keys(partes).length ? acotarPorPartes(partes) : undefined;
 }
 
 type Props = {
@@ -38,8 +61,9 @@ type Props = {
 };
 
 /**
- * La fila «¿Qué tal quedó?» bajo una respuesta de la IA de la vista guiada (REQ-010). Manda el pedido, la respuesta y el plan de
- * antes y de después (las «escenas» de este producto); si el cliente corrige en su mensaje siguiente, abre el «por qué».
+ * La fila «¿Qué tal quedó?» bajo una respuesta de la IA de la vista guiada (REQ-010). Solo la última lleva la escala completa; manda
+ * el pedido, la respuesta y el estado de antes y de después (las «escenas» de este producto); si el cliente corrige en su mensaje
+ * siguiente, abre el «por qué» en una línea.
  */
 export function CalificacionGuiada({ mensajes, indice, listo }: Props) {
   const mensaje = mensajes[indice];
@@ -51,9 +75,9 @@ export function CalificacionGuiada({ mensajes, indice, listo }: Props) {
       turnoId={mensaje.id}
       pedido={pedidoDelTurno(mensajes, indice)}
       respuesta={mensaje.content}
-      antes={estadoPrevio(mensajes, indice, (i) => estadoGuiadoDelMensaje(mensajes[i]!))}
-      despues={estadoGuiadoDelMensaje(mensaje)}
+      escenas={() => ({ antes: estadoPrevio(mensajes, indice, (i) => estadoGuiadoDelMensaje(mensajes[i]!)), despues: estadoGuiadoDelMensaje(mensaje) })}
       corregido={corrigeLaRespuesta(mensajes, indice)}
+      ultima={indice === ultimoTurnoGuiadoCalificable(mensajes)}
     />
   );
 }

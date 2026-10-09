@@ -5,14 +5,21 @@ import { crearControlador, type ConfigCalificacion, type ControladorCalificacion
 
 export type OpcionesCalificacion = {
   /**
-   * `true` cuando la persona deshizo o corrigió este turno. Solo el paso de `false` a `true` mientras está montado cuenta (un turno que
-   * ya llega deshecho, p. ej. al recargar, no manda nada ni abre nada).
+   * Si la persona deshizo o corrigió este turno. `undefined`: no se sabe (el turno es de otra escena que no está a la vista).
+   * Solo cuentan los cambios mientras se ve y está montado: lo primero que se ve (al montar o al volver a la escena del turno) solo
+   * se toma como punto de partida, sin mandar nada. De `false` a `true` se registra y se abre el «por qué»; de `true` a `false`
+   * (lo rehizo) se avisa al servidor.
    */
-  deshecho?: boolean;
+  deshecho?: boolean | undefined;
 };
 
-/** Solo el paso de «no deshecho» a «deshecho» mientras está montado cuenta. */
-export const pasaADeshecho = (previo: boolean, ahora: boolean): boolean => ahora && !previo;
+export type CambioDeshecho = "deshizo" | "rehizo" | "nada";
+
+/** Qué hacer cuando `deshecho` pasa de `previo` a `ahora` (`undefined`: aún no se sabe, no se hace nada). */
+export function cambioDeDeshecho(previo: boolean | undefined, ahora: boolean | undefined): CambioDeshecho {
+  if (previo === undefined || ahora === undefined || previo === ahora) return "nada";
+  return ahora ? "deshizo" : "rehizo";
+}
 
 export type CalificacionIA = {
   estado: EstadoCalificacion;
@@ -26,16 +33,20 @@ export type CalificacionIA = {
 
 /**
  * La calificación de un turno de la IA para cualquier superficie (Taller, chat guiado, chat clásico): el estado de la fila y los
- * gestos de la persona. `config` se lee al enviar (siempre lo último); el turno y el producto no cambian mientras vive el hook.
+ * gestos de la persona. Al montarse (el turno ya terminó) lo registra una vez. `config` se lee al enviar (siempre lo último); el
+ * turno y el producto no cambian mientras vive el hook.
  */
-export function useCalificacionIA(config: ConfigCalificacion, { deshecho = false }: OpcionesCalificacion = {}): CalificacionIA {
+export function useCalificacionIA(config: ConfigCalificacion, { deshecho }: OpcionesCalificacion = {}): CalificacionIA {
   const [controlador] = useState<ControladorCalificacion>(() => crearControlador(config));
   useEffect(() => { controlador.usar(config); });
+  useEffect(() => { void controlador.registrar(); }, [controlador]);
   const estado = useSyncExternalStore(controlador.suscribir, controlador.leer, controlador.leer);
 
-  const previo = useRef(deshecho);
+  const previo = useRef<boolean | undefined>(undefined);
   useEffect(() => {
-    if (pasaADeshecho(previo.current, deshecho)) controlador.marcarDeshecho();
+    const cambio = cambioDeDeshecho(previo.current, deshecho);
+    if (cambio === "deshizo") controlador.fijarDeshecho(true);
+    else if (cambio === "rehizo") controlador.fijarDeshecho(false);
     previo.current = deshecho;
   }, [deshecho, controlador]);
 
