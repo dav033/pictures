@@ -113,7 +113,7 @@ const SINONIMOS_COLOR: Readonly<Record<string, string>> = { natural: "beige", ca
  * «natural», «café»); `undefined` si esa flor no viene en ese color.
  */
 export function colorDeFollaje(flor: FlorArtificial, texto: string): ColorFlor | undefined {
-  const palabra = sinTildes(texto.trim().toLowerCase()).replace(/\s+/g, " ");
+  const palabra = sinTildes(texto.trim().toLowerCase()).replace(/[_\s]+/g, " ");
   const claves = new Set<string>();
   for (const base of [palabra, palabra.replace(/s$/, ""), palabra.replace(/es$/, "")]) {
     claves.add(base);

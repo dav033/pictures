@@ -4,6 +4,11 @@ import type { ElementoEscenografia } from "./escenografia";
 import { crearEstructura } from "./herramientas-escena-estructuras";
 import { PULGADAS_METALIZADO, PULGADA_CM } from "./metalizados";
 import { floresLeidas } from "./herramientas-escena-trazo";
+import { conNotaSiFalla } from "./decoracion-segura";
+import { corazonesLeidos, type CorazonLeido } from "./corazones-lectura";
+import { montonesDentroDeLaSala } from "./montones-dentro-sala";
+import { ponerSobreMesas, type SobreMesaPendiente } from "./sobre-mesa-lectura";
+import type { MuebleCatalogo } from "./mobiliario-tipos";
 import { piezaDeGenerador } from "./generadores-organicos";
 import { cajaTrazo, puntosDeSilueta, type SiluetaTrazo } from "./trazo-organico";
 import { formatoPorDiametro, grosorMinimoDePesos, pesosDeLectura, pesosDeTramo, traeMezcla } from "./mezcla-lectura";
@@ -68,6 +73,8 @@ const BORDE_DE_LA_FOTO = 0.02;
 
 /** Un montón de piso con el pie a más de esto sobre la línea del piso está en el aire (colgado de un aro), no en el piso. */
 const RACIMO_ALZADO_CM = 20;
+/** Un corazón leído sobre un montón de piso va esto (cm) delante del centro del montón: asoma de él, no queda dentro. */
+const CORAZON_DELANTE_DEL_MONTON_CM = 25;
 /** Un pie a más de esto sobre la línea del piso está tapado (por los pedestales, por los globos): el telón no flota. */
 const PIE_TAPADO_CM = 10;
 
@@ -131,6 +138,10 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
     return id;
   };
 
+  const sobreMesa: SobreMesaPendiente[] = [];
+  const montones: string[] = [];
+  const montonDePieza = new Map<number, string>();
+  const corazones: Array<{ pieza: CorazonLeido; indice: number }> = [];
   l.piezas.forEach((p, i) => {
     try {
       compilarPieza(p, i);
@@ -153,7 +164,8 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         const x0 = r1((Math.min(...puntos.map((q) => q.x)) + Math.max(...puntos.map((q) => q.x))) / 2);
         const fijos = fijosDeAnclas(p, H, notas).map((f) => ({ ...f, x: r1(X(f.x) - x0), y: r1(Y(f.y)) }));
         const trazo = { puntos: puntos.map((q) => ({ ...q, x: r1(q.x - x0) })), mezcla: pesos, colores: paletaDeLectura(p, H, notas), racimos: p.racimos, semilla: 11 + i, ...(fijos.length ? { fijos } : {}) };
-        const { flores, notas: notasFollaje } = p.follaje?.length ? floresLeidas(p.follaje) : { flores: null, notas: [] };
+        const sinFollaje: ReturnType<typeof floresLeidas> = { flores: null, notas: [] };
+        const { flores, notas: notasFollaje } = p.follaje?.length ? conNotaSiFalla(`Pieza ${i + 1} (guirnalda_organica): el follaje`, notas, () => floresLeidas(p.follaje!), sinFollaje) : sinFollaje;
         notas.push(...notasFollaje.map((n) => `Pieza ${i + 1} (guirnalda_organica): ${n}`));
         const largo = puntos.slice(1).reduce((s, q, k) => s + Math.hypot(q.x - puntos[k]!.x, q.y - puntos[k]!.y), 0);
         const huecos = Math.max(4, Math.min(30, r0(largo / 45)));
@@ -181,11 +193,13 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         const alzadoCm = Y(p.yPie);
         if (alzadoCm > RACIMO_ALZADO_CM && !apoyo) notas.push(`Pieza ${i + 1} (racimo_piso): su pie se ve ${Math.round(alzadoCm)} cm sobre la línea del piso y no hay mesa ni pedestal debajo: se cuelga en el aire, en el plano de la decoración.`);
         if (apoyo) notas.push(`Pieza ${i + 1} (racimo_piso): su pie queda a la altura del tope de ${apoyo.nombre}: se asienta encima.`);
-        poner("racimo-piso", "Racimo de piso", pieza, apoyo
+        const idMonton = poner("racimo-piso", "Racimo de piso", pieza, apoyo
           ? { en: "libre", xCm: apoyo.xCm, yCm: apoyo.yCm, zCm: apoyo.zCm, giroGrados: 0 }
           : alzadoCm > RACIMO_ALZADO_CM
             ? { en: "libre", xCm: X(p.x), yCm: alzadoCm, zCm: muro + PROFUNDIDAD_DE_LA_FOTO_CM, giroGrados: 0 }
             : { en: "piso", xCm: r1(X(p.x) * factor), zCm: r0(muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm - g / 2), giroGrados: 0 });
+        montones.push(idMonton);
+        montonDePieza.set(i, idMonton);
         return;
       }
       case "columna_organica": {
@@ -241,6 +255,10 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         if (arriba - base > 60) notas.push("El ramo de helio va sin las cintas ni el peso de la base.");
         return;
       }
+      case "corazon":
+        // Los corazones esperan a los montones (si caen en uno, van en él): `ponerCorazones`, al final.
+        corazones.push({ pieza: p, indice: i });
+        return;
       case "decoracion": {
         const decoracion = decoracionPredefinida(p.id);
         const color = codigoDeColor(p.colores[0]!, ["R-5"], notas);
@@ -288,6 +306,8 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
           return;
         }
         const medida = medidaDe(p);
+        // Lo que va sobre una mesa (el pastel) espera a que estén todas las mesas: `ponerSobreMesas`, al final.
+        if (entradaDeCatalogo(p.id)?.clase === "mueble" && (entradaDeCatalogo(p.id) as MuebleCatalogo).sobreMesa) { sobreMesa.push({ pieza: p, medida, indice: i }); return; }
         const mesas = l.piezas.flatMap((q) => (q.tipo === "fondo" ? [mesaLeida(q, medidaDe(q))] : [])).filter((m): m is MesaLeida => m !== null);
         const muebles = mobiliarioLeido(p, medida, notas, mesas);
         if (muebles) { for (const m of muebles) poner(m.base, m.nombre, m.pieza, m.colocacion); return; }
@@ -323,7 +343,7 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         }
         const sinRotulo: Pieza = { tipo: "escenografia", elementos, mueble: { id: p.id } };
         // Un nombre sobre un panel, un arco o la pared de lentejuelas: el texto leído es su rótulo, con el color y el acabado que se leyeron en las letras (sin color, el que se lee sobre el fondo).
-        const pieza = p.texto && ADMITEN_ROTULO.has(p.id) && sinRotulo.tipo === "escenografia" ? conTextoPieza(sinRotulo, { texto: p.texto, acabado: acabadoRotuloLeido(p.acabadoTexto), ...(tinta ? { color: tinta } : {}) }) : sinRotulo;
+        const pieza = p.texto && ADMITEN_ROTULO.has(p.id) && sinRotulo.tipo === "escenografia" ? conNotaSiFalla(`Pieza ${i + 1} (${p.id}): el rótulo «${p.texto}»`, notas, () => conTextoPieza(sinRotulo, { texto: p.texto!, acabado: acabadoRotuloLeido(p.acabadoTexto), ...(tinta ? { color: tinta } : {}) }), sinRotulo) : sinRotulo;
         poner(p.id.replace(/_/g, "-"), textoLetrero ? `Letrero ${JSON.stringify(textoLetrero)}` : p.id.replace(/_/g, " "), pieza,
           lugar === "pared" ? { en: "pared", pared: "fondo", aLoLargoCm: X(p.x), alturaCm: p.id === "letrero" ? r0(y0) : 0 } : { en: "piso", xCm: medida.xCm, zCm: z, giroGrados: 0 });
         return;
@@ -334,6 +354,21 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
     }
   }
 
+  escena = ponerSobreMesas(escena, sobreMesa, notas);
+  escena = montonesDentroDeLaSala(escena, montones, notas);
+  // Los corazones: en el montón de piso que los tiene debajo (por su x), delante de su centro, y si no, a la profundidad de siempre.
+  for (const { pieza: c, indice } of corazones) {
+    const k = l.piezas.findIndex((q, j) => q.tipo === "racimo_piso" && montonDePieza.has(j) && Math.abs(c.x - q.x) * l.aspecto <= q.ancho / 2 + 0.03);
+    const montonNodo = k >= 0 ? escena.nodos.find((n) => n.id === montonDePieza.get(k)) : undefined;
+    const enMonton = montonNodo?.colocacion.en === "piso" || montonNodo?.colocacion.en === "libre" ? montonNodo.colocacion : null;
+    if (enMonton) notas.push(`Pieza ${indice + 1} (corazon): va en el montón de piso que tiene debajo.`);
+    // Un grupo en el piso está tan cerca de la cámara como lo dice su pie (como un globo suelto); uno en el aire, a la profundidad de siempre.
+    const radioFoto = 14 / H;
+    const delante = c.en === "piso" ? profundidadEnElPiso(l, c.y + radioFoto).delanteCm : 0;
+    const zSuelto = c.en === "piso" ? muro + PROFUNDIDAD_DE_LA_FOTO_CM + delante - 14 : muro + 90;
+    const nodos = corazonesLeidos(c, { xCm: X(c.x), yCm: Y(c.y), zCm: enMonton ? enMonton.zCm + CORAZON_DELANTE_DEL_MONTON_CM : zSuelto }, notas);
+    for (const n of nodos) escena = { ...escena, nodos: [...escena.nodos, { id: idNuevo(escena, "corazon"), nombre: n.nombre, pieza: n.pieza, colocacion: n.colocacion }] };
+  }
   // Lo colgado de la pared que un panel de fondo (parado delante) taparía va delante del panel.
   escena = letrerosDelanteDeGlobos(colgadoDelanteDePaneles(escena, notas), notas);
   return { escena, notas: [...new Set(notas)], omitidas };

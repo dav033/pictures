@@ -3,6 +3,7 @@ import type { AcabadoEscenografia } from "./escenografia";
 import { muebleDe } from "./mobiliario-catalogo";
 import { puestosAlrededor, puestosEnFila } from "./mobiliario-disposicion";
 import { hexDeColor } from "./mobiliario-colores";
+import { coloresPorParte } from "./colores-por-parte";
 import { conTextoPieza, MAX_TEXTO_MUEBLE, opcionesDeMueble, piezaDeMueble } from "./mobiliario-pieza";
 import type { MuebleCatalogo } from "./mobiliario-tipos";
 import type { ColorLeido, PiezaLeida } from "./lectura-foto";
@@ -101,12 +102,15 @@ export function mobiliarioLeido(p: FondoLeido, medida: MedidaLeida, notas: strin
   // leídos son ambiguos (suelen ser la misma luz): el resto queda con los de catálogo.
   const ambiguos = iTinta >= 0 && Boolean(tinta) && p.colores.length < mueble.coloresDe.length;
   if (ambiguos && p.colores.length) notas.push(`${mueble.nombre}: con el color del texto aparte y solo ${p.colores.length} color(es) leído(s), el resto va con los de catálogo.`);
-  // Solo hasta el color de la tinta: lo que la foto no dice queda sin poner (los secundarios siguen al primero, como siempre).
-  const largo = Math.min(mueble.coloresDe.length, Math.max(p.colores.length, tinta && iTinta >= 0 ? iTinta + 1 : 0));
+  // El color leído de cada parte (`colores-por-parte.ts`: por parte, no por posición). Solo hasta el color de la tinta: lo que la foto no dice queda sin poner (los secundarios siguen al primero, como siempre).
+  const { porParte: leidoDe, sobran } = coloresPorParte(mueble.coloresDe, p.colores);
+  if (sobran.length) notas.push(`${mueble.nombre}: ${sobran.map((c) => `«${c.nombre}» (${Math.round(c.peso)} %)`).join(", ")} es un acento y el mueble no tiene una parte de adorno donde ponerlo: queda sin pintar.`);
+  const hasta = leidoDe.reduce((m, c, i) => (c ? i + 1 : m), 0);
+  const largo = Math.min(mueble.coloresDe.length, Math.max(hasta, tinta && iTinta >= 0 ? iTinta + 1 : 0));
   // Un color que el catálogo no trae (la cubierta opcional de una mesa) y se leyó transparente se queda sin poner: los
   // colores se cortan en el primero que falta, nunca un hueco. Leído solo como material («vidrio»), queda el color leído.
   const deParte = (i: number): string | undefined => {
-    const leido = p.colores[i], clara = claridad(leido);
+    const leido = leidoDe[i], clara = claridad(leido);
     if (ambiguos || clara === "transparente") return mueble.colores[i];
     if (clara === "material") return mueble.colores[i] ?? leido?.hex;
     return leido?.hex ?? mueble.colores[i];

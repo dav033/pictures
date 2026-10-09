@@ -7,6 +7,7 @@ import { mensajeConAlcance, type AlcanceResuelto } from "@/lib/globos3d/alcance-
 import { construirCuerpoEscenaIA, mensajeDelPedido, type FotoAdjuntaIA } from "@/lib/globos3d/cuerpo-escena-ia";
 import { deshacerTurno, estadoDeTurno, textoDeshacerTurno, type EstadoTurnoEnEscena } from "@/lib/globos3d/deshacer-turno";
 import { diffEscenas, diffVacio, idsParaResaltar, type DiffEscena } from "@/lib/globos3d/diff-escenas";
+import type { Encuadre } from "@/lib/globos3d/encuadre-foto";
 import type { Escena } from "@/lib/globos3d/escena";
 import { pedirEscenaIA, type FaseIA, type PasoIA } from "@/lib/globos3d/flujo-escena-ia";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
@@ -35,6 +36,8 @@ export type EntradaAsistenteIA = {
   aplicar: (escena: Escena, etiqueta: string) => void;
   /** Los turnos guardados con la escena. */
   inicial: readonly TurnoPanel[];
+  /** Una foto acaba de modelarse y su escena está por aplicarse: la cámara debe ponerse donde estaba la de la foto. */
+  verDesdeLaFoto?: (encuadre: Encuadre) => void;
 };
 
 export type EnvioIA = { texto: string; foto: FotoAdjuntaIA | null; alcance: AlcanceResuelto; escenaEnteraConElegida: boolean };
@@ -151,6 +154,9 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
         } else {
           const aplicada = aplicarTurno(u.escena, antes, r.escena, diff);
           diff = aplicada.diff;
+          // Una escena armada desde una foto se ve desde el mismo ángulo que la foto (antes quedaba la vista de siempre y no se parecía).
+          const deLaFoto = envio.foto ? datosDeRefinado(r.foto) : null;
+          if (deLaFoto) u.verDesdeLaFoto?.(deLaFoto.encuadre);
           u.aplicar(aplicada.escena, `Turno ${base.numero} de la IA`);
           despues = aplicada.escena;
           nota = textoAplicarTurno(aplicada.conservadas);

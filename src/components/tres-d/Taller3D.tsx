@@ -19,6 +19,8 @@ import { reemplazarColor } from "@/lib/globos3d/recolorear";
 import { armarEscena, escenaEnIngles, idNuevo, SALA_INICIAL, type Escena, type EscenaArmada, type NodoEscena } from "@/lib/globos3d/escena";
 import { ESCENAS_PREDEFINIDAS, escenaPredefinida } from "@/lib/globos3d/escenas-presets";
 import { nombreParaFoto, nombreQueSigue } from "@/lib/globos3d/nombre-escena";
+import type { Encuadre } from "@/lib/globos3d/encuadre-foto";
+import { vistaDeFoto } from "./camara-foto";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
 import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdicionEscena";
 import { useLienzoDecoraciones, type CopiaElegida } from "./useLienzoDecoraciones";
@@ -155,7 +157,7 @@ export function Taller3D() {
   // El nombre de la escena sigue a lo que la IA arma, si era el de una plantilla (nombre-escena.ts); el que escribió la persona no se toca.
   const alAplicarIA = useCallback((nueva: Escena) => { if (!solitario.activo) setNombreEscena((actual) => nombreQueSigue(actual, nueva)); }, [solitario.activo]);
   const nombreFoto = useMemo(() => nombreParaFoto(nombreEscena, escenaVista), [nombreEscena, escenaVista]);
-  const { ia, rotuloDeshacer } = useIATaller({ escena: escenaVista, cambiar: cambiarVista, ambito: solitario.activo ? `pieza:${solitario.solitario?.raizId ?? ""}` : "escena", clave: claveEscena, cache: cacheEscena, cargada, alAplicar: alAplicarIA });
+  const { ia, rotuloDeshacer } = useIATaller({ escena: escenaVista, cambiar: cambiarVista, ambito: solitario.activo ? `pieza:${solitario.solitario?.raizId ?? ""}` : "escena", clave: claveEscena, cache: cacheEscena, cargada, alAplicar: alAplicarIA, verDesdeLaFoto: (encuadre) => { vistaFotoPendiente.current = encuadre; } });
   /** Una pieza recién creada desde «Añadir → Nuevas» y abierta en el editor: «Cancelar» la quita. */
   const nuevaRef = useRef<string | null>(null);
   const [pestanaLado, setPestanaLado] = useState<PestanaLateral>("pieza");
@@ -169,6 +171,8 @@ export function Taller3D() {
   const [avisoLienzo, setAvisoLienzo] = useState<string | null>(null);
   const [vueltaEncuadre, setVueltaEncuadre] = useState(0);
   const encuadradoRef = useRef<number | null>(null);
+  /** El encuadre de la foto que se acaba de modelar: cuando la escena nueva se dibuja, la cámara pasa a ver desde donde estaba la de la foto. */
+  const vistaFotoPendiente = useRef<Encuadre | null>(null);
   const [armadas] = useState(() => new WeakMap<Escena, EscenaArmada>());
   const [dibujos] = useState(() => new WeakMap<EscenaArmada, DibujoEscena>());
   const [menu, setMenu] = useState<{ id: string; x: number; y: number; tactil: boolean } | null>(null);
@@ -312,6 +316,11 @@ export function Taller3D() {
     });
     if (encuadrar) setVistaFija("3d");
     if (vistaVuelta) visor.ponerVistaCamara(vistaVuelta);
+    else if (vistaFotoPendiente.current) {
+      visor.ponerVistaCamara(vistaDeFoto(vistaFotoPendiente.current, armadaMostrada.sala));
+      vistaFotoPendiente.current = null;
+      setVistaFija(null);
+    }
   }, [visor, armadaMostrada, dibujoVisible, escenaVista, seleccion, vueltaEncuadre, copiaElegida, solitario, vistaSolitario.verAnclas, todosLosGlobos]);
   useResaltadoIA(visor, armadaMostrada, ia.marcas);
 

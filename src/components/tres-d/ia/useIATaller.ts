@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { Encuadre } from "@/lib/globos3d/encuadre-foto";
 import type { Escena } from "@/lib/globos3d/escena";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
 import { guardarConversacion, leerConversacion } from "../guardado-conversacion";
@@ -20,6 +21,8 @@ type Entrada = {
   cargada: boolean;
   /** Cada vez que la IA (o deshacer/rehacer un turno) deja la escena así: para que el nombre de la escena la siga. */
   alAplicar?: (escena: Escena) => void;
+  /** Se modeló una foto: la cámara va donde estaba la de la foto. */
+  verDesdeLaFoto?: (encuadre: Encuadre) => void;
 };
 
 /**
@@ -27,11 +30,11 @@ type Entrada = {
  * lleva la identidad de la escena en que se hizo: al abrir una plantilla, una sala vacía o una idea de la biblioteca la escena
  * cambia de identidad y los turnos de antes dejan de actuar sobre ella, hasta que Ctrl+Z la devuelve), los pasos nombrados del historial y Esc para volver de «Ver antes».
  */
-export function useIATaller({ escena, cambiar, ambito, clave, cache, cargada, alAplicar }: Entrada) {
+export function useIATaller({ escena, cambiar, ambito, clave, cache, cargada, alAplicar, verDesdeLaFoto }: Entrada) {
   const [guardada] = useState(() => (typeof window === "undefined" ? [] : leerConversacion()));
   const nombres = useNombresDePasos();
   const aplicar = useCallback((nueva: Escena, etiqueta: string) => { nombres.nombrar(nueva, etiqueta); cambiar(nueva); alAplicar?.(nueva); }, [nombres, cambiar, alAplicar]);
-  const ia = useAsistenteIA({ escena, ambito, clave, cache, aplicar, inicial: guardada });
+  const ia = useAsistenteIA({ escena, ambito, clave, cache, aplicar, inicial: guardada, verDesdeLaFoto });
 
   useEffect(() => {
     if (!cargada) return;

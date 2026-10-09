@@ -2,6 +2,7 @@ import { armarEscena, type Escena, type NodoEscena } from "./escena";
 import { centroDe } from "./letras";
 import { muebleDe } from "./mobiliario-catalogo";
 import { armarPieza } from "./piezas";
+import { esTelon } from "./fondos-escenografia";
 
 /**
  * **Lo colgado de la pared que un panel taparía** (el neón «Happy Birthday» sobre la pared de lentejuelas, un letrero sobre
@@ -13,15 +14,18 @@ import { armarPieza } from "./piezas";
 
 /** Separación (cm) entre la cara del panel y lo que va delante. */
 const SEPARACION_CM = 2;
-/** Más fondo que esto (cm) ya no es un panel (es una mesa, unos pedestales): lo que se cuelga no se le pone delante. */
-const FONDO_MAXIMO_PANEL_CM = 40;
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
 const esEscenografia = (n: NodoEscena) => n.pieza.tipo === "escenografia";
+/**
+ * ¿El nodo de piso es un telón (panel, arco, marco, aro, biombo)? Lo dice el catálogo (`esTelon`), no su fondo: una mesa de postres
+ * de 31 cm de fondo o unos pedestales no son un panel aunque sean delgados, y no tapan lo que cuelga de la pared.
+ */
+const esPanelDeFondo = (n: NodoEscena) => n.pieza.tipo === "escenografia" && n.pieza.mueble !== undefined && esTelon(n.pieza.mueble.id);
 
 export function colgadoDelanteDePaneles(escena: Escena, notas: string[]): Escena {
   const colgados = escena.nodos.filter((n) => esEscenografia(n) && n.colocacion.en === "pared" && n.colocacion.pared === "fondo");
-  const paneles = escena.nodos.filter((n) => esEscenografia(n) && n.colocacion.en === "piso");
+  const paneles = escena.nodos.filter((n) => esPanelDeFondo(n) && n.colocacion.en === "piso");
   if (!colgados.length || !paneles.length) return escena;
   // Solo la escenografía: armarla es rápido (sin globos) y da las cajas en el mundo.
   const cajas = new Map(armarEscena({ ...escena, nodos: [...colgados, ...paneles] }).porNodo.map((n) => [n.id, n.caja]));
@@ -32,7 +36,7 @@ export function colgadoDelanteDePaneles(escena: Escena, notas: string[]): Escena
     let frente = -Infinity, delante = "";
     for (const p of paneles) {
       const k = cajas.get(p.id);
-      if (!k || k.max.z - k.min.z > FONDO_MAXIMO_PANEL_CM || k.max.z <= c.min.z) continue;
+      if (!k || k.max.z <= c.min.z) continue;
       const solapaX = Math.min(c.max.x, k.max.x) > Math.max(c.min.x, k.min.x);
       const solapaY = Math.min(c.max.y, k.max.y) > Math.max(c.min.y, k.min.y);
       if (solapaX && solapaY && k.max.z > frente) { frente = k.max.z; delante = p.nombre; }

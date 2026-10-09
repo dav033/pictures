@@ -7,7 +7,7 @@
  */
 import assert from "node:assert/strict";
 import * as THREE from "three";
-import { camaraDeFoto } from "@/components/tres-d/camara-foto";
+import { camaraDeFoto, vistaDeFoto } from "@/components/tres-d/camara-foto";
 import type { Encuadre } from "@/lib/globos3d/encuadre-foto";
 import { camaraNumerica, INCLINACION_MAXIMA_GRADOS, proyectar } from "@/lib/globos3d/proyeccion-foto";
 
@@ -43,6 +43,18 @@ prueba("la inclinación tiene tope, sin saltos, y sin camaraYCm la cámara va de
     antes = g;
   }
   assert.equal(camaraNumerica({ aspecto: 1, altoCm: 300, centroYCm: 80 }, sala).inclinacion, 0);
+});
+
+prueba("«ver desde la foto»: la vista del visor es la cámara de la foto (misma posición, mira al centro de la imagen) y se puede orbitar desde ahí", () => {
+  const camara = camaraDeFoto(inclinada, sala), v = vistaDeFoto(inclinada, sala);
+  assert.deepEqual(v.posicion, { x: camara.position.x, y: camara.position.y, z: camara.position.z });
+  // El objetivo cae sobre el eje óptico de la cámara y, mirado desde ella, en el centro del cuadro.
+  const centro = new THREE.Vector3(v.objetivo.x, v.objetivo.y, v.objetivo.z).project(camara);
+  assert.ok(Math.abs(centro.x) < 1e-6 && Math.abs(centro.y) < 1e-6, `${centro.x}, ${centro.y}`);
+  const distancia = Math.hypot(v.objetivo.x - v.posicion.x, v.objetivo.y - v.posicion.y, v.objetivo.z - v.posicion.z);
+  assert.ok(v.minDistancia < distancia && v.maxDistancia > distancia, `${v.minDistancia} < ${distancia} < ${v.maxDistancia}`);
+  assert.equal(v.near, camara.near);
+  assert.equal(v.far, camara.far);
 });
 
 console.log(`test-camara-foto: ${pruebas} pruebas ok`);

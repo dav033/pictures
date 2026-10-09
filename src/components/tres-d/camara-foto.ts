@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { Sala } from "@/lib/globos3d/escena";
 import type { Encuadre } from "@/lib/globos3d/encuadre-foto";
+import type { VistaCamara } from "./escena-globos";
 import { camaraNumerica, ejesDeCamara, FOV_FOTO_GRADOS } from "@/lib/globos3d/proyeccion-foto";
 
 /**
@@ -22,4 +23,24 @@ export function camaraDeFoto(encuadre: Encuadre, sala: Pick<Sala, "fondoCm">): T
   camara.updateMatrixWorld();
   camara.updateProjectionMatrix();
   return camara;
+}
+
+/** Lo más que se acerca la persona a la escena desde «ver desde la foto» (m), y cuántas veces la distancia de la foto se aleja. */
+const ACERCAR_MINIMO_M = 0.3;
+const ALEJAR_VECES = 3;
+
+/**
+ * La misma cámara de la foto como vista del visor (`ponerVistaCamara`): su posición, el punto al que mira a la distancia en que `altoCm` llena el
+ * cuadro y los límites de acercar y alejar. Así, al modelar una foto, la escena se ve desde el mismo ángulo que la foto y desde ahí se puede orbitar.
+ */
+export function vistaDeFoto(encuadre: Encuadre, sala: Pick<Sala, "fondoCm">): VistaCamara {
+  const camara = camaraDeFoto(encuadre, sala);
+  const c = camaraNumerica(encuadre, sala);
+  const distancia = (encuadre.altoCm / 2 / c.tangente) * CM;
+  const adelante = camara.getWorldDirection(new THREE.Vector3());
+  const { x, y, z } = camara.position;
+  return {
+    posicion: { x, y, z }, objetivo: { x: x + adelante.x * distancia, y: y + adelante.y * distancia, z: z + adelante.z * distancia },
+    near: camara.near, far: camara.far, minDistancia: ACERCAR_MINIMO_M, maxDistancia: distancia * ALEJAR_VECES,
+  };
 }

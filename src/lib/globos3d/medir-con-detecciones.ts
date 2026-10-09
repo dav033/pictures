@@ -1,5 +1,5 @@
 import { LecturaFotoSchema, type AnclaLeida, type ColorLeido, type LecturaFoto, type PiezaLeida } from "./lectura-foto";
-import { coloresDe, coloresPorEscalonDe, dominantesPorTramo, indiceDeDetectado, repartoDeColores } from "./medir-colores";
+import { coloresConLaEscena, coloresDe, coloresPorEscalonDe, dominantesPorTramo, indiceDeDetectado, repartoDeColores } from "./medir-colores";
 import { ejeMedido, globosDe, largosDelEje, mediana, normalEnPunto, percentil, proyectar, r3, type CajaDetectada, type Globo, type P } from "./medir-geometria";
 import { medirTamanos, repartoDe } from "./medir-tamanos";
 import type { Escalon } from "./mezcla-lectura";
@@ -179,11 +179,17 @@ function cajaMedida(p: Monton, globos: readonly Globo[], aspecto: number): Pick<
 }
 
 /** El montón de piso con el reparto de tamaños y de colores de sus globos (su escala no se toma: se ve más cerca de la cámara). */
-function medirMonton(p: Monton, detectados: readonly Globo[], pisoY: number | null, aspecto: number): Medicion {
-  if (detectados.length < MINIMO_GLOBOS) return { pieza: { ...p, colores: coloresDe(p.colores, detectados) }, escalaCm: null, notas: [] };
+function medirMonton(p: Monton, detectados: readonly Globo[], pisoY: number | null, aspecto: number, paleta: readonly ColorLeido[]): Medicion {
+  // Los colores que la detección ve en el montón y el lector no puso entran de la paleta de la escena, con muchos o pocos globos.
+  const conEscena = (leidos: readonly ColorLeido[], lista: readonly Globo[]) => coloresConLaEscena(leidos, lista, paleta);
+  const notaDe = (nuevos: readonly string[]) => (nuevos.length ? [`Montón de piso: ${nuevos.join(", ")} se ve en sus globos detectados y entra a sus colores (de la paleta de la escena).`] : []);
+  if (detectados.length < MINIMO_GLOBOS) {
+    const { colores, nuevos } = conEscena(coloresDe(p.colores, detectados), detectados);
+    return { pieza: { ...p, colores }, escalaCm: null, notas: notaDe(nuevos) };
+  }
   const t = medirTamanos(p.mezcla, detectados, pisoY, false);
   const { globos } = t;
-  const colores = coloresDe(p.colores, globos);
+  const { colores, nuevos } = conEscena(coloresDe(p.colores, globos), detectados);
   const coloresPorEscalon = coloresPorEscalonDe(t.porEscalon, colores);
   const pieza: Monton = { ...p, ...cajaMedida(p, globos, aspecto), mezcla: t.mezcla, colores };
   if (coloresPorEscalon.length) pieza.coloresPorEscalon = coloresPorEscalon; else delete pieza.coloresPorEscalon;
@@ -193,7 +199,7 @@ function medirMonton(p: Monton, detectados: readonly Globo[], pisoY: number | nu
   return {
     pieza,
     escalaCm: null,
-    notas: [`Montón de piso medido con ${globos.length} globos detectados: ${t.escalones.map((e) => `${e} ${t.reparto[e] ?? 0} %`).join(", ")}.`],
+    notas: [`Montón de piso medido con ${globos.length} globos detectados: ${t.escalones.map((e) => `${e} ${t.reparto[e] ?? 0} %`).join(", ")}.`, ...notaDe(nuevos)],
   };
 }
 
@@ -211,6 +217,7 @@ function dentroDeOtraPieza(g: Globo, p: PiezaLeida, aspecto: number): boolean {
     case "columna_clasica": return Math.abs(g.x - p.x * aspecto) <= ANCHO_COLUMNA_CLASICA && g.y >= p.yArriba - ANCHO_COLUMNA_CLASICA / 2 && g.y <= p.yBase;
     case "ramo_helio": return Math.abs(g.x - p.x * aspecto) <= Math.max(0.1, p.cantidad * ANCHO_RAMO_POR_GLOBO) && g.y >= p.yArriba - 0.05 && g.y <= p.yBase;
     case "globo": return Math.hypot(g.x - p.x * aspecto, g.y - p.y) <= p.diametro / 2 + g.d / 2;
+    case "corazon": return Math.hypot(g.x - p.x * aspecto, g.y - p.y) <= RADIO_DECORACION * Math.max(1, p.cantidad) + g.d / 2;
     case "decoracion": return Math.hypot(g.x - p.x * aspecto, g.y - p.y) <= RADIO_DECORACION * Math.max(1, p.cantidad) + g.d / 2;
     case "metalizado": return Math.abs(g.x - p.x * aspecto) <= (p.alto * p.texto.length * 0.62) / 2 && Math.abs(g.y - p.y) <= p.alto / 2;
     default: return false;
@@ -264,6 +271,8 @@ export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDe
     }
     if (deFondos) notas.push(`${deFondos} cajas detectadas son de un fondo o de un mueble (el propio panel, lo que hay sobre una mesa): no se miden como globos.`);
     if (deOtras) notas.push(`${deOtras} globos detectados son de otras piezas (columnas, globos sueltos, decoraciones): no cuentan en la medida de las guirnaldas.`);
+    // Los colores de la escena: los de las piezas de globos (no los de los fondos), para los que un montón vea y el lector no haya puesto.
+    const paleta = l.piezas.flatMap((q) => (q.tipo === "guirnalda_organica" || q.tipo === "columna_organica" || q.tipo === "racimo_piso" ? q.colores : []));
     const escalas: number[] = [];
     guirnaldas.forEach(({ p, i }, k) => {
       const m = medirGuirnalda(p, asignados[k]!, l.aspecto, l.pisoY);
@@ -272,7 +281,7 @@ export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDe
       if (m.escalaCm) escalas.push(m.escalaCm);
     });
     montones.forEach(({ p, i }, k) => {
-      const m = medirMonton(p, deMonton[k]!, l.pisoY, l.aspecto);
+      const m = medirMonton(p, deMonton[k]!, l.pisoY, l.aspecto, paleta);
       piezas[i] = m.pieza;
       notas.push(...m.notas);
     });

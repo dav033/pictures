@@ -120,6 +120,7 @@ export function lineaDePiezaLeida(p: PiezaLeida, i: number, altoImagenCm: number
       case "guirnalda_clasica": return `largo ${cm(Math.abs(p.x2 - p.x1))}`;
       case "globo": return `${cm(p.diametro)} de diámetro, ${p.en}`;
       case "ramo_helio": return `${p.cantidad} globos`;
+      case "corazon": return `${p.cantidad} corazón(es) C-12, ${p.en}`;
       case "decoracion": return `${p.id} ×${p.cantidad}`;
       case "metalizado": return `«${p.texto}»${p.cursiva ? " cursiva" : ""}`;
       case "fondo": return `${p.id}${p.cantidad && p.cantidad > 1 ? ` ×${p.cantidad}` : ""}${p.texto ? ` «${p.texto}»${p.colorTexto ? ` en ${p.colorTexto}` : ""}${p.acabadoTexto ? ` (${p.acabadoTexto})` : ""}` : ""}`;
