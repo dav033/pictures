@@ -53,5 +53,7 @@ export function salaNeutra(sala: Sala): Sala {
   return {
     ...sala, anchoCm: Math.max(sala.anchoCm, ANCHO_MINIMO_CM), altoCm: Math.max(sala.altoCm, ALTO_MINIMO_CM),
     tonos: { piso: "#d6d6da", paredes: "#dcdce0", techo: "#e6e6e9" }, mostrar: { piso: true, fondo: true, laterales: false, techo: false },
+    // Las miniaturas de la biblioteca van sobre un fondo liso y neutro: sin madera ni luces.
+    ambiente: { piso: "liso", luces: false, ventana: false },
   };
 }

@@ -10,6 +10,7 @@ import { ControlesPieza } from "./ControlesTactiles";
 import { formatoPorId, FORMATOS_GLOBO } from "@/lib/globos3d/formatos";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import type { GloboDecoracion, TuboDecoracion } from "@/lib/globos3d/decoraciones";
+import { papelDeConfeti } from "./armada-visor";
 import type { EscenaGlobos, FlorEnEscena, GloboColocadoEnEscena, GloboEnEscena, SolidoEnEscena, TuboEnEscena, VistaFija } from "./escena-globos";
 import { descripcionRender3d, formatoEnIngles } from "@/lib/globos3d/render-ia";
 import { GeneradorIA } from "./GeneradorIA";
@@ -262,7 +263,10 @@ export function Taller3D() {
     const hecho = dibujos.get(armadaEscena);
     if (hecho) return hecho;
     const dibujo: DibujoEscena = {
-      globos: armadaEscena.porNodo.flatMap((n) => n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true } : {}), nodo: n.id }))),
+      globos: armadaEscena.porNodo.flatMap((n) => {
+        const papel = n.globos.some((g) => g.confeti) ? papelDeConfeti(n.globos) : null;
+        return n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true, ...(papel ? { confetiHex: papel } : {}) } : {}), nodo: n.id }));
+      }),
       tubos: armadaEscena.porNodo.flatMap((n) => n.tubos.map((t): TuboEnEscena => ({ ...tuboAEscena(t), nodo: n.id }))),
       flores: armadaEscena.porNodo.flatMap((n) => n.flores.map((f) => ({ ...f, nodo: n.id }))),
       solidos: armadaEscena.porNodo.flatMap((n) => n.solidos.map((x) => ({ ...x, nodo: n.id }))),
@@ -340,7 +344,10 @@ export function Taller3D() {
   const lienzoDecoraciones = useLienzoDecoraciones({
     lienzoRef, visorRef: escenaRef, activo: editable, escena: escenaVista, armada: armadaEscena, seleccion, copia: copiaElegida,
     onCopia: setCopiaTocada, onSeleccion: elegir, onCambio: cambiarVista, onAviso: setAvisoLienzo, cache: cacheEscena,
-    aEscena: (n) => ({ globos: n.globos.map((g) => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true } : {}) })), tubos: n.tubos.map(tuboAEscena) }),
+    aEscena: (n) => {
+      const papel = n.globos.some((g) => g.confeti) ? papelDeConfeti(n.globos) : null;
+      return { globos: n.globos.map((g) => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true, ...(papel ? { confetiHex: papel } : {}) } : {}) })), tubos: n.tubos.map(tuboAEscena) };
+    },
   });
 
   // ----------------------------------------------------------------------------------------------------------
@@ -838,6 +845,14 @@ export function Taller3D() {
             <button type="button" onClick={() => setDialogo("lista")} aria-label={`Lista de compra: ${totalGlobos} globos`} className="grid size-11 shrink-0 place-items-center rounded-xl border border-taller-primario bg-taller-primario text-taller-sobre-primario"><ShoppingCart className="size-5" aria-hidden /></button>
           </>
         )}
+      </div>
+      {/* Acceso directo y con texto al render con IA (en escritorio vive en la barra superior). */}
+      <div className="pointer-events-none absolute inset-x-3 z-20 flex justify-center" style={{ top: "calc(max(12px, env(safe-area-inset-top)) + 52px)" }}>
+        <button type="button" onClick={() => setDialogo("imagen")} disabled={!listo}
+          title={solitario.activo ? "Foto realista con IA de esta pieza sola" : "Foto realista con IA de la escena"}
+          className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full border border-taller-primario bg-taller-primario px-5 text-sm font-semibold text-taller-sobre-primario shadow-[0_8px_24px_var(--sombra)] disabled:cursor-not-allowed disabled:opacity-45">
+          <WandSparkles className="size-5" aria-hidden />Generar render con IA
+        </button>
       </div>
       {renombrando && !esAncho && (
         <div className="absolute inset-x-3 top-16 z-30">

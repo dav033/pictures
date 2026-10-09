@@ -1,4 +1,4 @@
-import type { Escena } from "@/lib/globos3d/escena";
+import { ambienteNormalizado, type Escena } from "@/lib/globos3d/escena";
 
 /**
  * La escena del taller guardada en este navegador (localStorage): se guarda sola tras cada cambio y se recupera al
@@ -25,7 +25,11 @@ export function leerGuardada(): EscenaGuardada | null {
     const crudo = window.localStorage.getItem(CLAVE);
     if (!crudo) return null;
     const datos: unknown = JSON.parse(crudo);
-    return valida(datos) ? datos : null;
+    if (!valida(datos)) return null;
+    // El ambiente de la sala es opcional: lo que no cuadra se descarta (la sala queda neutra), no la escena entera.
+    const ambiente = ambienteNormalizado((datos.escena.sala as { ambiente?: unknown }).ambiente);
+    if (ambiente) datos.escena.sala.ambiente = ambiente; else delete datos.escena.sala.ambiente;
+    return datos;
   } catch {
     return null;
   }

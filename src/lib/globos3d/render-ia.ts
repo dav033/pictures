@@ -8,6 +8,7 @@
  * su cantidad, forma y colores, y «nada más hay en la sala») y el lugar por defecto es la sala del propio visor.
  * Sin dependencias de servidor: lo usan la ruta, el taller y las pruebas.
  */
+import { MARCA_LUZ_CALIDA } from "./luz-sala";
 export type AmbienteRender = "igual_visor" | "salon_elegante" | "fiesta_infantil" | "boda_jardin" | "estudio";
 
 /**
@@ -45,6 +46,8 @@ const FRASE_SALA = /The room as shown:[^.]*\.?\s*/;
  */
 const COLOR_FIEL = "Color fidelity: every balloon keeps exactly the color it has in the input image and the hex code given for it; do not darken, desaturate or tint the balloons.";
 const LUZ_NEUTRA = "Neutral daylight white balance and the same exposure and brightness as the input: do not warm or darken the image.";
+/** Si el visor iluminó la sala con luz cálida de estudio (ambiente de la sala), esa calidez es parte de la escena: no se pide quitarla. */
+const LUZ_CALIDA = "Keep the warm studio lighting of the input and its exposure and brightness: do not darken the image or change its white balance.";
 
 const NO_ANADIR = "Add nothing that is not in the input: no furniture, tables, desserts, cupcakes, gifts, plants, people, extra balloons, extra trees or extra figures.";
 
@@ -73,7 +76,7 @@ export function promptRender3d(descripcion: string, ambiente: AmbienteRender): s
     sala,
     decoracion ? `The decoration: ${decoracion}.` : "",
     COLOR_FIEL,
-    ambiente === "igual_visor" ? LUZ_NEUTRA : "",
+    ambiente === "igual_visor" ? (descripcion.includes(MARCA_LUZ_CALIDA) ? LUZ_CALIDA : LUZ_NEUTRA) : "",
     NO_ANADIR,
     "Same camera angle and framing as the input; sharp detail, natural depth.",
   ].filter(Boolean).join(" ");
