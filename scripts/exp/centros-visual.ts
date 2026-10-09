@@ -27,7 +27,7 @@ export function armarSalonDePrueba(): Escena {
   // Dos filas de tres mesas redondas con sus sillas, al fondo; la pista de baile al frente.
   [-330, 0, 330].forEach((x, i) => { e = paso(e, "agregar_mobiliario", { id: "mesa_redonda_sillas", x_cm: x, z_cm: -250 }); e = paso(e, "agregar_mobiliario", { id: "mesa_redonda_sillas", x_cm: x + (i - 1) * 0, z_cm: 20 }); });
   e = paso(e, "agregar_mobiliario", { id: "alfombra_redonda", ancho_cm: 300, x_cm: 0, z_cm: 290, colores: ["#2b2b2b"] });
-  e = paso(e, "decorar_mesas", { diseno: { tipo: "ramo_helio", colores: ["blanco", "dorado", "rosa"], alto_cm: 90 }, diseno_b: { tipo: "columna", colores: ["rosa", "blanco"], alto_cm: 55 } });
+  e = paso(e, "decorar_mesas", { disenos: [{ tipo: "ramo_helio", colores: ["blanco", "dorado", "rosa"], alto_cm: 90 }, { tipo: "columna", colores: ["rosa", "blanco"], alto_cm: 55 }] });
   e = paso(e, "techo_por_zona", { tipo: "festones", zona: { x_cm: 0, z_cm: 285, ancho_cm: 420, fondo_cm: 280 }, colores: ["blanco", "rosa", "dorado"], densidad: "media" });
   return e;
 }

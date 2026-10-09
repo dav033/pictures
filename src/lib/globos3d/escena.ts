@@ -85,7 +85,12 @@ export type Colocacion =
   | { en: "techo"; xCm: number; zCm: number; cuelgaCm: number; giroGrados: number; volteada: boolean }
   | { en: "ancla"; padreId: string; ancla: number; cada: number; giroGrados: number; /** Anclas del reparto que se saltan. */ omitir?: number[] }
   | { en: "libre"; xCm: number; yCm: number; zCm: number; giroGrados: number }
-  | { en: "sobre"; padreId: string; puntoCm: Vec3; normal: Vec3; giroGrados: number };
+  /**
+   * `encima`: apoyada sobre una superficie horizontal de la pieza de debajo (el centro de una mesa): lo que va «de pie» (un ramo, una
+   * burbuja) queda de pie y la pieza gira con la de debajo. Sin él, `sobre` se arma como siempre (las decoraciones de la biblioteca
+   * ya vienen orientadas por sus autores).
+   */
+  | { en: "sobre"; padreId: string; puntoCm: Vec3; normal: Vec3; giroGrados: number; encima?: boolean };
 
 export type LugarColocacion = Colocacion["en"];
 export type ColocacionSobre = Extract<Colocacion, { en: "sobre" }>;
@@ -191,10 +196,10 @@ export const puntoALocal = (marco: MarcoPieza, p: Vec3): Vec3 => vectorALocal(ma
  * El marco de un ancla, igual que `colocarEn` de `decoraciones.ts`: y local = normal; x local horizontal (o a lo
  * largo de x si la normal es vertical) y `giroGrados` sobre la normal.
  */
-function marcoDeAncla(ancla: AnclaDePieza, giroGrados: number, ejeX: Vec3 = { x: 1, y: 0, z: 0 }): Transformacion {
+function marcoDeAncla(ancla: AnclaDePieza, giroGrados: number, ejeX?: Vec3): Transformacion {
   const n = normalizar(ancla.normal);
-  // Con la normal vertical no hay «horizontal» que sirva de guía: se toma `ejeX` (en `sobre`, el x de la pieza de debajo, para que gire con ella).
-  const auxiliar: Vec3 = Math.abs(n.y) < 0.9 ? { x: 0, y: 1, z: 0 } : ejeX;
+  // Con la normal vertical no hay «horizontal» que sirva de guía: x del mundo o, en un `sobre` con `encima`, el x de la pieza de debajo (gira con ella).
+  const auxiliar: Vec3 = Math.abs(n.y) < 0.9 ? { x: 0, y: 1, z: 0 } : ejeX ?? { x: 1, y: 0, z: 0 };
   const xL = normalizar({ x: auxiliar.y * n.z - auxiliar.z * n.y, y: auxiliar.z * n.x - auxiliar.x * n.z, z: auxiliar.x * n.y - auxiliar.y * n.x });
   const zL = { x: n.y * xL.z - n.z * xL.y, y: n.z * xL.x - n.x * xL.z, z: n.x * xL.y - n.y * xL.x };
   const c = Math.cos(rad(giroGrados)), s = Math.sin(rad(giroGrados));
@@ -306,9 +311,9 @@ function orientada(nodo: NodoEscena): Pieza {
   const { pieza, colocacion } = nodo;
   if (pieza.tipo !== "decoracion") return pieza;
   // Las de Halloween que van de pie (calabazas, árbol, ramo, fantasma) quedan derechas en el piso y del techo.
-  // Sobre una superficie horizontal (el centro de una mesa) lo que va de pie queda de pie; sobre una pared o una columna, como en un ancla.
-  const sobreArriba = colocacion.en === "sobre" && colocacion.normal.y > 0.9 && esDePie(pieza.decoracion);
-  const deFrente = colocacion.en === "pared" || colocacion.en === "libre" || sobreArriba ? true : colocacion.en === "ancla" || colocacion.en === "sobre" ? false : Boolean(pieza.deFrente) || esDePie(pieza.decoracion);
+  // `encima` (el centro de una mesa): lo que va de pie queda de pie. Cualquier otro `sobre`, como en un ancla.
+  const encimaDePie = colocacion.en === "sobre" && colocacion.encima === true && esDePie(pieza.decoracion);
+  const deFrente = colocacion.en === "pared" || colocacion.en === "libre" || encimaDePie ? true : colocacion.en === "ancla" || colocacion.en === "sobre" ? false : Boolean(pieza.deFrente) || esDePie(pieza.decoracion);
   if (deFrente === Boolean(pieza.deFrente)) return pieza;
   const { deFrente: _anterior, ...resto } = pieza;
   void _anterior;
@@ -326,7 +331,7 @@ function marcoSobre(armada: PiezaArmada, c: ColocacionSobre, marcoPadre: MarcoPi
   const n = Math.hypot(girada.x, girada.y, girada.z) > 1e-9 ? normalizar(girada) : { x: 0, y: 0, z: 1 };
   const { min, max } = armada.caja;
   const radio = Math.max(Math.abs(min.x), Math.abs(max.x), Math.abs(min.z), Math.abs(max.z));
-  const base = marcoDeAncla({ posicion: p, normal: n }, c.giroGrados, girar(marcoPadre.m, { x: 1, y: 0, z: 0 }));
+  const base = marcoDeAncla({ posicion: p, normal: n }, c.giroGrados, c.encima ? girar(marcoPadre.m, { x: 1, y: 0, z: 0 }) : undefined);
   let espalda = ESPALDAS.get(armada);
   if (!espalda) { espalda = espaldaDe(armada); ESPALDAS.set(armada, espalda); }
   // Lo justo para que su espalda (cada globo, cada tubito) toque los globos de debajo; sin globos debajo, por su caja.

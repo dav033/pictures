@@ -4,7 +4,7 @@ import { centrosDe, centroDeMesa, cosaEncima, GRUPOS_MESA, mesasDeEscena, padreD
 import { altoDe, crearDiseno, recolorearCentro, reescalarCentro, TIPOS_DISENO } from "./centros-mesa-diseno";
 import { fallar } from "./herramientas-escena-colores";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
-import { MAX_NODOS } from "./herramientas-escena";
+import { MAX_NODOS } from "./limites-escena";
 import type { Pieza } from "./piezas";
 
 /**
@@ -15,11 +15,12 @@ import type { Pieza } from "./piezas";
  * `centros-mesa-diseno.ts`. El tope de piezas (`MAX_NODOS`) se comprueba ANTES de cambiar nada: o caben todos o no se pone ninguno.
  */
 
+/** El diseño de un centro: se define UNA vez y se usa en decorar_mesas (`disenos`, uno o dos) y en cambiar_centros (`diseno`). */
 const DisenoSchema = z.object({
-  tipo: z.enum(TIPOS_DISENO).describe("ramo_helio: ramo de helio con cintas y peso (de pie); racimo: sexteto de globos amarrados; columna: columna chica de R-5; flores: flor de globos; biblioteca: un item de la biblioteca (biblioteca_id)"),
-  colores: z.array(z.string().min(1).max(40)).min(1).max(4).optional().describe("hasta 4 colores (nombre o código Sempertex); se reparten en ciclo entre los globos"),
-  alto_cm: z.number().min(10).max(250).optional().describe("alto del centro; si falta, el de partida (ramo 70, racimo 26, columna 60)"),
-  biblioteca_id: z.string().min(1).max(160).optional().describe("solo con tipo biblioteca: el id que da buscar_en_biblioteca"),
+  tipo: z.enum(TIPOS_DISENO).describe("ramo_helio (ramo de helio con cintas, de pie), racimo (seis globos en copa), columna (chica de R-5), flores (flor de globos) o biblioteca (biblioteca_id)"),
+  colores: z.array(z.string().min(1).max(40)).min(1).max(4).optional().describe("hasta 4, en ciclo"),
+  alto_cm: z.number().min(10).max(250).optional().describe("ramo 70, racimo 26 y columna 60 si falta"),
+  biblioteca_id: z.string().min(1).max(160).optional(),
 });
 
 const SELECCION = {
@@ -28,15 +29,14 @@ const SELECCION = {
 };
 
 const DecorarSchema = z.object({
-  diseno: DisenoSchema,
-  diseno_b: DisenoSchema.optional().describe("segundo diseño: se alternan A, B, A, B (tablero de ajedrez) entre las mesas elegidas"),
+  disenos: z.array(DisenoSchema).min(1).max(2).describe("un diseño, o dos que se alternan A, B, A, B (tablero de ajedrez) entre las mesas"),
   ...SELECCION,
   forzar: z.boolean().optional().describe("true: también las mesas que llevan algo encima (por defecto se saltan)"),
 });
 const CompletarSchema = z.object({ ...SELECCION, forzar: z.boolean().optional().describe("true: también las mesas que llevan algo encima") });
 const CambiarSchema = z.object({
   ranura: z.enum(["a", "b", "todas"]).optional().describe("cuál diseño cambia (a o b); si falta, todos"),
-  diseno: DisenoSchema.optional().describe("otro diseño entero para esa ranura"),
+  diseno: DisenoSchema.optional().describe("otro diseño entero para esa ranura (a o b)"),
   colores: z.array(z.string().min(1).max(40)).min(1).max(4).optional().describe("nuevos colores, en el orden en que aparecen en el centro"),
   alto_cm: z.number().min(10).max(250).optional().describe("nuevo alto de todos"),
   escala: z.number().min(0.4).max(2.5).optional().describe("multiplica el alto actual (1.3 = 30 % más alto); en vez de alto_cm"),
@@ -59,10 +59,11 @@ function contexto(escena: Escena) {
   return { armada, mesas: mesasDeEscena(escena, armada) };
 }
 
-function mesasElegidas(mesas: readonly MesaDeEscena[], pedido: { mesas?: string[]; grupo?: (typeof GRUPOS_MESA)[number] }): MesaDeEscena[] {
+function mesasElegidas(mesas: readonly MesaDeEscena[], pedido: { mesas?: string[]; grupo?: (typeof GRUPOS_MESA)[number] }, notas: string[]): MesaDeEscena[] {
   if (!mesas.length) return fallar("No hay mesas en la escena: agrégalas con agregar_mobiliario (mesa_redonda_mantel, mesa_redonda_sillas, mesa_imperial_mantel…).");
   const r = seleccionarMesas(mesas, { ids: pedido.mesas, grupo: pedido.grupo });
   if (r.error) return fallar(r.error);
+  if (r.aviso) notas.push(r.aviso);
   if (!r.mesas.length) return fallar(`Ninguna mesa cumple ${pedido.grupo ? `el grupo «${pedido.grupo}»` : "lo pedido"}. Mesas: ${mesas.map((m) => `${m.nodo.id} (${m.tipo})`).join(", ")}.`);
   return r.mesas;
 }
@@ -91,8 +92,8 @@ function decorar(escena: Escena, argumentos: unknown) {
   const a = DecorarSchema.parse(argumentos ?? {});
   const notas: string[] = [];
   const { armada, mesas } = contexto(escena);
-  const elegidas = mesasElegidas(mesas, a);
-  const disenos = [crearDiseno(a.diseno, notas), ...(a.diseno_b ? [crearDiseno(a.diseno_b, notas)] : [])];
+  const elegidas = mesasElegidas(mesas, a, notas);
+  const disenos = a.disenos.map((d) => crearDiseno(d, notas));
   const saltadas: Array<readonly [string, string]> = [];
   const candidatas = elegidas.filter((m) => {
     const motivo = a.forzar ? null : cosaEncima(escena, armada, m);
@@ -141,8 +142,9 @@ function decorar(escena: Escena, argumentos: unknown) {
 
 function completar(escena: Escena, argumentos: unknown) {
   const a = CompletarSchema.parse(argumentos ?? {});
+  const notas: string[] = [];
   const { armada, mesas } = contexto(escena);
-  const elegidas = mesasElegidas(mesas, a);
+  const elegidas = mesasElegidas(mesas, a, notas);
   const centros = centrosDe(escena);
   const referencia = ([0, 1] as const).map((r) => centros.find((c) => ranuraDe(c) === r));
   if (!referencia[0] && !referencia[1]) return fallar("Todavía no hay centros de mesa que repetir: usa decorar_mesas con un diseño primero.");
@@ -178,6 +180,7 @@ function completar(escena: Escena, argumentos: unknown) {
   const resumen = [
     `Completé ${puestos.length} mesa${puestos.length === 1 ? "" : "s"} sin centro con el mismo diseño: ${lista(puestos.map((n) => padreDeCentro(n)!))}.`,
     saltadas.length ? `No quedaron (${saltadas.length}): ${agrupar(saltadas)}.` : "",
+    ...new Set(notas),
   ].filter(Boolean).join(" ");
   return { escena: actual, resumen };
 }
@@ -191,7 +194,7 @@ function cambiar(escena: Escena, argumentos: unknown) {
   if (a.alto_cm !== undefined && a.escala !== undefined) fallar("Pasa alto_cm o escala, no los dos.");
   const notas: string[] = [];
   const { armada, mesas } = contexto(escena);
-  const elegidas = mesasElegidas(mesas, a);
+  const elegidas = mesasElegidas(mesas, a, notas);
   const enAlcance = centrosEn(escena, elegidas, a.ranura);
   if (!enAlcance.length) return fallar("No hay centros de mesa que cambiar en esas mesas: pónlos con decorar_mesas.");
   if (a.diseno && (!a.ranura || a.ranura === "todas") && new Set(enAlcance.map(ranuraDe)).size > 1) fallar("Hay dos diseños (A y B): indica ranura a o b para decir cuál se reemplaza por el diseno nuevo.");
@@ -236,20 +239,21 @@ function cambiar(escena: Escena, argumentos: unknown) {
 
 function quitar(escena: Escena, argumentos: unknown) {
   const a = QuitarSchema.parse(argumentos ?? {});
+  const notas: string[] = [];
   const { mesas } = contexto(escena);
   const sinFiltro = !a.mesas?.length && (!a.grupo || a.grupo === "todas");
-  const lasCentros = sinFiltro ? centrosDe(escena).filter((c) => !a.ranura || a.ranura === "todas" || ranuraDe(c) === (a.ranura === "a" ? 0 : 1)) : centrosEn(escena, mesasElegidas(mesas, a), a.ranura);
+  const lasCentros = sinFiltro ? centrosDe(escena).filter((c) => !a.ranura || a.ranura === "todas" || ranuraDe(c) === (a.ranura === "a" ? 0 : 1)) : centrosEn(escena, mesasElegidas(mesas, a, notas), a.ranura);
   if (!lasCentros.length) return fallar("No hay centros de mesa que quitar con eso.");
   return {
     escena: sinNodos(escena, new Set(lasCentros.map((c) => c.id))),
-    resumen: `Quité ${lasCentros.length} centro${lasCentros.length === 1 ? "" : "s"} de mesa (de ${lista(lasCentros.map((c) => padreDeCentro(c) ?? c.id))}). Las mesas siguen igual.`,
+    resumen: `Quité ${lasCentros.length} centro${lasCentros.length === 1 ? "" : "s"} de mesa (de ${lista(lasCentros.map((c) => padreDeCentro(c) ?? c.id))}). Las mesas siguen igual.${notas.length ? ` ${[...new Set(notas)].join(" ")}` : ""}`,
   };
 }
 
 export const HERRAMIENTAS_CENTROS: Readonly<Record<string, HerramientaExtra>> = {
   decorar_mesas: {
     esquema: DecorarSchema,
-    descripcion: "Pone un centro de mesa sobre cada mesa (todas, las de ids, o un grupo: redondas, imperiales, coctel, postres, principal, invitados), diseñado UNA vez: ramo_helio, racimo, columna, flores o un item de la biblioteca, con colores y alto. Con diseno_b alterna dos diseños (alto y bajo, o dos colores). Cada centro va sobre su mesa y la sigue si se mueve; se salta las mesas que ya llevan algo encima. Sirve en cualquier escena con mesas: 1 mesa o 35. Si ya había centros en esas mesas, los reemplaza. Úsala para «centros de mesa», «decora las mesas».",
+    descripcion: "Pone un centro de mesa sobre cada mesa (todas, las de ids, o un grupo: redondas, imperiales, coctel, postres, principal, invitados), diseñado UNA vez: ramo_helio, racimo, columna, flores o un item de la biblioteca, con colores y alto. Con dos disenos los alterna (alto y bajo, o dos colores). Cada centro va sobre su mesa y la sigue si se mueve; se salta las mesas que ya llevan algo encima. Sirve en cualquier escena con mesas: 1 mesa o 35. Si ya había centros en esas mesas, los reemplaza. Úsala para «centros de mesa», «decora las mesas».",
     aplicar: decorar,
   },
   completar_centros: {

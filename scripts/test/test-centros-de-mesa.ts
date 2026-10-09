@@ -12,6 +12,7 @@
  */
 import assert from "node:assert/strict";
 import { armarEscena, SALA_INICIAL, type Escena, type NodoEscena } from "../../src/lib/globos3d/escena";
+import { deslizarSobre } from "../../src/lib/globos3d/lienzo-escena";
 import { centrosDe, esCentro, padreDeCentro, ranuraDe } from "../../src/lib/globos3d/centros-mesa";
 import { buscarEnBiblioteca } from "../../src/lib/globos3d/herramientas-escena-biblioteca";
 import { aplicarHerramienta, DECLARACIONES_ESCENA, MAX_NODOS, type ResultadoHerramienta } from "../../src/lib/globos3d/herramientas-escena";
@@ -29,7 +30,9 @@ const cerca = (real: number, esperado: number, tol: number, que: string) => asse
 const SALA = { ...SALA_INICIAL, anchoCm: 1200, fondoCm: 1000, altoCm: 400 };
 const vacia = (): Escena => ({ sala: { ...SALA }, nodos: [] });
 const mesa = (e: Escena, id: string, x: number, z: number, extra: Record<string, unknown> = {}): Escena => ok(aplicarHerramienta(e, "agregar_mobiliario", { id, x_cm: x, z_cm: z, ...extra })).escena;
-const decorar = (e: Escena, args: Record<string, unknown>) => aplicarHerramienta(e, "decorar_mesas", args);
+/** `diseno` (y `diseno_b`, el que alterna) se escriben como los pide la herramienta: `disenos: [A, B]`. */
+const aDisenos = ({ diseno, diseno_b, ...resto }: Record<string, unknown>) => ({ disenos: [diseno, ...(diseno_b ? [diseno_b] : [])], ...resto });
+const decorar = (e: Escena, args: Record<string, unknown>) => aplicarHerramienta(e, "decorar_mesas", aDisenos(args));
 const nodo = (e: Escena, id: string): NodoEscena => e.nodos.find((n) => n.id === id) ?? assert.fail(`falta ${id}`);
 const caja = (e: Escena, id: string) => armarEscena(e).porNodo.find((n) => n.id === id)!.caja;
 const centroXZ = (c: ReturnType<typeof caja>) => ({ x: (c.min.x + c.max.x) / 2, z: (c.min.z + c.max.z) / 2 });
@@ -64,7 +67,7 @@ prueba("la altura sale de la geometría: una mesa con otra altura (cambiar_pieza
   let e = mesa(vacia(), "mesa_redonda_mantel", 0, 0, { alto_cm: 90 });
   e = ok(decorar(e, { diseno: PEQUENO })).escena;
   cerca(caja(e, "centro-mesa-redonda-mantel").min.y, 90, 1.2, "cubierta a 90 cm");
-  const baja = ok(aplicarHerramienta(mesa(vacia(), "mesa_redonda", 0, 0, { alto_cm: 60 }), "decorar_mesas", { diseno: PEQUENO })).escena;
+  const baja = ok(aplicarHerramienta(mesa(vacia(), "mesa_redonda", 0, 0, { alto_cm: 60 }), "decorar_mesas", { disenos: [PEQUENO] })).escena;
   cerca(caja(baja, "centro-mesa-redonda").min.y, 60, 1.2, "cubierta a 60 cm");
 });
 
@@ -370,12 +373,54 @@ prueba("las herramientas están registradas, su esquema cabe en Gemini (pequeño
     };
     visitar(d!.parametersJsonSchema);
   }
-  assert.ok(total <= 14 * 1024, `las 4 pesan ${total} B`);
+  assert.ok(total <= 9 * 1024, `las 4 pesan ${total} B`);
   for (const n of [...nombres, "techo_por_zona"]) assert.ok(REGLAS_AGENTE.includes(n), `las reglas de la IA mencionan ${n}`);
   let e = ok(decorar(salon(), { diseno: RAMO, diseno_b: PEQUENO })).escena;
   e = ok(aplicarHerramienta(e, "cambiar_centros", { escala: 1.1 })).escena;
   assert.ok(EscenaSchema.safeParse(JSON.parse(JSON.stringify(e))).success, "la escena con centros es válida para la ruta");
   assert.ok(armarEscena(e).avisos.length === 0, "nada se arma con aviso");
+});
+
+prueba("`encima` se guarda en la colocación y pasa el esquema de la ruta sin perderse (la orientación de lo demás no cambia)", () => {
+  let e = mesa(vacia(), "mesa_redonda_mantel", 0, 0);
+  e = ok(decorar(e, { diseno: RAMO })).escena;
+  const centro = nodo(e, "centro-mesa-redonda-mantel");
+  assert.ok(centro.colocacion.en === "sobre" && centro.colocacion.encima === true);
+  const vuelta = EscenaSchema.parse(JSON.parse(JSON.stringify(e)));
+  assert.deepEqual(vuelta.nodos.map((n) => n.colocacion), e.nodos.map((n) => n.colocacion), "ningún campo se pierde al validar");
+  // Sin `encima` el mismo ramo se arma como siempre (acostado en su espacio): la regla nueva no es global.
+  const sin: Escena = { ...e, nodos: e.nodos.map((n) => (n.id === centro.id && n.colocacion.en === "sobre" ? { ...n, colocacion: { ...n.colocacion, encima: undefined } } : n)) };
+  const a = caja(e, centro.id), b = caja(sin, centro.id);
+  assert.ok(a.max.y - a.min.y > b.max.y - b.min.y + 10, `con encima ${(a.max.y - a.min.y).toFixed(0)} cm de alto, sin él ${(b.max.y - b.min.y).toFixed(0)}`);
+});
+
+prueba("las flechas (deslizarSobre) no sacan el centro de su mesa: se queda en la cubierta, a la altura de siempre", () => {
+  let e = mesa(vacia(), "mesa_redonda_mantel", 0, 0);
+  e = ok(decorar(e, { diseno: { tipo: "columna", alto_cm: 40 } })).escena;
+  const id = "centro-mesa-redonda-mantel";
+  const tope = caja(e, "mesa-redonda-mantel");
+  for (const delta of [{ x: 10, y: 0, z: 0 }, { x: 0, y: 0, z: -10 }, { x: -10, y: 0, z: 10 }]) {
+    let actual = e;
+    for (let i = 0; i < 30; i++) actual = deslizarSobre(actual, armarEscena(actual), id, delta);
+    const c = caja(actual, id);
+    assert.ok(c.min.x >= tope.min.x - 0.5 && c.max.x <= tope.max.x + 0.5 && c.min.z >= tope.min.z - 0.5 && c.max.z <= tope.max.z + 0.5, `dentro de la mesa tras 30 pasos de ${JSON.stringify(delta)}`);
+    cerca(c.min.y, 75, 1.2, "sigue apoyado en la cubierta");
+    assert.notDeepEqual(nodo(actual, id).colocacion, nodo(e, id).colocacion, "sí se movió");
+  }
+  const girada = ok(aplicarHerramienta(e, "girar_pieza", { id: "mesa-redonda-mantel", grados: 90 })).escena;
+  let actual = girada;
+  for (let i = 0; i < 30; i++) actual = deslizarSobre(actual, armarEscena(actual), id, { x: 10, y: 0, z: 0 });
+  const c = caja(actual, id), t = caja(actual, "mesa-redonda-mantel");
+  assert.ok(c.max.x <= t.max.x + 0.5, "también con la mesa girada");
+});
+
+prueba("principal e invitados: si la principal se supone por su sitio, el resultado lo dice; si se llama así, no", () => {
+  const supuesta = ok(decorar(salon(), { diseno: { tipo: "columna", alto_cm: 30 }, grupo: "principal" }));
+  assert.match(supuesta.resumen, /Ninguna mesa se llama «principal»: tomé como principal «[^»]+» \(mesa-imperial-mantel\)/);
+  assert.match(ok(decorar(salon(), { diseno: { tipo: "columna", alto_cm: 30 }, grupo: "invitados" })).resumen, /tomé como principal/);
+  assert.match(ok(aplicarHerramienta(ok(decorar(salon(), { diseno: { tipo: "columna", alto_cm: 30 } })).escena, "quitar_centros", { grupo: "principal" })).resumen, /tomé como principal/);
+  const nombrada = ok(aplicarHerramienta(salon(), "cambiar_pieza", { id: "mesa-imperial-mantel", nombre: "Mesa de los novios" })).escena;
+  assert.doesNotMatch(ok(decorar(nombrada, { diseno: { tipo: "columna", alto_cm: 30 }, grupo: "principal" })).resumen, /tomé como principal/);
 });
 
 console.log(`${pruebas} pruebas ok`);

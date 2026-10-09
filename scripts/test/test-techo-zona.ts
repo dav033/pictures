@@ -156,7 +156,7 @@ prueba("errores claros: sin zona, zona de dos formas, zona muy chica para feston
 
 prueba("el techo convive con los centros de mesa y con otro techo; ids distintos", () => {
   let e: Escena = { ...salon(), nodos: [mesaRedonda("mesa-1", -200, 0), mesaRedonda("mesa-2", 200, 0)] };
-  e = ok(aplicarHerramienta(e, "decorar_mesas", { diseno: { tipo: "ramo_helio" } })).escena;
+  e = ok(aplicarHerramienta(e, "decorar_mesas", { disenos: [{ tipo: "ramo_helio" }] })).escena;
   e = ok(techo(e, { tipo: "festones", sobre_pieza: "mesa-1" })).escena;
   e = ok(techo(e, { tipo: "helio", sobre_pieza: "mesa-2" })).escena;
   assert.deepEqual(e.nodos.filter((n) => n.id.startsWith("techo-zona-")).map((n) => n.id), ["techo-zona-festones", "techo-zona-helio"]);

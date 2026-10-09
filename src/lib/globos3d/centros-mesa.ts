@@ -6,8 +6,9 @@ import type { Pieza } from "./piezas";
 
 /**
  * **Centros de mesa**: una pieza encima de cada mesa, colocada como `sobre` la mesa (en el espacio de la mesa), así que moverla,
- * girarla o cambiarla de sitio lleva su centro con ella. Sirve con cualquier mesa del catálogo, esté o no en un salón armado por
- * `armar_salon`: redonda, imperial, cóctel, de postres… con mantel, con sillas o sin ellas.
+ * girarla o cambiarla de sitio lleva su centro con ella (la colocación lleva `encima: true`: ver `escena.ts`). Sirve con cualquier mesa
+ * del catálogo, esté o no en un salón armado por la herramienta de salón (otra rama): redonda, imperial, cóctel, de postres… con
+ * mantel, con sillas o sin ellas.
  *
  * Por qué una pieza por mesa y no un reparto en anclas (`ancla` + `cada` + `copias`): ese reparto copia UNA pieza en las anclas de
  * OTRA, y una mesa de escenografía no tiene anclas (son los huecos entre globos). Con N mesas hacen falta N piezas más; el tope de
@@ -27,7 +28,7 @@ export type Ranura = 0 | 1;
 
 /** La cara de arriba de una mesa: su centro y sus medidas en el espacio de la mesa, y el centro en el mundo. */
 export type Cubierta = { local: Vec3; centro: Vec3; anchoCm: number; fondoCm: number; topeMundo: { minX: number; maxX: number; minZ: number; maxZ: number } };
-export type MesaDeEscena = { nodo: NodoEscena; hecho: NodoArmado; marco: MarcoPieza; tipo: TipoMesa; cubierta: Cubierta; conCosas: boolean };
+export type MesaDeEscena = { nodo: NodoEscena; marco: MarcoPieza; tipo: TipoMesa; cubierta: Cubierta; conCosas: boolean };
 
 /** Un centro no se pone si ocupa más de esta parte de lo angosto de la cubierta. */
 export const OCUPACION_MAXIMA = 0.9;
@@ -63,7 +64,7 @@ function muebleDeMesa(n: NodoEscena): string | null {
  * La cubierta de una mesa armada: entre los sólidos, los que tienen al menos la mitad del área del mayor (la tapa, el sobremantel;
  * no las sillas) y, de ellos, el más alto. Se mide en el espacio de la mesa para que girarla no cambie sus medidas.
  */
-function cubiertaDe(hecho: NodoArmado, marco: MarcoPieza): Cubierta | null {
+export function cubiertaDe(hecho: NodoArmado, marco: MarcoPieza): Cubierta | null {
   const piezas = hecho.solidos.filter((s) => !s.oculto).map((s) => {
     const mundo = puntosSolido(s);
     const local = mundo.map((p) => puntoALocal(marco, p));
@@ -88,7 +89,7 @@ export function mesasDeEscena(escena: Escena, armada: EscenaArmada): MesaDeEscen
     const marco = hecho?.puestas[0]?.marco;
     if (!id || !hecho || !marco || hecho.copias === 0) return [];
     const cubierta = cubiertaDe(hecho, marco);
-    return cubierta ? [{ nodo, hecho, marco, tipo: tipoDeMesa(id), cubierta, conCosas: DE_FABRICA_CON_COSAS.test(id) }] : [];
+    return cubierta ? [{ nodo, marco, tipo: tipoDeMesa(id), cubierta, conCosas: DE_FABRICA_CON_COSAS.test(id) }] : [];
   });
 }
 
@@ -98,20 +99,20 @@ export function mesasDeEscena(escena: Escena, armada: EscenaArmada): MesaDeEscen
 
 /**
  * La mesa principal: la que se llama así (principal, honor, novios…) y, si ninguna, la imperial del fondo del salón (la de menor z;
- * una mesa de postres no cuenta). Vacío si no hay con qué decidirlo.
+ * una mesa de postres no cuenta). Vacío si no hay con qué decidirlo. `adivinada` dice que fue por el sitio y no por el nombre.
  */
-export function mesasPrincipales(mesas: readonly MesaDeEscena[]): MesaDeEscena[] {
+export function mesasPrincipales(mesas: readonly MesaDeEscena[]): { mesas: MesaDeEscena[]; adivinada: boolean } {
   const nombradas = mesas.filter((m) => NOMBRE_PRINCIPAL.test(`${m.nodo.id} ${m.nodo.nombre}`));
-  if (nombradas.length) return nombradas;
+  if (nombradas.length) return { mesas: nombradas, adivinada: false };
   const imperiales = mesas.filter((m) => m.tipo === "imperial");
   const fondo = [...imperiales].sort((a, b) => a.cubierta.centro.z - b.cubierta.centro.z)[0];
-  return fondo ? [fondo] : [];
+  return { mesas: fondo ? [fondo] : [], adivinada: Boolean(fondo) };
 }
 
 const DE_GRUPO: Readonly<Record<Exclude<GrupoMesa, "todas" | "principal" | "invitados">, TipoMesa>> = { redondas: "redonda", imperiales: "imperial", coctel: "coctel", postres: "postres" };
 
 /** Las mesas pedidas: por ids, por grupo, o las dos cosas a la vez (las que cumplen ambas). Sin nada, todas. */
-export function seleccionarMesas(mesas: readonly MesaDeEscena[], pedido: { ids?: readonly string[]; grupo?: GrupoMesa }): { mesas: MesaDeEscena[]; error?: string } {
+export function seleccionarMesas(mesas: readonly MesaDeEscena[], pedido: { ids?: readonly string[]; grupo?: GrupoMesa }): { mesas: MesaDeEscena[]; error?: string; /** Lo que se supuso al elegir (la mesa principal por su sitio): para decírselo a quien pidió. */ aviso?: string } {
   let elegidas = [...mesas];
   if (pedido.ids?.length) {
     const faltan = pedido.ids.filter((id) => !mesas.some((m) => m.nodo.id === id));
@@ -119,17 +120,16 @@ export function seleccionarMesas(mesas: readonly MesaDeEscena[], pedido: { ids?:
     elegidas = elegidas.filter((m) => pedido.ids!.includes(m.nodo.id));
   }
   const grupo = pedido.grupo ?? "todas";
-  if (grupo === "principal") {
-    const principales = mesasPrincipales(mesas);
-    if (!principales.length) return { mesas: [], error: "No identifico la mesa principal (ninguna se llama así ni hay una imperial): pásala con mesas = su id." };
-    elegidas = elegidas.filter((m) => principales.includes(m));
-  } else if (grupo === "invitados") {
-    const principales = mesasPrincipales(mesas);
-    elegidas = elegidas.filter((m) => (m.tipo === "redonda" || m.tipo === "imperial") && !principales.includes(m));
+  let aviso: string | undefined;
+  if (grupo === "principal" || grupo === "invitados") {
+    const principal = mesasPrincipales(mesas);
+    if (grupo === "principal" && !principal.mesas.length) return { mesas: [], error: "No identifico la mesa principal (ninguna se llama así ni hay una imperial): pásala con mesas = su id." };
+    if (principal.adivinada) aviso = `Ninguna mesa se llama «principal»: tomé como principal «${principal.mesas[0]!.nodo.nombre}» (${principal.mesas[0]!.nodo.id}), la imperial más al fondo del salón. Si no es esa, di su id con mesas.`;
+    elegidas = grupo === "principal" ? elegidas.filter((m) => principal.mesas.includes(m)) : elegidas.filter((m) => (m.tipo === "redonda" || m.tipo === "imperial") && !principal.mesas.includes(m));
   } else if (grupo !== "todas") {
     elegidas = elegidas.filter((m) => m.tipo === DE_GRUPO[grupo]);
   }
-  return { mesas: elegidas };
+  return { mesas: elegidas, ...(aviso ? { aviso } : {}) };
 }
 
 /**
@@ -181,7 +181,7 @@ export function centroDeMesa(escena: Escena, armada: EscenaArmada, mesa: MesaDeE
   let punto: Vec3 = { x: mesa.cubierta.local.x, y: mesa.cubierta.local.y + HUNDIMIENTO_SOBRE_CM, z: mesa.cubierta.local.z };
   const nodoCon = (p: Vec3): NodoEscena => ({
     id: como.id ?? idNuevo(escena, `centro${como.ranura ? "2" : ""}-${mesa.nodo.id}`), nombre: como.nombre, pieza,
-    colocacion: { en: "sobre", padreId: mesa.nodo.id, puntoCm: { x: r1(p.x), y: r1(p.y), z: r1(p.z) }, normal: { x: r1(normal.x), y: r1(normal.y), z: r1(normal.z) }, giroGrados: 0 },
+    colocacion: { en: "sobre", padreId: mesa.nodo.id, puntoCm: { x: r1(p.x), y: r1(p.y), z: r1(p.z) }, normal: { x: r1(normal.x), y: r1(normal.y), z: r1(normal.z) }, giroGrados: 0, encima: true },
   });
   let nodo = nodoCon(punto);
   let armado = armarNodoSuelto(escena, armada, nodo);

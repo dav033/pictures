@@ -2,7 +2,7 @@ import { z } from "zod";
 import { armarEscena, idNuevo, type Escena, type NodoEscena } from "./escena";
 import { fallar } from "./herramientas-escena-colores";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
-import { MAX_NODOS } from "./herramientas-escena";
+import { MAX_NODOS } from "./limites-escena";
 import { armarPieza } from "./piezas";
 import { DENSIDADES, TIPOS_TECHO_ZONA, techoParaZona, type TipoTechoZona, type Zona } from "./techo-zona";
 

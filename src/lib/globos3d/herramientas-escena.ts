@@ -39,6 +39,7 @@ import { cambiarMobiliario, resumenDeEscenografia } from "./herramientas-escena-
 import { elementosDeEscenografia } from "./mobiliario-pieza";
 import { ACABADOS_ROTULO } from "./rotulos";
 import { HERRAMIENTAS_EXTRA, NOMBRES_EXTRA, declaracionesExtra } from "./herramientas-escena-extra";
+import { MAX_NODOS } from "./limites-escena";
 
 /**
  * **Herramientas para que una IA construya la escena** del taller 3D (pestaña «Escena») por function calling.
@@ -888,8 +889,7 @@ function reubicarSobre(escena: Escena, id: string, vieja: Pieza, nueva: Pieza): 
   };
 }
 
-/** Máximo de piezas de una escena (las de la biblioteca traen varias). */
-export const MAX_NODOS = 150;
+export { MAX_NODOS };
 
 /** ¿El código es el color que se nombra («rosado» → Pastel Mate Rosado)? */
 function usaColor(codigo: string, de: string): boolean {
