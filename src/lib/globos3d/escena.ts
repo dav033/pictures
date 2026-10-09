@@ -11,6 +11,7 @@ import { arbolEnIngles } from "./arboles-globos";
 import { sumarMateriales } from "./mezcla";
 import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
+import { ESCENOGRAFIA_EN } from "./escenografia-ingles";
 import { PREFIJO_SALA, PREFIJO_UTILERIA, colorDeGloboEnIngles, coloresEnIngles, enLista, tonoEnIngles } from "./render-ia";
 import { contornoEnIngles, huecosEnIngles } from "./silueta-ia";
 import { referenciaPorCodigo } from "../plan/referencia-sempertex";
@@ -513,6 +514,13 @@ const MODULO_EN: Readonly<Record<Extract<Pieza, { tipo: "modulo" }>["modulo"], s
 
 const LUGAR_EN: Readonly<Record<ParedSala, string>> = { fondo: "on the back wall", izquierda: "on the left wall", derecha: "on the right wall" };
 
+/** Qué son los props de escenografía: lo que se sabe del catálogo («6 × Tiffany chair, a round banquet table») o, si no, la frase de siempre. */
+function propsEnIngles(porNombre: ReadonlyMap<string, number>, total: number): string {
+  if (!porNombre.size) return "backdrop panels, tables or rug";
+  const nombrados = [...porNombre.values()].reduce((s, n) => s + n, 0);
+  return [...[...porNombre].map(([nombre, n]) => (n > 1 ? `${n} × ${nombre}` : `a ${nombre}`)), ...(total > nombrados ? ["other props as in the input"] : [])].join(", ");
+}
+
 /**
  * La escena contada en inglés como **inventario cerrado** (FLUX inventaba un quinto árbol, otra calabaza, una mesa
  * de postres): cuántas piezas hay y de qué clase («Exactly 6 separate pieces: 3 × balloon tree, …»), cada una de
@@ -546,11 +554,17 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
   const sueltas: Entrada[] = [], pegadas: Entrada[] = [];
   // La escenografía (paneles, mesas, tapete) no es decoración de globos: va junta en una frase, sin numerar.
   let escenografia = 0;
+  const escenografiaPorNombre = new Map<string, number>();
   for (const nodo of escena.nodos) {
     const hecho = armada.porNodo.find((n) => n.id === nodo.id);
     if (!hecho || hecho.copias === 0) continue;
     const c = nodo.colocacion;
-    if (nodo.pieza.tipo === "escenografia") { escenografia += hecho.copias; continue; }
+    if (nodo.pieza.tipo === "escenografia") {
+      escenografia += hecho.copias;
+      const en = nodo.pieza.catalogoId ? ESCENOGRAFIA_EN[nodo.pieza.catalogoId] : undefined;
+      if (en) escenografiaPorNombre.set(en, (escenografiaPorNombre.get(en) ?? 0) + hecho.copias);
+      continue;
+    }
     const x = (hecho.caja.min.x + hecho.caja.max.x) / 2;
     const lugar = c.en === "piso" ? "standing on the floor" : c.en === "pared" ? LUGAR_EN[c.pared] : c.en === "techo" ? "hanging from the ceiling" : c.en === "libre" ? "set on the arrangement" : "";
     // Lo orgánico, con su silueta vista de frente (si mira a la cámara): sin ella FLUX completaba una media guirnalda.
@@ -583,7 +597,7 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     }),
     // Lo que NO hay (pared vacía bajo un extremo): sin esto FLUX cerraba una guirnalda y una pata en un marco.
     huecosEnIngles(armada.globos),
-    escenografia ? `${PREFIJO_UTILERIA} ${escenografia} party ${escenografia === 1 ? "prop" : "props"} (backdrop panels, tables or rug), exactly as in the input` : "",
+    escenografia ? `${PREFIJO_UTILERIA} ${escenografia} party ${escenografia === 1 ? "prop" : "props"} (${propsEnIngles(escenografiaPorNombre, escenografia)}), exactly as in the input` : "",
   ];
   const { tonos, mostrar } = escena.sala;
   const paredes = [mostrar.fondo ? "back" : "", mostrar.laterales ? "side" : ""].filter(Boolean);

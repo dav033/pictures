@@ -56,7 +56,7 @@ type PiezaBase =
    * La **utilería de fiesta** (banderín, platos, vasos… ver `utileria.ts`) también es escenografía, pero dice qué es
    * (`utileria`) y qué producto Sempertex representa (`productos`): sale en la lista «Productos de fiesta».
    */
-  | { tipo: "escenografia"; elementos: ElementoEscenografia[]; utileria?: TipoUtileria; productos?: ProductoDePieza[] }
+  | { tipo: "escenografia"; elementos: ElementoEscenografia[]; utileria?: TipoUtileria; productos?: ProductoDePieza[]; /** Id de `FONDOS_CATALOGO` de donde sale (un fondo o mueble); sirve para nombrarlo en el inventario de la foto con IA. */ catalogoId?: string }
   /**
    * Un globo suelto (el R-24 de remate encima de un arco): el centro de su cuerpo en el origen y el cuerpo hacia +y
    * (nudo abajo). Cotiza como un globo.

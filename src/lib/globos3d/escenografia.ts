@@ -23,7 +23,7 @@ export type DibujoMotivo = "calavera" | "murcielago" | "calabaza" | "fantasma" |
  * costado de delante) o en la de arriba (+y; en un plato, su cara). `hex` es la tinta (por defecto, blanco o negro
  * según el fondo) y `escala` lo agranda o achica respecto a la cara (1 = lo que cabe).
  */
-export type MotivoEscenografia = { dibujo: DibujoMotivo; texto?: string; hex?: string; cara?: "frente" | "arriba"; escala?: number };
+export type MotivoEscenografia = { dibujo: DibujoMotivo; texto?: string; hex?: string; cara?: "frente" | "arriba"; escala?: number; /** `neon`: el texto en cursiva luminosa (un letrero de neón), tal como se escribió. */ estilo?: "neon" };
 
 /** `oculto`: el elemento existe (sostiene o da un marco a lo que cuelga de él) pero no se dibuja (un amarre interno). */
 type Aspecto = { hex: string; acabado: AcabadoEscenografia; motivo?: MotivoEscenografia; oculto?: boolean };

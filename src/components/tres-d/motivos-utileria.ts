@@ -160,6 +160,32 @@ function texto(p: Pincel, ancho: number, alto: number, contenido: string, tinta:
   });
 }
 
+/** Letrero de neón: el texto tal cual, en cursiva, con un tubo claro al centro y un resplandor del color alrededor. */
+function textoNeon(p: Pincel, ancho: number, alto: number, contenido: string, tinta: string) {
+  const palabras = contenido.trim().split(/\s+/).filter(Boolean);
+  const lineas = palabras.length > 1 && contenido.length > 10 ? [palabras.slice(0, Math.ceil(palabras.length / 2)).join(" "), palabras.slice(Math.ceil(palabras.length / 2)).join(" ")] : [palabras.join(" ")];
+  const fuente = (t: number) => `italic 400 ${t}px "Segoe Script", "Brush Script MT", "Snell Roundhand", cursive`;
+  let tam = alto / (lineas.length * 1.35);
+  p.font = fuente(tam);
+  const mas = Math.max(...lineas.map((l) => p.measureText(l).width));
+  if (mas > ancho * 0.9) { tam *= (ancho * 0.9) / mas; p.font = fuente(tam); }
+  p.textAlign = "center";
+  p.textBaseline = "middle";
+  p.lineJoin = "round";
+  const pintar = (estilo: string, grosor: number, brillo: number) => {
+    p.strokeStyle = estilo;
+    p.fillStyle = estilo;
+    p.lineWidth = grosor;
+    p.shadowColor = tinta;
+    p.shadowBlur = brillo;
+    lineas.forEach((l, i) => { const y = alto / 2 + (i - (lineas.length - 1) / 2) * tam * 1.25; p.strokeText(l, ancho / 2, y); });
+  };
+  pintar(tinta, tam * 0.1, tam * 0.5);
+  pintar(tinta, tam * 0.1, tam * 0.2);
+  pintar("#ffffff", tam * 0.035, 0);
+  p.shadowBlur = 0;
+}
+
 function patron(p: Pincel, ancho: number, alto: number, dibujo: string, tinta: string) {
   p.fillStyle = tinta;
   if (dibujo === "lunares") {
@@ -186,7 +212,7 @@ function texturaMotivo(m: MotivoEscenografia, fondo: string, proporcion: number)
   if (typeof document === "undefined") return null;
   const tinta = m.hex ?? tintaPara(fondo);
   const ancho = proporcion >= 1 ? LADO : Math.round(LADO * proporcion), alto = proporcion >= 1 ? Math.round(LADO / proporcion) : LADO;
-  const clave = `${m.dibujo}|${m.texto ?? ""}|${tinta}|${m.hex ? "propia" : ""}|${ancho}x${alto}`;
+  const clave = `${m.dibujo}|${m.estilo ?? ""}|${m.texto ?? ""}|${tinta}|${m.hex ? "propia" : ""}|${ancho}x${alto}`;
   const guardada = TEXTURAS.get(clave);
   if (guardada) return guardada;
   const lienzo = document.createElement("canvas");
@@ -194,7 +220,7 @@ function texturaMotivo(m: MotivoEscenografia, fondo: string, proporcion: number)
   lienzo.height = alto;
   const p = lienzo.getContext("2d");
   if (!p) return null;
-  if (m.dibujo === "texto") texto(p, ancho, alto, m.texto ?? "", tinta);
+  if (m.dibujo === "texto") (m.estilo === "neon" ? textoNeon : texto)(p, ancho, alto, m.texto ?? "", tinta);
   else if (PATRONES.has(m.dibujo)) patron(p, ancho, alto, m.dibujo, tinta);
   else {
     const s = Math.min(ancho, alto);
