@@ -5,6 +5,7 @@ import {
   descendientes, desplazamientoEntre, duplicarNodo, girarNodo, historialCambiar, historialDeshacer, historialNuevo, historialReemplazar,
   historialRehacer, marcoDePared, moverNodo, pasarDeAncla, quitarNodo, type Colocacion, type Escena, type EscenaArmada,
 } from "@/lib/globos3d/escena";
+import { registrarClave } from "@/lib/globos3d/claves-escena";
 import type { EscenaGlobos, Punto3 } from "./escena-globos";
 
 /** Los cambios con la misma `agrupar` seguidos (menos de esto entre uno y otro) cuentan como un solo paso. */
@@ -13,22 +14,34 @@ const AGRUPAR_MS = 800;
 /**
  * La escena con deshacer y rehacer (hasta 50 pasos). `cambiar(nueva)` guarda un paso; con `agrupar`, los cambios
  * seguidos de lo mismo (un deslizador que se arrastra) se guardan como uno solo.
+ *
+ * Cada escena del historial lleva la identidad de «la escena» a la que pertenece (`clave`, para que la conversación con la IA
+ * sepa sobre cuál actúa): una edición hereda la de la anterior, y `cambiar(nueva, { clave })` empieza otra (una plantilla, una sala
+ * vacía). Así Ctrl+Z y Ctrl+Y devuelven también la identidad de la escena que vuelve.
  */
-export function useHistorialEscena(inicial: () => Escena) {
-  const [historial, setHistorial] = useState(() => historialNuevo(inicial()));
+export function useHistorialEscena(inicial: () => Escena, claveInicial?: string) {
+  const [claves] = useState(() => new WeakMap<Escena, string>());
+  const [historial, setHistorial] = useState(() => {
+    const escena = inicial();
+    if (claveInicial) claves.set(escena, claveInicial);
+    return historialNuevo(escena);
+  });
   const ultimo = useRef<{ clave: string; t: number } | null>(null);
-  const cambiar = useCallback((nueva: Escena, opciones?: { agrupar?: string }) => {
+  const cambiar = useCallback((nueva: Escena, opciones?: { agrupar?: string; clave?: string }) => {
     const ahora = Date.now();
     const clave = opciones?.agrupar;
     const juntar = Boolean(clave && ultimo.current?.clave === clave && ahora - ultimo.current.t < AGRUPAR_MS);
     ultimo.current = clave ? { clave, t: ahora } : null;
-    setHistorial((h) => (juntar ? historialReemplazar(h, nueva) : historialCambiar(h, nueva)));
-  }, []);
+    setHistorial((h) => {
+      registrarClave(claves, h.presente, nueva, opciones?.clave);
+      return juntar ? historialReemplazar(h, nueva) : historialCambiar(h, nueva);
+    });
+  }, [claves]);
   const deshacer = useCallback(() => { ultimo.current = null; setHistorial(historialDeshacer); }, []);
   const rehacer = useCallback(() => { ultimo.current = null; setHistorial(historialRehacer); }, []);
   /** Empieza de nuevo con `escena` y sin pasos (el editor solitario abre con un historial propio). */
   const reiniciar = useCallback((escena: Escena) => { ultimo.current = null; setHistorial(historialNuevo(escena)); }, []);
-  return { escena: historial.presente, cambiar, deshacer, rehacer, reiniciar, puedeDeshacer: historial.pasado.length > 0, puedeRehacer: historial.futuro.length > 0 };
+  return { escena: historial.presente, clave: claves.get(historial.presente) ?? null, cambiar, deshacer, rehacer, reiniciar, puedeDeshacer: historial.pasado.length > 0, puedeRehacer: historial.futuro.length > 0 };
 }
 
 export type PiezaEnVivo = { id: string; colocacion: Colocacion };

@@ -58,11 +58,12 @@ const corto = (t: string, n: number) => (t.length > n ? `${t.slice(0, n - 1)}…
 // ----------------------------------------------------------------------------------------------------------
 
 /**
- * Campos de la lectura que el modelo no escribe: los calcula la detección de globos (`medir-con-detecciones.ts`) y solo
+ * Campos de la lectura que el modelo no escribe: los calculan las detecciones de globos y de fondos (`medir-con-detecciones.ts`,
+ * `medir-fondos.ts`) y solo
  * los traen las lecturas a mano. Fuera del esquema de Gemini, que con ellos pasa de su tope de complejidad (la API
  * rechaza el esquema entero con «invalid argument»; comprobado el 2026-10-09 quitando uno u otro).
  */
-const SOLO_MEDIDOS = new Set(["coloresPorEscalon", "dominante", "anclas"]);
+export const SOLO_MEDIDOS: ReadonlySet<string> = new Set(["coloresPorEscalon", "dominante", "anclas", "cajas"]);
 
 /** Por encima de estos valores, una enumeración va al esquema de Gemini como texto libre (ver `paraGemini`). */
 export const ENUM_MAXIMO_PARA_GEMINI = 20;

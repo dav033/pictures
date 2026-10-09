@@ -15,6 +15,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
+import { abrirIA, textoComparando, textoDelHilo, trabajando } from "./ayudas-ia-ui";
 import { compilarLectura } from "../../src/lib/globos3d/compilar-lectura";
 import { encuadreDeLectura } from "../../src/lib/globos3d/encuadre-foto";
 import type { Escena } from "../../src/lib/globos3d/escena";
@@ -53,29 +54,29 @@ async function main() {
   });
 
   await pagina.goto(`${url}/3d`, { waitUntil: "load", timeout: 180_000 });
-  await pagina.waitForSelector("#escena-ia-linea", { timeout: 120_000 });
+  await abrirIA(pagina);
   await pagina.setInputFiles('input[type="file"]', foto);
   await pagina.waitForSelector('img[alt="Foto adjunta"]', { timeout: 30_000 });
-  await pagina.fill("#escena-ia-linea", "arma esta decoración de la foto en la pared del fondo");
-  await pagina.press("#escena-ia-linea", "Enter");
+  await pagina.fill("#ia-pedido", "arma esta decoración de la foto en la pared del fondo");
+  await pagina.press("#ia-pedido", "Enter");
 
   const botones: string[] = [];
   const inicio = Date.now();
   let primeraVista = false;
   while (Date.now() - inicio < 120_000) {
     await pagina.waitForTimeout(500);
-    const t = await pagina.locator('button[aria-label="Enviar a la IA"]').innerText().catch(() => "");
-    const barra = await pagina.locator('section[aria-label="Conversación con la IA"] p.text-taller-suave').first().innerText().catch(() => "");
-    const estado = `${t} | ${barra.replace(/\s+/g, " ").trim()}`;
+    const ocupada = await trabajando(pagina);
+    const comparando = await textoComparando(pagina);
+    const t = comparando || (ocupada ? "Trabajando" : "Libre");
+    const estado = t;
     if (botones[botones.length - 1] !== estado) { botones.push(estado); console.log(`[${Math.round((Date.now() - inicio) / 1000)} s] ${estado}`); }
-    if (!primeraVista && /Foto 1\/1/.test(t)) { primeraVista = true; await pagina.waitForTimeout(300); await pagina.screenshot({ path: path.join(salida, "1-comparando.png") }); }
-    if (t === "Pedir" && Date.now() - inicio > 6_000) { await pagina.waitForTimeout(1500); if (await pagina.locator('button[aria-label="Enviar a la IA"]').innerText().catch(() => "") === "Pedir") break; }
+    if (!primeraVista && /^Comparando con la foto/.test(comparando)) { primeraVista = true; await pagina.waitForTimeout(300); await pagina.screenshot({ path: path.join(salida, "1-comparando.png") }); }
+    if (!ocupada && Date.now() - inicio > 6_000) { await pagina.waitForTimeout(1500); if (!(await trabajando(pagina))) break; }
   }
-  await pagina.locator('button[aria-label="Ver la conversación y los ejemplos"]').click({ timeout: 2000 }).catch(() => undefined);
   await pagina.screenshot({ path: path.join(salida, "2-despues.png") });
-  const conversacion = (await pagina.locator('section[aria-label="Conversación con la IA"]').innerText().catch(() => "")).slice(0, 1800);
+  const conversacion = (await textoDelHilo(pagina)).slice(0, 1800);
   const resumenPiezas = (await pagina.locator("body").innerText()).match(/\d+ piezas? · \d+ globos/)?.[0] ?? null;
-  const puedeDeshacer = await pagina.getByText(/Deshacer lo de la IA/).count();
+  const puedeDeshacer = await pagina.getByRole("button", { name: /Deshacer turno/ }).count();
   await pagina.mouse.click(420, 160);
   await pagina.getByRole("button", { name: "Frente", exact: true }).click({ timeout: 2000 }).catch(() => undefined);
   await pagina.waitForTimeout(1500);

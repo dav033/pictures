@@ -1,4 +1,4 @@
-import { esTelon } from "./fondos-escenografia";
+import { TELONES_DE_DIAMETRO, esTelon } from "./fondos-escenografia";
 import { mismaFamiliaDeFondo } from "./fondos-familias";
 import type { PiezaLeida } from "./lectura-foto";
 
@@ -53,16 +53,29 @@ function candidatasDe(p: Fondo, leida: Caja, fondos: readonly FondoDetectado[], 
 function cajasDe(p: Fondo, leida: Caja, candidatas: readonly Candidata[]): Candidata[] | null {
   const mejor = candidatas[0];
   if (!mejor) return null;
-  if ((p.cantidad ?? 1) <= 1) return [mejor];
+  if ((p.cantidad ?? 1) <= 1 && !JUEGOS.has(p.id)) return [mejor];
   const grupo = candidatas.filter((c) => c === mejor || cruce(c.caja, leida) > 0);
   if (grupo.length === 1 && mejor.caja.x1 - mejor.caja.x0 < FRACCION_DE_FILA * (leida.x1 - leida.x0)) return null;
   return grupo;
 }
 
+/** Los fondos que son un juego de varios cuerpos (los pedestales): se guarda la caja de cada uno, no solo la unión. */
+const JUEGOS = new Set(["pedestales"]);
+
+/** La caja trae el arriba del telón leído si su borde de arriba difiere del leído en menos de esta fracción del alto leído. */
+const ARRIBA_COINCIDE = 0.15;
+
+/** Una caja es de lo leído (no de otro objeto ni de un telón mayor) si cabe dentro del recuadro leído con este margen (fracción del ancho leído). */
+const MARGEN_DENTRO = 0.1;
+const dentroDeLoLeido = (caja: Caja, leida: Caja, ancho: number) => {
+  const margen = MARGEN_DENTRO * ancho;
+  return caja.x0 >= leida.x0 - margen && caja.x1 <= leida.x1 + margen && caja.y0 >= leida.y0 - margen && caja.y1 <= leida.y1 + margen;
+};
+
 /** Una caja detectada que no llega a esta parte de lo leído (de ancho o de alto) es solo un pedazo del fondo. */
 const PARTE_MINIMA_DE_LO_LEIDO = 0.4;
 
-export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly FondoDetectado[], aspecto: number): { piezas: PiezaLeida[]; notas: string[] } {
+export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly FondoDetectado[], aspecto: number, pisoY: number | null = null): { piezas: PiezaLeida[]; notas: string[] } {
   const usados = new Set<FondoDetectado>();
   const salida: PiezaLeida[] = [...piezas];
   const notaDe = new Map<number, string>();
@@ -81,12 +94,24 @@ export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly Fond
       // medida, o si el fondo es un telón (aro, arco, marco: los globos lo tapan casi siempre); entonces se queda lo
       // leído antes que encoger el fondo hasta esconderlo. Si se quedó corta en las dos y no es un telón, manda la caja.
       const cortoAncho = union.x1 - union.x0 < PARTE_MINIMA_DE_LO_LEIDO * p.ancho, cortoAlto = union.y1 - union.y0 < PARTE_MINIMA_DE_LO_LEIDO * p.alto;
+      // Un telón del que la caja trae el ARRIBA (empieza donde él) y su ancho, pero no su pie (los globos o los muebles lo tapan), se mide por
+      // lo que la foto sí enseña: su ancho y su borde de arriba; el pie baja a la línea del piso (como el telón con el pie tapado de `compilar-lectura.ts`).
+      if (cortoAlto && !cortoAncho && esTelon(p.id) && !TELONES_DE_DIAMETRO.has(p.id) && Math.abs(union.y0 - leida.y0) <= ARRIBA_COINCIDE * p.alto && dentroDeLoLeido(union, leida, p.ancho)) {
+        const pie = Math.max(union.y1, pisoY ?? p.yBase);
+        salida[i] = { ...p, x: r3(entre((union.x0 + union.x1) / 2 / aspecto, -0.2, 1.2)), yBase: r3(entre(pie, -0.2, 1.2)), ancho: r3(entre(union.x1 - union.x0, 0.005, 2)), alto: r3(entre(pie - union.y0, 0.005, 2)) };
+        sinCaja.delete(i);
+        notaDe.set(i, `«${p.id}»: la caja detectada trae su borde de arriba y su ancho (${r3(union.x1 - union.x0)}) pero no su pie: ancho ${(salida[i] as Fondo).ancho} (leído ${p.ancho}) y alto ${(salida[i] as Fondo).alto} (leído ${p.alto}), con el pie en ${r3(pie)}.`);
+        continue;
+      }
       if ((cortoAncho !== cortoAlto) || ((cortoAncho || cortoAlto) && esTelon(p.id))) {
         sinCaja.delete(i);
         notaDe.set(i, `«${p.id}»: la caja detectada (${r3(union.x1 - union.x0)} × ${r3(union.y1 - union.y0)}) es un pedazo de lo leído (${p.ancho} × ${p.alto}): se queda lo leído.`);
         continue;
       }
       const nueva: Fondo = { ...p, x: r3(entre((union.x0 + union.x1) / 2 / aspecto, -0.2, 1.2)), yBase: r3(entre(union.y1, -0.2, 1.2)), ancho: r3(entre(union.x1 - union.x0, 0.005, 2)), alto: r3(entre(union.y1 - union.y0, 0.005, 2)) };
+      // Un juego (los pedestales) conserva el sitio, el pie y el tamaño de cada cuerpo, de izquierda a derecha.
+      const cuerpos = JUEGOS.has(p.id) ? [...cajas].sort((a, b) => a.caja.x0 - b.caja.x0).map((c) => ({ x: r3(entre((c.caja.x0 + c.caja.x1) / 2 / aspecto, -0.2, 1.2)), yBase: r3(entre(c.caja.y1, -0.2, 1.2)), ancho: r3(entre(c.caja.x1 - c.caja.x0, 0.005, 2)), alto: r3(entre(c.caja.y1 - c.caja.y0, 0.005, 2)) })) : [];
+      if (cuerpos.length) nueva.cajas = cuerpos; else delete nueva.cajas;
       salida[i] = nueva;
       sinCaja.delete(i);
       const deFamilia = cajas.some((c) => c.f.id !== p.id) ? ` (detectado como «${cajas[0]!.f.id}»)` : "";

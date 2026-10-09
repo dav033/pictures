@@ -86,6 +86,10 @@ export const ColoresEscalonSchema = z.object({
 });
 export type ColoresEscalon = z.infer<typeof ColoresEscalonSchema>;
 
+/** Un cuerpo de un fondo de varios (un pedestal del juego), tal como lo detecta la foto: su sitio, su pie y su tamaño. */
+export const CajaLeidaSchema = z.object({ x: Fraccion, yBase: Fraccion, ancho: Tamano, alto: Tamano });
+const CajaLeida = CajaLeidaSchema;
+
 const Comun = {
   colores: z.array(ColorLeidoSchema).min(1).max(6),
   nota: z.string().max(200).optional(),
@@ -144,7 +148,8 @@ export const PiezaLeidaSchema = z.discriminatedUnion("tipo", [
     id: z.enum(FONDOS_CATALOGO.map((f) => f.id) as [string, ...string[]]),
     x: Fraccion, yBase: Fraccion, ancho: Tamano, alto: Tamano, texto: z.string().max(30).optional(),
     colorTexto: z.string().max(30).optional(), acabadoTexto: AcabadoLeido.optional(),
-    cantidad: z.number().int().min(1).max(12).optional(), ...Comun,
+    cantidad: z.number().int().min(1).max(12).optional(),
+    cajas: z.array(CajaLeida).max(12).optional(), ...Comun,
   }),
   z.object({
     tipo: z.literal("otro"),

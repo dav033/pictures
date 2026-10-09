@@ -85,6 +85,8 @@ export type ResultadoRefinado = {
   rechazo?: MotivoRechazo;
   /** Los veredictos de cada ronda evaluada, con el parecido medido y lo que costó (lo leen las evaluaciones pagadas). */
   evaluaciones: EvaluacionRonda[];
+  /** Todo lo que costó la comparación (estimado): las rondas (también las que no cambiaron nada o se rechazaron) y su revisión. */
+  costeUsd: number;
 };
 
 /** Corre las rondas. Nunca lanza: lo que sale mal queda en `motivo` (y `error`) con lo hecho hasta ahí. */
@@ -93,7 +95,8 @@ export async function refinarConFoto(entrada: EntradaRefinado, deps: Dependencia
   const rondas: RondaHecha[] = [];
   const evaluaciones: EvaluacionRonda[] = [];
   let actual = entrada.escena;
-  const fin = (motivo: MotivoFinRefinado, extra: { error?: string; rechazo?: MotivoRechazo } = {}): ResultadoRefinado => ({ rondas, escena: actual, motivo, evaluaciones, ...extra });
+  let costeUsd = 0;
+  const fin = (motivo: MotivoFinRefinado, extra: { error?: string; rechazo?: MotivoRechazo } = {}): ResultadoRefinado => ({ rondas, escena: actual, motivo, evaluaciones, costeUsd, ...extra });
   if (!entrada.encuadre || !entrada.lectura) return fin("sin_lectura");
   for (let ronda = 1; ronda <= total; ronda++) {
     if (deps.signal.aborted) return fin("detenido");
@@ -106,13 +109,15 @@ export async function refinarConFoto(entrada: EntradaRefinado, deps: Dependencia
     }
     if (deps.signal.aborted) return fin("detenido");
     const r = await deps.pedir(construirCuerpoRefinar({ escena: actual, ronda, foto: entrada.foto, captura, lectura: entrada.lectura }), deps.signal);
-    // Una ronda que llega después de detener no se aplica.
+    // Lo que ya se pagó cuenta aunque se detenga: una ronda que llega después de detener no se aplica, pero costó.
+    if (r.ok) costeUsd += r.datos.uso?.costeEstimadoUsd ?? 0;
     if (deps.signal.aborted) return fin("detenido");
     if (!r.ok) return fin("error", { error: r.error });
     const cambios = r.datos.acciones.filter((a) => !a.consulta);
     if (cambios.length > 0 && deps.evaluar) {
       deps.alProgreso?.({ ronda, total, fase: "revisando" });
       const veredicto = await deps.evaluar({ ronda, antes: actual, despues: r.datos.escena, capturaAntes: captura, foto: entrada.foto, lectura: entrada.lectura, encuadre: entrada.encuadre, signal: deps.signal });
+      costeUsd += veredicto.costeEstimadoUsd;
       if (deps.signal.aborted) return fin("detenido");
       evaluaciones.push({ ronda, veredicto });
       if (!veredicto.aceptada) return fin("rechazada", { rechazo: veredicto.motivo ?? "sin_comparacion" });

@@ -71,7 +71,7 @@ const COMPLETAS: Readonly<Record<PiezaLeida["tipo"], PiezaLeida>> = {
   otro: { tipo: "otro", descripcion: "una torta de tres pisos" },
 };
 
-type Variante = { id: "nada" | "sin_mezcla" | "sin_formatos" | "nombre_desconocido" | "letrero" | "pedestales" | "lentejuelas" | "sin_gigantes" | "silla"; prepara: (p: PiezaLeida) => void };
+type Variante = { id: "nada" | "sin_mezcla" | "sin_formatos" | "nombre_desconocido" | "letrero" | "pedestales" | "lentejuelas" | "sin_gigantes" | "silla" | "juego"; prepara: (p: PiezaLeida) => void };
 const VARIANTES: Readonly<Record<Variante["id"], Variante["prepara"]>> = {
   nada: () => undefined,
   /** `tamanos` solo cuenta sin `mezcla`. */
@@ -89,6 +89,8 @@ const VARIANTES: Readonly<Record<Variante["id"], Variante["prepara"]>> = {
   },
   /** El panel redondo solo usa su alto (es un círculo): el ancho cuenta en los fondos que son rectángulos. */
   lentejuelas: (p) => { if (p.tipo === "fondo") p.id = "lentejuelas"; },
+  /** Las cajas solo cuentan en un juego de pedestales: cada cuerpo detectado se arma en su sitio. */
+  juego: (p) => { if (p.tipo === "fondo") { p.id = "pedestales"; p.cajas = [{ x: 0.3, yBase: 0.9, ancho: 0.3, alto: 0.3 }, { x: 0.55, yBase: 0.95, ancho: 0.3, alto: 0.35 }]; } },
   /** `cantidad` solo cuenta en los muebles de piso (varios iguales en fila): un panel es uno solo. */
   silla: (p) => { if (p.tipo === "fondo") p.id = "silla_tiffany"; },
 };
@@ -102,6 +104,7 @@ function condicionDe(ruta: string): Variante["id"] {
   if (ruta === "piezas[]<fondo>.colores[].acabado") return "pedestales";
   if (ruta === "piezas[]<fondo>.ancho") return "lentejuelas";
   if (ruta === "piezas[]<fondo>.cantidad") return "silla";
+  if (ruta.startsWith("piezas[]<fondo>.cajas[]")) return "juego";
   if (ruta === "piezas[]<guirnalda_organica>.puntos[].grosor" || ruta === "piezas[]<columna_organica>.grosor") return "sin_gigantes";
   return "nada";
 }

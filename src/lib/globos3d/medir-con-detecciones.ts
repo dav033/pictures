@@ -1,5 +1,5 @@
 import { LecturaFotoSchema, type AnclaLeida, type ColorLeido, type LecturaFoto, type PiezaLeida } from "./lectura-foto";
-import { coloresDe, coloresPorEscalonDe, dominanteDe, indiceDeDetectado } from "./medir-colores";
+import { coloresDe, coloresPorEscalonDe, dominantesPorTramo, indiceDeDetectado, repartoDeColores } from "./medir-colores";
 import { ejeMedido, globosDe, largosDelEje, mediana, normalEnPunto, percentil, proyectar, r3, type CajaDetectada, type Globo, type P } from "./medir-geometria";
 import { medirTamanos, repartoDe } from "./medir-tamanos";
 import type { Escalon } from "./mezcla-lectura";
@@ -115,6 +115,9 @@ function medirGuirnalda(p: Guirnalda, detectados: readonly Globo[], aspecto: num
     const k = largos.reduce((mejor, l, j) => (Math.abs(l - recorrido) < Math.abs(largos[mejor]! - recorrido) ? j : mejor), 0);
     caen[k]!.push({ g, lado, escalon: escalonDe[i]! });
   });
+  // El cuerpo de la guirnalda (los globos que no son del escalón más chico) y su reparto de colores en toda la pieza: con él se compara cada tramo.
+  const esCuerpo = (e: Escalon) => escalones.length < 2 || e !== escalones[0];
+  const referencia = repartoDeColores(globos.filter((_, i) => esCuerpo(escalonDe[i]!)), colores, indiceDe);
   const medidos = eje.map((q, i) => {
     // Con pocos globos en el punto, también los de los vecinos.
     const lista = caen[i]!.length >= MINIMO_POR_PUNTO ? caen[i]! : [...(caen[i - 1] ?? []), ...caen[i]!, ...(caen[i + 1] ?? [])];
@@ -127,8 +130,12 @@ function medirGuirnalda(p: Guirnalda, detectados: readonly Globo[], aspecto: num
     const extremo = i === 0 || i === eje.length - 1;
     const enElPiso = extremo && pisoY !== null && q.y + grosor / 2 >= pisoY - TOCA_PISO;
     const tramo = repartoDe(lista.map((x) => x.escalon), escalones, reparto);
-    return { x: q.x + normal.x * corrimiento, y: enElPiso ? q.y : q.y + normal.y * corrimiento, grosor, mezcla: tramo, dominante: dominanteDe(lista.map((x) => x.g), colores, indiceDe) };
+    // El dominante se mide con el cuerpo (sin el escalón más chico): los chicos son el acento regado por todo el recorrido (los cromados plateados) y no dicen de qué color es el tramo.
+    const cuerpo = lista.filter((x) => esCuerpo(x.escalon)).map((x) => x.g);
+    return { x: q.x + normal.x * corrimiento, y: enElPiso ? q.y : q.y + normal.y * corrimiento, grosor, mezcla: tramo, cuerpo };
   });
+  // El color de un tramo sale de un barrido de ventanas de dos puntos seguidos con la corrección por pruebas múltiples (`medir-colores.ts`).
+  const dominantes = dominantesPorTramo(medidos.map((m) => m?.cuerpo ?? null), colores, indiceDe, referencia);
   const puntos = suavizarGrosor(eje.map((q, i) => {
     const leido = q.origen === null ? null : p.puntos[q.origen]!;
     const m = medidos[i];
@@ -139,7 +146,7 @@ function medirGuirnalda(p: Guirnalda, detectados: readonly Globo[], aspecto: num
       const a = p.puntos[antes?.origen ?? despues!.origen!]!, b = p.puntos[despues?.origen ?? antes!.origen!]!;
       return { x: r3(q.x / aspecto), y: r3(q.y), grosor: r3((a.grosor + b.grosor) / 2) };
     }
-    return { x: r3(entre(m.x / aspecto, -0.2, 1.2)), y: r3(entre(m.y, -0.2, 1.2)), grosor: m.grosor, mezcla: m.mezcla, ...(m.dominante ? { dominante: m.dominante } : {}) };
+    return { x: r3(entre(m.x / aspecto, -0.2, 1.2)), y: r3(entre(m.y, -0.2, 1.2)), grosor: m.grosor, mezcla: m.mezcla, ...(dominantes[i] ? { dominante: dominantes[i] } : {}) };
   }));
   notas.push(`Guirnalda medida con ${globos.length} globos detectados: ${escalones.map((e) => `${e} ${reparto[e] ?? 0} %`).join(", ")}.`);
   // Anclas: los gigantes y los grandes de la pared, uno por uno, donde están, con su color y su diámetro; los mayores si pasan del tope.
@@ -151,6 +158,26 @@ function medirGuirnalda(p: Guirnalda, detectados: readonly Globo[], aspecto: num
 // Un montón de piso
 // ----------------------------------------------------------------------------------------------------------
 
+/** Los bordes del montón son los percentiles de las extremidades de sus globos (los sueltos de la orilla no mandan). */
+const PERCENTIL_BORDE_MONTON = 0.04;
+/** El centro del montón medido no se corre de lado más que esto (veces su ancho leído) de donde lo leyó el lector. */
+const CORRIMIENTO_MAXIMO_MONTON = 0.25;
+/** Un montón medido con menos de esta fracción de su alto leído es una detección que se perdió parte del montón: se queda lo leído. */
+const FRACCION_DEL_ALTO_MINIMA = 0.5;
+
+/**
+ * El recuadro del montón (centro, ancho, arriba y pie) tomado de sus globos detectados: lo que el lector pone a ojo (corrido, con
+ * hueco bajo la columna) sale de donde están los globos, sin correr su centro de lado más de `CORRIMIENTO_MAXIMO_MONTON` de su ancho
+ * leído. Si lo medido es mucho más bajo que lo leído (la detección se perdió la mitad del montón), se queda lo leído.
+ */
+function cajaMedida(p: Monton, globos: readonly Globo[], aspecto: number): Pick<Monton, "x" | "ancho" | "yArriba" | "yPie"> | Record<string, never> {
+  const x0 = percentil(globos.map((g) => g.x - g.d / 2), PERCENTIL_BORDE_MONTON), x1 = percentil(globos.map((g) => g.x + g.d / 2), 1 - PERCENTIL_BORDE_MONTON);
+  const y0 = percentil(globos.map((g) => g.y - g.d / 2), PERCENTIL_BORDE_MONTON), y1 = percentil(globos.map((g) => g.y + g.d / 2), 1 - PERCENTIL_BORDE_MONTON);
+  if (y1 - y0 < FRACCION_DEL_ALTO_MINIMA * (p.yPie - p.yArriba)) return {};
+  const corrimiento = (CORRIMIENTO_MAXIMO_MONTON * p.ancho) / aspecto;
+  return { x: r3(entre((x0 + x1) / 2 / aspecto, Math.max(-0.2, p.x - corrimiento), Math.min(1.2, p.x + corrimiento))), ancho: r3(entre(x1 - x0, 0.005, 2)), yArriba: r3(entre(y0, -0.2, 1.2)), yPie: r3(entre(y1, -0.2, 1.2)) };
+}
+
 /** El montón de piso con el reparto de tamaños y de colores de sus globos (su escala no se toma: se ve más cerca de la cámara). */
 function medirMonton(p: Monton, detectados: readonly Globo[], pisoY: number | null, aspecto: number): Medicion {
   if (detectados.length < MINIMO_GLOBOS) return { pieza: { ...p, colores: coloresDe(p.colores, detectados) }, escalaCm: null, notas: [] };
@@ -158,7 +185,7 @@ function medirMonton(p: Monton, detectados: readonly Globo[], pisoY: number | nu
   const { globos } = t;
   const colores = coloresDe(p.colores, globos);
   const coloresPorEscalon = coloresPorEscalonDe(t.porEscalon, colores);
-  const pieza: Monton = { ...p, mezcla: t.mezcla, colores };
+  const pieza: Monton = { ...p, ...cajaMedida(p, globos, aspecto), mezcla: t.mezcla, colores };
   if (coloresPorEscalon.length) pieza.coloresPorEscalon = coloresPorEscalon; else delete pieza.coloresPorEscalon;
   // Sus gigantes y grandes, uno por uno (el montón está en el piso, por delante: no se filtran por la altura de la pared).
   const anclas = anclasDe(t.porEscalon, colores, aspecto);
@@ -213,7 +240,7 @@ function esDeUnFondo(g: Globo, p: PiezaLeida, aspecto: number): boolean {
  * de ellos (si hay con qué) y los fondos en su caja detectada. Pura: misma lectura y mismas detecciones, misma salida.
  */
 export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDetectado[], fondos: readonly FondoDetectado[] = []): { lectura: LecturaFoto; notas: string[] } {
-  const conFondos = medirFondos(l.piezas, fondos, l.aspecto);
+  const conFondos = medirFondos(l.piezas, fondos, l.aspecto, l.pisoY);
   const notas = [...conFondos.notas];
   const piezas = [...conFondos.piezas];
   const globos = globosDe(detectados, l.aspecto);
