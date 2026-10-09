@@ -19,6 +19,8 @@ type EntradaComun = {
   alturaParedCm?: number;
   /** Va en el aire a esta altura sobre el piso (cm), sin esquivar lo que ya está: un nombre de acrílico delante de un aro. */
   flotaCm?: number;
+  /** Un telón: se para contra la pared (aros, arcos, marcos, biombo, escalera apoyada) y nunca avanza hacia la cámara de una foto. */
+  telon?: true;
   /**
    * Admite un rótulo en cursiva (`mueble.rotulo` de su pieza). `true`: lo lleva su ÚLTIMO elemento (el panel de delante, la tela del
    * marco); `"mayor"`: el de más área (el arco más grande de unos escalonados, con el texto arriba de lo que lo tapa). Ver `rotulos.ts`.

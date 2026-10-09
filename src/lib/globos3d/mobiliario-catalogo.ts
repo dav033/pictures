@@ -184,13 +184,13 @@ const BASE: readonly MuebleCatalogo[] = [
   }),
   mueble({
     id: "mesa_hexagonal", fondo: "proporcional", nombre: "Mesa hexagonal dorada", grupo: "mesa", retiroCm: 100,
-    descripcion: "Mesa hexagonal de alambre dorado de 50 cm y 60 cm de alto (suelta); con un segundo color lleva vidrio.",
-    medidas: { anchoCm: 50, fondoCm: 43, altoCm: 60 }, colores: ["#d4af5a"], coloresDe: ["alambre", "vidrio (opcional)"], armar: deMesaDeUnColor(mesaHexagonal, "metal", "brillante"),
+    descripcion: "Mesa hexagonal de alambre dorado de 50 cm y 60 cm de alto (suelta); con un segundo color lleva cubierta (blanca, de mármol o de vidrio).",
+    medidas: { anchoCm: 50, fondoCm: 43, altoCm: 60 }, colores: ["#d4af5a"], coloresDe: ["alambre", "cubierta (opcional)"], armar: deMesaDeUnColor(mesaHexagonal, "metal", "satinado"),
   }),
   mueble({
     id: "mesas_nido_hexagonales", fondo: "proporcional", nombre: "Mesas nido hexagonales", grupo: "mesa", retiroCm: 100,
     descripcion: "Juego de tres mesas nido hexagonales de alambre dorado (50, 40 y 31 cm) de 70, 62 y 55 cm de alto, corridas en escalón; el ancho es el de todo el juego.",
-    medidas: { anchoCm: 127, fondoCm: 45, altoCm: 70 }, colores: ["#d4af5a"], coloresDe: ["alambre", "vidrio (opcional)"], armar: deMesaDeUnColor(mesasNidoHexagonales, "metal", "brillante"),
+    medidas: { anchoCm: 127, fondoCm: 45, altoCm: 70 }, colores: ["#d4af5a"], coloresDe: ["alambre", "cubierta (opcional)"], armar: deMesaDeUnColor(mesasNidoHexagonales, "metal", "satinado"),
   }),
   mueble({
     id: "mesa_regalos", nombre: "Mesa de regalos", grupo: "mesa",
@@ -204,17 +204,17 @@ const BASE: readonly MuebleCatalogo[] = [
   }),
 
   mueble({
-    id: "aro_metalico", fondo: "fijo", nombre: "Aro metálico", grupo: "decorado", retiroCm: 30,
+    id: "aro_metalico", fondo: "fijo", nombre: "Aro metálico", grupo: "decorado", retiroCm: 30, telon: true,
     descripcion: "Aro metálico dorado de 1,5 m con pie (fondo circular para globos o flores), 1,75 m de alto total.",
     medidas: { anchoCm: 150, fondoCm: 34, altoCm: 175 }, colores: ["#d6b25a"], coloresDe: ["metal"], armar: deDecorado((o) => marcoMetalico({ ...o, forma: "aro" }), "metal", "metal"),
   }),
   mueble({
-    id: "aro_hexagonal", fondo: "fijo", nombre: "Marco hexagonal metálico", grupo: "decorado", retiroCm: 30,
+    id: "aro_hexagonal", fondo: "fijo", nombre: "Marco hexagonal metálico", grupo: "decorado", retiroCm: 30, telon: true,
     descripcion: "Marco hexagonal metálico dorado de 1,4 m de ancho con pie, 1,75 m de alto total.",
     medidas: { anchoCm: 140, fondoCm: 34, altoCm: 175 }, colores: ["#d6b25a"], coloresDe: ["metal"], armar: deDecorado((o) => marcoMetalico({ ...o, forma: "hexagono" }), "metal", "metal"),
   }),
   mueble({
-    id: "arco_metalico", fondo: "fijo", nombre: "Arco metálico", grupo: "decorado", retiroCm: 30,
+    id: "arco_metalico", fondo: "fijo", nombre: "Arco metálico", grupo: "decorado", retiroCm: 30, telon: true,
     descripcion: "Arco de medio punto metálico dorado de 1,2 × 2,3 m con patines (para cubrir de globos o flores).",
     medidas: { anchoCm: 120, fondoCm: 34, altoCm: 230 }, colores: ["#d6b25a"], coloresDe: ["metal"], armar: deDecorado((o) => marcoMetalico({ ...o, forma: "arco" }), "metal", "metal"),
   }),
@@ -229,12 +229,12 @@ const BASE: readonly MuebleCatalogo[] = [
     medidas: { anchoCm: 120, fondoCm: 90, altoCm: 60 }, colores: ["#f4f1ea"], coloresDe: ["color"], armar: deDecorado(peldanos, "satinado", "satinado"),
   }),
   mueble({
-    id: "escalera_decorativa", nombre: "Escalera decorativa", grupo: "decorado", retiroCm: 30,
+    id: "escalera_decorativa", nombre: "Escalera decorativa", grupo: "decorado", retiroCm: 30, telon: true,
     descripcion: "Escalera decorativa de madera de 45 cm y 1,5 m de alto apoyada en la pared (boho), con peldaños.",
     medidas: { anchoCm: 45, fondoCm: 40, altoCm: 150 }, colores: ["#a8815a"], coloresDe: ["madera"], armar: deDecorado(escaleraDecorativa, "madera", "madera"),
   }),
   mueble({
-    id: "biombo", nombre: "Biombo", grupo: "decorado", retiroCm: 40,
+    id: "biombo", nombre: "Biombo", grupo: "decorado", retiroCm: 40, telon: true,
     descripcion: "Biombo plegable de tres paneles en zigzag, 1,8 m a lo largo y 1,8 m de alto, marco de madera y tela clara.",
     medidas: { anchoCm: 180, fondoCm: 33, altoCm: 180 }, colores: ["#8a6a45", "#efe7d6"], coloresDe: ["marco", "tela"], armar: deDecorado(biombo, "madera", "tela"),
   }),
@@ -259,7 +259,7 @@ const BASE: readonly MuebleCatalogo[] = [
     medidas: { anchoCm: 120, fondoCm: 2, altoCm: 60 }, colores: ["#f4f6f8", "#ff4fa3"], coloresDe: ["tablero", "luz del neón"], armar: deDecorado(neonCursiva, "acrilico", "llama"),
   }),
   mueble({
-    id: "marco_tela", fondo: "fijo", nombre: "Marco con tela", grupo: "decorado", retiroCm: 30, rotulable: true,
+    id: "marco_tela", fondo: "fijo", nombre: "Marco con tela", grupo: "decorado", retiroCm: 30, telon: true, rotulable: true,
     descripcion: "Marco rectangular de fondo de 2,4 × 1,8 m con perfil de 4 cm (negro, dorado, blanco o madera) y tela tensada; admite un nombre o frase en vinilo cursivo (texto).",
     medidas: { anchoCm: 240, fondoCm: 34, altoCm: 180 }, colores: ["#1c1c1c", "#f7f6f2"], coloresDe: ["marco", "tela"], armar: deDecorado(marcoTela, "satinado", "tela"),
   }),

@@ -86,4 +86,22 @@ prueba("los telones del catálogo de muebles (marco con tela, aros, arco metáli
   }
 });
 
+prueba("lo que se para suelto delante (jarrón con pampas, lámpara de pie) sí avanza hasta donde dice su pie, aunque tenga poco retiro", () => {
+  for (const id of ["jarron_pampas", "lampara_pie"]) {
+    const a = compilarLectura(lectura([fondo(id, PISO, 0.3, 0.4)])).escena.nodos[0]!;
+    const b = compilarLectura(lectura([fondo(id, 0.97, 0.3, 0.4)])).escena.nodos[0]!;
+    assert.ok(a.colocacion.en === "piso" && b.colocacion.en === "piso");
+    assert.ok(b.colocacion.zCm > a.colocacion.zCm + 50, `${id}: ${a.colocacion.zCm} → ${b.colocacion.zCm}`);
+  }
+});
+
+prueba("la cámara de la foto está a la altura de la mano y mira hacia abajo: un pie poco más abajo que el piso no salta metros al frente", () => {
+  // Piso alto en la foto (0,6) y pie a 0,8: con la cámara a ras del centro de la imagen el pie quedaba a más de 3 m de la pared.
+  const l: LecturaFoto = { ...lectura([]), pisoY: 0.6, escala: { altoImagenCm: 380, referencia: "prueba" } };
+  const { delanteCm, factor } = profundidadEnElPiso(l, 0.8);
+  assert.ok(delanteCm > 60 && delanteCm < 300, `delante ${delanteCm}`);
+  assert.ok(factor > 0.5 && factor < 1, `factor ${factor}`);
+  assert.deepEqual(profundidadEnElPiso(l, 0.6), { delanteCm: 0, factor: 1 });
+});
+
 console.log(`test-compilar-fondos-profundidad: ${pruebas} pruebas ok`);

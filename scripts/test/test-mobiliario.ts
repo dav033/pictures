@@ -129,7 +129,7 @@ prueba("los conjuntos escalan a lo pedido y los colores van en su orden", () => 
     assert.match(r.resumen, new RegExp(`${Math.round(real.ancho)}×${Math.round(real.fondo)}×${Math.round(real.alto)}`), `${id}: el resumen dice las medidas reales`);
   }
   const hex = muebleDe("mesa_hexagonal")!;
-  assert.deepEqual(hex.coloresDe, ["alambre", "vidrio (opcional)"]);
+  assert.deepEqual(hex.coloresDe, ["alambre", "cubierta (opcional)"]);
   const sin = agregar(vacia(), { id: "mesa_hexagonal" }), con = agregar(vacia(), { id: "mesa_hexagonal", colores: ["dorado", "vidrio"] });
   assert.equal((armarPieza(con.escena.nodos[0]!.pieza).solidos ?? []).length, (armarPieza(sin.escena.nodos[0]!.pieza).solidos ?? []).length + 1, "el segundo color agrega el vidrio");
   const nido = agregar(vacia(), { id: "mesas_nido_hexagonales", colores: ["plata", "celeste"] });

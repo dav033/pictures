@@ -70,13 +70,16 @@ prueba("el R-9 que la mezcla llama mediano es mediano; sin decirlo, es chico y e
 console.log("Profundidad en el piso");
 prueba("numéricamente: lo que se apoya más abajo que el piso está más cerca y se ve más grande", () => {
   const l = lectura([], { escala: { altoImagenCm: 260, referencia: "x" }, pisoY: 0.8 });
-  const distancia = 260 / 2 / Math.tan(((FOV_FOTO_GRADOS / 2) * Math.PI) / 180);
-  const cerca = distancia * ((0.8 - 0.5) / (0.9 - 0.5));
-  const esperado = Math.round(distancia - cerca);
+  // La cámara a 140 cm (la mano) mira inclinada al centro de la imagen, a 78 cm del piso; cada fila de la foto es un rayo
+  // que baja `inclinación + α` y toca el piso a H / tan(ángulo) de la cámara, a H·cos α / sen(ángulo) de profundidad.
+  const t = Math.tan(((FOV_FOTO_GRADOS / 2) * Math.PI) / 180), distancia = 260 / 2 / t, H = 140, centro = 0.3 * 260;
+  const inclinacion = Math.asin((H - centro) / distancia);
+  const rayo = (y: number) => { const a = Math.atan((y - 0.5) * 2 * t), b = inclinacion + a; return { lejos: H / Math.tan(b), prof: (H * Math.cos(a)) / Math.sin(b) }; };
+  const linea = rayo(0.8), pie = rayo(0.9);
   const r = profundidadEnElPiso(l, 0.9);
-  assert.equal(r.delanteCm, esperado);
-  assert.equal(r.factor, Math.round(((distancia - esperado) / distancia) * 1000) / 1000);
-  assert.ok(r.delanteCm > 90 && r.delanteCm < 130 && r.factor < 1 && r.factor > 0.6, JSON.stringify(r));
+  assert.equal(r.delanteCm, Math.round(linea.lejos - pie.lejos));
+  assert.ok(Math.abs(r.factor - pie.prof / linea.prof) < 0.002, `${r.factor} vs ${pie.prof / linea.prof}`);
+  assert.ok(r.delanteCm > 40 && r.delanteCm < 130 && r.factor < 1 && r.factor > 0.6, JSON.stringify(r));
   assert.ok(profundidadEnElPiso(l, 0.95).delanteCm > r.delanteCm, "más abajo, más cerca");
 });
 

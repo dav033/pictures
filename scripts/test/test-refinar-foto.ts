@@ -143,7 +143,7 @@ await prueba("regresión: una guirnalda de la foto queda ARRIBA en la pared (a s
 
 console.log("Encuadre y cámara");
 await prueba("el encuadre de la lectura: escala, proporción y altura del centro de la imagen sobre el piso", () => {
-  assert.deepEqual(encuadreDeLectura(LECTURA_7), { aspecto: 0.97, altoCm: 260, centroYCm: 143 });
+  assert.deepEqual(encuadreDeLectura(LECTURA_7), { aspecto: 0.97, altoCm: 260, centroYCm: 143, camaraYCm: 143 });
   assert.deepEqual(medidasCaptura(0.97, 1024), { ancho: 993, alto: 1024 });
   assert.deepEqual(medidasCaptura(1.5, 1024), { ancho: 1024, alto: 683 });
   const sala = salaParaFoto(compilarLectura(LECTURA_7).escena.sala, encuadreDeLectura(LECTURA_7));
@@ -458,7 +458,7 @@ try {
     const datos = await r.json() as { escena: Escena; foto: { aplicada: boolean; lectura: LecturaFoto; encuadre: unknown } };
     assert.equal(datos.foto.aplicada, true);
     assert.ok(LecturaFotoSchema.safeParse(datos.foto.lectura).success);
-    assert.deepEqual(datos.foto.encuadre, { aspecto: 0.97, altoCm: 260, centroYCm: 143 });
+    assert.deepEqual(datos.foto.encuadre, { aspecto: 0.97, altoCm: 260, centroYCm: 143, camaraYCm: 143 });
     assert.ok(datos.escena.nodos.length >= 1);
     const sistema = sistemaDe(peticiones[peticiones.length - 1]!);
     assert.ok(sistema.includes("2 rondas automáticas"), "el modelo sabe que la comparación viene después");

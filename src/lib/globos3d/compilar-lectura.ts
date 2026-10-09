@@ -50,15 +50,12 @@ const ADMITEN_ROTULO = new Set(["panel_redondo", "arcos_chiara", "lentejuelas"])
  * ¿El fondo se para en el piso por delante de la pared (muebles, pedestales, mesa, tapete)? Los paneles y la pared de lentejuelas
  * (de piso, pegados a la pared) fijan la escala de la foto y los de la pared o el aire no tienen pie en el piso.
  */
-/** Hasta este retiro (cm) un mueble es un telón pegado a la pared (marco con tela, aros, arco metálico, biombo): no avanza hacia la cámara. */
-const RETIRO_DE_TELON_CM = 40;
-
 function seApoyaEnElPiso(q: Extract<PiezaLeida, { tipo: "fondo" }>): boolean {
   const e = entradaDeCatalogo(q.id);
   if (!e || e.lugar !== "piso" || e.flotaCm !== undefined) return false;
-  // Un telón (poco retiro) va contra la pared aunque su pie se vea más abajo: la profundidad del pie solo vale para lo que
-  // se para delante (pedestales, mesas, sillas).
-  if (e.retiroCm !== undefined && e.retiroCm <= RETIRO_DE_TELON_CM) return false;
+  // Un telón (aro, arco, marco con tela, biombo) va contra la pared aunque su pie se vea más abajo: la profundidad del pie
+  // solo vale para lo que se para delante (pedestales, mesas, sillas, un jarrón, una lámpara).
+  if ("telon" in e && e.telon) return false;
   return e.clase === "mueble" || e.retiroCm !== undefined;
 }
 

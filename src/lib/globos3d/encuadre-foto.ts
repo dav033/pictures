@@ -1,15 +1,16 @@
 import { z } from "zod";
 import type { Sala } from "./escena";
 import type { LecturaFoto } from "./lectura-foto";
-import { FOV_FOTO_GRADOS, PROFUNDIDAD_DE_LA_FOTO_CM } from "./proyeccion-foto";
+import { PROFUNDIDAD_DE_LA_FOTO_CM, pisoEnLaFoto } from "./proyeccion-foto";
 
 /**
  * **El encuadre de una foto en la escena** (REQ-001 paso 9): lo que hay que saber para volver a mirar la escena armada
  * de una foto desde donde estaba la cámara de la foto. La lectura da la escala (`altoImagenCm` cm de alto de imagen a la
  * distancia de la decoración), la proporción de la imagen y la línea del piso; el compilador puso el piso de la foto en
- * y = 0 y el centro de la imagen en x = 0, así que la cámara de frente, a la altura del centro de la imagen y a la
- * distancia en que `altoImagenCm` llena el cuadro, ve lo mismo que la foto. Puro y sin three.js (lo usan el servidor, que
- * lo devuelve junto a la lectura, y el navegador, que dibuja con él).
+ * y = 0 y el centro de la imagen en x = 0, así que la cámara a la altura de la mano (`camaraYCm`), mirando inclinada al
+ * centro de la imagen desde la distancia en que `altoImagenCm` llena el cuadro, ve lo mismo que la foto (las mesas por
+ * arriba, como en la foto). Puro y sin three.js (lo usan el servidor, que lo devuelve junto a la lectura, y el navegador,
+ * que dibuja con él).
  */
 
 export const EncuadreSchema = z.object({
@@ -17,6 +18,8 @@ export const EncuadreSchema = z.object({
   altoCm: z.number().min(60).max(1500),
   /** Altura (cm sobre el piso) del centro de la imagen: donde apunta la cámara. */
   centroYCm: z.number().min(-1000).max(2000),
+  /** Altura (cm sobre el piso) de la cámara, que mira inclinada al centro; sin ella (encuadres viejos), a la del centro y de frente. */
+  camaraYCm: z.number().min(-1000).max(2000).optional(),
 });
 export type Encuadre = z.infer<typeof EncuadreSchema>;
 
@@ -48,24 +51,30 @@ const FRACCION_MAXIMA_AL_FRENTE = 0.6;
 /**
  * Cuánto más cerca de la cámara (cm, desde el plano de la decoración) está algo apoyado en el piso cuyo pie se ve en la
  * foto a la altura `yPie`, más abajo que la línea del piso, y cuánto hay que achicar lo que mide en la foto (`factor` < 1:
- * lo cercano se ve más grande). La cámara de frente a la altura del centro de la imagen, como `camara-foto.ts`. Sin pasarse de
+ * lo cercano se ve más grande). Con la cámara del encuadre (`pisoEnLaFoto`), la misma que la captura. Sin pasarse de
  * lo que cabe en la sala (`fondoSalaCm`, de la pared al frente, menos la profundidad de la decoración y un margen).
  */
 export function profundidadEnElPiso(l: LecturaFoto, yPie: number, fondoSalaCm = FONDO_SALA_FOTO_CM): { delanteCm: number; factor: number } {
   const piso = pisoDeLectura(l);
-  const distancia = l.escala.altoImagenCm / 2 / Math.tan(((FOV_FOTO_GRADOS / 2) * Math.PI) / 180);
-  if (!Number.isFinite(yPie) || !(distancia > 0) || piso <= 0.5 || yPie <= piso) return { delanteCm: 0, factor: 1 };
-  // La línea del piso a la distancia d se ve a (piso − 0,5) × D / d bajo el centro.
-  const cerca = distancia * ((piso - 0.5) / (yPie - 0.5));
+  // Con la línea del piso por encima del centro de la foto, el centro cae en el piso y no en el plano de la decoración: la escala no vale para medir profundidad.
+  if (!Number.isFinite(yPie) || piso <= 0.5 || yPie <= piso) return { delanteCm: 0, factor: 1 };
+  // El piso que ve la cámara de la foto (la misma de la captura) en la línea del piso y en el pie: lo que separa los dos es lo que el pie está delante.
+  const encuadre = encuadreDeLectura(l);
+  const linea = pisoEnLaFoto(encuadre, piso), pie = pisoEnLaFoto(encuadre, yPie);
+  if (!linea || !pie) return { delanteCm: 0, factor: 1 };
   const cabeEnLaSala = Math.max(0, fondoSalaCm - PROFUNDIDAD_DE_LA_FOTO_CM - MARGEN_AL_FRENTE_CM);
-  const delanteCm = Math.max(0, Math.min(distancia * FRACCION_MAXIMA_AL_FRENTE, distancia - cerca, cabeEnLaSala));
-  return { delanteCm: Math.round(delanteCm), factor: Math.round(((distancia - delanteCm) / distancia) * 1000) / 1000 };
+  const delanteCm = Math.max(0, Math.min(linea.prof * FRACCION_MAXIMA_AL_FRENTE, pie.z - linea.z, cabeEnLaSala));
+  // Lo que está más cerca se ve más grande en la misma proporción en que baja su profundidad hasta la cámara.
+  const prof = Math.max(1, linea.prof - delanteCm * (linea.prof - pie.prof) / Math.max(1e-6, pie.z - linea.z));
+  return { delanteCm: Math.round(delanteCm), factor: Math.round((prof / linea.prof) * 1000) / 1000 };
 }
 
 /** El encuadre de la foto leída (el que usa `compilarLectura` para colocar las piezas). */
 export function encuadreDeLectura(l: LecturaFoto): Encuadre {
   const altoCm = l.escala.altoImagenCm;
-  return { aspecto: l.aspecto, altoCm, centroYCm: Math.round((pisoDeLectura(l) - 0.5) * altoCm * 10) / 10 };
+  const centroYCm = Math.round((pisoDeLectura(l) - 0.5) * altoCm * 10) / 10;
+  // La foto se toma de pie: si el centro de la imagen queda más bajo que la mano, la cámara mira hacia abajo (se ven las mesas por arriba).
+  return { aspecto: l.aspecto, altoCm, centroYCm, camaraYCm: Math.max(centroYCm, ALTURA_DE_LA_CAMARA_CM) };
 }
 
 /** Alto y ancho (px) de la captura: el lado mayor es `ladoMax` y la proporción la de la foto. */

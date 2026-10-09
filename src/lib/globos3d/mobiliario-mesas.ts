@@ -81,19 +81,24 @@ export function mesaCentro(o: OpcionesMesa): ElementoEscenografia[] {
   return salida;
 }
 
+/** Grosor (cm) de la cubierta de una mesa hexagonal de alambre. */
+const CUBIERTA_MESA_HEXAGONAL_CM = 2.4;
+
 /**
- * Mesa hexagonal de alambre dorado: aro de arriba (sin tapa; con `extra` lleva un vidrio o espejo), seis patas
- * finas y un aro más bajo que las une. `anchoCm` es el diámetro entre esquinas.
+ * Mesa hexagonal de alambre dorado: aro de arriba (sin tapa; con `extra` lleva encima una cubierta de ese color), seis
+ * patas finas y un aro más bajo que las une. `anchoCm` es el diámetro entre esquinas.
  */
 export function mesaHexagonal(o: OpcionesMesa): ElementoEscenografia[] {
   const { anchoCm: dia, altoCm: h, patas: oro, extra } = o;
   const r = dia / 2, marco = 2.4, grueso = 1.6;
-  const salida: ElementoEscenografia[] = [losa(poligono(6, r), h - grueso, grueso, oro, [poligono(6, r - marco)])];
-  if (extra) salida.push(losa(poligono(6, r - marco * 0.5), h - grueso * 0.6, 0.6, extra));
+  // Con cubierta (blanca, de mármol, de vidrio): una losa gruesa apoyada sobre el marco, un poco más ancha que él, como en las fotos.
+  const cubierta = extra ? CUBIERTA_MESA_HEXAGONAL_CM : 0, arriba = h - cubierta;
+  const salida: ElementoEscenografia[] = [losa(poligono(6, r), arriba - grueso, grueso, oro, [poligono(6, r - marco)])];
+  if (extra) salida.push(losa(poligono(6, r + 0.6), arriba, cubierta, extra));
   const baja = poligono(6, r * 0.9), y = h * 0.32;
   poligono(6, r - 0.8).forEach((p, i) => {
     const a = baja[i]!, b = baja[(i + 1) % 6]!;
-    salida.push(barra(v(p.x, 0, p.y), v(p.x, h - grueso, p.y), 0.6, oro), barra(v(a.x, y, a.y), v(b.x, y, b.y), 0.5, oro));
+    salida.push(barra(v(p.x, 0, p.y), v(p.x, arriba - grueso, p.y), 0.6, oro), barra(v(a.x, y, a.y), v(b.x, y, b.y), 0.5, oro));
   });
   return salida;
 }
