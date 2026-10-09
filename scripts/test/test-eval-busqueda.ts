@@ -37,6 +37,21 @@ async function main() {
   const inexistentes = idsDelOro(oro).filter((id) => !existentes.has(id));
   assert.deepEqual(inexistentes, [], `Ids del oro que no existen en las fichas: ${inexistentes.join(", ")}`);
 
+  // El oro de reserva (holdout): 15 consultas que no se miran al afinar. Misma forma, ids que existen, sin repetir las del desarrollo.
+  const reserva = leerOro(JSON.parse(readFileSync(path.join(RAIZ, "scripts/test/fixtures/oro-busqueda-taller-holdout.json"), "utf8")));
+  assert.equal(reserva.consultas.length, 15, "La reserva trae 15 consultas de texto.");
+  assert.equal(reserva.fotos.length, 0, "Las fotos del dueño ya están en el oro de desarrollo.");
+  const idsDev = new Set(oro.consultas.map((c) => c.id)), textosDev = new Set(oro.consultas.map((c) => c.texto));
+  for (const c of reserva.consultas) {
+    assert.ok(!idsDev.has(c.id), `${c.id}: el id ya está en el oro de desarrollo.`);
+    assert.ok(!textosDev.has(c.texto), `${c.id}: la consulta «${c.texto}» ya está en el oro de desarrollo.`);
+    assert.ok(c.relevantes.some((r) => r.grado === 2), `${c.id}: sin ningún exacto.`);
+  }
+  const faltan = idsDelOro(reserva).filter((id) => !existentes.has(id));
+  assert.deepEqual(faltan, [], `Ids de la reserva que no existen en las fichas: ${faltan.join(", ")}`);
+  const categoriasReserva = new Set(reserva.consultas.flatMap((c) => c.categoria.split("-")));
+  for (const esperada of ["estructura", "decoracion", "formato", "color", "ocasion", "tema", "medida", "fuente"]) assert.ok(categoriasReserva.has(esperada), `La reserva cubre la categoría «${esperada}».`);
+
   // Las fotos: una por referencia del dueño, con su número, y el esperado es esa referencia.
   assert.equal(new Set(oro.fotos.map((f) => f.numero)).size, 13, "Un número de foto por cada una.");
   for (const foto of oro.fotos) {

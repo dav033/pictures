@@ -6,13 +6,16 @@ import type { ItemBiblioteca, TipoItem } from "@/lib/globos3d/biblioteca";
 import type { TipoPieza } from "@/lib/globos3d/piezas";
 import { RRF_K } from "@/lib/rag/retrieval/rrf";
 import {
+  SIN_REFUERZOS,
   construirConsultaBusqueda,
   limiteSeguro,
+  type Afinado,
   type EntradaBusqueda,
   type FiltrosTaller,
   type RamaId,
   type RefuerzosSuaves,
 } from "./buscar-sql";
+import { entenderConsulta, type EntendidoConsulta } from "./entender-consulta";
 
 /**
  * Búsqueda de la biblioteca del taller 3D (REQ-002): Postgres (híbrida: palabras + nombre + vectores, ver
@@ -53,8 +56,8 @@ export type RespuestaBusquedaTaller = {
   resultados: ResultadoTaller[];
   ids: string[];
   ramas: RamaId[];
-  /** Lo que entendió el glosario (refuerzos suaves), para mostrarlo o depurar. */
-  interpretacion: { formatos: string[]; partes: string[]; tiposPieza: string[]; colores: string[]; notas: string[] } | null;
+  /** Lo que se entendió de la consulta (glosario y taxonomía: refuerzos suaves), para mostrarlo o depurar. */
+  interpretacion: (RefuerzosSuaves & { notas: string[] }) | null;
   avisos: string[];
 };
 
@@ -65,6 +68,10 @@ export type DependenciasBuscar = {
   obtenerPool?: () => Promise<Pick<Pool, "query">> | Pick<Pool, "query">;
   memoria?: (filtro: FiltroIA) => ItemBiblioteca[];
   interpretar?: (texto: string) => Interpretacion;
+  /** Celebraciones, temáticas, fuente y medida del texto (por defecto `entenderConsulta`). */
+  entender?: (texto: string) => EntendidoConsulta;
+  /** Pesos y bonos distintos de los afinados (la evaluación los prueba así; en producción no se usa). */
+  afinado?: Partial<Afinado>;
   /** Embedding de la consulta (por defecto `embeddingOpcional` del RAG, 2,5 s; si falla, la búsqueda sigue solo léxica). */
   embeberConsulta?: (texto: string) => Promise<number[] | undefined>;
 };
@@ -93,7 +100,26 @@ export function refuerzosDeInterpretacion(i: Interpretacion): RefuerzosSuaves {
   };
 }
 
-const sinRefuerzos = (r: RefuerzosSuaves) => !r.formatos.length && !r.partes.length && !r.tiposPieza.length && !r.colores.length;
+/** «columnas» → «columna»: el singular tosco con el que se compara contra los nombres. */
+const singular = (palabra: string): string => (palabra.length > 3 && palabra.endsWith("s") ? palabra.slice(0, -1) : palabra);
+
+/** Suma lo que entendió la taxonomía (celebración, temática, fuente, medida) a lo que entendió el glosario. */
+export function refuerzosDeConsulta(glosario: Interpretacion, entendido: EntendidoConsulta): RefuerzosSuaves {
+  return {
+    ...refuerzosDeInterpretacion(glosario),
+    nombresPieza: [...new Set(glosario.terminos.filter((t) => t.clase === "tipo").map((t) => t.texto.split(" ").map(singular).join(" ")))],
+    celebraciones: entendido.celebraciones,
+    tematicas: entendido.tematicas,
+    fuentes: entendido.fuentes,
+    altoCm: entendido.altoCm,
+    anchoCm: entendido.anchoCm,
+    palabrasExtra: entendido.expansion,
+  };
+}
+
+const sinRefuerzos = (r: RefuerzosSuaves) =>
+  !r.formatos.length && !r.partes.length && !r.tiposPieza.length && !r.colores.length &&
+  !r.celebraciones?.length && !r.tematicas?.length && !r.fuentes?.length && r.altoCm == null && r.anchoCm == null;
 
 // ----------------------------------------------------------------------------------------------------------
 // Filas de la base → respuesta
@@ -119,6 +145,10 @@ function razonesDe(fila: Fila, ramas: Record<Exclude<RamaId, "filtro">, PuntajeR
   if (fila.refuerzo_partes === true) r.push(`Tiene las partes pedidas (${refuerzos.partes.join(", ")})`);
   if (fila.refuerzo_tipos === true) r.push(`Es del tipo de pieza pedido (${refuerzos.tiposPieza.join(", ")})`);
   if (fila.refuerzo_colores === true) r.push(`Usa los colores pedidos (${refuerzos.colores.join(", ")})`);
+  if (fila.refuerzo_celebraciones === true) r.push(`Es de la celebración pedida (${refuerzos.celebraciones?.join(", ")})`);
+  if (fila.refuerzo_tematicas === true) r.push(`Es de la temática pedida (${refuerzos.tematicas?.join(", ")})`);
+  if (fila.refuerzo_fuentes === true) r.push(`Viene de la fuente pedida (${refuerzos.fuentes?.join(", ")})`);
+  if (fila.refuerzo_medida === true) r.push(`Mide cerca de lo pedido (${[refuerzos.altoCm != null ? `${refuerzos.altoCm} cm de alto` : "", refuerzos.anchoCm != null ? `${refuerzos.anchoCm} cm de ancho` : ""].filter(Boolean).join(", ")})`);
   const aplicados = (Object.entries(filtros) as Array<[string, unknown]>).filter(([, v]) => (Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null && v !== false));
   if (aplicados.length) r.push(`Cumple los filtros: ${aplicados.map(([k]) => k).join(", ")}`);
   return r;
@@ -240,13 +270,13 @@ export async function buscarEnTaller(entrada: EntradaBusqueda, dependencias: Dep
 
   const texto = (entrada.texto ?? "").trim();
   const interpretacion = texto ? (dependencias.interpretar ?? interpretarTerminos)(texto) : null;
-  const refuerzos = interpretacion ? refuerzosDeInterpretacion(interpretacion) : { formatos: [], partes: [], tiposPieza: [], colores: [] };
+  const refuerzos = interpretacion ? refuerzosDeConsulta(interpretacion, (dependencias.entender ?? entenderConsulta)(texto)) : SIN_REFUERZOS;
 
   // El vector de la consulta, si quien llama no lo trajo (la rama vectorial de texto); sin él, solo léxica.
   const vectorTexto = entrada.vectorTexto ?? (texto ? await (dependencias.embeberConsulta ?? embeberPorDefecto)(texto).catch(() => undefined) : undefined);
   const conVector: EntradaBusqueda = vectorTexto ? { ...entrada, vectorTexto } : entrada;
   // Fuera del try: una entrada inválida (vector de otro tamaño) es error de quien llama, no motivo para caer a memoria.
-  const consulta = construirConsultaBusqueda(conVector, refuerzos);
+  const consulta = construirConsultaBusqueda(conVector, refuerzos, dependencias.afinado);
   try {
     const pool = await (dependencias.obtenerPool ?? poolPorDefecto)();
     const { rows } = await pool.query(consulta.texto, consulta.valores);
