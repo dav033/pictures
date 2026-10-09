@@ -33,12 +33,25 @@ export type Dictado = {
   descartarError: () => void;
 };
 
-/** Mide el volumen del micrófono (RMS) sin tocar el audio que se graba. `null` si el navegador no lo permite. */
-function medirNivel(flujo: MediaStream, alNivel: (n: number) => void): { contexto: AudioContext; reloj: number } | null {
+/**
+ * El contexto de audio del medidor de volumen. Se crea (y se reanuda) en el mismo toque que inicia el dictado: iOS Safari
+ * lo deja «suspendido», y mudo el medidor, si nace después de esperar el permiso del micrófono. `null` si no hay Web Audio.
+ */
+function crearContextoAudio(): AudioContext | null {
   try {
     const Contexto = window.AudioContext ?? (window as VentanaConAudio).webkitAudioContext;
     if (!Contexto) return null;
     const contexto = new Contexto();
+    void contexto.resume().catch(() => undefined);
+    return contexto;
+  } catch {
+    return null;
+  }
+}
+
+/** Mide el volumen del micrófono (RMS) sin tocar el audio que se graba. `null` si el navegador no lo permite. */
+function medirNivel(flujo: MediaStream, contexto: AudioContext, alNivel: (n: number) => void): number | null {
+  try {
     const analizador = contexto.createAnalyser();
     analizador.fftSize = 256;
     contexto.createMediaStreamSource(flujo).connect(analizador);
@@ -49,7 +62,7 @@ function medirNivel(flujo: MediaStream, alNivel: (n: number) => void): { context
       for (const v of datos) suma += ((v - 128) / 128) ** 2;
       alNivel(Math.min(1, Math.sqrt(suma / datos.length) * 4));
     }, 90);
-    return { contexto, reloj };
+    return reloj;
   } catch {
     return null;
   }
@@ -59,7 +72,7 @@ function medirNivel(flujo: MediaStream, alNivel: (n: number) => void): { context
  * Dictado por voz: toca para grabar, toca para terminar. Graba con MediaRecorder (webm/opus, mp4 en Safari), manda el audio a
  * `/api/voz/transcribir` y entrega el texto a `alTexto`. Suelta el micrófono al terminar, al cancelar (Esc) y al desmontar.
  */
-export function useDictado(alTexto: (texto: string) => void): Dictado {
+export function useDictado(alTexto: (texto: string) => void, aceptaEsc: (e: KeyboardEvent) => boolean = () => true): Dictado {
   const [estado, despachar] = useReducer(reducirDictado, ESTADO_INICIAL);
   const [segundos, setSegundos] = useState(0);
   const [nivel, setNivel] = useState(0);
@@ -67,8 +80,9 @@ export function useDictado(alTexto: (texto: string) => void): Dictado {
   const abortador = useRef<AbortController | null>(null);
   const turno = useRef(0);
   const alTextoRef = useRef(alTexto);
+  const aceptaEscRef = useRef(aceptaEsc);
   const fase = useRef(estado.fase);
-  useEffect(() => { alTextoRef.current = alTexto; fase.current = estado.fase; });
+  useEffect(() => { alTextoRef.current = alTexto; aceptaEscRef.current = aceptaEsc; fase.current = estado.fase; });
 
   const soltar = useCallback(() => {
     const actual = grabacion.current;
@@ -128,25 +142,29 @@ export function useDictado(alTexto: (texto: string) => void): Dictado {
     const miTurno = ++turno.current;
     if (!navigator.onLine) { despachar({ tipo: "fallo", codigo: "sin_conexion" }); return; }
     despachar({ tipo: "pedir" });
+    const contexto = crearContextoAudio();
+    const cerrarContexto = () => void contexto?.close().catch(() => undefined);
     let flujo: MediaStream;
     try {
       flujo = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
     } catch (error) {
+      cerrarContexto();
       if (turno.current === miTurno) despachar({ tipo: "fallo", codigo: codigoDeErrorMicrofono(error) });
       return;
     }
-    if (turno.current !== miTurno) { flujo.getTracks().forEach((t) => t.stop()); return; }
+    if (turno.current !== miTurno) { flujo.getTracks().forEach((t) => t.stop()); cerrarContexto(); return; }
     let grabadora: MediaRecorder;
     try {
       const mime = elegirMimeGrabacion((m) => MediaRecorder.isTypeSupported(m));
       grabadora = new MediaRecorder(flujo, { ...(mime ? { mimeType: mime } : {}), audioBitsPerSecond: BITS_POR_SEGUNDO });
     } catch {
       flujo.getTracks().forEach((t) => t.stop());
+      cerrarContexto();
       despachar({ tipo: "fallo", codigo: "sin_microfono" });
       return;
     }
     const inicio = performance.now();
-    const actual: Grabacion = { flujo, grabadora, trozos: [], inicio, contexto: null, relojes: [] };
+    const actual: Grabacion = { flujo, grabadora, trozos: [], inicio, contexto, relojes: [] };
     grabacion.current = actual;
     grabadora.ondataavailable = (e) => { if (e.data.size > 0) actual.trozos.push(e.data); };
     grabadora.onstop = () => {
@@ -156,8 +174,8 @@ export function useDictado(alTexto: (texto: string) => void): Dictado {
       if (duracion < MINIMO_MS || audio.size === 0) { despachar({ tipo: "fallo", codigo: "muy_corto" }); return; }
       void transcribir(audio, miTurno);
     };
-    const medidor = medirNivel(flujo, setNivel);
-    if (medidor) { actual.contexto = medidor.contexto; actual.relojes.push(medidor.reloj); }
+    const medidor = contexto ? medirNivel(flujo, contexto, setNivel) : null;
+    if (medidor !== null) actual.relojes.push(medidor);
     actual.relojes.push(window.setInterval(() => {
       const transcurrido = (performance.now() - inicio) / 1000;
       setSegundos(transcurrido);
@@ -172,17 +190,17 @@ export function useDictado(alTexto: (texto: string) => void): Dictado {
     else if (fase.current === "grabando") terminar();
   }, [iniciar, terminar]);
 
-  // Esc cancela el dictado (y no llega al resto de la pantalla, que también usa Esc).
+  // Esc cancela el dictado mientras dura, pero solo si lo pulsó quien dicta (`aceptaEsc`) y nadie lo atendió antes (un diálogo
+  // abierto lo usa para cerrarse): sin capturar ni detener la propagación.
   useEffect(() => {
     if (estado.fase === "reposo") return;
     const alTeclear = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+      if (e.key !== "Escape" || e.defaultPrevented || !aceptaEscRef.current(e)) return;
       e.preventDefault();
-      e.stopPropagation();
       cancelar();
     };
-    window.addEventListener("keydown", alTeclear, true);
-    return () => window.removeEventListener("keydown", alTeclear, true);
+    window.addEventListener("keydown", alTeclear);
+    return () => window.removeEventListener("keydown", alTeclear);
   }, [estado.fase, cancelar]);
 
   useEffect(() => () => {

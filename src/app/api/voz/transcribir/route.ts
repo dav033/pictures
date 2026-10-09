@@ -8,10 +8,10 @@ import { atenderEstadoVoz, atenderTranscripcion } from "@/lib/voz/transcribir";
 /**
  * Dictado por voz (REQ-009): el audio del micrófono → texto con Whisper en el VPS (faster-whisper, sin coste por llamada).
  * Sesión y mismo origen, cupo por IP, topes de tamaño y reenvío firmado viven en `@/lib/voz`. La auditoría registra cada
- * llamada (proveedor «whisper-vps», duración, coste 0) pero ni el audio ni el texto: `auditarSalida` va apagado y la entrada
- * no JSON se omite sola. Corre en Node (el runtime por defecto): con `cacheComponents` Next rechaza declarar `runtime`.
+ * llamada (proveedor «whisper-vps», duración, coste 0) pero ni el audio ni el texto: `auditarEntrada` y `auditarSalida` van apagados (la entrada no se lee
+ * nunca, ni aunque el Content-Type diga «json»). Corre en Node (el runtime por defecto): con `cacheComponents` Next rechaza declarar `runtime`.
  */
-export const POST = conRegistro("/api/voz/transcribir", atenderPOST, { auditarSalida: false });
+export const POST = conRegistro("/api/voz/transcribir", atenderPOST, { auditarEntrada: false, auditarSalida: false });
 
 /** `{ habilitada }`: lo único del servicio que ve el navegador. Sin `conRegistro`: no decide nada. */
 export function GET(request: Request) {

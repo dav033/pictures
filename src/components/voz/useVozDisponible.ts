@@ -11,7 +11,7 @@ let consulta: Promise<boolean> | null = null;
 
 /** Pregunta una sola vez por carga de página si el servidor tiene el dictado encendido (`VOZ_ENABLED`). */
 function servidorHabilitado(): Promise<boolean> {
-  consulta ??= fetch("/api/voz/transcribir", { cache: "no-store" })
+  consulta ??= fetch("/api/voz/transcribir")
     .then(async (r) => (r.ok ? ((await r.json()) as { habilitada?: unknown }).habilitada === true : false))
     .catch(() => {
       consulta = null;

@@ -46,6 +46,7 @@ export function BotonVoz({ campoId, alTexto, deshabilitado = false, clase, varia
   const disponible = useVozDisponible();
   const alTextoRef = useRef(alTexto);
   const seleccionInicial = useRef<Seleccion | null>(null);
+  const envoltorio = useRef<HTMLSpanElement>(null);
   const [aviso, setAviso] = useState("");
 
   const insertar = useCallback((dictado: string) => {
@@ -56,13 +57,21 @@ export function BotonVoz({ campoId, alTexto, deshabilitado = false, clase, varia
     const { valor, cursor } = insertarEnCursor(campo.value, dictado, seleccion, campo.maxLength > 0 ? campo.maxLength : undefined);
     alTextoRef.current(valor);
     setAviso("Dictado insertado.");
+    // Solo se devuelve el foco (y el cursor) si el campo lo tenía al empezar o lo sigue teniendo: si no, en el teléfono se abriría el teclado.
+    if (!seleccionDe(campo) && !seleccionInicial.current) return;
     requestAnimationFrame(() => {
       campo.focus({ preventScroll: true });
       try { campo.setSelectionRange(cursor, cursor); } catch { /* algunos tipos de campo no admiten cursor */ }
     });
   }, [campoId]);
 
-  const { estado, segundos, nivel, alternar, cancelar, descartarError } = useDictado(insertar);
+  // Esc solo cuenta si se pulsa en el campo, en el botón o fuera de cualquier control; con un diálogo abierto es del diálogo.
+  const aceptaEsc = useCallback((e: KeyboardEvent) => {
+    const objetivo = e.target;
+    return objetivo === document.body || objetivo === document.getElementById(campoId) || (objetivo instanceof Node && !!envoltorio.current?.contains(objetivo));
+  }, [campoId]);
+
+  const { estado, segundos, nivel, alternar, cancelar, descartarError } = useDictado(insertar, aceptaEsc);
   useEffect(() => { alTextoRef.current = alTexto; });
 
   const error = estado.fase === "reposo" ? estado.error : null;
@@ -87,7 +96,7 @@ export function BotonVoz({ campoId, alTexto, deshabilitado = false, clase, varia
   };
 
   return (
-    <span className="relative inline-flex shrink-0">
+    <span ref={envoltorio} className="relative inline-flex shrink-0">
       <button
         type="button"
         onClick={alPulsar}

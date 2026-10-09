@@ -18,10 +18,10 @@ import { ESTADO_INICIAL, formatearTiempo, reducirDictado, type EstadoDictado, ty
 import { insertarEnCursor } from "../../src/components/voz/insertar-texto";
 import { MENSAJES_ERROR_DICTADO, codigoDeErrorMicrofono, codigoDeEstadoHttp } from "../../src/components/voz/mensajes-voz";
 import { MIMES_GRABACION, elegirMimeGrabacion } from "../../src/components/voz/mime";
-import { ErrorVoz, ESPERA_MAXIMA_REINTENTO_MS, esperaDeReintento, transcribirEnVps, type DependenciasVps } from "../../src/lib/voz/cliente-vps";
+import { ErrorVoz, ESPERA_MAXIMA_REINTENTO_MS, PRESUPUESTO_TOTAL_MS, esperaDeReintento, transcribirEnVps, type DependenciasVps } from "../../src/lib/voz/cliente-vps";
 import { leerConfigVoz, type ConfigVoz } from "../../src/lib/voz/config";
 import { CABECERA_FIRMA, CABECERA_TIMESTAMP, firmarPedido } from "../../src/lib/voz/firma";
-import { MAX_BYTES_AUDIO, esTipoAudioAceptado, tipoBase } from "../../src/lib/voz/limites";
+import { MAX_BYTES_AUDIO, esTipoAudioAceptado, tipoAudioAceptado } from "../../src/lib/voz/limites";
 import { TOPE_POR_MINUTO, reiniciarLimiteVoz, tomarCupoVoz } from "../../src/lib/voz/limite";
 import { atenderEstadoVoz, atenderTranscripcion, leerConTope, type DependenciasTranscripcion } from "../../src/lib/voz/transcribir";
 import { fijarConfiguracionParaPruebas } from "../../src/lib/registro/configuracion";
@@ -83,7 +83,10 @@ async function pruebasRuta(): Promise<void> {
     }
     assert.equal(esTipoAudioAceptado("audio/mp4"), true);
     assert.equal(esTipoAudioAceptado("audio/webm;codecs=opus"), true);
-    assert.equal(tipoBase("Audio/WebM; codecs=opus"), "audio/webm");
+    assert.equal(tipoAudioAceptado("Audio/WebM; codecs=opus"), "audio/webm");
+    for (const raro of ["audio/webm;x=json", "audio/webm; codecs=opus; x=1", "application/json;a=audio/webm", "audio/webm,application/json", "audio/flac"]) {
+      assert.equal(tipoAudioAceptado(raro), null, raro);
+    }
   });
   await prueba("más de 2 MB → 413, con Content-Length declarado y también leyendo el flujo sin declararlo", async () => {
     const { deps, llamadas } = dependencias();
@@ -137,8 +140,9 @@ async function pruebasRuta(): Promise<void> {
     const ocupado = await atenderTranscripcion(pedido(), dependencias({ transcribir: async () => { throw new ErrorVoz("ocupado", 2); } }).deps);
     assert.equal(ocupado.headers.get("retry-after"), "2");
   });
-  await prueba("GET de estado: solo { habilitada }, con sesión, sin secreto", async () => {
+  await prueba("GET de estado: solo { habilitada }, con sesión, sin secreto, y el navegador lo guarda 5 minutos", async () => {
     const encendida = atenderEstadoVoz(new Request("http://localhost/api/voz/transcribir"), { autenticado: () => true, config: () => CONFIG });
+    assert.equal(encendida.headers.get("cache-control"), "private, max-age=300");
     assert.deepEqual(await cuerpoDe(encendida), { habilitada: true });
     const apagada = atenderEstadoVoz(new Request("http://localhost/api/voz/transcribir"), { autenticado: () => true, config: () => ({ ...CONFIG, habilitada: false }) });
     assert.deepEqual(await cuerpoDe(apagada), { habilitada: false });
@@ -202,6 +206,9 @@ async function pruebasVps(): Promise<void> {
     assert.deepEqual([...p.cuerpo], [...AUDIO]);
     assert.ok(![...p.cabeceras.values()].some((v) => v.includes(SECRETO)), "el secreto no viaja, solo la firma");
   });
+  await prueba("vector de firma conocido (calculado aparte con Python hmac/hashlib): secreto «s», instante 1700000000, cuerpo «abc»", () => {
+    assert.equal(firmarPedido("s", 1700000000, new TextEncoder().encode("abc")), "8b45e13ae308b103625e7b23feed05a36b5ae7caa4bafdb14b6d789a69bd29a1");
+  });
   await prueba("otro cuerpo, otro instante u otro secreto dan otra firma", () => {
     const base = firmarPedido(SECRETO, 1000, AUDIO);
     assert.notEqual(base, firmarPedido(SECRETO, 1001, AUDIO));
@@ -239,14 +246,26 @@ async function pruebasVps(): Promise<void> {
     await assert.rejects(transcribirEnVps(AUDIO, "audio/webm", CONFIG, deps), (e) => e instanceof ErrorVoz && e.codigo === "ocupado" && e.reintentarEnSeg === 1);
     assert.equal(pedidos.length, 2);
   });
-  await prueba("413 y 422 → demasiado largo; 401, 500 o JSON raro → servicio (sin detalles); sin reintento", async () => {
-    for (const [codigo, esperado] of [[413, "demasiado_largo"], [422, "demasiado_largo"], [401, "servicio"], [500, "servicio"]] as const) {
+  await prueba("413 y 422 → demasiado largo; 401, 415, 500 o JSON raro → servicio; el estado del VPS queda en el error; sin reintento", async () => {
+    for (const [codigo, esperado] of [[413, "demasiado_largo"], [422, "demasiado_largo"], [401, "servicio"], [415, "servicio"], [500, "servicio"]] as const) {
       const { deps, pedidos } = vpsSimulado([status(codigo)]);
-      await assert.rejects(transcribirEnVps(AUDIO, "audio/webm", CONFIG, deps), (e) => e instanceof ErrorVoz && e.codigo === esperado, String(codigo));
+      await assert.rejects(transcribirEnVps(AUDIO, "audio/webm", CONFIG, deps), (e) => e instanceof ErrorVoz && e.codigo === esperado && e.estadoVps === codigo && e.message.includes(`VPS ${codigo}`), String(codigo));
       assert.equal(pedidos.length, 1);
     }
     const { deps } = vpsSimulado([() => Response.json({ otra: "forma" })]);
     await assert.rejects(transcribirEnVps(AUDIO, "audio/webm", CONFIG, deps), (e) => e instanceof ErrorVoz && e.codigo === "servicio");
+  });
+  await prueba("sin tiempo para el reintento (el primer intento se comió el presupuesto) → ocupado, sin segundo pedido", async () => {
+    let reloj = 1_760_000_000_000;
+    const pedidos: number[] = [];
+    const deps: DependenciasVps = {
+      ahora: () => reloj,
+      esperar: async (ms) => { reloj += ms; },
+      fetch: (async () => { pedidos.push(reloj); reloj += 19_000; return new Response("{}", { status: 503, headers: { "Retry-After": "5" } }); }) as typeof fetch,
+    };
+    await assert.rejects(transcribirEnVps(AUDIO, "audio/webm", CONFIG, deps), (e) => e instanceof ErrorVoz && e.codigo === "ocupado" && e.estadoVps === 503);
+    assert.equal(pedidos.length, 1);
+    assert.ok(PRESUPUESTO_TOTAL_MS <= 30_000);
   });
   await prueba("sin respuesta a tiempo → tiempo_agotado; sin configurar → no_configurada; red caída → servicio", async () => {
     const { deps } = vpsSimulado([() => new Promise<Response>(() => undefined)]);
@@ -301,10 +320,18 @@ async function pruebaAuditoria(): Promise<void> {
     const datos = (llamada[0].datos ?? llamada[0]) as Record<string, unknown>;
     assert.equal(datos.costeEstimadoUsd, 0);
 
+    globalThis.fetch = (async () => new Response("{}", { status: 401 })) as typeof fetch;
+    const rechazada = await POST(new Request("http://localhost/api/voz/transcribir", { method: "POST", headers: { "content-type": "audio/webm", "x-conversacion-id": "conv-voz-1" }, body: AUDIO }));
+    assert.equal(rechazada.status, 502);
+    assert.ok(!JSON.stringify(await rechazada.json()).includes("401"), "el estado del VPS no sale hacia el navegador");
+    await esperarRegistros();
+    assert.match(archivosDe(raiz).map((a) => readFileSync(a, "utf8")).join("\n"), /VPS 401/, "pero queda en la auditoría");
+    const json = await POST(new Request("http://localhost/api/voz/transcribir", { method: "POST", headers: { "content-type": "audio/webm;x=json" }, body: AUDIO }));
+    assert.equal(json.status, 415);
+
     process.env.VOZ_ENABLED = "false";
     const apagada = await POST(new Request("http://localhost/api/voz/transcribir", { method: "POST", headers: { "content-type": "audio/webm" }, body: AUDIO }));
     assert.equal(apagada.status, 404);
-    assert.equal(reenvios.length, 1);
     pruebas += 1;
     console.log("  ✓ ruta real: audita «whisper-vps» (coste 0) sin audio ni texto, y apagada responde 404");
   } finally {
