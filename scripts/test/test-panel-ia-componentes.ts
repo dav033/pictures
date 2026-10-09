@@ -26,6 +26,8 @@ import { TarjetaTurno } from "../../src/components/tres-d/ia/TarjetaTurno";
 import type { AsistenteIA } from "../../src/components/tres-d/ia/useAsistenteIA";
 import { guardarEscena, leerGuardada } from "../../src/components/tres-d/guardado-escena";
 import { guardarConversacion, leerConversacion } from "../../src/components/tres-d/guardado-conversacion";
+import { registrarClave } from "../../src/lib/globos3d/claves-escena";
+import { historialCambiar, historialDeshacer, historialNuevo, historialRehacer } from "../../src/lib/globos3d/escena";
 import { insetTeclado } from "../../src/components/tres-d/useInsetTeclado";
 
 let pruebas = 0;
@@ -232,38 +234,61 @@ function falsoNavegador(limite: (clave: string, valor: string) => boolean) {
   } };
   return memoria;
 }
-prueba("guardar y leer devuelve la clave y los turnos (sin los errores); la escena no lleva la conversación", () => {
+prueba("guardar y leer devuelve los turnos (sin los errores); la escena guarda su clave y no lleva la conversación", () => {
   const memoria = falsoNavegador(() => true);
   const turnos = [turno(1), turno(2, { pregunta: { texto: "¿La igualo?", opciones: ["Sí", "No"] } }), turno(3, { estado: "error", diff: null })];
-  assert.equal(guardarConversacion({ clave: "e7", turnos }), true);
-  assert.equal(guardarEscena({ nombre: "Mi escena", escena: alta }), true);
+  assert.equal(guardarConversacion(turnos), true);
+  assert.equal(guardarEscena({ nombre: "Mi escena", escena: alta, clave: "e7" }), true);
   const leida = leerConversacion();
-  assert.equal(leida?.clave, "e7");
-  assert.deepEqual(leida?.turnos.map((t) => t.numero), [1, 2]);
-  assert.deepEqual(leida?.turnos[0]?.diff, turnos[0]!.diff);
-  assert.ok(![...memoria.get("taller3d:escena:v1") ?? ""].join("").includes("conversacion"));
+  assert.deepEqual(leida.map((t) => t.numero), [1, 2]);
+  assert.deepEqual(leida[0]?.diff, turnos[0]!.diff);
+  assert.ok(!(memoria.get("taller3d:escena:v1") ?? "").includes("turnos"));
+  assert.equal(leerGuardada()?.clave, "e7", "la clave sobrevive aunque la conversación no se guarde");
   assert.equal(leerGuardada()?.escena.nodos.length, alta.nodos.length);
+  memoria.set("taller3d:escena:v1", JSON.stringify({ nombre: "Vieja", escena: base }));
+  assert.equal(leerGuardada()?.clave, undefined, "una escena guardada antes de las claves abre igual");
 });
 prueba("si la conversación no cabe en el navegador, la escena se guarda igual y la conversación suelta los turnos más viejos hasta caber", () => {
   const LIMITE = 40_000;
   falsoNavegador((k, v) => k !== "taller3d:conversacion:v1" || v.length < LIMITE);
   const grandes = Array.from({ length: 12 }, (_, i) => turno(i + 1, { respuesta: "x".repeat(9_000) }));
-  assert.equal(guardarEscena({ nombre: "Mi escena", escena: alta }), true, "la escena no depende de la conversación");
-  assert.equal(guardarConversacion({ clave: "e1", turnos: grandes }), true);
+  assert.equal(guardarEscena({ nombre: "Mi escena", escena: alta, clave: "e1" }), true, "la escena no depende de la conversación");
+  assert.equal(guardarConversacion(grandes), true);
   const leida = leerConversacion();
-  assert.ok(leida && leida.turnos.length > 0 && leida.turnos.length < 12, "quedaron los más nuevos");
-  assert.equal(leida.turnos[leida.turnos.length - 1]!.numero, 12);
+  assert.ok(leida.length > 0 && leida.length < 12, "quedaron los más nuevos");
+  assert.equal(leida[leida.length - 1]!.numero, 12);
 });
 prueba("si ni un turno cabe, no lanza (devuelve false) y la escena sigue guardándose; basura guardada no rompe la lectura", () => {
   const memoria = falsoNavegador((k) => k !== "taller3d:conversacion:v1");
-  assert.equal(guardarConversacion({ clave: "e1", turnos: [turno(1)] }), false);
-  assert.equal(guardarEscena({ nombre: "Mi escena", escena: alta }), true);
+  assert.equal(guardarConversacion([turno(1)]), false);
+  assert.equal(guardarEscena({ nombre: "Mi escena", escena: alta, clave: "e1" }), true);
   memoria.set("taller3d:conversacion:v1", "{no es json");
-  assert.equal(leerConversacion(), null);
-  memoria.set("taller3d:conversacion:v1", JSON.stringify({ clave: "e1", turnos: "no" }));
-  assert.deepEqual(leerConversacion(), { clave: "e1", turnos: [] });
-  memoria.set("taller3d:conversacion:v1", JSON.stringify({ turnos: [] }));
-  assert.equal(leerConversacion(), null, "sin clave no hay a qué escena pertenece");
+  assert.deepEqual(leerConversacion(), []);
+  memoria.set("taller3d:conversacion:v1", JSON.stringify({ turnos: "no" }));
+  assert.deepEqual(leerConversacion(), []);
+});
+
+console.log("La clave de la escena sigue a Ctrl+Z y Ctrl+Y");
+prueba("edición hereda; plantilla o sala vacía abren otra; Ctrl+Z devuelve la anterior con SU clave y Ctrl+Y la nueva", () => {
+  const claves = new WeakMap<Escena, string>();
+  const A = base, B = alta, C = { ...base, nodos: [] } as Escena;
+  claves.set(A, "e1");
+  let h = historialNuevo(A);
+  registrarClave(claves, h.presente, B);
+  h = historialCambiar(h, B);
+  assert.equal(claves.get(h.presente), "e1", "una edición hereda");
+  registrarClave(claves, h.presente, C, "e2");
+  h = historialCambiar(h, C);
+  assert.equal(claves.get(h.presente), "e2", "reemplazar la escena abre otra identidad");
+  h = historialDeshacer(h);
+  assert.equal(h.presente, B);
+  assert.equal(claves.get(h.presente), "e1", "Ctrl+Z trae la escena de antes con su identidad: sus turnos vuelven a actuar");
+  h = historialRehacer(h);
+  assert.equal(claves.get(h.presente), "e2");
+  // Una escena que ya tenía clave (la devuelve la IA con otra forma) no la pierde por heredar.
+  const D = { ...A }; claves.set(D, "e9");
+  registrarClave(claves, B, D);
+  assert.equal(claves.get(D), "e9");
 });
 
 console.log("Teclado de pantalla");

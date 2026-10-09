@@ -80,15 +80,18 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
       destacar(idsParaResaltar(aplicada.diff));
       setTurnos((t) => [...t, {
         id: `r${Date.now().toString(36)}${r.ronda}`, numero: siguienteNumero(t), pedido: `Ronda ${r.ronda} con la foto`, contexto: "comparando con la foto", ambito: u.ambito, clave: u.clave, foto: true,
-        respuesta: r.respuesta.slice(0, 1400), pasos: r.cambios.map(pasoDe), diff: aplicada.diff, pregunta: null, costeUsd: r.costeUsd ?? null, ms: 0, estado: "aplicado", nota: textoAplicarTurno(aplicada.conservadas),
+        respuesta: r.respuesta.slice(0, 1400), pasos: r.cambios.map(pasoDe), diff: aplicada.diff, pregunta: null, costeUsd: null, ms: 0, estado: "aplicado", nota: textoAplicarTurno(aplicada.conservadas),
       }]);
     },
+    // Al terminar se carga todo lo que costó la comparación (también las rondas sin cambios, las rechazadas y su revisión) al último turno.
     alTerminar: (r) => {
       const resumen = resumenDeRefinado(r);
-      if (!resumen) return;
+      if (!resumen && !r.costeUsd) return;
       setTurnos((t) => {
         const ultimo = t[t.length - 1];
-        return ultimo ? [...t.slice(0, -1), { ...ultimo, nota: [ultimo.nota, resumen].filter(Boolean).join(" ") }] : t;
+        if (!ultimo) return t;
+        const costeUsd = r.costeUsd ? (ultimo.costeUsd ?? 0) + r.costeUsd : ultimo.costeUsd;
+        return [...t.slice(0, -1), { ...ultimo, costeUsd, nota: resumen ? [ultimo.nota, resumen].filter(Boolean).join(" ") : ultimo.nota }];
       });
     },
   });

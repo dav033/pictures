@@ -24,12 +24,15 @@ const libre = (id: string, usados: Set<string>): string => {
 };
 
 /** Las piezas nuevas de la IA cuyo id ya usa otra pieza de la persona toman un id libre (y lo que cuelga de ellas, el nuevo padre). */
-function sinChoques(actual: Escena, diff: DiffEscena): DiffEscena {
+function sinChoques(actual: Escena, diff: DiffEscena, soloDistintas: boolean): DiffEscena {
   const usados = new Set([...actual.nodos.map((n) => n.id), ...diff.nodos.map((c) => c.id)]);
   const nuevos = new Map<string, string>();
   for (const c of diff.nodos) {
     const ahora = c.tipo === "nueva" ? actual.nodos.find((n) => n.id === c.id) : undefined;
-    if (ahora && c.despues && !sonIguales(ahora, c.despues)) nuevos.set(c.id, libre(c.id, usados));
+    // Al rehacer, una pieza del mismo tipo y nombre con ese id es la de la IA (la persona la movió o la editó); si es otra cosa (un id
+    // que quedó libre y que la persona volvió a usar), la de la IA toma un id libre.
+    const esLaDeLaIA = soloDistintas && ahora && c.despues && ahora.pieza.tipo === c.despues.pieza.tipo && ahora.nombre === c.despues.nombre;
+    if (ahora && c.despues && !sonIguales(ahora, c.despues) && !esLaDeLaIA) nuevos.set(c.id, libre(c.id, usados));
   }
   if (!nuevos.size) return diff;
   const cambiar = (n: NodoEscena | null, esNueva: boolean): NodoEscena | null => {
@@ -41,8 +44,13 @@ function sinChoques(actual: Escena, diff: DiffEscena): DiffEscena {
   return { ...diff, nodos: diff.nodos.map((c): CambioNodo => ({ ...c, id: c.tipo === "nueva" ? nuevos.get(c.id) ?? c.id : c.id, despues: cambiar(c.despues, c.tipo === "nueva") })) };
 }
 
-export function aplicarDiff(actual: Escena, original: DiffEscena): ResultadoAplicarTurno {
-  const diff = sinChoques(actual, original);
+/**
+ * `renombrar`: la primera vez que se aplica la respuesta (la persona pudo crear, mientras la IA contestaba, una pieza con el mismo id)
+ * cualquier pieza distinta con el id de una nueva la hace tomar un id libre. Al rehacer o al mirar el estado de un turno, una pieza del
+ * mismo tipo y nombre con ese id es la de la IA (que la persona movió o editó): se cuenta como conservada, nunca se duplica.
+ */
+export function aplicarDiff(actual: Escena, original: DiffEscena, renombrar = false): ResultadoAplicarTurno {
+  const diff = sinChoques(actual, original, !renombrar);
   const conservadas: PiezaConservada[] = [];
   const aplicadas: string[] = [];
   const tocadas = new Set<string>();
@@ -53,7 +61,11 @@ export function aplicarDiff(actual: Escena, original: DiffEscena): ResultadoApli
   for (const c of diff.nodos) {
     const ahora = hay(c.id);
     if (c.tipo === "nueva") {
-      if (ahora || !c.despues) continue;
+      if (!c.despues) continue;
+      if (ahora) {
+        if (!sonIguales(ahora, c.despues)) conservadas.push({ id: c.id, nombre: ahora.nombre, motivo: "editada" });
+        continue;
+      }
       nodos.push(c.despues);
       tocadas.add(c.id); aplicadas.push(c.id);
       continue;
@@ -97,7 +109,7 @@ export function aplicarDiff(actual: Escena, original: DiffEscena): ResultadoApli
 /** La respuesta de la IA sobre la escena de ahora: tal cual si no cambió nada mientras contestaba; si no, solo lo que la persona no tocó. */
 export function aplicarTurno(actual: Escena, antes: Escena, despues: Escena, diff: DiffEscena): ResultadoAplicarTurno {
   if (actual === antes || sonIguales(actual, antes)) return { escena: despues, conservadas: [], diff };
-  return aplicarDiff(actual, diff);
+  return aplicarDiff(actual, diff, true);
 }
 
 /** Lo que se le dice a la persona cuando trabajó a mano mientras la IA contestaba. */

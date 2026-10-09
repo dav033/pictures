@@ -38,6 +38,7 @@ export function PanelIA({ ia, escena, seleccion, enHoja = false, alFotoRealista,
   const fotoIA = useFotoAdjunta();
   const [texto, setTexto] = useState("");
   const [hayNuevo, setHayNuevo] = useState(false);
+  const raiz = useRef<HTMLDivElement>(null);
   const hilo = useRef<HTMLDivElement>(null);
   const caja = useRef<HTMLTextAreaElement>(null);
   const siguiendo = useRef(true);
@@ -76,10 +77,16 @@ export function PanelIA({ ia, escena, seleccion, enHoja = false, alFotoRealista,
     if (siguiendo.current) setHayNuevo(false);
   };
 
-  // Esc detiene a la IA mientras trabaja (la caja está desactivada, así que el foco puede estar en cualquier parte).
+  // Esc detiene a la IA mientras trabaja (la caja está desactivada, así que el foco puede estar en cualquier parte). No si es para otra
+  // cosa: un diálogo abierto, un menú, o un campo de texto fuera de este panel (el inspector, el nombre de la escena).
   useEffect(() => {
     if (!ia.ocupado) return;
-    const alTeclado = (e: KeyboardEvent) => { if (e.key === "Escape") ia.detener(); };
+    const alTeclado = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || document.querySelector("dialog[open], [role='dialog']")) return;
+      const foco = document.activeElement;
+      const ajeno = foco instanceof HTMLElement && !raiz.current?.contains(foco) && foco.closest("input, textarea, select, [contenteditable='true'], [role='menu']");
+      if (!ajeno) ia.detener();
+    };
     window.addEventListener("keydown", alTeclado);
     return () => window.removeEventListener("keydown", alTeclado);
   }, [ia]);
@@ -97,7 +104,7 @@ export function PanelIA({ ia, escena, seleccion, enHoja = false, alFotoRealista,
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" onDrop={fotoIA.alSoltar} onDragOver={fotoIA.alArrastrar} onDragLeave={fotoIA.alSalir}>
+    <div ref={raiz} className="flex min-h-0 flex-1 flex-col" onDrop={fotoIA.alSoltar} onDragOver={fotoIA.alArrastrar} onDragLeave={fotoIA.alSalir}>
       {!enHoja && (
         <div className="flex shrink-0 items-center gap-2 px-3 pb-1 pt-2">
           <Sparkles className="size-4 text-taller-acento" aria-hidden />

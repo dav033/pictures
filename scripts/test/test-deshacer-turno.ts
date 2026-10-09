@@ -143,6 +143,32 @@ prueba("aplicado: se puede deshacer; tras Ctrl+Z (o el botón): se puede rehacer
   assert.ok(sonIguales(rehecha.escena, turnoIA.despues));
   assert.equal(estadoDeTurno(rehecha.escena, diff).deshacible, true);
 });
+prueba("la IA suma una columna y tú la mueves: no es «deshecho», no se puede rehacer (nunca se duplica) y queda bloqueado", () => {
+  const nueva = turnoIA.despues.nodos.find((n) => n.id === "columna-nueva")!;
+  const soloSuma = { ...base, nodos: [...base.nodos, nueva] };
+  const d = diffEscenas(base, soloSuma);
+  const movida = colocar(soloSuma, "columna-nueva", 90);
+  assert.deepEqual(estadoDeTurno(movida, d), { deshacible: false, rehacible: false, bloqueado: true });
+  const r = aplicarDiff(movida, d);
+  assert.equal(r.escena, movida, "rehacer no cambia nada");
+  assert.equal(r.escena.nodos.filter((n) => n.id.startsWith("columna-nueva")).length, 1);
+  assert.deepEqual(r.conservadas.map((c) => [c.id, c.motivo]), [["columna-nueva", "editada"]]);
+  // Sin tocar: se puede deshacer; ya quitada: se puede rehacer, y rehacer deja una sola.
+  assert.deepEqual(estadoDeTurno(soloSuma, d), { deshacible: true, rehacible: false, bloqueado: false });
+  assert.deepEqual(estadoDeTurno(base, d), { deshacible: false, rehacible: true, bloqueado: false });
+  assert.equal(aplicarDiff(base, d).escena.nodos.filter((n) => n.id.startsWith("columna-nueva")).length, 1);
+});
+prueba("un id que quedó libre al deshacer y la persona volvió a usar para otra cosa no se confunde con la pieza de la IA", () => {
+  const nueva = turnoIA.despues.nodos.find((n) => n.id === "columna-nueva")!;
+  const d = diffEscenas(base, { ...base, nodos: [...base.nodos, nueva] });
+  const otra: NodoEscena = { ...hijoDe("columna-nueva", "arco"), nombre: "Mi flor" };
+  const conOtra = { ...base, nodos: [...base.nodos, otra] };
+  assert.equal(estadoDeTurno(conOtra, d).rehacible, true, "la de la IA se puede rehacer");
+  const r = aplicarDiff(conOtra, d);
+  assert.equal(r.escena.nodos.filter((n) => n.nombre === "Columna nueva").length, 1);
+  assert.equal(col(r.escena, "columna-nueva").nombre, "Mi flor", "lo de la persona queda");
+  assert.ok(r.escena.nodos.length === new Set(r.escena.nodos.map((n) => n.id)).size);
+});
 prueba("bloqueado: si lo único que cambió la IA lo cambiaste tú, no hay nada que deshacer (el botón no puede estar activo)", () => {
   const solo = diffEscenas(base, alto(base, "columna-izq", 220));
   const tuyo = alto(base, "columna-izq", 250);

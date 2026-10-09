@@ -47,6 +47,7 @@ import { ListaCompra } from "./ListaCompra";
 import { BarraHerramientas, EtiquetaElegida, ReglaAlturas, type Herramienta } from "./SobreVisor";
 import { medidaPrincipal, NOMBRE_TIPO } from "./tipos-pieza";
 import { leerGuardada, guardarEscena } from "./guardado-escena";
+import { claveNueva } from "./guardado-conversacion";
 import { useInsetTeclado } from "./useInsetTeclado";
 import type { PestanaAnadir } from "./PanelAnadir";
 import type { PiezaParaAnadir } from "./nuevas-taller";
@@ -128,7 +129,8 @@ export function Taller3D() {
   // La última escena guardada en este navegador (si hay) en vez de la de partida. En el servidor no hay navegador: hasta
   // hidratar (`cargada`) no se pinta nada que dependa de la escena, así lo del servidor y lo del navegador coinciden.
   const [guardadaAlAbrir] = useState(() => (typeof window === "undefined" ? null : leerGuardada()));
-  const historialEscena = useHistorialEscena(() => guardadaAlAbrir?.escena ?? escenaPredefinida("arco_organico_columnas_guirnalda"));
+  const [claveInicial] = useState(() => guardadaAlAbrir?.clave ?? claveNueva());
+  const historialEscena = useHistorialEscena(() => guardadaAlAbrir?.escena ?? escenaPredefinida("arco_organico_columnas_guirnalda"), claveInicial);
   const escenaEdit = historialEscena.escena;
   const setEscenaEdit = historialEscena.cambiar;
   const [nombreEscena, setNombreEscena] = useState(() => guardadaAlAbrir?.nombre ?? ESCENAS_PREDEFINIDAS.find((p) => p.id === "arco_organico_columnas_guirnalda")?.nombre ?? "Mi escena");
@@ -146,7 +148,8 @@ export function Taller3D() {
   const puedeDeshacerVista = solitario.activo ? solitario.puedeDeshacer : historialEscena.puedeDeshacer;
   const puedeRehacerVista = solitario.activo ? solitario.puedeRehacer : historialEscena.puedeRehacer;
   // La IA (pestaña «IA» del panel derecho): cada turno es UN paso nombrado del historial global; Ctrl+Z y «Deshacer turno» van juntos.
-  const { ia, reemplazarEscena, rotuloDeshacer } = useIATaller({ escena: escenaVista, cambiar: cambiarVista, ambito: solitario.activo ? `pieza:${solitario.solitario?.raizId ?? ""}` : "escena", cache: cacheEscena, cargada });
+  const claveEscena = historialEscena.clave ?? claveInicial;
+  const { ia, rotuloDeshacer } = useIATaller({ escena: escenaVista, cambiar: cambiarVista, ambito: solitario.activo ? `pieza:${solitario.solitario?.raizId ?? ""}` : "escena", clave: claveEscena, cache: cacheEscena, cargada });
   /** Una pieza recién creada desde «Añadir → Nuevas» y abierta en el editor: «Cancelar» la quita. */
   const nuevaRef = useRef<string | null>(null);
   const [pestanaLado, setPestanaLado] = useState<PestanaLateral>("pieza");
@@ -224,9 +227,9 @@ export function Taller3D() {
   // Guardar solo (medio segundo después del último cambio).
   useEffect(() => {
     if (!cargada) return;
-    const t = setTimeout(() => setUltimoGuardado({ escena: escenaEdit, nombre: nombreEscena, ok: guardarEscena({ nombre: nombreEscena, escena: escenaEdit }) }), 500);
+    const t = setTimeout(() => setUltimoGuardado({ escena: escenaEdit, nombre: nombreEscena, ok: guardarEscena({ nombre: nombreEscena, escena: escenaEdit, clave: claveEscena }) }), 500);
     return () => clearTimeout(t);
-  }, [cargada, escenaEdit, nombreEscena]);
+  }, [cargada, escenaEdit, nombreEscena, claveEscena]);
   const armadaEscena = useMemo(() => {
     if (!cargada) return null;
     const hecha = armadas.get(escenaVista);
@@ -549,24 +552,21 @@ export function Taller3D() {
   ) : <Cargando />;
   const plantilla = (id: string) => {
     if (solitario.activo) salirSolitario(false);
-    setEscenaEdit(escenaPredefinida(id));
+    setEscenaEdit(escenaPredefinida(id), { clave: claveNueva() });
     setNombreEscena(ESCENAS_PREDEFINIDAS.find((p) => p.id === id)?.nombre ?? "Mi escena");
     setSeleccion(null); setOcultos(new Set()); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); setHistorialColor([]);
-    reemplazarEscena();
   };
   const salaVacia = () => {
     if (solitario.activo) salirSolitario(false);
-    setEscenaEdit({ ...escenaEdit, nodos: [] });
+    setEscenaEdit({ ...escenaEdit, nodos: [] }, { clave: claveNueva() });
     setNombreEscena("Escena nueva");
     setSeleccion(null); setOcultos(new Set());
-    reemplazarEscena();
   };
   const abrirEnEscena = (escena: Escena, item: ItemBiblioteca) => {
     if (solitario.activo) salirSolitario(false);
-    setEscenaEdit(escena);
+    setEscenaEdit(escena, { clave: claveNueva() });
     setNombreEscena(item.nombre);
     setSeleccion(null); setCopiaTocada(null); setOcultos(new Set()); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); setFicha(null);
-    reemplazarEscena();
   };
   const anadirItem = (item: ItemBiblioteca) => {
     // La biblioteca ya está cargada (de ahí viene el item): este import no trae nada nuevo.

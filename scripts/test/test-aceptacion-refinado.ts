@@ -306,6 +306,28 @@ await prueba("cada motivo dice su frase al usuario, sin cifras", async () => {
   const sinComparar = await refinarConFoto(entrada, bucle(veredictoSinComparar()).deps);
   assert.match(resumenDeRefinado(sinComparar), /^No pude comparar con la foto/);
 });
+await prueba("el coste total cuenta todas las rondas: las que no cambian nada, las rechazadas y su revisión", async () => {
+  const conUso = (coste: number) => async (): Promise<{ ok: true; datos: RespuestaRonda }> => ({ ok: true, datos: { ...respuesta(), uso: { costeEstimadoUsd: coste } } });
+  // Rechazada: la ronda (0,01) y su revisión (0,0003) se pagaron aunque no se aplicó nada.
+  const rechazada = await refinarConFoto(entrada, bucle(veredicto(false, "no_mejora"), { pedir: conUso(0.01) }).deps);
+  assert.equal(rechazada.rondas.length, 0);
+  assert.equal(Math.round(rechazada.costeUsd * 1e5) / 1e5, 0.0103);
+  // Aceptada: lo mismo.
+  assert.equal(Math.round((await refinarConFoto(entrada, bucle(veredicto(true), { pedir: conUso(0.01) }).deps)).costeUsd * 1e5) / 1e5, 0.0103);
+  // Dos rondas, la segunda sin cambios (solo consulta): también cuesta.
+  let n = 0;
+  const sinCambios = async (): Promise<{ ok: true; datos: RespuestaRonda }> => { n += 1; return { ok: true, datos: n === 1 ? { ...respuesta(), refinar: { ...resultado(), terminar: false, motivo: "continua" }, uso: { costeEstimadoUsd: 0.01 } } : { ...respuesta(), acciones: [{ ...cambio, consulta: true }], uso: { costeEstimadoUsd: 0.02 } } }; };
+  const dos = await refinarConFoto(entrada, bucle(veredicto(true), { pedir: sinCambios, maxRondas: 2 }).deps);
+  assert.equal(dos.rondas.length, 1);
+  assert.equal(Math.round(dos.costeUsd * 1e5) / 1e5, 0.0303);
+  // Detener después de pagar: lo que ya llegó cuenta (la ronda y su revisión), aunque no se aplique.
+  const parar = new AbortController();
+  const detenida = await refinarConFoto(entrada, bucle(veredicto(true), { pedir: async () => { parar.abort(); return { ok: true, datos: { ...respuesta(), uso: { costeEstimadoUsd: 0.01 } } }; }, signal: parar.signal }).deps);
+  assert.equal(detenida.motivo, "detenido");
+  assert.equal(detenida.costeUsd, 0.01);
+  // Sin uso en la respuesta no inventa nada.
+  assert.equal((await refinarConFoto(entrada, bucle(veredicto(true), { evaluar: undefined }).deps)).costeUsd, 0);
+});
 await prueba("detener durante la revisión no aplica la ronda", async () => {
   const control = new AbortController();
   const { deps, aplicadas } = bucle(veredicto(true), { signal: control.signal, evaluar: async () => { control.abort(); return veredicto(true); } });
