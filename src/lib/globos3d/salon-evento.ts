@@ -1,14 +1,14 @@
-import { idMesa, inflar, PREFIJO_ZONA, rectDe, seCruzan, type RectCm, type ZonaSalon } from "./salon-zonas";
+import { inflar, rectDe, type RectCm, type ZonaSalon } from "./salon-zonas";
 
 /**
  * **Distribución de un salón de eventos** (REQ-008): función pura que, dados los invitados, el tipo de mesa y las zonas
- * pedidas, dice qué mueble va dónde. Las mesas de invitados van en una cuadrícula con pasillos, llenada por filas desde
- * la mesa principal hacia la entrada y del centro hacia afuera (quitar invitados quita las últimas mesas y no mueve las
- * demás); la pista queda libre; la mesa de postres, contra la pared izquierda; el fondo de fotos, contra la pared del fondo
- * detrás de la mesa principal, y la entrada al frente.
+ * pedidas, dice qué mueble va dónde. Las mesas de invitados van por filas con pasillos: la mesa principal contra el fondo, la
+ * pista de baile justo delante con mesas a sus dos lados y más filas detrás (hacia la entrada). Se llenan fila por fila del
+ * centro hacia afuera, así que quitar invitados quita las últimas mesas y no mueve las demás. La mesa de postres va contra la
+ * pared izquierda, el fondo de fotos contra la pared del fondo detrás de la mesa principal y la entrada al frente.
  *
  * Sala (cm): x de izquierda (−) a derecha (+) desde el centro, z de fondo (−) a frente (+); la pared del fondo está en z = −fondo/2.
- * No toca ninguna escena: `salon-aplicar.ts` convierte esto en piezas.
+ * No toca ninguna escena: `salon-armar.ts` y `salon-ajustar.ts` convierten esto en piezas.
  */
 
 export const TIPOS_MESA_SALON = ["redonda8", "redonda10", "imperial"] as const;
@@ -22,17 +22,27 @@ export const MESAS_SALON: Readonly<Record<TipoMesaSalon, { mueble: string; puest
 };
 
 /** Aire entre los conjuntos de mesas (cm): más que el pasillo mínimo de 90 cm para que quepa una silla echada atrás. */
-export const PASILLO_CM = 100;
+export const PASILLO_CM = 91;
 /** Lo que se deja entre una mesa y la pared o la pista (cm). */
 export const MARGEN_CM = 90;
 /** Del fondo de fotos: el panel va a 30 cm de la pared y lo que se arma delante empieza a 60 cm de ella. */
 export const PANEL_RETIRO_CM = 30;
 export const FRENTE_PANEL_CM = 60;
 /** Profundidad (desde la pared) reservada al fondo de fotos cuando nada la pide mayor. */
-export const PROFUNDIDAD_FONDO_CM = 180;
-/** Del tapete de la entrada a la pared del frente: el tapete queda a 200 cm de ella. */
-export const ENTRADA_RETIRO_CM = 200;
-const BANDA_ENTRADA_CM = 380;
+export const PROFUNDIDAD_FONDO_CM = 150;
+/** El tapete de la entrada queda a 170 cm de la pared del frente. */
+export const ENTRADA_RETIRO_CM = 170;
+/** Del panel al arco que va delante, y del tapete de la entrada al arco de la entrada (hacia la puerta). */
+export const ARCO_FONDO_DELANTE_CM = 70;
+export const ARCO_ENTRADA_DELANTE_CM = 100;
+/** Entre el arco del fondo de fotos y el de la entrada: más cerca, uno tapa al otro. */
+export const DISTANCIA_MINIMA_ARCOS_CM = 400;
+/** De la mesa principal a lo que sigue (cm). */
+const AIRE_TRAS_PRINCIPAL_CM = 100;
+/** El pasillo de la entrada: el ancho del arco más aire a cada lado; las mesas de los lados siguen hasta el fondo de la sala. */
+const ANCHO_PASILLO_ENTRADA_CM = 500;
+/** De la pared a las sillas de la mesa principal, además del fondo de fotos: entero para poder leerlo de vuelta de la escena. */
+export const SILLAS_DESDE_FONDO_CM = 23;
 
 const SALA_MINIMA_CM = 600;
 const SALA_MAXIMA_CM = 3000;
@@ -40,16 +50,22 @@ const ANCHO_PANEL_MAX_CM = 480;
 const ANCHO_PRINCIPAL_MAX_CM = 360;
 const FONDO_PRINCIPAL_CM = 92;
 const SILLA_FONDO_CM = 45;
-/** De la pared (más lo que ocupa el fondo de fotos) al centro de las sillas de la mesa principal: entero, para poder leer la profundidad de vuelta de la escena. */
-export const SILLAS_DESDE_FONDO_CM = 23;
 const ANCHO_POSTRES_CM = 194;
 const FONDO_POSTRES_CM = 47;
 const DIAMETRO_TAPETE_CM = 160;
+const PISTA_MINIMA_CM = 250;
+
+/** Los invitados que caben en cualquier tipo de mesa de una sala de 30 × 30 m con todas las zonas (el tope que acepta la IA). */
+export const MAX_INVITADOS_SALON = 300;
+
+export type RolElemento = "mesa" | "ancla" | "silla";
 
 export type ElementoSalon = {
+  /** Cómo se llama la pieza (el id real lo asigna quien la pone en la escena, sin repetir). */
   id: string;
   /** `null` en las mesas de invitados. */
   zona: ZonaSalon | null;
+  rol: RolElemento;
   mueble: string;
   anchoCm: number;
   fondoCm: number;
@@ -64,7 +80,7 @@ export type ParamsSalon = {
   invitados: number;
   mesa: TipoMesaSalon;
   zonas: readonly ZonaSalon[];
-  /** Sala fija (la pedida o la que ya hay). Si falta, la más chica que cabe con proporción de salón (largo : ancho entre 0,8 y 1,6). */
+  /** Sala fija (la pedida o la que ya hay). Si falta, la más chica que cabe con proporción de salón (largo : ancho entre 0,7 y 1,8). */
   sala?: { anchoCm: number; fondoCm: number };
   /** Con `sala` ausente: no baja de estas medidas (agrandar un salón sin encogerlo). */
   salaMinima?: { anchoCm: number; fondoCm: number };
@@ -72,16 +88,19 @@ export type ParamsSalon = {
   reservas?: readonly RectCm[];
   /** Lo que ocupa el fondo de fotos desde la pared (cm); más que el de siempre si hay una decoración propia delante del panel. */
   profundidadFondoCm?: number;
-  /** Diámetro (cm) de la pista, si ya existe una: así agregar o quitar invitados no la cambia ni mueve las mesas. Si falta, sale de los invitados. */
+  /** Diámetro (cm) de la pista, si ya existe una: agregar o quitar invitados no la cambia ni mueve las mesas. Si falta, sale de los invitados. */
   pistaCm?: number;
   /** Altura de la sala, para que el panel no la pase. */
   altoSalaCm?: number;
 };
 
+export type Celda = { xCm: number; zCm: number };
+
 export type DistribucionSalon = {
   sala: { anchoCm: number; fondoCm: number };
   elementos: ElementoSalon[];
-  /** Mesas de invitados que hacen falta, que caben y que se colocaron. */
+  /** Todos los sitios de mesa que hay, en el orden en que se llenan (los primeros `mesasNecesarias` llevan mesa en `elementos`). */
+  celdas: Celda[];
   mesasNecesarias: number;
   capacidad: number;
   faltan: number;
@@ -89,46 +108,54 @@ export type DistribucionSalon = {
   sinLugar: ZonaSalon[];
 };
 
-type Celda = { x: number; z: number };
-
-/** La pista de baile: ~0,7 m² por bailarín (45 % de los invitados), entre 3 y 5 m de diámetro. */
-export const diametroPista = (invitados: number): number => Math.min(500, Math.max(300, Math.round((Math.sqrt((invitados * 0.45 * 0.7 * 4) / Math.PI) * 100) / 10) * 10));
+/** La pista de baile: 0,2 m² por invitado (la mitad baila con ~0,4 m² cada uno), entre 3 y 4,5 m de diámetro. */
+export const diametroPista = (invitados: number): number => Math.min(450, Math.max(300, Math.round((Math.sqrt((invitados * 0.2 * 4) / Math.PI) * 100) / 10) * 10));
 
 export const mesasNecesarias = (invitados: number, mesa: TipoMesaSalon): number => (invitados > 0 ? Math.ceil(invitados / MESAS_SALON[mesa].puestos) : 0);
 
-/** Las celdas libres de la cuadrícula de mesas, en el orden en que se llenan: por fila, del centro hacia los lados. */
+/** Los tramos de [a, b] que quedan al quitar [x0, x1]. */
+const sinTramo = (tramos: ReadonlyArray<readonly [number, number]>, x0: number, x1: number): Array<[number, number]> =>
+  tramos.flatMap(([a, b]): Array<[number, number]> => (x1 <= a || x0 >= b ? [[a, b]] : [...(x0 > a ? [[a, x0] as [number, number]] : []), ...(x1 < b ? [[x1, b] as [number, number]] : [])]));
+
+/** Los sitios de mesa de una sala, fila por fila: en cada fila, lo que deja libre lo bloqueado, con las mesas repartidas parejo en cada tramo. */
 function celdasLibres(anchoSala: number, mesa: TipoMesaSalon, z0: number, z1: number, bloqueos: readonly RectCm[]): Celda[] {
   const { anchoCm, fondoCm } = MESAS_SALON[mesa];
-  const columnas = Math.floor((anchoSala - 2 * MARGEN_CM + PASILLO_CM) / (anchoCm + PASILLO_CM));
   const filas = Math.floor((z1 - z0 + PASILLO_CM) / (fondoCm + PASILLO_CM));
   const celdas: Celda[] = [];
   for (let j = 0; j < filas; j++) {
     const z = z0 + fondoCm / 2 + j * (fondoCm + PASILLO_CM);
+    let tramos: Array<[number, number]> = [[-anchoSala / 2 + MARGEN_CM, anchoSala / 2 - MARGEN_CM]];
+    for (const b of bloqueos) if (b.z0 < z + fondoCm / 2 && b.z1 > z - fondoCm / 2) tramos = sinTramo(tramos, b.x0, b.x1);
     const fila: Celda[] = [];
-    for (let i = 0; i < columnas; i++) {
-      const x = (i - (columnas - 1) / 2) * (anchoCm + PASILLO_CM);
-      if (!bloqueos.some((b) => seCruzan(rectDe(x, z, anchoCm, fondoCm), b))) fila.push({ x, z });
+    for (const [a, b] of tramos) {
+      const largo = b - a, k = Math.floor((largo + PASILLO_CM) / (anchoCm + PASILLO_CM));
+      if (k < 1) continue;
+      const ocupa = k * anchoCm + (k - 1) * PASILLO_CM;
+      for (let i = 0; i < k; i++) fila.push({ xCm: a + (largo - ocupa) / 2 + anchoCm / 2 + i * (anchoCm + PASILLO_CM), zCm: z });
     }
-    celdas.push(...fila.sort((a, b) => Math.abs(a.x) - Math.abs(b.x) || a.x - b.x));
+    celdas.push(...fila.sort((u, v) => Math.abs(u.xCm) - Math.abs(v.xCm) || u.xCm - v.xCm));
   }
   return celdas;
 }
 
-/** Todo menos las mesas de invitados, y las celdas libres para ellas, de una sala de esas medidas. */
-function planear(anchoSala: number, fondoSala: number, p: ParamsSalon): { zonas: ElementoSalon[]; celdas: Celda[]; sinLugar: ZonaSalon[] } {
+type Plan = { zonas: ElementoSalon[]; celdas: Celda[]; sinLugar: ZonaSalon[] };
+
+/** Todo menos las mesas de invitados, y los sitios libres para ellas, de una sala de esas medidas. */
+function planear(anchoSala: number, fondoSala: number, p: ParamsSalon): Plan {
   const tiene = (z: ZonaSalon) => p.zonas.includes(z);
   const zonas: ElementoSalon[] = [];
   const bloqueos: RectCm[] = (p.reservas ?? []).map((r) => inflar(r, 40));
   const sinLugar: ZonaSalon[] = [];
   const zFondo = -fondoSala / 2;
   const profundidad = p.profundidadFondoCm ?? PROFUNDIDAD_FONDO_CM;
+  const mesa = MESAS_SALON[p.mesa];
 
   const anchoPanel = Math.min(ANCHO_PANEL_MAX_CM, anchoSala - 200);
   const conFondo = tiene("fondo_fotos") && anchoPanel >= 150;
   if (tiene("fondo_fotos") && !conFondo) sinLugar.push("fondo_fotos");
   if (conFondo) {
     const alto = Math.min(300, (p.altoSalaCm ?? 450) - 40);
-    zonas.push({ id: PREFIJO_ZONA.fondo_fotos, zona: "fondo_fotos", mueble: "marco_tela", anchoCm: anchoPanel, fondoCm: 34, altoCm: alto, xCm: 0, zCm: zFondo + PANEL_RETIRO_CM, giroGrados: 0 });
+    zonas.push({ id: "salon-fondo", zona: "fondo_fotos", rol: "ancla", mueble: "marco_tela", anchoCm: anchoPanel, fondoCm: 34, altoCm: alto, xCm: 0, zCm: zFondo + PANEL_RETIRO_CM, giroGrados: 0 });
   }
 
   const anchoPrincipal = Math.min(ANCHO_PRINCIPAL_MAX_CM, anchoSala - 2 * MARGEN_CM);
@@ -139,26 +166,33 @@ function planear(anchoSala: number, fondoSala: number, p: ParamsSalon): { zonas:
     const zSillas = zFondo + (conFondo ? profundidad : 60) + SILLAS_DESDE_FONDO_CM;
     const zMesa = zSillas + SILLA_FONDO_CM / 2 + FONDO_PRINCIPAL_CM / 2 + 6;
     finPrincipal = zMesa + FONDO_PRINCIPAL_CM / 2;
-    zonas.push({ id: PREFIJO_ZONA.mesa_principal, zona: "mesa_principal", mueble: "mesa_imperial_mantel", anchoCm: anchoPrincipal, fondoCm: FONDO_PRINCIPAL_CM, altoCm: 75, xCm: 0, zCm: zMesa, giroGrados: 0 });
+    zonas.push({ id: "salon-principal", zona: "mesa_principal", rol: "ancla", mueble: "mesa_imperial_mantel", anchoCm: anchoPrincipal, fondoCm: FONDO_PRINCIPAL_CM, altoCm: 75, xCm: 0, zCm: zMesa, giroGrados: 0 });
     const sillas = Math.min(8, Math.floor((anchoPrincipal - 20) / 55));
-    for (let i = 0; i < sillas; i++) zonas.push({ id: `${PREFIJO_ZONA.mesa_principal}-silla-${i + 1}`, zona: "mesa_principal", mueble: "silla_tiffany", anchoCm: 45, fondoCm: SILLA_FONDO_CM, altoCm: 90, xCm: (i - (sillas - 1) / 2) * 55, zCm: zSillas, giroGrados: 0 });
+    for (let i = 0; i < sillas; i++) zonas.push({ id: `salon-principal-silla-${i + 1}`, zona: "mesa_principal", rol: "silla", mueble: "silla_tiffany", anchoCm: 45, fondoCm: SILLA_FONDO_CM, altoCm: 90, xCm: (i - (sillas - 1) / 2) * 55, zCm: zSillas, giroGrados: 0 });
   }
 
-  const zCampo = conPrincipal ? finPrincipal + 140 : conFondo ? zFondo + profundidad + 100 : zFondo + MARGEN_CM;
+  const zCampo = conPrincipal ? finPrincipal + AIRE_TRAS_PRINCIPAL_CM : conFondo ? zFondo + profundidad + 100 : zFondo + MARGEN_CM;
   const conEntrada = tiene("entrada");
   const zEntrada = fondoSala / 2 - ENTRADA_RETIRO_CM;
-  const zFinCampo = conEntrada ? fondoSala / 2 - BANDA_ENTRADA_CM : fondoSala / 2 - MARGEN_CM;
+  const zFinCampo = fondoSala / 2 - MARGEN_CM;
   if (conEntrada) {
-    if (zEntrada - DIAMETRO_TAPETE_CM / 2 > (conPrincipal ? finPrincipal : conFondo ? zFondo + profundidad : zFondo)) zonas.push({ id: PREFIJO_ZONA.entrada, zona: "entrada", mueble: "alfombra_redonda", anchoCm: DIAMETRO_TAPETE_CM, fondoCm: DIAMETRO_TAPETE_CM, altoCm: 1, xCm: 0, zCm: zEntrada, giroGrados: 0 });
-    else sinLugar.push("entrada");
+    const previo = conPrincipal ? finPrincipal : conFondo ? zFondo + profundidad : zFondo;
+    const separaArcos = !conFondo || (zEntrada + ARCO_ENTRADA_DELANTE_CM) - (zFondo + PANEL_RETIRO_CM + ARCO_FONDO_DELANTE_CM) >= DISTANCIA_MINIMA_ARCOS_CM;
+    if (zEntrada - DIAMETRO_TAPETE_CM / 2 > previo && separaArcos) {
+      bloqueos.push({ x0: -ANCHO_PASILLO_ENTRADA_CM / 2, x1: ANCHO_PASILLO_ENTRADA_CM / 2, z0: zEntrada - DIAMETRO_TAPETE_CM / 2 - MARGEN_CM, z1: fondoSala / 2 });
+      zonas.push({ id: "salon-entrada", zona: "entrada", rol: "ancla", mueble: "alfombra_redonda", anchoCm: DIAMETRO_TAPETE_CM, fondoCm: DIAMETRO_TAPETE_CM, altoCm: 1, xCm: 0, zCm: zEntrada, giroGrados: 0 });
+    } else sinLugar.push("entrada");
   }
 
   if (tiene("pista")) {
     const d = Math.min(p.pistaCm ?? diametroPista(p.invitados), anchoSala - 2 * MARGEN_CM, zFinCampo - zCampo);
-    if (d >= 250) {
-      const zc = zCampo + d / 2;
-      zonas.push({ id: PREFIJO_ZONA.pista, zona: "pista", mueble: "alfombra_redonda", anchoCm: d, fondoCm: d, altoCm: 1, xCm: 0, zCm: zc, giroGrados: 0 });
-      bloqueos.push(inflar(rectDe(0, zc, d, d), MARGEN_CM));
+    if (d >= PISTA_MINIMA_CM) {
+      // La pista queda en las primeras filas, con mesas a sus lados: baja hasta centrarse en ellas sin acercarse a menos de 90 cm de la fila de abajo.
+      const paso = mesa.fondoCm + PASILLO_CM;
+      const filas = Math.ceil((d + MARGEN_CM) / paso);
+      const z0 = zCampo + Math.min(70, Math.max(0, filas * paso - MARGEN_CM - d));
+      zonas.push({ id: "salon-pista", zona: "pista", rol: "ancla", mueble: "alfombra_redonda", anchoCm: d, fondoCm: d, altoCm: 1, xCm: 0, zCm: z0 + d / 2, giroGrados: 0 });
+      bloqueos.push({ x0: -d / 2 - MARGEN_CM, x1: d / 2 + MARGEN_CM, z0: z0 - MARGEN_CM, z1: z0 + d + MARGEN_CM });
     } else sinLugar.push("pista");
   }
 
@@ -166,7 +200,7 @@ function planear(anchoSala: number, fondoSala: number, p: ParamsSalon): { zonas:
     const zc = zCampo + ANCHO_POSTRES_CM / 2 + 20;
     const xc = -anchoSala / 2 + 40 + FONDO_POSTRES_CM / 2;
     if (zc + ANCHO_POSTRES_CM / 2 < zFinCampo && anchoSala >= 500) {
-      zonas.push({ id: PREFIJO_ZONA.mesa_postres, zona: "mesa_postres", mueble: "mesa_postres_mantel", anchoCm: ANCHO_POSTRES_CM, fondoCm: FONDO_POSTRES_CM, altoCm: 90, xCm: xc, zCm: zc, giroGrados: 90 });
+      zonas.push({ id: "salon-postres", zona: "mesa_postres", rol: "ancla", mueble: "mesa_postres_mantel", anchoCm: ANCHO_POSTRES_CM, fondoCm: FONDO_POSTRES_CM, altoCm: 90, xCm: xc, zCm: zc, giroGrados: 90 });
       bloqueos.push({ x0: -anchoSala / 2, x1: xc + FONDO_POSTRES_CM / 2 + MARGEN_CM, z0: zc - ANCHO_POSTRES_CM / 2 - MARGEN_CM, z1: zc + ANCHO_POSTRES_CM / 2 + MARGEN_CM });
     } else sinLugar.push("mesa_postres");
   }
@@ -174,25 +208,20 @@ function planear(anchoSala: number, fondoSala: number, p: ParamsSalon): { zonas:
   return { zonas, celdas: celdasLibres(anchoSala, p.mesa, zCampo, zFinCampo, bloqueos), sinLugar };
 }
 
-const redondear100 = (n: number) => Math.round(n / 100) * 100;
+const redondear50 = (n: number) => Math.ceil(n / 50) * 50;
 
 /** La sala más chica (en área, con proporción de salón) donde caben las mesas pedidas. Si ninguna alcanza, la máxima. */
 function derivarSala(p: ParamsSalon, necesarias: number): { anchoCm: number; fondoCm: number } {
   const candidatas: Array<{ a: number; f: number }> = [];
-  for (let a = Math.max(SALA_MINIMA_CM, redondear100(p.salaMinima?.anchoCm ?? 0)); a <= SALA_MAXIMA_CM; a += 100) {
-    for (let f = Math.max(SALA_MINIMA_CM, redondear100(p.salaMinima?.fondoCm ?? 0)); f <= SALA_MAXIMA_CM; f += 100) {
-      if (f / a >= 0.8 && f / a <= 1.6) candidatas.push({ a, f });
+  for (let a = Math.max(SALA_MINIMA_CM, redondear50(p.salaMinima?.anchoCm ?? 0)); a <= SALA_MAXIMA_CM; a += 50) {
+    for (let f = Math.max(SALA_MINIMA_CM, redondear50(p.salaMinima?.fondoCm ?? 0)); f <= SALA_MAXIMA_CM; f += 50) {
+      if (f / a >= 0.7 && f / a <= 1.8) candidatas.push({ a, f });
     }
   }
   const costo = (c: { a: number; f: number }) => c.a * c.f * (1 + 0.3 * Math.abs(c.f / c.a - 1.25));
   candidatas.sort((x, y) => costo(x) - costo(y));
   const hallada = candidatas.find((c) => planear(c.a, c.f, p).celdas.length >= necesarias);
   return hallada ? { anchoCm: hallada.a, fondoCm: hallada.f } : { anchoCm: SALA_MAXIMA_CM, fondoCm: SALA_MAXIMA_CM };
-}
-
-/** Cuántas mesas de invitados caben en una sala de esas medidas con esas zonas. */
-export function capacidadSalon(p: ParamsSalon & { sala: { anchoCm: number; fondoCm: number } }): number {
-  return planear(p.sala.anchoCm, p.sala.fondoCm, p).celdas.length;
 }
 
 /** Distribuye el salón. Determinista: los mismos parámetros dan siempre lo mismo. */
@@ -203,7 +232,10 @@ export function distribuirSalon(p: ParamsSalon): DistribucionSalon {
   const colocadas = Math.min(necesarias, celdas.length);
   const mesa = MESAS_SALON[p.mesa];
   const mesas: ElementoSalon[] = celdas.slice(0, colocadas).map((c, k) => ({
-    id: idMesa(k + 1), zona: null, mueble: mesa.mueble, anchoCm: mesa.anchoCm, fondoCm: mesa.fondoCm, altoCm: mesa.altoCm, xCm: c.x, zCm: c.z, giroGrados: 0,
+    id: `salon-mesa-${String(k + 1).padStart(2, "0")}`, zona: null, rol: "mesa", mueble: mesa.mueble, anchoCm: mesa.anchoCm, fondoCm: mesa.fondoCm, altoCm: mesa.altoCm, xCm: c.xCm, zCm: c.zCm, giroGrados: 0,
   }));
-  return { sala, elementos: [...zonas, ...mesas], mesasNecesarias: necesarias, capacidad: celdas.length, faltan: necesarias - colocadas, sinLugar };
+  return { sala, elementos: [...zonas, ...mesas], celdas, mesasNecesarias: necesarias, capacidad: celdas.length, faltan: necesarias - colocadas, sinLugar };
 }
+
+/** El rectángulo del piso de un elemento (con su giro). */
+export const rectDeElemento = (e: ElementoSalon): RectCm => (Math.abs(e.giroGrados) % 180 === 90 ? rectDe(e.xCm, e.zCm, e.fondoCm, e.anchoCm) : rectDe(e.xCm, e.zCm, e.anchoCm, e.fondoCm));

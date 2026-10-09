@@ -2,17 +2,18 @@ import { z } from "zod";
 import type { Escena } from "./escena";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
 import { coloresDeMuebles } from "./herramientas-escena-salon";
-import { armarSalon } from "./salon-aplicar";
+import { armarSalon } from "./salon-armar";
 import { decorarSalon, ESTILOS_SALON, type EstiloSalon } from "./salon-decoracion";
-import { mesasNecesarias, TIPOS_MESA_SALON } from "./salon-evento";
-import { esDeSalon, ZONAS_SALON, zonasDeEscena, type ZonaSalon } from "./salon-zonas";
+import { MAX_INVITADOS_SALON, mesasNecesarias, TIPOS_MESA_SALON } from "./salon-evento";
+import { vivas } from "./salon-registro";
+import { ZONAS_SALON, zonasDeEscena, type ZonaSalon } from "./salon-zonas";
 import { MAX_NODOS } from "./limites-escena";
 import { fallar } from "./herramientas-escena-colores";
 
 /**
  * **planificar_evento** (REQ-008): el pedido completo («boda de 120 en un salón, blanco y dorado») en UNA llamada. Elige la
  * escala (`alcance`): `solo_decoracion` (fondo de fotos y entrada, sin mesas), `rincon` (unas pocas mesas con postres y fondo de
- * fotos) o `salon` (la sala completa). Arma el salón (salon-aplicar.ts), lo decora con globos de los colores del pedido
+ * fotos) o `salon` (la sala completa). Arma el salón (salon-armar.ts), lo decora con globos de los colores del pedido
  * (salon-decoracion.ts) y, si están registradas, llama a las herramientas que decoran por zona (centros de mesa y techo, de otra rama).
  * Después el modelo afina con las herramientas de siempre y ajustar_salon / mover_zona / quitar_zona.
  */
@@ -28,7 +29,7 @@ export const HERRAMIENTAS_POR_ZONA = ["decorar_mesas", "decorar_techo"] as const
 const EventoSchema = z.object({
   tipo_evento: z.enum(TIPOS_EVENTO).describe("boda y quince: salón completo con mesa principal y pista; corporativo: sin pista ni postres; cumpleanos, bautizo y baby_shower: fondo de fotos, postres y entrada"),
   alcance: z.enum(ALCANCES_EVENTO).optional().describe("solo_decoracion: fondo de fotos y entrada, sin mesas; rincon: pocas mesas con postres y fondo de fotos; salon: la sala completa. Si falta: sin invitados = solo_decoracion, hasta 40 = rincon, más = salon"),
-  invitados: z.number().int().min(1).max(400).optional().describe("invitados (50–200 es lo típico de un salón); no hace falta con solo_decoracion"),
+  invitados: z.number().int().min(1).max(MAX_INVITADOS_SALON).optional().describe("invitados (50–200 es lo típico de un salón); no hace falta con solo_decoracion"),
   colores: z.array(z.string().min(1).max(40)).max(3).optional().describe("los colores del evento («blanco», «dorado»): el primero es el mantel y los globos principales, el segundo las sillas y los acentos"),
   estilo: z.enum(ESTILOS_SALON).optional().describe("organico (globos de varios tamaños, por defecto) o clasico (cuartetos)"),
   mesa: z.enum(TIPOS_MESA_SALON).optional().describe("redonda8 (por defecto), redonda10 o imperial"),
@@ -85,13 +86,13 @@ function planificar(escena: Escena, argumentos: unknown, registro: Registro): { 
   const mesa = a.mesa ?? "redonda8";
   if (alcance === "rincon" && mesasNecesarias(invitados, mesa) > 8) notas.push(`Un rincón lleva pocas mesas y son ${mesasNecesarias(invitados, mesa)}: para más de 8 mesas usa alcance salon.`);
   if (alcance === "solo_decoracion" && a.invitados !== undefined) notas.push("Con solo_decoracion no se arman mesas: ignoré los invitados.");
-  const habiaPropias = escena.nodos.some((n) => !esDeSalon(n.id));
 
   const salon = armarSalon(escena, {
     invitados, mesa, anchoCm: a.ancho_cm, fondoCm: a.fondo_cm, zonas: zonasDelEvento(a.tipo_evento, alcance), colores: coloresDeMuebles(a.colores, notas), reemplazar: a.reemplazar,
   }, notas);
-  // Con decoración propia, esa es el fondo de fotos (armarSalon la dejó delante del panel): no se le suma otra encima.
-  const decorada = decorarSalon(salon.escena, zonasDeEscena(salon.escena), { colores: a.colores ?? [], estilo, fondo: !habiaPropias, entrada: true }, notas);
+  // Si el salón conservó decoración tuya en el fondo de fotos, esa es el fondo: no se le suma otro arco encima.
+  const adoptada = vivas(salon.escena).some((v) => v.info.rol === "adoptada");
+  const decorada = decorarSalon(salon.escena, zonasDeEscena(salon.escena), { colores: a.colores ?? [], estilo, fondo: !adoptada, entrada: true }, notas);
   if (decorada.nodos.length > MAX_NODOS) fallar(`El evento sumaría ${decorada.nodos.length} piezas y el máximo es ${MAX_NODOS}: usa menos zonas o menos invitados.`);
   const final = invitados > 0 ? decorarPorZona(decorada, registro, { colores: a.colores ?? [], estilo }, notas) : decorada;
   const piezasNuevas = final.nodos.length - escena.nodos.length;

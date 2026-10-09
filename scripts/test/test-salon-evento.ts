@@ -16,8 +16,9 @@ import { aplicarHerramienta, DECLARACIONES_ESCENA } from "../../src/lib/globos3d
 import { crearPlanificarEvento } from "../../src/lib/globos3d/herramientas-escena-evento";
 import { HERRAMIENTAS_SALON } from "../../src/lib/globos3d/herramientas-escena-salon";
 import { MAX_NODOS } from "../../src/lib/globos3d/limites-escena";
-import { distribuirSalon, MESAS_SALON, PASILLO_CM, TIPOS_MESA_SALON, type ElementoSalon } from "../../src/lib/globos3d/salon-evento";
-import { esDeSalon, esMesaDeInvitados, rectDe, seCruzan, ZONAS_SALON, zonasDeEscena, type RectCm } from "../../src/lib/globos3d/salon-zonas";
+import { distribuirSalon, ENTRADA_RETIRO_CM, MESAS_SALON, PASILLO_CM, TIPOS_MESA_SALON, type ElementoSalon } from "../../src/lib/globos3d/salon-evento";
+import { esDelSalon, mesasVivas } from "../../src/lib/globos3d/salon-registro";
+import { rectDe, seCruzan, ZONAS_SALON, zonasDeEscena, zonasPresentes, type RectCm } from "../../src/lib/globos3d/salon-zonas";
 
 let pruebas = 0;
 const prueba = (nombre: string, fn: () => void) => { fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
@@ -33,15 +34,17 @@ const falla = (escena: Escena, nombre: string, args: Record<string, unknown>) =>
   return r.ok ? "" : r.error;
 };
 const cajas = (escena: Escena): Map<string, RectCm> => new Map(armarEscena(escena).porNodo.filter((n) => n.copias > 0).map((n) => [n.id, { x0: n.caja.min.x, x1: n.caja.max.x, z0: n.caja.min.z, z1: n.caja.max.z }]));
-const mesas = (escena: Escena) => escena.nodos.filter((n) => esMesaDeInvitados(n.id));
+const mesas = (escena: Escena) => mesasVivas(escena).map((v) => v.nodo);
+const hayZona = (escena: Escena, zona: (typeof ZONAS_SALON)[number]) => zonasPresentes(escena).includes(zona);
+const delSalon = (escena: Escena) => escena.nodos.filter((n) => esDelSalon(escena, n.id));
 const dentro = (r: RectCm, s: Pick<Escena["sala"], "anchoCm" | "fondoCm">, tol = 1) => r.x0 >= -s.anchoCm / 2 - tol && r.x1 <= s.anchoCm / 2 + tol && r.z0 >= -s.fondoCm / 2 - tol && r.z1 <= s.fondoCm / 2 + tol;
 const hueco = (a: RectCm, b: RectCm) => Math.max(Math.max(a.x0, b.x0) - Math.min(a.x1, b.x1), Math.max(a.z0, b.z0) - Math.min(a.z1, b.z1));
 const TODAS = [...ZONAS_SALON];
 /** Ninguna pieza de una zona se encima con una pieza de otra (las de una misma zona sí se tocan: sillas con su mesa, arco con su panel). */
 function sinEncimar(escena: Escena) {
   const c = cajas(escena);
-  const zonaDe = (id: string) => (esMesaDeInvitados(id) ? id : id.split("-")[1]!);
-  const ids = [...c.keys()].filter(esDeSalon);
+  const zonaDe = (id: string) => { const i = escena.salon!.piezas[id]!; return i.zona === "mesas" ? id : i.zona; };
+  const ids = [...c.keys()].filter((id) => escena.salon?.piezas[id] !== undefined);
   ids.forEach((a, i) => { for (const b of ids.slice(i + 1)) if (zonaDe(a) !== zonaDe(b)) assert.ok(!seCruzan(c.get(a)!, c.get(b)!), `${a} se encima con ${b}`); });
 }
 
@@ -98,7 +101,7 @@ prueba("distribuirSalon: todas las zonas presentes, dentro de la sala y la mesa 
 prueba("distribuirSalon es determinista, y quitar invitados quita las últimas mesas sin mover las demás", () => {
   const a = distribuirSalon({ invitados: 120, mesa: "redonda8", zonas: TODAS });
   assert.deepEqual(distribuirSalon({ invitados: 120, mesa: "redonda8", zonas: TODAS }), a);
-  const menos = distribuirSalon({ invitados: 60, mesa: "redonda8", zonas: TODAS, sala: a.sala });
+  const menos = distribuirSalon({ invitados: 60, mesa: "redonda8", zonas: TODAS, sala: a.sala, pistaCm: a.elementos.find((e) => e.zona === "pista")!.anchoCm });
   const mesasA = a.elementos.filter((e) => e.zona === null), mesasB = menos.elementos.filter((e) => e.zona === null);
   assert.equal(mesasB.length, 8);
   assert.deepEqual(mesasB, mesasA.slice(0, 8), "las 8 primeras no se mueven");
@@ -108,7 +111,7 @@ prueba("una sala fija que no alcanza falla claro (faltan mesas) y no se desborda
   const d = distribuirSalon({ invitados: 200, mesa: "redonda8", zonas: TODAS, sala: { anchoCm: 800, fondoCm: 1000 } });
   assert.ok(d.faltan > 0 && d.capacidad < d.mesasNecesarias);
   assert.equal(d.elementos.filter((e) => e.zona === null).length, d.capacidad);
-  const tope = distribuirSalon({ invitados: 400, mesa: "redonda8", zonas: TODAS });
+  const tope = distribuirSalon({ invitados: 1000, mesa: "redonda8", zonas: TODAS });
   assert.deepEqual(tope.sala, { anchoCm: 3000, fondoCm: 3000 }, "si ninguna sala alcanza, la máxima");
 });
 
@@ -192,10 +195,13 @@ prueba("escala solo decoración: sin mesas de invitados y sin agrandar la sala",
   assert.equal(mesas(r.escena).length, 0);
   assert.deepEqual([r.escena.sala.anchoCm, r.escena.sala.fondoCm], [SALA_INICIAL.anchoCm, SALA_INICIAL.fondoCm]);
   const z = zonasDeEscena(r.escena);
-  assert.ok(z.fondo && z.entrada && !z.pista && !z.mesaPrincipal);
-  for (const id of ["salon-fondo-arco", "salon-fondo-columna-1", "salon-entrada-arco"]) assert.ok(r.escena.nodos.some((n) => n.id === id), id);
-  const c = cajas(r.escena);
-  for (const [id, caja] of c) assert.ok(dentro(caja, r.escena.sala, 5), `${id} fuera de la sala`);
+  assert.ok(z.fondo && !z.entrada && !z.pista && !z.mesaPrincipal, "en 6 × 5 m el arco de la entrada taparía el del fondo: no se arma");
+  assert.match(r.resumen, /entrada no cabe/);
+  for (const id of ["salon-fondo-arco", "salon-fondo-columna"]) assert.ok(r.escena.nodos.some((n) => n.id === id), id);
+  for (const [id, caja] of cajas(r.escena)) assert.ok(dentro(caja, r.escena.sala, 5), `${id} fuera de la sala`);
+  const grande = herramienta(vacia(), "planificar_evento", { tipo_evento: "boda", alcance: "solo_decoracion", ancho_cm: 900, fondo_cm: 1000 });
+  assert.ok(zonasDeEscena(grande.escena).entrada && grande.escena.nodos.some((n) => n.id === "salon-entrada-arco"));
+  for (const [id, caja] of cajas(grande.escena)) assert.ok(dentro(caja, grande.escena.sala, 5), `${id} fuera de la sala`);
 });
 
 prueba("escala rincón: un rincón de postres suelto y un cumpleaños de 20 con 3 mesas", () => {
@@ -205,7 +211,7 @@ prueba("escala rincón: un rincón de postres suelto y un cumpleaños de 20 con 
   const cumple = herramienta(vacia(), "planificar_evento", { tipo_evento: "cumpleanos", invitados: 20, colores: ["rosa"] });
   assert.equal(mesas(cumple.escena).length, 3);
   const z = zonasDeEscena(cumple.escena);
-  assert.ok(z.fondo && z.postres && !z.pista && !z.mesaPrincipal);
+  assert.ok(z.fondo && hayZona(cumple.escena, "mesa_postres") && !z.pista && !z.mesaPrincipal);
 });
 
 prueba("escala salón: 60 invitados (mediano) y 180 con mesas imperiales (grande) caben y se arman completos", () => {
@@ -215,7 +221,7 @@ prueba("escala salón: 60 invitados (mediano) y 180 con mesas imperiales (grande
   assert.equal(mesas(grande.escena).length, 18);
   for (const e of [mediano.escena, grande.escena]) {
     const z = zonasDeEscena(e);
-    assert.ok(z.mesaPrincipal && z.pista && z.postres && z.fondo && z.entrada);
+    assert.ok(z.mesaPrincipal && z.pista && hayZona(e, "mesa_postres") && z.fondo && z.entrada);
     assert.ok(e.nodos.length <= MAX_NODOS);
     sinEncimar(e);
     for (const [id, caja] of cajas(e)) assert.ok(dentro(caja, e.sala, 5), `${id} fuera de la sala`);
@@ -232,8 +238,8 @@ prueba("ajustar_salon 120 → 60 quita las últimas mesas sin mover las demás n
   assert.equal(mesas(r.escena).length, 8);
   const antes = mesas(base).slice(0, 8);
   assert.deepEqual(mesas(r.escena), antes, "las 8 de adelante quedan idénticas");
-  for (const n of base.nodos.filter((x) => !esDeSalon(x.id))) assert.deepEqual(r.escena.nodos.find((x) => x.id === n.id), n, `${n.id} cambió`);
-  for (const n of base.nodos.filter((x) => esDeSalon(x.id) && !esMesaDeInvitados(x.id))) assert.deepEqual(r.escena.nodos.find((x) => x.id === n.id), n, `${n.id} cambió`);
+  for (const n of base.nodos.filter((x) => !esDelSalon(base, x.id))) assert.deepEqual(r.escena.nodos.find((x) => x.id === n.id), n, `${n.id} cambió`);
+  for (const n of delSalon(base).filter((x) => !mesas(base).includes(x))) assert.deepEqual(r.escena.nodos.find((x) => x.id === n.id), n, `${n.id} cambió`);
   assert.deepEqual(r.escena.sala, base.sala, "la sala no cambia");
   assert.match(r.resumen, /Quité 7 mesa/);
 });
@@ -259,7 +265,7 @@ prueba("ajustar_salon agranda la sala si las mesas no caben, y con una sala más
   assert.equal(ancha.escena.sala.anchoCm, mas.escena.sala.anchoCm + 400);
   const z = zonasDeEscena(ancha.escena);
   assert.ok(Math.abs(z.fondo!.zCm - (-ancha.escena.sala.fondoCm / 2 + 30)) < 2, "el panel sigue pegado a la pared del fondo");
-  assert.ok(Math.abs(z.entrada!.zCm - (ancha.escena.sala.fondoCm / 2 - 200)) < 2, "la entrada sigue al frente");
+  assert.ok(Math.abs(z.entrada!.zCm - (ancha.escena.sala.fondoCm / 2 - ENTRADA_RETIRO_CM)) < 2, "la entrada sigue al frente");
   for (const [id, caja] of cajas(ancha.escena)) assert.ok(dentro(caja, ancha.escena.sala, 5), `${id} fuera`);
   assert.match(falla(mas.escena, "ajustar_salon", { ancho_cm: 800, fondo_cm: 900 }), /caben/);
 });
@@ -275,8 +281,8 @@ prueba("ajustar_salon agrega una zona que falta; mover_zona y quitar_zona sin re
   assert.ok(zonasDeEscena(conPista.escena).pista);
 
   const movida = herramienta(completo, "mover_zona", { zona: "mesa_postres", z_cm: 300 });
-  const p = zonasDeEscena(movida.escena).postres!;
-  assert.ok(Math.abs((p.caja.z0 + p.caja.z1) / 2 - 300) < 1);
+  const p = movida.escena.nodos.find((n) => n.id === "salon-postres")!.colocacion;
+  assert.ok(p.en === "piso" && Math.abs(p.zCm - 300) < 1);
   assert.match(falla(completo, "mover_zona", { zona: "pista", x_cm: 99999 }), /se saldría/);
   assert.match(falla(completo, "mover_zona", { zona: "pista" }), /Dime a dónde/);
   // El ajuste siguiente respeta dónde quedó lo que el usuario movió.
@@ -294,7 +300,7 @@ prueba("lo que está sobre una mesa que se quita se va con ella; lo demás del u
   const r = herramienta({ ...base, nodos: [...base.nodos, centro] }, "ajustar_salon", { invitados: 8 });
   assert.ok(!r.escena.nodos.some((n) => n.id === "centro-x"));
   assert.match(r.resumen, /1 pieza\(s\) que estaban sobre ellas/);
-  assert.equal(r.escena.nodos.filter((n) => !esDeSalon(n.id)).length, 3);
+  assert.equal(r.escena.nodos.filter((n) => !esDelSalon(r.escena, n.id)).length, 3);
 });
 
 prueba("sin salón armado, ajustar / mover / quitar fallan claro", () => {
@@ -313,8 +319,8 @@ prueba("planificar_evento: boda de 120 en blanco y dorado, de una llamada, con a
   const e = r.escena;
   assert.equal(mesas(e).length, 15);
   const z = zonasDeEscena(e);
-  assert.ok(z.mesaPrincipal && z.pista && z.postres && z.fondo && z.entrada);
-  for (const id of ["salon-fondo-arco", "salon-fondo-columna-1", "salon-fondo-columna-2", "salon-entrada-arco"]) assert.ok(e.nodos.some((n) => n.id === id), `falta ${id}`);
+  assert.ok(z.mesaPrincipal && z.pista && hayZona(e, "mesa_postres") && z.fondo && z.entrada);
+  for (const id of ["salon-fondo-arco", "salon-fondo-columna", "salon-fondo-columna-2", "salon-entrada-arco"]) assert.ok(e.nodos.some((n) => n.id === id), `falta ${id}`);
   const arco = e.nodos.find((n) => n.id === "salon-entrada-arco")!.pieza;
   assert.equal(arco.tipo, "arco_organico");
   if (arco.tipo === "arco_organico") assert.deepEqual(arco.arco.colores.map((c) => c.codigo), ["005", "570"], "blanco y dorado del resolvedor de colores");
@@ -327,9 +333,9 @@ prueba("planificar_evento: boda de 120 en blanco y dorado, de una llamada, con a
 });
 
 prueba("planificar_evento en estilo clásico arma arco y columnas de cuartetos", () => {
-  const r = herramienta(vacia(), "planificar_evento", { tipo_evento: "boda", alcance: "solo_decoracion", estilo: "clasico", colores: ["rosa", "blanco"] });
+  const r = herramienta(vacia(), "planificar_evento", { tipo_evento: "boda", alcance: "solo_decoracion", estilo: "clasico", colores: ["rosa", "blanco"], ancho_cm: 900, fondo_cm: 1000 });
   assert.equal(r.escena.nodos.find((n) => n.id === "salon-entrada-arco")!.pieza.tipo, "arco");
-  assert.equal(r.escena.nodos.find((n) => n.id === "salon-fondo-columna-1")!.pieza.tipo, "columna");
+  assert.equal(r.escena.nodos.find((n) => n.id === "salon-fondo-columna")!.pieza.tipo, "columna");
 });
 
 prueba("planificar_evento sobre una decoración existente la conserva y no le suma otro arco encima", () => {

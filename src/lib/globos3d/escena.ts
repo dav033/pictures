@@ -1,6 +1,7 @@
 import { MARCA_LUZ_CALIDA } from "./luz-sala";
 import type { Vec3 } from "./modulos";
 import { armarPieza, type AnclaDePieza, type FlorDePieza, type GloboDePieza, type Pieza, type PiezaArmada } from "./piezas";
+import type { RegistroSalon } from "./salon-registro";
 import type { TuboDecoracion } from "./decoraciones";
 import { decoracionEnIngles, type MaterialDecoracion } from "./figuras";
 import { esDePie } from "./halloween";
@@ -95,7 +96,8 @@ export const HUNDIMIENTO_SOBRE_CM = 1.5;
 
 export type NodoEscena = { id: string; nombre: string; pieza: Pieza; colocacion: Colocacion };
 
-export type Escena = { sala: Sala; nodos: NodoEscena[] };
+/** `salon`: el registro del salón de eventos que armaron las herramientas de REQ-008 (qué piezas son suyas y dónde las puso; ver salon-registro.ts). */
+export type Escena = { sala: Sala; nodos: NodoEscena[]; salon?: RegistroSalon };
 
 /** Un volumen vertical de la escena (hilos de lo que cuelga del techo). */
 export type CilindroDeEscena = { base: Vec3; radioCm: number; altoCm: number; hex: string; /** De qué pieza es (el hilo se mueve con ella). */ nodo?: string };

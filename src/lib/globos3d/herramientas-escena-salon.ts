@@ -2,8 +2,9 @@ import { z } from "zod";
 import { fallar } from "./herramientas-escena-colores";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
 import { hexDeColor } from "./mobiliario-colores";
-import { ajustarSalon, armarSalon } from "./salon-aplicar";
-import { TIPOS_MESA_SALON } from "./salon-evento";
+import { ajustarSalon } from "./salon-ajustar";
+import { armarSalon } from "./salon-armar";
+import { MAX_INVITADOS_SALON, TIPOS_MESA_SALON } from "./salon-evento";
 import { moverZona, quitarZona } from "./salon-zonas-editar";
 import { ZONAS_SALON } from "./salon-zonas";
 
@@ -20,7 +21,7 @@ const Mesa = z.enum(TIPOS_MESA_SALON);
 const TEXTO_ZONAS = "mesa_principal (mesa de los novios con sillas detrás, mirando al salón), pista (pista de baile libre), mesa_postres (contra la pared izquierda), fondo_fotos (panel contra la pared del fondo, detrás de la mesa principal), entrada (tapete al frente)";
 
 const ArmarSchema = z.object({
-  invitados: z.number().int().min(0).max(400).optional().describe("cuántos invitados; las mesas salen de ahí. 0 o sin decir: solo las zonas, sin mesas de invitados"),
+  invitados: z.number().int().min(0).max(MAX_INVITADOS_SALON).optional().describe("cuántos invitados; las mesas salen de ahí. 0 o sin decir: solo las zonas, sin mesas de invitados"),
   mesa: Mesa.optional().describe("redonda8 (redonda con 8 sillas, por defecto), redonda10 (redonda de 1,8 m con 10 sillas) o imperial (larga con 10 sillas)"),
   ancho_cm: z.number().optional().describe("ancho del salón (300–3000). Si no dices ancho ni fondo: se usa la sala actual si caben las mesas, y si no se arma la más chica que cabe"),
   fondo_cm: z.number().optional().describe("fondo del salón (300–3000)"),
@@ -30,7 +31,7 @@ const ArmarSchema = z.object({
 });
 
 const AjustarSchema = z.object({
-  invitados: z.number().int().min(1).max(400).optional().describe("nuevo total de invitados: agrega o quita mesas del final de la cuadrícula; las de adelante no se mueven"),
+  invitados: z.number().int().min(1).max(MAX_INVITADOS_SALON).optional().describe("nuevo total de invitados: agrega o quita mesas del final de la cuadrícula; las de adelante no se mueven"),
   mesa: Mesa.optional().describe("cambia el tipo de todas las mesas de invitados (redonda8, redonda10, imperial), con sus colores"),
   ancho_cm: z.number().optional().describe("nuevo ancho de la sala (300–3000); cada zona se corre con su pared"),
   fondo_cm: z.number().optional().describe("nuevo fondo de la sala (300–3000)"),
