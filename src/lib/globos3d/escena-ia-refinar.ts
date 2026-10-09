@@ -92,6 +92,7 @@ export const reglasDeRonda = (ronda: number) => `COMPARACIÓN CON LA FOTO (la es
 - Si ninguna es significativa: no cambies nada, di en una frase que ya se ve como la foto y termina.
 - Si hay significativas, corrígelas de la más notoria a la menos con las herramientas normales: ajustar_tamanos (más o menos R-24/R-18/R-5…, con donde para un lado), cambiar_pieza sobre la guirnalda o columna orgánica (ancho_cm, alto_cm, grosor_cm, silueta o puntos del trazo para el recorrido y el cuerpo; colores y pesos), editar_globos, recolorear_escena, poner_remate, mover_pieza, girar_pieza, quitar_pieza o agregar_pieza. Una corrección por diferencia; no rehagas lo que ya está bien ni uses usar_preset.
 - NUNCA agregues piezas que no se ven en la foto. Lo que figura en «No se arman» no se hace.
+- Alturas: lo que en la foto cuelga de la pared (guirnaldas, letreros, metalizados, flores) se queda a su altura de la foto; NUNCA lo bajes al piso (altura 0) salvo que en la foto esté apoyado en el piso. Si algo queda tapado, muévelo de lado o hacia delante, no hacia abajo.
 - No quites ni reduzcas los globos grandes de la guirnalda para «destapar» otra pieza (letras, figuras): si la foto tiene lo grande, se queda; lo que va por delante se mueve, no se tapa a base de quitar globos. Si una diferencia no se puede corregir con estas herramientas, dilo y déjala.
 - Al terminar responde en 1 a 3 frases: qué diferencias había y qué corregiste (con los números de la verificación). Es la ronda ${ronda} de ${MAX_RONDAS_REFINAR}.`;
 
