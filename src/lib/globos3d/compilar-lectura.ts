@@ -164,7 +164,10 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
       case "racimo_piso": {
         // Un montón en el piso por delante: su pie, más abajo que la línea del piso, dice cuánto más cerca de la cámara
         // está (y por cuánto se ve más grande de lo que es).
-        const { delanteCm, factor } = profundidadEnElPiso(l, p.yPie);
+        // Sobre una mesa o un pedestal (su tope, en la foto, a la altura del pie del montón) se asienta encima, y con el tamaño y la
+        // profundidad con que se arma ese mueble: su factor manda (el pie del montón, sobre el tope, no dice su cercanía).
+        const apoyo = apoyoDeRacimo(l, p, muro, { X, Y, cm });
+        const { delanteCm, factor } = apoyo ? { delanteCm: 0, factor: apoyo.factor } : profundidadEnElPiso(l, p.yPie);
         const ancho = Math.max(30, cm(p.ancho) * factor), alto = Math.max(25, (p.yPie - p.yArriba) * H * factor);
         const g = Math.min(140, Math.max(25, Math.min(alto, ancho)));
         const pesos = pesosDeLectura(p, H);
@@ -176,8 +179,6 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, null, 0, p.mezcla).pieza : piezaDeGenerador({ tipo: "trazo", trazo });
         // Si su pie se ve más arriba de la línea del piso, no se apoya en él (un montón colgado de un aro, prendido a la estructura): va a esa altura, en el plano de la decoración.
         const alzadoCm = Y(p.yPie);
-        // Sobre una mesa o un pedestal, cuyo tope está a la altura de su pie, se asienta encima; si no, cuelga y se dice.
-        const apoyo = alzadoCm > RACIMO_ALZADO_CM ? apoyoDeRacimo(l, p, muro, { X, Y, cm }) : null;
         if (alzadoCm > RACIMO_ALZADO_CM && !apoyo) notas.push(`Pieza ${i + 1} (racimo_piso): su pie se ve ${Math.round(alzadoCm)} cm sobre la línea del piso y no hay mesa ni pedestal debajo: se cuelga en el aire, en el plano de la decoración.`);
         if (apoyo) notas.push(`Pieza ${i + 1} (racimo_piso): su pie queda a la altura del tope de ${apoyo.nombre}: se asienta encima.`);
         poner("racimo-piso", "Racimo de piso", pieza, apoyo

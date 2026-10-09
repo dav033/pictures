@@ -79,6 +79,22 @@ prueba("sobre un pedestal en primer plano (su pie más abajo que la línea del p
   }
   assert.ok(notas.some((n) => /se asienta encima/.test(n)), notas.join(" | "));
 });
+prueba("el montón sobre un pedestal en primer plano toma la escala del pedestal, no la de la pared (el mismo montón colgado se ve más grande)", () => {
+  const pedestal: PiezaLeida = { tipo: "fondo", id: "pedestales", x: 0.3, yBase: 0.9, ancho: 0.2, alto: 0.3, colores: blanco, cajas: [{ x: 0.3, yBase: 0.9, ancho: 0.2, alto: 0.3 }] };
+  const ancho = (piezas: PiezaLeida[]) => { const c = caja(lectura(piezas), "racimo-piso"); return c.max.x - c.min.x; };
+  const encima = ancho([pedestal, monton(0.6)]);
+  const colgado = ancho([monton(0.6)]);
+  assert.ok(encima < colgado * 0.95, `encima ${encima.toFixed(0)} cm, colgado ${colgado.toFixed(0)} cm`);
+});
+prueba("un pedestal bajo en primer plano, cuyo tope se ve por debajo de la línea del piso, también sostiene al montón", () => {
+  const corto: PiezaLeida = { tipo: "fondo", id: "pedestales", x: 0.3, yBase: 0.97, ancho: 0.2, alto: 0.1, colores: blanco, cajas: [{ x: 0.3, yBase: 0.97, ancho: 0.2, alto: 0.1 }] };
+  const { nodo, notas } = nodoMonton([corto, monton(0.87)]);
+  assert.equal(nodo.colocacion.en, "libre", JSON.stringify(nodo.colocacion));
+  const l = lectura([corto, monton(0.87)]);
+  const pedestal = compilarLectura(l).escena.nodos.find((n) => n.id.startsWith("pedestal"))!;
+  if (nodo.colocacion.en === "libre" && pedestal.colocacion.en === "piso") assert.equal(nodo.colocacion.zCm, pedestal.colocacion.zCm);
+  assert.ok(notas.some((n) => /se asienta encima/.test(n)), notas.join(" | "));
+});
 prueba("una mesa que no está debajo (en x) no lo sostiene", () => {
   const mesa: PiezaLeida = { tipo: "fondo", id: "mesa_mantel", x: 0.8, yBase: 0.68, ancho: 0.2, alto: 0.18, colores: blanco };
   assert.equal(nodoMonton([mesa, monton(0.5)]).nodo.colocacion.en, "libre");

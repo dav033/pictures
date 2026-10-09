@@ -40,10 +40,11 @@ export const DESVIO_COLOR_ESCALON = 15;
 export const PARTE_DOMINANTE = 50;
 export const VENTAJA_DOMINANTE = 15;
 export const RAZON_SEGUNDO = 2;
-/** Con menos globos casados que estos, un tramo no dice su color (seis globos de dos colores parejos dan 4 a 2 por azar una vez de cada tres). */
-export const MINIMO_DOMINANTE = 8;
-/** Cuánto azar se tolera: la cuenta de un color en un tramo tiene que ser tan rara como esto si los globos fueran de color al azar. */
-export const ALFA_DOMINANTE = 0.02;
+/** Una ventana de dos puntos seguidos necesita al menos estos globos casados del cuerpo para decir un tramo, y un punto al menos estos para tomarlo. */
+export const MINIMO_VENTANA = 12;
+export const MINIMO_PUNTO = 5;
+/** El azar que se tolera en TODA la guirnalda (probabilidad de pintar un tramo falso en una guirnalda de colores parejos); se reparte entre sus ventanas y colores. */
+export const ALFA_DOMINANTE = 0.05;
 
 /** El índice del color de la pieza que corresponde a cada color detectado (memoizado), o -1. */
 export function indiceDeDetectado(colores: readonly ColorLeido[]): (color: string) => number {
@@ -122,31 +123,33 @@ export function colaBinomial(k: number, n: number, p: number): number {
   return Math.min(1, suma);
 }
 
-/** El color de la pieza que domina un tramo (su índice en los colores de la pieza). */
-export type Dominio = { indice: number };
-
 /**
- * El color que domina en un tramo: con al menos `MINIMO_DOMINANTE` globos casados, ≥ 50 % de ellos, el doble que el segundo y 15
- * puntos más que su parte en la REFERENCIA (el reparto de los mismos globos, los del cuerpo, en toda la pieza: no el peso de la
- * pieza, que cuenta también los chicos). Además, que esa cuenta no se dé por azar: cola binomial ≤ `ALFA_DOMINANTE` contra esa
- * parte, sobre los globos del tramo y los de su `vecino` juntos (un tramo es de dos puntos seguidos, no de uno). Sin referencia, el
- * peso de cada color en la pieza.
+ * El color que domina cada punto de una guirnalda (`null` en un punto sin globos medidos), o undefined. Es un barrido de ventanas
+ * de dos puntos seguidos: en cada una, para cada color, se pregunta si su cuenta entre los globos del CUERPO de la ventana se da por
+ * azar contra su parte en el cuerpo de toda la pieza (`referencia`; cola binomial), con la corrección por pruebas múltiples
+ * (`ALFA_DOMINANTE` es el azar tolerado en TODA la guirnalda, repartido entre sus ventanas y colores): sin ella, doce puntos de una
+ * guirnalda pareja daban un tramo falso una vez de cada seis. Un punto toma el color de una ventana que lo trae si además él mismo lo
+ * tiene en mayoría (≥ 50 % de sus globos casados, el doble que el segundo y 15 puntos más que en la referencia).
  */
-export function dominioDe(lista: readonly Globo[], colores: readonly ColorLeido[], indiceDe = indiceDeDetectado(colores), referencia?: readonly number[], vecino: readonly Globo[] = []): Dominio | undefined {
-  const { cuenta, total } = cuentaPorColor(lista, colores, indiceDe);
-  if (total < MINIMO_DOMINANTE) return undefined;
-  const k = cuenta.reduce((m, n, i) => (n > cuenta[m]! ? i : m), 0);
-  const pesoTotal = colores.reduce((s, c) => s + c.peso, 0) || 1;
-  const base = referencia?.[k] ?? colores[k]!.peso / pesoTotal;
-  const parte = cuenta[k]! / total;
-  const segundo = cuenta.reduce((m, n, i) => (i !== k && n > m ? n : m), 0);
-  if (!(100 * parte >= PARTE_DOMINANTE && cuenta[k]! >= RAZON_SEGUNDO * segundo && 100 * (parte - base) >= VENTAJA_DOMINANTE)) return undefined;
-  const junto = cuentaPorColor([...lista, ...vecino], colores, indiceDe);
-  return colaBinomial(junto.cuenta[k]!, junto.total, base) <= ALFA_DOMINANTE ? { indice: k } : undefined;
-}
-
-/** El nombre del color que domina el tramo (ver `dominioDe`), o undefined. */
-export function dominanteDe(lista: readonly Globo[], colores: readonly ColorLeido[], indiceDe = indiceDeDetectado(colores), referencia?: readonly number[], vecino: readonly Globo[] = []): string | undefined {
-  const d = dominioDe(lista, colores, indiceDe, referencia, vecino);
-  return d ? colores[d.indice]!.nombre : undefined;
+export function dominantesPorTramo(tramos: ReadonlyArray<readonly Globo[] | null>, colores: readonly ColorLeido[], indiceDe: (color: string) => number, referencia: readonly number[]): Array<string | undefined> {
+  const cuentas = tramos.map((t) => (t ? cuentaPorColor(t, colores, indiceDe) : null));
+  const ventanas = cuentas.flatMap((c, i) => (c && cuentas[i + 1] ? [i] : []));
+  const alfa = ALFA_DOMINANTE / Math.max(1, ventanas.length * colores.length);
+  const sale = cuentas.map(() => new Set<number>());
+  for (const i of ventanas) {
+    const a = cuentas[i]!, b = cuentas[i + 1]!, n = a.total + b.total;
+    if (n < MINIMO_VENTANA) continue;
+    colores.forEach((_, k) => {
+      if (colaBinomial(a.cuenta[k]! + b.cuenta[k]!, n, referencia[k] ?? 0) <= alfa) { sale[i]!.add(k); sale[i + 1]!.add(k); }
+    });
+  }
+  return cuentas.map((c, i) => {
+    if (!c || c.total < MINIMO_PUNTO) return undefined;
+    const propios = [...sale[i]!].filter((k) => {
+      const segundo = c.cuenta.reduce((m, n, j) => (j !== k && n > m ? n : m), 0);
+      return 100 * (c.cuenta[k]! / c.total) >= PARTE_DOMINANTE && c.cuenta[k]! >= RAZON_SEGUNDO * segundo && 100 * (c.cuenta[k]! / c.total - (referencia[k] ?? 0)) >= VENTAJA_DOMINANTE;
+    });
+    const k = propios.reduce<number | undefined>((m, j) => (m === undefined || c.cuenta[j]! > c.cuenta[m]! ? j : m), undefined);
+    return k === undefined ? undefined : colores[k]!.nombre;
+  });
 }

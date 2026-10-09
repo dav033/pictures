@@ -1,5 +1,5 @@
 import { LecturaFotoSchema, type AnclaLeida, type ColorLeido, type LecturaFoto, type PiezaLeida } from "./lectura-foto";
-import { coloresDe, coloresPorEscalonDe, dominioDe, indiceDeDetectado, repartoDeColores } from "./medir-colores";
+import { coloresDe, coloresPorEscalonDe, dominantesPorTramo, indiceDeDetectado, repartoDeColores } from "./medir-colores";
 import { ejeMedido, globosDe, largosDelEje, mediana, normalEnPunto, percentil, proyectar, r3, type CajaDetectada, type Globo, type P } from "./medir-geometria";
 import { medirTamanos, repartoDe } from "./medir-tamanos";
 import type { Escalon } from "./mezcla-lectura";
@@ -134,15 +134,8 @@ function medirGuirnalda(p: Guirnalda, detectados: readonly Globo[], aspecto: num
     const cuerpo = lista.filter((x) => esCuerpo(x.escalon)).map((x) => x.g);
     return { x: q.x + normal.x * corrimiento, y: enElPiso ? q.y : q.y + normal.y * corrimiento, grosor, mezcla: tramo, cuerpo };
   });
-  // Un tramo es de dos puntos seguidos: el color de un punto vale si la cuenta, junto con la de un vecino, no se da por azar.
-  const dominantes = medidos.map((m, i) => {
-    if (!m) return undefined;
-    for (const v of [medidos[i - 1], medidos[i + 1]]) {
-      const d = v ? dominioDe(m.cuerpo, colores, indiceDe, referencia, v.cuerpo) : undefined;
-      if (d) return colores[d.indice]!.nombre;
-    }
-    return undefined;
-  });
+  // El color de un tramo sale de un barrido de ventanas de dos puntos seguidos con la corrección por pruebas múltiples (`medir-colores.ts`).
+  const dominantes = dominantesPorTramo(medidos.map((m) => m?.cuerpo ?? null), colores, indiceDe, referencia);
   const puntos = suavizarGrosor(eje.map((q, i) => {
     const leido = q.origen === null ? null : p.puntos[q.origen]!;
     const m = medidos[i];

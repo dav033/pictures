@@ -10,7 +10,7 @@ import { PROFUNDIDAD_DE_LA_FOTO_CM } from "./proyeccion-foto";
  */
 
 /** Cuánto se retira de la pared un cuerpo cuyo pie no dice profundidad: el retiro del catálogo, que lo deja delante de cualquier panel. */
-export const RETIRO_MUEBLE_CM = 120;
+const RETIRO_MUEBLE_CM = 120;
 /** Lo mínimo que mide un cuerpo armado (cm). */
 const MINIMO_CM = 30;
 
