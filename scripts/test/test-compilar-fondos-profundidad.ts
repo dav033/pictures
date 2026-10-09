@@ -78,4 +78,12 @@ prueba("un panel pegado a la pared no se mueve aunque su pie quede bajo la líne
   assert.equal((a.colocacion as { zCm: number }).zCm, (b.colocacion as { zCm: number }).zCm);
 });
 
+prueba("los telones del catálogo de muebles (marco con tela, aros, arco metálico, biombo) tampoco avanzan hacia la cámara", () => {
+  for (const id of ["marco_tela", "aro_metalico", "aro_hexagonal", "arco_metalico", "biombo"]) {
+    const a = compilarLectura(lectura([fondo(id, PISO, 0.4, 0.4)])).escena.nodos[0]!;
+    const b = compilarLectura(lectura([fondo(id, 0.97, 0.4, 0.4)])).escena.nodos[0]!;
+    assert.deepEqual(b.colocacion, a.colocacion, `${id} no debe moverse con el pie`);
+  }
+});
+
 console.log(`test-compilar-fondos-profundidad: ${pruebas} pruebas ok`);

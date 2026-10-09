@@ -20,7 +20,7 @@ export const SINONIMOS_DE_FONDO: Readonly<Record<string, string>> = {
   mesa_de_postres: "mesa_postres", mesa_dulces: "mesa_postres", mesa_de_dulces: "mesa_postres", consola: "mesa_postres", mesa_de_dulces_con_mantel: "mesa_postres_mantel", mesa_de_postres_con_mantel: "mesa_postres_mantel", mesa_postres_con_mantel: "mesa_postres_mantel",
   mesa_de_regalos: "mesa_regalos", mesa_regalo: "mesa_regalos", mesa_de_centro: "mesa_centro",
   mesa_cocktail: "mesa_coctel", mesa_de_coctel: "mesa_coctel", mesa_alta: "mesa_coctel", mesa_cocktail_licra: "mesa_coctel_licra",
-  tapete: "tapete_redondo", alfombra: "alfombra_redonda", tapete_circular: "tapete_redondo", alfombra_circular: "alfombra_redonda",
+  tapete: "tapete_redondo", alfombra: "alfombra_redonda", tapete_circular: "alfombra_redonda", alfombra_circular: "alfombra_redonda",
   cortina: "cortina_luces", cortina_con_luces: "cortina_luces", cortinas: "cortina_luces", cortina_de_luces: "cortina_luces",
   letrero_nombre: "letrero", cartel: "letrero", tablero: "letrero",
   silla: "silla_tiffany", silla_chiavari: "silla_tiffany", silla_chiavari_dorada: "silla_tiffany", sillas: "silla_tiffany", silla_dorada: "silla_tiffany",
