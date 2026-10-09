@@ -19,6 +19,8 @@ import { PEDIDO_LECTURA, construirPromptLectura } from "./prompt-lectura-foto";
 export const PROPOSITO_LECTURA_FOTO = "lectura_foto_escena";
 const SUPERFICIE = "/api/escena-desde-foto";
 const MAX_TOKENS_SALIDA = 12_000;
+/** Más baja que la de fábrica (1,0): una lectura debe repetirse parecido de una corrida a otra. */
+const TEMPERATURA_LECTURA = 0.3;
 
 export type UsoModelo = { entrada: number; salida: number; pensamiento: number };
 export type FotoLectura = { bytes: Uint8Array; mime: string };
@@ -54,16 +56,20 @@ const corto = (t: string, n: number) => (t.length > n ? `${t.slice(0, n - 1)}…
 // Esquema para Gemini
 // ----------------------------------------------------------------------------------------------------------
 
-/** `const` de una cadena → `enum` de un valor (lo que Gemini entiende de las uniones discriminadas de Zod). */
-function constAEnum(nodo: unknown): unknown {
-  if (Array.isArray(nodo)) return nodo.map(constAEnum);
+/**
+ * Lo que Gemini no digiere del esquema de Zod: `const` de una cadena → `enum` de un valor, y `maxItems` (con `maxItems: 30`
+ * en las piezas, cada una con sus colores, rechaza el esquema entero con «invalid argument»; comprobado contra la API real
+ * el 2026-10-09). Los topes de cantidad los vuelve a exigir Zod al validar y el prompt los dice.
+ */
+function paraGemini(nodo: unknown): unknown {
+  if (Array.isArray(nodo)) return nodo.map(paraGemini);
   if (nodo === null || typeof nodo !== "object") return nodo;
-  return Object.fromEntries(Object.entries(nodo as Record<string, unknown>).flatMap(([clave, valor]) => (clave === "const" ? [["enum", [valor]]] : [[clave, constAEnum(valor)]])));
+  return Object.fromEntries(Object.entries(nodo as Record<string, unknown>).flatMap(([clave, valor]) => (clave === "maxItems" ? [] : clave === "const" ? [["enum", [valor]]] : [[clave, paraGemini(valor)]])));
 }
 
-/** El esquema de la lectura en el subconjunto de JSON Schema de Gemini (sin `$schema`, `additionalProperties` ni `const`). */
+/** El esquema de la lectura en el subconjunto de JSON Schema de Gemini (sin `$schema`, `additionalProperties`, `const` ni `maxItems`). */
 export function esquemaLecturaParaGemini(): Record<string, unknown> {
-  return constAEnum(paraGoogleSchema(ESQUEMA_LECTURA_FOTO)) as Record<string, unknown>;
+  return paraGemini(paraGoogleSchema(ESQUEMA_LECTURA_FOTO)) as Record<string, unknown>;
 }
 
 // ----------------------------------------------------------------------------------------------------------
@@ -105,7 +111,7 @@ export const generarConGemini: GenerarLectura = async ({ sistema, contents, esqu
   const r = await cliente.models.generateContent({
     model: MODELO_CHAT,
     contents,
-    config: { systemInstruction: sistema, responseMimeType: "application/json", responseJsonSchema: esquema, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: MAX_TOKENS_SALIDA, abortSignal: signal },
+    config: { systemInstruction: sistema, responseMimeType: "application/json", responseJsonSchema: esquema, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: MAX_TOKENS_SALIDA, temperature: TEMPERATURA_LECTURA, abortSignal: signal },
   });
   const partes = r.candidates?.[0]?.content?.parts ?? [];
   return {

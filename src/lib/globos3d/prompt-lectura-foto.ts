@@ -1,3 +1,4 @@
+import { FONDOS_CATALOGO } from "./fondos-escenografia";
 import { coloresDelFormato } from "./formatos";
 import { RACIMOS_PREDEFINIDOS } from "./racimos-globos";
 import { REFERENCIAS_DUENO, type ReferenciaDueno } from "./referencias-dueno";
@@ -37,13 +38,14 @@ COORDENADAS Y MEDIDAS
 - pisoY = la y de la línea del piso bajo la decoración (null si no se ve el piso). sala.pared y sala.piso: el color de la pared de fondo y del piso, en hex.
 
 PIEZAS (usa solo estos tipos; cada objeto físico es una pieza)
-- guirnalda_organica: cualquier cuerpo largo de globos de varios tamaños: festón, arco, medio arco que baja por un lado, guirnalda que cruza arriba y cae en una esquina, arco asimétrico. Se describe por su EJE: 4 a 12 "puntos" en orden de un extremo al otro, cada uno con x, y y grosor del cuerpo en ese punto (más grueso donde carga). Sigue el recorrido REAL de la foto; si un extremo llega al piso, su punto va a la altura del piso. Un arco con dos patas en el piso es UNA pieza con el eje de pata a pata.
-- columna_organica: columna de globos de varios tamaños. forma: recta (silueta de columna normal), racimos (racimos apilados que se corren de lado), s (ondula), inclinada.
-- columna_clasica: columna lisa de cuartetos con colores que se repiten al subir. guirnalda_clasica: guirnalda lisa de cuartetos entre dos puntos.
+- guirnalda_organica: cualquier cuerpo largo de globos de varios tamaños que corre en HORIZONTAL, en arco o en diagonal: festón, arco, medio arco que baja por un lado, guirnalda que cruza arriba y cae en una esquina, arco asimétrico. Se describe por su EJE: 4 a 12 "puntos" en orden de un extremo al otro, cada uno con x, y y grosor del cuerpo en ese punto (más grueso donde carga). Sigue el recorrido REAL de la foto; si un extremo llega al piso, su punto va a la altura del piso. Un arco con dos patas en el piso es UNA pieza con el eje de pata a pata.
+- columna_organica: cuerpo de globos de varios tamaños que se levanta VERTICAL desde el piso (más alto que ancho), aunque sea ondulado, inclinado o de racimos corridos: NO es una guirnalda_organica. Si sube del piso y se curva solo en la punta, es columna_organica; si cruza la pared de lado a lado o dibuja un arco, es guirnalda_organica. forma: recta (silueta de columna normal), racimos (racimos apilados que se corren de lado), s (ondula), inclinada.
+- columna_clasica: columna lisa de cuartetos del mismo tamaño con colores que se repiten al subir (la base o el remate de otro color van como otra columna corta). guirnalda_clasica: tubo liso y parejo de cuartetos del mismo tamaño entre dos puntos (un travesaño o puente horizontal liso es esto, no una orgánica). Lo orgánico se reconoce por los tamaños mezclados y el contorno irregular. Un portal o marco hecho de columnas verticales unidas por un travesaño NUNCA es un solo trazo en U: son sus columnas (una pieza por columna, con su base o remate de otro color como columna corta aparte) más la guirnalda de arriba.
 - globo: un globo suelto (en el piso o en el aire). ramo_helio: varios globos de helio atados juntos (cantidad real).
-- decoracion: racimos y orbes del catálogo (se elige por id). metalizado: globo de foil (letras, números, palabras; cursiva si el foil está en letra cursiva).
-- fondo: escenografía del catálogo (panel redondo, media luna, arcos chiara, pared de lentejuelas, pedestales, mesa con mantel, tapete, cortina con luces, letrero). Mide ancho y alto en fracción del alto de la foto.
+- decoracion: racimos y orbes del catálogo (se elige por id). Una pieza por cada racimo u orbe, con su posición y cantidad 1 (cantidad mayor solo si están pegados). Los racimos de uvas, bolitas doradas o globitos R-5 agrupados sobre una estructura son decoracion, no globos sueltos: cuéntalos todos. metalizado: globo de foil (letras, números, palabras; cursiva si el foil está en letra cursiva).
+- fondo: escenografía del catálogo (ver la lista abajo). Una mesa con mantel es fondo mesa_mantel; un letrero o tablero con un nombre o frase es fondo letrero (con su texto); un panel de cortina con luces, fondo cortina_luces; un tapete en el piso, tapete_redondo. Sinónimos: paneles o arcos de medio punto escalonados (de madera calada, tela o malla) = arcos_chiara; panel o pared de lentejuelas, shimmer o brillos = lentejuelas; cilindros o plintos para la torta = pedestales. Mide ancho y alto en fracción del alto de la foto.
 - otro: todo lo que no es de globos ni del catálogo (torta, dulces, figuras, flores naturales, letreros de luz, muebles, personas). No se arma: solo se anota con su descripción.
+- Cantidades: como máximo 30 piezas en total; una guirnalda orgánica lleva de 4 a 12 puntos (nunca más de 24); cada pieza de 1 a 6 colores (la columna clásica, de 1 a 4).
 - NUNCA agregues piezas que no se ven. Una pieza cortada por el borde de la foto se lee hasta donde se ve y se anota en su nota. Si dudas entre dos tipos, elige el más simple y di la duda en la nota.
 
 TAMAÑOS Y COLORES
@@ -57,6 +59,8 @@ Responde SOLO el JSON.`;
 
 const nombresDeColor = () => [...new Set(coloresDelFormato("R-12").map((c) => c.nombreCompleto))].join(", ");
 
+const fondosDelCatalogo = () => FONDOS_CATALOGO.map((f) => `${f.id}: ${f.descripcion}`).join(" ");
+
 const racimosDelCatalogo = () => RACIMOS_PREDEFINIDOS.map((r) => `${r.id}: ${r.descripcion}`).join(" ");
 
 /** La instrucción de sistema completa: reglas, colores Sempertex, decoraciones del catálogo y las lecturas de ejemplo. */
@@ -67,6 +71,7 @@ export function construirPromptLectura(excluirIds: readonly string[] = []): stri
   return [
     REGLAS,
     `COLORES SEMPERTEX (nombres para "nombre"): ${nombresDeColor()}.`,
+    `FONDOS DEL CATÁLOGO (tipo "fondo"): ${fondosDelCatalogo()}`,
     `DECORACIONES DEL CATÁLOGO (tipo "decoracion"): ${racimosDelCatalogo()}`,
     `Lecturas hechas a mano por el decorador de OTRAS fotos, para que veas el formato y el criterio (no las copies):\n\n${ejemplos}`,
   ].join("\n\n");

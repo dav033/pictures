@@ -25,6 +25,7 @@ import { DECLARACIONES_ESCENA, NOMBRES_HERRAMIENTAS, aplicarHerramienta } from "
 import { MODELAR_DESDE_FOTO } from "@/lib/globos3d/herramientas-escena-foto";
 import { LecturaFotoSchema, type LecturaFoto } from "@/lib/globos3d/lectura-foto";
 import { ErrorLecturaFoto, costeFlashUsd, esquemaLecturaParaGemini, leerFotoConIA, validarLectura, type Generacion, type PeticionLectura } from "@/lib/globos3d/leer-foto-ia";
+import { compararLecturas, distanciaTrazos, familiaDeColor, siluetaDeTrazo } from "@/lib/globos3d/comparar-lecturas";
 import { combinarEscenaDeFoto, modelarDesdeFoto, resumenParaAgente, type Modelado } from "@/lib/globos3d/modelar-desde-foto";
 import { construirPromptLectura, ejemplosDeLectura } from "@/lib/globos3d/prompt-lectura-foto";
 import { REFERENCIAS_DUENO } from "@/lib/globos3d/referencias-dueno";
@@ -51,14 +52,14 @@ function generador(respuestas: string[]) {
 
 async function main() {
 console.log("Esquema y prompt");
-await prueba("el esquema para Gemini no trae $schema, additionalProperties ni const", () => {
+await prueba("el esquema para Gemini no trae $schema, additionalProperties, const ni maxItems", () => {
   const texto = JSON.stringify(esquemaLecturaParaGemini());
-  for (const prohibido of ['"$schema"', '"additionalProperties"', '"const"']) assert.ok(!texto.includes(prohibido), `trae ${prohibido}`);
+  for (const prohibido of ['"$schema"', '"additionalProperties"', '"const"', '"maxItems"']) assert.ok(!texto.includes(prohibido), `trae ${prohibido}`);
   assert.ok(texto.includes('"guirnalda_organica"') && texto.includes('"piezas"'));
 });
 await prueba("el prompt trae el oficio, los colores Sempertex y 3 lecturas de ejemplo válidas", () => {
   const p = construirPromptLectura();
-  for (const clave of ["FRACCIÓN DEL ALTO", "guirnalda_organica", "columna_clasica", "nunca inventas", "Fashion Blanco", "orbe_flecos_dorado", "NUNCA agregues piezas"]) assert.ok(p.includes(clave), `falta «${clave}»`);
+  for (const clave of ["FRACCIÓN DEL ALTO", "guirnalda_organica", "columna_clasica", "nunca inventas", "como máximo 30 piezas", "Fashion Blanco", "orbe_flecos_dorado", "NUNCA agregues piezas"]) assert.ok(p.includes(clave), `falta «${clave}»`);
   const ejemplos = ejemplosDeLectura();
   assert.equal(ejemplos.length, 3);
   for (const e of ejemplos) { LecturaFotoSchema.parse(e.lectura); assert.ok(p.includes(JSON.stringify(e.lectura))); }
@@ -287,6 +288,45 @@ await prueba("/api/escena-ia rechaza una foto mala antes de llamar al modelo", a
   const pedir = (foto: unknown) => POST(new Request("http://localhost/api/escena-ia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ escena: vacia, mensaje: "como la foto", foto }) }));
   assert.equal((await pedir({ mime: "image/gif", base64: b64 })).status, 400, "el esquema no admite gif");
   assert.equal((await pedir({ mime: "image/png", base64: Buffer.from("no soy una imagen ".repeat(10)).toString("base64") })).status, 400, "ilegible");
+});
+
+console.log("Evaluación (comparar lecturas)");
+await prueba("una lectura contra sí misma puntúa 100 % en las 13 referencias", () => {
+  for (const r of REFERENCIAS_DUENO) { const c = compararLecturas(r.lectura, r.lectura); assert.equal(c.puntaje, 1, String(r.numero)); assert.equal(c.tipos.inventadas.length, 0); }
+});
+await prueba("piezas inventadas y faltantes se cuentan por tipo; las decoraciones por su cantidad", () => {
+  const h = REFERENCIAS_DUENO[1]!.lectura;
+  const sinRamo: LecturaFoto = { ...h, piezas: h.piezas.filter((p) => p.tipo !== "ramo_helio") };
+  const c = compararLecturas(sinRamo, h);
+  assert.deepEqual(c.tipos.faltantes, ["ramo_helio"]);
+  assert.deepEqual(compararLecturas(h, sinRamo).tipos.inventadas, ["ramo_helio"]);
+  assert.ok(c.puntaje < 1 && c.tipos.f1 < 1);
+  const seis = REFERENCIAS_DUENO[3]!.lectura;
+  const unaSola = { ...seis, piezas: seis.piezas.map((p) => (p.tipo === "decoracion" ? { ...p, cantidad: 1 } : p)) };
+  const fusion = { ...seis, piezas: [...seis.piezas.filter((p) => p.tipo !== "decoracion"), { ...seis.piezas.find((p) => p.tipo === "decoracion")!, cantidad: seis.piezas.filter((p) => p.tipo === "decoracion").length }] } as LecturaFoto;
+  assert.equal(compararLecturas(fusion, seis).tipos.f1, 1, "una de cantidad 6 = seis de cantidad 1");
+  assert.ok(compararLecturas(unaSola, seis).tipos.f1 === 1, "seis piezas de cantidad 1 siguen siendo seis");
+});
+await prueba("colores: misma mezcla = 1; otra familia baja; el dorado cromado y el rojo se separan", () => {
+  const h = REFERENCIAS_DUENO[5]!.lectura;
+  const azul: LecturaFoto = { ...h, piezas: h.piezas.map((p) => ("colores" in p ? { ...p, colores: p.colores.map((c) => ({ ...c, nombre: "azul rey", hex: "#1f3c9c", acabado: "mate" as const })) } : p)) as LecturaFoto["piezas"] };
+  assert.ok(compararLecturas(azul, h).colores.familia < 0.3);
+  assert.equal(familiaDeColor({ nombre: "dorado", hex: "#c9a24e", acabado: "cromado" }), "dorado");
+  assert.equal(familiaDeColor({ nombre: "rojo", hex: "#d61a1a", acabado: "mate" }), "rojo");
+  assert.equal(familiaDeColor({ nombre: "azul marino", hex: "#1d2b5c", acabado: "mate" }), "azul");
+  assert.equal(familiaDeColor({ nombre: "blush", hex: "#e8c4c4", acabado: "mate" }), "rosa");
+  assert.equal(familiaDeColor({ nombre: "marfil", hex: "#efe8c8", acabado: "mate" }), "crema");
+});
+await prueba("siluetas: clase del recorrido de las 13 lecturas y distancia entre ejes", () => {
+  const clase = (n: number) => REFERENCIAS_DUENO.find((r) => r.numero === n)!.lectura.piezas.flatMap((p) => (p.tipo === "guirnalda_organica" ? [siluetaDeTrazo(p.puntos)] : []));
+  assert.deepEqual(clase(7), ["arco"]);
+  assert.deepEqual(clase(9), ["arco"]);
+  assert.deepEqual(clase(2), ["medio_arco"]);
+  assert.deepEqual(clase(13), ["medio_arco"]);
+  assert.deepEqual(clase(12), ["horizontal"]);
+  assert.equal(siluetaDeTrazo([{ x: 0.1, y: 0.1 }, { x: 0.5, y: 0.4 }, { x: 0.9, y: 0.1 }]), "colgante");
+  assert.equal(distanciaTrazos([{ x: 0, y: 0 }, { x: 1, y: 0 }], [{ x: 0, y: 0 }, { x: 0.5, y: 0 }, { x: 1, y: 0 }]), 0);
+  assert.ok(Math.abs(distanciaTrazos([{ x: 0, y: 0 }, { x: 1, y: 0 }], [{ x: 0, y: 0.1 }, { x: 1, y: 0.1 }]) - 0.1) < 1e-9);
 });
 
 console.log("Cliente");
