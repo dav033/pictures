@@ -15,6 +15,8 @@ const FAMILIAS: ReadonlyArray<readonly string[]> = [
   ["silla_tiffany", "silla_moderna"],
   ["sofa", "love_seat", "sillon"],
   ["aro_metalico", "aro_hexagonal", "arco_metalico"],
+  ["pastel", "base_pastel"],
+  ["cortina_luces", "cortina_flecos"],
 ];
 
 const FAMILIA_DE: ReadonlyMap<string, number> = new Map(FAMILIAS.flatMap((ids, i) => ids.map((id): [string, number] => [id, i])));

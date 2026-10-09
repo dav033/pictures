@@ -1,6 +1,6 @@
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { FORMATOS_GLOBO } from "../formatos";
-import { claveCruce, elegirVariante, presentaciones, type Crosswalk, type EntradaCrosswalk, type MotivoSinCobertura, type VarianteElegida } from "./crosswalk-variantes";
+import { claveCruce, elegirVariante, presentaciones, type Crosswalk, type EntradaCrosswalk, type MotivoCruce, type VarianteElegida } from "./crosswalk-variantes";
 import { MERMA, cantidadConMerma } from "./merma";
 import type { BomLinea } from "./resultado-motor-v1";
 
@@ -35,7 +35,7 @@ export type CompraPlaneada = {
 
 export type ReservaPlan = { objetivo: number; cubierta: number; sinCubrir: number; excedenteNatural: number };
 
-export type FaltanteCruce = { formatoId: string; codigo: string; motivo: MotivoSinCobertura | "desconocida" };
+export type FaltanteCruce = { formatoId: string; codigo: string; motivo: MotivoCruce };
 
 export type PlanDeCompra = { politica: PoliticaPaquetes; compras: CompraPlaneada[]; reserva: ReservaPlan };
 

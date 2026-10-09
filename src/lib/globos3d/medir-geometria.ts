@@ -107,21 +107,41 @@ export function normalEnPunto(eje: readonly P[], i: number): P {
   return l > 1e-9 ? { x: x / l, y: y / l } : normales[0] ?? { x: 0, y: -1 };
 }
 
+/** Dos centros a menos de esto (en log: 1,4 veces) son un solo modo partido en dos. */
+const SEPARACION_MINIMA_DE_CENTROS = Math.log(1.4);
+/** Y uno de los dos tiene menos de esta parte de los puntos (un grupito pegado al de al lado, no un escalón). */
+const PARTE_DEL_GRUPITO = 0.08;
+/** El otro arranque se toma si su costo es menos de esta parte del costo del de siempre. */
+const COSTO_MEJOR_QUE_EL_BASE = 0.85;
+
 /**
- * k-medias en una dimensión (log del diámetro); centros de menor a mayor. Los centros iniciales salen del punto más lejano de los
- * que ya hay (empezando por la mediana): con cuantiles, un escalón raro (tres gigantes entre setenta globos) no recibía centro y
- * dos centros caían en el mismo escalón común.
+ * k-medias en una dimensión (log del diámetro); centros de menor a mayor. Se prueba con otros dos arranques (cuantiles y puntos parejos) y solo se cambia el de siempre
+ * cuando dejó un grupito pegado a otro y el otro baja el costo más de un 15 %.
+ * El principal pone los centros iniciales en el punto más lejano de los que ya hay (empezando por la mediana): con cuantiles solos, un
+ * escalón raro (tres gigantes entre setenta globos) no recibía centro y dos centros caían en el mismo escalón común.
  */
 export function kMedias1D(v: readonly number[], k: number): number[] {
-  let centros = [mediana(v)];
-  while (centros.length < k) {
-    const lejano = v.reduce((m, x) => (Math.min(...centros.map((c) => Math.abs(x - c))) > Math.min(...centros.map((c) => Math.abs(m - c))) ? x : m), v[0]!);
-    centros.push(lejano);
-  }
-  for (let it = 0; it < 30; it++) {
-    const grupos: number[][] = centros.map(() => []);
-    for (const x of v) grupos[centros.reduce((m, c, i) => (Math.abs(x - c) < Math.abs(x - centros[m]!) ? i : m), 0)]!.push(x);
-    centros = grupos.map((g, i) => (g.length ? g.reduce((s, x) => s + x, 0) / g.length : centros[i]!));
-  }
-  return centros.sort((a, b) => a - b);
+  const refinar = (inicio: number[]): { centros: number[]; costo: number } => {
+    let centros = inicio;
+    for (let it = 0; it < 30; it++) {
+      const grupos: number[][] = centros.map(() => []);
+      for (const x of v) grupos[centros.reduce((m, c, i) => (Math.abs(x - c) < Math.abs(x - centros[m]!) ? i : m), 0)]!.push(x);
+      centros = grupos.map((g, i) => (g.length ? g.reduce((s, x) => s + x, 0) / g.length : centros[i]!));
+    }
+    const costo = v.reduce((s, x) => s + Math.min(...centros.map((c) => (x - c) ** 2)), 0);
+    return { centros, costo };
+  };
+  // El de siempre: la mediana y los más lejanos. Con él solo, una nube con dos modos y una cola (chicos, medianos y unos grandes) podía caer en un óptimo malo
+  // (partía los chicos en dos y juntaba los medianos con los grandes): la foto del cumpleaños medía 455 cm en vez de ~290.
+  const lejanos = [mediana(v)];
+  while (lejanos.length < k) lejanos.push(v.reduce((m, x) => (Math.min(...lejanos.map((c) => Math.abs(x - c))) > Math.min(...lejanos.map((c) => Math.abs(m - c))) ? x : m), v[0]!));
+  const ordenado = [...v].sort((a, b) => a - b);
+  const cuantiles = Array.from({ length: k }, (_, i) => ordenado[Math.min(ordenado.length - 1, Math.floor(((i + 0.5) * ordenado.length) / k))]!);
+  const parejos = Array.from({ length: k }, (_, i) => ordenado[0]! + ((i + 0.5) * (ordenado[ordenado.length - 1]! - ordenado[0]!)) / k);
+  const [base, ...otros] = [lejanos, cuantiles, parejos].map(refinar);
+  const mejor = otros.reduce((m, r) => (r.costo < m.costo ? r : m), otros[0]!);
+  // Solo se cambia el arranque de siempre si dejó un grupito pegado a otro (un solo modo partido en dos) y el otro es claramente mejor: así lo que ya medía bien no se mueve.
+  const ordenados = base!.centros.map((c) => ({ c, n: v.filter((x) => Math.abs(x - c) <= Math.min(...base!.centros.map((q) => Math.abs(x - q)))).length })).sort((x, y) => x.c - y.c);
+  const partido = ordenados.some((q, i) => i > 0 && q.c - ordenados[i - 1]!.c < SEPARACION_MINIMA_DE_CENTROS && Math.min(q.n, ordenados[i - 1]!.n) < PARTE_DEL_GRUPITO * v.length);
+  return (partido && mejor.costo < base!.costo * COSTO_MEJOR_QUE_EL_BASE ? mejor : base!).centros.sort((x, y) => x - y);
 }

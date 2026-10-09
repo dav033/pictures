@@ -21,10 +21,10 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { CotizacionPlanGuiadoSchema, PlanGuiadoSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1";
 import { generarPasosPlan } from "../../src/lib/ia/guiado/generar-pasos-plan";
-import { coloresDelFormato, FORMATOS_GLOBO } from "../../src/lib/globos3d/formatos";
+import { colorSeVendeEnFormato, coloresDelFormato, FORMATOS_GLOBO } from "../../src/lib/globos3d/formatos";
 import { abrirContextoPlan, verificarTokenAprobacion } from "../../src/lib/plan/aprobacion";
 import { armarDesdeEspec, cantidadConMerma, cotizarBom, crosswalkIncluido, especHashDe, MERMA, MERMA_PORCENTAJE, planearCompra, POLITICA_PAQUETES, sobreDelMotor, type CotizacionDelMotor, type ResultadoMotorV1 } from "../../src/lib/globos3d/motor/v1";
-import { claveCruce, construirCrosswalk, CrosswalkSchema, elegirVariante, MOTIVOS_SIN_COBERTURA, normalizarTitulo, type Crosswalk, type FilaCatalogo } from "../../src/lib/globos3d/motor/crosswalk-variantes";
+import { claveCruce, construirCrosswalk, CrosswalkSchema, elegirVariante, MOTIVOS_SIN_COBERTURA, normalizarTitulo, presentaciones, type Crosswalk, type FilaCatalogo } from "../../src/lib/globos3d/motor/crosswalk-variantes";
 import { optimizarCobertura, pulgadasDeFormato, colorDeCompra } from "../../src/lib/globos3d/motor/plan-de-compra";
 import { DIRECTORIO_DORADO, DIRECTORIO_DORADO_PRECIO, todosLosCasos, type CasoMotor, type RegistroDoradoPrecio } from "../lib/casos-motor-guiada";
 import { registroPrecio } from "../motor/generar-golden-precio";
@@ -85,6 +85,12 @@ async function main(): Promise<void> {
     let pares = 0;
     for (const formato of FORMATOS_GLOBO) for (const ref of coloresDelFormato(formato.id)) {
       const clave = claveCruce(formato.id, ref.codigo);
+      // El corazón C-12 se arma en cualquier color (decisión del dueño): los que la tabla oficial no le da no son un hueco del cruce, y `presentaciones` dice por qué no hay variante.
+      if (formato.id === "C-12" && !colorSeVendeEnFormato(formato.id, ref.codigo)) {
+        assert.ok(!(clave in cruce.entradas) && !(clave in cruce.sinCobertura));
+        assert.deepEqual(presentaciones(cruce, formato.id, ref.codigo), { ok: false, motivo: "corazon_color_no_vendido" }, clave);
+        continue;
+      }
       pares += 1;
       assert.ok((clave in cruce.entradas) !== (clave in cruce.sinCobertura), `${clave}: debe estar en uno y solo uno`);
       if (clave in cruce.sinCobertura) assert.ok((MOTIVOS_SIN_COBERTURA as readonly string[]).includes(cruce.sinCobertura[clave]!));

@@ -3,9 +3,10 @@ import { mat, trasladarGirar, type Material } from "./mobiliario-base";
 import { banca, sillaModerna, sillaTiffany, sofa, taburete, type OpcionesAsiento } from "./mobiliario-asientos";
 import {
   alfombraRedonda, basePastel, baseHexagonal, biombo, columnaGriega, escaleraDecorativa, jarronPampas, lamparaPie, marcoMetalico, marcoTela, neonCursiva, peldanos,
-  rotuloAcrilico, TEXTO_ROTULO_ACRILICO, type OpcionesDecorado,
+  pastel, rotuloAcrilico, TEXTO_ROTULO_ACRILICO, type OpcionesDecorado,
 } from "./mobiliario-decorado";
 import { puestosAlrededor } from "./mobiliario-disposicion";
+import { cortinaFlecos } from "./mobiliario-flecos";
 import {
   carritoDulces, consola, mesaCentro, mesaCoctel, mesaCoctelLicra, mesaHexagonal, mesaImperial, mesaRedonda, mesaRedondaMantel, mesaRegalos, mesasNidoHexagonales, ALTO_PILA_REGALOS,
   type OpcionesMesa,
@@ -174,8 +175,8 @@ const BASE: readonly MuebleCatalogo[] = [
   }),
   mueble({
     id: "mesa_postres", nombre: "Mesa de postres", grupo: "mesa",
-    descripcion: "Consola o mesa de postres angosta de 1,8 m × 45 cm y 90 cm de alto, sin mantel (tapa crema, patas doradas).",
-    medidas: { anchoCm: 180, fondoCm: 45, altoCm: 90 }, colores: ["#e9dfcd", "#c9a14a"], coloresDe: ["tapa", "patas"], armar: deMesa(consola, "madera", "metal"),
+    descripcion: "Consola o mesa de postres angosta de 1,8 m × 45 cm y 90 cm de alto, sin mantel (tapa crema, patas doradas). Con un tercer color (el adorno) es la ornamentada de las fotos de fiesta: tapa con moldura, patas torneadas y filetes del color del adorno (blanca con filete dorado = tapa y patas blancas, adorno dorado).",
+    medidas: { anchoCm: 180, fondoCm: 45, altoCm: 90 }, colores: ["#e9dfcd", "#c9a14a"], coloresDe: ["tapa", "patas", "adorno (opcional)"], armar: deMesa(consola, "madera", "metal"),
   }),
   mueble({
     id: "mesa_postres_mantel", nombre: "Mesa de postres con mantel", grupo: "mesa",
@@ -257,6 +258,17 @@ const BASE: readonly MuebleCatalogo[] = [
     id: "base_pastel", fondo: "igual_ancho", nombre: "Base de pastel", grupo: "decorado", sobreMesa: true,
     descripcion: "Base de pastel (platón sobre pie) blanca de 32 cm de plato y 18 cm de alto; va sobre una mesa.",
     medidas: { anchoCm: 32, fondoCm: 32, altoCm: 18 }, colores: ["#f4f1ea"], coloresDe: ["color"], armar: deDecorado(basePastel, "brillante", "brillante"),
+  }),
+  mueble({
+    id: "pastel", fondo: "igual_ancho", nombre: "Pastel", grupo: "decorado", sobreMesa: true,
+    descripcion: "Pastel de 1 a 3 pisos (según su alto) sobre su plato con pie, de 28 cm de plato y 30 cm de alto; va sobre una mesa. Colores: el pastel y el plato con el filete.",
+    medidas: { anchoCm: 28, fondoCm: 28, altoCm: 30 }, colores: ["#f4efe4", "#d6b25a"], coloresDe: ["pastel", "plato y filete"], armar: deDecorado(pastel, "mate", "metal"),
+  }),
+  mueble({
+    id: "cortina_flecos", fondo: "fijo", nombre: "Cortina de flecos", grupo: "decorado", lugar: "pared", telon: true,
+    descripcion: "Cortina de flecos (tiras de brillo, tinsel o shimmer que cuelgan de un riel) de 2 × 2,5 m, con un drapeado de raso detrás si se le da un segundo color; cuelga de la pared del fondo hasta el piso.",
+    medidas: { anchoCm: 200, fondoCm: 4, altoCm: 250 }, colores: ["#c9cfd0"], coloresDe: ["flecos", "drapeado de raso (opcional)"],
+    armar: (o) => cortinaFlecos({ ...o, flecos: color(o, 0, "metal"), ...(o.colores[1] ? { raso: color(o, 1, "satinado") } : {}) }),
   }),
   mueble({
     id: "neon_cursiva", fondo: "fijo", nombre: "Letrero de neón", grupo: "decorado", lugar: "pared", alturaParedCm: 130, conTexto: true, textoPorDefecto: "Happy Birthday",

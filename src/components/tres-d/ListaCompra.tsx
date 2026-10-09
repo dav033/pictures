@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { ClipboardCopy } from "lucide-react";
 import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import type { MaterialDecoracion } from "@/lib/globos3d/figuras";
+import { corazonesSinCobertura } from "@/lib/globos3d/formatos";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { ProductosFiesta } from "./UtileriaFiesta";
 import { BTN } from "./ui-taller";
@@ -28,6 +29,7 @@ function ListaMateriales({ materiales }: { materiales: ReadonlyArray<MaterialDec
 function enTexto(nombre: string, escena: Escena, armada: EscenaArmada): string {
   const lineas = [`${nombre} — lista de compra`, `${escena.nodos.length} piezas · ${armada.globos.length} globos`, "", "GLOBOS"];
   for (const x of [...armada.materiales].sort((a, b) => b.cantidad - a.cantidad)) lineas.push(`${x.cantidad} × ${x.formatoId} ${referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} ${x.codigo}`);
+  for (const x of corazonesSinCobertura(armada.materiales)) lineas.push(`SIN COBERTURA: la tienda no vende el Corazón 12 en ${referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} ${x.codigo} (${x.cantidad}).`);
   lineas.push("", "POR PIEZA");
   for (const n of armada.porNodo) lineas.push(`${n.nombre}: ${n.globos.length} globos${n.copias > 1 ? ` en ${n.copias} copias` : ""}`);
   return lineas.join("\n");
@@ -57,6 +59,7 @@ export function ListaCompra({ nombre, escena, armada, productosExactos }: { nomb
         {armada.materiales.length ? <ListaMateriales materiales={armada.materiales} /> : <p className="text-sm text-taller-suave">La escena no lleva globos todavía.</p>}
         {tubitos && <p className="mt-1 text-xs text-taller-suave">Tubitos contados por largo (~137 cm útiles cada uno).</p>}
         {armada.materiales.some((x) => x.formatoId === "C-6") && <p className="text-xs text-taller-suave">Corazón 6: color de Celebra ed. 27 (no está en la tabla oficial).</p>}
+        {corazonesSinCobertura(armada.materiales).map((x) => <p key={x.codigo} className="text-xs text-red-600" role="note">Sin cobertura: la tienda no vende el Corazón 12 en {referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} ({x.codigo}); {x.cantidad} {x.cantidad === 1 ? "corazón no se puede comprar" : "corazones no se pueden comprar"} en ese color.</p>)}
         {armada.flores.length > 0 && <p className="mt-1 text-xs text-taller-suave">Las flores artificiales son follaje: no cuentan como globos.</p>}
       </section>
       <section aria-label="Por pieza">

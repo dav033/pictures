@@ -69,12 +69,43 @@ export function mesaCoctelLicra(o: OpcionesMesa): ElementoEscenografia[] {
   ];
 }
 
-/** Consola / mesa de postres (angosta y alta) sin mantel: tapa, cuatro patas y un estante bajo. 180 × 45 × 90 cm. */
+/** Consola / mesa de postres (angosta y alta) sin mantel: tapa, cuatro patas y un estante bajo. 180 × 45 × 90 cm. Con `extra` es la ornamentada (`consolaOrnamentada`). */
 export function consola(o: OpcionesMesa): ElementoEscenografia[] {
+  if (o.extra) return consolaOrnamentada({ ...o, extra: o.extra });
   const { anchoCm: w, fondoCm: d, altoCm: h, tapa, patas } = o;
   const salida: ElementoEscenografia[] = [caja(v(0, h - 1.5, 0), v(w, 3, d), tapa), caja(v(0, h * 0.24, 0), v(w - 10, 2.5, d - 8), patas)];
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) salida.push(barra(v(sx * (w / 2 - 6), 0, sz * (d / 2 - 5)), v(sx * (w / 2 - 6), h - 3, sz * (d / 2 - 5)), 1.4, patas, 2));
   salida.push(caja(v(0, h - 6, 0), v(w - 12, 5, d - 10), patas));
+  return salida;
+}
+
+/**
+ * La mesa de postres ornamentada de las fotos de fiesta (blanca, con patas torneadas y filetes dorados): la tapa con su moldura, el faldón con un friso,
+ * las patas de balaustre (pie, copa, bulbo, cuello y collarín) y el estante de abajo con su canto. `extra` es el color de los filetes y los collarines.
+ */
+function consolaOrnamentada(o: OpcionesMesa & { extra: Material }): ElementoEscenografia[] {
+  const { anchoCm: w, fondoCm: d, altoCm: h, tapa, patas, extra: filete } = o;
+  const salida: ElementoEscenografia[] = [
+    caja(v(0, h - 1.5, 0), v(w, 3, d), tapa),
+    caja(v(0, h - 3.6, 0), v(w + 1.6, 1.2, d + 1.6), filete),
+    caja(v(0, h - 7, 0), v(w - 12, 6, d - 10), patas),
+    caja(v(0, h - 7, (d - 10) / 2 + 0.3), v(w - 16, 1.4, 0.6), filete),
+    caja(v(0, h * 0.24, 0), v(w - 10, 2.5, d - 8), patas),
+    caja(v(0, h * 0.24 + 1.5, 0), v(w - 8, 0.8, d - 6), filete),
+  ];
+  const alto = h - 8.5;
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const x = sx * (w / 2 - 6), z = sz * (d / 2 - 5);
+    salida.push(
+      cilindro(v(x, 0, z), 3.4, 2, patas, 2.8),
+      cilindro(v(x, 2, z), 2.8, alto * 0.14, patas, 1.5),
+      cilindro(v(x, 2 + alto * 0.14, z), 1.5, alto * 0.1, patas, 3.3),
+      cilindro(v(x, 2 + alto * 0.24, z), 3.3, alto * 0.1, patas, 1.5),
+      cilindro(v(x, 2 + alto * 0.34, z), 1.5, alto * 0.5, patas, 1.8),
+      cilindro(v(x, 2 + alto * 0.84, z), 2.6, 1.2, filete, 2.6),
+      cilindro(v(x, 3.2 + alto * 0.84, z), 1.8, alto * 0.16 - 1.2, patas, 2.2),
+    );
+  }
   return salida;
 }
 

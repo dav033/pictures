@@ -135,6 +135,11 @@ export const PiezaLeidaSchema = z.discriminatedUnion("tipo", [
     x: Fraccion, yBase: Fraccion, yArriba: Fraccion, cantidad: z.number().int().min(2).max(20), ...Comun,
   }),
   z.object({
+    // Globos de corazón de látex (un solo tamaño, C-12) de cualquier color: `cantidad` de ellos juntos alrededor de (x, y), en el piso o en el aire.
+    tipo: z.literal("corazon"),
+    x: Fraccion, y: Fraccion, en: z.enum(["piso", "aire"]), cantidad: z.number().int().min(1).max(12), ...Comun,
+  }),
+  z.object({
     tipo: z.literal("decoracion"),
     id: z.enum(RACIMOS_PREDEFINIDOS.map((r) => r.id) as [string, ...string[]]),
     x: Fraccion, y: Fraccion, cantidad: z.number().int().min(1).max(12), ...Comun,

@@ -1,5 +1,6 @@
 import { TELONES_DE_DIAMETRO, esTelon } from "./fondos-escenografia";
 import { mismaFamiliaDeFondo } from "./fondos-familias";
+import { fondosSinLeer } from "./fondos-sin-leer";
 import type { PiezaLeida } from "./lectura-foto";
 
 /**
@@ -18,6 +19,8 @@ const IOU_MINIMO = 0.1;
 const CENTROS_MAXIMOS = 0.25;
 /** Una sola caja no vale por una fila de piezas si es más angosta que esta fracción de lo leído: sería una sola silla de la fila. */
 const FRACCION_DE_FILA = 0.6;
+/** El esquema de la lectura admite hasta 30 piezas. */
+const MAXIMO_PIEZAS = 30;
 const entre = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 const r3 = (n: number) => Math.round(n * 1000) / 1000;
 
@@ -118,5 +121,8 @@ export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly Fond
       notaDe.set(i, `«${p.id}» puesto en la caja detectada${deFamilia}${cajas.length > 1 ? ` (${cajas.length} cajas)` : ""}: ancho ${nueva.ancho} (leído ${p.ancho}), alto ${nueva.alto} (leído ${p.alto}).`);
     }
   }
-  return { piezas: salida, notas: [...notaDe.entries()].sort((a, b) => a[0] - b[0]).map(([, n]) => n) };
+  // Lo detectado que el lector no leyó y va sobre una mesa (los pasteles) se vuelve pieza.
+  const sobrantes = fondos.filter((f) => !usados.has(f)).flatMap((f) => { const caja = cajaDeDeteccion(f, aspecto); return caja ? [{ id: f.id, caja }] : []; });
+  const nuevas = fondosSinLeer(sobrantes, aspecto, Math.max(0, MAXIMO_PIEZAS - salida.length), salida);
+  return { piezas: [...salida, ...nuevas.piezas, ...nuevas.otros], notas: [...[...notaDe.entries()].sort((a, b) => a[0] - b[0]).map(([, n]) => n), ...nuevas.notas] };
 }

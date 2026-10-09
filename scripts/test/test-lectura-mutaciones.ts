@@ -65,6 +65,7 @@ const COMPLETAS: Readonly<Record<PiezaLeida["tipo"], PiezaLeida>> = {
   guirnalda_clasica: { tipo: "guirnalda_clasica", x1: 0.2, x2: 0.8, y: 0.3, caida: 0.1, colores: [DORADO, BLANCO], nota: "cuelga" },
   globo: { tipo: "globo", x: 0.5, y: 0.5, diametro: 0.2, en: "aire", colores: [DORADO], nota: "suelto" },
   ramo_helio: { tipo: "ramo_helio", x: 0.5, yBase: 0.85, yArriba: 0.4, cantidad: 4, colores: [DORADO, BLANCO], nota: "atado" },
+  corazon: { tipo: "corazon", x: 0.5, y: 0.55, en: "piso", cantidad: 6, colores: [DORADO, BLANCO], nota: "dos verdes grandes" },
   decoracion: { tipo: "decoracion", id: "orbe_flecos_dorado", x: 0.5, y: 0.5, cantidad: 2, colores: [DORADO], nota: "dos orbes" },
   metalizado: { tipo: "metalizado", texto: "LOVE", cursiva: false, x: 0.5, y: 0.5, alto: 0.2, colores: [DORADO], nota: "foil" },
   fondo: { tipo: "fondo", id: "panel_redondo", x: 0.5, yBase: 0.85, ancho: 0.5, alto: 0.5, texto: "Hola", colorTexto: "negro", acabadoTexto: "cromado", cantidad: 3, colores: [DORADO, BLANCO], nota: "panel" },

@@ -29,9 +29,26 @@ const CRISTAL = "390";
 const FORMATOS_ORGANICOS: readonly string[] = ["R-36", "R-24", "R-18", "R-12", "R-9", "R-5"];
 const FORMATOS_CRISTAL: readonly string[] = ["R-12", "R-18", "R-24"];
 
+/**
+ * Los blancos cálidos que el lector escribe como «marfil», «ivory», «crema», «hueso», «blanco crema»…: no son el Fashion Blanco (005) ni, como pasaba
+ * con «blanco crema», un Satín Perla. Van al Pastel Dusk Crema (107) o, con acabado perla, al Silk Perla Crema (873). El nude y la arena ya se resuelven por nombre (661 y 071).
+ */
+const BLANCO_CALIDO = /^(blanco )?(marfil|ivory|crema|cream|hueso|off ?white|roto)$|^blanco (marfil|crema|hueso|roto)$/;
+const CREMA_MATE = "107", CREMA_PERLA = "873";
+const sinTildes = (t: string) => t.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim().replace(/\s+/g, " ");
+
+/** El código de un blanco cálido leído, si lo es y se fabrica en los formatos pedidos. */
+export function codigoDeBlancoCalido(c: ColorLeido, formatos: readonly string[]): string | null {
+  if (!BLANCO_CALIDO.test(sinTildes(c.nombre)) || c.acabado === "cromado") return null;
+  const codigo = c.acabado === "perla" ? CREMA_PERLA : CREMA_MATE;
+  return formatos.every((f) => coloresDelFormato(f).some((r) => r.codigo === codigo)) ? codigo : null;
+}
+
 /** Un color leído → código Sempertex (en los formatos pedidos): por nombre y acabado, si no por el hex medido. */
 export function codigoDeColor(c: ColorLeido, formatos: readonly string[], notas: string[]): string {
   if (c.acabado === "cristal" || c.acabado === "confeti") return CRISTAL;
+  const calido = codigoDeBlancoCalido(c, formatos);
+  if (calido) { notas.push(`«${c.nombre}» → ${nombreDeCodigo(calido)}`); return calido; }
   const familia = FAMILIA_ACABADO[c.acabado];
   const pedido = familia && !c.nombre.toLowerCase().includes(familia) ? `${c.nombre} ${familia}` : c.nombre;
   try {

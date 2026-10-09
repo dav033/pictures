@@ -152,6 +152,39 @@ export function basePastel(o: OpcionesDecorado): ElementoEscenografia[] {
   return [cilindro(v(0, 0, 0), dia * 0.26, 1.5, m, dia * 0.22), cilindro(v(0, 1.5, 0), 2.4, h - 3.5, m, 1.8), cilindro(v(0, h - 2, 0), dia / 2, 2, m, dia / 2 - 0.4)];
 }
 
+/** Alto (cm) del plato y el pie sobre los que se apoyan los pisos de un pastel. */
+const PIE_DEL_PASTEL_CM = 10;
+/** Alto (cm) de un piso de pastel: con él se cuentan los pisos que caben en el alto pedido. */
+const PISO_DE_PASTEL_CM = 9;
+/** Cuánto más angosto que el de abajo es cada piso siguiente. */
+const REDUCCION_DE_PISO = 0.78;
+export const MAXIMO_PISOS_PASTEL = 3;
+
+/** Cuántos pisos tiene un pastel que mide `altoCm` de alto (de 1 a 3): el alto manda, así que la lectura de una foto y el deslizador de alto dicen lo mismo. */
+export const pisosDePastel = (altoCm: number): number => Math.min(MAXIMO_PISOS_PASTEL, Math.max(1, Math.round((altoCm - PIE_DEL_PASTEL_CM) / PISO_DE_PASTEL_CM)));
+
+/**
+ * Pastel de 1 a 3 pisos sobre su plato con pie: el color principal es el pastel y el secundario el plato y el filete de cada piso. `anchoCm` es el diámetro del
+ * plato; el piso de abajo mide el 90 % de él y cada uno siguiente, el 78 % del anterior. `altoCm` es el total y de él salen los pisos (`pisosDePastel`).
+ */
+export function pastel(o: OpcionesDecorado): ElementoEscenografia[] {
+  const { anchoCm: dia, altoCm: h, principal: crema, secundario: filete } = o;
+  const pisos = pisosDePastel(h);
+  const alto = (h - PIE_DEL_PASTEL_CM) / pisos;
+  const salida: ElementoEscenografia[] = [
+    cilindro(v(0, 0, 0), dia * 0.24, 1.5, filete, dia * 0.2),
+    cilindro(v(0, 1.5, 0), 2.2, PIE_DEL_PASTEL_CM - 3.5, filete, 1.8),
+    cilindro(v(0, PIE_DEL_PASTEL_CM - 2, 0), dia / 2, 2, filete, dia / 2 - 0.4),
+  ];
+  let radio = (dia * 0.9) / 2;
+  for (let k = 0; k < pisos; k++) {
+    const y = PIE_DEL_PASTEL_CM + k * alto;
+    salida.push(cilindro(v(0, y, 0), radio, alto, crema), cilindro(v(0, y, 0), radio + 0.35, 1.1, filete));
+    radio *= REDUCCION_DE_PISO;
+  }
+  return salida;
+}
+
 /** Letrero de neón: tablero oscuro (acrílico) con el texto en cursiva luminosa. Va en la pared. */
 export function neonCursiva(o: OpcionesDecorado): ElementoEscenografia[] {
   const motivo: MotivoEscenografia = { dibujo: "texto", texto: o.texto || "Happy Birthday", hex: o.secundario.hex, estilo: "neon" };

@@ -31,7 +31,10 @@ export const SINONIMOS_DE_FONDO: Readonly<Record<string, string>> = {
   escalones: "peldanos", escalon: "peldanos", gradas: "peldanos", peldano: "peldanos", escalera: "escalera_decorativa",
   columna: "columna_griega", pilar: "columna_griega", columna_romana: "columna_griega",
   jarron: "jarron_pampas", pampas: "jarron_pampas", lampara: "lampara_pie",
-  base_de_pastel: "base_pastel", soporte_pastel: "base_pastel", marco_de_tela: "marco_tela", marco_con_tela: "marco_tela",
+  base_de_pastel: "base_pastel", soporte_pastel: "base_pastel", torta: "pastel", tortas: "pastel", pastel_de_pisos: "pastel", torta_de_pisos: "pastel", cake: "pastel", tiered_cake: "pastel", pasteles: "pastel",
+  cortina_de_flecos: "cortina_flecos", cortina_flecos_dorados: "cortina_flecos", cortina_de_tiras: "cortina_flecos", cortina_tiras: "cortina_flecos", cortina_de_tinsel: "cortina_flecos", cortina_tinsel: "cortina_flecos", cortina_shimmer: "cortina_flecos",
+  cortina_de_fleco: "cortina_flecos", cortina_fleco: "cortina_flecos", cortina_de_raso: "cortina_flecos", cortina_de_satin: "cortina_flecos", fringe_curtain: "cortina_flecos", tinsel_curtain: "cortina_flecos", cortina_brillante: "cortina_flecos", cortina_metalizada: "cortina_flecos", flecos: "cortina_flecos",
+  mesa_de_postres_blanca: "mesa_postres", mesa_de_postres_ornamentada: "mesa_postres", mesa_postres_blanca: "mesa_postres", marco_de_tela: "marco_tela", marco_con_tela: "marco_tela",
   nombre_acrilico: "rotulo_acrilico", nombre_de_acrilico: "rotulo_acrilico", letras_acrilico: "rotulo_acrilico",
   carrito: "carrito_dulces", candy_cart: "carrito_dulces",
 };
