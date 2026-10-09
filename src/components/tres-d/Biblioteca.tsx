@@ -15,6 +15,7 @@ import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { MiniaturaDecoracion } from "./DecoracionesPequenas";
 import { ACTIVO, BOTON, INACTIVO } from "./PanelFlor";
 import { mostrarArmada } from "./armada-visor";
+import { exigirLetraDeRotulos } from "./fuente-rotulos";
 import type { EscenaGlobos } from "./escena-globos";
 import { armarEnMotor, useMotorBiblioteca, type Armado } from "./biblioteca-cliente";
 import { ArrastreDecoracionContexto, arrastreDeItem } from "./arrastre-decoracion";
@@ -180,6 +181,9 @@ export function useMiniaturas3d(orden: readonly ItemBiblioteca[], huellas: Reado
         if (!vivo) return;
         const hecho = await armarEnMotor(item, false);
         if ("error" in hecho) throw new Error(hecho.error);
+        if (!vivo || !visorRef.current) return;
+        // Un nombre o un neón se dibuja con la letra cursiva: sin esperarla la miniatura se guarda con la marca roja.
+        await exigirLetraDeRotulos(hecho.armada.solidos);
         if (!vivo || !visorRef.current) return;
         mostrarArmada(visorRef.current, hecho.armada);
         await esperarCuadro();
