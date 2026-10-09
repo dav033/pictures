@@ -45,7 +45,7 @@ prueba("todo campo hoja del esquema tiene su destino, y el libro no tiene campos
 prueba("lo ignorado dice por qué, y todo lo demás tiene al menos un consumidor", () => {
   for (const [ruta, destino] of Object.entries(DESTINOS)) {
     if ("ignorado" in destino) assert.ok(destino.ignorado.length >= 25, `${ruta}: la razón de ignorarlo es muy corta`);
-    else assert.ok(destino.length >= 1 && destino.every((c) => ["compilar", "medir", "prompt"].includes(c)), ruta);
+    else assert.ok(destino.length >= 1 && destino.every((c) => ["compilar", "medir", "prompt", "nota"].includes(c)), ruta);
   }
 });
 

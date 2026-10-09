@@ -1,10 +1,13 @@
 import type { LecturaFoto } from "../../src/lib/globos3d/lectura-foto";
 
 /**
- * **El libro de cuentas de la lectura de una foto**: para CADA campo hoja de `LecturaFotoSchema`, quién lo consume —
- * `compilar` (`compilar-lectura.ts` y lo que llama), `medir` (`medir-con-detecciones.ts`: lo mide o lo corrige con los globos
- * detectados) o `prompt` (lo que ve el modelo del agente: `resumenParaAgente`)— o `ignorado`, con la razón. Un campo que se
- * produce y nadie consume es un defecto: la regla del dueño es que no haya propiedades huérfanas.
+ * **El libro de cuentas de la lectura de una foto**: para CADA campo hoja de `LecturaFotoSchema`, quién lo consume:
+ * - `compilar`: cambia la ESCENA que arma `compilar-lectura.ts` (y lo que llama);
+ * - `nota`: solo cambia las notas o las piezas omitidas del compilador, no la escena (lo que el lector anota, lo que no se arma);
+ * - `medir`: `medir-con-detecciones.ts` lo mide o lo corrige con los globos detectados;
+ * - `prompt`: lo que ve el modelo del agente (`resumenParaAgente`, `lineaDePiezaLeida`);
+ * - o `ignorado`, con la razón. Un campo que se produce y nadie consume es un defecto: la regla del dueño es que no haya
+ *   propiedades huérfanas.
  *
  * `RutaHoja` se deduce del tipo de la lectura: si se agrega o se quita un campo del esquema, este archivo no compila hasta que se
  * declare su destino (`satisfies Record<RutaHoja, Destino>`), y `test-lectura-destinos.ts` lo comprueba también contra el JSON
@@ -22,7 +25,7 @@ type Campos<T, P extends string> = { [K in keyof T & string]-?: Hojas<NonNullabl
 
 export type RutaHoja = Hojas<LecturaFoto, "">;
 
-export type Consumidor = "compilar" | "medir" | "prompt";
+export type Consumidor = "compilar" | "medir" | "prompt" | "nota";
 export type Destino = readonly [Consumidor, ...Consumidor[]] | { readonly ignorado: string };
 
 const C = ["compilar"] as const;
@@ -79,7 +82,7 @@ export const DESTINOS = {
   "piezas[]<guirnalda_organica>.colores[].hex": CM,
   "piezas[]<guirnalda_organica>.colores[].peso": ["compilar", "medir", "prompt"] as const,
   "piezas[]<guirnalda_organica>.colores[].acabado": ["compilar", "medir", "prompt"] as const,
-  "piezas[]<guirnalda_organica>.nota": C,
+  "piezas[]<guirnalda_organica>.nota": ["nota"] as const,
 
   "piezas[]<columna_organica>.tipo": C,
   "piezas[]<columna_organica>.forma": ["compilar", "prompt"] as const,
@@ -111,7 +114,7 @@ export const DESTINOS = {
   "piezas[]<columna_organica>.colores[].hex": C,
   "piezas[]<columna_organica>.colores[].peso": ["compilar", "prompt"] as const,
   "piezas[]<columna_organica>.colores[].acabado": ["compilar", "prompt"] as const,
-  "piezas[]<columna_organica>.nota": C,
+  "piezas[]<columna_organica>.nota": ["nota"] as const,
 
   "piezas[]<racimo_piso>.tipo": C,
   "piezas[]<racimo_piso>.x": CM,
@@ -148,7 +151,7 @@ export const DESTINOS = {
   "piezas[]<racimo_piso>.colores[].hex": CM,
   "piezas[]<racimo_piso>.colores[].peso": ["compilar", "medir", "prompt"] as const,
   "piezas[]<racimo_piso>.colores[].acabado": ["compilar", "medir", "prompt"] as const,
-  "piezas[]<racimo_piso>.nota": C,
+  "piezas[]<racimo_piso>.nota": ["nota"] as const,
 
   "piezas[]<columna_clasica>.tipo": C,
   "piezas[]<columna_clasica>.x": CM,
@@ -158,7 +161,7 @@ export const DESTINOS = {
   "piezas[]<columna_clasica>.colores[].hex": C,
   "piezas[]<columna_clasica>.colores[].peso": ["prompt"] as const,
   "piezas[]<columna_clasica>.colores[].acabado": ["compilar", "prompt"] as const,
-  "piezas[]<columna_clasica>.nota": C,
+  "piezas[]<columna_clasica>.nota": ["nota"] as const,
 
   "piezas[]<guirnalda_clasica>.tipo": C,
   "piezas[]<guirnalda_clasica>.x1": ["compilar", "prompt"] as const,
@@ -169,7 +172,7 @@ export const DESTINOS = {
   "piezas[]<guirnalda_clasica>.colores[].hex": C,
   "piezas[]<guirnalda_clasica>.colores[].peso": ["prompt"] as const,
   "piezas[]<guirnalda_clasica>.colores[].acabado": ["compilar", "prompt"] as const,
-  "piezas[]<guirnalda_clasica>.nota": C,
+  "piezas[]<guirnalda_clasica>.nota": ["nota"] as const,
 
   "piezas[]<globo>.tipo": C,
   "piezas[]<globo>.x": CM,
@@ -180,18 +183,18 @@ export const DESTINOS = {
   "piezas[]<globo>.colores[].hex": C,
   "piezas[]<globo>.colores[].peso": ["prompt"] as const,
   "piezas[]<globo>.colores[].acabado": ["compilar", "prompt"] as const,
-  "piezas[]<globo>.nota": C,
+  "piezas[]<globo>.nota": ["nota"] as const,
 
   "piezas[]<ramo_helio>.tipo": C,
   "piezas[]<ramo_helio>.x": CM,
-  "piezas[]<ramo_helio>.yBase": CM,
+  "piezas[]<ramo_helio>.yBase": ["nota", "medir"] as const,
   "piezas[]<ramo_helio>.yArriba": CM,
   "piezas[]<ramo_helio>.cantidad": ["compilar", "medir", "prompt"] as const,
   "piezas[]<ramo_helio>.colores[].nombre": ["compilar", "prompt"] as const,
   "piezas[]<ramo_helio>.colores[].hex": C,
   "piezas[]<ramo_helio>.colores[].peso": ["prompt"] as const,
   "piezas[]<ramo_helio>.colores[].acabado": ["compilar", "prompt"] as const,
-  "piezas[]<ramo_helio>.nota": C,
+  "piezas[]<ramo_helio>.nota": ["nota"] as const,
 
   "piezas[]<decoracion>.tipo": C,
   "piezas[]<decoracion>.id": ["compilar", "prompt"] as const,
@@ -202,11 +205,11 @@ export const DESTINOS = {
   "piezas[]<decoracion>.colores[].hex": C,
   "piezas[]<decoracion>.colores[].peso": ["prompt"] as const,
   "piezas[]<decoracion>.colores[].acabado": ["compilar", "prompt"] as const,
-  "piezas[]<decoracion>.nota": C,
+  "piezas[]<decoracion>.nota": ["nota"] as const,
 
   "piezas[]<metalizado>.tipo": C,
   "piezas[]<metalizado>.texto": ["compilar", "medir", "prompt"] as const,
-  "piezas[]<metalizado>.cursiva": ["compilar", "prompt"] as const,
+  "piezas[]<metalizado>.cursiva": ["nota", "prompt"] as const,
   "piezas[]<metalizado>.x": CM,
   "piezas[]<metalizado>.y": CM,
   "piezas[]<metalizado>.alto": CM,
@@ -214,7 +217,7 @@ export const DESTINOS = {
   "piezas[]<metalizado>.colores[].hex": { ignorado: "el foil se pide por el nombre del color («rosa oro»); el hex no se usa" },
   "piezas[]<metalizado>.colores[].peso": ["prompt"] as const,
   "piezas[]<metalizado>.colores[].acabado": ["prompt"] as const,
-  "piezas[]<metalizado>.nota": C,
+  "piezas[]<metalizado>.nota": ["nota"] as const,
 
   "piezas[]<fondo>.tipo": C,
   "piezas[]<fondo>.id": ["compilar", "medir", "prompt"] as const,
@@ -227,8 +230,8 @@ export const DESTINOS = {
   "piezas[]<fondo>.colores[].hex": C,
   "piezas[]<fondo>.colores[].peso": ["prompt"] as const,
   "piezas[]<fondo>.colores[].acabado": ["compilar", "prompt"] as const,
-  "piezas[]<fondo>.nota": C,
+  "piezas[]<fondo>.nota": ["nota"] as const,
 
   "piezas[]<otro>.tipo": C,
-  "piezas[]<otro>.descripcion": ["compilar", "prompt"] as const,
+  "piezas[]<otro>.descripcion": ["nota", "prompt"] as const,
 } as const satisfies Record<RutaHoja, Destino>;

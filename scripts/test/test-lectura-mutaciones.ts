@@ -2,7 +2,7 @@
  * Cada campo de la lectura que el libro de destinos (`lectura-destinos.ts`) dice que consume el compilador CAMBIA lo que se
  * compila cuando se modifica. Sin coste ni red. El libro es una declaración; esta prueba la verifica: de cada hoja con
  * «compilar» se arma una lectura completa de su pieza, se cambia ese campo (según su tipo en el esquema) y se exige que la
- * escena o las notas salgan distintas. Si un campo se anuncia como consumido y no lo es, falla aquí con su nombre.
+ * ESCENA salga distinta (un cambio que solo toca una nota no cuenta: esos campos van como «nota» y se exige que cambien las notas). Si un campo se anuncia como consumido y no lo es, falla aquí con su nombre.
  *
  * Algunos campos solo cuentan en ciertas condiciones, y la prueba las pone (`CONDICIONES`): `tamanos` solo cuando no hay `mezcla`;
  * el diámetro de un escalón solo si el escalón no nombra su formato; el hex de un color solo si su nombre no está en la tabla;
@@ -71,7 +71,7 @@ const COMPLETAS: Readonly<Record<PiezaLeida["tipo"], PiezaLeida>> = {
   otro: { tipo: "otro", descripcion: "una torta de tres pisos" },
 };
 
-type Variante = { id: "nada" | "sin_mezcla" | "sin_formatos" | "nombre_desconocido" | "letrero" | "pedestales" | "lentejuelas"; prepara: (p: PiezaLeida) => void };
+type Variante = { id: "nada" | "sin_mezcla" | "sin_formatos" | "nombre_desconocido" | "letrero" | "pedestales" | "lentejuelas" | "sin_gigantes"; prepara: (p: PiezaLeida) => void };
 const VARIANTES: Readonly<Record<Variante["id"], Variante["prepara"]>> = {
   nada: () => undefined,
   /** `tamanos` solo cuenta sin `mezcla`. */
@@ -82,6 +82,11 @@ const VARIANTES: Readonly<Record<Variante["id"], Variante["prepara"]>> = {
   nombre_desconocido: (p) => { if ("colores" in p) p.colores.forEach((c, i) => { c.nombre = `color de fantasía ${i}`; c.acabado = "mate"; }); },
   letrero: (p) => { if (p.tipo === "fondo") p.id = "letrero"; },
   pedestales: (p) => { if (p.tipo === "fondo") p.id = "pedestales"; },
+  /** Con gigantes en la mezcla, el cuerpo no baja de lo que piden (R-36: ~1,1 m): el grosor leído solo manda sin ellos. */
+  sin_gigantes: (p) => {
+    if ("mezcla" in p && p.mezcla) { p.mezcla.gigantes = 0; delete p.mezcla.diametroGigante; delete p.mezcla.formatoGigante; p.mezcla.medianos += 8; }
+    if (p.tipo === "guirnalda_organica") { p.puntos.forEach((q) => { if (q.mezcla) { q.mezcla.medianos += q.mezcla.gigantes ?? 0; delete q.mezcla.gigantes; } }); delete p.anclas; delete p.coloresPorEscalon; }
+  },
   /** El panel redondo solo usa su alto (es un círculo): el ancho cuenta en los fondos que son rectángulos. */
   lentejuelas: (p) => { if (p.tipo === "fondo") p.id = "lentejuelas"; },
 };
@@ -94,6 +99,7 @@ function condicionDe(ruta: string): Variante["id"] {
   if (ruta === "piezas[]<fondo>.texto") return "letrero";
   if (ruta === "piezas[]<fondo>.colores[].acabado") return "pedestales";
   if (ruta === "piezas[]<fondo>.ancho") return "lentejuelas";
+  if (ruta === "piezas[]<guirnalda_organica>.puntos[].grosor" || ruta === "piezas[]<columna_organica>.grosor") return "sin_gigantes";
   return "nada";
 }
 
@@ -112,7 +118,7 @@ const OTRO_HEX = (hex: string) => (hex.toLowerCase() === "#808080" ? "#204060" :
 /** Un valor distinto y válido para la hoja (según su tipo en el esquema y, donde hace falta, lo que la distingue). */
 function otroValor(ruta: string, actual: unknown, nodo: Nodo): unknown {
   const campo = ruta.split(".").pop()!.replace("[]", "");
-  if (ruta.endsWith("colores[].nombre")) return actual === "dorado" ? "negro" : "dorado";
+  if (ruta.endsWith("colores[].nombre")) return actual === "dorado" ? "plata" : "dorado";
   if (ruta.endsWith("colores[].acabado")) return actual === "cromado" ? "mate" : "cromado";
   if (campo === "color" || campo === "dominante") return actual === "dorado" ? "blanco" : "dorado";
   if (campo === "follaje") return "palma";
@@ -125,7 +131,7 @@ function otroValor(ruta: string, actual: unknown, nodo: Nodo): unknown {
   if (nodo.type === "number" || nodo.type === "integer") {
     const v = actual as number, min = nodo.minimum ?? -Infinity, max = nodo.maximum ?? Infinity;
     // Los diámetros pasan a otro formato solo si cambian lo bastante.
-    const factores = campo.startsWith("diametro") ? [2.3, 0.45] : campo === "grosor" || campo === "ancho" ? [1.4, 0.7] : [0.7, 1.4];
+    const factores = campo.startsWith("diametro") ? [2.3, 0.45] : campo === "grosor" ? [2.2, 0.7] : campo === "ancho" ? [1.4, 0.7] : [0.7, 1.4];
     for (const f of factores) { const n = nodo.type === "integer" ? Math.round(v * f) : Math.round(v * f * 1000) / 1000; if (n !== v && n >= min && n <= max) return n; }
     const n = nodo.type === "integer" ? v + 1 : v + 0.1;
     return n <= max ? n : v - (nodo.type === "integer" ? 1 : 0.1);
@@ -145,15 +151,16 @@ const huella = (l: LecturaFoto) => {
   const valida = LecturaFotoSchema.safeParse(l);
   assert.ok(valida.success, valida.success ? "" : valida.error.issues.slice(0, 2).map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
   const c = compilarLectura(valida.data);
-  return JSON.stringify({ escena: c.escena, notas: c.notas, omitidas: c.omitidas });
+  return { escena: JSON.stringify(c.escena), notas: JSON.stringify({ notas: c.notas, omitidas: c.omitidas }) };
 };
+type Huella = ReturnType<typeof huella>;
 
 const lecturaDe = (pieza: PiezaLeida, variante: Variante["id"]): LecturaFoto => {
   const p = structuredClone(pieza);
   VARIANTES[variante](p);
   return { ...structuredClone(RAIZ), piezas: [p] };
 };
-const base = new Map<string, string>();
+const base = new Map<string, Huella>();
 const huellaBase = (tipo: PiezaLeida["tipo"], variante: Variante["id"]) => {
   const k = `${tipo}|${variante}`;
   if (!base.has(k)) base.set(k, huella(lecturaDe(COMPLETAS[tipo], variante)));
@@ -164,10 +171,13 @@ const huellaBase = (tipo: PiezaLeida["tipo"], variante: Variante["id"]) => {
 // Una prueba por hoja que dice «compilar»
 // ----------------------------------------------------------------------------------------------------------
 
-const consumeCompilar = (d: (typeof DESTINOS)[keyof typeof DESTINOS]) => !("ignorado" in d) && (d as readonly string[]).includes("compilar");
-const hojasAProbar = Object.entries(DESTINOS).filter(([, d]) => consumeCompilar(d)).map(([ruta]) => ruta);
+type Destinos = (typeof DESTINOS)[keyof typeof DESTINOS];
+const consume = (d: Destinos, quien: string) => !("ignorado" in d) && (d as readonly string[]).includes(quien);
+/** Lo que se compara según el destino: la ESCENA para «compilar»; las notas y las piezas omitidas para «nota». */
+const parteDe = (ruta: string): keyof Huella => (consume(DESTINOS[ruta as keyof typeof DESTINOS], "compilar") ? "escena" : "notas");
+const hojasAProbar = Object.entries(DESTINOS).filter(([, d]) => consume(d, "compilar") || consume(d, "nota")).map(([ruta]) => ruta);
 
-console.log(`Mutación de ${hojasAProbar.length} campos declarados como consumidos por el compilador`);
+console.log(`Mutación de ${hojasAProbar.length} campos declarados como consumidos por el compilador (la escena) o por sus notas`);
 for (const ruta of hojasAProbar) {
   if (ruta.endsWith(".tipo")) continue; // el discriminante: sin él la pieza no se arma (lo prueban todas las demás)
   const tipo = ruta.match(/^piezas\[\]<([a-z_]+)>/)?.[1] as PiezaLeida["tipo"] | undefined;
@@ -182,16 +192,16 @@ for (const ruta of hojasAProbar) {
       let a = l as unknown as Record<string, unknown>;
       for (const p of camino.slice(0, -1)) a = a[p] as Record<string, unknown>;
       a[camino[camino.length - 1]!] = otroValor(ruta, a[camino[camino.length - 1]!], nodo);
-      assert.notEqual(huella(l), antes, `${ruta}: cambiarlo no cambia lo compilado`);
+      assert.notEqual(huella(l)[parteDe(ruta)], antes[parteDe(ruta)], `${ruta}: cambiarlo no cambia ${parteDe(ruta) === "escena" ? "la escena" : "las notas"}`);
       return;
     }
     const l = lecturaDe(COMPLETAS[tipo], variante);
     colocar(l.piezas[0], ruta, nodo);
-    assert.notEqual(huella(l), huellaBase(tipo, variante), `${ruta}: cambiarlo no cambia lo compilado`);
+    assert.notEqual(huella(l)[parteDe(ruta)], huellaBase(tipo, variante)[parteDe(ruta)], `${ruta}: cambiarlo no cambia ${parteDe(ruta) === "escena" ? "la escena" : "las notas"}`);
   });
 }
 assert.deepEqual(fallos, [], `campos que el libro dice consumidos y no cambian lo compilado:\n  ${fallos.join("\n  ")}`);
-console.log(`  ✓ ${pruebas} campos cambian lo que se compila`);
+console.log(`  ✓ ${pruebas} campos cambian la escena o las notas, según su destino`);
 
 // Lo ignorado de verdad se ignora: si cambiarlo cambia lo compilado, el libro está desactualizado.
 for (const [ruta, d] of Object.entries(DESTINOS)) {
@@ -200,7 +210,8 @@ for (const [ruta, d] of Object.entries(DESTINOS)) {
   prueba(`ignorado: ${ruta}`, () => {
     const l = lecturaDe(COMPLETAS[tipo], "nada");
     colocar(l.piezas[0], ruta, NODOS.get(ruta)!);
-    assert.equal(huella(l), huellaBase(tipo, "nada"), `${ruta}: está declarado ignorado y cambia lo compilado`);
+    const antes = huellaBase(tipo, "nada"), despues = huella(l);
+    assert.ok(despues.escena === antes.escena && despues.notas === antes.notas, `${ruta}: está declarado ignorado y cambia lo compilado`);
   });
 }
 assert.deepEqual(fallos, [], `el libro está desactualizado: ${fallos.join(" | ")}`);
