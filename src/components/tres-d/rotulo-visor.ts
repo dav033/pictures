@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { RotuloEscenografia, SolidoEscenografia } from "@/lib/globos3d/escenografia";
 import { cajaDeTinta, contornosDeMascara, type Mascara } from "@/lib/globos3d/rotulo-contornos";
 import { aspectoEstimado, caraDe, colocarRotulo, type CaraRotulo, GROSOR_ACRILICO_CM, GROSOR_VINILO_CM, lineasDeRotulo } from "@/lib/globos3d/rotulos";
-import { cargarFuenteRotulos, estadoFuenteRotulos, FUENTE_ROTULOS, fuenteDeRotulos } from "./fuente-rotulos";
+import { cargarFuenteRotulos, estadoFuenteRotulos, FUENTE_ROTULOS, fuenteDeRotulos, reintentarFuenteRotulos } from "./fuente-rotulos";
 import { colorDeLatex } from "./materiales-visor";
 
 /**
@@ -18,9 +18,9 @@ import { colorDeLatex } from "./materiales-visor";
 
 const CM = 0.01;
 /**
- * Cuántos textos distintos se guardan por visor. Al escribir un nombre letra por letra pasan por aquí los intermedios (el campo espera
- * a que se deje de teclear, pero no todos los intermedios se evitan): al llegar al tope sale el que lleva más tiempo sin usarse.
- * Cada texto cuesta ~1–3 mil triángulos (unos 100 KB de GPU): 12 son un tope bajo y un nombre se rehace en ~50–100 ms.
+ * Cuántos textos SIN USAR se guardan por visor (los que ninguna malla viva usa): al escribir un nombre letra por letra pasan por aquí
+ * los intermedios, y al llegar al tope sale el que lleva más tiempo sin usarse. Los textos en uso (una escena con 20 números de mesa
+ * son 20) no cuentan y nunca salen: cada texto cuesta de 3,5 a 10 mil triángulos (~0,3 MB de GPU) y se rehace en 12–50 ms.
  */
 const MAXIMO_TEXTOS = 12;
 const LETRA_PX = 150;
@@ -36,7 +36,7 @@ export const rasterizarTexto: Rasterizador = (texto) => {
   if (typeof document === "undefined") return null;
   const estado = estadoFuenteRotulos();
   if (estado === "pendiente" || estado === "cargando") { void cargarFuenteRotulos(); return "pendiente"; }
-  if (estado === "fallo") return null;
+  if (estado === "fallo") { reintentarFuenteRotulos(); return null; }
   const lineas = lineasDeRotulo(texto);
   const medidor = document.createElement("canvas").getContext("2d");
   if (!medidor || !lineas.length) return null;
@@ -74,6 +74,8 @@ function recortada(m: Mascara): Mascara | null {
 }
 
 type TextoListo = { geometria: THREE.BufferGeometry; aspecto: number };
+/** Un texto guardado y cuántas mallas vivas lo usan (cada una avisa al liberarse: `userData.alLiberar`). */
+type TextoGuardado = TextoListo & { usos: number };
 
 /** La geometría de unas letras de alto 1, centradas en x e y y de profundidad 1 (de z = 0 a z = 1). */
 function geometriaDeMascara(m: Mascara): TextoListo | null {
@@ -108,13 +110,12 @@ export type OpcionesRotulos = {
 /**
  * Los rótulos de UN visor: `entorno` es el reflejo de ese visor. El visor es el DUEÑO de todo lo que crea aquí (la geometría de cada
  * texto, los materiales, la marca): las mallas de las piezas lo usan prestado y nunca lo liberan (todo va marcado `compartido`).
- * Un texto que sale del tope se suelta de la GPU al momento; si una pieza viva aún lo usa, se vuelve a subir al dibujarla y se
- * libera con el visor (`retiradas`).
+ * Cada malla cuenta como un uso de su texto y avisa al liberarse (`userData.alLiberar`, que llama el visor al vaciar la pieza): un
+ * texto en uso no sale nunca del caché y uno sin uso sale (y se suelta de la GPU) solo al llegar un texto nuevo y si hay más de `MAXIMO_TEXTOS` sin usar.
  */
 export function crearRotulosVisor(entorno: () => THREE.Texture, opciones: OpcionesRotulos = {}): RotulosVisor {
   const rasterizar = opciones.rasterizar ?? rasterizarTexto;
-  const textos = new Map<string, TextoListo>();
-  const retiradas = new Set<THREE.BufferGeometry>();
+  const textos = new Map<string, TextoGuardado>();
   const materiales = new Map<string, THREE.Material>();
   let marca: THREE.BoxGeometry | null = null;
   let esperando = false, vivo = true, avisoFallo = false;
@@ -123,10 +124,21 @@ export function crearRotulosVisor(entorno: () => THREE.Texture, opciones: Opcion
   const avisarCuandoEsteLista = () => {
     if (esperando) return;
     esperando = true;
-    void cargarFuenteRotulos().then(() => { esperando = false; if (vivo) opciones.alFuenteLista?.(); });
+    void cargarFuenteRotulos().then((lista) => { esperando = false; if (vivo && lista) opciones.alFuenteLista?.(); });
   };
 
-  const textoListo = (texto: string): TextoListo | "pendiente" | null => {
+  /** Suelta los textos sin uso que pasan del tope, el que lleva más tiempo sin usarse primero (el Map guarda el orden de uso). El recién llegado es el último: no sale. */
+  const podar = () => {
+    let sinUso = [...textos].filter(([, t]) => t.usos === 0);
+    for (const [clave, t] of sinUso) {
+      if (sinUso.length <= MAXIMO_TEXTOS) break;
+      t.geometria.dispose();
+      textos.delete(clave);
+      sinUso = sinUso.filter(([k]) => k !== clave);
+    }
+  };
+
+  const textoListo = (texto: string): TextoGuardado | "pendiente" | null => {
     const clave = `${FUENTE_ROTULOS.version}|${texto}`;
     const guardado = textos.get(clave);
     if (guardado) { textos.delete(clave); textos.set(clave, guardado); return guardado; }
@@ -135,14 +147,11 @@ export function crearRotulosVisor(entorno: () => THREE.Texture, opciones: Opcion
     const hecho = mascara ? geometriaDeMascara(mascara) : null;
     if (!hecho) return null;
     hecho.geometria.userData.compartido = true;
-    textos.set(clave, hecho);
-    if (textos.size > MAXIMO_TEXTOS) {
-      const [viejo, saliente] = textos.entries().next().value!;
-      textos.delete(viejo);
-      saliente.geometria.dispose();
-      retiradas.add(saliente.geometria);
-    }
-    return hecho;
+    const nuevo = { ...hecho, usos: 0 };
+    textos.set(clave, nuevo);
+    // Se poda al llegar un texto nuevo (no al soltarse una malla): rehacer una escena suelta primero todas sus mallas y las pide de nuevo.
+    podar();
+    return nuevo;
   };
 
   const material = (acabado: "vinilo" | "acrilico_espejo" | "acrilico_mate" | "marca" | "falla", hex: string): THREE.Material => {
@@ -177,12 +186,18 @@ export function crearRotulosVisor(entorno: () => THREE.Texture, opciones: Opcion
       const texto = textoListo(r.texto);
       if (texto === "pendiente") { avisarCuandoEsteLista(); return placa(r, cara, false); }
       if (!texto) {
+        // La letra falló: se reintenta (como mucho cada pocos segundos) y, si llega, se rehace lo que quedó como marca roja.
+        reintentarFuenteRotulos();
+        if (estadoFuenteRotulos() === "cargando") avisarCuandoEsteLista();
         if (!avisoFallo && typeof document !== "undefined") { avisoFallo = true; console.warn("[rótulos] No se pudo dibujar un texto (la letra cursiva no cargó): se muestra una marca roja en su lugar."); }
         return typeof document === "undefined" ? null : placa(r, cara, true);
       }
       const colocado = colocarRotulo(cara, r, texto.aspecto);
       const vinilo = r.acabado === "vinilo";
       const objeto = new THREE.Mesh(texto.geometria, material(r.acabado, r.color));
+      // La malla usa este texto hasta que se libere (la pieza se vacía o se rehace): entonces el texto puede salir del caché.
+      texto.usos++;
+      objeto.userData.alLiberar = () => { texto.usos = Math.max(0, texto.usos - 1); };
       objeto.scale.set(colocado.altoCm * CM, colocado.altoCm * CM, (vinilo ? GROSOR_VINILO_CM : GROSOR_ACRILICO_CM) * CM);
       objeto.position.set(colocado.xCm * CM, colocado.yCm * CM, (colocado.zCm + (vinilo ? 0.02 : 0)) * CM);
       objeto.castShadow = !vinilo;
@@ -192,11 +207,9 @@ export function crearRotulosVisor(entorno: () => THREE.Texture, opciones: Opcion
     liberar() {
       vivo = false;
       for (const t of textos.values()) t.geometria.dispose();
-      for (const g of retiradas) g.dispose();
       marca?.dispose();
       for (const m of materiales.values()) m.dispose();
       textos.clear();
-      retiradas.clear();
       materiales.clear();
       marca = null;
     },

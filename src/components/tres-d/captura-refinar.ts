@@ -2,7 +2,7 @@ import { armarEscena, type Escena } from "@/lib/globos3d/escena";
 import type { FotoAdjuntaIA } from "@/lib/globos3d/cuerpo-escena-ia";
 import { medidasCaptura, salaParaFoto, type Encuadre } from "@/lib/globos3d/encuadre-foto";
 import { mostrarArmada } from "./armada-visor";
-import { prepararRotulos } from "./fuente-rotulos";
+import { exigirLetraDeRotulos } from "./fuente-rotulos";
 import { camaraDeFoto } from "./camara-foto";
 
 /**
@@ -31,7 +31,7 @@ export async function capturarEscenaParaRefinar(escena: Escena, encuadre: Encuad
   try {
     const armada = armarEscena(escena);
     // La letra de los rótulos tiene que estar cargada antes de dibujar: si no, la captura que va a la IA saldría con marcas.
-    await prepararRotulos(armada.solidos);
+    await exigirLetraDeRotulos(armada.solidos);
     const sala = salaParaFoto(armada.sala, encuadre);
     mostrarArmada(visor, armada, sala);
     await esperarCuadro();

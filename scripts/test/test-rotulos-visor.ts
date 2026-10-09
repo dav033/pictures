@@ -31,7 +31,6 @@ const falso = (): { rasterizar: Rasterizador; llamadas: string[] } => {
   };
 };
 const entorno = new THREE.Texture();
-let avisos = 0;
 
 /** Las letras de lo que dibujó el visor: la malla hija con la geometría de texto. */
 function letrasDe(objetos: THREE.Object3D[]): THREE.Mesh[] {
@@ -111,32 +110,58 @@ prueba("la geometría de cada texto es de ESTE visor: se hace una vez, no se com
   assert.equal(letrasDe(sinLienzo).length, 0);
 });
 
-prueba("el visor guarda los últimos 12 textos y suelta el que lleva más tiempo sin usarse; el dueño de todo es el visor", () => {
+/** Lo que hace el visor al vaciar una pieza: avisar a cada malla que se libera (`userData.alLiberar`). */
+const liberarMallas = (objetos: THREE.Object3D[]) => {
+  for (const o of objetos) o.traverse((h) => { const f: unknown = h.userData.alLiberar; if (typeof f === "function") { h.userData.alLiberar = undefined; f(); } });
+};
+const cajaConTexto = (texto: string, x = 0): ElementoEscenografia => ({ forma: "caja", centro: { x, y: 100, z: 0 }, tamano: { x: 100, y: 200, z: 2 }, hex: "#fff", acabado: "mate", rotulo: { texto, color: "#000000", acabado: "vinilo", altoCm: 20, yCm: 50 } });
+
+prueba("MAYOR 3: una escena con 20 textos distintos en uso no se rehace una y otra vez ni suelta lo que sus mallas usan", () => {
   const f = falso();
   const visor = crearEscenografiaVisor(() => entorno, { rasterizar: f.rasterizar });
-  const caja = (texto: string): ElementoEscenografia => ({ forma: "caja", centro: { x: 0, y: 100, z: 0 }, tamano: { x: 100, y: 200, z: 2 }, hex: "#fff", acabado: "mate", rotulo: { texto, color: "#000000", acabado: "vinilo", altoCm: 20, yCm: 50 } });
-  const primero = letrasDe(visor.piezas(armarEscenografia([caja("a")])))[0]!.geometry;
+  const numeros = Array.from({ length: 20 }, (_, i) => `Mesa ${i + 1}`);
+  const elementos = numeros.map((t, i) => cajaConTexto(t, i * 120));
+  const primera = visor.piezas(armarEscenografia(elementos));
+  const geometrias = letrasDe(primera).map((m) => m.geometry);
   let sueltas = 0;
-  primero.addEventListener("dispose", () => { sueltas++; });
-  for (let i = 0; i < 12; i++) visor.piezas(armarEscenografia([caja(`nombre ${i}`)]));
-  assert.equal(sueltas, 1, "con el texto 13 sale el primero (el más viejo) de la GPU");
-  assert.equal(primero.userData.compartido, true, "ninguna pieza libera lo del visor: el visor lo libera todo");
-  visor.liberar();
-  assert.equal(sueltas, 2, "y lo que salió del tope pero una pieza viva aún usaba se suelta de nuevo al liberar el visor");
+  for (const g of geometrias) g.addEventListener("dispose", () => { sueltas++; });
+  assert.equal(f.llamadas.length, 20);
+  // Se rehace la escena entera (cambió la sala, llegó la letra): los 20 textos siguen guardados, sin dibujarlos de nuevo.
+  for (let ronda = 0; ronda < 3; ronda++) {
+    liberarMallas(primera.splice(0));
+    primera.push(...visor.piezas(armarEscenografia(elementos)));
+  }
+  assert.equal(f.llamadas.length, 20, "tres rehechos de 20 textos, ninguno se vuelve a dibujar");
+  assert.equal(sueltas, 0, "ni se suelta una geometría que una malla viva usa");
 });
 
-prueba("lo usado hace poco no sale por viejo; y mientras la letra carga el rótulo es una marca y se avisa cuando está lista", () => {
+prueba("los textos sin uso salen del caché pasando de 12, el más viejo primero; los que una malla usa, nunca", () => {
   const f = falso();
   const visor = crearEscenografiaVisor(() => entorno, { rasterizar: f.rasterizar });
-  const caja = (texto: string): ElementoEscenografia => ({ forma: "caja", centro: { x: 0, y: 100, z: 0 }, tamano: { x: 100, y: 200, z: 2 }, hex: "#fff", acabado: "mate", rotulo: { texto, color: "#000000", acabado: "vinilo", altoCm: 20, yCm: 50 } });
-  for (const t of ["uno", "dos", "tres"]) visor.piezas(armarEscenografia([caja(t)]));
-  visor.piezas(armarEscenografia([caja("uno")]));
-  for (let i = 0; i < 10; i++) visor.piezas(armarEscenografia([caja(`otro ${i}`)]));
+  const sueltas: string[] = [];
+  const hechos = Array.from({ length: 16 }, (_, i) => {
+    const objetos = visor.piezas(armarEscenografia([cajaConTexto(`nombre ${i}`)]));
+    letrasDe(objetos)[0]!.geometry.addEventListener("dispose", () => { sueltas.push(`nombre ${i}`); });
+    return objetos;
+  });
+  assert.deepEqual(sueltas, [], "16 textos en uso: ninguno sale");
+  // Se vacían las piezas (escribir un nombre letra por letra las rehace y deja los intermedios sin uso): sin texto nuevo no se poda.
+  for (const objetos of hechos) liberarMallas(objetos);
+  assert.deepEqual(sueltas, [], "soltar mallas no suelta textos: rehacer una escena las pide de nuevo");
+  visor.piezas(armarEscenografia([cajaConTexto("nombre nuevo")]));
+  assert.deepEqual(sueltas, ["nombre 0", "nombre 1", "nombre 2", "nombre 3", "nombre 4"], "con un texto nuevo, pasando de 12 sin uso, salen los más viejos");
+  // Lo usado hace poco no sale por viejo: «nombre 5» se vuelve a usar y no se redibuja.
   const antes = f.llamadas.length;
-  visor.piezas(armarEscenografia([caja("uno")]));
-  assert.equal(f.llamadas.length, antes, "«uno» se usó después que «dos» y «tres»: sigue guardado");
-  const cargando = crearEscenografiaVisor(() => entorno, { rasterizar: () => "pendiente", alFuenteLista: () => { avisos++; } });
-  const objetos = cargando.piezas(armarEscenografia([caja("Ana")]));
+  const otra = visor.piezas(armarEscenografia([cajaConTexto("nombre 5")]));
+  assert.equal(f.llamadas.length, antes, "«nombre 5» seguía guardado");
+  assert.equal(letrasDe(otra).length, 1);
+  visor.liberar();
+  assert.ok(sueltas.length >= 5);
+});
+
+prueba("mientras la letra carga el rótulo es una marca (no letras)", () => {
+  const cargando = crearEscenografiaVisor(() => entorno, { rasterizar: () => "pendiente" });
+  const objetos = cargando.piezas(armarEscenografia([cajaConTexto("Ana")]));
   const marca = objetos[0]!.children[0] as THREE.Mesh | undefined;
   assert.ok(marca instanceof THREE.Mesh && !(marca.geometry instanceof THREE.ExtrudeGeometry), "una marca (no letras) del tamaño del texto");
   assert.equal(letrasDe(objetos).length, 0);
@@ -172,8 +197,5 @@ prueba("la miniatura dibuja el rótulo con el mismo tamaño y lugar que el visor
   assert.equal(textoDeMiniatura(solido(marco), uno, uno, 1)!.lineas.length, 3);
   assert.equal(textoDeMiniatura(armarEscenografia([{ forma: "cilindro", base: { x: 0, y: 0, z: 0 }, radioCm: 5, altoCm: 10, hex: "#fff", acabado: "mate" }])[0]!, uno, uno, 1), undefined);
 });
-
-// La letra termina de cargar después (la carga es asíncrona): el visor avisa una vez para rehacer lo que dibujó como marca.
-process.on("beforeExit", () => assert.ok(avisos >= 1, "el visor avisó que la letra terminó de cargar"));
 
 terminar("test-rotulos-visor");

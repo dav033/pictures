@@ -3,7 +3,7 @@ import type { AcabadoRotulo, ElementoEscenografia, RotuloEscenografia, SolidoEsc
 import { altoEnEm, aspectoEstimado, limpiarTexto, MAX_TEXTO_ROTULO, partirEnLineas } from "./rotulos-texto";
 import type { Punto2 } from "./trenza";
 
-export { altoEnEm, aspectoEstimado, limpiarTexto, lineasDeRotulo, MAX_LINEAS_ROTULO, MAX_TEXTO_ROTULO, textoEnUnaLinea } from "./rotulos-texto";
+export { altoEnEm, analizarTexto, aspectoEstimado, avisoDeTexto, limpiarTexto, lineasDeRotulo, MAX_LINEAS_ROTULO, MAX_TEXTO_ROTULO, textoEnUnaLinea } from "./rotulos-texto";
 
 /**
  * **Rótulos** (2026-10-09): un nombre o frase en letra cursiva —con las letras unidas— sobre la cara de delante de un panel o

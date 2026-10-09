@@ -9,7 +9,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { chromium } from "playwright";
 
-const FUENTE = "public/fonts/great-vibes-latin-400-normal.woff2";
+const FUENTE = "public/fonts/great-vibes-5.3.0-latin-400.woff2";
 const SALIDA = "src/lib/globos3d/rotulos-fuente-anchos.ts";
 
 const caracteres: string[] = [];

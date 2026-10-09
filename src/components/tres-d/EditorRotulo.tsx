@@ -2,7 +2,7 @@
 
 import { admiteRotulo, conTextoPieza, portadorDeRotulo, type PiezaEscenografia } from "@/lib/globos3d/mobiliario-pieza";
 import type { Pieza } from "@/lib/globos3d/piezas";
-import { ACABADOS_ROTULO, caraDe, esAcabadoRotulo, limpiarTexto, MAX_LINEAS_ROTULO, MAX_TEXTO_ROTULO, NOMBRE_ACABADO_ROTULO } from "@/lib/globos3d/rotulos";
+import { ACABADOS_ROTULO, avisoDeTexto, caraDe, esAcabadoRotulo, limpiarTexto, MAX_LINEAS_ROTULO, NOMBRE_ACABADO_ROTULO } from "@/lib/globos3d/rotulos";
 import { CampoTexto } from "./CampoTexto";
 import { useFuenteRotulos } from "./fuente-rotulos";
 import { Deslizador } from "./PanelFlor";
@@ -10,6 +10,8 @@ import { Deslizador } from "./PanelFlor";
 const centimetros = (cm: number) => `${Math.round(cm)} cm`;
 /** El texto con que arranca un rótulo nuevo: se cambia de inmediato. */
 const TEXTO_NUEVO = "Nombre";
+/** Lo que deja escribir el campo: más que lo que se dibuja (24), para poder decir qué se quita o se corta en vez de cortarlo sin avisar. */
+const MAX_ENTRADA_ROTULO = 120;
 
 /** ¿Es una pieza que admite un nombre en cursiva (panel redondo, arcos, lentejuelas, letrero, marco con tela)? */
 export const esRotulable = (p: Pieza): p is PiezaEscenografia => p.tipo === "escenografia" && admiteRotulo(p);
@@ -34,9 +36,9 @@ export function EditorRotulo({ pieza, onPieza }: { pieza: PiezaEscenografia; onP
   }
   return (
     <div className="flex flex-col gap-2.5" aria-label="Nombre en cursiva">
-      {fuente === "fallo" && <p role="alert" className="text-xs text-red-600">No se pudo cargar la letra cursiva: el nombre se ve como una marca roja. Recarga la página.</p>}
+      {fuente === "fallo" && <p role="alert" className="text-xs text-red-600">No se pudo cargar la letra cursiva: el nombre se ve como una marca roja (se vuelve a intentar al editar; si sigue, revisa la conexión).</p>}
       {/* Vaciar el campo no quita el texto (para eso está el botón): se queda el último. */}
-      <CampoTexto etiqueta="Nombre o frase en cursiva" valor={rotulo.texto} lineas={MAX_LINEAS_ROTULO} maxLength={MAX_TEXTO_ROTULO} onTexto={(t) => { if (limpiarTexto(t)) pon({ texto: t }); }} />
+      <CampoTexto etiqueta="Nombre o frase en cursiva" valor={rotulo.texto} lineas={MAX_LINEAS_ROTULO} maxLength={MAX_ENTRADA_ROTULO} aviso={(t) => avisoDeTexto(t)} onTexto={(t) => { if (limpiarTexto(t)) pon({ texto: t }); }} />
       <div className="grid grid-cols-2 gap-2">
         <span className="flex items-center gap-2 text-xs text-texto">
           <input type="color" value={rotulo.color} aria-label="Color del texto" onChange={(e) => pon({ color: e.target.value })} className="size-7 shrink-0 cursor-pointer rounded-md border-0 bg-transparent p-0" />

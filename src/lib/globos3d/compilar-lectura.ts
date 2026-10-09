@@ -19,7 +19,7 @@ import { reemplazarColor } from "./recolorear";
 import { arcosChiara, cortina, letrero, mediaLuna, panelRedondo, pedestales } from "./fondos-escenografia";
 import { mesaConMantel, paredLentejuelas, tapete } from "./escenografia";
 import { conTextoPieza } from "./mobiliario-pieza";
-import { acabadoRotuloLeido, MAX_TEXTO_ROTULO } from "./rotulos";
+import { acabadoRotuloLeido, avisoDeTexto, limpiarTexto } from "./rotulos";
 import { mesaLeida, mobiliarioLeido, tintaLeida, type MedidaLeida, type MesaLeida } from "./compilar-mobiliario";
 import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
 
@@ -220,7 +220,10 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         // Los colores del fondo son solo `colores`; las letras traen su color y su acabado aparte (colorTexto, acabadoTexto).
         const tinta = p.texto ? tintaLeida(p, notas) : undefined;
         const hex = (k: number) => p.colores[k]?.hex ?? p.colores[0]!.hex;
-        if (p.texto && p.texto.length > MAX_TEXTO_ROTULO && ADMITEN_ROTULO.has(p.id)) notas.push(`${p.id.replace(/_/g, " ")}: el texto leído pasa de ${MAX_TEXTO_ROTULO} letras; quedó «${p.texto.slice(0, MAX_TEXTO_ROTULO)}».`);
+        const avisoTexto = p.texto && ADMITEN_ROTULO.has(p.id) ? avisoDeTexto(p.texto) : null;
+        if (avisoTexto) notas.push(`${p.id.replace(/_/g, " ")}: ${avisoTexto}`);
+        // El letrero imprime su texto en una línea y su nombre lo cita como dato (nunca el texto crudo en una frase).
+        const textoLetrero = p.id === "letrero" && p.texto ? limpiarTexto(p.texto, 1) : "";
         const a = cm(p.alto), w = cm(p.ancho), y0 = Y(p.yBase);
         let elementos: ElementoEscenografia[];
         let lugar: "piso" | "pared" = "piso", z = muro + 5;
@@ -233,12 +236,12 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
           case "mesa_mantel": z = muro + 120; elementos = mesaConMantel({ anchoCm: w, fondoCm: 75, altoCm: Math.min(110, Math.max(60, a)), mantel: hex(0) }); break;
           case "tapete_redondo": z = muro + 160; elementos = tapete({ anchoCm: w, fondoCm: r0(w * 0.7), hex: hex(0) }); break;
           case "cortina_luces": lugar = "pared"; elementos = cortina({ anchoCm: w, altoCm: a, hex: hex(0), luces: true }); break;
-          default: lugar = "pared"; elementos = letrero({ texto: p.texto ?? "", anchoCm: w, altoCm: a, hex: hex(0), tinta: tinta ?? hex(1) });
+          default: lugar = "pared"; elementos = letrero({ texto: textoLetrero, anchoCm: w, altoCm: a, hex: hex(0), tinta: tinta ?? hex(1) });
         }
         const sinRotulo: Pieza = { tipo: "escenografia", elementos, mueble: { id: p.id } };
         // Un nombre sobre un panel, un arco o la pared de lentejuelas: el texto leído es su rótulo, con el color y el acabado que se leyeron en las letras (sin color, el que se lee sobre el fondo).
         const pieza = p.texto && ADMITEN_ROTULO.has(p.id) && sinRotulo.tipo === "escenografia" ? conTextoPieza(sinRotulo, { texto: p.texto, acabado: acabadoRotuloLeido(p.acabadoTexto), ...(tinta ? { color: tinta } : {}) }) : sinRotulo;
-        poner(p.id.replace(/_/g, "-"), p.id === "letrero" && p.texto ? `Letrero «${p.texto}»` : p.id.replace(/_/g, " "), pieza,
+        poner(p.id.replace(/_/g, "-"), textoLetrero ? `Letrero ${JSON.stringify(textoLetrero)}` : p.id.replace(/_/g, " "), pieza,
           lugar === "pared" ? { en: "pared", pared: "fondo", aLoLargoCm: X(p.x), alturaCm: p.id === "letrero" ? r0(y0) : 0 } : { en: "piso", xCm: X(p.x), zCm: z, giroGrados: 0 });
         return;
       }

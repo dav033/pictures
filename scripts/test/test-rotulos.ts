@@ -13,7 +13,7 @@ import { muebleDe } from "../../src/lib/globos3d/mobiliario-catalogo";
 import { admiteRotulo, conRotuloPieza, conTextoPieza, elementosDeEscenografia, MuebleDePiezaSchema, piezaDeEntrada, piezaDeMueble, portadorDeRotulo, rotuloArmado } from "../../src/lib/globos3d/mobiliario-pieza";
 import { armarPieza } from "../../src/lib/globos3d/piezas";
 import { areaConSigno, contornosDeMascara, contornosSeCruzan, puntoEnPoligono } from "../../src/lib/globos3d/rotulo-contornos";
-import { aspectoEstimado, caraDe, colocarRotulo, conRotulo, conSaltos, limpiarTexto, normalizarRotulo, rotuloInicial, tintaSobre } from "../../src/lib/globos3d/rotulos";
+import { aspectoEstimado, avisoDeTexto, caraDe, colocarRotulo, conRotulo, conSaltos, limpiarTexto, normalizarRotulo, rotuloInicial, tintaSobre } from "../../src/lib/globos3d/rotulos";
 import { prueba, terminar, vacia, cerca, herramienta, escenografia, ultimo, mascara } from "./lib-test-rotulos";
 
 // ---------------------------------------------------------------------------------------------------------- contornos
@@ -229,7 +229,7 @@ prueba("contornos: un anillo de 2 px, anillos uno dentro de otro y una pared de 
 prueba("el texto se limpia: NFC, sin controles ni formato (U+202E, ancho cero), sin comillas ni paréntesis, solo latín; 24 grafemas", () => {
   assert.equal(limpiarTexto("\u202EDavid"), "David", "el de U+202E invierte las letras: fuera");
   assert.equal(limpiarTexto("Da\u200Bvi\u2060d"), "David", "los de ancho cero: fuera");
-  assert.equal(limpiarTexto('Dijo "hola" (ok) <b>x</b>'), "Dijo hola ok bxb", "comillas, paréntesis y ángulos: fuera");
+  assert.equal(limpiarTexto('Dijo "hola" (ok) <b>x</b>'), "Dijo hola ok b x b", "comillas: fuera; paréntesis y ángulos separan palabras");
   assert.equal(limpiarTexto("Ana 🎉 ❤"), "Ana", "emojis: fuera");
   assert.equal(limpiarTexto("Ана Ana"), "Ana", "otras escrituras: la letra no las tiene");
   assert.equal(limpiarTexto("Año Ñandú"), "Año Ñandú", "el latín de Latin-1 se queda");
@@ -242,6 +242,36 @@ prueba("el texto se limpia: NFC, sin controles ni formato (U+202E, ancho cero), 
   const rotulo = (texto: string) => MuebleDePiezaSchema.safeParse({ id: "marco_tela", rotulo: { texto, color: "#000000", acabado: "vinilo", altoCm: 20, yCm: 30 } }).success;
   assert.equal(rotulo("David"), true);
   for (const malo of ['di "hola"', "\u202Eabc", "a\u200Bb", "  espacios  "]) assert.equal(rotulo(malo), false, JSON.stringify(malo));
+});
+
+prueba("el español no se rompe: ¡¿, espacios Unicode, separadores, ligaduras, puntos suspensivos y letras latinas fuera de Latin-1", () => {
+  const igual = ["¡Feliz!", "¿Sí?", "Ñandú", "Zoë", "Ana-María", "XV", "Ana & Leo", "Ana Sofía", "Año Nuevo", "Pedro y Mía"];
+  for (const t of igual) assert.equal(limpiarTexto(t), t, t);
+  assert.equal(limpiarTexto("D\u2019Angelo"), "D'Angelo", "el apóstrofo tipográfico");
+  assert.equal(limpiarTexto("Ana\u00a0Sof\u00eda"), "Ana Sof\u00eda", "el espacio de no separar es un espacio");
+  assert.equal(limpiarTexto("Ana\u2003Sofía\u3000Ruiz"), "Ana Sofía Ruiz", "cualquier espacio Unicode");
+  assert.equal(limpiarTexto("Isa/Leo"), "Isa Leo", "lo que separa palabras no las pega");
+  assert.equal(limpiarTexto("Isa_Leo|Ana"), "Isa Leo Ana");
+  assert.equal(limpiarTexto("\u0141ukasz"), "Lukasz", "Ł: la letra no la trae, pasa a L");
+  assert.equal(limpiarTexto("\ufb01esta"), "fiesta", "la ligadura ﬁ");
+  assert.equal(limpiarTexto("Isa\u2026"), "Isa...", "los puntos suspensivos");
+  assert.equal(limpiarTexto("\u0150rs \u017d"), "Ors Z", "ő y ž pasan a su base");
+  assert.equal(limpiarTexto("\u0152uvre"), "OEuvre");
+  // Lo que se quita o se cambia se dice (a la IA, a la lectura de foto y en el campo del inspector).
+  assert.equal(avisoDeTexto("¡Feliz!"), null, "lo que se dibuja tal cual no avisa");
+  assert.equal(avisoDeTexto("Isa/Leo"), null, "separar con espacio no es perder algo");
+  assert.match(avisoDeTexto("Ana \u{1F389}")!, /quité lo que la letra no dibuja/);
+  assert.match(avisoDeTexto("\u0141ukasz")!, /cambié \u0141\u2192L/);
+  assert.match(avisoDeTexto("\u202eDavid")!, /caracteres invisibles/);
+  assert.doesNotMatch(avisoDeTexto("\u202eDavid")!, /\u202e/, "el aviso no lleva el carácter que da vuelta el texto");
+  assert.match(avisoDeTexto("a".repeat(30))!, /pasa de 24 letras/);
+  // El aviso llega a quien lo escribe: la IA de escena (rótulo, neón y nombre de acrílico) y la lectura de una foto.
+  const a = herramienta(vacia(), "agregar_mobiliario", { id: "marco_tela", texto: "Ana \u{1F389} Leo" });
+  assert.match(a.resumen, /quité lo que la letra no dibuja/);
+  const n = herramienta(vacia(), "agregar_mobiliario", { id: "neon_cursiva", texto: "Mia \u{1F600} 15" });
+  assert.match(n.resumen, /quité lo que la letra no dibuja/);
+  const sinAviso = herramienta(vacia(), "agregar_mobiliario", { id: "marco_tela", texto: "¡Feliz cumple!" });
+  assert.doesNotMatch(sinAviso.resumen, /quité|cambié/);
 });
 
 prueba("FLUX: el texto va como dato entre comillas escapadas y, en varias líneas, se dice «set on three lines»", () => {

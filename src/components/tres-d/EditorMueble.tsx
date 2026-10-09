@@ -1,7 +1,8 @@
 "use client";
 
 import { muebleDe } from "@/lib/globos3d/mobiliario-catalogo";
-import { limitesDeMueble, MAX_TEXTO_MUEBLE, piezaDeMueble, type OpcionesGuardadas, type PiezaEscenografia } from "@/lib/globos3d/mobiliario-pieza";
+import { limitesDeMueble, piezaDeMueble, type OpcionesGuardadas, type PiezaEscenografia } from "@/lib/globos3d/mobiliario-pieza";
+import { avisoDeTexto } from "@/lib/globos3d/rotulos";
 import type { Pieza } from "@/lib/globos3d/piezas";
 import { CampoTexto } from "./CampoTexto";
 import { EditorRotulo } from "./EditorRotulo";
@@ -60,7 +61,7 @@ export function EditorMueble({ pieza, onPieza }: { pieza: PiezaEscenografia & { 
           {acabados.map(([id, nombre]) => <option key={id} value={id}>{nombre}</option>)}
         </select>
       </label>
-      {m.conTexto && <CampoTexto etiqueta="Texto" valor={o.texto ?? m.textoPorDefecto ?? ""} lineas={m.lineasTexto ?? 1} maxLength={MAX_TEXTO_MUEBLE} onTexto={(texto) => pon({ texto })} />}
+      {m.conTexto && <CampoTexto etiqueta="Texto" valor={o.texto ?? m.textoPorDefecto ?? ""} lineas={m.lineasTexto ?? 1} maxLength={120} aviso={(t) => avisoDeTexto(t, m.lineasTexto ?? 1)} onTexto={(texto) => pon({ texto })} />}
       {m.rotulable && <EditorRotulo pieza={pieza} onPieza={onPieza} />}
     </div>
   );

@@ -18,7 +18,7 @@ import { chromium, type Page } from "playwright";
 import { aspectoEstimado } from "../../src/lib/globos3d/rotulos";
 
 const RAIZ = resolve(__dirname, "../..");
-const FUENTE = join(RAIZ, "public/fonts/great-vibes-latin-400-normal.woff2");
+const FUENTE = join(RAIZ, "public/fonts/great-vibes-5.3.0-latin-400.woff2");
 const TEXTOS = ["Isabella", "David y Dayan", "Let's Party", "Mia 15", "David\ny\nDayan", "Let's\nParty", "Feliz cumple\nValentina"];
 
 type Medida = { texto: string; aspecto: number; triangulos: number; ms: number };
@@ -36,14 +36,15 @@ async function empaquetar(): Promise<string> {
 }
 
 /** Una página con el código del taller y la letra servida del disco (o con 404 si `sinLetra`). */
-async function abrir(navegador: Awaited<ReturnType<typeof chromium.launch>>, codigo: string, sinLetra: boolean): Promise<{ pagina: Page; consola: string[] }> {
+async function abrir(navegador: Awaited<ReturnType<typeof chromium.launch>>, codigo: string, sinLetra: boolean | "una-vez"): Promise<{ pagina: Page; consola: string[] }> {
   const pagina = await navegador.newPage();
   const consola: string[] = [];
   pagina.on("console", (m) => { if (m.type() === "warning" || m.type() === "error") consola.push(m.text()); });
+  let fallosPendientes = sinLetra === "una-vez" ? 1 : 0;
   await pagina.route("http://rotulos.test/**", (ruta) => {
     const url = new URL(ruta.request().url());
     if (url.pathname === "/") return ruta.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><body></body>" });
-    if (url.pathname === "/fonts/great-vibes-latin-400-normal.woff2" && !sinLetra) return ruta.fulfill({ status: 200, contentType: "font/woff2", body: readFileSync(FUENTE) });
+    if (url.pathname === "/fonts/great-vibes-5.3.0-latin-400.woff2" && sinLetra !== true && fallosPendientes-- <= 0) return ruta.fulfill({ status: 200, contentType: "font/woff2", body: readFileSync(FUENTE) });
     return ruta.fulfill({ status: 404, body: "no" });
   });
   await pagina.goto("http://rotulos.test/");
@@ -88,6 +89,23 @@ async function main() {
     }
     console.log("  ✓ con la letra cargada: proporciones estimadas y triángulos por texto");
 
+    // ---- el visor avisa (una vez) cuando la letra llega, para rehacer lo que dibujó como marca
+    const pagina2 = await abrir(navegador, codigo, false);
+    const aviso = await pagina2.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { cargarFuenteRotulos: () => Promise<boolean>; crearRotulosVisor: (e: () => unknown, o: object) => { malla: (s: unknown) => { geometry: { type: string } } | null } } }).Rot;
+      let avisos = 0;
+      const visor = R.crearRotulosVisor(() => null, { alFuenteLista: () => { avisos++; } });
+      const solido = { forma: "caja", tamano: { x: 200, y: 200, z: 2 }, hex: "#ffffff", acabado: "mate", rotulo: { texto: "Ana", color: "#000000", acabado: "vinilo", altoCm: 40, yCm: 100 } };
+      const antes = visor.malla(solido)!.geometry.type;
+      visor.malla(solido);
+      await R.cargarFuenteRotulos();
+      await new Promise((r) => setTimeout(r, 50));
+      return { antes, avisos, despues: visor.malla(solido)!.geometry.type };
+    });
+    assert.equal(aviso.antes, "BoxGeometry", "antes de que llegue la letra: una marca");
+    assert.equal(aviso.avisos, 1, "el visor avisa una sola vez que la letra llegó");
+    assert.notEqual(aviso.despues, "BoxGeometry", "y con la letra ya dibuja las letras");
+
     // ---- sin la letra: no hay letra de reemplazo
     const falla = await abrir(navegador, codigo, true);
     const resultado = await falla.pagina.evaluate(async () => {
@@ -105,6 +123,24 @@ async function main() {
     assert.equal(resultado.color, 0xd94b4b, "roja");
     assert.ok(falla.consola.some((l) => l.includes("[rótulos]")), `avisa en la consola: ${falla.consola.join(" | ")}`);
     console.log("  ✓ sin la letra: marca roja y aviso, nunca otra letra");
+
+    // ---- un fallo no se recuerda: la captura para la IA para con un error y, al volver la red, la siguiente sale bien
+    const una = await abrir(navegador, codigo, "una-vez");
+    const reintento = await una.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { exigirLetraDeRotulos: (s: object[]) => Promise<void>; estadoFuenteRotulos: () => string; prepararRotulos: (s: object[]) => Promise<boolean> } }).Rot;
+      const conRotulo = [{ rotulo: { texto: "Ana" } }], neon = [{ motivo: { estilo: "neon" } }];
+      const sinNada = await R.prepararRotulos([{}]);
+      let error = "";
+      try { await R.exigirLetraDeRotulos(conRotulo); } catch (e) { error = e instanceof Error ? e.message : String(e); }
+      const estadoTrasFallo = R.estadoFuenteRotulos();
+      await R.exigirLetraDeRotulos(neon);
+      return { sinNada, error, estadoTrasFallo, estadoFinal: R.estadoFuenteRotulos() };
+    });
+    assert.equal(reintento.sinNada, true, "sin rótulos no hace falta la letra");
+    assert.match(reintento.error, /No se pudo cargar la letra de los rótulos/, "la captura falla con un error claro, no con una marca roja");
+    assert.equal(reintento.estadoTrasFallo, "fallo");
+    assert.equal(reintento.estadoFinal, "lista", "el fallo no se recuerda: el siguiente intento carga (y un letrero de neón también la pide)");
+    console.log("  ✓ un fallo no dura hasta recargar: la captura para con error y el siguiente intento carga la letra");
     console.log("test-rotulos-letra: ok");
   } finally {
     await navegador.close();

@@ -1006,6 +1006,9 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   function liberar(objeto: THREE.Object3D) {
     objeto.traverse((hijo) => {
       if (hijo instanceof THREE.Mesh) {
+        // Lo que una malla usa prestado de su visor (el texto de un rótulo) se avisa al liberarla: una sola vez.
+        const alLiberar: unknown = hijo.userData.alLiberar;
+        if (typeof alLiberar === "function") { hijo.userData.alLiberar = undefined; alLiberar(); }
         if (!hijo.geometry.userData.compartido) hijo.geometry.dispose();
         const materialesHijo = Array.isArray(hijo.material) ? hijo.material : [hijo.material];
         for (const m of materialesHijo) {

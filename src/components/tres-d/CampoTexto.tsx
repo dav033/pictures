@@ -11,7 +11,7 @@ const ESPERA_MS = 300;
  * texto y se saca su contorno), y no hace falta rehacerlas con cada letra ni guardar cada intermedio. Con una sola línea es un campo
  * de texto; con más, un área de `lineas` renglones.
  */
-export function CampoTexto({ etiqueta, valor, lineas = 1, maxLength, onTexto }: { etiqueta: string; valor: string; lineas?: number; maxLength: number; onTexto: (texto: string) => void }) {
+export function CampoTexto({ etiqueta, valor, lineas = 1, maxLength, onTexto, aviso }: { etiqueta: string; valor: string; lineas?: number; maxLength: number; onTexto: (texto: string) => void; /** Qué decir de lo escrito si no se dibuja tal cual (se quita o se cambia algo); null si va bien. */ aviso?: (texto: string) => string | null }) {
   const [borrador, setBorrador] = useState<string | null>(null);
   const espera = useRef<ReturnType<typeof setTimeout> | null>(null);
   const aplicar = useRef(onTexto);
@@ -28,11 +28,13 @@ export function CampoTexto({ etiqueta, valor, lineas = 1, maxLength, onTexto }: 
     setBorrador(null);
   };
   const clases = "rounded-md bg-superficie-suave px-2 py-1.5 text-sm";
+  const nota = borrador !== null && aviso ? aviso(borrador) : null;
   return (
     <label className="flex flex-col gap-1 text-xs text-texto">{etiqueta}
       {lineas > 1
         ? <textarea value={borrador ?? valor} rows={lineas} maxLength={maxLength} onChange={(e) => escribir(e.target.value)} onBlur={soltar} className={`${clases} resize-none`} />
         : <input type="text" value={borrador ?? valor} maxLength={maxLength} onChange={(e) => escribir(e.target.value)} onBlur={soltar} className={clases} />}
+      {nota && <span role="status" className="text-[0.7rem] text-texto-suave">{nota}</span>}
     </label>
   );
 }

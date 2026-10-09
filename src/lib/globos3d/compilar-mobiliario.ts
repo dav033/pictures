@@ -6,7 +6,7 @@ import { hexDeColor } from "./mobiliario-colores";
 import { conTextoPieza, MAX_TEXTO_MUEBLE, opcionesDeMueble, piezaDeMueble } from "./mobiliario-pieza";
 import type { MuebleCatalogo } from "./mobiliario-tipos";
 import type { ColorLeido, PiezaLeida } from "./lectura-foto";
-import { acabadoRotuloLeido } from "./rotulos";
+import { acabadoRotuloLeido, avisoDeTexto } from "./rotulos";
 import type { Pieza } from "./piezas";
 
 /**
@@ -83,7 +83,8 @@ export function mobiliarioLeido(p: FondoLeido, medida: MedidaLeida, notas: strin
   const sinRotulo = piezaDeMueble(mueble, opcionesDeMueble(mueble, { ...t, colores, ...(acabado ? { acabado } : {}), ...(mueble.conTexto && p.texto ? { texto: p.texto.slice(0, MAX_TEXTO_MUEBLE) } : {}) }));
   // Un marco con un nombre: el texto leído es su rótulo, con el color y el acabado que se leyeron en las letras (sin color, el que se lee sobre la tela).
   const pieza = mueble.rotulable && p.texto && sinRotulo.tipo === "escenografia" ? conTextoPieza(sinRotulo, { texto: p.texto, acabado: acabadoRotuloLeido(p.acabadoTexto), ...(tinta ? { color: tinta } : {}) }) : sinRotulo;
-  if ((mueble.conTexto || mueble.rotulable) && p.texto && p.texto.length > MAX_TEXTO_MUEBLE) notas.push(`${mueble.nombre}: el texto leído pasa de ${MAX_TEXTO_MUEBLE} letras; quedó «${p.texto.slice(0, MAX_TEXTO_MUEBLE)}».`);
+  const avisoTexto = (mueble.conTexto || mueble.rotulable) && p.texto ? avisoDeTexto(p.texto, mueble.lineasTexto ?? (mueble.rotulable ? 3 : 1)) : null;
+  if (avisoTexto) notas.push(`${mueble.nombre}: ${avisoTexto}`);
   const nodo = (i: number, colocacion: Colocacion): NodoMobiliario => ({ base: idBase, nombre: n > 1 ? `${mueble.nombre} ${i + 1}` : mueble.nombre, pieza, colocacion });
   if (pared) return [nodo(0, { en: "pared", pared: "fondo", aLoLargoCm: r0(medida.xCm), alturaCm: r0(Math.max(0, medida.yBaseCm)) })];
   // En el aire: a la altura que se lee (si la foto no la da, la de siempre) y delante del aro, a su retiro.

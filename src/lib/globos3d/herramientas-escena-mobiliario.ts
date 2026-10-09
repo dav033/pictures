@@ -9,7 +9,7 @@ import { colocacionPorDefecto } from "./mobiliario-colocar";
 import { muebleDe } from "./mobiliario-catalogo";
 import { puestosAlrededor, puestosEnFila, type Puesto } from "./mobiliario-disposicion";
 import { admiteRotulo, conTextoPieza, opcionesDeMueble, piezaDeEntrada, piezaDeMueble, portadorDeRotulo, type OpcionesGuardadas, type PiezaEscenografia } from "./mobiliario-pieza";
-import { ACABADOS_ROTULO, caraDe, esAcabadoRotulo, NOMBRE_ACABADO_ROTULO, textoEnUnaLinea, type PedidoRotulo } from "./rotulos";
+import { ACABADOS_ROTULO, avisoDeTexto, caraDe, esAcabadoRotulo, NOMBRE_ACABADO_ROTULO, textoEnUnaLinea, type PedidoRotulo } from "./rotulos";
 import { descripcionConColores, retiroDe, type FondoCatalogo } from "./mobiliario-tipos";
 import { esAcabadoMueble, limitesDeMueble, MAX_TEXTO_MUEBLE } from "./mobiliario-pieza";
 import { armarPieza, type Pieza } from "./piezas";
@@ -42,7 +42,7 @@ const MobiliarioSchema = z.object({
   texto: z.string().min(1).max(MAX_TEXTO_MUEBLE).optional().describe("lo que dice, en cursiva (hasta 24 letras; varias líneas separadas por un salto de línea): neon_cursiva, rotulo_acrilico, y el nombre en vinilo de panel_redondo, arcos_chiara, lentejuelas, letrero o marco_tela"),
   color_texto: z.string().min(1).max(40).optional().describe("solo con texto en un panel, arco, marco o letrero: color de las letras (nombre común o #rrggbb; por defecto el que se lee sobre el fondo)"),
   acabado_texto: z.enum(ACABADOS_ROTULO).optional().describe("solo con texto en un panel, arco, marco o letrero: vinilo (por defecto), acrilico_espejo o acrilico_mate"),
-  alto_texto_cm: z.number().min(1).max(600).optional().describe("solo con texto en un panel, arco, marco o letrero: alto de todo el texto (22 % del fondo por defecto; se achica si no cabe a lo ancho)"),
+  alto_texto_cm: z.number().min(1).max(600).optional().describe("solo con texto en un panel, arco, marco o letrero: alto de todo el texto (30 % del fondo por defecto; se achica si no cabe a lo ancho)"),
   altura_texto_cm: z.number().min(0).max(1500).optional().describe("solo con texto en un panel, arco, marco o letrero: altura del centro del texto sobre el borde de abajo del fondo (a media altura por defecto)"),
   x_cm: z.number().optional().describe("izquierda (−) a derecha (+) desde el centro de la sala; el centro de la fila o del mueble"),
   z_cm: z.number().optional().describe("fondo (−) a frente (+); la pared del fondo está en z = −fondo/2"),
@@ -76,6 +76,7 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
   const mueble = entrada.clase === "mueble" ? entrada : undefined;
   if (!mueble && (a.ancho_cm || a.fondo_cm || a.alto_cm || a.colores || a.acabado)) notas.push(`«${entrada.nombre}» es un fondo de foto: va con sus medidas y colores de catálogo (el mobiliario sí cambia de medida y color).`);
   if (a.texto && !mueble?.conTexto && !entrada.rotulable) notas.push(`«${entrada.nombre}» no lleva texto: lo ignoré.`);
+  if (a.texto && mueble?.conTexto) { const aviso = avisoDeTexto(a.texto, mueble.lineasTexto ?? 1); if (aviso) notas.push(aviso); }
   if (!entrada.rotulable && (a.color_texto || a.acabado_texto || a.alto_texto_cm || a.altura_texto_cm)) notas.push(`«${entrada.nombre}» no lleva un rótulo aparte: ignoré color_texto, acabado_texto, alto_texto_cm y altura_texto_cm (el nombre de acrílico cambia con colores y acabado).`);
   const limites = mueble ? limitesDeMueble(mueble) : undefined;
   if (mueble && a.fondo_cm !== undefined && mueble.fondo && mueble.fondo !== "libre") notas.push(`«${mueble.nombre}» no cambia de fondo por separado (${mueble.fondo === "igual_ancho" ? "es redondo: su fondo es su ancho" : mueble.fondo === "proporcional" ? "su fondo sale de su ancho" : "su fondo es fijo"}): ignoré fondo_cm.`);
@@ -167,6 +168,8 @@ function conRotuloPedido(pieza: PiezaEscenografia, props: Props, notas: string[]
   if (acabado !== undefined && !esAcabadoRotulo(acabado)) fallar(`El acabado del texto va entre ${ACABADOS_ROTULO.join(", ")}, no «${String(acabado)}».`);
   const alto = num(props, "alto_texto_cm"), altura = num(props, "altura_texto_cm");
   if (alto !== undefined && (!Number.isFinite(alto) || alto <= 0)) fallar(`alto_texto_cm tiene que ser mayor que 0 (me pasaron ${alto}).`);
+  const avisoTexto = typeof props.texto === "string" ? avisoDeTexto(props.texto) : null;
+  if (avisoTexto) notas.push(avisoTexto);
   const pedido: PedidoRotulo = {
     ...(typeof props.texto === "string" ? { texto: props.texto } : {}),
     ...(typeof props.color_texto === "string" ? { color: hexDeColor(props.color_texto, notas) } : {}),
@@ -229,6 +232,7 @@ export function cambiarMobiliario(base: PiezaEscenografia, props: Props, notas: 
   const acabado = typeof props.acabado === "string" ? props.acabado : undefined;
   if (acabado && !esAcabadoMueble(acabado)) fallar(`El acabado de un mueble va entre ${ACABADOS.join(", ")}, no «${acabado}».`);
   if (typeof props.texto === "string" && !m.conTexto && !m.rotulable) notas.push(`«${nombre}» no lleva texto: lo ignoré.`);
+  if (typeof props.texto === "string" && m.conTexto) { const aviso = avisoDeTexto(props.texto, m.lineasTexto ?? 1); if (aviso) notas.push(aviso); }
   if (colores && colores.length > m.coloresDe.length) notas.push(`«${nombre}» lleva ${m.coloresDe.length} color(es) (${m.coloresDe.join(", ")}): ignoré los demás.`);
   const pedidosHex = colores?.slice(0, m.coloresDe.length).map((c) => hexDeColor(c, notas));
   // Si todos sus colores eran el primero (la alfombra sin ribete), un solo color pedido los lleva a todos.
