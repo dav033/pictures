@@ -1,4 +1,4 @@
-import { PREFIJO_NO_PUDE } from "./prefijo-no-pude";
+import { PREFIJO_NO_PUDE } from "@/lib/prefijo-no-pude";
 import { ErrorHerramienta, resolverColorFlexible, resolverColorOrganico } from "../herramientas-escena-colores";
 import { FEMENINAS } from "@/lib/plan/piezas-individuales";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";

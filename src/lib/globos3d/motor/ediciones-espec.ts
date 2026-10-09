@@ -12,7 +12,7 @@ import { EspecClienteV1Schema, type EspecClienteV1 } from "./espec-cliente-v1";
  * (`agregar_pieza`) o las de una idea del catálogo (`agregar_idea`): no hay arrastrar, mover ni crear.
  */
 export type { ResultadoEdicion } from "./ediciones-comunes";
-export { PREFIJO_NO_PUDE } from "./prefijo-no-pude";
+export { PREFIJO_NO_PUDE } from "@/lib/prefijo-no-pude";
 
 export type ContextoEdicion = {
   /** La espec de la idea del catálogo que `agregar_idea` suma (la ruta la arma del plan guardado); null si no existe. */

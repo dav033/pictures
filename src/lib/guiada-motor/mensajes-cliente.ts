@@ -4,7 +4,7 @@
  * (códigos de formato, «armado», «paleta», nombres de lista de materiales) se traduce aquí a palabras de cliente; el motivo
  * técnico queda en la auditoría, no en la respuesta.
  */
-import { PREFIJO_NO_PUDE } from "@/lib/globos3d/motor/prefijo-no-pude";
+import { PREFIJO_NO_PUDE } from "@/lib/prefijo-no-pude";
 
 export { PREFIJO_NO_PUDE };
 
