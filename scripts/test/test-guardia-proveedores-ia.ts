@@ -128,6 +128,8 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
   "src/app/api/internal/ai/echo/route.ts": "eco Next → Python (diagnóstico)",
   "src/app/api/escena-ia/route.ts": "taller 3D: la IA arma la escena con herramientas (Gemini texto)",
   "src/app/api/render-3d-imagen/route.ts": "taller 3D: foto con IA (FLUX)",
+  "src/app/api/taller/buscar/route.ts": "taller 3D: búsqueda en la biblioteca (RAG; embedding de la consulta con Gemini)",
+  "src/app/api/taller/buscar-foto/route.ts": "taller 3D: búsqueda por foto en la biblioteca (embedding de imagen con Gemini)",
 };
 
 /** Rutas /api fuera del flujo de decisiones, con el motivo. Una ruta nueva debe clasificarse aquí o arriba. */
