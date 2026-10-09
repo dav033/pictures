@@ -1,6 +1,6 @@
 import { ApiError } from "@google/genai";
 import { getGeminiClient } from "@/lib/gemini";
-import { conReintento } from "@sempertex/agente-core";
+import { conReintento, type FlujoIA } from "@sempertex/agente-core";
 import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR } from "@/lib/ia/nucleo/feature-flags";
 import {
@@ -174,6 +174,8 @@ export async function embeberImagen(
   bytes: Uint8Array,
   mime: string,
   telemetria?: ContextoTelemetriaIA,
+  /** El flujo al que se atribuye la llamada en la telemetría (por defecto, la búsqueda del armador). */
+  flujo: FlujoIA = "armador_decoracion",
 ): Promise<number[]> {
   if (bytes.byteLength === 0) throw new Error("La imagen está vacía.");
   const cliente = getGeminiClient("embedding");
@@ -187,7 +189,7 @@ export async function embeberImagen(
       const inicio = Date.now();
       const registro = (resultado: Parameters<typeof registrarGemini>[0]["resultado"]) =>
         registrarGemini({
-          flujo: "armador_decoracion",
+          flujo,
           capacidad: "embedding_imagen",
           modelo: MODELO_EMBEDDING,
           inicio,
