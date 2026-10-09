@@ -174,7 +174,9 @@ prueba("contrato de la ruta: selección, pregunta, verificación registrada, 12 
     assert.match(ruta, re);
   }
   const ui = readFileSync(new URL("../../src/components/tres-d/AsistenteEscena.tsx", import.meta.url), "utf8");
-  assert.match(ui, /seleccion: seleccion \? \{ id: seleccion\.id/);
+  assert.match(ui, /construirCuerpoEscenaIA\(\{ escena: antes, mensaje: limpio, historial, seleccion, foto \}\)/);
+  const cuerpo = readFileSync(new URL("../../src/lib/globos3d/cuerpo-escena-ia.ts", import.meta.url), "utf8");
+  assert.match(cuerpo, /seleccion: seleccion \? \{ id: seleccion\.id/);
   assert.match(ui, /OpcionesPregunta/);
 });
 
