@@ -293,6 +293,15 @@ const CONJUNTOS: readonly MuebleCatalogo[] = [
     },
   }),
   mueble({
+    id: "mesa_redonda10_sillas", fondo: "igual_ancho", nombre: "Mesa redonda con 10 sillas", grupo: "mesa", retiroCm: 190,
+    descripcion: "Mesa redonda de 1,8 m con mantel blanco y diez sillas Tiffany doradas alrededor, en una sola pieza (el ancho es el de todo el conjunto, sillas incluidas; el alto, el de las sillas).",
+    medidas: { anchoCm: 300, fondoCm: 300, altoCm: 90 }, colores: ["#f7f6f2", "#d6b25a", "#f4efe4"], coloresDe: ["mantel", "sillas", "cojines"],
+    armar: (o) => {
+      const d = Math.max(60, Math.min(o.anchoCm, o.fondoCm) - 2 * ALREDEDOR_SILLAS_CM);
+      return conSillas(MESA_REDONDA_MANTEL.armar({ anchoCm: d + 14, fondoCm: d + 14, altoCm: (o.altoCm * 75) / 90, colores: [o.colores[0]!] }), d + 14, d + 14, o, 10);
+    },
+  }),
+  mueble({
     id: "mesa_imperial_sillas", fondo: "proporcional", nombre: "Mesa imperial con 10 sillas", grupo: "mesa", retiroCm: 190,
     descripcion: "Mesa larga imperial de 2,4 × 0,9 m con mantel blanco y diez sillas Tiffany (cuatro por lado y una en cada cabecera); el ancho y el fondo son los de todo el conjunto.",
     medidas: { anchoCm: 360, fondoCm: 198, altoCm: 90 }, colores: ["#f7f6f2", "#d6b25a", "#f4efe4"], coloresDe: ["mantel", "sillas", "cojines"],
