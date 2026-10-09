@@ -132,7 +132,7 @@ const plantillasFalsas = [{ id: "referencia:happy-birthday-azul-dorado-redondo",
 let modelado!: Modelado;
 await prueba("lee, busca plantillas en paralelo y compila la lectura a escena", async () => {
   const g = generador([buena]);
-  modelado = await modelarDesdeFoto(FOTO, { opciones: { generar: g.generar }, plantillas: async () => plantillasFalsas });
+  modelado = await modelarDesdeFoto(FOTO, { detectar: null, opciones: { generar: g.generar }, plantillas: async () => plantillasFalsas });
   assert.deepEqual(modelado.escena, compilarLectura(LECTURA).escena);
   assert.deepEqual(modelado.plantillas, plantillasFalsas);
   assert.ok(modelado.escena.nodos.length >= 5);
@@ -141,8 +141,8 @@ await prueba("lee, busca plantillas en paralelo y compila la lectura a escena", 
 });
 await prueba("sin función de plantillas no hay plantillas; si la búsqueda falla solo deja un aviso", async () => {
   const g = generador([buena]);
-  assert.deepEqual((await modelarDesdeFoto(FOTO, { opciones: { generar: g.generar } })).plantillas, []);
-  const r = await modelarDesdeFoto(FOTO, { opciones: { generar: g.generar }, plantillas: async () => { throw new Error("base caída"); } });
+  assert.deepEqual((await modelarDesdeFoto(FOTO, { detectar: null, opciones: { generar: g.generar } })).plantillas, []);
+  const r = await modelarDesdeFoto(FOTO, { detectar: null, opciones: { generar: g.generar }, plantillas: async () => { throw new Error("base caída"); } });
   assert.deepEqual(r.plantillas, []);
   assert.match(r.avisos.join(" "), /base caída/);
 });

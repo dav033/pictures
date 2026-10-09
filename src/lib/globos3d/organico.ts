@@ -80,7 +80,13 @@ export type TramoOrganico = {
 };
 
 /** Relleno de huecos: se prueba en este orden; con `trios`, cada relleno intenta llevar dos compañeros. */
-export type RellenoOrganico = { formatoId: string; infladoCm: number; trios: boolean };
+export type RellenoOrganico = {
+  formatoId: string; infladoCm: number; trios: boolean;
+  /** A lo más cuántos globos de este relleno (con sus compañeros): para que los chicos no pasen de lo que pide la mezcla. */
+  maximo?: number;
+  /** Globos por racimito (con `trios`; 3 por omisión, hasta 6): los R-5 de las fotos van en racimitos de 3 a 5. */
+  racimo?: number;
+};
 
 /**
  * Un color de la paleta (código Sempertex de 3 cifras) con su peso relativo. `formatos` limita en qué globos va
@@ -93,7 +99,15 @@ export type RellenoOrganico = { formatoId: string; infladoCm: number; trios: boo
  * en cada grupo de globos que admite los mismos colores, entre esos colores por sus pesos.
  */
 export type FranjaColor = { desde: number; hasta: number };
-export type ColorOrganico = { codigo: string; peso: number; confeti?: boolean; formatos?: readonly string[]; tramos?: readonly string[]; franjas?: readonly FranjaColor[] };
+export type ColorOrganico = {
+  codigo: string; peso: number; confeti?: boolean; formatos?: readonly string[]; tramos?: readonly string[]; franjas?: readonly FranjaColor[];
+  /**
+   * La cuota de este color se cuenta en cada FORMATO por separado (los colores por escalón medidos en una foto: «los R-24,
+   * 89 % dorados»). Sin él, la cuota es sobre todos los globos del tramo y un color que no va en un formato se concentra
+   * en los demás (el Reflex Azul que no viene en R-9 queda en todos los R-24).
+   */
+  porFormato?: boolean;
+};
 
 /** Un obstáculo cilíndrico vertical (un pedestal): `base` es el centro de su cara de abajo. */
 export type Cilindro = { id: string; base: Vec3; radioCm: number; altoCm: number };
@@ -117,7 +131,15 @@ export type OpcionesOrganico = {
   /** Multiplica los globos de estructura por centímetro (1 = envoltura cubierta). */
   densidad?: number;
   pasadasRelajacion?: number;
+  /**
+   * Globos FIJOS (los gigantes y grandes de una foto, donde la foto los tiene): van en ese sitio y con ese color, la
+   * relajación no los mueve ni se quitan, y la estructura del tramo cuenta con ellos (pone uno menos de su formato).
+   * `centro` en el plano del tramo (x, y en cm); se ponen por delante del eje, en la cara que se ve.
+   */
+  fijos?: readonly GloboFijo[];
 };
+
+export type GloboFijo = { formatoId: string; codigo: string; x: number; y: number; infladoCm?: number };
 
 export type TamanoOrganico = "grande" | "mediano" | "relleno";
 
@@ -440,6 +462,9 @@ type Interno = {
   inclinacion: number;
   tamano: TamanoOrganico;
   racimo: number | null;
+  /** Puesto desde fuera (`opciones.fijos`): no se mueve, no se quita y trae su color. */
+  fijo?: boolean;
+  codigoFijo?: string;
 };
 
 type Hueco = { tramo: number; s: number; c: Vec3; r: number; superficie: Vec3; normal: Vec3 };
@@ -593,12 +618,13 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
         if (exceso <= 0) continue;
         peor = Math.max(peor, (a.r + b.r - dist) / menor);
         const u = unitario(delta, vec(1, 0, 0));
-        const ma = a.d ** 3, mb = b.d ** 3;
+        const ma = a.fijo ? 1e12 : a.d ** 3, mb = b.fijo ? 1e12 : b.d ** 3;
         a.c = suma(a.c, escala(u, (-exceso * mb) / (ma + mb)));
         b.c = suma(b.c, escala(u, (exceso * ma) / (ma + mb)));
       }
     }
     for (const g of globos) {
+      if (g.fijo) continue;
       for (const h of huecos) {
         const delta = resta(g.c, h.c);
         const dist = norma(delta);
@@ -615,6 +641,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
    */
   const atraerEnvoltura = (factor: number) => {
     for (const g of globos) {
+      if (g.fijo) continue;
       const tp = tramos[g.tramo]!;
       const m = proyectar(tp, g.c);
       g.s = m.s;
@@ -658,7 +685,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
           const falta = dist - a.r - b.r + 0.04 * Math.min(a.d, b.d);
           if (falta <= 0) continue;
           const u = vec(dx / dist, dy / dist, dz / dist);
-          const ma = a.d ** 3, mb = b.d ** 3;
+          const ma = a.fijo ? 1e12 : a.d ** 3, mb = b.fijo ? 1e12 : b.d ** 3;
           const k = 0.3 * falta;
           a.c = suma(a.c, escala(u, (k * mb) / (ma + mb)));
           b.c = suma(b.c, escala(u, (-k * ma) / (ma + mb)));
@@ -720,6 +747,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
   const asentarSueltos = (rayos: readonly Rayo[]) => {
     for (let i = 0; i < globos.length; i++) {
       const g = globos[i]!;
+      if (g.fijo) continue;
       globos.splice(i, 1);
       if (contactos(g.c, g.r) + apoyado(g.c, g.r, g.tramo) < 3) {
         let c = g.c;
@@ -821,7 +849,8 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
   const tamanosRelleno = (): Array<{ formatoId: string; base: number }> => {
     const tamanos: Array<{ formatoId: string; base: number }> = [];
     for (const rel of opciones.relleno) {
-      if (!formatoValido(rel.formatoId)) continue;
+      // Los rellenos en racimitos (los R-5 con tope) no tapan fugas sueltos: irían como puntos regados y pasarían su tope.
+      if (!formatoValido(rel.formatoId) || rel.racimo !== undefined || rel.maximo !== undefined) continue;
       tamanos.push({ formatoId: rel.formatoId, base: infladoValido(formatoPorId(rel.formatoId)!, rel.infladoCm) });
     }
     tamanos.sort((a, b) => b.base - a.base);
@@ -948,7 +977,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
     const tamanos = tamanosRelleno();
     for (let i = globos.length - 1; i >= 0; i--) {
       const g = globos[i]!;
-      if (i >= globos.length || contactos(g.c, g.r) - 1 + apoyado(g.c, g.r, g.tramo) >= 3) continue;
+      if (g.fijo || i >= globos.length || contactos(g.c, g.r) - 1 + apoyado(g.c, g.r, g.tramo) >= 3) continue;
       const propios = rayos.filter((rayo) => cortaRayo(g, rayo) && !globos.some((h) => h !== g && cortaRayo(h, rayo)));
       if (propios.length === 0) continue;
       globos.splice(i, 1);
@@ -1027,6 +1056,23 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
   // sitio (son las anclas, repartidas); los medianos se colocan de abajo arriba y cada uno baja hasta el primer sitio
   // libre, como cuando se arma la columna desde la base: así quedan apretados contra los de abajo y no salen los
   // huecos del reparto al azar (que llena poco más de la mitad).
+  // Los fijos van primero, donde los pide la foto; cada uno descuenta el objetivo de su formato más cercano.
+  for (const f of opciones.fijos ?? []) {
+    if (!formatoValido(f.formatoId)) continue;
+    let mejor = { it: 0, m: proyectar(tramos[0]!, vec(f.x, f.y, 0)), d: Infinity };
+    tramos.forEach((tp, it) => { const m = proyectar(tp, vec(f.x, f.y, 0)); const d = distancia(m.p, vec(f.x, f.y, 0)); if (d < mejor.d) mejor = { it, m, d }; });
+    const tp = tramos[mejor.it]!;
+    const R = interpolarGrosor(tp.def.grosor, Math.min(1, Math.max(0, mejor.m.s / tp.largo)));
+    const d = f.infladoCm ? infladoValido(formatoPorId(f.formatoId)!, f.infladoCm) : inflar(f.formatoId);
+    // Por delante del eje (z > 0, hacia quien mira), lo que deja su radio dentro del cuerpo.
+    const z = Math.max(0, Math.sqrt(Math.max(0, R * R - mejor.d * mejor.d)) - d * 0.35);
+    globos.push({ formatoId: f.formatoId, d, r: d / 2, c: vec(f.x, f.y, z), tramo: mejor.it, s: mejor.m.s, phi: Math.PI / 2, hundimiento: 1, inclinacion: 0, tamano: nominal.get(f.formatoId)! >= INFLADO_GRANDE_CM ? "grande" : "mediano", racimo: null, fijo: true, codigoFijo: f.codigo });
+    const lista = objetivos.get(f.formatoId);
+    if (lista?.length) {
+      const k = lista.reduce((m, o, i) => (o.tramo === mejor.it && Math.abs(o.s - mejor.m.s) < Math.abs((lista[m]!.tramo === mejor.it ? lista[m]!.s : Infinity) - mejor.m.s) ? i : m), 0);
+      lista.splice(k, 1);
+    }
+  }
   const ordenEstructura = [...objetivos.keys()].sort((a, b) => nominal.get(b)! - nominal.get(a)!);
   let sinCupo = 0;
   for (const id of ordenEstructura) {
@@ -1146,7 +1192,11 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
       if (sitio) candidatos.push({ p, holgura: sitio.holgura - sitio.hundimiento * r0 });
     }
     candidatos.sort((a, b) => b.holgura - a.holgura || a.p.tramo - b.p.tramo || a.p.s - b.p.s || a.p.phi - b.p.phi);
+    const tope = relleno.maximo ?? Infinity;
+    const porRacimo = Math.min(6, Math.max(3, relleno.racimo ?? 3));
+    let puestos = 0;
     for (const cand of candidatos) {
+      if (puestos >= tope) break;
       const tp = tramos[cand.p.tramo]!;
       const d = inflar(relleno.formatoId, base);
       const sitio = primeraHondura(tp, cand.p.s, cand.p.phi, d);
@@ -1154,6 +1204,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
       const racimo = relleno.trios ? racimos++ : null;
       const nuevo: Interno = { formatoId: relleno.formatoId, d, r: d / 2, c: sitio.c, tramo: cand.p.tramo, s: cand.p.s, phi: cand.p.phi, hundimiento: sitio.hundimiento, inclinacion: (azar() - 0.5) * 0.4, tamano: "relleno", racimo };
       globos.push(nuevo);
+      puestos++;
       if (!relleno.trios) continue;
       // Dos compañeros pegados, sobre la misma envoltura: el trío en triángulo (los dos a 60° uno del otro, vistos
       // desde el primero). Si el segundo no cabe a un lado del primero, se prueba al otro.
@@ -1170,12 +1221,19 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
         const sitio2 = primeraHondura(tp, s2, phi2, d2);
         if (!sitio2) return false;
         globos.push({ ...nuevo, d: d2, r: d2 / 2, c: sitio2.c, s: s2, phi: phi2, hundimiento: sitio2.hundimiento, inclinacion: (azar() - 0.5) * 0.4 });
+        puestos++;
         return true;
       };
-      for (let k = 0; k < 6; k++) {
-        if (!companero(k)) continue;
-        if (!companero(k + 1)) companero(k + 5);
-        break;
+      if (porRacimo === 3) {
+        for (let k = 0; k < 6; k++) {
+          if (!companero(k)) continue;
+          if (!companero(k + 1)) companero(k + 5);
+          break;
+        }
+      } else {
+        // Racimito de más de tres: compañeros alrededor del primero, a 60° uno de otro, hasta completar.
+        let enRacimo = 1;
+        for (let k = 0; k < 6 && enRacimo < porRacimo && puestos < tope; k++) if (companero(k)) enRacimo++;
       }
     }
   }
@@ -1195,7 +1253,8 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
     for (let j = i + 1; j < globos.length; j++) {
       const a = globos[i]!, b = globos[j]!;
       if ((a.r + b.r - distancia(a.c, b.c)) / Math.min(a.d, b.d) > LIM) {
-        globos.splice(a.d < b.d ? i : j, 1);
+        if (a.fijo && b.fijo) continue;
+        globos.splice(a.fijo ? j : b.fijo ? i : a.d < b.d ? i : j, 1);
         quitados++;
         i = -1;
         break;
@@ -1264,6 +1323,7 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
   const codigos: Array<string | null> = globos.map(() => null), rescate = new Map<number, string>();
   const pegadoIgual = (i: number, k: number) => vecinos[i]!.some((j) => entrada[j] === k);
   const conFranjas = paleta.some((e) => e.franjas?.length);
+  const porFormato = paleta.some((e) => e.porFormato);
   /** Fracción del recorrido de su tramo en que cae cada globo (solo hace falta si algún color va por franjas). */
   const fracciones = conFranjas ? globos.map((g) => { const tp = tramos[g.tramo]!; return limitar(proyectar(tp, g.c).s / tp.largo, 0, 1); }) : [];
   /** Si la entrada `e` de la paleta puede ir en el globo `i` (por su tramo y su franja). */
@@ -1274,8 +1334,12 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
   };
   // Grupos de globos con las mismas entradas posibles: sin `tramos` ni `franjas` en la paleta, uno solo con todos.
   const grupos = new Map<string, { entradas: number[]; indices: number[] }>();
-  globos.forEach((_, i) => {
-    let entradas = [...paleta.keys()].filter((k) => vaEnGlobo(paleta[k]!, i));
+  globos.forEach((g, i) => {
+    if (g.codigoFijo) return;
+    // Por tramo y franja; con colores `porFormato`, también por FORMATO: cada grupo reparte sus cuotas solo entre los colores
+    // que pueden ir en sus globos (si no, la cuota de un color de un escalón se calculaba sobre todos y el sobrante caía al último).
+    let entradas = [...paleta.keys()].filter((k) => vaEnGlobo(paleta[k]!, i) && (!porFormato || codigoEn(paleta[k]!, g.formatoId) !== null));
+    if (entradas.length === 0) entradas = [...paleta.keys()].filter((k) => vaEnGlobo(paleta[k]!, i));
     // Un globo justo en el borde de dos franjas que no cae en ninguna: los colores de su tramo, sin mirar franjas.
     if (entradas.length === 0 && conFranjas) entradas = [...paleta.keys()].filter((k) => vaEnGlobo({ ...paleta[k]!, franjas: [] }, i));
     const clave = entradas.join(",");
@@ -1317,7 +1381,7 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
   }
   // Los que no pudo tomar nadie (solo pasa con paletas muy restringidas): la entrada posible con menos vecinos iguales.
   globos.forEach((g, i) => {
-    if (entrada[i] !== null) return;
+    if (entrada[i] !== null || g.codigoFijo) return;
     const posibles = paleta.map((e, k) => ({ k, ok: vaEnGlobo(e, i) && codigoEn(e, g.formatoId) !== null })).filter((x) => x.ok).map((x) => x.k);
     if (posibles.length === 0) {
       const { ref, aviso } = colorDeRescate(paleta.filter((e) => vaEnGlobo(e, i)), referencias, g.formatoId);
@@ -1330,7 +1394,7 @@ export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
   });
   globos.forEach((g, i) => {
     const k = entrada[i];
-    codigos[i] = k === null || k === undefined ? rescate.get(i) ?? "005" : codigoEn(paleta[k]!, g.formatoId) ?? "005";
+    codigos[i] = g.codigoFijo && referencias.has(g.codigoFijo) ? g.codigoFijo : k === null || k === undefined ? rescate.get(i) ?? "005" : codigoEn(paleta[k]!, g.formatoId) ?? "005";
   });
 
   // Salida.

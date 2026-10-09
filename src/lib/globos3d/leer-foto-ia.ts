@@ -1,3 +1,4 @@
+import { ajustarLectura } from "./ajustar-lectura";
 import { ThinkingLevel, type Content } from "@google/genai";
 import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
@@ -61,10 +62,23 @@ const corto = (t: string, n: number) => (t.length > n ? `${t.slice(0, n - 1)}…
  * en las piezas, cada una con sus colores, rechaza el esquema entero con «invalid argument»; comprobado contra la API real
  * el 2026-10-09). Los topes de cantidad los vuelve a exigir Zod al validar y el prompt los dice.
  */
+/**
+ * Campos de la lectura que el modelo no escribe: los calcula la detección de globos (`medir-con-detecciones.ts`) y solo
+ * los traen las lecturas a mano. Fuera del esquema de Gemini, que con ellos pasa de su tope de complejidad (la API
+ * rechaza el esquema entero con «invalid argument»; comprobado el 2026-10-09 quitando uno u otro).
+ */
+const SOLO_MEDIDOS = new Set(["coloresPorEscalon", "muestras", "dominante", "anclas"]);
+
 function paraGemini(nodo: unknown): unknown {
   if (Array.isArray(nodo)) return nodo.map(paraGemini);
   if (nodo === null || typeof nodo !== "object") return nodo;
-  return Object.fromEntries(Object.entries(nodo as Record<string, unknown>).flatMap(([clave, valor]) => (clave === "maxItems" ? [] : clave === "const" ? [["enum", [valor]]] : [[clave, paraGemini(valor)]])));
+  return Object.fromEntries(Object.entries(nodo as Record<string, unknown>).flatMap(([clave, valor]) => {
+    if (clave === "maxItems") return [];
+    if (clave === "const") return [["enum", [valor]]];
+    if (clave === "properties" && valor && typeof valor === "object") return [[clave, paraGemini(Object.fromEntries(Object.entries(valor as Record<string, unknown>).filter(([k]) => !SOLO_MEDIDOS.has(k))))]];
+    if (clave === "required" && Array.isArray(valor)) return [[clave, valor.filter((k) => !SOLO_MEDIDOS.has(String(k)))]];
+    return [[clave, paraGemini(valor)]];
+  }));
 }
 
 /** El esquema de la lectura en el subconjunto de JSON Schema de Gemini (sin `$schema`, `additionalProperties`, `const` ni `maxItems`). */
@@ -164,7 +178,7 @@ export async function leerFotoConIA(foto: FotoLectura, opciones: OpcionesLectura
       intento, ok: validada.ok, error: validada.ok ? null : corto(validada.error, 400), tokens: g.uso, costeEstimadoUsd: costeFlashUsd(g.uso), modelo: MODELO_CHAT, finishReason: g.finishReason ?? null,
       piezas: validada.ok ? validada.lectura.piezas.map((p) => p.tipo) : null,
     }, { entrada: { bytesFoto: foto.bytes.byteLength, mime: foto.mime } });
-    if (validada.ok) return { lectura: validada.lectura, descartadas: [], uso, costeEstimadoUsd: costeFlashUsd(uso), intentos: intento, modelo: MODELO_CHAT };
+    if (validada.ok) return { lectura: ajustarLectura(validada.lectura).lectura, descartadas: [], uso, costeEstimadoUsd: costeFlashUsd(uso), intentos: intento, modelo: MODELO_CHAT };
     ultimo = validada;
     contents.push(
       { role: "model", parts: [{ text: corto(g.texto, 20_000) }] },
@@ -173,7 +187,7 @@ export async function leerFotoConIA(foto: FotoLectura, opciones: OpcionesLectura
   }
 
   if (ultimo && !ultimo.ok && ultimo.parcial) {
-    return { lectura: ultimo.parcial.lectura, descartadas: ultimo.parcial.descartadas, uso, costeEstimadoUsd: costeFlashUsd(uso), intentos: 2, modelo: MODELO_CHAT };
+    return { lectura: ajustarLectura(ultimo.parcial.lectura).lectura, descartadas: ultimo.parcial.descartadas, uso, costeEstimadoUsd: costeFlashUsd(uso), intentos: 2, modelo: MODELO_CHAT };
   }
   throw new ErrorLecturaFoto(`La IA no devolvió una lectura válida de la foto${ultimo && !ultimo.ok ? `: ${corto(ultimo.error, 300)}` : ""}.`, "invalida");
 }

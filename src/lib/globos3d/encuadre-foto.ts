@@ -37,6 +37,25 @@ export function pisoDeLectura(l: LecturaFoto): number {
   return Math.max(0.5 + ALTURA_DE_LA_CAMARA_CM / l.escala.altoImagenCm, ...colgadas);
 }
 
+/** Apertura vertical de la cámara de la foto (grados) y a qué profundidad de la pared se mide la escala (cm hacia el frente). */
+export const FOV_FOTO_GRADOS = 35;
+export const PROFUNDIDAD_FOTO_CM = 40;
+
+/**
+ * Cuánto más cerca de la cámara (cm, desde el plano de la decoración) está algo apoyado en el piso cuyo pie se ve en la
+ * foto a la altura `yPie`, más abajo que la línea del piso, y cuánto hay que achicar lo que mide en la foto (`factor` < 1:
+ * lo cercano se ve más grande). La cámara de frente a la altura del centro de la imagen, como `camara-foto.ts`.
+ */
+export function profundidadEnElPiso(l: LecturaFoto, yPie: number): { delanteCm: number; factor: number } {
+  const piso = pisoDeLectura(l);
+  const distancia = l.escala.altoImagenCm / 2 / Math.tan(((FOV_FOTO_GRADOS / 2) * Math.PI) / 180);
+  if (piso <= 0.5 || yPie <= piso) return { delanteCm: 0, factor: 1 };
+  // La línea del piso a la distancia d se ve a (piso − 0,5) × D / d bajo el centro.
+  const cerca = distancia * ((piso - 0.5) / (yPie - 0.5));
+  const delanteCm = Math.min(distancia * 0.6, distancia - cerca);
+  return { delanteCm: Math.round(delanteCm), factor: Math.round(((distancia - delanteCm) / distancia) * 1000) / 1000 };
+}
+
 /** El encuadre de la foto leída (el que usa `compilarLectura` para colocar las piezas). */
 export function encuadreDeLectura(l: LecturaFoto): Encuadre {
   const altoCm = l.escala.altoImagenCm;

@@ -92,12 +92,14 @@ await prueba("las 5 fotos con mezcla armadas por el compilador cumplen el repart
     assert.ok(distanciaEscalones(hecho, meta) < 0.15, `${n}: ${JSON.stringify(hecho)} contra ${JSON.stringify(meta)}`);
   }
 });
-await prueba("antes de la mezcla una guirnalda con 35 % de grandes salía con 2 %: ahora sale con ≥ 30 %", () => {
+// Con el relleno tupido por escalones (sin huecos entre globos, 2026-10-08) la parte de grandes puede quedar unos puntos
+// bajo la leída: se prefiere el cuerpo lleno. Antes de la mezcla salía con 2 %.
+await prueba("antes de la mezcla una guirnalda con 35 % de grandes salía con 2 %: ahora sale con ≥ 25 %", () => {
   const delgada = structuredClone(LECTURA_7);
   for (const p of delgada.piezas) if (p.tipo === "guirnalda_organica") { p.puntos = p.puntos.map((q) => ({ ...q, grosor: 0.12 })); }
   const compilada = compilarLectura(delgada);
   const e = escalonesDe(globosOrganicosPorFormato(compilada.escena));
-  assert.ok(e.grandes >= 0.3, `grandes ${e.grandes}`);
+  assert.ok(e.grandes >= 0.25, `grandes ${e.grandes}`);
   assert.ok(compilada.notas.some((n) => /se engrosó/.test(n)), "avisa que engrosó el cuerpo");
 });
 await prueba("una lectura sin mezcla ni tamanos se compila como siempre (mezcla de partida)", () => {

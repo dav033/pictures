@@ -1,7 +1,7 @@
 import type { Vec3 } from "./modulos";
-import { RELLENO_TUPIDO, crearAzar, type ColorOrganico, type OpcionesOrganico, type PuntoGrosor, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "./organico";
+import { RELLENO_TUPIDO, crearAzar, type ColorOrganico, type GloboFijo, type OpcionesOrganico, type PuntoGrosor, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "./organico";
 import { INFLADOS_ORGANICOS, type PesosFormato } from "./estructuras-organicas";
-import { ZONAS_ORGANICAS, pesosConZonas, rangoAltura, type RangoAltura, type ZonaMezcla } from "./zonas-organicas";
+import { ZONAS_ORGANICAS, fraccionesDe, normalizarPesos, pesosConZonas, rangoAltura, type RangoAltura, type ZonaMezcla } from "./zonas-organicas";
 
 /**
  * **Trazo orgánico**: una guirnalda orgánica que sigue CUALQUIER silueta dibujada en la pared — el festón, el arco
@@ -19,7 +19,14 @@ import { ZONAS_ORGANICAS, pesosConZonas, rangoAltura, type RangoAltura, type Zon
  * aire lleva remate redondo.
  */
 
-export type PuntoTrazo = { x: number; y: number; /** Diámetro del cuerpo de globos en ese punto (cm). */ grosor: number };
+export type PuntoTrazo = {
+  x: number; y: number; /** Diámetro del cuerpo de globos en ese punto (cm). */ grosor: number;
+  /**
+   * La mezcla en ese tramo cuando no es la de toda la pieza (pesos por formato): el lado cargado de gigantes, el racimo
+   * de R-5 de una esquina. Entre dos puntos se interpola por el recorrido; un punto sin ella lleva la mezcla de la pieza.
+   */
+  pesos?: PesosFormato;
+};
 
 export type ParametrosTrazoOrganico = {
   /** Al menos 2 puntos, en orden a lo largo del trazo. */
@@ -41,6 +48,8 @@ export type ParametrosTrazoOrganico = {
   densidad?: number;
   irregularidad?: number;
   semilla: number;
+  /** Globos fijos en el plano del trazo (los gigantes de una foto, donde la foto los tiene): ver `OpcionesOrganico.fijos`. */
+  fijos?: readonly GloboFijo[];
 };
 
 /** Inflados de lo orgánico con el gigante de 36" (lo que asoma en los arcos de las fotos). */
@@ -154,6 +163,9 @@ export function validarTrazo(p: ParametrosTrazoOrganico): string | null {
   }
   if (!Object.values(p.mezcla).some((w) => w > 0)) return "La mezcla de tamaños no tiene ningún formato con peso.";
   if (!p.colores.some((c) => c.peso > 0)) return "El trazo necesita al menos un color con peso.";
+  for (const q of p.puntos) {
+    if (q.pesos && (Object.values(q.pesos).some((w) => !Number.isFinite(w) || w < 0) || !Object.values(q.pesos).some((w) => w > 0))) return "La mezcla de un punto del trazo necesita pesos positivos.";
+  }
   for (const z of p.zonas ?? []) {
     if (!(ZONAS_ORGANICAS as readonly string[]).includes(z.zona)) return `Zona «${z.zona}» desconocida: ${ZONAS_ORGANICAS.join(", ")}.`;
     if (Object.values(z.pesos).some((w) => !Number.isFinite(w) || w < 0)) return "Un peso de zona no es un número positivo.";
@@ -182,6 +194,26 @@ export function muestrasTrazo(p: Pick<ParametrosTrazoOrganico, "puntos">): { mue
   return { muestras, rango: rangoAltura(muestras), largoCm: total, tocaPiso: { inicio: tocaPiso(puntos[0]!), fin: tocaPiso(puntos[ultimo]!) } };
 }
 
+/**
+ * La mezcla a la fracción `t` del recorrido con mezclas por punto: la de los dos puntos que la rodean (la de la pieza
+ * en los que no traen), normalizadas e interpoladas por el largo. Es aproximada: `t` es del eje suavizado y las fracciones
+ * de los puntos, de la polilínea original (casi iguales).
+ */
+export function mezclaEnRecorrido(p: Pick<ParametrosTrazoOrganico, "puntos" | "mezcla">, t: number): PesosFormato {
+  const fr = fraccionesDe(p.puntos);
+  const de = (i: number) => normalizarPesos(p.puntos[i]!.pesos ?? p.mezcla);
+  let i = 0;
+  while (i < fr.length - 2 && fr[i + 1]! < t) i++;
+  const a = de(i), b = de(Math.min(i + 1, fr.length - 1));
+  const u = Math.min(1, Math.max(0, (t - fr[i]!) / ((fr[i + 1] ?? 1) - fr[i]! || 1)));
+  const salida: Record<string, number> = {};
+  for (const f of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const w = (a[f] ?? 0) * (1 - u) + (b[f] ?? 0) * u;
+    if (w > 0) salida[f] = Math.round(w * 1000) / 1000;
+  }
+  return salida;
+}
+
 /** Las opciones del motor orgánico de un trazo. */
 export function opcionesTrazoOrganico(p: ParametrosTrazoOrganico): OpcionesOrganico {
   const error = validarTrazo(p);
@@ -198,19 +230,25 @@ export function opcionesTrazoOrganico(p: ParametrosTrazoOrganico): OpcionesOrgan
   const grosor: PuntoGrosor[] = densos.map((q) => ({ t: r1(q.t * 1000) / 1000, radioCm: r1((q.grosor / 2) * Math.max(0.6, abulta(q.t))) }));
   const cadaMezcla = Math.max(1, Math.round(densos.length / 8));
   // Con zonas, la mezcla se pone en cada punto (para que el cambio de zona quede donde va); sin ellas, cada tanto.
-  const cada = p.zonas?.length ? 1 : cadaMezcla;
-  const mezcla: PuntoMezcla[] = densos.flatMap((q, i) => (i % cada === 0 || i === densos.length - 1 ? [{ t: r1(q.t * 1000) / 1000, pesos: pesosQueCaben(p.zonas?.length ? pesosConZonas(p.mezcla, p.zonas, q.t, q.y, rango, q.x) : p.mezcla, q.grosor, INFLADOS_TRAZO) }] : []));
+  const porPunto = p.puntos.some((q) => q.pesos);
+  const cada = p.zonas?.length || porPunto ? 1 : cadaMezcla;
+  const mezcla: PuntoMezcla[] = densos.flatMap((q, i) => {
+    if (i % cada !== 0 && i !== densos.length - 1) return [];
+    const base = porPunto ? mezclaEnRecorrido(p, q.t) : p.mezcla;
+    return [{ t: r1(q.t * 1000) / 1000, pesos: pesosQueCaben(p.zonas?.length ? pesosConZonas(base, p.zonas, q.t, q.y, rango, q.x) : base, q.grosor, INFLADOS_TRAZO) }];
+  });
   const recorrido: Vec3[] = densos.map((q) => ({ x: r1(q.x), y: r1(q.y), z: 0 }));
   const tramo: TramoOrganico = {
     id: "trazo", nombre: "Guirnalda orgánica (trazo)", recorrido, grosor, mezcla,
     irregularidad: Math.min(0.3, p.irregularidad ?? 0.12 + racimos * 0.1),
     tapas: { inicio: !tocaPiso.inicio, fin: !tocaPiso.fin },
   };
-  const formatos = new Set([...Object.keys(p.mezcla).filter((f) => (p.mezcla[f] ?? 0) > 0), ...(p.zonas ?? []).flatMap((z) => Object.keys(z.pesos).filter((f) => (z.pesos[f] ?? 0) > 0))]);
+  const formatos = new Set([...Object.keys(p.mezcla).filter((f) => (p.mezcla[f] ?? 0) > 0), ...p.puntos.flatMap((q) => Object.keys(q.pesos ?? {}).filter((f) => (q.pesos![f] ?? 0) > 0)), ...(p.zonas ?? []).flatMap((z) => Object.keys(z.pesos).filter((f) => (z.pesos[f] ?? 0) > 0))]);
   const relleno = (p.relleno ?? RELLENO_TUPIDO.filter((x) => formatos.has(x.formatoId) || x.formatoId === "R-5")).map((x) => ({ ...x }));
   return {
     semilla: p.semilla, tramos: [tramo], inflados: INFLADOS_TRAZO, variacionInflado: 0.07, relleno,
     colores: p.colores.map((c) => ({ ...c })), suelo: true, huecosFlores: 0, vista: { x: 0, y: 0, z: 1 }, densidad: p.densidad ?? DENSIDAD_TRAZO,
+    ...(p.fijos?.length ? { fijos: p.fijos.map((f) => ({ ...f })) } : {}),
   };
 }
 
