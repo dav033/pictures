@@ -94,6 +94,8 @@ export type Afinado = {
   promocionPadre: number;
   /** Candidatos mínimos por rama (`CANDIDATOS_MAXIMO` es el tope). */
   candidatos: number;
+  /** Cuántos items de la pieza pedida, los más cercanos a la medida pedida, se agregan aunque ninguna rama los traiga. */
+  candidatosMedida: number;
 };
 
 export const AFINADO_POR_DEFECTO: Afinado = {
@@ -104,6 +106,7 @@ export const AFINADO_POR_DEFECTO: Afinado = {
   factorHermano: 0.7,
   promocionPadre: 0.8,
   candidatos: 200,
+  candidatosMedida: 40,
 };
 export const PESOS_RAMA: Readonly<Record<RamaId, number>> = AFINADO_POR_DEFECTO.pesos;
 export const CANDIDATOS_MAXIMO = 300;
@@ -123,6 +126,7 @@ export function fusionarAfinado(parcial: Partial<Afinado> = {}): Afinado {
     factorHermano: parcial.factorHermano ?? AFINADO_POR_DEFECTO.factorHermano,
     promocionPadre: parcial.promocionPadre ?? AFINADO_POR_DEFECTO.promocionPadre,
     candidatos: parcial.candidatos ?? AFINADO_POR_DEFECTO.candidatos,
+    candidatosMedida: parcial.candidatosMedida ?? AFINADO_POR_DEFECTO.candidatosMedida,
   };
 }
 
@@ -282,16 +286,30 @@ export function construirConsultaBusqueda(entrada: EntradaBusqueda, refuerzos: R
   ctes.push(`ramas AS (\n  ${union}\n)`);
   ctes.push(`fusion AS (\n  SELECT id, SUM(peso / (${RRF_K} + rango)) AS rrf,\n    ${porRamaColumnas}\n  FROM ramas\n  GROUP BY id\n)`);
   const promocion = afinado.promocionPadre;
-  if (promocion > 0) {
-    // La escena entera de cada fragmento candidato entra aunque ninguna rama la haya traído (si pasa los filtros duros).
+  const nombresPieza = refuerzos.nombresPieza?.length ? p.agregar(refuerzos.nombresPieza.map((n) => `\\y${n.replace(/[^a-z0-9 ]/g, "")}`), "text[]") : null;
+  const tiposPieza = refuerzos.tiposPieza.length ? p.agregar(refuerzos.tiposPieza, "text[]") : null;
+  const cercanias: string[] = [];
+  if (typeof refuerzos.altoCm === "number") cercanias.push(cercaniaMedida("t.alto_cm", refuerzos.altoCm, p));
+  if (typeof refuerzos.anchoCm === "number") cercanias.push(cercaniaMedida("t.ancho_cm", refuerzos.anchoCm, p));
+  const cercania = cercanias.join(" + ");
+
+  // Candidatos que ninguna rama trajo: la escena entera de cada fragmento (si pasa los filtros duros) y, si piden una
+  // medida, los items de esa pieza que más se le acercan (el texto de «columna» trae cientos y la medida no cuenta ahí).
+  const extras: string[] = [];
+  if (promocion > 0) extras.push(`SELECT DISTINCT split_part(x.id, '~', 1) AS id FROM fusion x JOIN taller_items xt ON xt.id = x.id WHERE position('~' in x.id) > 0 AND xt.tipo <> 'utileria'`);
+  if (cercania && afinado.candidatosMedida > 0) {
+    const dePieza = [nombresPieza && `lower(unaccent(t.nombre)) ~ ANY(${nombresPieza})`, tiposPieza && `t.tipos_pieza && ${tiposPieza}`].filter(Boolean).join(" OR ");
+    extras.push(`SELECT id FROM (SELECT t.id, ${cercania} AS cercania FROM filtrados f JOIN taller_items t ON t.id = f.id${dePieza ? ` WHERE ${dePieza}` : ""}) m WHERE m.cercania > 0 ORDER BY m.cercania DESC, m.id LIMIT ${afinado.candidatosMedida}`);
+  }
+  if (extras.length) {
     const nulos = ramas.map((r) => `NULL::integer AS rango_${r}, NULL::float8 AS puntaje_${r}`).join(", ");
     ctes.push(`candidatos AS (
   SELECT * FROM fusion
   UNION ALL
-  SELECT pa.id, 0::float8 AS rrf, ${nulos}
-  FROM (SELECT DISTINCT split_part(x.id, '~', 1) AS id FROM fusion x JOIN taller_items xt ON xt.id = x.id WHERE position('~' in x.id) > 0 AND xt.tipo <> 'utileria') pa
-  JOIN filtrados f ON f.id = pa.id
-  WHERE NOT EXISTS (SELECT 1 FROM fusion y WHERE y.id = pa.id)
+  SELECT e.id, 0::float8 AS rrf, ${nulos}
+  FROM (${extras.map((x) => `(${x})`).join(" UNION ")}) e
+  JOIN filtrados f ON f.id = e.id
+  WHERE NOT EXISTS (SELECT 1 FROM fusion y WHERE y.id = e.id)
 )`);
   }
 
@@ -304,22 +322,14 @@ export function construirConsultaBusqueda(entrada: EntradaBusqueda, refuerzos: R
   const b = afinado.bonos;
   if (refuerzos.formatos.length) agregarRefuerzo("formatos", `EXISTS (SELECT 1 FROM unnest(t.formatos) AS x(f) WHERE x.f LIKE ANY(${p.agregar(refuerzos.formatos.map(patronLike), "text[]")}))`, b.formatos);
   if (refuerzos.partes.length) agregarRefuerzo("partes", `t.partes && ${p.agregar(refuerzos.partes, "text[]")}`, b.partes);
-  if (refuerzos.tiposPieza.length) agregarRefuerzo("tipos", `t.tipos_pieza && ${p.agregar(refuerzos.tiposPieza, "text[]")}`, b.tiposPieza);
+  if (tiposPieza) agregarRefuerzo("tipos", `t.tipos_pieza && ${tiposPieza}`, b.tiposPieza);
   if (refuerzos.colores.length) agregarRefuerzo("colores", `t.colores && ${p.agregar(refuerzos.colores, "text[]")}`, b.colores);
   if (refuerzos.celebraciones?.length) agregarRefuerzo("celebraciones", `t.celebraciones && ${p.agregar(refuerzos.celebraciones, "text[]")}`, b.celebraciones);
   if (refuerzos.tematicas?.length) agregarRefuerzo("tematicas", `t.tematicas && ${p.agregar(refuerzos.tematicas, "text[]")}`, b.tematicas);
   if (refuerzos.fuentes?.length) agregarRefuerzo("fuentes", `t.fuente_tipo = ANY(${p.agregar(refuerzos.fuentes, "text[]")})`, b.fuentes);
-  if (refuerzos.nombresPieza?.length) {
-    // `\y` = límite de palabra: «arco» no suma «arcoíris».
-    agregarRefuerzo("nombre_pieza", `lower(unaccent(t.nombre)) ~ ANY(${p.agregar(refuerzos.nombresPieza.map((n) => `\\y${n.replace(/[^a-z0-9 ]/g, "")}`), "text[]")})`, b.nombrePieza);
-  }
-  const cercanias: string[] = [];
-  if (typeof refuerzos.altoCm === "number") cercanias.push(cercaniaMedida("t.alto_cm", refuerzos.altoCm, p));
-  if (typeof refuerzos.anchoCm === "number") cercanias.push(cercaniaMedida("t.ancho_cm", refuerzos.anchoCm, p));
-  if (cercanias.length) {
-    const suma = cercanias.join(" + ");
-    agregarRefuerzo("medida", `(${suma}) > 0`, b.medida, `(${suma}) * ${BONO_REFUERZO * b.medida}`);
-  }
+  // `\y` = límite de palabra: «arco» no suma «arcoíris».
+  if (nombresPieza) agregarRefuerzo("nombre_pieza", `lower(unaccent(t.nombre)) ~ ANY(${nombresPieza})`, b.nombrePieza);
+  if (cercania) agregarRefuerzo("medida", `(${cercania}) > 0`, b.medida, `(${cercania}) * ${BONO_REFUERZO * b.medida}`);
 
   const columnasRamas = ramas.flatMap((r) => [`fu.rango_${r}`, `fu.puntaje_${r}`]);
   const puntajeBase = ["fu.rrf", ...bono].join(" + ");

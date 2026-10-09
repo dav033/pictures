@@ -235,6 +235,11 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
   assert.ok(c.valores.some((x) => Array.isArray(x) && x.includes("\\ycolumna")), "el nombre se compara por palabra completa");
   assert.ok(!/t\.celebraciones &&.*\nAND/.test(c.texto) && !partes(c).filtrados.includes("celebraciones"), "ninguno es filtro duro");
 
+  assert.match(c.texto, /WHERE m\.cercania > 0 ORDER BY m\.cercania DESC, m\.id LIMIT 40/, "los más cercanos a la medida entran aunque el texto no los traiga");
+  assert.match(c.texto, /lower\(unaccent\(t\.nombre\)\) ~ ANY\(\$\d+::text\[\]\) OR t\.tipos_pieza && \$\d+::text\[\]/, "pero solo de la pieza pedida");
+  const sinInyeccion = construirConsultaBusqueda({ texto: "columna" }, refuerzos, { candidatosMedida: 0, promocionPadre: 0 });
+  assert.ok(!sinInyeccion.texto.includes("candidatos AS"), "sin promoción ni inyección de medida no hay candidatos extra");
+
   const ancho = construirConsultaBusqueda({ texto: "arco" }, { ...SIN_REFUERZOS, anchoCm: 400 });
   assert.match(ancho.texto, /t\.ancho_cm - /);
   assert.ok(ancho.valores.includes(60), "400 cm de ancho → tolerancia de 60 cm");
@@ -249,7 +254,7 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
   sqlSano(c);
   assert.match(c.texto, /\ncandidatos AS \(/, "la escena entera entra aunque ninguna rama la traiga");
   assert.match(c.texto, /split_part\(x\.id, '~', 1\)/);
-  assert.match(c.texto, /JOIN filtrados f ON f\.id = pa\.id/, "la escena que se agrega pasa los filtros duros");
+  assert.match(c.texto, /JOIN filtrados f ON f\.id = e.id/, "la escena que se agrega pasa los filtros duros");
   assert.match(c.texto, /xt\.tipo <> 'utileria'/, "la utilería (platos, banderines) no es parte de un globo: no se agrupa");
   assert.match(c.texto, /\(position\('~' in t\.id\) > 0 AND t\.tipo <> 'utileria'\) AS es_fragmento/);
   assert.match(c.texto, /power\(0\.7::float8, h\.puesto\)/, "cada fragmento pierde puntaje según su puesto en la familia");
