@@ -29,7 +29,8 @@ import { reemplazarColor } from "./recolorear";
 import { nombreForma, type ColoresForma, type OpcionesForma } from "./formas";
 import { opcionesArcoOrganico } from "./formas-escena";
 import { COLORES_METALIZADO, PULGADAS_METALIZADO, nombreMetalizado } from "./metalizados";
-import { armarPieza, type Pieza, type PiezaArmada, type TipoPieza } from "./piezas";
+import { type Pieza, type PiezaArmada, type TipoPieza } from "./piezas";
+import { CACHE_ARMADO, alturaDePieza, armadaDe } from "./altura-pieza";
 import { armarEscena, descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo, NOMBRE_PARED, type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoEscena, type ParedSala, type Sala } from "./escena";
 import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
 import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, guirnaldaFeston, piezaNueva } from "./escenas-presets";
@@ -376,20 +377,6 @@ function medidasDe(p: Pieza): string {
   }
 }
 
-/** Piezas ya armadas por su JSON (para no rehacer un arco orgánico en cada llamada que necesita la geometría). */
-const CACHE_ARMADO = new Map<string, PiezaArmada>();
-
-function armadaDe(p: Pieza): PiezaArmada {
-  const clave = JSON.stringify(p);
-  let armada = CACHE_ARMADO.get(clave);
-  if (!armada) {
-    armada = armarPieza(p);
-    CACHE_ARMADO.set(clave, armada);
-    while (CACHE_ARMADO.size > 300) { const primera = CACHE_ARMADO.keys().next().value; if (primera === undefined) break; CACHE_ARMADO.delete(primera); }
-  }
-  return armada;
-}
-
 /** Los globos de un orgánico por tamaño y color (lo que la IA necesita para «más R-24» o «los grandes azules»). */
 function conteoOrganico(p: Pieza): string {
   try { return ` · ${textoConteo(armadaDe(p).materiales)}`; } catch { return ""; }
@@ -518,9 +505,7 @@ function colocacionDe(donde: Donde, escena: Escena, previa: Colocacion | null, p
 
 function comprobarAltura(pieza: Pieza, c: Colocacion, sala: Sala) {
   if (c.en !== "piso" && c.en !== "pared") return;
-  const porCaja = () => { const { min, max } = armadaDe(pieza).caja; return max.y - min.y; };
-  const alto = pieza.tipo === "columna" ? pieza.alturaCm : pieza.tipo === "arco" || pieza.tipo === "pared_malla" ? pieza.altoCm : pieza.tipo === "arco_organico" ? pieza.arco.altoCm : pieza.tipo === "pared_trenzas" ? pieza.opciones.altoCm
-    : pieza.tipo === "decoracion" || pieza.tipo === "escenografia" || pieza.tipo === "techo" ? 0 : porCaja();
+  const alto = alturaDePieza(pieza);
   const base = c.en === "pared" ? c.alturaCm : 0;
   if ((c.en === "piso" || c.en === "pared") && alto + base > sala.altoCm) fallar(`La pieza mide ${r0(alto)} cm${base ? ` y empieza a ${r0(base)} cm` : ""}: no cabe bajo el techo de ${r0(sala.altoCm)} cm.`);
 }
@@ -1007,7 +992,9 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       const a = ESQUEMAS.ajustar_tamanos.parse(argumentos);
       const nodo = nodoPorId(escena, a.id);
       const organica = esPiezaOrganica(nodo.pieza) ? nodo.pieza : fallar(`«${nodo.nombre}» es ${NOMBRE_TIPO[nodo.pieza.tipo]}: ajustar_tamanos es para piezas orgánicas (de varios tamaños). Para las demás usa cambiar_pieza.`);
-      const hecho = ajustarTamanos(organica, a, notas);
+      // Lo que cabe de alto bajo el techo: engrosar el cuerpo para llegar a la meta no puede pasarse de ahí.
+      const techoCm = nodo.colocacion.en === "piso" ? escena.sala.altoCm : nodo.colocacion.en === "pared" ? escena.sala.altoCm - nodo.colocacion.alturaCm : undefined;
+      const hecho = ajustarTamanos(organica, a, notas, techoCm);
       comprobarAltura(hecho.pieza, nodo.colocacion, escena.sala);
       const nodoNuevo: NodoEscena = { ...nodo, pieza: hecho.pieza };
       return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, hecho.pieza), resumen: conNotas(`Ajusté «${nodo.nombre}» (${nodo.id}): ${hecho.resumen}`, notas) };
