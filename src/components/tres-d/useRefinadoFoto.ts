@@ -8,12 +8,16 @@ import { MAX_RONDAS_REFINAR } from "@/lib/globos3d/refinado/ronda";
 import { pedirRondaHttp, pedirVeredictoHttp, reducirFotoParaRevision } from "./refinado-http";
 
 /**
- * Rondas automáticas tras armar desde una foto: una, y solo se queda si mejora (`refinado/evaluador.ts`: el servidor decide si la
- * captura se parece más a la foto que la de antes y la estructura no empeora). En la evaluación (07, 09, 12, 13) las rondas sin
- * criterio no mejoraron en promedio, y en una prueba real con la 07 la ronda tapó el «LOVE» detrás de la guirnalda y
- * achicó la silueta; ahora una ronda así se descarta sola. La ruta admite hasta MAX_RONDAS_REFINAR.
+ * Rondas automáticas tras armar desde una foto: CERO. El criterio de aceptación (`refinado/evaluador.ts`: el servidor decide si la
+ * captura se parece más a la foto que la de antes y la estructura no empeora) existe y se prueba, pero la calibración
+ * (`scripts/exp/calibrar-margen-refinado.ts`, 2026-10-09, ver `MARGEN_MEJORA`) no lo respalda todavía: el embedding de imagen no
+ * tiene ruido (el piso es 0) pero tampoco distingue lo pequeño; mover 50 cm una pieza mejoró el parecido en 2 de 4 fotos y la curva
+ * de efecto no es monótona. Con el margen de 0,02 solo pasan los cambios grandes, y una ronda pagada se descartaría casi siempre.
+ * Se enciende (1) cuando el paso 3 del protocolo (rondas etiquetadas por el dueño, curva ROC) confirme un margen que separe las
+ * rondas buenas de las malas. En la evaluación (07, 09, 12, 13) las rondas sin criterio no mejoraron en promedio, y en una prueba
+ * real con la 07 la ronda tapó el «LOVE» detrás de la guirnalda y achicó la silueta. La ruta admite hasta MAX_RONDAS_REFINAR.
  */
-export const RONDAS_AUTOMATICAS: number = 1;
+export const RONDAS_AUTOMATICAS: number = 0;
 
 /**
  * El refinado contra la foto de la barra «Pídele a la IA» (REQ-001 paso 9): corre `refinarConFoto` con la captura del

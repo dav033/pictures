@@ -8,9 +8,23 @@ import type { Rechazo, Similitud, Veredicto } from "./motivos";
 
 /**
  * Cuánto más tiene que parecerse la captura de después a la foto que la de antes (coseno de gemini-embedding-2).
- * Procedencia: `scripts/exp/calibrar-margen-refinado.ts` (ver el informe en el comentario de `MARGEN_CALIBRADO` más abajo).
+ *
+ * Procedencia: `scripts/exp/calibrar-margen-refinado.ts`, corrida del 2026-10-09 con las fotos 4, 7, 9 y 12 del dueño y su
+ * lectura a mano (92 embeddings, US$0,009):
+ *  - Piso de ruido = 0. Cinco capturas de la misma escena, cada una con un navegador nuevo, salen byte por byte idénticas, y
+ *    re-embeber los mismos bytes (foto y captura, 5 veces) da el mismo coseno. El margen no tiene que tapar ruido de render ni de
+ *    la API; hay que tapar la falta de sensibilidad del embedding.
+ *  - Curva de efecto (28 perturbaciones de signo conocido): cambiar el color dominante (Δ −0,03 a −0,08), quitar la pieza mayor
+ *    (−0,05 y −0,11) y mover 100 cm (−0,02 a −0,04) bajan el parecido con claridad; mover 20 cm, achicar ×0,8, agregar una copia o
+ *    quitar la pieza menor quedan entre −0,02 y +0,014 (signo al azar). Mover 50 cm SUBIÓ el parecido en 2 de 4 fotos (+0,013 y
+ *    +0,026) y la monotonía 20 → 50 → 100 cm solo se cumple en 1 de 4: el embedding no distingue un desplazamiento chico.
+ *  - Con 0,02 pasa 1 de 28 perturbaciones sin ser mejora (el desplazamiento de 50 cm de la foto 7, +0,026) y ninguna de las
+ *    otras familias de signo al azar (su mayor ganancia falsa es +0,0137; 0,02 es 1,5 veces eso); deshacer 10 de 28
+ *    perturbaciones (las visibles) sí pasa. Con 0,01 pasarían 3 de 28 falsas; con 0,03, ninguna pero solo 9 de 28 pasan.
+ * Es un margen provisional: sin rondas etiquetadas por el dueño (paso 3 del protocolo, ver el pendiente) no se sabe cuántas
+ * rondas buenas se pierden ni cuántas malas pasan, y por eso `RONDAS_AUTOMATICAS` está en 0.
  */
-export const MARGEN_MEJORA = 0.01;
+export const MARGEN_MEJORA = 0.02;
 
 /** Tolerancia del punto flotante: una mejora que cae justo en el margen cuenta como que lo alcanza. */
 const EPSILON = 1e-9;

@@ -63,6 +63,7 @@ El consejo de LLM lo recomendó antes que un LoRA de estructuras (ver enlaces).
 - Más decoraciones del banco: guirnalda espiral roja y azul (e02-p016-002), columnas de cuarteto grande con chicos de colores (e02-p045-000, e02-p044-000), arcos con decoraciones colgadas (e20-p036-002, e26-p043-002).
 - Decidir el paso entre cuartetos: las fotos muestran 0,6–0,7 d por nivel; el taller usa 0,8 d (5 por metro de Sempertex).
 - Afinar decoraciones dentro de una escena (hoy solo se cambian por otra predefinida).
+- Refinado con la foto, paso 3 de la calibración del margen (pendiente, lo hace el dueño): rondas A/B etiquetadas por él («esta quedó mejor / peor / igual») con el criterio de `lib/globos3d/refinado/` y curva ROC del parecido por embedding para fijar `MARGEN_MEJORA` (hoy 0,02, provisional: `scripts/exp/calibrar-margen-refinado.ts`, pasos 1 y 2 hechos el 2026-10-09: piso de ruido 0, pero la curva de efecto no es monótona). Hasta entonces `RONDAS_AUTOMATICAS = 0` en `useRefinadoFoto.ts`.
 
 ### Antes planeado: motor de composición modular (hecho en buena parte con Escena)
 
