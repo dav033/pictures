@@ -3,6 +3,7 @@ import { conRegistro, decidir } from "@/lib/registro/servidor";
 import { generarConSempertexFlux } from "@/lib/ia/kagutsuchi/flux";
 import { aligerarImagenGenerada } from "@/lib/generacion/imagen-liviana";
 import { AMBIENTE_POR_DEFECTO, MAX_DESCRIPCION, promptRender3d, type AmbienteRender } from "@/lib/globos3d/render-ia";
+import { TOPE_FOTOS_POR_HORA } from "@/lib/globos3d/foto-realista";
 
 /**
  * Taller 3D → foto con IA. Recibe la captura del visor (JPEG o PNG) y una descripción corta de la decoración, y
@@ -17,7 +18,7 @@ const CuerpoSchema = z.object({
   aspecto: z.enum(["3:2", "1:1", "2:3", "16:9"]).default("3:2"),
 }).strict();
 
-const TOPE_POR_HORA = 30;
+const TOPE_POR_HORA = TOPE_FOTOS_POR_HORA;
 let ventana = { desde: Date.now(), usadas: 0 };
 
 export const POST = conRegistro("/api/render-3d-imagen", atenderPOST, { vista: "3d" });

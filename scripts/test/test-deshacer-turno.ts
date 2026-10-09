@@ -4,9 +4,12 @@
  * - sin nada después, deshacer el turno deja la escena exacta de antes;
  * - lo que se tocó a mano después se conserva (y se dice); lo demás de la IA vuelve;
  * - lo quitado vuelve a su sitio; lo sumado se va, salvo que algo nuevo dependa de ello;
- * - el historial global: UN paso, y Ctrl+Z lo revierte.
+ * - el historial global: UN paso, y Ctrl+Z lo revierte;
+ * - aplicar el turno cuando se editó a mano mientras la IA contestaba: solo se aplica lo que no tocó la persona.
+ * - aplicar el turno cuando la persona editó a mano mientras la IA contestaba: solo se aplica lo que no tocó ella.
  */
 import assert from "node:assert/strict";
+import { aplicarTurno, textoAplicarTurno } from "../../src/lib/globos3d/aplicar-turno";
 import { deshacerTurno, textoDeshacerTurno } from "../../src/lib/globos3d/deshacer-turno";
 import { diffEscenas, sonIguales } from "../../src/lib/globos3d/diff-escenas";
 import { escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
@@ -104,6 +107,41 @@ prueba("Deshacer turno es UN paso del historial; Ctrl+Z lo deshace y deja la esc
   h = historialCambiar(h, deshacerTurno(h.presente, diff).escena);
   assert.equal(h.pasado.length, pasosAntes + 1);
   assert.ok(sonIguales(historialDeshacer(h).presente, conMano));
+});
+
+console.log("Aplicar el turno");
+prueba("si la escena no cambió mientras la IA contestaba, queda la respuesta tal cual", () => {
+  const r = aplicarTurno(turnoIA.antes, turnoIA.antes, turnoIA.despues, diff);
+  assert.equal(r.escena, turnoIA.despues);
+  assert.deepEqual(r.conservadas, []);
+  assert.equal(textoAplicarTurno(r.conservadas), null);
+});
+
+prueba("si moviste otra pieza mientras tanto, se aplica lo de la IA y se queda lo tuyo", () => {
+  const manual = colocar(turnoIA.antes, "columna-der", 180);
+  const r = aplicarTurno(manual, turnoIA.antes, turnoIA.despues, diff);
+  assert.deepEqual(r.conservadas, []);
+  const der = r.escena.nodos.find((n) => n.id === "columna-der")!;
+  assert.equal(der.colocacion.en === "piso" ? der.colocacion.xCm : 0, 180);
+  const izq = r.escena.nodos.find((n) => n.id === "columna-izq")!;
+  assert.equal(izq.pieza.tipo === "columna" ? izq.pieza.alturaCm : 0, 220);
+  assert.ok(!r.escena.nodos.some((n) => n.id === "guirnalda") && r.escena.nodos.some((n) => n.id === "columna-nueva"));
+});
+
+prueba("si tocaste la misma pieza que la IA, gana lo tuyo y se dice", () => {
+  const manual = colocar(turnoIA.antes, "columna-izq", -300);
+  const r = aplicarTurno(manual, turnoIA.antes, turnoIA.despues, diff);
+  assert.deepEqual(r.conservadas.map((c) => [c.id, c.motivo]), [["columna-izq", "editada"]]);
+  const izq = r.escena.nodos.find((n) => n.id === "columna-izq")!;
+  assert.deepEqual([izq.pieza.tipo === "columna" ? izq.pieza.alturaCm : 0, izq.colocacion.en === "piso" ? izq.colocacion.xCm : 0], [180, -300]);
+  assert.match(textoAplicarTurno(r.conservadas) ?? "", /cambiaste «Columna izquierda»: conservé lo tuyo/);
+});
+
+prueba("si quitaste a mano lo que la IA cambió, no resucita", () => {
+  const manual = { ...turnoIA.antes, nodos: turnoIA.antes.nodos.filter((n) => n.id !== "columna-izq") };
+  const r = aplicarTurno(manual, turnoIA.antes, turnoIA.despues, diff);
+  assert.ok(!r.escena.nodos.some((n) => n.id === "columna-izq"));
+  assert.deepEqual(r.conservadas.map((c) => c.motivo), ["quitada"]);
 });
 
 console.log(`\n${pruebas} pruebas OK`);
