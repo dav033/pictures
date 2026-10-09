@@ -114,6 +114,9 @@ export type PiezaConColores = {
   puntos?: ReadonlyArray<{ x: number; y: number; dominante?: string }>;
 };
 
+const seFabricaEn = (formatoId: string, codigo: string) => coloresDelFormato(formatoId).some((r) => r.codigo === codigo);
+const nombreDeCodigo = (codigo: string) => { const r = referenciaPorCodigo(codigo); return r ? `${r.codigo} ${r.nombreCompleto}` : codigo; };
+
 /** La paleta de una pieza orgánica leída, con sus colores por escalón y por tramo si los trae. */
 export function paletaDeLectura(p: PiezaConColores, altoImagenCm: number, notas: string[]): ColorOrganico[] {
   const porEscalon = (p.coloresPorEscalon ?? []).filter((e) => e.pesos.some((w) => w > 0));
@@ -129,8 +132,17 @@ export function paletaDeLectura(p: PiezaConColores, altoImagenCm: number, notas:
     const propios = new Set(porEscalon.flatMap((e) => formatosDe[e.escalon]));
     const resto = FORMATOS_ORGANICOS.filter((f) => !propios.has(f));
     p.colores.forEach((c, k) => empujar(entrada(c, codigos[k]!, c.peso, resto)));
-    // Cada escalón, con el color resuelto en SU formato (el Reflex Dorado no se fabrica en 36": ahí va el Metal Dorado).
-    for (const e of porEscalon) p.colores.forEach((c, k) => empujar(entrada(c, formatosDe[e.escalon].length === 1 ? codigoDeColor(c, formatosDe[e.escalon], notas) : codigos[k]!, e.pesos[k] ?? 0, formatosDe[e.escalon])));
+    // Cada escalón con sus colores en SU formato. Nunca se cambia el color por el tamaño: si el color no se fabrica en el
+    // formato del escalón (el Reflex Dorado no viene en 36"), esos globos van en el más grande de abajo en que sí viene
+    // (un gigante dorado cromado es un R-24 Reflex Dorado, no un R-36 Latte), como las anclas (`formatoConColor`).
+    for (const e of porEscalon) p.colores.forEach((c, k) => {
+      const suyos = formatosDe[e.escalon];
+      const codigo = codigos[k]!;
+      const unico = suyos.length === 1 ? suyos[0]! : null;
+      const formatos = unico && c.acabado !== "cristal" && c.acabado !== "confeti" && !seFabricaEn(unico, codigo) ? [formatoConColor(unico, codigo)] : suyos;
+      if (formatos !== suyos) notas.push(`${nombreDeCodigo(codigo)} no viene en ${unico}: sus ${e.escalon} van en ${formatos[0]}, del mismo color.`);
+      empujar(entrada(c, codigo, e.pesos[k] ?? 0, formatos));
+    });
   } else {
     salida.push(...coloresOrganicos(p.colores, notas));
   }

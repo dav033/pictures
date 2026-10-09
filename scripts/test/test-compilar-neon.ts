@@ -66,6 +66,17 @@ prueba("un fondo de foto fijo (sin opciones) llega a FLUX con sus colores, no so
   assert.match(frase({ tipo: "fondo", id: "mesa_mantel", x: 0.5, yBase: 0.8, ancho: 0.4, alto: 0.2, colores: [BLANCO] }), /^table with a floor-length tablecloth in /);
 });
 
+prueba("un tablero leído «transparente» se queda de acrílico transparente (no blanco mate) y la luz va con su color leído", () => {
+  const leido = { ...neon, colorTexto: undefined, colores: [{ nombre: "transparente", hex: "#ffffff", peso: 20, acabado: "mate" as const }, { nombre: "amarillo neon", hex: "#ffff99", peso: 80, acabado: "brillante" as const }] };
+  const { nodo, opciones } = opcionesDe({ ...base, piezas: [leido] }, "neon_cursiva");
+  const catalogo = muebleDe("neon_cursiva")!;
+  assert.equal(opciones.colores[0], catalogo.colores[0], "el tablero, el de catálogo");
+  assert.equal(opciones.colores[1]?.toLowerCase(), "#ffff99");
+  assert.equal((opciones as { acabado?: string }).acabado, undefined, "sin el mate del «transparente»");
+  const frase = fraseDeEscenografia(nodo.pieza as Parameters<typeof fraseDeEscenografia>[0]);
+  assert.match(frase ?? "", /clear acrylic/);
+});
+
 prueba("sin panel delante, lo colgado sigue en la pared", () => {
   const { nodo } = opcionesDe({ ...base, piezas: [neon] }, "neon_cursiva");
   assert.equal(nodo.colocacion.en, "pared");

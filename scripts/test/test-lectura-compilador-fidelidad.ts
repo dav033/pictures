@@ -118,6 +118,19 @@ prueba("cada escalón con colores propios lleva su paleta en SUS formatos; los d
   assert.ok(resto.every((c) => c.formatos!.includes("R-12") && c.formatos!.includes("R-24")));
 });
 
+prueba("los gigantes de un color que no viene en R-36 (Reflex Dorado) van en R-24 del MISMO color, nunca en un R-36 Latte", () => {
+  const notas: string[] = [];
+  const DORADO: ColorLeido = { nombre: "Reflex Dorado", hex: "#c9a24e", peso: 70, acabado: "cromado" };
+  const paleta = paletaDeLectura({ colores: [DORADO, BLANCO], mezcla: MEZCLA_GIGANTES, coloresPorEscalon: [{ escalon: "gigantes", pesos: [80, 20] }] }, 260, notas);
+  const enGigantes = paleta.filter((c) => c.formatos?.length === 1 && (c.formatos[0] === "R-36" || c.formatos[0] === "R-24"));
+  const codigos = new Set(paleta.map((c) => c.codigo));
+  assert.equal(codigos.size, 2, `solo el dorado y el blanco leídos: ${[...codigos].join(", ")} · ${notas.join(" | ")}`);
+  const dorado = enGigantes.find((c) => c.formatos![0] === "R-24");
+  assert.ok(dorado && dorado.peso === 80, "el dorado de los gigantes va en R-24 con su peso");
+  assert.ok(enGigantes.some((c) => c.formatos![0] === "R-36" && c.codigo !== dorado.codigo), "el blanco sí va en R-36");
+  assert.ok(notas.some((n) => /no viene en R-36: sus gigantes van en R-24, del mismo color/.test(n)), notas.join(" | "));
+});
+
 prueba("un gigante dorado cromado baja a R-24 pero sigue contando como gigante, con el diámetro medido", () => {
   const notas: string[] = [];
   const fijos = fijosDeAnclas({ colores: [DORADO, BLANCO], mezcla: MEZCLA_GIGANTES, anclas: [
