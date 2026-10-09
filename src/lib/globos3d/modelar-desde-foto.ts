@@ -122,7 +122,7 @@ export function lineaDePiezaLeida(p: PiezaLeida, i: number, altoImagenCm: number
       case "ramo_helio": return `${p.cantidad} globos`;
       case "decoracion": return `${p.id} ×${p.cantidad}`;
       case "metalizado": return `«${p.texto}»${p.cursiva ? " cursiva" : ""}`;
-      case "fondo": return `${p.id}${p.texto ? ` «${p.texto}»` : ""}`;
+      case "fondo": return `${p.id}${p.cantidad && p.cantidad > 1 ? ` ×${p.cantidad}` : ""}${p.texto ? ` «${p.texto}»${p.colorTexto ? ` en ${p.colorTexto}` : ""}${p.acabadoTexto ? ` (${p.acabadoTexto})` : ""}` : ""}`;
       case "otro": return p.descripcion;
       default: return exhaustivo(p);
     }
