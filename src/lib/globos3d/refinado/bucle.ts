@@ -28,6 +28,8 @@ export type RondaHecha = {
   respuesta: string;
   cambios: AccionRefinado[];
   resultado: ResultadoRonda;
+  /** Lo que costó la ronda (estimado por el servidor), para que el total de la conversación la cuente. */
+  costeUsd?: number;
 };
 
 export type MotivoFinRefinado = "sin_diferencias" | "sin_cambios" | "ultima_ronda" | "detenido" | "error" | "sin_lectura" | "rechazada";
@@ -118,7 +120,7 @@ export async function refinarConFoto(entrada: EntradaRefinado, deps: Dependencia
       if (!veredicto.aceptada) return fin("rechazada", { rechazo: veredicto.motivo ?? "sin_comparacion" });
     }
     if (cambios.length > 0) {
-      const hecha: RondaHecha = { ronda, antes: actual, escena: r.datos.escena, respuesta: r.datos.respuesta, cambios, resultado: r.datos.refinar };
+      const hecha: RondaHecha = { ronda, antes: actual, escena: r.datos.escena, respuesta: r.datos.respuesta, cambios, resultado: r.datos.refinar, ...(r.datos.uso?.costeEstimadoUsd !== undefined ? { costeUsd: r.datos.uso.costeEstimadoUsd } : {}) };
       rondas.push(hecha);
       actual = r.datos.escena;
       deps.alRonda?.(hecha);

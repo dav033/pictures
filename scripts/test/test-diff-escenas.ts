@@ -5,7 +5,7 @@
  * - totales de globos; las líneas de la tarjeta; lo que se resalta en el visor; escenas iguales → diff vacío.
  */
 import assert from "node:assert/strict";
-import { deltaGlobos, diffEscenas, diffVacio, idsParaResaltar, lineasDeDiff, medidaTexto, sonIguales, textoGlobos } from "../../src/lib/globos3d/diff-escenas";
+import { coloresTexto, deltaGlobos, diffEscenas, diffVacio, idsParaResaltar, lineasDeDiff, medidaTexto, sonIguales, textoGlobos } from "../../src/lib/globos3d/diff-escenas";
 import { aplicarHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 import { escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
 import type { Escena, NodoEscena } from "../../src/lib/globos3d/escena";
@@ -34,7 +34,6 @@ prueba("columna más alta y de otro color: dos campos con antes → después, y 
   assert.deepEqual(alto && [alto.clase, alto.antes, alto.despues], ["medida", "1,8 m", "2,2 m"]);
   const color = c.campos.find((x) => x.etiqueta === "colores");
   assert.deepEqual(color && [color.clase, color.antes, color.despues], ["color", "609, 005, 570, 010", "570"]);
-  assert.ok(c.campos.some((x) => x.clase === "globos"), "los globos por formato también se cuentan");
   assert.ok(c.globosDespues > c.globosAntes);
   assert.equal(deltaGlobos(d), c.globosDespues - c.globosAntes);
   assert.equal(c.antes?.id, "columna-izq");
@@ -52,7 +51,7 @@ prueba("pieza nueva y pieza quitada: con sus globos, el índice de antes y sus p
   const sumar = diffEscenas(sin, base);
   assert.equal(sumar.nodos[0]!.tipo, "nueva");
   assert.equal(sumar.nodos[0]!.antes, null);
-  assert.equal(sumar.piezasDespues - sumar.piezasAntes, 1);
+  assert.equal(sumar.nodos.length, 1);
   assert.equal(textoGlobos(deltaGlobos(sumar)).startsWith("+"), true);
 });
 
@@ -64,13 +63,14 @@ prueba("el sitio: moverla es «sitio», cambiar de pared a piso es «lugar»", (
   assert.deepEqual(diffEscenas(base, alPiso).nodos[0]!.campos.map((x) => [x.etiqueta, x.antes, x.despues]), [["lugar", "pared", "piso"]]);
 });
 
-prueba("herramientas reales: ajustar_tamanos del arco da formatos «R-24: a → b»", () => {
+prueba("herramientas reales: ajustar_tamanos del arco cambia sus globos (en los totales, no en una línea por formato)", () => {
   const r = aplicarHerramienta(base, "ajustar_tamanos", { id: "arco", cambios: [{ formato: "R-24", accion: "mas" }] });
   if (!r.ok) assert.fail(r.error);
-  const c = diffEscenas(base, r.escena).nodos.find((x) => x.id === "arco");
+  const d = diffEscenas(base, r.escena);
+  const c = d.nodos.find((x) => x.id === "arco");
   assert.ok(c, "el arco cambió");
-  const r24 = c.campos.find((x) => x.clase === "globos" && x.etiqueta === "R-24");
-  assert.ok(r24 && Number(r24.despues) > Number(r24.antes), `R-24 sube (${r24?.antes} → ${r24?.despues})`);
+  assert.ok(c.globosDespues !== c.globosAntes && deltaGlobos(d) === c.globosDespues - c.globosAntes);
+  assert.ok(!lineasDeDiff(d).some((l) => /R-\d+: \d+ → \d+/.test(l.detalle)), "los conteos por formato no se repiten en la línea");
 });
 
 prueba("la sala también cuenta, y el nombre", () => {
@@ -90,7 +90,23 @@ prueba("las líneas de la tarjeta: +, − y ~ con su detalle; lo cambiado largo 
   assert.equal(lineas.find((l) => l.id === "guirnalda")?.signo, "−");
   const col = lineas.filter((l) => l.id === "columna-izq");
   assert.ok(col.every((l) => l.signo === "~" && l.titulo === "Columna izquierda"));
+  assert.equal(col.length, 1, "una sola línea por pieza");
   assert.equal(col[0]!.detalle, "alto 1,8 m → 2,2 m");
+});
+
+prueba("una línea por pieza, en palabras de decorador: medida, colores con su nombre y «movida»", () => {
+  const cambiada = conNodo(base, "columna-izq", (n) => n.pieza.tipo === "columna" && n.colocacion.en === "piso"
+    ? { ...n, pieza: { ...n.pieza, alturaCm: 220, colores: ["570"] }, colocacion: { ...n.colocacion, xCm: -200 } } : n);
+  const lineas = lineasDeDiff(diffEscenas(base, cambiada));
+  assert.equal(lineas.length, 1);
+  assert.equal(lineas[0]!.titulo, "Columna izquierda");
+  const partes = lineas[0]!.detalle.split(" · ");
+  assert.equal(partes.length, 3);
+  assert.equal(partes[0], "alto 1,8 m → 2,2 m");
+  assert.equal(partes[1], "Rosado/Blanco/Dorado +1 → Dorado 570", "colores con nombre y, si es uno, su código");
+  assert.equal(partes[2], "movida");
+  assert.equal(coloresTexto("609, 609"), "Rosado 609");
+  assert.equal(coloresTexto("999"), "999");
 });
 
 prueba("el visor resalta lo nuevo y lo cambiado, no lo quitado", () => {

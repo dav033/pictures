@@ -15,7 +15,7 @@ import type { Escena, NodoEscena } from "../../src/lib/globos3d/escena";
 import { resumenFotoRealista } from "../../src/lib/globos3d/foto-realista";
 import { leerRespuestaIA, mensajeDeError } from "../../src/lib/globos3d/respuesta-escena-ia";
 import { sugerenciasIA } from "../../src/lib/globos3d/sugerencias-ia";
-import { costeTexto, historialParaModelo, leerTurnos, siguienteNumero, tiempoTipico, turnosParaGuardar, type TurnoPanel } from "../../src/lib/globos3d/turnos-ia";
+import { costeTexto, esDeEstaEscena, historialParaModelo, pasoLegible, leerTurnos, siguienteNumero, tiempoTipico, turnosParaGuardar, type TurnoPanel } from "../../src/lib/globos3d/turnos-ia";
 
 let pruebas = 0;
 const prueba = (nombre: string, fn: () => void) => { fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
@@ -23,7 +23,7 @@ const base = escenaPredefinida("arco_organico_columnas_guirnalda");
 const alto = (e: Escena, id: string, cm: number): Escena => ({ ...e, nodos: e.nodos.map((n) => (n.id === id && n.pieza.tipo === "columna" ? { ...n, pieza: { ...n.pieza, alturaCm: cm } } : n)) });
 
 const turno = (numero: number, cambios: Partial<TurnoPanel> = {}): TurnoPanel => ({
-  id: `t${numero}`, numero, pedido: `pedido ${numero}`, contexto: "escena entera", ambito: "escena", foto: false, respuesta: `hecho ${numero}`,
+  id: `t${numero}`, numero, pedido: `pedido ${numero}`, contexto: "escena entera", ambito: "escena", clave: "e1", foto: false, respuesta: `hecho ${numero}`,
   pasos: [{ herramienta: "ver_escena", resumen: "Miré", consulta: true }], diff: diffEscenas(base, alto(base, "columna-izq", 220)), pregunta: null,
   costeUsd: 0.0031, ms: 12_000, estado: "aplicado", nota: null, ...cambios,
 });
@@ -116,6 +116,28 @@ prueba("con una pieza elegida: lo suyo va primero (alto de la columna, tupido de
   const sinElegida: NodoEscena | undefined = base.nodos[0];
   assert.ok(sinElegida);
   assert.deepEqual(textos(base, "no-existe"), textos(base));
+});
+
+console.log("Un turno solo actúa sobre su escena y su editor");
+prueba("la clave y el ámbito deben coincidir: otra escena, o otra pieza en el editor solitario, no vale", () => {
+  const t = turno(1);
+  assert.equal(esDeEstaEscena(t, "e1", "escena"), true);
+  assert.equal(esDeEstaEscena(t, "e2", "escena"), false, "se abrió una plantilla o una sala vacía");
+  assert.equal(esDeEstaEscena(t, "e1", "pieza:columna-izq"), false, "se entró al editor solitario");
+  assert.equal(esDeEstaEscena(turno(2, { ambito: "pieza:a" }), "e1", "pieza:b"), false, "otra pieza en el editor solitario");
+  assert.equal(esDeEstaEscena(turno(2, { ambito: "pieza:a" }), "e1", "pieza:a"), true);
+});
+prueba("lo guardado sin clave (o con otra forma) no entra: un turno huérfano nunca actuaría sobre una escena", () => {
+  const crudo = JSON.parse(JSON.stringify([turno(1), { ...turno(2), clave: undefined }, { ...turno(3), ambito: 4 }])) as unknown;
+  assert.deepEqual(leerTurnos(crudo).map((t) => t.numero), [1]);
+});
+
+console.log("Pasos en palabras de persona");
+prueba("nombres de herramientas legibles y medidas en la misma unidad (m) en todo el texto", () => {
+  assert.equal(pasoLegible({ herramienta: "editar_pieza", resumen: "", consulta: false }), "Editar pieza");
+  assert.equal(pasoLegible({ herramienta: "cambiar_pieza", resumen: "Columna izquierda: alto 220 cm, ancho 35 cm", consulta: false }), "Cambió una pieza · Columna izquierda: alto 2,2 m, ancho 35 cm");
+  assert.equal(pasoLegible({ herramienta: "ver_escena", resumen: "Miró la escena: 4 piezas\nsegunda línea", consulta: true }), "Miró la escena: 4 piezas");
+  assert.doesNotMatch(pasoLegible({ herramienta: "ajustar_tamanos", resumen: "x", consulta: false }), /ajustar_tamanos/);
 });
 
 console.log("Respuesta de la ruta y foto realista");

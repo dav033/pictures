@@ -14,6 +14,8 @@ type Props = {
   /** Cuántos turnos lleva la conversación y si la IA está trabajando (para el aviso de la pestaña cuando no se ve). */
   turnos: number;
   trabajando: boolean;
+  /** Mientras se ve la escena de antes de un turno, la pestaña «Pieza» no se toca (mostraría la escena de ahora). */
+  piezaInerte?: boolean;
 };
 
 const PESTANA = "relative flex h-11 flex-1 items-center justify-center gap-1.5 border-b-2 text-[13px] font-medium";
@@ -23,7 +25,7 @@ const PESTANA = "relative flex h-11 flex-1 items-center justify-center gap-1.5 b
  * y no sobre el visor, así nunca tapa la escena. Las dos quedan montadas (la conversación, lo escrito y la posición del hilo
  * se conservan al cambiar). Pestañas con flechas ←/→, Inicio y Fin como pide el patrón ARIA.
  */
-export function PestanasLaterales({ activa, alCambiar, pieza, ia, turnos, trabajando }: Props) {
+export function PestanasLaterales({ activa, alCambiar, pieza, ia, turnos, trabajando, piezaInerte = false }: Props) {
   // Los turnos que llegaron mientras se veía «Pieza» se avisan en la pestaña hasta que se abre la IA.
   const [vistos, setVistos] = useState(turnos);
   if (activa === "ia" && vistos !== turnos) setVistos(turnos);
@@ -51,7 +53,7 @@ export function PestanasLaterales({ activa, alCambiar, pieza, ia, turnos, trabaj
           {nuevos > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-taller-primario px-1 text-[11px] font-semibold text-taller-sobre-primario" aria-label={`${nuevos} ${nuevos === 1 ? "respuesta nueva" : "respuestas nuevas"}`}>{nuevos}</span>}
         </button>
       </div>
-      <div role="tabpanel" id="lado-panel-pieza" aria-labelledby="lado-pestana-pieza" hidden={activa !== "pieza"} className={`min-h-0 flex-1 flex-col overflow-y-auto ${activa === "pieza" ? "flex" : "hidden"}`}>{pieza}</div>
+      <div role="tabpanel" id="lado-panel-pieza" aria-labelledby="lado-pestana-pieza" hidden={activa !== "pieza"} inert={piezaInerte} className={`min-h-0 flex-1 flex-col overflow-y-auto ${activa === "pieza" ? "flex" : "hidden"}`}>{pieza}</div>
       <div role="tabpanel" id="lado-panel-ia" aria-labelledby="lado-pestana-ia" hidden={activa !== "ia"} className={`min-h-0 flex-1 flex-col ${activa === "ia" ? "flex" : "hidden"}`}>{ia}</div>
     </div>
   );

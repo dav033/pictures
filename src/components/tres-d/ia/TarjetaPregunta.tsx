@@ -2,7 +2,7 @@
 
 import type { PreguntaTurno } from "@/lib/globos3d/turnos-ia";
 
-const OPCION = "inline-flex min-h-9 items-center rounded-full border border-taller-borde bg-taller-boton px-3 text-xs text-taller-texto hover:bg-taller-encima disabled:opacity-45";
+const OPCION = "inline-flex min-h-10 items-center rounded-full border border-taller-borde bg-taller-boton px-3 text-xs text-taller-texto hover:bg-taller-encima disabled:opacity-45";
 
 /** Lo que la IA pregunta cuando dos o más piezas encajan: cada opción, al tocarla, se manda como el próximo pedido. */
 export function TarjetaPregunta({ pregunta, ocupado, alResponder, alOtraCosa }: { pregunta: PreguntaTurno; ocupado: boolean; alResponder: (opcion: string) => void; alOtraCosa: () => void }) {

@@ -36,8 +36,7 @@ import { ALTURAS, HojaMovil, type AlturaHoja } from "./HojaMovil";
 import { BannerVerAntes } from "./ia/BannerVerAntes";
 import { PanelIA } from "./ia/PanelIA";
 import { PestanasLaterales, type PestanaLateral } from "./ia/PestanasLaterales";
-import { useAsistenteIA } from "./ia/useAsistenteIA";
-import { useNombresDePasos } from "./ia/useNombresDePasos";
+import { useIATaller } from "./ia/useIATaller";
 import { useResaltadoIA } from "./ia/useResaltadoIA";
 import { DialogoTaller } from "./DialogoTaller";
 import { Inspector } from "./Inspector";
@@ -48,6 +47,7 @@ import { ListaCompra } from "./ListaCompra";
 import { BarraHerramientas, EtiquetaElegida, ReglaAlturas, type Herramienta } from "./SobreVisor";
 import { medidaPrincipal, NOMBRE_TIPO } from "./tipos-pieza";
 import { leerGuardada, guardarEscena } from "./guardado-escena";
+import { useInsetTeclado } from "./useInsetTeclado";
 import type { PestanaAnadir } from "./PanelAnadir";
 import type { PiezaParaAnadir } from "./nuevas-taller";
 import type { VistaSolitario } from "./ParametrosPieza";
@@ -146,11 +146,7 @@ export function Taller3D() {
   const puedeDeshacerVista = solitario.activo ? solitario.puedeDeshacer : historialEscena.puedeDeshacer;
   const puedeRehacerVista = solitario.activo ? solitario.puedeRehacer : historialEscena.puedeRehacer;
   // La IA (pestaña «IA» del panel derecho): cada turno es UN paso nombrado del historial global; Ctrl+Z y «Deshacer turno» van juntos.
-  const nombresPasos = useNombresDePasos();
-  const aplicarIA = useCallback((escena: Escena, etiqueta: string) => { nombresPasos.nombrar(escena, etiqueta); cambiarVista(escena); }, [nombresPasos, cambiarVista]);
-  const ia = useAsistenteIA({ escena: escenaVista, ambito: solitario.activo ? "pieza" : "escena", cache: cacheEscena, aplicar: aplicarIA, inicial: guardadaAlAbrir?.conversacion ?? [] });
-  const pasoDeshacer = nombresPasos.nombreDe(escenaVista);
-  const rotuloDeshacer = pasoDeshacer ? `Deshacer ${pasoDeshacer}` : "Deshacer";
+  const { ia, reemplazarEscena, rotuloDeshacer } = useIATaller({ escena: escenaVista, cambiar: cambiarVista, ambito: solitario.activo ? `pieza:${solitario.solitario?.raizId ?? ""}` : "escena", cache: cacheEscena, cargada });
   /** Una pieza recién creada desde «Añadir → Nuevas» y abierta en el editor: «Cancelar» la quita. */
   const nuevaRef = useRef<string | null>(null);
   const [pestanaLado, setPestanaLado] = useState<PestanaLateral>("pieza");
@@ -174,6 +170,7 @@ export function Taller3D() {
   const [ocultos, setOcultos] = useState<ReadonlySet<string>>(() => new Set());
   // Interfaz: panel abierto, pestaña de «Añadir», herramienta del visor, vista fija, diálogos.
   const esAncho = useEsAncho();
+  const insetTeclado = useInsetTeclado(!esAncho);
   const [panel, setPanelElegido] = useState<Panel | null>("piezas");
   /** Los paneles que ya se abrieron alguna vez (quedan montados). */
   const [panelesVistos, setPanelesVistos] = useState<ReadonlySet<Panel>>(() => new Set<Panel>(["piezas"]));
@@ -227,10 +224,9 @@ export function Taller3D() {
   // Guardar solo (medio segundo después del último cambio).
   useEffect(() => {
     if (!cargada) return;
-    const t = setTimeout(() => setUltimoGuardado({ escena: escenaEdit, nombre: nombreEscena, ok: guardarEscena({ nombre: nombreEscena, escena: escenaEdit, conversacion: ia.turnos }) }), 500);
+    const t = setTimeout(() => setUltimoGuardado({ escena: escenaEdit, nombre: nombreEscena, ok: guardarEscena({ nombre: nombreEscena, escena: escenaEdit }) }), 500);
     return () => clearTimeout(t);
-  }, [cargada, escenaEdit, nombreEscena, ia.turnos]);
-
+  }, [cargada, escenaEdit, nombreEscena]);
   const armadaEscena = useMemo(() => {
     if (!cargada) return null;
     const hecha = armadas.get(escenaVista);
@@ -548,7 +544,7 @@ export function Taller3D() {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   };
   const panelIA = armadaEscena ? (
-    <PanelIA ia={ia} escena={escenaVista} ambito={solitario.activo ? "pieza" : "escena"} seleccion={seleccionIA} enHoja={!esAncho}
+    <PanelIA ia={ia} escena={escenaVista} seleccion={seleccionIA} enHoja={!esAncho}
       alFotoRealista={() => setDialogo("imagen")} alElegirPieza={elegir} alEnviado={alEnviarIA} />
   ) : <Cargando />;
   const plantilla = (id: string) => {
@@ -556,18 +552,21 @@ export function Taller3D() {
     setEscenaEdit(escenaPredefinida(id));
     setNombreEscena(ESCENAS_PREDEFINIDAS.find((p) => p.id === id)?.nombre ?? "Mi escena");
     setSeleccion(null); setOcultos(new Set()); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); setHistorialColor([]);
+    reemplazarEscena();
   };
   const salaVacia = () => {
     if (solitario.activo) salirSolitario(false);
     setEscenaEdit({ ...escenaEdit, nodos: [] });
     setNombreEscena("Escena nueva");
     setSeleccion(null); setOcultos(new Set());
+    reemplazarEscena();
   };
   const abrirEnEscena = (escena: Escena, item: ItemBiblioteca) => {
     if (solitario.activo) salirSolitario(false);
     setEscenaEdit(escena);
     setNombreEscena(item.nombre);
     setSeleccion(null); setCopiaTocada(null); setOcultos(new Set()); setVueltaEncuadre((v) => v + 1); setAvisoColor(null); setFicha(null);
+    reemplazarEscena();
   };
   const anadirItem = (item: ItemBiblioteca) => {
     // La biblioteca ya está cargada (de ahí viene el item): este import no trae nada nuevo.
@@ -810,7 +809,7 @@ export function Taller3D() {
   };
   if (!esAncho && !hojasVistas.has(pestanaVista)) setHojasVistas(new Set(hojasVistas).add(pestanaVista));
   const contenidoHoja = pestanasHoja.filter((p) => hojasVistas.has(p.id) || p.id === pestanaVista).map((p) => (
-    <div key={p.id} hidden={p.id !== pestanaVista} className={`min-h-0 flex-1 flex-col ${p.id === pestanaVista ? "flex" : "hidden"}`}>{contenidoDe(p.id)}</div>
+    <div key={p.id} hidden={p.id !== pestanaVista} inert={ia.escenaAntes !== null && p.id !== "ia"} className={`min-h-0 flex-1 flex-col ${p.id === pestanaVista ? "flex" : "hidden"}`}>{contenidoDe(p.id)}</div>
   ));
 
   const movil = !esAncho && (
@@ -870,7 +869,7 @@ export function Taller3D() {
           <button type="button" onClick={() => visor?.verDesde("3d")} aria-label="Encuadrar todo" className={`grid size-11 place-items-center rounded-xl ${FLOTANTE}`}><Scan className="size-5" aria-hidden /></button>
         </div>
       )}
-      <HojaMovil hoja={hoja} alCambiarAltura={cambiarAltura} alEscribir={() => setHoja("alta")} pestanas={pestanasHoja} activa={pestanaVista} alElegir={elegirPestanaHoja}>
+      <HojaMovil hoja={hoja} alCambiarAltura={cambiarAltura} alEscribir={() => setHoja("alta")} elevacion={insetTeclado} pestanas={pestanasHoja} activa={pestanaVista} alElegir={elegirPestanaHoja}>
         {contenidoHoja}
       </HojaMovil>
     </>
@@ -885,7 +884,7 @@ export function Taller3D() {
       <ArrastreDecoracionContexto.Provider value={editable ? lienzoDecoraciones.empezarArrastre : null}>
         <div className="flex min-h-0 flex-1">
           {esAncho && !solitario.activo && (
-            <nav aria-label="Paneles" className="flex w-[60px] shrink-0 flex-col items-center gap-1.5 border-r border-taller-linea bg-taller-barra pt-2.5">
+            <nav aria-label="Paneles" inert={ia.escenaAntes !== null} className="flex w-[60px] shrink-0 flex-col items-center gap-1.5 border-r border-taller-linea bg-taller-barra pt-2.5">
               {PANELES.map((p) => (
                 <button key={p.id} type="button" onClick={() => elegirPanel(p.id)} aria-pressed={panel === p.id} aria-label={p.nombre} title={p.nombre} className={`${RIEL} ${panel === p.id ? RIEL_ON : ""}`}>{p.icono}</button>
               ))}
@@ -897,7 +896,7 @@ export function Taller3D() {
           {esAncho && (
             // Los paneles ya abiertos quedan montados y ocultos: volver a abrirlos no los pinta de nuevo (ni rehace la
             // biblioteca, que sigue al día por debajo).
-            <aside aria-label={PANELES.find((p) => p.id === panel)?.nombre} hidden={solitario.activo || !panel}
+            <aside aria-label={PANELES.find((p) => p.id === panel)?.nombre} hidden={solitario.activo || !panel} inert={ia.escenaAntes !== null}
               onKeyDown={(e) => { if (e.key === "Escape" && !e.defaultPrevented && !escribiendo(e.target)) { e.preventDefault(); setPanel(null); } }}
               className={`min-h-0 shrink-0 flex-col border-r border-taller-linea bg-taller-panel ${solitario.activo || !panel ? "hidden" : "flex"} ${panel === "anadir" ? "w-[340px]" : panel === "plantillas" ? "w-[320px]" : "w-[272px]"}`}>
               {PANELES.filter((p) => panelesVistos.has(p.id)).map((p) => (
@@ -929,7 +928,7 @@ export function Taller3D() {
           {esAncho && (
             <aside aria-label={solitario.activo ? "Parámetros de la pieza e IA" : nodoElegido ? "Pieza elegida e IA" : "Escena e IA"}
               className={`flex min-h-0 shrink-0 flex-col border-l border-taller-linea bg-taller-panel ${pestanaLado === "ia" ? "w-[360px]" : solitario.activo ? "w-[340px]" : "w-80"}`}>
-              <PestanasLaterales activa={pestanaLado} alCambiar={setPestanaLado} turnos={ia.turnos.length} trabajando={ia.ocupado} ia={panelIA}
+              <PestanasLaterales activa={pestanaLado} alCambiar={setPestanaLado} turnos={ia.turnos.length} trabajando={ia.ocupado} piezaInerte={ia.escenaAntes !== null} ia={panelIA}
                 pieza={solitario.activo ? (
                   <>
                     <div className="px-4 pt-4"><div className="taller-rotulo text-taller-acento">{nodoElegido ? NOMBRE_TIPO[nodoElegido.pieza.tipo] : ""}</div>{nodoElegido && nodoElegido.id !== raizSolitario?.id && <p className="mt-1 text-sm font-semibold">{nodoElegido.nombre}</p>}</div>

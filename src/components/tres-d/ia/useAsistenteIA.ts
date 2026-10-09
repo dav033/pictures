@@ -2,17 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cabecerasConversacion } from "@/lib/registro/cliente";
-import { aplicarTurno, textoAplicarTurno } from "@/lib/globos3d/aplicar-turno";
+import { aplicarDiff, aplicarTurno, textoAplicarTurno } from "@/lib/globos3d/aplicar-turno";
 import { mensajeConAlcance, type AlcanceResuelto } from "@/lib/globos3d/alcance-ia";
 import { construirCuerpoEscenaIA, mensajeDelPedido, type FotoAdjuntaIA } from "@/lib/globos3d/cuerpo-escena-ia";
-import { deshacerTurno, textoDeshacerTurno } from "@/lib/globos3d/deshacer-turno";
+import { deshacerTurno, estadoDeTurno, textoDeshacerTurno, type EstadoTurnoEnEscena } from "@/lib/globos3d/deshacer-turno";
 import { diffEscenas, diffVacio, idsParaResaltar, type DiffEscena } from "@/lib/globos3d/diff-escenas";
 import type { Escena } from "@/lib/globos3d/escena";
 import { pedirEscenaIA, type FaseIA, type PasoIA } from "@/lib/globos3d/flujo-escena-ia";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
 import { resumenDeRefinado, type RondaHecha } from "@/lib/globos3d/refinado/bucle";
 import { datosDeRefinado, leerRespuestaIA, mensajeDeError } from "@/lib/globos3d/respuesta-escena-ia";
-import { historialParaModelo, siguienteNumero, tiempoTipico, type AmbitoTurno, type PasoTurno, type TurnoPanel } from "@/lib/globos3d/turnos-ia";
+import { esDeEstaEscena, historialParaModelo, siguienteNumero, tiempoTipico, type AmbitoTurno, type PasoTurno, type TurnoPanel } from "@/lib/globos3d/turnos-ia";
 import { RONDAS_AUTOMATICAS, useRefinadoFoto } from "../useRefinadoFoto";
 
 /** Cuánto se queda marcado en el visor lo que acaba de cambiar la IA. */
@@ -25,7 +25,10 @@ export type EnCurso = { pedido: string; contexto: string; foto: boolean; inicio:
 export type EntradaAsistenteIA = {
   /** La escena que se edita ahora (la entera, o la pieza sola en el editor solitario). */
   escena: Escena;
+  /** `escena`, o `pieza:<id de la raíz>` en el editor solitario. */
   ambito: AmbitoTurno;
+  /** La identidad de la escena abierta: los turnos de otra escena no actúan sobre esta. */
+  clave: string;
   cache: Map<string, PiezaArmada>;
   /** Pone la escena como UN paso nombrado del historial global (Ctrl+Z lo deshace igual que «Deshacer turno»). */
   aplicar: (escena: Escena, etiqueta: string) => void;
@@ -40,7 +43,8 @@ const pasoDe = (p: { herramienta: string; resumen: string; consulta: boolean }):
 /**
  * El asistente de IA del taller como conversación de turnos (D-021): manda el pedido con avance en vivo y «Detener», aplica la
  * respuesta como UN paso nombrado del historial (respetando lo que la persona haya editado mientras tanto), guarda qué cambió
- * en cada turno, deshace solo lo que tocó ese turno, deja ver la escena de antes y marca en el visor lo cambiado.
+ * en cada turno, deshace y rehace solo lo que tocó ese turno (lo que se puede hacer HOY, mirando la escena), deja ver la
+ * escena de antes y marca en el visor lo cambiado. Un turno solo actúa sobre la escena y el editor en que se hizo.
  */
 export function useAsistenteIA(entrada: EntradaAsistenteIA) {
   const [turnos, setTurnos] = useState<TurnoPanel[]>(() => [...entrada.inicial]);
@@ -48,8 +52,12 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
   const [antesId, setAntesId] = useState<string | null>(null);
   const [apuntadas, setApuntadas] = useState<readonly Marca[] | null>(null);
   const [destello, setDestello] = useState<readonly Marca[]>([]);
+  /** Lo que se le dijo a la persona al deshacer o rehacer un turno (no se guarda). */
+  const [avisos, setAvisos] = useState<Readonly<Record<string, string>>>({});
   const control = useRef<AbortController | null>(null);
   const reloj = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Dónde se pidió la comparación con la foto: si se cambia de escena o de editor, las rondas paran. */
+  const origenRefinado = useRef<{ clave: string; ambito: AmbitoTurno } | null>(null);
   const ultima = useRef(entrada);
   useEffect(() => { ultima.current = entrada; });
   useEffect(() => () => { control.current?.abort(); if (reloj.current) clearTimeout(reloj.current); }, []);
@@ -64,13 +72,15 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
   const refinado = useRefinadoFoto({
     alRonda: (r: RondaHecha) => {
       const u = ultima.current;
+      const origen = origenRefinado.current;
+      if (!origen || !esDeEstaEscena(origen, u.clave, u.ambito)) { refinado.detener(); return; }
       const diff = diffEscenas(r.antes, r.escena, { cache: u.cache });
       const aplicada = aplicarTurno(u.escena, r.antes, r.escena, diff);
       u.aplicar(aplicada.escena, `Ronda ${r.ronda} con la foto`);
-      destacar(idsParaResaltar(diff));
+      destacar(idsParaResaltar(aplicada.diff));
       setTurnos((t) => [...t, {
-        id: `r${Date.now().toString(36)}${r.ronda}`, numero: siguienteNumero(t), pedido: `Ronda ${r.ronda} con la foto`, contexto: "comparando con la foto", ambito: u.ambito, foto: true,
-        respuesta: r.respuesta.slice(0, 1400), pasos: r.cambios.map(pasoDe), diff, pregunta: null, costeUsd: null, ms: 0, estado: "aplicado", nota: textoAplicarTurno(aplicada.conservadas),
+        id: `r${Date.now().toString(36)}${r.ronda}`, numero: siguienteNumero(t), pedido: `Ronda ${r.ronda} con la foto`, contexto: "comparando con la foto", ambito: u.ambito, clave: u.clave, foto: true,
+        respuesta: r.respuesta.slice(0, 1400), pasos: r.cambios.map(pasoDe), diff: aplicada.diff, pregunta: null, costeUsd: r.costeUsd ?? null, ms: 0, estado: "aplicado", nota: textoAplicarTurno(aplicada.conservadas),
       }]);
     },
     alTerminar: (r) => {
@@ -88,13 +98,13 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
     const pedido = mensajeDelPedido(envio.texto, envio.foto);
     if (!pedido || control.current || refinado.refinando) return false;
     const inicio = Date.now();
-    const { escena: antes, ambito } = ultima.current;
+    const { escena: antes, ambito, clave } = ultima.current;
     const mio = new AbortController();
     control.current = mio;
     const vistos: PasoTurno[] = [];
     setAntesId(null);
     setEnCurso({ pedido, contexto: envio.alcance.contexto, foto: envio.foto !== null, inicio, fase: envio.foto ? "leyendo_foto" : "pensando", pasos: [] });
-    const base = { id: `t${inicio.toString(36)}`, numero: siguienteNumero(turnos), pedido, contexto: envio.alcance.contexto, ambito, foto: envio.foto !== null };
+    const base = { id: `t${inicio.toString(36)}`, numero: siguienteNumero(turnos), pedido, contexto: envio.alcance.contexto, ambito, clave, foto: envio.foto !== null };
     const sinHacer = (estado: "error" | "detenido", nota: string): false => {
       agregar({ ...base, respuesta: "", pasos: vistos, diff: null, pregunta: null, costeUsd: null, ms: Date.now() - inicio, estado, nota });
       return false;
@@ -102,7 +112,7 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
     try {
       const { estado, datos } = await pedirEscenaIA({
         cuerpo: construirCuerpoEscenaIA({
-          escena: antes, mensaje: mensajeConAlcance(pedido, envio.alcance, envio.escenaEnteraConElegida), historial: historialParaModelo(turnos),
+          escena: antes, mensaje: mensajeConAlcance(pedido, envio.alcance, envio.escenaEnteraConElegida), historial: historialParaModelo(turnos.filter((t) => esDeEstaEscena(t, clave, ambito))),
           seleccion: envio.alcance.seleccion, foto: envio.foto,
         }),
         cabeceras: cabecerasConversacion("3d"),
@@ -119,11 +129,12 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
       let nota: string | null = null;
       if (diff) {
         const u = ultima.current;
-        if (u.ambito !== ambito) {
-          nota = "Cambiaste de editor mientras la IA trabajaba: no apliqué sus cambios. Vuelve a pedírselo.";
+        if (!esDeEstaEscena({ clave, ambito }, u.clave, u.ambito)) {
+          nota = "Cambiaste de escena o de editor mientras la IA trabajaba: no apliqué sus cambios. Vuelve a pedírselo.";
           diff = null;
         } else {
           const aplicada = aplicarTurno(u.escena, antes, r.escena, diff);
+          diff = aplicada.diff;
           u.aplicar(aplicada.escena, `Turno ${base.numero} de la IA`);
           nota = textoAplicarTurno(aplicada.conservadas);
           destacar(idsParaResaltar(diff));
@@ -134,7 +145,10 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
         estado: diff ? "aplicado" : "sin_cambios", nota,
       });
       const comparable = envio.foto ? datosDeRefinado(r.foto) : null;
-      if (envio.foto && comparable && RONDAS_AUTOMATICAS > 0) void refinado.iniciar({ escena: r.escena, foto: envio.foto, lectura: comparable.lectura, encuadre: comparable.encuadre });
+      if (envio.foto && comparable && RONDAS_AUTOMATICAS > 0) {
+        origenRefinado.current = { clave, ambito };
+        void refinado.iniciar({ escena: r.escena, foto: envio.foto, lectura: comparable.lectura, encuadre: comparable.encuadre });
+      }
       return true;
     } catch (causa) {
       return causa instanceof DOMException && causa.name === "AbortError"
@@ -148,35 +162,63 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
 
   const detener = () => { control.current?.abort(); refinado.detener(); };
 
-  /** Revierte SOLO lo que tocó ese turno (lo editado a mano después se conserva) como un paso nombrado del historial. */
-  const deshacer = (id: string) => {
+  const delTurno = (id: string): TurnoPanel | null => {
     const turno = turnos.find((t) => t.id === id);
     const u = ultima.current;
-    if (!turno?.diff || turno.estado === "deshecho" || turno.ambito !== u.ambito) return;
+    return turno?.diff && esDeEstaEscena(turno, u.clave, u.ambito) ? turno : null;
+  };
+  const avisar = (id: string, texto: string) => setAvisos((a) => ({ ...a, [id]: texto }));
+
+  /** Revierte SOLO lo que tocó ese turno (campo a campo; lo editado a mano después se conserva) como un paso nombrado del historial. */
+  const deshacer = (id: string) => {
+    const turno = delTurno(id);
+    if (!turno?.diff) return;
+    const u = ultima.current;
     const r = deshacerTurno(u.escena, turno.diff);
     if (r.revertidas.length) {
       u.aplicar(r.escena, `Deshacer turno ${turno.numero}`);
       destacar(r.revertidas.filter((x) => x !== "sala").map((x) => ({ id: x, nueva: false })));
     }
     setAntesId(null);
-    setTurnos((t) => t.map((x) => (x.id === id ? { ...x, estado: r.revertidas.length || !r.conservadas.length ? "deshecho" : x.estado, nota: textoDeshacerTurno(r, `el turno ${turno.numero}`) } : x)));
+    avisar(id, textoDeshacerTurno(r, `el turno ${turno.numero}`));
+  };
+
+  /** Vuelve a aplicar un turno que se deshizo (con el botón o con Ctrl+Z), con la misma regla: solo lo que la persona no cambió. */
+  const rehacer = (id: string) => {
+    const turno = delTurno(id);
+    if (!turno?.diff) return;
+    const u = ultima.current;
+    const r = aplicarDiff(u.escena, turno.diff);
+    if (r.escena !== u.escena) {
+      u.aplicar(r.escena, `Rehacer turno ${turno.numero}`);
+      destacar(idsParaResaltar(r.diff));
+      setTurnos((t) => t.map((x) => (x.id === id ? { ...x, diff: r.diff } : x)));
+    }
+    setAntesId(null);
+    avisar(id, textoAplicarTurno(r.conservadas) ?? (r.escena === u.escena ? `No había nada que rehacer en el turno ${turno.numero}.` : `Rehice el turno ${turno.numero}.`));
   };
 
   const verAntes = (id: string | null) => setAntesId((actual) => (actual === id ? null : id));
   const turnoAntes = antesId ? turnos.find((t) => t.id === antesId) ?? null : null;
-  const { escena, ambito } = entrada;
+  const { escena, ambito, clave } = entrada;
   const escenaAntes = useMemo(
-    () => (turnoAntes?.diff && turnoAntes.ambito === ambito ? deshacerTurno(escena, turnoAntes.diff).escena : null),
-    [turnoAntes, escena, ambito],
+    () => (turnoAntes?.diff && esDeEstaEscena(turnoAntes, clave, ambito) ? deshacerTurno(escena, turnoAntes.diff).escena : null),
+    [turnoAntes, escena, ambito, clave],
   );
+  /** Qué se puede hacer hoy con cada turno de esta escena y este editor (no lo que se guardó: Ctrl+Z y Ctrl+Y también cuentan). */
+  const estados = useMemo(() => {
+    const salida: Record<string, EstadoTurnoEnEscena> = {};
+    for (const t of turnos) if (t.diff && esDeEstaEscena(t, clave, ambito)) salida[t.id] = estadoDeTurno(escena, t.diff);
+    return salida;
+  }, [turnos, escena, ambito, clave]);
 
-  const borrar = () => { if (control.current) return; setTurnos([]); setAntesId(null); setDestello([]); };
+  const borrar = () => { if (control.current) return; setTurnos([]); setAntesId(null); setDestello([]); setAvisos({}); };
   const ultimoTurno = turnos[turnos.length - 1];
-  const preguntaPendiente = !enCurso && ultimoTurno?.pregunta ? { turnoId: ultimoTurno.id, ...ultimoTurno.pregunta } : null;
+  const preguntaPendiente = !enCurso && ultimoTurno?.pregunta && esDeEstaEscena(ultimoTurno, clave, ambito) ? { turnoId: ultimoTurno.id, ...ultimoTurno.pregunta } : null;
 
   return {
     turnos, enCurso, refinando: refinado.refinando, ocupado: enCurso !== null || refinado.refinando !== null,
-    enviar, detener, deshacer, verAntes, antesId: escenaAntes ? antesId : null, escenaAntes, borrar, preguntaPendiente,
+    enviar, detener, deshacer, rehacer, verAntes, antesId: escenaAntes ? antesId : null, escenaAntes, borrar, preguntaPendiente, estados, avisos,
     /** Qué piezas marca el visor: lo que se señala con el cursor y, si no, lo que acaba de cambiar la IA. */
     marcas: apuntadas ?? destello, apuntar: setApuntadas,
     tiempo: tiempoTipico(turnos),

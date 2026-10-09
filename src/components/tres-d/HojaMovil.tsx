@@ -15,6 +15,8 @@ type Props<P extends string> = {
   alCambiarAltura: (paso: 1 | -1) => void;
   /** Se escribe en un campo de texto: la hoja sube para que el teclado no la tape. */
   alEscribir: () => void;
+  /** px que el teclado de pantalla tapa de la parte baja (ver `useInsetTeclado`): la hoja sube esa cantidad. */
+  elevacion?: number;
   pestanas: readonly Pestana<P>[];
   activa: P;
   alElegir: (id: P) => void;
@@ -22,11 +24,11 @@ type Props<P extends string> = {
 };
 
 /** La hoja inferior del teléfono: asa para subirla y bajarla (arrastrando, tocando o con flechas), el contenido de la pestaña y la barra de secciones. */
-export function HojaMovil<P extends string>({ hoja, alCambiarAltura, alEscribir, pestanas, activa, alElegir, children }: Props<P>) {
+export function HojaMovil<P extends string>({ hoja, alCambiarAltura, alEscribir, pestanas, activa, alElegir, elevacion = 0, children }: Props<P>) {
   const deslizar = useRef<number | null>(null);
   const alternar = () => alCambiarAltura(hoja === "alta" ? -1 : 1);
   return (
-    <section aria-label="Paneles del taller"
+    <section aria-label="Paneles del taller" style={elevacion ? { bottom: elevacion, maxHeight: `calc(100dvh - ${elevacion}px - 16px)` } : undefined}
       onFocusCapture={(e) => { if (e.target instanceof HTMLTextAreaElement || (e.target instanceof HTMLInputElement && e.target.type !== "range" && e.target.type !== "checkbox")) alEscribir(); }}
       className={`absolute inset-x-0 bottom-0 z-20 flex flex-col rounded-t-[20px] border-t border-taller-borde bg-taller-panel shadow-[0_-10px_30px_var(--sombra)] ${ALTURA_HOJA[hoja]}`}>
       <div onPointerDown={(e) => { deslizar.current = e.clientY; }} onPointerCancel={() => { deslizar.current = null; }}

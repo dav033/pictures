@@ -1,4 +1,4 @@
-import type { CambioNodo, CambioSala, CampoCambiado, DiffEscena } from "./diff-escenas";
+import { medidaTexto, type CambioNodo, type CambioSala, type CampoCambiado, type DiffEscena } from "./diff-escenas";
 import type { NodoEscena } from "./escena";
 import type { TurnoIA } from "./cuerpo-escena-ia";
 
@@ -11,9 +11,9 @@ import type { TurnoIA } from "./cuerpo-escena-ia";
 
 export type PasoTurno = { herramienta: string; resumen: string; consulta: boolean };
 export type PreguntaTurno = { texto: string; opciones: string[] };
-export type EstadoTurno = "aplicado" | "sin_cambios" | "deshecho" | "error" | "detenido";
-/** Dónde trabajó la IA: la escena entera o la pieza que se edita sola (el editor solitario). */
-export type AmbitoTurno = "escena" | "pieza";
+export type EstadoTurno = "aplicado" | "sin_cambios" | "error" | "detenido";
+/** Dónde trabajó la IA: `escena` (la entera) o `pieza:<id de la raíz>` (esa pieza en el editor solitario). */
+export type AmbitoTurno = string;
 
 export type TurnoPanel = {
   id: string;
@@ -22,6 +22,8 @@ export type TurnoPanel = {
   /** «sobre «Columna izquierda»», «escena entera», «con foto»: a qué se refería el pedido. */
   contexto: string;
   ambito: AmbitoTurno;
+  /** De qué escena es el turno (cambia al reemplazarla por una plantilla, una sala vacía o una idea de la biblioteca): un turno solo actúa sobre la suya. */
+  clave: string;
   foto: boolean;
   respuesta: string;
   pasos: PasoTurno[];
@@ -37,7 +39,7 @@ export type TurnoPanel = {
 
 /** Cuántos turnos se guardan con la escena y cuánto pueden pesar (el navegador da unos 5 MB para todo). */
 export const MAX_TURNOS_GUARDADOS = 20;
-const MAX_BYTES_TURNOS = 1_500_000;
+const MAX_BYTES_TURNOS = 600_000;
 
 const esObjeto = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const texto = (v: unknown): v is string => typeof v === "string";
@@ -61,14 +63,14 @@ const esCambioSala = (v: unknown): v is CambioSala => esObjeto(v) && lista(v.cam
 
 function esDiff(v: unknown): v is DiffEscena {
   return esObjeto(v) && lista(v.nodos, esCambioNodo) && (v.sala === null || esCambioSala(v.sala))
-    && numero(v.globosAntes) && numero(v.globosDespues) && numero(v.piezasAntes) && numero(v.piezasDespues);
+    && numero(v.globosAntes) && numero(v.globosDespues);
 }
 const esPaso = (v: unknown): v is PasoTurno => esObjeto(v) && texto(v.herramienta) && texto(v.resumen) && typeof v.consulta === "boolean";
 const esPregunta = (v: unknown): v is PreguntaTurno => esObjeto(v) && texto(v.texto) && lista(v.opciones, texto);
-const ESTADOS: readonly EstadoTurno[] = ["aplicado", "sin_cambios", "deshecho", "error", "detenido"];
+const ESTADOS: readonly EstadoTurno[] = ["aplicado", "sin_cambios", "error", "detenido"];
 
 function esTurno(v: unknown): v is TurnoPanel {
-  return esObjeto(v) && texto(v.id) && numero(v.numero) && texto(v.pedido) && texto(v.contexto) && (v.ambito === "escena" || v.ambito === "pieza")
+  return esObjeto(v) && texto(v.id) && numero(v.numero) && texto(v.pedido) && texto(v.contexto) && texto(v.ambito) && texto(v.clave)
     && typeof v.foto === "boolean" && texto(v.respuesta) && lista(v.pasos, esPaso) && (v.diff === null || esDiff(v.diff))
     && (v.pregunta === null || esPregunta(v.pregunta)) && (v.costeUsd === null || numero(v.costeUsd)) && numero(v.ms)
     && ESTADOS.includes(v.estado as EstadoTurno) && (v.nota === null || texto(v.nota));
@@ -99,7 +101,7 @@ export function historialParaModelo(turnos: readonly TurnoPanel[], max = 3): Tur
 
 /** Cuánto suele tardar la IA, según los turnos que ya hizo: «unos 12 s». `null` mientras no haya ninguno. */
 export function tiempoTipico(turnos: readonly TurnoPanel[]): string | null {
-  const tiempos = turnos.filter((t) => t.estado === "aplicado" || t.estado === "sin_cambios" || t.estado === "deshecho").map((t) => t.ms).sort((a, b) => a - b);
+  const tiempos = turnos.filter((t) => t.estado === "aplicado" || t.estado === "sin_cambios").map((t) => t.ms).sort((a, b) => a - b);
   const mediana = tiempos[Math.floor(tiempos.length / 2)];
   return mediana === undefined ? null : `unos ${Math.max(1, Math.round(mediana / 1000))} s`;
 }
@@ -109,4 +111,28 @@ export const segundos = (ms: number): string => `${Math.max(1, Math.round(ms / 1
 /** «US$0,003». Cuando es muy poco, no se redondea a cero. */
 export function costeTexto(usd: number): string {
   return `US$${usd.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: usd < 0.01 ? 4 : 3 })}`;
+}
+
+/** ¿El turno es de esta escena y de este editor? Solo entonces puede deshacerse, rehacerse o mostrarse «antes». */
+export const esDeEstaEscena = (t: Pick<TurnoPanel, "clave" | "ambito">, clave: string, ambito: AmbitoTurno): boolean => t.clave === clave && t.ambito === ambito;
+
+const NOMBRE_HERRAMIENTA: Readonly<Record<string, string>> = {
+  ver_escena: "Miró la escena", ver_pieza: "Miró una pieza", buscar_en_escena: "Buscó en la escena", listar_colores: "Miró los colores", contar_globos: "Contó globos",
+  seleccionar_grupo: "Eligió un grupo de piezas", usar_preset: "Partió de una escena armada", agregar_pieza: "Agregó una pieza", agregar_del_catalogo: "Agregó del catálogo",
+  agregar_mobiliario: "Agregó mobiliario", mover_pieza: "Movió una pieza", girar_pieza: "Giró una pieza", cambiar_pieza: "Cambió una pieza", quitar_pieza: "Quitó una pieza",
+  duplicar_pieza: "Copió una pieza", reemplazar_pieza: "Reemplazó una pieza", cambiar_sala: "Cambió la sala", poner_sobre: "Colgó una decoración", mover_sobre: "Movió una decoración",
+  separar_copia: "Separó una copia", recolorear_escena: "Cambió colores", ajustar_tamanos: "Ajustó tamaños de globos", editar_globos: "Cambió globos por formato o color",
+  buscar_en_biblioteca: "Buscó en la biblioteca", insertar_de_biblioteca: "Puso una idea de la biblioteca", alinear: "Alineó piezas", distribuir: "Repartió piezas",
+  espejar: "Espejó piezas", poner_remate: "Puso un globo de remate", pintar_en_malla: "Pintó la malla", preguntar_usuario: "Te hizo una pregunta", modelar_desde_foto: "Armó la escena desde la foto",
+  reportar_comparacion: "Comparó con la foto",
+};
+
+/** Un paso de la IA en palabras de persona, con las medidas en la misma unidad que el resto de la tarjeta («alto 220 cm» → «alto 2,2 m»). */
+export function pasoLegible(p: PasoTurno): string {
+  const nombre = NOMBRE_HERRAMIENTA[p.herramienta] ?? `${p.herramienta.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())}`;
+  const detalle = p.resumen
+    .split("\n")[0]!
+    .replace(/(\d+(?:[.,]\d+)?)\s*cm\b/g, (_, n: string) => medidaTexto(Number(n.replace(",", "."))));
+  if (!detalle) return nombre;
+  return detalle.toLowerCase().startsWith(nombre.toLowerCase()) ? detalle : `${nombre} · ${detalle}`;
 }

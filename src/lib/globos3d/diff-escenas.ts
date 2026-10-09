@@ -1,6 +1,6 @@
-import { armarEscena, type Colocacion, type Escena, type NodoArmado, type NodoEscena, type Sala } from "./escena";
-import { inventarioDe } from "./partes-globos";
+import { armarEscena, type Colocacion, type Escena, type NodoEscena, type Sala } from "./escena";
 import type { PiezaArmada } from "./piezas";
+import { referenciaPorCodigo } from "../plan/referencia-sempertex";
 
 /**
  * **Qué cambió entre dos escenas** (REQ IA-panel, D-021): la comparación por id de pieza que alimenta las tarjetas de turno
@@ -9,7 +9,7 @@ import type { PiezaArmada } from "./piezas";
  * que `deshacer-turno.ts` necesita para revertir SOLO lo que tocó la IA sin tirar lo que se hizo a mano después. Puro, sin red.
  */
 
-export type ClaseCampo = "medida" | "color" | "sitio" | "globos" | "ajuste";
+export type ClaseCampo = "medida" | "color" | "sitio" | "ajuste";
 export type CampoCambiado = { clase: ClaseCampo; etiqueta: string; antes: string; despues: string };
 
 export type CambioNodo = {
@@ -32,12 +32,10 @@ export type DiffEscena = {
   sala: CambioSala | null;
   globosAntes: number;
   globosDespues: number;
-  piezasAntes: number;
-  piezasDespues: number;
 };
 
-/** Cuántos campos de una pieza cambiada se detallan antes de resumir el resto («+3 ajustes»). */
-const MAX_CAMPOS = 4;
+/** Cuántas cosas de una pieza cambiada se dicen en su línea antes de resumir el resto («+2 ajustes»). */
+const MAX_FRASES = 3;
 
 /** JSON con las llaves ordenadas: dos piezas iguales comparan igual aunque una se haya armado con otro orden. */
 export function jsonEstable(valor: unknown): string {
@@ -58,10 +56,10 @@ const ETIQUETAS: Readonly<Record<string, string>> = {
   giroGrados: "giro", xCm: "x", zCm: "z", yCm: "y", aLoLargoCm: "a lo largo", cuelgaCm: "cuelga", pared: "pared", en: "lugar", nombre: "nombre",
 };
 
-const etiquetaDe = (llave: string) => ETIQUETAS[llave] ?? llave.replace(/Cm$/, "").replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
+export const etiquetaDeLlave = (llave: string) => ETIQUETAS[llave] ?? llave.replace(/Cm$/, "").replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
 
 function claseDe(llave: string): ClaseCampo {
-  if (/color|codigo|hex|peso/i.test(llave)) return "color";
+  if (/colores|codigo|hex|tonos?$/i.test(llave)) return "color";
   if (/Cm$|ancho|alto|alt[ou]ra|grosor/.test(llave) && llave !== "giroGrados") return "medida";
   return "ajuste";
 }
@@ -93,7 +91,7 @@ const esHoja = (v: unknown): boolean => typeof v !== "object" || v === null || A
 function camposDe(antes: unknown, despues: unknown, llave: string, clase: (llave: string) => ClaseCampo, salida: CampoCambiado[]): void {
   if (sonIguales(antes, despues)) return;
   if (esHoja(antes) || esHoja(despues) || antes === undefined || despues === undefined) {
-    salida.push({ clase: clase(llave), etiqueta: etiquetaDe(llave), antes: valorTexto(llave, antes), despues: valorTexto(llave, despues) });
+    salida.push({ clase: clase(llave), etiqueta: etiquetaDeLlave(llave), antes: valorTexto(llave, antes), despues: valorTexto(llave, despues) });
     return;
   }
   const a = antes as Record<string, unknown>, d = despues as Record<string, unknown>;
@@ -101,28 +99,14 @@ function camposDe(antes: unknown, despues: unknown, llave: string, clase: (llave
 }
 
 /** Los campos que cambiaron en la pieza, el sitio y el nombre de una pieza que sigue en la escena. */
-function camposDeNodo(antes: NodoEscena, despues: NodoEscena, formatos: CampoCambiado[]): CampoCambiado[] {
+function camposDeNodo(antes: NodoEscena, despues: NodoEscena): CampoCambiado[] {
   const campos: CampoCambiado[] = [];
   if (antes.nombre !== despues.nombre) campos.push({ clase: "ajuste", etiqueta: "nombre", antes: antes.nombre, despues: despues.nombre });
   if (antes.pieza.tipo !== despues.pieza.tipo) campos.push({ clase: "ajuste", etiqueta: "tipo", antes: antes.pieza.tipo, despues: despues.pieza.tipo });
   else camposDe(antes.pieza, despues.pieza, "pieza", claseDe, campos);
   if (antes.colocacion.en !== despues.colocacion.en) campos.push({ clase: "sitio", etiqueta: "lugar", antes: antes.colocacion.en, despues: despues.colocacion.en });
   else camposDe(antes.colocacion as Colocacion, despues.colocacion as Colocacion, "colocacion", () => "sitio", campos);
-  // Primero lo que se pidió (medida, color, sitio); detrás, cuántos globos de cada formato resultaron.
-  return [...campos, ...formatos];
-}
-
-function porFormato(n: Pick<NodoArmado, "globos" | "tubos"> | undefined): Map<string, number> {
-  const mapa = new Map<string, number>();
-  for (const l of n ? inventarioDe(n) : []) mapa.set(l.formatoId, (mapa.get(l.formatoId) ?? 0) + l.cantidad);
-  return mapa;
-}
-
-/** «R-24: 6 → 14»: una línea por formato cuyo número cambió. */
-function camposDeFormatos(antes: NodoArmado | undefined, despues: NodoArmado | undefined): CampoCambiado[] {
-  const a = porFormato(antes), d = porFormato(despues);
-  return [...new Set([...a.keys(), ...d.keys()])].filter((f) => (a.get(f) ?? 0) !== (d.get(f) ?? 0))
-    .map((f) => ({ clase: "globos" as const, etiqueta: f, antes: String(a.get(f) ?? 0), despues: String(d.get(f) ?? 0) }));
+  return campos;
 }
 
 function camposDeSala(antes: Sala, despues: Sala): CampoCambiado[] {
@@ -155,7 +139,7 @@ export function diffEscenas(antes: Escena, despues: Escena, opciones: OpcionesDi
     if (sonIguales(previo.nodo, n)) continue;
     const ha = hecho(armadaAntes, n.id);
     nodos.push({
-      id: n.id, nombre: n.nombre, tipo: "cambiada", campos: camposDeNodo(previo.nodo, n, camposDeFormatos(ha, hn)),
+      id: n.id, nombre: n.nombre, tipo: "cambiada", campos: camposDeNodo(previo.nodo, n),
       globosAntes: ha?.globos.length ?? 0, globosDespues: hn?.globos.length ?? 0, antes: previo.nodo, despues: n, indice: previo.indice,
     });
   }
@@ -165,7 +149,7 @@ export function diffEscenas(antes: Escena, despues: Escena, opciones: OpcionesDi
   }
 
   const sala: CambioSala | null = sonIguales(antes.sala, despues.sala) ? null : { campos: camposDeSala(antes.sala, despues.sala), antes: antes.sala, despues: despues.sala };
-  return { nodos, sala, globosAntes: armadaAntes.globos.length, globosDespues: armadaDespues.globos.length, piezasAntes: antes.nodos.length, piezasDespues: despues.nodos.length };
+  return { nodos, sala, globosAntes: armadaAntes.globos.length, globosDespues: armadaDespues.globos.length };
 }
 
 export const diffVacio = (d: DiffEscena): boolean => d.nodos.length === 0 && d.sala === null;
@@ -178,22 +162,40 @@ export function textoGlobos(delta: number): string {
 
 export const deltaGlobos = (d: DiffEscena): number => d.globosDespues - d.globosAntes;
 
+/** Los colores de una lista de códigos («609, 005 45 %») con su nombre: «Rosado/Blanco», o «Dorado 570» si es uno solo. */
+export function coloresTexto(valor: string): string {
+  const codigos = [...new Set(valor.split(",").map((t) => t.trim().split(/\s+/)[0] ?? "").filter(Boolean))];
+  const nombres = codigos.map((c) => referenciaPorCodigo(c)?.nombre ?? c);
+  if (nombres.length === 1) return `${nombres[0]!} ${codigos[0]!}`.replace(/^(\S+) \1$/, "$1");
+  return nombres.length > 3 ? `${nombres.slice(0, 3).join("/")} +${nombres.length - 3}` : nombres.join("/");
+}
+
+const corto = (t: string, n = 28) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
+
+/** Lo que cambió en un campo, dicho como lo diría un decorador: «alto 1,8 m → 2,2 m», «Rosado/Blanco → Dorado 570», «movida». */
+function fraseDeCampo(c: CampoCambiado): string {
+  if (c.clase === "color") return `${coloresTexto(c.antes)} → ${coloresTexto(c.despues)}`;
+  if (c.clase === "sitio") return c.etiqueta === "lugar" ? `de ${c.antes} a ${c.despues}` : "movida";
+  return `${c.etiqueta} ${corto(c.antes)} → ${corto(c.despues)}`;
+}
+
 /** Una línea de la lista de cambios: el signo (+ − ~), la pieza y su detalle. */
 export type LineaDiff = { id: string | null; signo: "+" | "−" | "~"; titulo: string; detalle: string };
 
+/** Una línea por pieza (y una por la sala): lo nuevo y lo quitado con sus globos, lo cambiado con sus cambios en palabras. */
 export function lineasDeDiff(d: DiffEscena): LineaDiff[] {
   const lineas: LineaDiff[] = [];
   for (const c of d.nodos) {
     if (c.tipo === "nueva") lineas.push({ id: c.id, signo: "+", titulo: c.nombre, detalle: c.globosDespues ? `${c.globosDespues} globos` : "" });
     else if (c.tipo === "quitada") lineas.push({ id: c.id, signo: "−", titulo: c.nombre, detalle: c.globosAntes ? `${c.globosAntes} globos` : "" });
     else {
-      const visibles = c.campos.slice(0, MAX_CAMPOS);
-      for (const campo of visibles) lineas.push({ id: c.id, signo: "~", titulo: c.nombre, detalle: campo.clase === "globos" ? `${campo.etiqueta}: ${campo.antes} → ${campo.despues} globos` : `${campo.etiqueta} ${campo.antes} → ${campo.despues}` });
-      if (c.campos.length > visibles.length) lineas.push({ id: c.id, signo: "~", titulo: c.nombre, detalle: `+${c.campos.length - visibles.length} ajustes más` });
-      if (!c.campos.length) lineas.push({ id: c.id, signo: "~", titulo: c.nombre, detalle: "ajustes" });
+      const frases = [...new Set(c.campos.map(fraseDeCampo))];
+      const dichas = frases.slice(0, MAX_FRASES);
+      if (frases.length > dichas.length) dichas.push(`+${frases.length - dichas.length} ajustes`);
+      lineas.push({ id: c.id, signo: "~", titulo: c.nombre, detalle: dichas.join(" · ") || "ajustes" });
     }
   }
-  if (d.sala) lineas.push({ id: null, signo: "~", titulo: "Sala", detalle: d.sala.campos.slice(0, 2).map((c) => `${c.etiqueta} ${c.antes} → ${c.despues}`).join("; ") || "ajustes" });
+  if (d.sala) lineas.push({ id: null, signo: "~", titulo: "Sala", detalle: [...new Set(d.sala.campos.map(fraseDeCampo))].slice(0, 2).join(" · ") || "ajustes" });
   return lineas;
 }
 

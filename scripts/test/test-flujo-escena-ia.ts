@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { TIPO_NDJSON, crearSeparadorDeLineas, eventoDeLinea, lineaNdjson, pedirEscenaIA, type EventoFlujo } from "../../src/lib/globos3d/flujo-escena-ia";
+import { TIPO_NDJSON, crearSeparadorDeLineas, eventoDeLinea, leerFlujo, lineaNdjson, pedirEscenaIA, responderEnFlujo, type EventoFlujo } from "../../src/lib/globos3d/flujo-escena-ia";
 
 let pruebas = 0;
 const prueba = async (nombre: string, fn: () => void | Promise<void>) => { await fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
@@ -68,11 +68,60 @@ async function main() {
     await assert.rejects(espera, (e: unknown) => e instanceof DOMException && e.name === "AbortError");
   });
 
+  console.log("Servidor del flujo");
+  const leerTodo = async (r: Response): Promise<EventoFlujo[]> => { const e: EventoFlujo[] = []; await leerFlujo(r.body!, (x) => e.push(x)); return e; };
+  await prueba("el final lleva el estado real (aunque la respuesta HTTP del flujo sea 200) y se avisa al registro", async () => {
+    const vistos: number[] = [];
+    const r = responderEnFlujo({ procesar: async (avisar) => { avisar({ tipo: "fase", fase: "pensando" }); return Response.json({ error: "cupo" }, { status: 429 }); }, alFallo: () => assert.fail("no falló"), alTerminar: (e) => vistos.push(e) });
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get("x-accel-buffering"), "no");
+    assert.match(r.headers.get("content-type") ?? "", /x-ndjson/);
+    const eventos = await leerTodo(r);
+    assert.deepEqual(eventos.map((e) => e.tipo), ["fase", "final"]);
+    assert.deepEqual(eventos[1], { tipo: "final", estado: 429, cuerpo: { error: "cupo" } });
+    assert.deepEqual(vistos, [429]);
+  });
+  await prueba("una excepción a mitad del flujo sale como «final» 500 tras lo ya avisado, y se registra", async () => {
+    const fallos: unknown[] = [];
+    const r = responderEnFlujo({ procesar: async (avisar) => { avisar({ tipo: "paso", ...paso }); throw new Error("se cayó el modelo"); }, alFallo: (e) => fallos.push(e) });
+    const eventos = await leerTodo(r);
+    assert.deepEqual(eventos.map((e) => e.tipo), ["paso", "final"]);
+    assert.equal((eventos[1] as { estado: number }).estado, 500);
+    assert.equal(fallos.length, 1);
+  });
+  await prueba("el latido sale mientras la IA trabaja y el cliente no lo cuenta como paso", async () => {
+    const r = responderEnFlujo({ procesar: async () => { await new Promise((ok) => setTimeout(ok, 90)); return Response.json({ respuesta: "x" }); }, alFallo: () => undefined, latidoMs: 20 });
+    const eventos = await leerTodo(r);
+    assert.ok(eventos.filter((e) => e.tipo === "latido").length >= 2, "al menos dos latidos");
+    assert.equal(eventos[eventos.length - 1]!.tipo, "final");
+    const vistos: string[] = [];
+    const cliente = await pedirEscenaIA({
+      cuerpo: {}, cabeceras: {}, signal: senal(), alEvento: (e) => vistos.push(e.tipo),
+      buscar: async () => responderEnFlujo({ procesar: async (avisar) => { avisar({ tipo: "fase", fase: "pensando" }); await new Promise((ok) => setTimeout(ok, 50)); return Response.json({ ok: 1 }); }, alFallo: () => undefined, latidoMs: 10 }),
+    });
+    assert.deepEqual(vistos, ["fase"]);
+    assert.deepEqual(cliente, { estado: 200, datos: { ok: 1 } });
+  });
+  await prueba("si el navegador corta (cancela el cuerpo) el servidor no se rompe, apaga el latido y avisa al registro", async () => {
+    let termino = 0;
+    let soltar: () => void = () => undefined;
+    const r = responderEnFlujo({ procesar: () => new Promise((ok) => { soltar = () => ok(Response.json({ ok: 1 })); }), alFallo: () => assert.fail("no era un fallo"), alTerminar: () => { termino += 1; }, latidoMs: 10 });
+    const lector = r.body!.getReader();
+    await lector.read();
+    await lector.cancel();
+    soltar();
+    await new Promise((ok) => setTimeout(ok, 40));
+    assert.equal(termino, 1);
+  });
+
   console.log("Ruta");
   await prueba("la ruta responde en flujo solo con la cabecera, avisa fases y pasos, y sigue en el registro", () => {
     const ruta = readFileSync(path.resolve(__dirname, "../../src/app/api/escena-ia/route.ts"), "utf8");
     assert.match(ruta, /request\.headers\.get\("accept"\)/);
-    assert.match(ruta, /procesarPedido\(request, escribir\)/);
+    assert.match(ruta, /responderEnFlujo\(\{/);
+    assert.match(ruta, /procesar: \(avisar\) => procesarPedido\(request, avisar\)/);
+    assert.match(ruta, /alTerminar: \(estado\) =>/);
+    assert.match(ruta, /uso: \{ pasos, llamadas, costeEstimadoUsd: costeUsd\(tokens/);
     assert.match(ruta, /avisar\?\.\(\{ tipo: "paso"/);
     assert.match(ruta, /avisar\?\.\(\{ tipo: "fase", fase: "pensando" \}\)/);
     assert.match(ruta, /getGeminiClient\("escena_ia"\)/);

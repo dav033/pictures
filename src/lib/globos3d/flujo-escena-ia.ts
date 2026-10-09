@@ -16,7 +16,9 @@ export type PasoIA = { n: number; herramienta: string; resumen: string; consulta
 export type EventoFlujo =
   | { tipo: "fase"; fase: FaseIA }
   | ({ tipo: "paso" } & PasoIA)
-  | { tipo: "final"; estado: number; cuerpo: unknown };
+  | { tipo: "final"; estado: number; cuerpo: unknown }
+  /** Una línea vacía de contenido cada pocos segundos: un proxy no corta un flujo que parece parado. */
+  | { tipo: "latido" };
 
 export const lineaNdjson = (evento: EventoFlujo): string => `${JSON.stringify(evento)}\n`;
 
@@ -33,6 +35,7 @@ export function eventoDeLinea(linea: string): EventoFlujo | null {
   if (dato.tipo === "paso" && typeof dato.n === "number" && typeof dato.herramienta === "string" && typeof dato.resumen === "string" && typeof dato.consulta === "boolean" && typeof dato.ok === "boolean") {
     return { tipo: "paso", n: dato.n, herramienta: dato.herramienta, resumen: dato.resumen, consulta: dato.consulta, ok: dato.ok };
   }
+  if (dato.tipo === "latido") return { tipo: "latido" };
   if (dato.tipo === "final" && typeof dato.estado === "number") return { tipo: "final", estado: dato.estado, cuerpo: dato.cuerpo };
   return null;
 }
@@ -79,7 +82,7 @@ export async function pedirEscenaIA(entrada: {
   cuerpo: unknown;
   cabeceras: Record<string, string>;
   signal: AbortSignal;
-  alEvento?: (e: Exclude<EventoFlujo, { tipo: "final" }>) => void;
+  alEvento?: (e: Exclude<EventoFlujo, { tipo: "final" | "latido" }>) => void;
   buscar?: typeof fetch;
 }): Promise<RespuestaEscenaIA> {
   const { cuerpo, cabeceras, signal, alEvento, buscar = fetch } = entrada;
@@ -95,7 +98,54 @@ export async function pedirEscenaIA(entrada: {
   const salida: { final: RespuestaEscenaIA | null } = { final: null };
   await leerFlujo(r.body, (e) => {
     if (e.tipo === "final") salida.final = { estado: e.estado, datos: e.cuerpo };
-    else alEvento?.(e);
+    else if (e.tipo !== "latido") alEvento?.(e);
   });
   return salida.final ?? { estado: 502, datos: { error: "La conexión con la IA se cortó antes de terminar." } };
+}
+
+/** Cada cuántos ms el servidor manda un latido mientras la IA trabaja. */
+export const LATIDO_MS = 15_000;
+
+/**
+ * El lado del servidor del flujo: abre la respuesta NDJSON, deja que `procesar` avise fases y pasos, escribe el `final` con
+ * el estado y el cuerpo de la respuesta normal y cierra. Un fallo de `procesar` sale como un `final` 500 (nunca un flujo
+ * colgado); si el navegador corta, se deja de escribir y se apaga el latido. `alTerminar` recibe el estado real (el de la
+ * respuesta HTTP del flujo es siempre 200).
+ */
+export function responderEnFlujo(entrada: {
+  procesar: (avisar: (e: EventoFlujo) => void) => Promise<Response>;
+  alFallo: (error: unknown) => void;
+  alTerminar?: (estado: number) => void;
+  latidoMs?: number;
+}): Response {
+  const { procesar, alFallo, alTerminar, latidoMs = LATIDO_MS } = entrada;
+  const codificador = new TextEncoder();
+  let cerrado = false;
+  let reloj: ReturnType<typeof setInterval> | null = null;
+  const parar = () => { cerrado = true; if (reloj) clearInterval(reloj); reloj = null; };
+  const flujo = new ReadableStream<Uint8Array>({
+    async start(control) {
+      const escribir = (e: EventoFlujo) => {
+        if (cerrado) return;
+        try { control.enqueue(codificador.encode(lineaNdjson(e))); } catch { parar(); }
+      };
+      reloj = setInterval(() => escribir({ tipo: "latido" }), latidoMs);
+      let estado = 500;
+      try {
+        const respuesta = await procesar(escribir);
+        estado = respuesta.status;
+        escribir({ tipo: "final", estado, cuerpo: await respuesta.json().catch(() => null) });
+      } catch (error) {
+        alFallo(error);
+        escribir({ tipo: "final", estado, cuerpo: { error: "No pude hablar con la IA ahora. Vuelve a intentarlo." } });
+      } finally {
+        alTerminar?.(estado);
+        const fin = !cerrado;
+        parar();
+        if (fin) { try { control.close(); } catch { /* ya cerrado */ } }
+      }
+    },
+    cancel() { parar(); },
+  });
+  return new Response(flujo, { headers: { "Content-Type": `${TIPO_NDJSON}; charset=utf-8`, "Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no" } });
 }

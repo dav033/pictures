@@ -1,46 +1,108 @@
-import type { PiezaConservada } from "./deshacer-turno";
-import { sonIguales, type DiffEscena } from "./diff-escenas";
-import type { Escena } from "./escena";
+import { sonIguales, type CambioNodo, type DiffEscena } from "./diff-escenas";
+import type { Escena, NodoEscena } from "./escena";
+import { fusionarNodo, padreDe, salaNormalizada, sanearPadres, type PiezaConservada } from "./fusion-nodos";
 
 /**
- * **Aplicar el turno de la IA a la escena de ahora** (D-021): la IA trabaja sobre la escena que le mandaron (`antes`) y
- * contesta unos segundos después. Si en ese rato la persona movió o cambió algo a mano, la escena de ahora ya no es `antes`:
- * en vez de pisarla con la respuesta, se aplica solo lo que la IA tocó y cada pieza editada a mano se conserva como está
- * (y se dice). Es la misma regla de `deshacer-turno.ts` al revés. Puro.
+ * **Aplicar (o rehacer) el turno de la IA sobre la escena de ahora** (D-021): la IA trabaja sobre la escena que le mandaron
+ * (`antes`) y contesta unos segundos después. Si en ese rato la persona cambió algo a mano, la escena de ahora ya no es
+ * `antes`: en vez de pisarla con la respuesta, se aplica solo lo que la persona no tocó (campo a campo) y se dice qué se
+ * conservó. Es la misma regla de `deshacer-turno.ts` al revés, y sirve también para rehacer un turno deshecho. Puro.
  */
 
-export type ResultadoAplicarTurno = { escena: Escena; conservadas: PiezaConservada[] };
+export type ResultadoAplicarTurno = {
+  escena: Escena;
+  conservadas: PiezaConservada[];
+  /** El mismo turno; si una pieza nueva de la IA chocaba en id con una de la persona, ya va con el id nuevo. */
+  diff: DiffEscena;
+};
 
-export function aplicarTurno(actual: Escena, antes: Escena, despues: Escena, diff: DiffEscena): ResultadoAplicarTurno {
-  if (actual === antes || sonIguales(actual, antes)) return { escena: despues, conservadas: [] };
+function conPadre<T extends NodoEscena>(n: T, padreId: string): T {
+  return "padreId" in n.colocacion ? { ...n, colocacion: { ...n.colocacion, padreId } } : n;
+}
+const libre = (id: string, usados: Set<string>): string => {
+  for (let i = 2; ; i++) { const candidato = `${id}-ia${i > 2 ? i : ""}`; if (!usados.has(candidato)) { usados.add(candidato); return candidato; } }
+};
+
+/** Las piezas nuevas de la IA cuyo id ya usa otra pieza de la persona toman un id libre (y lo que cuelga de ellas, el nuevo padre). */
+function sinChoques(actual: Escena, diff: DiffEscena): DiffEscena {
+  const usados = new Set([...actual.nodos.map((n) => n.id), ...diff.nodos.map((c) => c.id)]);
+  const nuevos = new Map<string, string>();
+  for (const c of diff.nodos) {
+    const ahora = c.tipo === "nueva" ? actual.nodos.find((n) => n.id === c.id) : undefined;
+    if (ahora && c.despues && !sonIguales(ahora, c.despues)) nuevos.set(c.id, libre(c.id, usados));
+  }
+  if (!nuevos.size) return diff;
+  const cambiar = (n: NodoEscena | null, esNueva: boolean): NodoEscena | null => {
+    if (!n) return n;
+    const padre = padreDe(n);
+    const base = padre && nuevos.has(padre) ? conPadre(n, nuevos.get(padre)!) : n;
+    return esNueva && nuevos.has(base.id) ? { ...base, id: nuevos.get(base.id)! } : base;
+  };
+  return { ...diff, nodos: diff.nodos.map((c): CambioNodo => ({ ...c, id: c.tipo === "nueva" ? nuevos.get(c.id) ?? c.id : c.id, despues: cambiar(c.despues, c.tipo === "nueva") })) };
+}
+
+export function aplicarDiff(actual: Escena, original: DiffEscena): ResultadoAplicarTurno {
+  const diff = sinChoques(actual, original);
   const conservadas: PiezaConservada[] = [];
+  const aplicadas: string[] = [];
+  const tocadas = new Set<string>();
+  const aQuitar = new Set<string>();
   let nodos = [...actual.nodos];
-  const ahora = (id: string) => nodos.find((n) => n.id === id);
+  const hay = (id: string) => nodos.find((n) => n.id === id);
 
   for (const c of diff.nodos) {
-    const hay = ahora(c.id);
+    const ahora = hay(c.id);
     if (c.tipo === "nueva") {
-      if (hay) conservadas.push({ id: c.id, nombre: hay.nombre, motivo: "editada" });
-      else if (c.despues) nodos.push(c.despues);
+      if (ahora || !c.despues) continue;
+      nodos.push(c.despues);
+      tocadas.add(c.id); aplicadas.push(c.id);
       continue;
     }
-    if (!hay) { if (c.tipo === "cambiada") conservadas.push({ id: c.id, nombre: c.nombre, motivo: "quitada" }); continue; }
-    if (!c.antes || !sonIguales(hay, c.antes)) { conservadas.push({ id: c.id, nombre: hay.nombre, motivo: "editada" }); continue; }
-    const nuevo = c.despues;
-    nodos = nuevo ? nodos.map((n) => (n.id === c.id ? nuevo : n)) : nodos.filter((n) => n.id !== c.id);
+    if (!ahora) { if (c.tipo === "cambiada") conservadas.push({ id: c.id, nombre: c.nombre, motivo: "quitada" }); continue; }
+    if (c.tipo === "quitada") {
+      if (c.antes && sonIguales(ahora, c.antes)) aQuitar.add(c.id);
+      else conservadas.push({ id: c.id, nombre: ahora.nombre, motivo: "editada" });
+      continue;
+    }
+    if (!c.antes || !c.despues) continue;
+    const r = fusionarNodo(ahora, c.antes, c.despues);
+    if (r.cambiados.length) { nodos = nodos.map((n) => (n.id === c.id ? r.nodo : n)); tocadas.add(c.id); aplicadas.push(c.id); }
+    if (r.conservados.length) conservadas.push({ id: c.id, nombre: ahora.nombre, motivo: "editada", campos: r.conservados });
   }
+
+  // Lo que la IA quitó no se quita si la persona colgó algo de ello mientras tanto.
+  for (let seguir = true; seguir;) {
+    seguir = false;
+    for (const n of nodos) {
+      const padre = padreDe(n);
+      if (padre && aQuitar.has(padre) && !aQuitar.has(n.id)) {
+        aQuitar.delete(padre); seguir = true;
+        conservadas.push({ id: padre, nombre: hay(padre)?.nombre ?? padre, motivo: "en_uso" });
+        break;
+      }
+    }
+  }
+  if (aQuitar.size) { nodos = nodos.filter((n) => !aQuitar.has(n.id)); aplicadas.push(...aQuitar); }
 
   let sala = actual.sala;
   if (diff.sala) {
-    if (sonIguales(actual.sala, diff.sala.antes)) sala = diff.sala.despues;
-    else conservadas.push({ id: "sala", nombre: "Sala", motivo: "sala" });
+    if (sonIguales(actual.sala, diff.sala.antes)) { sala = salaNormalizada(diff.sala.despues); aplicadas.push("sala"); }
+    else if (!sonIguales(actual.sala, diff.sala.despues)) conservadas.push({ id: "sala", nombre: "Sala", motivo: "sala" });
   }
-  return { escena: { ...actual, sala, nodos }, conservadas };
+
+  nodos = sanearPadres(nodos, actual.nodos, tocadas, conservadas, aplicadas);
+  return { escena: aplicadas.length ? { ...actual, sala, nodos } : actual, conservadas, diff };
+}
+
+/** La respuesta de la IA sobre la escena de ahora: tal cual si no cambió nada mientras contestaba; si no, solo lo que la persona no tocó. */
+export function aplicarTurno(actual: Escena, antes: Escena, despues: Escena, diff: DiffEscena): ResultadoAplicarTurno {
+  if (actual === antes || sonIguales(actual, antes)) return { escena: despues, conservadas: [], diff };
+  return aplicarDiff(actual, diff);
 }
 
 /** Lo que se le dice a la persona cuando trabajó a mano mientras la IA contestaba. */
 export function textoAplicarTurno(conservadas: readonly PiezaConservada[]): string | null {
   if (!conservadas.length) return null;
-  const nombres = conservadas.slice(0, 3).map((c) => `«${c.nombre}»`).join(", ");
+  const nombres = conservadas.slice(0, 3).map((c) => `«${c.nombre}»${c.campos?.length ? ` (${c.campos.join(", ")})` : ""}`).join(", ");
   return `Mientras trabajaba cambiaste ${nombres}${conservadas.length > 3 ? ` y otras ${conservadas.length - 3}` : ""}: conservé lo tuyo y no apliqué ahí lo de la IA.`;
 }
