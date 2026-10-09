@@ -127,7 +127,9 @@ function medirGuirnalda(p: Guirnalda, detectados: readonly Globo[], aspecto: num
     const extremo = i === 0 || i === eje.length - 1;
     const enElPiso = extremo && pisoY !== null && q.y + grosor / 2 >= pisoY - TOCA_PISO;
     const tramo = repartoDe(lista.map((x) => x.escalon), escalones, reparto);
-    return { x: q.x + normal.x * corrimiento, y: enElPiso ? q.y : q.y + normal.y * corrimiento, grosor, mezcla: tramo, dominante: dominanteDe(lista.map((x) => x.g), colores, indiceDe) };
+    // El dominante se mide con el cuerpo (sin el escalón más chico): los chicos son el acento regado por todo el recorrido (los cromados plateados) y no dicen de qué color es el tramo.
+    const cuerpo = lista.filter((x) => escalones.length < 2 || x.escalon !== escalones[0]);
+    return { x: q.x + normal.x * corrimiento, y: enElPiso ? q.y : q.y + normal.y * corrimiento, grosor, mezcla: tramo, dominante: dominanteDe(cuerpo.map((x) => x.g), colores, indiceDe) };
   });
   const puntos = suavizarGrosor(eje.map((q, i) => {
     const leido = q.origen === null ? null : p.puntos[q.origen]!;
@@ -151,6 +153,23 @@ function medirGuirnalda(p: Guirnalda, detectados: readonly Globo[], aspecto: num
 // Un montón de piso
 // ----------------------------------------------------------------------------------------------------------
 
+/** Los bordes del montón son los percentiles de las extremidades de sus globos (los sueltos de la orilla no mandan). */
+const PERCENTIL_BORDE_MONTON = 0.04;
+/** El montón medido no se aparta de su recuadro leído más que esto (veces su ancho leído) ni se queda en menos de esta fracción de su alto leído. */
+const FRACCION_DEL_ALTO_MINIMA = 0.5;
+
+/**
+ * El recuadro del montón (centro, ancho, arriba y pie) tomado de sus globos detectados: lo que el lector pone a ojo (corrido, con
+ * hueco bajo la columna) sale de donde están los globos. Si lo medido es mucho más bajo que lo leído (la detección se perdió la
+ * mitad del montón), se queda lo leído.
+ */
+function cajaMedida(p: Monton, globos: readonly Globo[], aspecto: number): Pick<Monton, "x" | "ancho" | "yArriba" | "yPie"> | Record<string, never> {
+  const x0 = percentil(globos.map((g) => g.x - g.d / 2), PERCENTIL_BORDE_MONTON), x1 = percentil(globos.map((g) => g.x + g.d / 2), 1 - PERCENTIL_BORDE_MONTON);
+  const y0 = percentil(globos.map((g) => g.y - g.d / 2), PERCENTIL_BORDE_MONTON), y1 = percentil(globos.map((g) => g.y + g.d / 2), 1 - PERCENTIL_BORDE_MONTON);
+  if (y1 - y0 < FRACCION_DEL_ALTO_MINIMA * (p.yPie - p.yArriba)) return {};
+  return { x: r3(entre((x0 + x1) / 2 / aspecto, -0.2, 1.2)), ancho: r3(entre(x1 - x0, 0.005, 2)), yArriba: r3(entre(y0, -0.2, 1.2)), yPie: r3(entre(y1, -0.2, 1.2)) };
+}
+
 /** El montón de piso con el reparto de tamaños y de colores de sus globos (su escala no se toma: se ve más cerca de la cámara). */
 function medirMonton(p: Monton, detectados: readonly Globo[], pisoY: number | null, aspecto: number): Medicion {
   if (detectados.length < MINIMO_GLOBOS) return { pieza: { ...p, colores: coloresDe(p.colores, detectados) }, escalaCm: null, notas: [] };
@@ -158,7 +177,7 @@ function medirMonton(p: Monton, detectados: readonly Globo[], pisoY: number | nu
   const { globos } = t;
   const colores = coloresDe(p.colores, globos);
   const coloresPorEscalon = coloresPorEscalonDe(t.porEscalon, colores);
-  const pieza: Monton = { ...p, mezcla: t.mezcla, colores };
+  const pieza: Monton = { ...p, ...cajaMedida(p, globos, aspecto), mezcla: t.mezcla, colores };
   if (coloresPorEscalon.length) pieza.coloresPorEscalon = coloresPorEscalon; else delete pieza.coloresPorEscalon;
   // Sus gigantes y grandes, uno por uno (el montón está en el piso, por delante: no se filtran por la altura de la pared).
   const anclas = anclasDe(t.porEscalon, colores, aspecto);
@@ -213,7 +232,7 @@ function esDeUnFondo(g: Globo, p: PiezaLeida, aspecto: number): boolean {
  * de ellos (si hay con qué) y los fondos en su caja detectada. Pura: misma lectura y mismas detecciones, misma salida.
  */
 export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDetectado[], fondos: readonly FondoDetectado[] = []): { lectura: LecturaFoto; notas: string[] } {
-  const conFondos = medirFondos(l.piezas, fondos, l.aspecto);
+  const conFondos = medirFondos(l.piezas, fondos, l.aspecto, l.pisoY);
   const notas = [...conFondos.notas];
   const piezas = [...conFondos.piezas];
   const globos = globosDe(detectados, l.aspecto);

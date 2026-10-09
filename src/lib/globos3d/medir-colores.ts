@@ -33,9 +33,14 @@ export const MINIMO_COLOR_ESCALON = 6;
 export const MINIMO_COLOR_TRAMO = 5;
 /** Diferencia mínima (en puntos de %) con el reparto de la pieza para que un escalón lleve sus propios colores. */
 export const DESVIO_COLOR_ESCALON = 15;
-/** Un color domina un tramo si tiene al menos este % de sus globos y le saca esta diferencia (puntos de %) a su peso en la pieza. */
-export const PARTE_DOMINANTE = 70;
+/**
+ * Un color domina un tramo si tiene al menos este % de sus globos, le saca esta diferencia (puntos de %) a su peso en la pieza y
+ * tiene al menos `RAZON_SEGUNDO` veces los globos del segundo color. Con 70 % no dominaba ningún tramo de una guirnalda con acentos
+ * (el blanco de la izquierda con un tercio de plateados): la mayoría simple y el doble del segundo bastan.
+ */
+export const PARTE_DOMINANTE = 50;
 export const VENTAJA_DOMINANTE = 15;
+export const RAZON_SEGUNDO = 2;
 
 /** El índice del color de la pieza que corresponde a cada color detectado (memoizado), o -1. */
 export function indiceDeDetectado(colores: readonly ColorLeido[]): (color: string) => number {
@@ -95,12 +100,13 @@ export function coloresPorEscalonDe(porEscalon: ReadonlyMap<Escalon, readonly Gl
   return salida;
 }
 
-/** El color que domina en un tramo (≥ 70 % de sus globos y 15 puntos más que en la pieza), o undefined. */
+/** El color que domina en un tramo (≥ 50 % de sus globos, el doble que el segundo y 15 puntos más que en la pieza), o undefined. */
 export function dominanteDe(lista: readonly Globo[], colores: readonly ColorLeido[], indiceDe = indiceDeDetectado(colores)): string | undefined {
   const { cuenta, total } = cuentaPorColor(lista, colores, indiceDe);
   if (total < MINIMO_COLOR_TRAMO) return undefined;
   const k = cuenta.reduce((m, n, i) => (n > cuenta[m]! ? i : m), 0);
   const pesoTotal = colores.reduce((s, c) => s + c.peso, 0) || 1;
   const parte = (100 * cuenta[k]!) / total;
-  return parte >= PARTE_DOMINANTE && parte - (100 * colores[k]!.peso) / pesoTotal >= VENTAJA_DOMINANTE ? colores[k]!.nombre : undefined;
+  const segundo = cuenta.reduce((m, n, i) => (i !== k && n > m ? n : m), 0);
+  return parte >= PARTE_DOMINANTE && cuenta[k]! >= RAZON_SEGUNDO * segundo && parte - (100 * colores[k]!.peso) / pesoTotal >= VENTAJA_DOMINANTE ? colores[k]!.nombre : undefined;
 }

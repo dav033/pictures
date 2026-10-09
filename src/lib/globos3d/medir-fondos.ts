@@ -62,10 +62,15 @@ function cajasDe(p: Fondo, leida: Caja, candidatas: readonly Candidata[]): Candi
 /** Los fondos que son un juego de varios cuerpos (los pedestales): se guarda la caja de cada uno, no solo la unión. */
 const JUEGOS = new Set(["pedestales"]);
 
+/** Los telones cuyo `alto` es un diámetro (panel redondo, media luna): el ancho de su caja ya es todo lo que se ve de ellos. */
+const DE_DIAMETRO = new Set(["panel_redondo", "media_luna"]);
+/** La caja trae el arriba del telón leído si su borde de arriba difiere del leído en menos de esta fracción del alto leído. */
+const ARRIBA_COINCIDE = 0.15;
+
 /** Una caja detectada que no llega a esta parte de lo leído (de ancho o de alto) es solo un pedazo del fondo. */
 const PARTE_MINIMA_DE_LO_LEIDO = 0.4;
 
-export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly FondoDetectado[], aspecto: number): { piezas: PiezaLeida[]; notas: string[] } {
+export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly FondoDetectado[], aspecto: number, pisoY: number | null = null): { piezas: PiezaLeida[]; notas: string[] } {
   const usados = new Set<FondoDetectado>();
   const salida: PiezaLeida[] = [...piezas];
   const notaDe = new Map<number, string>();
@@ -84,6 +89,15 @@ export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly Fond
       // medida, o si el fondo es un telón (aro, arco, marco: los globos lo tapan casi siempre); entonces se queda lo
       // leído antes que encoger el fondo hasta esconderlo. Si se quedó corta en las dos y no es un telón, manda la caja.
       const cortoAncho = union.x1 - union.x0 < PARTE_MINIMA_DE_LO_LEIDO * p.ancho, cortoAlto = union.y1 - union.y0 < PARTE_MINIMA_DE_LO_LEIDO * p.alto;
+      // Un telón del que la caja trae el ARRIBA (empieza donde él) y su ancho, pero no su pie (los globos o los muebles lo tapan), se mide por
+      // lo que la foto sí enseña: su ancho y su borde de arriba; el pie baja a la línea del piso (como el telón con el pie tapado de `compilar-lectura.ts`).
+      if (cortoAlto && !cortoAncho && esTelon(p.id) && !DE_DIAMETRO.has(p.id) && Math.abs(union.y0 - leida.y0) <= ARRIBA_COINCIDE * p.alto) {
+        const pie = Math.max(union.y1, pisoY ?? p.yBase);
+        salida[i] = { ...p, x: r3(entre((union.x0 + union.x1) / 2 / aspecto, -0.2, 1.2)), yBase: r3(entre(pie, -0.2, 1.2)), ancho: r3(entre(union.x1 - union.x0, 0.005, 2)), alto: r3(entre(pie - union.y0, 0.005, 2)) };
+        sinCaja.delete(i);
+        notaDe.set(i, `«${p.id}»: la caja detectada trae su borde de arriba y su ancho (${r3(union.x1 - union.x0)}) pero no su pie: ancho ${(salida[i] as Fondo).ancho} (leído ${p.ancho}) y alto ${(salida[i] as Fondo).alto} (leído ${p.alto}), con el pie en ${r3(pie)}.`);
+        continue;
+      }
       if ((cortoAncho !== cortoAlto) || ((cortoAncho || cortoAlto) && esTelon(p.id))) {
         sinCaja.delete(i);
         notaDe.set(i, `«${p.id}»: la caja detectada (${r3(union.x1 - union.x0)} × ${r3(union.y1 - union.y0)}) es un pedazo de lo leído (${p.ancho} × ${p.alto}): se queda lo leído.`);

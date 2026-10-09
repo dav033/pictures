@@ -165,4 +165,23 @@ prueba("los mismos globos sobre un panel (sin superficie) siguen siendo de la gu
   assert.notEqual(JSON.stringify(con.lectura.piezas[0]), JSON.stringify(sin.lectura.piezas[0]));
 });
 
+console.log("Telón con el arriba visible");
+prueba("un aro leído enorme del que la caja trae el arriba y el ancho (el pie lo tapan los globos) toma ese ancho y ese arriba, y su pie baja al piso", () => {
+  // Leído 0,46 × 0,68 con el pie en 0,78 (arriba en 0,10); la caja es el arco de arriba: de 0,146 a 0,335 y 0,234 de ancho (con la foto de aspecto 0,75).
+  const aro = fondo("aro_metalico", 0.48, 0.78, 0.46, 0.68);
+  const caja = { id: "aro_metalico", box_2d: [146, 326, 335, 638] };
+  const r = medirFondos([aro], [caja], 0.75, 0.58);
+  const f = r.piezas[0] as Fondo;
+  assert.ok(cerca(f.ancho, 0.234), `ancho ${f.ancho}`);
+  assert.ok(cerca(f.yBase - f.alto, 0.146), `arriba ${f.yBase - f.alto}`);
+  assert.ok(cerca(f.yBase, 0.58), `pie ${f.yBase}`);
+  assert.match(r.notas.join(" "), /trae su borde de arriba y su ancho/);
+  // Sin la línea del piso, el pie queda donde se leyó.
+  const sinPiso = medirFondos([aro], [caja], 0.75).piezas[0] as Fondo;
+  assert.ok(cerca(sinPiso.yBase, 0.78) && cerca(sinPiso.yBase - sinPiso.alto, 0.146), JSON.stringify(sinPiso));
+  // Una caja que no es el arriba (es el pie) no cambia lo leído, como antes.
+  const pie = medirFondos([aro], [{ id: "aro_metalico", box_2d: [600, 326, 780, 638] }], 0.75, 0.58).piezas[0];
+  assert.deepEqual(pie, aro);
+});
+
 console.log(`test-medir-fondos: ${pruebas} pruebas ok`);

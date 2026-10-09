@@ -22,6 +22,7 @@ import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
 import { codigoDeColor, fijosDeAnclas, paletaDeLectura } from "./colores-lectura";
 import { recogerPuntas } from "./puntas-lectura";
 import { apoyoDeRacimo } from "./apoyo-racimo";
+import { montonesAlPie } from "./montones-al-pie";
 import { colgadoDelanteDePaneles, letrerosDelanteDeGlobos } from "./colgado-delante";
 
 export { codigoDeColor } from "./colores-lectura";
@@ -111,8 +112,9 @@ function engrosarParaGrandes<T extends { x: number; y: number; grosor: number; p
   return nuevos;
 }
 
-export function compilarLectura(l: LecturaFoto): EscenaCompilada {
+export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
   const notas: string[] = [], omitidas: string[] = [];
+  const l = montonesAlPie(leida, notas);
   const H = l.escala.altoImagenCm;
   const piso = pisoDeLectura(l);
   const X = (x: number) => r1((x - 0.5) * l.aspecto * H);
