@@ -29,10 +29,12 @@ CREATE TABLE IF NOT EXISTS modulos_renders (
   dueno            TEXT,
   -- Quién y con qué base se hizo el render: sha256 de la captura 3D que mandó el cliente y huella de su cookie de sesión
   -- (nunca la cookie). Para auditar un render malo y descartarlo (DELETE de la ruta) sin adivinar de dónde vino.
+  -- Huella (16 hex del sha256) del contenido de la imagen guardada: la versión de su URL; así preguntar si hay render no lee el objeto.
+  huella_imagen    TEXT,
   captura_sha256   TEXT,
   sesion           TEXT,
   -- Nunca una fila lista sin imagen, ni una pendiente con imagen.
-  CONSTRAINT modulos_renders_objeto_coherente CHECK ((estado = 'lista') = (objeto_key IS NOT NULL))
+  CONSTRAINT modulos_renders_objeto_coherente CHECK ((estado = 'lista') = (objeto_key IS NOT NULL) AND (estado = 'lista') = (huella_imagen IS NOT NULL))
 );
 
 -- Galería (US-4): listas por tipo y versión, las más nuevas primero.

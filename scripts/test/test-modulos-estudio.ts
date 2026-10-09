@@ -12,7 +12,8 @@ import assert from "node:assert/strict";
 import { coloresPorAcabado, resolverConfig, acabadoDe, nombreTipo, FORMATO_POR_DEFECTO, TIPOS_ESTUDIO, type ConfigModulo } from "../../src/lib/modulos-estudio/configuracion";
 import { puedeEscribirCacheModulos } from "../../src/lib/modulos-estudio/puede-escribir";
 import { huellaDeSesion } from "../../src/lib/modulos-estudio/sesion";
-import { crearLimitadorTasa, ipDe } from "../../src/lib/seguridad/limite-tasa";
+import { cookieDeAdministrador, crearLimitador, ipDe } from "../../src/lib/feedback-ia/acceso";
+import { sessionToken } from "../../src/lib/auth/session";
 import { huellaCaptura, huellaGeometria, huellaTexto, versionPipeline } from "../../src/lib/modulos-estudio/huella-pipeline";
 import { claveObjeto, claveRender, configCanonica, VERSION_PIPELINE } from "../../src/lib/modulos-estudio/clave-render";
 import { coloresCanonicos, GLOBOS_POR_TIPO, simetriasDeModulo } from "../../src/lib/modulos-estudio/simetrias";
@@ -20,7 +21,7 @@ import { promptModuloEstudio } from "../../src/lib/modulos-estudio/prompt-estudi
 import { armarEstudio, cajaDeGlobo, escenaEstudio } from "../../src/lib/modulos-estudio/escena-estudio";
 import { crearAlmacenMemoria, crearRepositorioMemoria } from "../../src/lib/modulos-estudio/adaptadores/memoria";
 import { crearAlmacenS3 } from "../../src/lib/modulos-estudio/adaptadores/almacen-s3";
-import { CacheCaidoError, crearServicioRenders, FaltaCapturaError, RenderEnCursoError } from "../../src/lib/modulos-estudio/servicio-renders";
+import { CacheCaidoError, crearServicioRenders, huellaImagen, FaltaCapturaError, RenderEnCursoError } from "../../src/lib/modulos-estudio/servicio-renders";
 import type { CapturaBase, GeneradorRender } from "../../src/lib/modulos-estudio/puertos";
 import { reiniciarFotosPorHora, tomarFotoDeLaHora } from "../../src/lib/globos3d/tope-fotos-hora";
 import { crearClienteAlmacen } from "../../src/lib/almacen/objetos-s3";
@@ -409,6 +410,7 @@ async function principal() {
     const entorno = process.env as Record<string, string | undefined>;
     const guardado = { modo: entorno.MODULOS_ESCRITURA, nodo: entorno.NODE_ENV };
     const peticion = new Request("http://localhost/api/modulos-render");
+    const entornoDe = (modo: string | undefined, nodo: string) => { if (modo === undefined) delete entorno.MODULOS_ESCRITURA; else entorno.MODULOS_ESCRITURA = modo; entorno.NODE_ENV = nodo; };
     const con = (modo: string | undefined, nodo: string) => {
       if (modo === undefined) delete entorno.MODULOS_ESCRITURA; else entorno.MODULOS_ESCRITURA = modo;
       entorno.NODE_ENV = nodo;
@@ -420,6 +422,26 @@ async function principal() {
     assert.equal(con(undefined, "development"), true, "en desarrollo, abierta por defecto");
     assert.equal(con("cerrada", "development"), false, "y se puede cerrar");
     assert.equal(con("otra-cosa", "production"), false, "solo abierta abre");
+    // La sesión de administración del panel de la IA (la MISMA función, cookie `feedback_admin` + sesión de la app) abre la puerta
+    // aunque en producción no haya variable; sin ADMIN_PASSWORD, con otra clave o sin la sesión de la app no abre.
+    const previo = { app: entorno.APP_PASSWORD, admin: entorno.ADMIN_PASSWORD };
+    entorno.APP_PASSWORD = "clave-de-la-app";
+    entorno.ADMIN_PASSWORD = "clave-del-panel";
+    const cookieAdmin = cookieDeAdministrador().split(";")[0]!;
+    const sesionApp = `session=${sessionToken("clave-de-la-app")}`;
+    const conCookies = (cookie: string, extra: Record<string, string> = {}) => new Request("http://localhost/api/modulos-render", { headers: { cookie, ...extra } });
+    entornoDe(undefined, "production");
+    assert.equal(puedeEscribirCacheModulos(conCookies(`${sesionApp}; ${cookieAdmin}`)), true, "el administrador del panel puede");
+    assert.equal(puedeEscribirCacheModulos(conCookies(sesionApp)), false, "la sesión del equipo sola no");
+    assert.equal(puedeEscribirCacheModulos(conCookies(cookieAdmin)), false, "la cookie de administrador sin la sesión de la app no");
+    assert.equal(puedeEscribirCacheModulos(conCookies(`${sesionApp}; feedback_admin=${"0".repeat(64)}`)), false, "una cookie de administrador falsa no");
+    assert.equal(puedeEscribirCacheModulos(conCookies(`${sesionApp}; ${cookieAdmin}`, { origin: "https://otro.sitio" })), false, "de otro origen no (CSRF)");
+    delete entorno.ADMIN_PASSWORD;
+    assert.equal(puedeEscribirCacheModulos(conCookies(`${sesionApp}; ${cookieAdmin}`)), false, "sin ADMIN_PASSWORD el administrador queda cerrado");
+    entornoDe("abierta", "production");
+    assert.equal(puedeEscribirCacheModulos(conCookies(sesionApp, { origin: "https://otro.sitio" })), false, "ni abierta deja escribir desde otro origen");
+    if (previo.app === undefined) delete entorno.APP_PASSWORD; else entorno.APP_PASSWORD = previo.app;
+    if (previo.admin === undefined) delete entorno.ADMIN_PASSWORD; else entorno.ADMIN_PASSWORD = previo.admin;
     if (guardado.modo === undefined) delete entorno.MODULOS_ESCRITURA; else entorno.MODULOS_ESCRITURA = guardado.modo;
     if (guardado.nodo === undefined) delete entorno.NODE_ENV; else entorno.NODE_ENV = guardado.nodo;
     // La huella de la sesión no es la cookie.
@@ -428,6 +450,28 @@ async function principal() {
     assert.match(huella ?? "", /^[0-9a-f]{16}$/);
     assert.ok(!huella!.includes("secreto"));
     assert.equal(huellaDeSesion(peticion), null);
+  }
+
+  // La huella del contenido se guarda al escribir: preguntar si hay render (meta) hace un HEAD, no baja la imagen.
+  {
+    const { servicio, repo, almacen } = crear();
+    const hecha = await servicio.obtenerOGenerar(duoA, captura);
+    const fila = repo.filas.get(hecha.clave)!;
+    assert.match(fila.huella ?? "", /^[0-9a-f]{16}$/);
+    let lecturas = 0;
+    const leerOriginal = almacen.leer.bind(almacen);
+    almacen.leer = async (objeto) => { lecturas++; return leerOriginal(objeto); };
+    const consulta = await servicio.consultar(duoA);
+    assert.ok(consulta.estado === "hit" && consulta.huella === fila.huella && consulta.mime === "image/jpeg");
+    assert.equal(lecturas, 0, "consultar no lee el objeto");
+    const leida = await servicio.leer(duoA, fila.huella!);
+    assert.ok(leida && leida.huella === fila.huella && leida.imagen.bytes.length === 5);
+    assert.equal(lecturas, 1);
+    assert.equal(await servicio.leer(duoA, "0000000000000000"), null, "una huella que ya no es la de la fila no lee nada");
+    assert.equal(lecturas, 1);
+    assert.equal(leida?.huella, huellaImagen(leida!.imagen), "la huella guardada es la del contenido");
+    almacen.objetos.clear();
+    assert.equal((await servicio.consultar(duoA)).estado, "miss", "con la fila lista pero sin objeto, no hay render");
   }
 
   // A6 (2.ª ronda): cada generación tiene su objeto; un descarte lento no borra el que otra generación guardó para la misma clave.
@@ -471,20 +515,15 @@ async function principal() {
     assert.ok(Math.abs(armado.anclas[0]!.posicion.z - (natural[0]! + natural[1]!) / 2) < 0.1 && armado.anclas[0]!.posicion.z < -5);
   }
 
-  // A8: el límite por IP del intérprete.
+  // A8: el límite por IP del intérprete (el limitador del panel de la IA, no una copia).
   {
-    const limite = crearLimitadorTasa({ max: 20, ventanaMs: 60_000 });
-    for (let i = 0; i < 20; i++) assert.ok(limite.tomar("1.2.3.4", 1_000 + i).ok);
-    const veintiuno = limite.tomar("1.2.3.4", 2_000);
-    assert.ok(!veintiuno.ok && veintiuno.reintentarEnMs > 0 && veintiuno.reintentarEnMs <= 60_000);
-    assert.ok(limite.tomar("5.6.7.8", 2_000).ok, "otra IP tiene su propia cuenta");
-    assert.ok(limite.tomar("1.2.3.4", 61_001).ok, "pasado el minuto vuelve a abrirse");
-    // Con claves inventadas (ventanas vivas) la memoria no crece sin tope: se sueltan las más viejas.
-    const apretado = crearLimitadorTasa({ max: 1, ventanaMs: 60_000 });
-    for (let i = 0; i < 12_000; i++) apretado.tomar(`ip-${i}`, 5_000 + i);
-    assert.ok(apretado.tamano() <= 5_000, `el limitador guarda ${apretado.tamano()} claves`);
+    const limite = crearLimitador(20, 60_000);
+    for (let i = 0; i < 20; i++) assert.ok(limite("1.2.3.4", 1_000 + i));
+    assert.ok(!limite("1.2.3.4", 2_000), "la 21.ª del minuto se rechaza");
+    assert.ok(limite("5.6.7.8", 2_000), "otra IP tiene su propia cuenta");
+    assert.ok(limite("1.2.3.4", 61_001), "pasado el minuto vuelve a abrirse");
     assert.equal(ipDe(new Request("http://x/", { headers: { "x-forwarded-for": " 9.9.9.9, 10.0.0.1" } })), "9.9.9.9");
-    assert.equal(ipDe(new Request("http://x/")), "sin-ip");
+    assert.equal(ipDe(new Request("http://x/")), "desconocida");
   }
 
   // Ficha de la reserva: quien tardó más que la caducidad no pisa a quien tomó su reserva.
@@ -499,8 +538,8 @@ async function principal() {
     assert.ok(fichaB && a.reservada && fichaB !== a.dueno);
     await repo.liberar("k", a.reservada ? a.dueno : "");
     assert.ok(repo.filas.has("k"), "la ficha vieja no borra la reserva de B");
-    await assert.rejects(repo.completar("k", a.reservada ? a.dueno : "", { objeto: "o", mime: "image/jpeg", costeUsd: 0.05, capturaSha256: "h", sesion: null }), /ya no es de quien/);
-    await repo.completar("k", fichaB!, { objeto: "o", mime: "image/jpeg", costeUsd: 0.05, capturaSha256: "h", sesion: null });
+    await assert.rejects(repo.completar("k", a.reservada ? a.dueno : "", { objeto: "o", mime: "image/jpeg", costeUsd: 0.05, capturaSha256: "h", sesion: null, huella: "hhhhhhhhhhhhhhhh" }), /ya no es de quien/);
+    await repo.completar("k", fichaB!, { objeto: "o", mime: "image/jpeg", costeUsd: 0.05, capturaSha256: "h", sesion: null, huella: "hhhhhhhhhhhhhhhh" });
     assert.equal(repo.filas.get("k")!.estado, "lista");
   }
 
@@ -511,10 +550,13 @@ async function principal() {
       async poner(clave, cuerpo, tipo) { guardado.set(clave, { cuerpo, tipo }); },
       async obtener(clave) { return guardado.get(clave) ?? null; },
       async borrar(clave) { guardado.delete(clave); },
+      async existe(clave) { return guardado.has(clave); },
     });
     await almacen.guardar("modulos/x.jpg", { bytes: jpg(7), mime: "image/jpeg" });
     assert.deepEqual(await almacen.leer("modulos/x.jpg"), { bytes: jpg(7), mime: "image/jpeg" });
     assert.equal(await almacen.leer("modulos/y.jpg"), null);
+    assert.equal(await almacen.existe("modulos/x.jpg"), true);
+    assert.equal(await almacen.existe("modulos/y.jpg"), false);
     await almacen.borrar("modulos/x.jpg");
     assert.equal(await almacen.leer("modulos/x.jpg"), null);
   }
@@ -530,6 +572,7 @@ async function principal() {
       const cabeceras = init?.headers as Record<string, string>;
       peticiones.push({ metodo, ruta: url.pathname, firmada: /^AWS4-HMAC-SHA256 /.test(cabeceras.authorization ?? "") });
       const clave = decodeURIComponent(url.pathname.replace(/^\/decoracion-feedback\//, ""));
+      if (metodo === "HEAD") return new Response(null, { status: bucket.has(clave) ? 200 : 404 });
       if (metodo === "DELETE") { bucket.delete(clave); return new Response(null, { status: 204 }); }
       if (metodo === "PUT") { bucket.set(clave, { cuerpo: new Uint8Array(init?.body as Buffer), tipo: cabeceras["content-type"] ?? "" }); return new Response(null, { status: 200 }); }
       const objeto = bucket.get(clave);

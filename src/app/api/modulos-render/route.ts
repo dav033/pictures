@@ -77,12 +77,13 @@ async function atenderGET(request: Request) {
     return Response.json({ encontrada: hallado.estado === "hit", cache, clave: hallado.clave, puedeEscribir, ...(imagen ? { imagen } : {}) }, { headers: { "cache-control": "no-store" } });
   }
   // Una URL con huella de un render que ya no es ese (descartado o reemplazado) no sirve la imagen nueva con la etiqueta vieja.
-  if (hallado.estado === "hit" && (!v || v === hallado.huella)) {
-    return new Response(Buffer.from(hallado.imagen.bytes), {
+  const guardada = hallado.estado === "hit" && (!v || v === hallado.huella) ? await servicioRenders().leer(config, v) : null;
+  if (guardada) {
+    return new Response(Buffer.from(guardada.imagen.bytes), {
       headers: {
-        "content-type": hallado.imagen.mime,
+        "content-type": guardada.imagen.mime,
         "cache-control": v ? "private, max-age=31536000, immutable" : "private, no-cache",
-        "x-render-clave": hallado.clave,
+        "x-render-clave": guardada.clave,
         "x-render-origen": "cache",
       },
     });
@@ -105,9 +106,9 @@ async function atenderPOST(request: Request) {
 
   // Generar paga una imagen: solo el equipo. Leer lo ya guardado por esta vía sigue siendo gratis para cualquiera.
   if (!puedeEscribirCacheModulos(request)) {
-    const hallado = await servicio.consultar(resuelta.config);
-    if (hallado.estado === "hit") return respuestaCache(hallado);
-    decidir("regla:render_modulo_escritura_cerrada", "un POST de generación sin permiso de escritura", { clave: hallado.clave });
+    const guardada = await servicio.leer(resuelta.config);
+    if (guardada) return respuestaCache(guardada);
+    decidir("regla:render_modulo_escritura_cerrada", "un POST de generación sin permiso de escritura", { clave: servicio.clave(resuelta.config) });
     return Response.json({ error: SOLO_EL_EQUIPO, puedeEscribir: false }, { status: 403 });
   }
 

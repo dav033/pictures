@@ -50,7 +50,8 @@ export class RenderEnCursoError extends Error {
 }
 
 export type ConsultaCache =
-  | { estado: "hit"; clave: string; imagen: ObjetoImagen; huella: string }
+  /** Hay render y su objeto está en el almacén (un HEAD): sin bajar la imagen. `leer` la baja. */
+  | { estado: "hit"; clave: string; huella: string; mime: string }
   | { estado: "miss"; clave: string }
   | { estado: "no_disponible"; clave: string; motivo: string };
 
@@ -127,17 +128,35 @@ export function crearServicioRenders(deps: DependenciasServicio) {
     return almacen.leer(fila.objeto);
   }
 
-  /** Sin generar nada: ¿está ya en el caché? */
+  /**
+   * Sin generar nada y sin bajar la imagen: ¿está ya en el caché? La huella sale de la fila (se guardó al escribir) y solo se
+   * comprueba con un HEAD que el objeto siga en el almacén.
+   */
   async function consultar(config: ConfigModulo): Promise<ConsultaCache> {
     const clave = claveRender(config, version);
     if (!repositorio || !almacen) return { estado: "no_disponible", clave, motivo: "El caché no está configurado." };
     try {
       const fila = await repositorio.buscar(clave);
-      const imagen = fila ? await leerFila(fila) : null;
-      return imagen ? { estado: "hit", clave, imagen, huella: huellaImagen(imagen) } : { estado: "miss", clave };
+      if (!fila || fila.estado !== "lista" || !fila.objeto || !fila.huella || !(await almacen.existe(fila.objeto))) return { estado: "miss", clave };
+      return { estado: "hit", clave, huella: fila.huella, mime: fila.mime ?? "application/octet-stream" };
     } catch (error) {
       anotar("cache_consulta_fallo", { clave, error: mensaje(error) });
       return { estado: "no_disponible", clave, motivo: "El caché no respondió." };
+    }
+  }
+
+  /** La imagen guardada (se baja el objeto). Con `huellaEsperada`, si la fila ya es de otro contenido, `null` sin leer nada. */
+  async function leer(config: ConfigModulo, huellaEsperada?: string): Promise<{ clave: string; imagen: ObjetoImagen; huella: string } | null> {
+    const clave = claveRender(config, version);
+    if (!repositorio || !almacen) return null;
+    try {
+      const fila = await repositorio.buscar(clave);
+      if (!fila || (huellaEsperada && fila.huella !== huellaEsperada)) return null;
+      const imagen = await leerFila(fila);
+      return imagen && fila.huella ? { clave, imagen, huella: fila.huella } : null;
+    } catch (error) {
+      anotar("cache_lectura_fallo", { clave, error: mensaje(error) });
+      return null;
     }
   }
 
@@ -181,7 +200,7 @@ export function crearServicioRenders(deps: DependenciasServicio) {
     const objeto = claveObjeto(clave, generada.mime, dueno);
     try {
       await almacen.guardar(objeto, generada);
-      await repositorio.completar(clave, dueno, { objeto, mime: generada.mime, costeUsd: generada.costeUsd, capturaSha256: sha256(Buffer.from(captura.base64, "base64")), sesion });
+      await repositorio.completar(clave, dueno, { objeto, mime: generada.mime, costeUsd: generada.costeUsd, capturaSha256: sha256(Buffer.from(captura.base64, "base64")), sesion, huella: huellaImagen(generada) });
     } catch (error) {
       anotar("cache_guardado_fallo", { clave, error: mensaje(error) });
       await repositorio.liberar(clave, dueno).catch(() => undefined);
@@ -206,7 +225,7 @@ export function crearServicioRenders(deps: DependenciasServicio) {
         anotar("cache_consulta_fallo", { clave, error: mensaje(error) });
         throw new CacheCaidoError();
       }
-      if (imagen) return { origen: "cache", clave, imagen, huella: huellaImagen(imagen) };
+      if (imagen) return { origen: "cache", clave, imagen, huella: fila?.huella ?? huellaImagen(imagen) };
 
       const nueva = { clave, tipo: canon.tipo, formatoId: canon.formatoId, colores: canon.colores, version };
       let dueno: string | null = null;
@@ -257,7 +276,7 @@ export function crearServicioRenders(deps: DependenciasServicio) {
     return cancelable(trabajo, opciones.senal);
   }
 
-  return { consultar, descartar, obtenerOGenerar, clave: (config: ConfigModulo) => claveRender(config, version) };
+  return { consultar, leer, descartar, obtenerOGenerar, clave: (config: ConfigModulo) => claveRender(config, version) };
 }
 
 export type ServicioRenders = ReturnType<typeof crearServicioRenders>;

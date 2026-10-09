@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { conRegistro } from "@/lib/registro/servidor";
-import { crearLimitadorTasa, ipDe } from "@/lib/seguridad/limite-tasa";
+import { crearLimitador, ipDe, type Limitador } from "@/lib/feedback-ia/acceso";
 import { ErrorInterpretacion, MAX_PEDIDO, interpretarPedido } from "@/lib/modulos-estudio/interpretar-ia";
 
 /**
@@ -11,17 +11,16 @@ import { ErrorInterpretacion, MAX_PEDIDO, interpretarPedido } from "@/lib/modulo
 /** Cada llamada paga un turno de Gemini Flash: 20 por minuto y por IP bastan para escribir a mano. */
 const PEDIDOS_POR_MINUTO = 20;
 declare global {
-  var __limiteInterpretarModulos: ReturnType<typeof crearLimitadorTasa> | undefined;
+  var __limiteInterpretarModulos: Limitador | undefined;
 }
-const limitador = () => (globalThis.__limiteInterpretarModulos ??= crearLimitadorTasa({ max: PEDIDOS_POR_MINUTO, ventanaMs: 60_000 }));
+const limitador = () => (globalThis.__limiteInterpretarModulos ??= crearLimitador(PEDIDOS_POR_MINUTO, 60_000));
 
 const CuerpoSchema = z.object({ texto: z.string().min(1).max(MAX_PEDIDO) }).strict();
 
 export const POST = conRegistro("/api/modulos-interpretar", atenderPOST, { vista: "3d" });
 
 async function atenderPOST(request: Request) {
-  const toma = limitador().tomar(ipDe(request));
-  if (!toma.ok) return Response.json({ error: "Demasiados pedidos seguidos. Espera un momento." }, { status: 429, headers: { "retry-after": String(Math.ceil(toma.reintentarEnMs / 1000)) } });
+  if (!limitador()(ipDe(request))) return Response.json({ error: "Demasiados pedidos seguidos. Espera un momento." }, { status: 429, headers: { "retry-after": "60" } });
   let cuerpo: unknown;
   try { cuerpo = await request.json(); } catch { return Response.json({ error: "El pedido no llegó en un formato válido." }, { status: 400 }); }
   const leido = CuerpoSchema.safeParse(cuerpo);
