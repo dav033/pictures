@@ -5,8 +5,11 @@
  */
 
 export type P = { x: number; y: number };
-/** Un globo detectado: centro, diámetro (el lado mayor de su caja) y medidas de su caja en unidades de alto de la foto (x también: x × aspecto), y el nombre de su color. */
-export type Globo = { x: number; y: number; d: number; w: number; h: number; color: string };
+/**
+ * Un globo detectado: centro, diámetro (el lado mayor de su caja) y medidas de su caja en unidades de alto de la foto (x también:
+ * x × aspecto), el nombre de su color y si su caja parece la de UN globo entero (`entero`, ver `globosDe`).
+ */
+export type Globo = { x: number; y: number; d: number; w: number; h: number; color: string; entero: boolean };
 export type CajaDetectada = { box_2d: readonly [number, number, number, number] | readonly number[]; color: string };
 
 /** Un punto del eje: su sitio (x en unidades de alto) y el índice del punto leído de que viene (null: agregado en un tramo largo). */
@@ -22,14 +25,30 @@ export const r3 = (n: number) => Math.round(n * 1000) / 1000;
 export const mediana = (v: readonly number[]) => { const s = [...v].sort((a, b) => a - b); const k = Math.floor(s.length / 2); return s.length % 2 ? s[k]! : (s[k - 1]! + s[k]!) / 2; };
 export const percentil = (v: readonly number[], p: number) => { const s = [...v].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.max(0, Math.round(p * (s.length - 1))))]!; };
 
-/** Los globos en unidades de ALTO de la foto, con su diámetro; las cajas que no son cajas se descartan. */
+/** Una caja de globo entero es casi cuadrada: entre estas razones ancho / alto (las tiras del borde de un trozo miden 0,3 a 0,4). */
+export const ASPECTO_ENTERO_MINIMO = 0.75;
+export const ASPECTO_ENTERO_MAXIMO = 1.33;
+/** Y no contiene en su parte central (el 80 % de su caja) el centro de más de uno de los otros globos: una caja que junta a todo un montón no es un globo. */
+export const PARTE_CENTRAL = 0.8;
+export const MAXIMO_CENTROS_DENTRO = 1;
+
+/**
+ * Los globos en unidades de ALTO de la foto, con su diámetro; las cajas que no son cajas se descartan. Cada uno trae `entero`:
+ * su caja es casi cuadrada y casi no contiene otros globos. Un globo gigante de verdad pasa las dos pruebas; la caja suelta que el
+ * detector pone sobre medio montón (o el borde de un trozo) no pasa ninguna.
+ */
 export function globosDe(det: readonly CajaDetectada[], aspecto: number): Globo[] {
-  return det.flatMap((g) => {
+  const sinEntero = det.flatMap((g) => {
     const [y0, x0, y1, x1] = g.box_2d as readonly number[];
     if (![y0, x0, y1, x1].every((n) => Number.isFinite(n)) || y1! <= y0! || x1! <= x0!) return [];
     const h = (y1! - y0!) / 1000, w = ((x1! - x0!) / 1000) * aspecto;
     // Un globo tapado a medias deja una caja angosta: su diámetro es el lado mayor.
     return [{ x: ((x0! + x1!) / 2 / 1000) * aspecto, y: (y0! + y1!) / 2 / 1000, d: Math.max(h, w), w, h, color: g.color }];
+  });
+  return sinEntero.map((b, i) => {
+    const aspectoCaja = b.w / b.h;
+    const dentro = sinEntero.reduce((n, o, j) => (j !== i && Math.abs(o.x - b.x) <= (PARTE_CENTRAL / 2) * b.w && Math.abs(o.y - b.y) <= (PARTE_CENTRAL / 2) * b.h ? n + 1 : n), 0);
+    return { ...b, entero: aspectoCaja >= ASPECTO_ENTERO_MINIMO && aspectoCaja <= ASPECTO_ENTERO_MAXIMO && dentro <= MAXIMO_CENTROS_DENTRO };
   });
 }
 

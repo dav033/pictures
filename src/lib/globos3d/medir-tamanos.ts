@@ -32,6 +32,8 @@ const PARTE_MINIMA_GRUPO = 0.03;
 const MINIMO_ABSOLUTO_GRUPO = 3;
 /** Dos escalones vecinos de la detección miden al menos esta razón entre sí (R-18 contra R-12 es 1,36; la caja suelta de un solo tamaño no la alcanza). */
 const RAZON_ESCALON_MINIMA = 1.2;
+/** Un grupo chico de globos enteros se queda como escalón si su diámetro no pasa de esta vez el del escalón de abajo (R-36 contra R-12 es 3). */
+const RAZON_MAXIMA_ENTRE_ESCALONES = 3.3;
 /** Un globo que mide más de esta razón (o menos de su inversa) de la mediana de su escalón no es de ese escalón. */
 const RAZON_ATIPICO = 2;
 const VUELTAS_ATIPICOS = 3;
@@ -57,12 +59,22 @@ export function repartoDe(lista: readonly Escalon[], escalones: readonly Escalon
   return salida;
 }
 
+/** Un grupo chico es un escalón de verdad si son globos enteros y no pasan de `RAZON_MAXIMA_ENTRE_ESCALONES` veces el grupo de abajo. */
+function esEscalonDeEnteros(i: number, globos: readonly Globo[], indice: readonly number[]): boolean {
+  const suyos = globos.filter((_, j) => indice[j] === i);
+  if (!suyos.every((g) => g.entero)) return false;
+  if (i === 0) return true;
+  const deAbajo = globos.filter((_, j) => indice[j] === i - 1).map((g) => g.d);
+  return deAbajo.length === 0 || mediana(suyos.map((g) => g.d)) <= RAZON_MAXIMA_ENTRE_ESCALONES * mediana(deAbajo);
+}
+
 type Agrupado = { escalones: Escalon[]; globos: Globo[]; indice: number[] };
 
 /**
  * Agrupa los globos en tantos grupos como escalones y asigna cada uno al más cercano. Mientras no queden bien separados:
  * - un grupo con menos globos que el mínimo son cajas sueltas (con ellas el agrupado gastaba un escalón en cada una): se
- *   descartan y se vuelve a agrupar con los mismos escalones;
+ *   descartan y se vuelve a agrupar con los mismos escalones; salvo que todos sus globos sean ENTEROS (una caja de globo, no la
+ *   de medio montón) y no midan más de 3,3 veces el escalón de abajo: dos o tres gigantes de verdad son el escalón de gigantes;
  * - dos grupos vecinos de tamaño casi igual (o un grupo vacío) son el mismo escalón: se queda uno menos, el de más arriba
  *   (los escalones de arriba son los que menos globos tienen y los que más se inventa el lector).
  */
@@ -76,7 +88,7 @@ function agrupar(lista: readonly Globo[], escalonesLeidos: readonly Escalon[]): 
     const indice = logs.map((x) => centros.reduce((mejor, c, i) => (Math.abs(x - c) < Math.abs(x - centros[mejor]!) ? i : mejor), 0));
     if (escalones.length <= 2) return { escalones, globos, indice };
     const tamanos = centros.map((_, i) => indice.filter((j) => j === i).length);
-    const sueltas = tamanos.findIndex((n) => n > 0 && n < minimo);
+    const sueltas = tamanos.findIndex((n, i) => n > 0 && n < minimo && !esEscalonDeEnteros(i, globos, indice));
     if (sueltas >= 0) { globos = globos.filter((_, j) => indice[j] !== sueltas); continue; }
     const juntos = centros.some((c, i) => tamanos[i] === 0 || (i > 0 && c - centros[i - 1]! < Math.log(RAZON_ESCALON_MINIMA)));
     if (!juntos) return { escalones, globos, indice };

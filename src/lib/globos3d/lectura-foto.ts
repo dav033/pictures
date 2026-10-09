@@ -109,7 +109,7 @@ export const PiezaLeidaSchema = z.discriminatedUnion("tipo", [
     tipo: z.literal("racimo_piso"),
     x: Fraccion, yPie: Fraccion, yArriba: Fraccion, ancho: Tamano,
     tamanos: Tamanos, mezcla: MezclaLeidaSchema.optional(), racimos: z.number().min(0).max(1),
-    coloresPorEscalon: z.array(ColoresEscalonSchema).max(4).optional(), ...Comun,
+    coloresPorEscalon: z.array(ColoresEscalonSchema).max(4).optional(), anclas: z.array(AnclaLeidaSchema).max(80).optional(), ...Comun,
   }),
   z.object({
     tipo: z.literal("columna_clasica"),

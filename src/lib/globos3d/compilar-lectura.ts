@@ -121,7 +121,9 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         const pesos = pesosDeLectura(p, H);
         // Un montón es una columna de racimos baja y ancha (cerrada arriba, abierta al piso).
         const puntos = puntosDeSilueta("columna_racimos", { anchoCm: r0(Math.max(g, ancho)), altoCm: r0(Math.max(alto, g * 0.8)), grosorCm: r0(g) });
-        const trazo = { silueta: "columna_racimos" as const, puntos, mezcla: pesos, colores: paletaDeLectura({ colores: p.colores, mezcla: p.mezcla, coloresPorEscalon: p.coloresPorEscalon }, H, notas), racimos: p.racimos, semilla: 31 + i };
+        // Sus gigantes y grandes, uno por uno: x desde el centro del montón y y desde su pie, a la escala con que se ve de cerca.
+        const fijos = fijosDeAnclas(p, H, notas).map((f) => ({ ...f, x: r1((f.x - p.x) * l.aspecto * H * factor), y: r1(Math.max(0, (p.yPie - f.y) * H * factor)), ...(f.infladoCm ? { infladoCm: r0(f.infladoCm * factor) } : {}) }));
+        const trazo = { silueta: "columna_racimos" as const, puntos, mezcla: pesos, colores: paletaDeLectura({ colores: p.colores, mezcla: p.mezcla, coloresPorEscalon: p.coloresPorEscalon }, H, notas), racimos: p.racimos, semilla: 31 + i, ...(fijos.length ? { fijos } : {}) };
         const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, null, 0, p.mezcla).pieza : piezaDeGenerador({ tipo: "trazo", trazo });
         poner("racimo-piso", "Racimo de piso", pieza, { en: "piso", xCm: r1(X(p.x) * factor), zCm: r0(muro + PROFUNDIDAD_FOTO_CM + delanteCm - g / 2), giroGrados: 0 });
         return;

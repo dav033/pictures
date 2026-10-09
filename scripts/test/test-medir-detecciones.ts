@@ -17,7 +17,7 @@ import { crearAzar } from "../../src/lib/globos3d/organico";
 import { LecturaFotoSchema, type ColorLeido, type LecturaFoto, type PiezaLeida } from "../../src/lib/globos3d/lectura-foto";
 import { coloresDe, coloresPorEscalonDe, dominanteDe, indiceDeDetectado } from "../../src/lib/globos3d/medir-colores";
 import { medirConDetecciones, type GloboDetectado } from "../../src/lib/globos3d/medir-con-detecciones";
-import { ejeMedido, type Globo } from "../../src/lib/globos3d/medir-geometria";
+import { ejeMedido, globosDe, type Globo } from "../../src/lib/globos3d/medir-geometria";
 import { medirFondos } from "../../src/lib/globos3d/medir-fondos";
 import { fundirRepetidas, tocaBordeDeTrozo, trozosDelMosaico } from "../../src/lib/globos3d/mosaico-deteccion";
 
@@ -25,7 +25,7 @@ let pruebas = 0;
 const prueba = (nombre: string, fn: () => void) => { fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
 
 /** Un globo ya medido (las cuentas de color solo miran su diámetro y su color). */
-const unGlobo = (d: number, color: string): Globo => ({ x: 0, y: 0, d, w: d, h: d, color });
+const unGlobo = (d: number, color: string): Globo => ({ x: 0, y: 0, d, w: d, h: d, color, entero: true });
 
 type Guirnalda = Extract<PiezaLeida, { tipo: "guirnalda_organica" }>;
 type Monton = Extract<PiezaLeida, { tipo: "racimo_piso" }>;
@@ -212,6 +212,59 @@ prueba("el panel de fondo tomado por un globo, y lo que hay sobre una mesa, no c
   assert.match(con.notas.join(" "), /5 cajas detectadas son de un fondo o de un mueble/);
   // Los globos de la guirnalda que pasan por delante del panel (dentro de su caja) siguen contando.
   assert.ok(garlandaDe(con.lectura).mezcla!.medianos > 30);
+});
+
+// ----------------------------------------------------------------------------------------------------------
+// Cajas reales (fotos de prueba v3 y v4 del dueño; solo las cajas y su color, sin imágenes)
+// ----------------------------------------------------------------------------------------------------------
+
+type CajaReal = readonly [number, number, number, number, string];
+const aDetecciones = (l: readonly CajaReal[]): GloboDetectado[] => l.map(([y0, x0, y1, x1, color]) => ({ box_2d: [y0, x0, y1, x1], color }));
+/** v3: las cajas del montón de la derecha; la primera es el único gigante blanco (d = 0,174, casi cuadrado, sin otros globos dentro). */
+const MONTON_V3: readonly CajaReal[] = [[599,780,762,954,"blanco"], [755,877,849,976,"dorado"], [757,750,830,824,"dorado"], [719,930,795,1000,"dorado"], [756,818,830,882,"dorado"], [695,731,760,800,"dorado"], [740,701,816,756,"dorado"], [670,712,732,776,"dorado"], [621,737,677,791,"dorado"], [628,935,683,988,"dorado"], [674,950,729,1000,"dorado"], [702,684,759,725,"blanco"], [676,709,739,742,"dorado"], [634,670,678,717,"dorado"], [733,786,776,832,"dorado"], [623,715,676,752,"blanco"], [592,791,625,845,"dorado"], [595,756,628,799,"blanco"], [802,967,846,996,"dorado"], [722,679,759,706,"blanco"], [599,719,628,745,"dorado"], [668,694,694,721,"blanco"]];
+/** v4: las cajas del montón de la izquierda; la primera es una caja suelta de 0,36 × 0,30 que el detector puso sobre medio montón. */
+const MONTON_V4: readonly CajaReal[] = [[592,69,952,365,"dorado"], [663,172,742,279,"dorado"], [614,67,694,151,"blanco"], [625,140,704,225,"blanco"], [558,133,634,216,"blanco"], [602,234,662,314,"dorado"], [679,275,741,345,"blanco"], [711,295,786,352,"blanco"], [742,258,809,314,"blanco"], [699,97,742,176,"dorado"], [592,298,629,374,"dorado"], [627,310,682,355,"dorado"], [808,258,869,289,"dorado"], [635,258,680,295,"blanco"], [664,270,704,309,"blanco"], [698,1,742,93,"dorado"], [674,0,733,58,"dorado"]];
+const MEZCLA_REAL = { gigantes: 15, grandes: 15, medianos: 50, chicos: 20, diametroGigante: 0.26, diametroGrande: 0.15, diametroMediano: 0.085, diametroChico: 0.04, formatoGigante: "R-36" as const, formatoGrande: "R-18" as const, formatoMediano: "R-12" as const, formatoChico: "R-5" as const };
+const montonDe = (x: number, yPie: number, yArriba: number, ancho: number): PiezaLeida => ({ tipo: "racimo_piso", x, yPie, yArriba, ancho, tamanos: {}, racimos: 0.5, colores: [DORADO, BLANCO], mezcla: MEZCLA_REAL });
+
+console.log("Un gigante de verdad no es una caja suelta");
+prueba("v3: el gigante del montón (d = 0,174, entero) se queda como escalón de gigantes y queda anclado", () => {
+  const det = aDetecciones(MONTON_V3);
+  const globos = globosDe(det, 1);
+  assert.ok(globos[0]!.entero && Math.abs(globos[0]!.d - 0.174) < 0.001, `entero ${globos[0]!.entero}, d ${globos[0]!.d}`);
+  const r = medirConDetecciones(lectura([montonDe(0.85, 0.85, 0.6, 0.32)], { aspecto: 1 }), det);
+  const m = r.lectura.piezas[0] as Monton;
+  assert.ok((m.mezcla!.gigantes ?? 0) > 0, JSON.stringify(m.mezcla));
+  assert.ok(m.anclas?.some((a) => a.escalon === "gigantes" && Math.abs((a.diametro ?? 0) - 0.174) < 0.001 && a.color === "blanco"), JSON.stringify(m.anclas));
+});
+
+prueba("v4: la caja de 0,36 que junta 12 globos (dorada, del color del montón) no es un globo: se rechaza y no se ancla", () => {
+  const det = aDetecciones(MONTON_V4);
+  const globos = globosDe(det, 1);
+  const suelta = globos[0]!;
+  assert.ok(Math.abs(suelta.d - 0.36) < 0.001 && suelta.w / suelta.h > 0.75 && suelta.w / suelta.h < 1.33, "es casi cuadrada: lo que la delata son los globos que contiene");
+  assert.ok(!suelta.entero, "contiene el centro de otros 12 globos");
+  assert.ok(globos.slice(1).filter((g) => g.entero).length >= 8, "la mayoría de los globos de verdad sí son enteros");
+  const r = medirConDetecciones(lectura([montonDe(0.12, 0.96, 0.55, 0.6)], { aspecto: 1 }), det);
+  const m = r.lectura.piezas[0] as Monton;
+  assert.equal(m.mezcla!.gigantes ?? 0, 0);
+  assert.ok(!m.anclas?.some((a) => (a.diametro ?? 0) > 0.3), JSON.stringify(m.anclas));
+});
+
+prueba("las tiras del borde de un trozo (aspecto 0,3 a 0,4) no son globos enteros", () => {
+  const tira = globosDe([{ box_2d: [100, 300, 220, 345], color: "dorado" }], 1)[0]!;
+  assert.ok(!tira.entero, `aspecto ${(tira.w / tira.h).toFixed(2)}`);
+});
+
+prueba("el resultado con las cajas reales no depende de su orden", () => {
+  const l = lectura([montonDe(0.85, 0.85, 0.6, 0.32)], { aspecto: 1 });
+  const referencia = medirConDetecciones(l, aDetecciones(MONTON_V3));
+  const azar = crearAzar(5);
+  for (let k = 0; k < 4; k++) {
+    const barajada = [...aDetecciones(MONTON_V3)];
+    for (let i = barajada.length - 1; i > 0; i--) { const j = Math.floor(azar() * (i + 1)); [barajada[i], barajada[j]] = [barajada[j]!, barajada[i]!]; }
+    assert.deepEqual(medirConDetecciones(l, barajada).lectura, referencia.lectura, `permutación ${k}`);
+  }
 });
 
 console.log("Colores");

@@ -60,7 +60,7 @@ const COMPLETAS: Readonly<Record<PiezaLeida["tipo"], PiezaLeida>> = {
     anclas: [{ x: 0.42, y: 0.42, escalon: "gigantes", color: "blanco", diametro: 0.4 }, { x: 0.58, y: 0.42, escalon: "grandes", color: "dorado", diametro: 0.24 }],
   },
   columna_organica: { tipo: "columna_organica", forma: "racimos", x: 0.2, yBase: 0.85, yArriba: 0.35, ancho: 0.25, grosor: 0.2, tamanos: {}, mezcla: MEZCLA, racimos: 0.4, colores: [DORADO, BLANCO], nota: "se corta arriba" },
-  racimo_piso: { tipo: "racimo_piso", x: 0.5, yPie: 0.97, yArriba: 0.8, ancho: 0.3, tamanos: {}, mezcla: MEZCLA, racimos: 0.5, coloresPorEscalon: [{ escalon: "chicos", pesos: [100, 0] }], colores: [DORADO, BLANCO], nota: "más cerca de la cámara" },
+  racimo_piso: { tipo: "racimo_piso", anclas: [{ x: 0.5, y: 0.88, escalon: "gigantes", color: "blanco", diametro: 0.4 }, { x: 0.45, y: 0.9, escalon: "grandes", color: "dorado", diametro: 0.24 }], x: 0.5, yPie: 0.97, yArriba: 0.8, ancho: 0.3, tamanos: {}, mezcla: MEZCLA, racimos: 0.5, coloresPorEscalon: [{ escalon: "chicos", pesos: [100, 0] }], colores: [DORADO, BLANCO], nota: "más cerca de la cámara" },
   columna_clasica: { tipo: "columna_clasica", x: 0.2, yBase: 0.85, yArriba: 0.4, colores: [DORADO, BLANCO], nota: "dos colores" },
   guirnalda_clasica: { tipo: "guirnalda_clasica", x1: 0.2, x2: 0.8, y: 0.3, caida: 0.1, colores: [DORADO, BLANCO], nota: "cuelga" },
   globo: { tipo: "globo", x: 0.5, y: 0.5, diametro: 0.2, en: "aire", colores: [DORADO], nota: "suelto" },

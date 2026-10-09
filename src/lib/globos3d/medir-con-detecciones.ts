@@ -1,4 +1,4 @@
-import { LecturaFotoSchema, type AnclaLeida, type LecturaFoto, type PiezaLeida } from "./lectura-foto";
+import { LecturaFotoSchema, type AnclaLeida, type ColorLeido, type LecturaFoto, type PiezaLeida } from "./lectura-foto";
 import { coloresDe, coloresPorEscalonDe, dominanteDe, indiceDeDetectado } from "./medir-colores";
 import { ejeMedido, globosDe, largosDelEje, mediana, normalEnPunto, percentil, proyectar, r3, type CajaDetectada, type Globo, type P } from "./medir-geometria";
 import { medirTamanos, repartoDe } from "./medir-tamanos";
@@ -76,6 +76,20 @@ function suavizarGrosor<T extends { grosor: number }>(puntos: readonly T[]): T[]
 
 const entre = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
+/**
+ * Los gigantes y los grandes uno por uno, donde están, con su color (el de la pieza más parecido) y su diámetro; los mayores si
+ * pasan del tope. Salen de mayor a menor diámetro y, a igual diámetro, por sitio: no dependen del orden en que llegaron las cajas.
+ */
+function anclasDe(porEscalon: ReadonlyMap<Escalon, readonly Globo[]>, colores: readonly ColorLeido[], aspecto: number, filtro: (g: Globo) => boolean = () => true): AnclaLeida[] {
+  const indiceDe = indiceDeDetectado(colores);
+  return (["gigantes", "grandes"] as const)
+    .flatMap((e) => (porEscalon.get(e) ?? []).filter(filtro).flatMap((g) => {
+      const k = indiceDe(g.color);
+      return k >= 0 ? [{ x: r3(g.x / aspecto), y: r3(g.y), escalon: e, color: colores[k]!.nombre, diametro: r3(g.d) }] : [];
+    }))
+    .sort((a, b) => b.diametro! - a.diametro! || a.x - b.x || a.y - b.y).slice(0, MAXIMO_ANCLAS);
+}
+
 function medirGuirnalda(p: Guirnalda, detectados: readonly Globo[], aspecto: number, pisoY: number | null): Medicion {
   const notas: string[] = [];
   if (detectados.length < MINIMO_GLOBOS) return { pieza: p, escalaCm: null, notas };
@@ -128,13 +142,7 @@ function medirGuirnalda(p: Guirnalda, detectados: readonly Globo[], aspecto: num
   }));
   notas.push(`Guirnalda medida con ${globos.length} globos detectados: ${escalones.map((e) => `${e} ${reparto[e] ?? 0} %`).join(", ")}.`);
   // Anclas: los gigantes y los grandes de la pared, uno por uno, donde están, con su color y su diámetro; los mayores si pasan del tope.
-  const anclas: AnclaLeida[] = (["gigantes", "grandes"] as const)
-    .flatMap((e) => (porEscalon.get(e) ?? []).filter(t.dePared).flatMap((g) => {
-      const k = indiceDe(g.color);
-      return k >= 0 ? [{ x: r3(g.x / aspecto), y: r3(g.y), escalon: e, color: colores[k]!.nombre, diametro: r3(g.d) }] : [];
-    }))
-    // De mayor a menor diámetro; a igual diámetro, por sitio (la salida no depende del orden en que llegaron las cajas).
-    .sort((a, b) => b.diametro! - a.diametro! || a.x - b.x || a.y - b.y).slice(0, MAXIMO_ANCLAS);
+  const anclas = anclasDe(porEscalon, colores, aspecto, t.dePared);
   return { pieza: { ...p, puntos, mezcla, colores, ...(coloresPorEscalon.length ? { coloresPorEscalon } : {}), ...(anclas.length ? { anclas } : {}) }, escalaCm: t.escalaCm, notas };
 }
 
@@ -143,7 +151,7 @@ function medirGuirnalda(p: Guirnalda, detectados: readonly Globo[], aspecto: num
 // ----------------------------------------------------------------------------------------------------------
 
 /** El montón de piso con el reparto de tamaños y de colores de sus globos (su escala no se toma: se ve más cerca de la cámara). */
-function medirMonton(p: Monton, detectados: readonly Globo[], pisoY: number | null): Medicion {
+function medirMonton(p: Monton, detectados: readonly Globo[], pisoY: number | null, aspecto: number): Medicion {
   if (detectados.length < MINIMO_GLOBOS) return { pieza: { ...p, colores: coloresDe(p.colores, detectados) }, escalaCm: null, notas: [] };
   const t = medirTamanos(p.mezcla, detectados, pisoY, false);
   const { globos } = t;
@@ -151,6 +159,9 @@ function medirMonton(p: Monton, detectados: readonly Globo[], pisoY: number | nu
   const coloresPorEscalon = coloresPorEscalonDe(t.porEscalon, colores);
   const pieza: Monton = { ...p, mezcla: t.mezcla, colores };
   if (coloresPorEscalon.length) pieza.coloresPorEscalon = coloresPorEscalon; else delete pieza.coloresPorEscalon;
+  // Sus gigantes y grandes, uno por uno (el montón está en el piso, por delante: no se filtran por la altura de la pared).
+  const anclas = anclasDe(t.porEscalon, colores, aspecto);
+  if (anclas.length) pieza.anclas = anclas; else delete pieza.anclas;
   return {
     pieza,
     escalaCm: null,
@@ -235,7 +246,7 @@ export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDe
       if (m.escalaCm) escalas.push(m.escalaCm);
     });
     montones.forEach(({ p, i }, k) => {
-      const m = medirMonton(p, deMonton[k]!, l.pisoY);
+      const m = medirMonton(p, deMonton[k]!, l.pisoY, l.aspecto);
       piezas[i] = m.pieza;
       notas.push(...m.notas);
     });
