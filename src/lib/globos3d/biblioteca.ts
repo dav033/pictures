@@ -623,7 +623,7 @@ export function productosDe(item: ItemBiblioteca, armada?: EscenaArmada, cache?:
     const hecho = hecha.porNodo.find((n) => n.id === nodo.id);
     if (!hecho || hecho.copias === 0) continue;
     // Lo oculto (amarres internos) no se ve ni se compra: no va en la lista.
-    if (nodo.pieza.tipo === "escenografia" && !nodo.pieza.productos?.length && !elementosDeEscenografia(nodo.pieza).every((e) => e.oculto)) sumar(nodo.nombre.replace(/\s*\(.*\)$/, "").replace(nodo.pieza.mueble ? /\s+\d+$/ : /$^/, ""), "escenografia", hecho.copias, nodo.nombre);
+    if (nodo.pieza.tipo === "escenografia" && !nodo.pieza.productos?.length && !elementosDeEscenografia(nodo.pieza).every((e) => e.oculto && !e.rotulo)) sumar(nodo.nombre.replace(/\s*\(.*\)$/, "").replace(nodo.pieza.mueble ? /\s+\d+$/ : /$^/, ""), "escenografia", hecho.copias, nodo.nombre);
     if (nodo.pieza.tipo === "decoracion" && hecho.materiales.length === 0 && hecho.tubos.some((t) => t.papel)) sumar(nombreGenerico(nodo.nombre), "papel", hecho.copias, nodo.nombre);
     if (hecho.flores.length) sumar("Flores artificiales (follaje)", "follaje", hecho.flores.length, nodo.nombre);
     // El relleno de un globo burbuja (confeti, plumas) es papel: no es producto de la tienda.

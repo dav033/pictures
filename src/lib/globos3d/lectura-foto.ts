@@ -94,7 +94,7 @@ export const PiezaLeidaSchema = z.discriminatedUnion("tipo", [
   z.object({
     tipo: z.literal("fondo"),
     id: z.enum(FONDOS_CATALOGO.map((f) => f.id) as [string, ...string[]]),
-    x: Fraccion.describe("centro"), yBase: Fraccion, ancho: Tamano, alto: Tamano, texto: z.string().max(30).optional().describe("letrero o neón: lo que dice"),
+    x: Fraccion.describe("centro"), yBase: Fraccion, ancho: Tamano, alto: Tamano, texto: z.string().max(30).optional().describe("lo que dice (letrero, neón, nombre en cursiva)"),
     cantidad: z.number().int().min(1).max(12).optional().describe("cuántos iguales en fila (sillas…): el ancho es el de todos juntos; si falta, 1"), ...Comun,
   }),
   z.object({

@@ -25,8 +25,25 @@ export type DibujoMotivo = "calavera" | "murcielago" | "calabaza" | "fantasma" |
  */
 export type MotivoEscenografia = { dibujo: DibujoMotivo; texto?: string; hex?: string; cara?: "frente" | "arriba"; escala?: number; /** `neon`: el texto en cursiva luminosa (un letrero de neón), tal como se escribió. */ estilo?: "neon" };
 
-/** `oculto`: el elemento existe (sostiene o da un marco a lo que cuelga de él) pero no se dibuja (un amarre interno). */
+/** Cómo está hecho un rótulo: `vinilo` (calcomanía fina, mate), `acrilico_espejo` (letras recortadas de acrílico espejo, 6 mm) o `acrilico_mate` (lo mismo, de color liso). */
+export type AcabadoRotulo = "vinilo" | "acrilico_espejo" | "acrilico_mate";
+
+/**
+ * Un nombre o frase en letra cursiva (con las letras unidas) sobre la cara de delante de una caja o un panel: vinilo pegado
+ * o letras de acrílico recortadas. `texto` va en una o varias líneas (separadas por un salto de línea), `color` es `#rrggbb`, `altoCm` lo alto de todo
+ * el texto (si no cabe a lo ancho de la cara, se achica) y `yCm` la altura de su centro sobre el borde de abajo del elemento
+ * que lo lleva. Va centrado a lo ancho. El visor lo dibuja (`rotulo-visor.ts`); la cara y el ajuste los da `rotulos.ts`.
+ */
+export type RotuloEscenografia = { texto: string; color: string; acabado: AcabadoRotulo; altoCm: number; yCm: number };
+
+/**
+ * `oculto`: el elemento existe (sostiene o da un marco a lo que cuelga de él) pero no se dibuja (un amarre interno); si lleva
+ * `rotulo`, el cuerpo no se dibuja y el rótulo sí (el nombre de acrílico que va suelto delante de un aro).
+ */
 type Aspecto = { hex: string; acabado: AcabadoEscenografia; motivo?: MotivoEscenografia; oculto?: boolean };
+type ConRotulo = { rotulo?: RotuloEscenografia };
+/** Un cilindro no lleva rótulo (no tiene cara plana): el campo existe para poder preguntarlo sin distinguir la forma. */
+type SinRotulo = { rotulo?: undefined };
 
 /**
  * Marco propio de un elemento (opcional): su forma se arma como siempre y luego se lleva a este marco (origen y dos
@@ -36,9 +53,9 @@ type Aspecto = { hex: string; acabado: AcabadoEscenografia; motivo?: MotivoEscen
 export type MarcoElemento = { origen: Vec3; ejeX: Vec3; ejeY: Vec3 };
 
 export type ElementoEscenografia =
-  | (Aspecto & { forma: "caja"; centro: Vec3; tamano: Vec3; giroGrados?: number; en?: MarcoElemento })
-  | (Aspecto & { forma: "cilindro"; base: Vec3; radioCm: number; altoCm: number; radioArribaCm?: number; en?: MarcoElemento })
-  | (Aspecto & { forma: "panel"; contorno: Punto2[]; huecos?: Punto2[][]; zCm: number; grosorCm: number; en?: MarcoElemento });
+  | (Aspecto & ConRotulo & { forma: "caja"; centro: Vec3; tamano: Vec3; giroGrados?: number; en?: MarcoElemento })
+  | (Aspecto & SinRotulo & { forma: "cilindro"; base: Vec3; radioCm: number; altoCm: number; radioArribaCm?: number; en?: MarcoElemento })
+  | (Aspecto & ConRotulo & { forma: "panel"; contorno: Punto2[]; huecos?: Punto2[][]; zCm: number; grosorCm: number; en?: MarcoElemento });
 
 /**
  * El producto Sempertex que representa una pieza de **utilería de fiesta** (banderín, platos, vasos…): su nombre exacto
@@ -56,9 +73,9 @@ export type ProductoDePieza = { nombre: string; url: string; cantidad: number; /
 export type MarcoSolido = { origen: Vec3; ejeX: Vec3; ejeY: Vec3; ejeZ: Vec3 };
 
 export type SolidoEscenografia = MarcoSolido & Aspecto & (
-  | { forma: "caja"; tamano: Vec3 }
-  | { forma: "cilindro"; radioCm: number; altoCm: number; radioArribaCm: number }
-  | { forma: "panel"; contorno: Punto2[]; huecos: Punto2[][]; grosorCm: number }
+  | (ConRotulo & { forma: "caja"; tamano: Vec3 })
+  | (SinRotulo & { forma: "cilindro"; radioCm: number; altoCm: number; radioArribaCm: number })
+  | (ConRotulo & { forma: "panel"; contorno: Punto2[]; huecos: Punto2[][]; grosorCm: number })
 );
 
 const X: Vec3 = { x: 1, y: 0, z: 0 }, Y: Vec3 = { x: 0, y: 1, z: 0 }, Z: Vec3 = { x: 0, y: 0, z: 1 };
@@ -83,16 +100,18 @@ export function armarEscenografia(elementos: readonly ElementoEscenografia[]): S
   });
 }
 
+const rotuloDe = (e: ConRotulo): ConRotulo => (e.rotulo ? { rotulo: { ...e.rotulo } } : {});
+
 function armarElemento(e: ElementoEscenografia): SolidoEscenografia {
   const aspecto: Aspecto = { hex: e.hex, acabado: e.acabado, ...(e.motivo ? { motivo: { ...e.motivo } } : {}), ...(e.oculto ? { oculto: true } : {}) };
   if (e.forma === "caja") {
     const a = ((e.giroGrados ?? 0) * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
-    return { ...aspecto, forma: "caja", tamano: { ...e.tamano }, origen: { ...e.centro }, ejeX: { x: c, y: 0, z: -s }, ejeY: Y, ejeZ: { x: s, y: 0, z: c } };
+    return { ...aspecto, ...rotuloDe(e), forma: "caja", tamano: { ...e.tamano }, origen: { ...e.centro }, ejeX: { x: c, y: 0, z: -s }, ejeY: Y, ejeZ: { x: s, y: 0, z: c } };
   }
   if (e.forma === "cilindro") {
     return { ...aspecto, forma: "cilindro", radioCm: e.radioCm, altoCm: e.altoCm, radioArribaCm: e.radioArribaCm ?? e.radioCm, origen: { ...e.base }, ejeX: X, ejeY: Y, ejeZ: Z };
   }
-  return { ...aspecto, forma: "panel", contorno: e.contorno.map((p) => ({ ...p })), huecos: (e.huecos ?? []).map((h) => h.map((p) => ({ ...p }))), grosorCm: e.grosorCm, origen: { x: 0, y: 0, z: e.zCm }, ejeX: X, ejeY: Y, ejeZ: Z };
+  return { ...aspecto, ...rotuloDe(e), forma: "panel", contorno: e.contorno.map((p) => ({ ...p })), huecos: (e.huecos ?? []).map((h) => h.map((p) => ({ ...p }))), grosorCm: e.grosorCm, origen: { x: 0, y: 0, z: e.zCm }, ejeX: X, ejeY: Y, ejeZ: Z };
 }
 
 /** Puntos del sólido en su marco (las esquinas de su caja local), para medir lo que ocupa. */

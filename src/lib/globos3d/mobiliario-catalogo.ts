@@ -2,8 +2,8 @@ import { mesaConMantel, type AcabadoEscenografia, type ElementoEscenografia } fr
 import { mat, trasladarGirar, type Material } from "./mobiliario-base";
 import { banca, sillaModerna, sillaTiffany, sofa, taburete, type OpcionesAsiento } from "./mobiliario-asientos";
 import {
-  alfombraRedonda, basePastel, baseHexagonal, biombo, columnaGriega, escaleraDecorativa, jarronPampas, lamparaPie, marcoMetalico, neonCursiva, peldanos,
-  type OpcionesDecorado,
+  alfombraRedonda, basePastel, baseHexagonal, biombo, columnaGriega, escaleraDecorativa, jarronPampas, lamparaPie, marcoMetalico, marcoTela, neonCursiva, peldanos,
+  rotuloAcrilico, TEXTO_ROTULO_ACRILICO, type OpcionesDecorado,
 } from "./mobiliario-decorado";
 import { puestosAlrededor } from "./mobiliario-disposicion";
 import {
@@ -254,9 +254,20 @@ const BASE: readonly MuebleCatalogo[] = [
     medidas: { anchoCm: 32, fondoCm: 32, altoCm: 18 }, colores: ["#f4f1ea"], coloresDe: ["color"], armar: deDecorado(basePastel, "brillante", "brillante"),
   }),
   mueble({
-    id: "neon_cursiva", fondo: "fijo", nombre: "Letrero de neón", grupo: "decorado", lugar: "pared", alturaParedCm: 130, conTexto: true,
+    id: "neon_cursiva", fondo: "fijo", nombre: "Letrero de neón", grupo: "decorado", lugar: "pared", alturaParedCm: 130, conTexto: true, textoPorDefecto: "Happy Birthday",
     descripcion: "Letrero de neón en cursiva de 1,2 × 0,6 m sobre acrílico oscuro (texto a elegir, por defecto «Happy Birthday»); va en la pared.",
     medidas: { anchoCm: 120, fondoCm: 2, altoCm: 60 }, colores: ["#101014", "#ff4fa3"], coloresDe: ["tablero", "luz del neón"], armar: deDecorado(neonCursiva, "satinado", "llama"),
+  }),
+  mueble({
+    id: "marco_tela", fondo: "fijo", nombre: "Marco con tela", grupo: "decorado", retiroCm: 30, rotulable: true,
+    descripcion: "Marco rectangular de fondo de 2,4 × 1,8 m con perfil de 4 cm (negro, dorado, blanco o madera) y tela tensada; admite un nombre o frase en vinilo cursivo (texto).",
+    medidas: { anchoCm: 240, fondoCm: 34, altoCm: 180 }, colores: ["#1c1c1c", "#f7f6f2"], coloresDe: ["marco", "tela"], armar: deDecorado(marcoTela, "satinado", "tela"),
+  }),
+  mueble({
+    id: "rotulo_acrilico", fondo: "fijo", nombre: "Nombre de acrílico", grupo: "decorado", lugar: "piso", retiroCm: 34, flotaCm: 115, conTexto: true, textoPorDefecto: TEXTO_ROTULO_ACRILICO, lineasTexto: 3,
+    acabadosPropios: [["metal", "Espejo"], ["mate", "Mate"]],
+    descripcion: "Nombre o frase recortado en acrílico de 6 mm, letra cursiva unida (texto a elegir), suelto y en el aire, delante de un aro o arco; dorado espejo (acabado metal = espejo, mate = liso).",
+    medidas: { anchoCm: 120, fondoCm: 0.6, altoCm: 30 }, colores: ["#d6b25a"], coloresDe: ["letras"], armar: deDecorado(rotuloAcrilico, "metal", "metal"),
   }),
   mueble({
     id: "columna_griega", fondo: "igual_ancho", nombre: "Columna griega", grupo: "decorado", retiroCm: 40,

@@ -2,7 +2,7 @@ import type { Colocacion } from "./escena";
 import type { AcabadoEscenografia } from "./escenografia";
 import { muebleDe } from "./mobiliario-catalogo";
 import { puestosAlrededor, puestosEnFila } from "./mobiliario-disposicion";
-import { MAX_TEXTO_MUEBLE, opcionesDeMueble, piezaDeMueble } from "./mobiliario-pieza";
+import { conTextoPieza, MAX_TEXTO_MUEBLE, opcionesDeMueble, piezaDeMueble } from "./mobiliario-pieza";
 import type { MuebleCatalogo } from "./mobiliario-tipos";
 import type { ColorLeido, PiezaLeida } from "./lectura-foto";
 import type { Pieza } from "./piezas";
@@ -63,15 +63,22 @@ export function mobiliarioLeido(p: FondoLeido, medida: MedidaLeida, notas: strin
   const idBase = p.id.replace(/_/g, "-");
   const cuantos = Math.max(1, p.cantidad ?? 1);
   const pared = mueble.lugar === "pared";
-  if (pared && cuantos > 1) notas.push(`${mueble.nombre}: los de pared van de uno en uno; puse solo uno de los ${cuantos} leídos.`);
-  const n = pared ? 1 : cuantos;
+  // Lo que flota en el aire (el nombre de acrílico delante de un aro) también va de uno en uno.
+  const flota = mueble.flotaCm !== undefined;
+  if ((pared || flota) && cuantos > 1) notas.push(`${mueble.nombre}: los ${pared ? "de pared" : "que flotan"} van de uno en uno; puse solo uno de los ${cuantos} leídos.`);
+  const n = pared || flota ? 1 : cuantos;
   const t = medidasDe(mueble, medida, n > 1, notas);
   const colores = p.colores.slice(0, mueble.coloresDe.length).map((c) => c.hex);
   const acabado = p.colores[0] ? ACABADO[p.colores[0].acabado] : undefined;
-  const pieza = piezaDeMueble(mueble, opcionesDeMueble(mueble, { ...t, colores, ...(acabado ? { acabado } : {}), ...(mueble.conTexto && p.texto ? { texto: p.texto.slice(0, MAX_TEXTO_MUEBLE) } : {}) }));
-  if (mueble.conTexto && p.texto && p.texto.length > MAX_TEXTO_MUEBLE) notas.push(`${mueble.nombre}: el texto leído pasa de ${MAX_TEXTO_MUEBLE} letras; quedó «${p.texto.slice(0, MAX_TEXTO_MUEBLE)}».`);
+  const sinRotulo = piezaDeMueble(mueble, opcionesDeMueble(mueble, { ...t, colores, ...(acabado ? { acabado } : {}), ...(mueble.conTexto && p.texto ? { texto: p.texto.slice(0, MAX_TEXTO_MUEBLE) } : {}) }));
+  // Un marco con un nombre en vinilo: el texto leído es su rótulo; su tinta, el color que viene después de los del marco (o la que se lee sobre la tela).
+  const tinta = p.colores.length > mueble.coloresDe.length ? p.colores.at(-1)?.hex : undefined;
+  const pieza = mueble.rotulable && p.texto && sinRotulo.tipo === "escenografia" ? conTextoPieza(sinRotulo, { texto: p.texto, ...(tinta ? { color: tinta } : {}) }) : sinRotulo;
+  if ((mueble.conTexto || mueble.rotulable) && p.texto && p.texto.length > MAX_TEXTO_MUEBLE) notas.push(`${mueble.nombre}: el texto leído pasa de ${MAX_TEXTO_MUEBLE} letras; quedó «${p.texto.slice(0, MAX_TEXTO_MUEBLE)}».`);
   const nodo = (i: number, colocacion: Colocacion): NodoMobiliario => ({ base: idBase, nombre: n > 1 ? `${mueble.nombre} ${i + 1}` : mueble.nombre, pieza, colocacion });
   if (pared) return [nodo(0, { en: "pared", pared: "fondo", aLoLargoCm: r0(medida.xCm), alturaCm: r0(Math.max(0, medida.yBaseCm)) })];
+  // En el aire: a la altura que se lee (si la foto no la da, la de siempre) y delante del aro, a su retiro.
+  if (flota) return [nodo(0, { en: "libre", xCm: r0(medida.xCm), yCm: r0(medida.yBaseCm > 20 ? medida.yBaseCm : mueble.flotaCm!), zCm: medida.muroZ + (mueble.retiroCm ?? 120), giroGrados: 0 })];
   const mesa = n > 1 && mueble.asiento ? mesaDelGrupo(mesas, medida.xCm, medida.anchoCm) : null;
   if (mesa) {
     const puestos = puestosAlrededor({ cx: mesa.x, cz: mesa.z, anchoCm: mesa.anchoCm, fondoCm: mesa.fondoCm, cantidad: n, holguraCm: t.fondoCm / 2 + 8, frenteCm: t.anchoCm });

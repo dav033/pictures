@@ -17,6 +17,10 @@ type EntradaComun = {
   retiroCm?: number;
   /** En la pared: la altura del borde de abajo al ponerlo (cm); por defecto 0. */
   alturaParedCm?: number;
+  /** Va en el aire a esta altura sobre el piso (cm), sin esquivar lo que ya está: un nombre de acrílico delante de un aro. */
+  flotaCm?: number;
+  /** Admite un rótulo en cursiva (`mueble.rotulo` de su pieza): lo lleva su ÚLTIMO elemento (el panel de delante, la tela del marco). Ver `rotulos.ts`. */
+  rotulable?: true;
   elementos: () => ElementoEscenografia[];
 };
 
@@ -42,8 +46,14 @@ export type MuebleCatalogo = EntradaComun & {
   seguirPrimero?: boolean;
   /** Es un asiento suelto: se puede repartir en fila o alrededor de una mesa. */
   asiento?: boolean;
-  /** Lleva un texto (el neón). */
+  /** Lleva un texto (el neón, el nombre de acrílico). */
   conTexto?: boolean;
+  /** El texto con que se arma y se muestra si no se pide otro (solo con `conTexto`). */
+  textoPorDefecto?: string;
+  /** Cuántas líneas admite su texto (1 por defecto: el neón; el nombre de acrílico, 3). Solo con `conTexto`. */
+  lineasTexto?: number;
+  /** Los materiales del color principal que ofrece este mueble, con su nombre («metal» es el espejo de un nombre de acrílico); si falta, los de siempre. */
+  acabadosPropios?: ReadonlyArray<readonly [AcabadoEscenografia, string]>;
   /** Va sobre una mesa (la base de pastel). */
   sobreMesa?: boolean;
   armar: (o: OpcionesMueble) => ElementoEscenografia[];

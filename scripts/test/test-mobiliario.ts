@@ -1,7 +1,7 @@
 /**
  * Mobiliario de eventos (`mobiliario-*.ts`) y su integración. Sin coste: ninguna IA ni red.
  *   npx tsx --conditions=react-server scripts/test/test-mobiliario.ts
- * - cada mueble del catálogo (los 37, también los conjuntos) arma como escenografía sin globos ni materiales, apoyado en el
+ * - cada mueble del catálogo (los 39, también los conjuntos) arma como escenografía sin globos ni materiales, apoyado en el
  *   piso, y mide lo que dicen sus medidas totales (±12 %);
  * - se guarda paramétrico (`mueble.opciones`, sin sólidos): la escena pesa poco y `cambiar_pieza` cambia medidas, colores
  *   y texto; un fondo fijo da error claro; `ver_escena` dice nombre, medidas y colores;
@@ -43,8 +43,8 @@ const cambiar = (escena: Escena, args: Record<string, unknown>) => aplicarHerram
 const piso = (n: Escena["nodos"][number]) => (n.colocacion.en === "piso" ? { x: n.colocacion.xCm, z: n.colocacion.zCm, g: n.colocacion.giroGrados } : assert.fail(`${n.id} no está en el piso`));
 const color = (nombre: string, hex: string, acabado: "mate" | "brillante" | "cromado" | "perla" = "mate") => ({ nombre, hex, peso: 100, acabado });
 
-prueba("los 37 muebles del catálogo arman como escenografía, apoyados y con sus medidas totales (±12 %)", () => {
-  assert.equal(CATALOGO_MOBILIARIO.length, 37);
+prueba("los 39 muebles del catálogo arman como escenografía, apoyados y con sus medidas totales (±12 %)", () => {
+  assert.equal(CATALOGO_MOBILIARIO.length, 39);
   for (const m of CATALOGO_MOBILIARIO) {
     const a = armado(m.id);
     assert.equal(a.globos.length, 0, m.id);

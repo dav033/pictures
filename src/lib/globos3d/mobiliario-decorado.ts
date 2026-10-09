@@ -1,11 +1,12 @@
 import type { ElementoEscenografia, MotivoEscenografia } from "./escenografia";
 import type { Punto2 } from "./trenza";
 import { barra, caja, cilindro, losa, mat, poligono, r1, v, type Material } from "./mobiliario-base";
+import { GROSOR_ACRILICO_CM, limpiarTexto } from "./rotulos";
 
 /**
  * **Decorado de pie** (cm): marcos metálicos (aro, hexágono, arco) con su pie, base hexagonal, peldaños de
  * exhibición, escalera decorativa, biombo, jarrón con pampas, lámpara de pie, base de pastel, letrero de neón,
- * columna griega y alfombra redonda. Todo apoyado en el piso, de frente a +z y centrado en x = 0.
+ * columna griega, alfombra redonda, marco de tela para fondos y nombre de acrílico recortado. Todo apoyado en el piso, de frente a +z y centrado en x = 0.
  */
 
 export type OpcionesDecorado = { anchoCm: number; fondoCm: number; altoCm: number; principal: Material; secundario: Material; texto?: string };
@@ -169,4 +170,41 @@ export function alfombraRedonda(o: OpcionesDecorado): ElementoEscenografia[] {
   if (borde.hex === m.hex) return [cilindro(v(0, 0, 0), dia / 2, 1, m)];
   // Con ribete: el disco de abajo es del color del borde y el de arriba, 4 cm más angosto.
   return [cilindro(v(0, 0, 0), dia / 2, 0.5, borde), cilindro(v(0, 0.5, 0), dia / 2 - 4, 0.5, m)];
+}
+
+/** Perfil del marco de tela (cm) y lo que entra la tela bajo él. */
+const PERFIL_MARCO_CM = 4;
+
+/**
+ * Marco rectangular de fondo con tela tensada (el backdrop de una mesa de dulces o de fotos): cuatro perfiles de 4 cm del color
+ * del marco (`principal`), dos patines al piso y la tela (`secundario`) metida un poco hacia atrás. La tela es el ÚLTIMO
+ * elemento: ahí va el rótulo (`mueble.rotulo`). `anchoCm` y `altoCm` son los del marco entero.
+ */
+export function marcoTela(o: OpcionesDecorado): ElementoEscenografia[] {
+  const { anchoCm: w, altoCm: h, principal: marco, secundario: tela } = o;
+  const p = PERFIL_MARCO_CM;
+  return [
+    caja(v(0, h - p / 2, 0), v(w, p, p), marco), caja(v(0, p / 2, 0), v(w, p, p), marco),
+    caja(v(-w / 2 + p / 2, h / 2, 0), v(p, h - 2 * p, p), marco), caja(v(w / 2 - p / 2, h / 2, 0), v(p, h - 2 * p, p), marco),
+    caja(v(-w / 2 + 10, 1.25, 0), v(5, 2.5, 34), marco), caja(v(w / 2 - 10, 1.25, 0), v(5, 2.5, 34), marco),
+    caja(v(0, h / 2, 0.25), v(w - 2 * p + 2, h - 2 * p + 2, 0.5), tela),
+  ];
+}
+
+/** El texto con que se muestra y se arma un nombre de acrílico si no se pide otro. */
+export const TEXTO_ROTULO_ACRILICO = "Isabella";
+
+/**
+ * Nombre de acrílico recortado, en letra cursiva con las letras unidas, de 6 mm, para ponerlo suelto delante de un aro o un
+ * arco. Es un tablero invisible de `anchoCm` × `altoCm` (lo que ocupa la pieza) con el rótulo dentro: las letras llenan lo
+ * que quepa. Con el material metal o brillante es espejo (dorado, plata, oro rosa); con cualquier otro, acrílico liso.
+ */
+export function rotuloAcrilico(o: OpcionesDecorado): ElementoEscenografia[] {
+  const { anchoCm: w, altoCm: h, principal } = o;
+  const espejo = principal.acabado === "metal" || principal.acabado === "brillante";
+  const texto = limpiarTexto(o.texto ?? "") || TEXTO_ROTULO_ACRILICO;
+  return [{
+    forma: "caja", centro: v(0, h / 2, 0), tamano: v(w, h, GROSOR_ACRILICO_CM), hex: principal.hex, acabado: principal.acabado, oculto: true,
+    rotulo: { texto, color: principal.hex, acabado: espejo ? "acrilico_espejo" : "acrilico_mate", altoCm: h, yCm: h / 2 },
+  }];
 }
