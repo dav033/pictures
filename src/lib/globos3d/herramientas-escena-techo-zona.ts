@@ -67,6 +67,15 @@ function zonaPedida(escena: Escena, a: z.infer<typeof TechoZonaSchema>, notas: s
   return { zona: { cx: (dentro.x0 + dentro.x1) / 2, cz: (dentro.z0 + dentro.z1) / 2, ancho: dentro.x1 - dentro.x0, fondo: dentro.z1 - dentro.z0 }, origen };
 }
 
+/**
+ * Cuánto cuelga una decoración de techo (cm desde el techo): lo del 72 % del alto de la sala (o `libreCm`, el alto libre pedido) solo en
+ * salas altas; en una baja, pegada al techo. La usan la herramienta y quien reajusta los techos cuando cambia el alto de la sala.
+ */
+export function cuelgaDeTecho(altoSalaCm: number, altoPiezaCm: number, libreCm?: number): number {
+  const objetivo = libreCm ?? (altoSalaCm > 400 ? altoSalaCm * 0.72 : altoSalaCm - altoPiezaCm);
+  return Math.min(Math.max(0, altoSalaCm - 40), Math.max(0, altoSalaCm - objetivo - altoPiezaCm));
+}
+
 function aplicar(escena: Escena, argumentos: unknown) {
   const a = TechoZonaSchema.parse(argumentos ?? {});
   const notas: string[] = [];
@@ -79,10 +88,7 @@ function aplicar(escena: Escena, argumentos: unknown) {
   const { min, max } = armarPieza(pieza).caja;
   const alto = max.y - min.y, sala = escena.sala;
 
-  // Cuánto cuelga: lo del 72 % del alto de la sala (o `altura_libre_cm`) solo en salas altas; en una baja, pegada al techo.
-  const objetivo = a.altura_libre_cm ?? (sala.altoCm > 400 ? sala.altoCm * 0.72 : sala.altoCm - alto);
-  const tope = Math.max(0, sala.altoCm - 40);
-  const cuelga = Math.min(tope, Math.max(0, sala.altoCm - objetivo - alto));
+  const cuelga = cuelgaDeTecho(sala.altoCm, alto, a.altura_libre_cm);
   const libre = sala.altoCm - cuelga - alto;
   if (a.altura_libre_cm !== undefined && Math.abs(libre - a.altura_libre_cm) > 1) notas.push(`el punto más bajo queda a ${r0(libre)} cm del piso (no a ${r0(a.altura_libre_cm)}): ${libre > a.altura_libre_cm ? "la pieza tapa el techo" : "el hilo máximo de esta sala"}`);
   if (libre < 210) notas.push(`el punto más bajo queda a ${r0(libre)} cm del piso: es bajo para pasar por debajo`);

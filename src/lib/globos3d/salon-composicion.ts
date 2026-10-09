@@ -18,7 +18,7 @@ export const ACENTOS_FONDO = ["corazon", "estrella", "nube", "luna", "flor", "re
 export type AcentoFondo = (typeof ACENTOS_FONDO)[number];
 
 export type Composicion = { fondo: ArquetipoFondo; figura: FiguraFondo; acento: AcentoFondo; entrada: EntradaSalon; semilla: number };
-export type PedidoComposicion = { tipo: string; tematica?: string; colores?: readonly string[]; estilo?: string; texto?: string };
+export type PedidoComposicion = { tipo: string; tematica?: string; colores?: readonly string[]; estilo?: string; texto?: string; variante?: number };
 
 type Eleccion = { fondo: ArquetipoFondo; figura?: FiguraFondo; acento?: AcentoFondo };
 
@@ -94,10 +94,26 @@ function eleccionTematica(tematica: string | undefined, tipo: string): Eleccion 
   return tipo === "halloween" || tipo === "graduacion" ? POR_CELEBRACION[tipo] ?? null : null;
 }
 
+/** Lo que se ofrece después de lo que pide el tema o la ocasión cuando piden «otra opción» (`variante` 1, 2, 3…). */
+const OTRAS_OPCIONES: readonly Eleccion[] = [
+  { fondo: "aro_ramos", acento: "flor" }, { fondo: "paneles_guirnalda" }, { fondo: "semiarco_racimos" }, { fondo: "pared_letras" },
+  { fondo: "columnas_techo" }, { fondo: "mural" }, { fondo: "figuras", figura: "nube" },
+];
+
+/**
+ * La composición de un pedido. Con `variante` 0 (la primera) manda el tema o la ocasión, y es la misma cada vez que se pide lo mismo;
+ * con 1, 2, 3… sale otra distinta para el mismo pedido (la variante entra también en la semilla, así que cambian los modelos y la entrada).
+ */
 export function composicionDe(p: PedidoComposicion): Composicion {
-  const semilla = semillaDe(plegar([p.tipo, p.tematica ?? "", ...(p.colores ?? []), p.estilo ?? "", p.texto ?? ""].join("|")));
+  const pedido = plegar([p.tipo, p.tematica ?? "", ...(p.colores ?? []), p.estilo ?? "", p.texto ?? ""].join("|"));
+  const variante = Math.max(0, Math.floor(p.variante ?? 0));
+  const semilla = semillaDe(variante ? `${pedido}|variante ${variante}` : pedido);
+  const base = semillaDe(pedido);
   const pool = POR_OCASION[p.tipo] ?? POR_OCASION.otro!;
-  const elegida = eleccionTematica(p.tematica, p.tipo) ?? pool[semilla % pool.length]!;
+  const principal = eleccionTematica(p.tematica, p.tipo) ?? pool[base % pool.length]!;
+  const clave = (e: Eleccion) => `${e.fondo}/${e.figura ?? ""}`;
+  const opciones = [principal, ...pool, ...OTRAS_OPCIONES].filter((e, i, todas) => todas.findIndex((x) => clave(x) === clave(e)) === i);
+  const elegida = opciones[variante % opciones.length]!;
   const figura = elegida.figura ?? FIGURAS_POR_SEMILLA[(semilla >>> 8) % FIGURAS_POR_SEMILLA.length]!;
   const acento = elegida.acento ?? ACENTOS_FONDO[(semilla >>> 4) % ACENTOS_FONDO.length]!;
   const entrada: EntradaSalon = p.tipo === "boda" || p.tipo === "quince" || p.tipo === "corporativo" ? "arco" : (semilla >>> 16) % 2 === 0 ? "arco" : "columnas";

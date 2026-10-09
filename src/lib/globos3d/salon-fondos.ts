@@ -50,6 +50,24 @@ function acento(c: ContextoFondo, delanteCm = 110): Adorno {
   return { base: "foil", nombre: `${NOMBRE_ACENTO[forma]} de foil`, pieza: estructura(c, "metalizado", { forma_metalizado: forma, color_metalizado: "oro", pulgadas: forma === "flor" ? 27 : 32 }), colocacion: enPiso(c.f.xCm, c.f.zCm + delanteCm) };
 }
 
+/** El texto de las letras de foil: el foil trae solo 0–9 y A–Z, así que sin acentos (Sofía → SOFIA, Begoña → BEGONA), sin espacios ni signos y hasta 12. */
+export function textoDeFoil(texto: string, notas: string[]): string | null {
+  const plano = texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/\s+/g, "");
+  const limpio = plano.replace(/[^0-9A-Z]/g, "");
+  if (!limpio) { notas.push(`El texto «${texto}» no tiene letras ni números que el foil traiga: no puse letras.`); return null; }
+  const final = limpio.slice(0, 12);
+  const cambios = [plano !== texto.toUpperCase().replace(/\s+/g, "") && "sin acentos", limpio.length !== plano.length && "sin signos", limpio.length > 12 && "recortado a 12"].filter(Boolean);
+  if (cambios.length) notas.push(`Las letras de foil van como «${final}» (${cambios.join(", ")}): el foil trae solo 0–9 y A–Z.`);
+  return final;
+}
+
+/** Las letras o el número de foil que pidió el usuario, de pie delante del centro del fondo (en cualquier composición); `null` si no pidió texto. */
+function letrasDeFoil(c: ContextoFondo): Adorno | null {
+  const texto = c.texto?.trim() ? textoDeFoil(c.texto, c.notas) : null;
+  if (!texto) return null;
+  return { base: "foil", nombre: /^\d+$/.test(texto) ? "Número de foil" : "Letras de foil", pieza: estructura(c, "metalizado", { color_metalizado: "oro", texto, ...(texto.length > 1 ? { forma_metalizado: "letras" } : {}) }), colocacion: enPiso(c.f.xCm, c.f.zCm + 110) };
+}
+
 /** Lo que cabe en la sala: el borde a 80 cm de cada pared lateral. */
 const dentroX = (c: ContextoFondo, x: number) => Math.max(-c.anchoSalaCm / 2 + 80, Math.min(c.anchoSalaCm / 2 - 80, x));
 
@@ -86,14 +104,10 @@ function racimosLaterales(c: ContextoFondo, altoCm: number, grosorCm: number, se
 /** La separación del centro a las columnas o racimos de los lados. */
 const separacion = (c: ContextoFondo) => c.f.anchoCm / 2 + 110;
 
-function paredYLetras(c: ContextoFondo): Adorno[] {
+function paredYLetras(c: ContextoFondo, letras: Adorno | null): Adorno[] {
   const { f } = c;
   const ancho = Math.min(560, c.anchoSalaCm - 160, f.anchoCm + 200), alto = Math.min(280, c.altoSalaCm - 50);
-  const texto = c.texto?.trim().toUpperCase().replace(/\s+/g, "");
-  const z = f.zCm + 110;
-  const foil: Adorno = texto && /^[0-9A-Z]{1,12}$/.test(texto)
-    ? { base: "foil", nombre: /^\d+$/.test(texto) ? "Número de foil" : "Letras de foil", pieza: estructura(c, "metalizado", { color_metalizado: "oro", texto, ...(texto.length > 1 ? { forma_metalizado: "letras" } : {}) }), colocacion: enPiso(f.xCm, z) }
-    : acento(c);
+  const foil = letras ?? acento(c);
   return [
     { base: "pared", nombre: "Pared de globos del fondo", pieza: estructura(c, "pared_trenzas", { ancho_cm: ancho, alto_cm: alto, colores: c.nombres.slice(0, 3) }), colocacion: enPared(f.xCm, 0) },
     foil,
@@ -179,16 +193,18 @@ function aroYRamos(c: ContextoFondo): Adorno[] {
   return [{ base: "aro", nombre: "Aro de globos del fondo", pieza: estructura(c, "aro_organico", { ancho_cm: diametro, grosor_cm: 45 }), colocacion: enPiso(f.xCm, z) }, ...ramos];
 }
 
-/** Las piezas de la composición elegida para el fondo de fotos (con la figura de foil del tema, salvo en las que ya la llevan). */
+/** Las piezas de la composición elegida para el fondo de fotos, con las letras de foil si pidieron texto o, si no, la figura de foil del tema (salvo en las que ya la llevan). */
 export function adornosDelFondo(c: ContextoFondo): Adorno[] {
+  const letras = letrasDeFoil(c);
+  const marca = (delanteCm?: number) => letras ?? acento(c, delanteCm);
   switch (c.composicion.fondo) {
-    case "arco_columnas": return arcoYColumnas(c);
-    case "pared_letras": return paredYLetras(c);
-    case "paneles_guirnalda": return [...guirnaldaYRacimos(c), acento(c)];
-    case "semiarco_racimos": return [...semiarcoYRacimos(c), acento(c)];
-    case "columnas_techo": return [...columnasAltas(c), acento(c)];
-    case "mural": return [...muralYRacimos(c), acento(c, 140)];
-    case "figuras": return figuras(c);
-    case "aro_ramos": return [...aroYRamos(c), acento(c, 150)];
+    case "arco_columnas": return [...arcoYColumnas(c), ...(letras ? [letras] : [])];
+    case "pared_letras": return paredYLetras(c, letras);
+    case "paneles_guirnalda": return [...guirnaldaYRacimos(c), marca()];
+    case "semiarco_racimos": return [...semiarcoYRacimos(c), marca()];
+    case "columnas_techo": return [...columnasAltas(c), marca()];
+    case "mural": return [...muralYRacimos(c), marca(140)];
+    case "figuras": return [...figuras(c), ...(letras ? [letras] : [])];
+    case "aro_ramos": return [...aroYRamos(c), marca(150)];
   }
 }

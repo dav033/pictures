@@ -1,8 +1,9 @@
 import { ambienteNormalizado, type Escena } from "@/lib/globos3d/escena";
+import { esPlantillaSinTocar } from "@/lib/globos3d/escenas-presets";
 
 /**
  * La escena del taller guardada en este navegador (localStorage): se guarda sola tras cada cambio y se recupera al
- * volver a /3d. Lo que no cuadra (otra versión, datos dañados) se descarta y el taller abre su escena de partida.
+ * volver a /3d. Lo que no cuadra (otra versión, datos dañados) se descarta y el taller abre la sala vacía.
  */
 const CLAVE = "taller3d:escena:v1";
 
@@ -26,6 +27,8 @@ export function leerGuardada(): EscenaGuardada | null {
     if (!crudo) return null;
     const datos: unknown = JSON.parse(crudo);
     if (!valida(datos)) return null;
+    // La plantilla con que abría el taller, sin tocar, no es trabajo de nadie: se abre la sala vacía de ahora.
+    if (esPlantillaSinTocar(datos.escena)) return null;
     // El ambiente de la sala es opcional: lo que no cuadra se descarta (la sala queda neutra), no la escena entera.
     const ambiente = ambienteNormalizado((datos.escena.sala as { ambiente?: unknown }).ambiente);
     if (ambiente) datos.escena.sala.ambiente = ambiente; else delete datos.escena.sala.ambiente;

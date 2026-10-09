@@ -39,6 +39,7 @@ import { ListaCompra } from "./ListaCompra";
 import { BarraHerramientas, EtiquetaElegida, ReglaAlturas, type Herramienta } from "./SobreVisor";
 import { medidaPrincipal, NOMBRE_TIPO } from "./tipos-pieza";
 import { leerGuardada, guardarEscena } from "./guardado-escena";
+import { conSalaNueva } from "@/lib/globos3d/salon-techos";
 import type { PestanaAnadir } from "./PanelAnadir";
 import type { PiezaParaAnadir } from "./nuevas-taller";
 import type { VistaSolitario } from "./ParametrosPieza";
@@ -638,7 +639,7 @@ export function Taller3D() {
   const panelSala = (
     <div className="flex min-h-0 flex-1 flex-col">
       {esAncho && <h2 className="px-4 pb-3 pt-4 text-[15px] font-semibold">Sala</h2>}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4"><EditorSala sala={escenaVista.sala} onSala={(sala) => cambiarVista({ ...escenaVista, sala }, { agrupar: "sala" })} plegable={false} /></div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4"><EditorSala sala={escenaVista.sala} onSala={(sala) => cambiarVista(conSalaNueva(escenaVista, sala), { agrupar: "sala" })} plegable={false} /></div>
     </div>
   );
 

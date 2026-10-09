@@ -8,6 +8,7 @@ import {
 import { desplazarNodo, nodoDeElemento, paletaDeMesas, ponerElemento, quitarConLoSuyo } from "./salon-nodos";
 import { anclaDeZona, conAnotacion, estaMovida, mesasVivas, miembrosDeZona, registroVivo, type PiezaViva } from "./salon-registro";
 import { resumenDeSalon } from "./salon-resumen";
+import { conSalaNueva } from "./salon-techos";
 import { piezasDeUsuarioEnElPiso } from "./salon-usuario";
 import { cajaDeMueble, cajaDeZona, dentroDe, inflar, seCruzan, ZONAS_SALON, zonasPresentes, type RectCm, type ZonaSalon } from "./salon-zonas";
 
@@ -68,7 +69,7 @@ export function ajustarSalon(escena: Escena, p: PedidoAjuste, notas: string[]): 
   const paleta = paletaDeMesas(escena);
   const inicial = { invitados, mesa, profundidadFondoCm: registro.profundidadFondoCm };
   const salaCambia = d.sala.anchoCm !== escena.sala.anchoCm || d.sala.fondoCm !== escena.sala.fondoCm;
-  let e: Escena = salaCambia ? { ...escena, sala: { ...escena.sala, anchoCm: d.sala.anchoCm, fondoCm: d.sala.fondoCm, altoCm: Math.max(d.sala.anchoCm, d.sala.fondoCm) >= 900 ? Math.max(escena.sala.altoCm, ALTO_SALON_CM) : escena.sala.altoCm } } : escena;
+  let e: Escena = salaCambia ? conSalaNueva(escena, { ...escena.sala, anchoCm: d.sala.anchoCm, fondoCm: d.sala.fondoCm, altoCm: Math.max(d.sala.anchoCm, d.sala.fondoCm) >= 900 ? Math.max(escena.sala.altoCm, ALTO_SALON_CM) : escena.sala.altoCm }) : escena;
 
   // Las zonas que estaban: con otra sala se corren con su pared (con todo lo suyo, también la decoración adoptada); las movidas se quedan.
   if (salaCambia) {

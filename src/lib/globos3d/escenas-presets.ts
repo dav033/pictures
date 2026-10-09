@@ -418,9 +418,15 @@ export function escenaPredefinida(id: string): Escena {
   return structuredClone(preset.escena);
 }
 
-/** ¿La escena es una plantilla de partida tal cual, sin que nadie la haya tocado? Así se sabe que se puede reemplazar al diseñar algo nuevo. */
+/** La plantilla con que abría el taller (arco, dos columnas y guirnalda): la única que cuenta como «de partida». */
+export const PLANTILLA_DE_PARTIDA = "arco_organico_columnas_guirnalda";
+
+/**
+ * ¿La escena es la plantilla con que abría el taller, tal cual y sin que nadie la haya tocado? Solo esa: una plantilla que el usuario
+ * eligió a propósito («Empezar de una plantilla») es trabajo suyo y no se reemplaza.
+ */
 export function esPlantillaSinTocar(escena: Escena): boolean {
   if (!escena.nodos.length) return false;
-  const nodos = JSON.stringify(escena.nodos);
-  return ESCENAS_PREDEFINIDAS.some((p) => JSON.stringify(p.escena.nodos) === nodos);
+  const partida = ESCENAS_PREDEFINIDAS.find((p) => p.id === PLANTILLA_DE_PARTIDA);
+  return partida !== undefined && JSON.stringify(partida.escena.nodos) === JSON.stringify(escena.nodos);
 }

@@ -39,13 +39,19 @@ function volverAApoyar(antes: Escena, despues: Escena, notas: string[]): Escena 
 
 /** Deja los centros del salón de `despues` al día con lo que cambió respecto a `antes` (la escena antes del ajuste). */
 export function sincronizarCentros(antes: Escena, despues: Escena, notas: string[]): Escena {
-  if (!centrosDe(antes).length) return despues;
+  // Solo cuentan los centros de las mesas del salón: uno que el usuario puso a mano en una mesa suya ni decide si hay que decorar ni sirve de modelo.
+  const delSalon = (e: Escena) => { const z = zonasDeEscena(e); const mesas = new Set([...z.mesas, ...(z.mesaPrincipal ? [z.mesaPrincipal.id] : [])]); return centrosDe(e).filter((c) => mesas.has(padreDeCentro(c) ?? "")); };
+  if (!delSalon(antes).length) return despues;
   const habia = new Set(zonasDeEscena(antes).mesas);
   const nuevas = zonasDeEscena(despues).mesas.filter((id) => !habia.has(id));
   let actual = despues;
   if (nuevas.length) {
+    // `completar_centros` copia el primer centro que encuentra: se le ocultan los de las mesas del usuario y se devuelven después.
+    const propios = new Set(delSalon(despues).map((c) => c.id));
+    const ajenos = centrosDe(despues).filter((c) => !propios.has(c.id));
     try {
-      actual = HERRAMIENTAS_CENTROS.completar_centros!.aplicar(actual, { mesas: nuevas }).escena;
+      const completada = HERRAMIENTAS_CENTROS.completar_centros!.aplicar(sinCentros(despues, new Set(ajenos.map((c) => c.id))), { mesas: nuevas }).escena;
+      actual = { ...completada, nodos: [...completada.nodos, ...ajenos] };
       notas.push(`Las ${nuevas.length} mesa(s) nueva(s) recibieron el mismo centro de mesa que las demás.`);
     } catch (error) {
       notas.push(`Las ${nuevas.length} mesa(s) nueva(s) quedaron sin centro de mesa (${error instanceof Error ? error.message : String(error)}): usa completar_centros.`);

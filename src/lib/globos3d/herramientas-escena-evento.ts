@@ -31,6 +31,7 @@ export type AlcanceEvento = (typeof ALCANCES_EVENTO)[number];
 const EventoSchema = z.object({
   tipo_evento: z.enum(TIPOS_EVENTO).describe("boda y quince: salón con mesa principal y pista; corporativo: sin pista ni postres; el resto (otro = cualquier decoración temática): fondo de fotos, postres y entrada"),
   tematica: z.string().min(2).max(60).optional().describe("el tema («safari», «princesas», «Frozen», «boho»): decide la composición del fondo y las ideas de la biblioteca; sin tema manda la ocasión"),
+  variante: z.number().int().min(0).max(20).optional().describe("«dame otra»: 0 = la primera; 1, 2… = otra composición del mismo pedido"),
   texto: z.string().min(1).max(24).optional().describe("lo que dicen las letras o el número de foil del fondo, si la composición los lleva («Ana», «15», «2026»)"),
   alcance: z.enum(ALCANCES_EVENTO).optional().describe("solo_decoracion: fondo de fotos y entrada, sin mesas; rincon: pocas mesas con postres y fondo de fotos; salon: la sala completa. Si falta: sin invitados = solo_decoracion, hasta 40 = rincon, más = salon"),
   invitados: z.number().int().min(1).max(MAX_INVITADOS_SALON).optional().describe("invitados (50–200 es lo típico de un salón); no hace falta con solo_decoracion"),
@@ -75,7 +76,7 @@ function planificar(escena: Escena, argumentos: unknown): { escena: Escena; resu
   const base = esPlantillaSinTocar(escena) ? { ...escena, nodos: [] } : escena;
   if (base !== escena) notas.push("La escena era la plantilla de partida sin tocar (arco, dos columnas y guirnalda): la reemplacé por el diseño del evento.");
   const colores = a.colores?.length ? a.colores : coloresDeTema(a.tipo_evento, a.tematica) ?? [];
-  const composicion = composicionDe({ tipo: a.tipo_evento, tematica: a.tematica, colores: a.colores, estilo, texto: a.texto });
+  const composicion = composicionDe({ tipo: a.tipo_evento, tematica: a.tematica, colores: a.colores, estilo, texto: a.texto, variante: a.variante });
 
   const salon = armarSalon(base, {
     invitados, mesa, anchoCm: a.ancho_cm, fondoCm: a.fondo_cm, zonas: zonasDelEvento(a.tipo_evento, alcance), colores: coloresDeMuebles(a.colores, notas), reemplazar: a.reemplazar,
@@ -84,7 +85,7 @@ function planificar(escena: Escena, argumentos: unknown): { escena: Escena; resu
   const adoptada = vivas(salon.escena).some((v) => v.info.rol === "adoptada");
   const zonas = zonasDeEscena(salon.escena);
   let decorada = decorarSalon(salon.escena, zonas, { colores, estilo, composicion, texto: a.texto, fondo: !adoptada, entrada: true }, notas);
-  if (!adoptada) decorada = ponerIdeasDeBiblioteca(decorada, zonasDeEscena(decorada), { tipo: a.tipo_evento, tematica: a.tematica, semilla: composicion.semilla, alFrente: alcance === "solo_decoracion" }, notas);
+  if (!adoptada) decorada = ponerIdeasDeBiblioteca(decorada, zonasDeEscena(decorada), { tipo: a.tipo_evento, tematica: a.tematica, semilla: composicion.semilla, colores, alFrente: alcance === "solo_decoracion" }, notas);
   if (decorada.nodos.length > MAX_NODOS) fallar(`El evento sumaría ${decorada.nodos.length} piezas y el máximo es ${MAX_NODOS}: usa menos zonas o menos invitados.`);
   // Centros de mesa y techo según la escala: solo_decoracion no lleva mesas (ni centros); el rincón, un grupito de globos sobre su mesa principal o de postres; el salón, festones sobre la pista; la composición «columnas y techo», globos sobre el fondo.
   const techos: TechoDelEvento[] = [...(alcance === "salon" ? ["pista" as const] : alcance === "rincon" ? ["rincon" as const] : []), ...(composicion.fondo === "columnas_techo" && !adoptada ? ["fondo" as const] : [])];
@@ -102,7 +103,7 @@ const NOMBRE_COMPOSICION: Readonly<Record<ArquetipoFondo, string>> = {
 export const HERRAMIENTAS_EVENTO: Readonly<Record<string, HerramientaExtra>> = {
   planificar_evento: {
     esquema: EventoSchema,
-    descripcion: "Para un EVENTO o una DECORACIÓN TEMÁTICA NUEVA (boda, XV, cumpleaños, baby shower, bautizo, graduación, Halloween, corporativo; «el salón completo», «solo la decoración de safari», «un rincón de postres»): ÚSALA PRIMERO, en una llamada. Arma el salón (mesas con sillas, mesa principal, pista, postres, entrada; agranda la sala) y un fondo de fotos cuya composición sale de la tematica (palmeras, castillo, pared con letras, semiarco con racimos, mural, aro con ramos, columnas con techo, guirnalda a lo ancho; el arco con columnas es solo una), 1 a 3 ideas de la biblioteca, un centro en cada mesa y el techo de la pista, con los colores del pedido. Conserva lo que ya había y reemplaza la plantilla de partida sin tocar. Afina con ajustar_salon, mover_zona, quitar_zona, decorar_mesas, techo_por_zona.",
+    descripcion: "Para un EVENTO o una DECORACIÓN TEMÁTICA NUEVA (boda, XV, cumpleaños, baby shower, bautizo, graduación, Halloween, corporativo; «el salón completo», «solo la decoración de safari», «un rincón de postres»): ÚSALA PRIMERO, en una llamada. Arma el salón (mesas con sillas, mesa principal, pista, postres, entrada; agranda la sala) y un fondo de fotos cuya composición sale de la tematica (palmeras, castillo, pared con letras, semiarco con racimos, mural, aro con ramos, columnas con techo, guirnalda a lo ancho; el arco con columnas es solo una), 1 a 3 ideas de la biblioteca, un centro en cada mesa y el techo de la pista, con los colores del pedido. Conserva lo que ya había y reemplaza la plantilla de partida sin tocar.",
     aplicar: planificar,
   },
 };

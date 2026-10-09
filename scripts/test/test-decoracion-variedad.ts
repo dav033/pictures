@@ -14,6 +14,11 @@ import { armarEscena, SALA_INICIAL, type Escena } from "../../src/lib/globos3d/e
 import { esPlantillaSinTocar, escenaPredefinida, ESCENAS_PREDEFINIDAS } from "../../src/lib/globos3d/escenas-presets";
 import { aplicarHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 import { composicionDe } from "../../src/lib/globos3d/salon-composicion";
+import { coloresDePieza } from "../../src/lib/globos3d/herramientas-escena-recolor";
+import { conSalaNueva } from "../../src/lib/globos3d/salon-techos";
+import { cuelgaDeTecho } from "../../src/lib/globos3d/herramientas-escena-techo-zona";
+import { leerGuardada } from "../../src/components/tres-d/guardado-escena";
+import { armarPieza } from "../../src/lib/globos3d/piezas";
 import { vivas } from "../../src/lib/globos3d/salon-registro";
 
 let pruebas = 0;
@@ -131,8 +136,97 @@ prueba("el taller nuevo abre con la sala vacía (las plantillas siguen en «Empe
   const ruta = readFileSync(new URL("../../src/app/api/escena-ia/route.ts", import.meta.url), "utf8");
   assert.match(ruta, /EDITAR/);
   assert.match(ruta, /DISEÑAR/);
-  assert.match(ruta, /plantilla de partida sin tocar/);
+  assert.match(ruta, /plantilla con que abría el taller sin tocar/);
+  assert.doesNotMatch(ruta, /fondo de fotos con arco/);
+  assert.match(ruta, /variante \+ 1/);
+  assert.match(ruta, /ajustar_salon \(más o menos invitados: las mesas nuevas reciben solas/);
   assert.match(ruta, /Nunca contestes «hazme una decoración» solo recoloreando/);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Hallazgos de la revisión antagónica
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** Las piezas del fondo que vienen de la biblioteca (no las armó la composición: sus ids no empiezan por «salon-»). */
+const ideasDe = (e: Escena) => vivas(e).filter((v) => v.info.rol === "adorno" && !v.nodo.id.startsWith("salon-") && !v.nodo.id.startsWith("techo-zona-")).map((v) => v.nodo);
+
+prueba("A1: las ideas de la biblioteca van en los colores del evento y, con tema, solo si coinciden con el tema", () => {
+  const graduacion = decoracion({ tipo_evento: "graduacion", colores: ["azul"], texto: "2026" });
+  const ideas = ideasDe(graduacion.escena);
+  assert.ok(ideas.length >= 1, "la graduación trae ideas de la biblioteca");
+  const codigos = new Set(ideas.flatMap((n) => coloresDePieza(n.pieza, "uso").map((c) => c.codigo)));
+  const propios = new Set(vivas(graduacion.escena).filter((v) => v.nodo.id.startsWith("salon-fondo-pared")).flatMap((v) => coloresDePieza(v.nodo.pieza, "uso").map((c) => c.codigo)));
+  assert.ok(codigos.size >= 1 && [...codigos].every((c) => propios.has(c)), `colores de las ideas ${[...codigos].join(",")} fuera de los del evento ${[...propios].join(",")}`);
+  const safari = decoracion({ tipo_evento: "cumpleanos", tematica: "safari" });
+  assert.equal(ideasDe(safari.escena).length, 0, "la biblioteca no tiene safari: no se rellena con lo de la ocasión (arcos de corazones neón)");
+  assert.match(safari.resumen, /no tiene ideas de «safari»/);
+});
+
+prueba("A1: un rincón dice qué pasó con las ideas, no las pierde en silencio", () => {
+  const rincon = herramienta(vacia(), "planificar_evento", { tipo_evento: "quince", alcance: "rincon", invitados: 20, colores: ["rosa", "dorado"] });
+  assert.match(rincon.resumen, /Idea de la biblioteca|no cupo|no cabe|no tiene ideas|Ninguna idea/);
+});
+
+prueba("A2: solo la plantilla con que abría el taller cuenta como «sin tocar»; una plantilla elegida a propósito se conserva", () => {
+  for (const p of ESCENAS_PREDEFINIDAS.filter((x) => x.id !== "arco_organico_columnas_guirnalda")) {
+    assert.ok(!esPlantillaSinTocar(escenaPredefinida(p.id)), p.id);
+    const r = decoracion({ tipo_evento: "cumpleanos", tematica: "safari" }, escenaPredefinida(p.id));
+    for (const n of p.escena.nodos) assert.deepEqual(r.escena.nodos.find((x) => x.id === n.id)?.pieza, n.pieza, `${p.id}: se perdió ${n.id}`);
+    assert.doesNotMatch(r.resumen, /plantilla de partida sin tocar/);
+  }
+});
+
+prueba("A3: «dame otra opción» (variante) cambia la composición, la misma variante repite, y una boda también varía", () => {
+  const fondos = [0, 1, 2, 3].map((v) => composicionDe({ tipo: "boda", variante: v }).fondo);
+  assert.equal(fondos[0], "arco_columnas");
+  assert.equal(new Set(fondos).size, 4, fondos.join(","));
+  const boda = (variante: number) => decoracion({ tipo_evento: "boda", variante });
+  assert.notEqual(firma(boda(0).escena), firma(boda(1).escena));
+  assert.deepEqual(boda(2).escena, boda(2).escena);
+  const safari = (variante: number) => firma(decoracion({ tipo_evento: "cumpleanos", tematica: "safari", variante }).escena);
+  assert.notEqual(safari(0), safari(1));
+  assert.notEqual(safari(1), safari(2));
+});
+
+prueba("A4: el texto sale en letras de foil en cualquier composición, con acentos y ñ, y avisa si se recorta", () => {
+  for (const [texto, esperado] of [["Sofía", "SOFIA"], ["José", "JOSE"], ["Begoña", "BEGONA"], ["Ana Lu", "ANALU"]] as const) {
+    for (const [tipo, tematica] of [["boda", undefined], ["cumpleanos", "safari"], ["cumpleanos", "Frozen"], ["graduacion", undefined], ["baby_shower", "princesas"]] as const) {
+      const r = decoracion({ tipo_evento: tipo, tematica, texto });
+      const letras = r.escena.nodos.find((n) => n.nombre === "Letras de foil");
+      assert.ok(letras && letras.pieza.tipo === "metalizado", `${texto} en ${tipo} ${tematica ?? ""}: sin letras`);
+      assert.equal(letras.pieza.tipo === "metalizado" && letras.pieza.metalizado.forma.tipo === "letras" ? letras.pieza.metalizado.forma.texto : "", esperado);
+      if (/[íéñ]/.test(texto)) assert.match(r.resumen, /sin acentos/);
+    }
+  }
+  assert.match(decoracion({ tipo_evento: "boda", texto: "María José Hernández" }).resumen, /recortado a 12/);
+  assert.match(decoracion({ tipo_evento: "boda", texto: "!!!" }).resumen, /no puse letras/);
+});
+
+prueba("A6: abrir el taller con la plantilla antigua sin tocar guardada da la sala vacía; lo trabajado se conserva", () => {
+  const guardado: Record<string, string> = {};
+  (globalThis as unknown as { window: unknown }).window = { localStorage: { getItem: (k: string) => guardado[k] ?? null, setItem: (k: string, v: string) => { guardado[k] = v; } } };
+  const poner = (escena: Escena) => { guardado["taller3d:escena:v1"] = JSON.stringify({ nombre: "x", escena }); };
+  poner(escenaPredefinida("arco_organico_columnas_guirnalda"));
+  assert.equal(leerGuardada(), null);
+  poner(escenaPredefinida("pared_fondo_columnas"));
+  assert.ok(leerGuardada());
+  const tocada = escenaPredefinida("arco_organico_columnas_guirnalda");
+  poner({ ...tocada, nodos: tocada.nodos.slice(1) });
+  assert.ok(leerGuardada());
+});
+
+prueba("A8: al bajar el alto de la sala, los techos de zona se vuelven a colgar y no quedan a la altura de la cabeza", () => {
+  const boda = decoracion({ tipo_evento: "boda", alcance: "salon", invitados: 100, colores: ["blanco", "dorado"] }).escena;
+  const techo = boda.nodos.find((n) => n.id.startsWith("techo-zona-"))!;
+  const antes = techo.colocacion.en === "techo" ? techo.colocacion.cuelgaCm : -1;
+  assert.ok(boda.sala.altoCm > 400 && antes > 0, `cuelga ${antes} en una sala de ${boda.sala.altoCm}`);
+  const baja = conSalaNueva(boda, { ...boda.sala, altoCm: 300 });
+  const despues = baja.nodos.find((n) => n.id === techo.id)!.colocacion;
+  const { min, max } = armarPieza(techo.pieza).caja;
+  assert.ok(despues.en === "techo" && despues.cuelgaCm === Math.round(cuelgaDeTecho(300, max.y - min.y)) && despues.cuelgaCm < antes);
+  assert.ok(despues.en === "techo" && 300 - despues.cuelgaCm - (max.y - min.y) >= 0, "la pieza no sale del piso");
+  const igual = conSalaNueva(boda, { ...boda.sala, anchoCm: boda.sala.anchoCm + 100 });
+  assert.deepEqual(igual.nodos, boda.nodos, "sin cambio de alto no toca nada");
 });
 
 console.log(`\n${pruebas} pruebas pasaron`);

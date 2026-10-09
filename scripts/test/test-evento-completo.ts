@@ -216,4 +216,23 @@ prueba("el peor salón (300 invitados en 30 × 30 m, con centros y techo) cabe e
   }
 });
 
+prueba("A7: un centro que el usuario puso a mano en una mesa suya ni decide ni sirve de modelo al ajustar el salón", () => {
+  const conMesaSuya = herramienta(herramienta(vacia(), "agregar_mobiliario", { id: "mesa_redonda_mantel", x_cm: 0, z_cm: 0 }).escena, "decorar_mesas", { disenos: [{ tipo: "columna", colores: ["rojo"] }] }).escena;
+  const suyo = centrosDe(conMesaSuya)[0]!;
+  const sala = herramienta(conMesaSuya, "planificar_evento", { tipo_evento: "boda", invitados: 60, colores: ["blanco", "dorado"] }).escena;
+  assert.equal(centrosDe(sala)[0]!.id, suyo.id, "el del usuario va primero: el que copiaría completar_centros");
+  const mas = herramienta(sala, "ajustar_salon", { invitados: 140 }).escena;
+  const nuevas = zonasDeEscena(mas).mesas.filter((id) => !zonasDeEscena(sala).mesas.includes(id));
+  assert.ok(nuevas.length > 0);
+  for (const id of nuevas) {
+    const pieza = centrosDe(mas).find((c) => padreDeCentro(c) === id)?.pieza;
+    assert.ok(pieza?.tipo === "decoracion" && pieza.decoracion.tipo === "ramo_helio", `${id} copió el centro del usuario`);
+  }
+  assert.deepEqual(mas.nodos.find((n) => n.id === suyo.id), sala.nodos.find((n) => n.id === suyo.id), "el del usuario no se toca");
+  // Si el salón no llevaba centros, uno del usuario no hace que se pongan en las mesas nuevas.
+  const sinCentros = herramienta(conMesaSuya, "armar_salon", { invitados: 60 }).escena;
+  const crece = herramienta(sinCentros, "ajustar_salon", { invitados: 140 }).escena;
+  assert.deepEqual(centrosDe(crece).map((c) => c.id), [suyo.id]);
+});
+
 console.log(`\n${pruebas} pruebas pasaron`);
