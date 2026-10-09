@@ -9,7 +9,7 @@
 /** Un extremo con el borde de los globos a menos de esto del piso nace del piso y queda abierto (como en `trazo-organico.ts`). */
 export const TOCA_PISO_CM = 6;
 /** Qué parte del radio de la punta se recoge hacia dentro. */
-export const FRACCION_PUNTA = 0.5;
+export const FRACCION_PUNTA = 0.4;
 /** Lo más que se recoge una punta de lo que mide su primer tramo (un tramo corto no se pliega sobre sí mismo). */
 const PARTE_DEL_TRAMO = 0.6;
 

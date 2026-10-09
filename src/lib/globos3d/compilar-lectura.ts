@@ -204,10 +204,15 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         return;
       }
       case "globo": {
-        const f = formatoPorDiametro(cm(p.diametro));
+        // Un globo suelto en el piso está tan cerca de la cámara como lo dice su pie (su borde de abajo): el que se ve más abajo que la línea del piso
+        // está por delante de la decoración y se ve más grande de lo que es.
+        const { delanteCm, factor } = p.en === "piso" ? profundidadEnElPiso(l, p.y + p.diametro / 2) : { delanteCm: 0, factor: 1 };
+        const f = formatoPorDiametro(cm(p.diametro) * factor);
         const codigo = codigoDeColor(p.colores[0]!, [f.formatoId], notas);
         const pieza: Pieza = { tipo: "globo", formatoId: f.formatoId, infladoCm: f.infladoCm, codigo };
-        poner(`globo-${f.formatoId.toLowerCase()}`, `Globo ${f.formatoId}`, pieza, p.en === "piso" ? { en: "piso", xCm: X(p.x), zCm: muro + 110, giroGrados: 0 } : { en: "libre", xCm: X(p.x), yCm: Y(p.y), zCm: muro + 70, giroGrados: 0 });
+        poner(`globo-${f.formatoId.toLowerCase()}`, `Globo ${f.formatoId}`, pieza, p.en === "piso"
+          ? { en: "piso", xCm: r1(X(p.x) * factor), zCm: r0(delanteCm > 0 ? muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm - f.infladoCm / 2 : muro + 110), giroGrados: 0 }
+          : { en: "libre", xCm: X(p.x), yCm: Y(p.y), zCm: muro + 70, giroGrados: 0 });
         return;
       }
       case "ramo_helio": {

@@ -5,13 +5,17 @@
  * - un telón de piso (marco con tela, pared de lentejuelas) del que la foto enseña solo la parte de arriba conserva su tope y se
  *   prolonga al piso; un panel redondo o un telón apoyado en el piso no cambia;
  * - un montón de piso cuyo pie se ve sobre la línea del piso (colgado de un aro) va en el aire, a esa altura.
+ * - un globo suelto en el piso se coloca por su pie: el que se ve más abajo que la línea del piso está por delante y mide menos.
  * Sin coste: no llama a ningún modelo.
  *
  * Run: NODE_OPTIONS=--use-system-ca npx tsx --conditions=react-server scripts/test/test-proporciones-lectura.ts
  */
 import assert from "node:assert/strict";
 import { compilarLectura } from "@/lib/globos3d/compilar-lectura";
+import { encuadreDeLectura } from "@/lib/globos3d/encuadre-foto";
 import { armarEscena } from "@/lib/globos3d/escena";
+import { centroDe } from "@/lib/globos3d/letras";
+import { camaraNumerica, proyectar } from "@/lib/globos3d/proyeccion-foto";
 import { LecturaFotoSchema, type LecturaFoto } from "@/lib/globos3d/lectura-foto";
 import { FRACCION_PUNTA, recogerPuntas } from "@/lib/globos3d/puntas-lectura";
 
@@ -93,6 +97,29 @@ prueba("un montón con el pie en la línea del piso o más abajo sigue en el pis
     const nodo = compilarLectura(lectura([monton(yPie)])).escena.nodos.find((n) => n.id.startsWith("racimo-piso"))!;
     assert.equal(nodo.colocacion.en, "piso", `yPie ${yPie}`);
   }
+});
+
+console.log("Globos sueltos en el piso");
+const suelto = (y: number): LecturaFoto["piezas"][number] => ({ tipo: "globo", x: 0.3, y, diametro: 0.1, en: "piso", colores: blanco });
+prueba("un globo suelto cuyo pie se ve más abajo que la línea del piso está por delante de la decoración y, a igual tamaño en la foto, mide menos", () => {
+  const en = (y: number) => { const n = compilarLectura(lectura([suelto(y)])).escena.nodos[0]!; return { colocacion: n.colocacion, pieza: n.pieza }; };
+  const pared = en(PISO - 0.05), delante = en(0.93);
+  assert.ok(pared.colocacion.en === "piso" && delante.colocacion.en === "piso");
+  if (pared.colocacion.en === "piso" && delante.colocacion.en === "piso") assert.ok(delante.colocacion.zCm > pared.colocacion.zCm + 40, `z ${delante.colocacion.zCm} contra ${pared.colocacion.zCm}`);
+  const inflado = (x: ReturnType<typeof en>) => (x.pieza.tipo === "globo" ? x.pieza.infladoCm : 0);
+  assert.ok(inflado(delante) < inflado(pared), `inflado ${inflado(delante)} cm contra ${inflado(pared)} cm`);
+});
+
+prueba("el globo suelto armado se ve donde estaba su pie en la foto (la cámara de la foto lo proyecta en su fila)", () => {
+  const l = lectura([suelto(0.93)]);
+  const escena = compilarLectura(l).escena;
+  const armada = armarEscena(escena);
+  const camara = camaraNumerica(encuadreDeLectura(l), escena.sala);
+  const g = armada.globos[0]!;
+  const c = centroDe(g);
+  const pie = proyectar(camara, { x: c.x, y: c.y - g.infladoCm / 2, z: c.z });
+  const fila = pie ? (1 - pie.y) / 2 : NaN;
+  assert.ok(Math.abs(fila - 0.93) < 0.04, `el pie cae en la fila ${fila.toFixed(3)} de 0,93`);
 });
 
 console.log(`test-proporciones-lectura: ${pruebas} pruebas ok`);
