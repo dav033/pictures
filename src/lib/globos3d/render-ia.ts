@@ -63,21 +63,10 @@ const NO_ANADIR_CON_MOBILIARIO = "Add nothing that is not in the input: no extra
 const CONSERVAR_MOBILIARIO = "Keep every table, chair and centrepiece exactly as shown in the input: same number, same layout, same positions and sizes; the tables and chairs are main subjects of the photograph and must be clearly visible, not removed, merged or hidden.";
 
 /**
- * El camino fiel de la foto («Igual al visor»): FLUX.1 [dev] imagen-a-imagen sobre la captura, que conserva mesas, sillas,
- * disposición y cámara. FLUX.2 `/edit` (sin control de fuerza) devolvía la sala reencuadrada, sin el panel o con otra disposición. Medido
- * el 2026-10-09 con la boda de prueba (scripts/exp/render-boda.ts): 0,40 casi no cambia la captura; 0,55 conserva mesas, sillas, marco y rótulo y
- * suma tela y látex más reales (los colores se corren un poco); 0,70 ya cambia el arco y borra el panel; con ControlNet salió peor.
- */
-export const STRENGTH_FIEL = 0.55;
-
-/** Tamaño (px) de la base de FLUX.1 por proporción: menos de 1 MP (se cobra 1 MP) y múltiplos de 8. */
-export const TAMANO_BASE_FIEL: Readonly<Record<"3:2" | "1:1" | "2:3" | "16:9", { ancho: number; alto: number }>> = {
-  "3:2": { ancho: 1200, alto: 800 }, "1:1": { ancho: 1000, alto: 1000 }, "2:3": { ancho: 800, alto: 1200 }, "16:9": { ancho: 1280, alto: 720 },
-};
-
-/**
- * ¿Esta foto va por el camino fiel? Toda foto con el lugar de la captura («Igual al visor»): con otro lugar hay que rehacer paredes y luz, y FLUX.1 no lo hace.
- * Antes solo la escena con mesas y sillas; la de globos solos (2026-10-09, 11:35) también salía de FLUX.2 `/edit`, que la reencuadraba y reinterpretaba.
+ * ¿Esta foto va por FLUX.1 Kontext max («camino fiel»)? Toda foto con el lugar de la captura («Igual al visor»): con otro lugar hay que rehacer paredes y luz.
+ * Medido el 2026-10-09 con la boda de prueba (scripts/exp/render-boda.ts y render-boda2.ts, 12 imágenes): FLUX.1 imagen-a-imagen conserva todo pero sigue
+ * siendo el render 3D; FLUX.2 `/edit` es foto real pero reencuadra (3 o 4 mesas de 6) y a veces escribe mal el rótulo; Kontext pro cambia la cámara y
+ * las formas; Kontext max da foto real con la cámara, las 6 mesas, los centros, el marco y el rótulo en su sitio.
  */
 export const usaCaminoFiel = (ambiente: AmbienteRender): boolean => ambiente === "igual_visor";
 
@@ -119,6 +108,30 @@ export function promptRender3d(descripcion: string, ambiente: AmbienteRender): s
     ambiente === "igual_visor" ? (descripcion.includes(MARCA_LUZ_CALIDA) ? LUZ_CALIDA : LUZ_NEUTRA) : "",
     mobiliario ? NO_ANADIR_CON_MOBILIARIO : NO_ANADIR,
     "Same camera angle and framing as the input; sharp detail, natural depth.",
+  ].filter(Boolean).join(" ");
+}
+
+/** Los textos escritos que lleva la escena (rótulos, neones, letreros), tal cual están en la descripción: `lettering "Boda Real"`, `reading "Mia 15"`. */
+export function textosDeRotulos(descripcion: string): string[] {
+  return [...new Set([...descripcion.matchAll(/(?:lettering|reading) "([^"]{1,60})"/g)].map((m) => m[1]!))];
+}
+
+/**
+ * La instrucción para convertir la captura en foto sin moverla (FLUX.2 `/edit` con la captura como `render_3d_base`, o FLUX.1 Kontext): es un plano en
+ * 3D, no un resultado previo. Dice qué se conserva (cámara, cuenta y sitio de cada objeto, lo que trae la descripción), qué se vuelve real (los
+ * materiales planos) y cómo se escribe cada texto, letra por letra: FLUX.2 escribió «Boda Kat» donde decía «Boda Real».
+ */
+export function promptFotoDeLayout(descripcion: string, ambiente: AmbienteRender = "igual_visor"): string {
+  const decoracion = decoracionPara(descripcion, ambiente);
+  const textos = textosDeRotulos(descripcion);
+  return [
+    "Turn this 3D layout render into a real professional event photograph.",
+    "Keep the exact camera position, lens, framing and perspective of the input, and the position, size and count of every object in it; do not add, remove, move, merge or recolor anything.",
+    "Replace the flat CG materials with real ones: real linen tablecloths, real latex balloons with natural highlights and subtle texture, real wooden chairs, a real floor and real painted walls, soft natural lighting with soft shadows.",
+    decoracion ? `The scene: ${decoracion}.` : "",
+    textos.length ? `Every written text reads exactly as follows, spelled letter by letter, in the same script and color as in the input: ${textos.map((t) => `"${t}"`).join(", ")}.` : "",
+    COLOR_FIEL,
+    "No collage, no close-up, no different viewpoint.",
   ].filter(Boolean).join(" ");
 }
 

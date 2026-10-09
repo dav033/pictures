@@ -14,7 +14,7 @@ import { aplicarHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 import { claveDesconocida, sugerenciaDeClave } from "../../src/lib/globos3d/argumentos-desconocidos";
 import { avisosParaElUsuario, conHonestidad } from "../../src/lib/globos3d/honestidad-respuesta";
 import { armarEscena, escenaEnIngles, SALA_INICIAL, type Escena } from "../../src/lib/globos3d/escena";
-import { colgadoDelTecho, descripcionRender3d, promptRender3d, promptRender3dFiel } from "../../src/lib/globos3d/render-ia";
+import { colgadoDelTecho, descripcionRender3d, promptFotoDeLayout, promptRender3d } from "../../src/lib/globos3d/render-ia";
 import { REGLAS_AGENTE } from "../../src/lib/globos3d/escena-ia-agente";
 import { MAX_LINEA_STDOUT, partirLinea, reensamblarFragmentos } from "../../src/lib/registro/fragmentos";
 import { mesaConMantel, sombrear, SOMBRA_FALDA } from "../../src/lib/globos3d/escenografia";
@@ -99,7 +99,7 @@ prueba("con globos colgados del techo la sala no es «plain and empty» ni en la
   const d = descripcionRender3d(escenaEnIngles(e, armarEscena(e)), []);
   assert.ok(colgadoDelTecho(d));
   assert.doesNotMatch(d, /plain and empty|all empty/);
-  for (const texto of [promptRender3d(d, "igual_visor"), promptRender3d(d, "estudio"), promptRender3dFiel(d, "igual_visor")]) assert.doesNotMatch(texto, /plain and empty|plain empty room|and empty\./, texto.slice(-400));
+  for (const texto of [promptRender3d(d, "igual_visor"), promptRender3d(d, "estudio"), promptFotoDeLayout(d)]) assert.doesNotMatch(texto, /plain and empty|plain empty room|and empty\./, texto.slice(-400));
   assert.match(promptRender3d(d, "igual_visor"), /hangs from or floats against the ceiling/);
 });
 prueba("sin nada en el techo la sala sigue «plain and empty»", () => {

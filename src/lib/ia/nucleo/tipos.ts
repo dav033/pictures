@@ -41,7 +41,9 @@ export type ImageInputRole =
   | "style_reference"
   | "catalog_product_reference"
   | "venue_base"
-  | "previous_generated_result";
+  | "previous_generated_result"
+  /** La captura del taller 3D: un plano en 3D que se vuelve foto conservando su cámara y sus objetos (no un resultado previo que se retoca). */
+  | "render_3d_base";
 
 export type ImageInput = ImagenEtiquetada & {
   role: ImageInputRole;

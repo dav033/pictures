@@ -9,11 +9,12 @@
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { buildFluxEditPrompt } from "../../src/lib/ia/kagutsuchi/flux";
 import { aplicarHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 import { armarEscena, escenaEnIngles, SALA_INICIAL, type Escena } from "../../src/lib/globos3d/escena";
 import { escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
 import {
-  AMBIENTES_RENDER, NADA_MAS, STRENGTH_FIEL, TAMANO_BASE_FIEL, usaCaminoFiel, NADA_MAS_CON_MOBILIARIO, PREFIJO_MOBILIARIO, descripcionRender3d, promptRender3d, promptRender3dFiel, traeMobiliario,
+  AMBIENTES_RENDER, NADA_MAS, promptFotoDeLayout, textosDeRotulos, usaCaminoFiel, NADA_MAS_CON_MOBILIARIO, PREFIJO_MOBILIARIO, descripcionRender3d, promptRender3d, promptRender3dFiel, traeMobiliario,
 } from "../../src/lib/globos3d/render-ia";
 
 let pruebas = 0;
@@ -62,7 +63,7 @@ prueba("no queda ninguna frase que niegue las mesas o vacíe la sala", () => {
     assert.match(p, /no extra tables or chairs/);
   }
   assert.match(promptRender3d(d, "igual_visor"), /plain walls with the furniture and decorations described below in place/);
-  assert.doesNotMatch(promptRender3dFiel(d, "igual_visor"), /plain empty room/);
+  assert.doesNotMatch(promptFotoDeLayout(d), /plain empty room/);
 });
 prueba("el mobiliario sobrevive al tope de la descripción (va antes de la lista de piezas)", () => {
   const e = paso(boda(), "agregar_pieza", { tipo: "columna", colores: ["rosa", "dorado"], donde: { en: "piso", x_cm: -500, z_cm: -300 } });
@@ -96,19 +97,36 @@ prueba("la marca del mobiliario se lee en el texto, no en un nombre cualquiera",
 });
 
 console.log("Camino fiel");
-prueba("toda foto con el lugar del visor va por FLUX.1 imagen-a-imagen (con o sin mobiliario); con otro lugar, FLUX.2 como siempre", () => {
+prueba("toda foto con el lugar del visor va por Kontext max (con o sin mobiliario); con otro lugar, FLUX.2 como siempre", () => {
   for (const e of [boda(), escenaPredefinida("arco_organico_columnas_guirnalda")]) assert.equal(usaCaminoFiel("igual_visor"), true, textoDe(e).slice(0, 40));
   for (const a of AMBIENTES_RENDER.filter((x) => x.id !== "igual_visor")) assert.equal(usaCaminoFiel(a.id), false, a.id);
 });
-prueba("la base de FLUX.1 cabe en 1 MP (se cobra 1 MP) con múltiplos de 8, y la ruta usa el camino fiel", () => {
-  for (const [aspecto, { ancho, alto }] of Object.entries(TAMANO_BASE_FIEL)) {
-    assert.ok(ancho * alto <= 1_000_000 && ancho % 8 === 0 && alto % 8 === 0, aspecto);
-  }
-  assert.ok(STRENGTH_FIEL > 0.4 && STRENGTH_FIEL < 0.7, "dentro de lo medido: más arriba cambia el arco y borra el panel");
+prueba("la ruta convierte el plano con Kontext max y la instrucción de layout, no con el texto de «resultado previo»", () => {
   const ruta = readFileSync("src/app/api/render-3d-imagen/route.ts", "utf8");
   assert.match(ruta, /usaCaminoFiel\(ambiente/);
-  assert.match(ruta, /generarConFluxFiel\(prompt, \{/);
-  for (const aspecto of ["3:2", "1:1", "2:3", "16:9"]) assert.ok(aspecto in TAMANO_BASE_FIEL && ruta.includes(`"${aspecto}"`), aspecto);
+  assert.match(ruta, /generarConFluxKontext\(prompt, \{[\s\S]*variante: "max"/);
+  assert.match(ruta, /promptFotoDeLayout\(descripcion/);
+});
+prueba("promptFotoDeLayout: plano 3D a foto, conserva cámara y cuentas, materiales reales y el rótulo letra por letra", () => {
+  const d = textoDe(boda());
+  assert.deepEqual(textosDeRotulos(d), []);
+  const conRotulo = `${d} Set piece: a round sign with gold cursive lettering "Boda Real" on it.`;
+  assert.deepEqual(textosDeRotulos(conRotulo), ["Boda Real"]);
+  const p = promptFotoDeLayout(conRotulo);
+  assert.match(p, /^Turn this 3D layout render into a real professional event photograph\./);
+  assert.match(p, /exact camera position, lens, framing and perspective of the input, and the position, size and count of every object/);
+  assert.match(p, /Replace the flat CG materials with real ones: real linen tablecloths, real latex balloons/);
+  assert.match(p, /6 × round banquet table/);
+  assert.match(p, /Each table has 4 chairs evenly spaced around it, and a balloon centrepiece standing ON TOP/);
+  assert.match(p, /spelled letter by letter[^"]*"Boda Real"/);
+  assert.doesNotMatch(p, /previous result|no furniture|plain and empty|no other furniture/i);
+  assert.doesNotMatch(promptFotoDeLayout(d), /spelled letter by letter/, "sin textos no hay frase de textos");
+});
+prueba("FLUX.2 con `render_3d_base` dice que es un plano 3D, no un resultado previo", () => {
+  const t = buildFluxEditPrompt("X", [{ id: "c", descripcion: "d", base64: "AA", mime: "image/png", role: "render_3d_base", priority: 1, allowed_use: "u" }]);
+  assert.match(t, /PRIMARY BASE @image1: a 3D layout render, not a photo/);
+  assert.match(t, /3D layout render to convert into a photograph/);
+  assert.doesNotMatch(t, /previous result|apply only requested change/);
 });
 
 console.log(`\n${pruebas} pruebas ok`);

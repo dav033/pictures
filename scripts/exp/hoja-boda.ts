@@ -15,6 +15,7 @@ const ALTO = 640;
 const NOMBRES: Readonly<Record<string, string>> = {
   a: "a) FLUX.2 /edit, texto de antes (prohibia mesas)", b: "b) FLUX.2 /edit, texto nuevo", c: "c) FLUX.1 i2i strength 0,55",
   d: "d) FLUX.1 + ControlNet canny+depth 0,7", e: "e) FLUX.1 i2i strength 0,40", f: "f) FLUX.1 i2i strength 0,70",
+  g: "g) FLUX.2 /edit, plano 3D a convertir", k: "k) FLUX.1 Kontext pro", m: "m) FLUX.1 Kontext max", x: "x) variante de tamano",
 };
 
 const rotulo = (texto: string, ancho: number) => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${ancho}" height="34"><rect width="100%" height="100%" fill="#111" fill-opacity="0.78"/><text x="10" y="23" font-family="Arial" font-size="18" fill="#fff">${texto.replace(/&/g, "y").replace(/</g, "")}</text></svg>`);
@@ -28,7 +29,9 @@ async function celda(archivo: string, texto: string): Promise<Buffer> {
 async function main() {
   const captura = join(CARPETA, "captura-3d-escena.jpg");
   if (!existsSync(captura)) throw new Error("Falta captura-3d-escena.jpg.");
-  const imagenes = readdirSync(CARPETA).filter((f) => /^[a-f]-s\d+\.png$/.test(f)).sort();
+  // `--ronda2`: solo g, k, m, x y la hoja se llama hoja-comparativa-2.jpg.
+  const ronda2 = process.argv.includes("--ronda2");
+  const imagenes = readdirSync(CARPETA).filter((f) => (ronda2 ? /^[gkmx]-s\d+\.png$/ : /^[a-f]-s\d+\.png$/).test(f)).sort();
   const izquierda = await celda(captura, "Captura 3D del taller (la entrada)");
   const celdas: Buffer[] = [izquierda];
   for (const f of imagenes) {
@@ -47,8 +50,8 @@ async function main() {
   const columnas = 2, filas = Math.ceil(celdas.length / columnas);
   const hoja = await sharp({ create: { width: columnas * ancho + (columnas - 1) * 8, height: filas * ALTO + (filas - 1) * 8, channels: 3, background: "#ffffff" } })
     .composite(celdas.map((c, i) => ({ input: c, left: (i % columnas) * (ancho + 8), top: Math.floor(i / columnas) * (ALTO + 8) }))).jpeg({ quality: 88 }).toBuffer();
-  writeFileSync(join(CARPETA, "hoja-comparativa.jpg"), hoja);
-  console.log("hoja-comparativa.jpg", readFileSync(join(CARPETA, "hoja-comparativa.jpg")).length, "bytes");
+  writeFileSync(join(CARPETA, ronda2 ? "hoja-comparativa-2.jpg" : "hoja-comparativa.jpg"), hoja);
+  console.log(ronda2 ? "hoja-comparativa-2.jpg" : "hoja-comparativa.jpg", "lista");
 }
 
 main().catch((error) => { console.error(error); process.exit(1); });
