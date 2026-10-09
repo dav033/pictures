@@ -171,6 +171,8 @@ export type AspectoCaptura = "2:3" | "1:1" | "3:2";
 const TAMANO_CAPTURA: Record<AspectoCaptura, { ancho: number; alto: number }> = { "2:3": { ancho: 1024, alto: 1536 }, "1:1": { ancho: 1024, alto: 1024 }, "3:2": { ancho: 1536, alto: 1024 } };
 
 const CM = 0.01;
+/** Sin pieza a la que referirse (la vista previa, un globo suelto): la referencia es el origen. */
+const SIN_REFERENCIA = { x: 0, y: 0, z: 0 };
 /** Fondo del render estándar (gris claro neutro, como las fotos de decoración sobre pared lisa). */
 const FONDO_ESTANDAR = 0xe6e6e9;
 /** Cuántas piezas que dejaron de verse se guardan dibujadas por si vuelven (ver `aparcados`). */
@@ -507,7 +509,7 @@ function objetoCompleto(globo: GloboColocadoEnEscena, indice: number, entorno: T
   orientacionDe(globo, objeto.quaternion);
   objeto.position.set(globo.nudo.x * CM, globo.nudo.y * CM, globo.nudo.z * CM);
   // El mismo achatado que el de los globos por instancias (el nudo no se mueve).
-  if (globo.formato.tipo === "redondo") objeto.scale.setFromMatrixScale(achatadoDe(globo.nudo, globo.infladoCm, globo.formato.id));
+  if (globo.formato.tipo === "redondo") objeto.scale.setFromMatrixScale(achatadoDe(globo.nodo ?? "", globo.nudo, SIN_REFERENCIA, globo.infladoCm, globo.formato.id));
   objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
   return objeto;
 }
@@ -784,11 +786,11 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   function asegurarDef(clave: string, crear: () => DefLote) { if (!defs.has(clave)) defs.set(clave, crear()); }
 
   /** Un globo de una pieza: por instancias en sus lotes (y lo impreso aparte, en su marco). */
-  function agregarGlobo(globo: GloboColocadoEnEscena, indice: number, grupo: THREE.Group, instancias: Instancia[]) {
+  function agregarGlobo(globo: GloboColocadoEnEscena, indice: number, grupo: THREE.Group, instancias: Instancia[], nodoId: string, ref: THREE.Vector3) {
     const plantilla = plantillaDe(globo);
     if (!plantilla) { grupo.add(objetoCompleto(globo, indice, entornoMetal())); return; }
     // El látex de verdad no es una esfera perfecta: cada globo sale un poco apretado o alargado (solo al dibujar).
-    const marco = globo.formato.tipo === "redondo" ? marcoDeGlobo(globo).multiply(achatadoDe(globo.nudo, globo.infladoCm, globo.formato.id)) : marcoDeGlobo(globo);
+    const marco = globo.formato.tipo === "redondo" ? marcoDeGlobo(globo).multiply(achatadoDe(nodoId, globo.nudo, ref, globo.infladoCm, globo.formato.id)) : marcoDeGlobo(globo);
     const propio = globo.familia === "neon";
     const confetiHex = globo.confetiHex ?? CONFETI_PLATA;
     const base = propio ? null : colorDeLatex(globo.familia, globo.hex);
@@ -864,7 +866,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     const grupo = new THREE.Group();
     if (id) grupo.userData.nodo = id;
     const instancias: Instancia[] = [];
-    for (const { g, i } of c.globos) agregarGlobo(g, i, grupo, instancias);
+    for (const { g, i } of c.globos) agregarGlobo(g, i, grupo, instancias, id, ref);
     for (const tramo of c.tubos) agregarTubo(tramo, grupo, instancias);
     // Follaje (no es globo): flores artificiales mirando hacia fuera de su hueco.
     for (const { f, i } of c.flores) agregarFlor(f, i, instancias);
@@ -1457,6 +1459,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     if (extras.length) objeto.add(...extras);
     orientacionDe(globo, objeto.quaternion);
     objeto.position.set(globo.nudo.x * CM, globo.nudo.y * CM, globo.nudo.z * CM);
+    // El mismo achatado que el de las piezas dibujadas (la vista previa no sabe a qué pieza irá: se guía por su sitio).
+    if (globo.formato.tipo === "redondo") objeto.scale.setFromMatrixScale(achatadoDe(globo.nodo ?? "", globo.nudo, SIN_REFERENCIA, globo.infladoCm, globo.formato.id));
     return objeto;
   }
 
