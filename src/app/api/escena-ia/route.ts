@@ -17,6 +17,7 @@ import { decidirRonda, type ReporteComparacion } from "@/lib/globos3d/refinado/r
 import { encuadreDeLectura } from "@/lib/globos3d/encuadre-foto";
 import { modelarFotoReal } from "@/lib/taller/modelar-foto-real";
 import { normalizarFotoA } from "@/lib/taller/normalizar-foto";
+import { TIPO_NDJSON, lineaNdjson, type EventoFlujo } from "@/lib/globos3d/flujo-escena-ia";
 
 /**
  * Taller 3D → «Pídele a la IA»: el usuario escribe en lenguaje natural («un arco orgánico rosado y dorado de 3 m,
@@ -36,6 +37,10 @@ import { normalizarFotoA } from "@/lib/taller/normalizar-foto";
  * puede preguntar (preguntar_usuario corta el turno y devuelve `pregunta` con opciones para botones); tras cada
  * vuelta que cambia la escena recibe una verificación automática (piezas y globos por formato antes → después,
  * verificacion-escena.ts) para que corrija y diga números reales.
+ *
+ * Avance en vivo (D-021, flujo-escena-ia.ts): con `Accept: application/x-ndjson` la respuesta va línea a línea (fase, un `paso` por
+ * herramienta aplicada y un `final` con el mismo JSON de siempre); sin la cabecera, el JSON único de siempre. El corte del navegador
+ * (`request.signal`, «Detener») ya llega al modelo.
  */
 
 const MAX_PASOS = 12;
@@ -87,7 +92,30 @@ function textoDe(contenido: Content | undefined): string {
 
 export const POST = conRegistro("/api/escena-ia", atenderPOST, { vista: "3d" });
 
+type Avisar = (evento: EventoFlujo) => void;
+
+/** Con `Accept: application/x-ndjson`, la misma respuesta en flujo; si no, el JSON único. */
 async function atenderPOST(request: Request) {
+  if (!(request.headers.get("accept") ?? "").includes(TIPO_NDJSON)) return procesarPedido(request);
+  const codificador = new TextEncoder();
+  const flujo = new ReadableStream<Uint8Array>({
+    async start(control) {
+      const escribir = (evento: EventoFlujo) => { try { control.enqueue(codificador.encode(lineaNdjson(evento))); } catch { /* el navegador cortó */ } };
+      try {
+        const respuesta = await procesarPedido(request, escribir);
+        escribir({ tipo: "final", estado: respuesta.status, cuerpo: await respuesta.json().catch(() => null) });
+      } catch (error) {
+        decidir("modelo:escena_ia", "el flujo del asistente de escena falló", { error: corto(error instanceof Error ? error.message : String(error), 300) });
+        escribir({ tipo: "final", estado: 500, cuerpo: { error: "No pude hablar con la IA ahora. Vuelve a intentarlo." } });
+      } finally {
+        try { control.close(); } catch { /* ya cerrado */ }
+      }
+    },
+  });
+  return new Response(flujo, { headers: { "Content-Type": `${TIPO_NDJSON}; charset=utf-8`, "Cache-Control": "no-cache, no-transform" } });
+}
+
+async function procesarPedido(request: Request, avisar?: Avisar): Promise<Response> {
   let cuerpo: unknown;
   try { cuerpo = await request.json(); } catch { return Response.json({ error: "El pedido no llegó en un formato válido." }, { status: 400 }); }
   const validado = CuerpoSchema.safeParse(cuerpo);
@@ -104,6 +132,7 @@ async function atenderPOST(request: Request) {
   let adjunta: FotoPreparada | null = null;
   const acciones: Accion[] = [];
   if (foto) {
+    avisar?.({ tipo: "fase", fase: "leyendo_foto" });
     const preparada = await prepararFotoAdjunta(foto, inicial, { normalizar: normalizarFotoA, modelar: modelarFotoReal }, MAX_NODOS, request.signal);
     if (!preparada.ok) {
       decidir("modelo:escena_ia", "no se pudo leer la foto adjunta", { error: preparada.error, estado: preparada.status }, { entrada: { mensaje } });
@@ -146,6 +175,7 @@ async function atenderPOST(request: Request) {
 
   try {
     for (;;) {
+      avisar?.({ tipo: "fase", fase: "pensando" });
       const r = await cliente.models.generateContent({
         model: MODELO_CHAT,
         contents,
@@ -176,6 +206,7 @@ async function atenderPOST(request: Request) {
               ? { resultado: aplicarReporte(escena, llamada.args, reportes), busqueda: null }
               : await aplicarHerramientaAsincrona(escena, nombre, llamada.args ?? {});
         decidir("herramienta:escena_ia", `aplicar ${nombre} a la escena del taller 3D`, hecho.ok ? { ok: true, resumen: hecho.resumen, piezas: hecho.escena.nodos.length, ...(busqueda ? { busqueda: { fuente: busqueda.fuente, ids: busqueda.ids, motivo: busqueda.motivo ?? null } } : {}) } : { ok: false, error: hecho.error }, { entrada: { herramienta: nombre, argumentos: llamada.args ?? {}, paso: pasos, ...(busqueda?.entrada ? { busqueda: busqueda.entrada } : {}) } });
+        avisar?.({ tipo: "paso", n: llamadas, herramienta: nombre, resumen: corto((hecho.ok ? hecho.resumen : hecho.error).split("\n")[0] ?? "", 140), consulta: hecho.ok && hecho.consulta, ok: hecho.ok });
         if (hecho.ok) {
           escena = hecho.escena;
           acciones.push({ herramienta: nombre, resumen: hecho.consulta ? corto(hecho.resumen.split("\n")[0] ?? hecho.resumen, 140) : corto(hecho.resumen, 400), consulta: hecho.consulta });

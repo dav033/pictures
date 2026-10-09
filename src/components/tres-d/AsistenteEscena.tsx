@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, Sparkles, Square, Undo2 } from "lucide-react";
 import type { Escena } from "@/lib/globos3d/escena";
 import { cabecerasConversacion } from "@/lib/registro/cliente";
+import { pedirEscenaIA, type EventoFlujo } from "@/lib/globos3d/flujo-escena-ia";
 import { construirCuerpoEscenaIA, mensajeDelPedido, type SeleccionIA, type TurnoIA } from "@/lib/globos3d/cuerpo-escena-ia";
 import { EncuadreSchema, type Encuadre } from "@/lib/globos3d/encuadre-foto";
 import { resumenDeRefinado, type RondaHecha } from "@/lib/globos3d/refinado/bucle";
@@ -42,15 +43,16 @@ const esPregunta = (v: unknown): v is Pregunta =>
   && (v as { opciones: unknown[] }).opciones.every((o) => typeof o === "string");
 
 /** Lo que dice la barra mientras trabaja la IA: armando, leyendo la foto o comparando con ella. */
-function textoDeProgreso(cargando: boolean, leyendoFoto: boolean, refinando: ProgresoRefinado | null): string {
+function textoDeProgreso(cargando: boolean, leyendoFoto: boolean, refinando: ProgresoRefinado | null, vivo: string | null = null): string {
+  if (cargando && vivo) return vivo;
   if (!cargando && refinando) return refinando.fase === "revisando" ? "Revisando si mejoró…" : `Comparando con la foto… ronda ${refinando.ronda}/${refinando.total}`;
   return leyendoFoto ? "La IA está leyendo la foto…" : "La IA está armando…";
 }
 
-/** «Detener»: para la comparación con la foto (lo ya corregido se queda y se puede deshacer por ronda). */
-function BotonDetener({ alTocar, clase }: { alTocar: () => void; clase: string }) {
+/** «Detener»: corta el pedido a la IA (no se aplica nada) o para la comparación con la foto (lo ya corregido se queda y se puede deshacer por ronda). */
+function BotonDetener({ alTocar, clase, etiqueta = "Detener la comparación con la foto" }: { alTocar: () => void; clase: string; etiqueta?: string }) {
   return (
-    <button type="button" onClick={alTocar} className={clase} aria-label="Detener la comparación con la foto">
+    <button type="button" onClick={alTocar} className={clase} aria-label={etiqueta}>
       <Square className="size-3.5" aria-hidden /> Detener
     </button>
   );
@@ -94,6 +96,9 @@ export function AsistenteEscena({ escena, onEscena, compacta = false, seleccion 
   /** Sube con cada respuesta o error (la barra compacta abre la conversación para verla). */
   const [vueltas, setVueltas] = useState(0);
   const fotoIA = useFotoAdjunta();
+  const [vivo, setVivo] = useState<string | null>(null);
+  const corte = useRef<AbortController | null>(null);
+  useEffect(() => () => corte.current?.abort(), []);
   const [leyendoFoto, setLeyendoFoto] = useState(false);
   const refinado = useRefinadoFoto({
     alRonda: (r: RondaHecha) => {
@@ -114,16 +119,17 @@ export function AsistenteEscena({ escena, onEscena, compacta = false, seleccion 
     const foto = fotoIA.foto ? { mime: fotoIA.foto.mime, base64: fotoIA.foto.base64 } : null;
     const limpio = mensajeDelPedido(mensaje, foto);
     if (!limpio || cargando || refinado.refinando) return;
-    setCargando(true); setLeyendoFoto(foto !== null); setError(null); setRespuesta(null); setAcciones([]); setPregunta(null);
+    setCargando(true); setLeyendoFoto(foto !== null); setError(null); setRespuesta(null); setAcciones([]); setPregunta(null); setVivo(null);
     const antes = escena;
+    const mio = new AbortController();
+    corte.current = mio;
     try {
-      const r = await fetch("/api/escena-ia", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...cabecerasConversacion("3d") },
-        body: JSON.stringify(construirCuerpoEscenaIA({ escena: antes, mensaje: limpio, historial, seleccion, foto })),
+      const { estado, datos } = await pedirEscenaIA({
+        cuerpo: construirCuerpoEscenaIA({ escena: antes, mensaje: limpio, historial, seleccion, foto }),
+        cabeceras: cabecerasConversacion("3d"), signal: mio.signal,
+        alEvento: (e: Exclude<EventoFlujo, { tipo: "final" }>) => { if (e.tipo === "paso") setVivo(e.resumen); },
       });
-      const datos: unknown = await r.json().catch(() => null);
-      if (!r.ok || !esRespuesta(datos)) {
+      if (estado < 200 || estado >= 300 || !esRespuesta(datos)) {
         const motivo = typeof datos === "object" && datos !== null && "error" in datos && typeof datos.error === "string" ? datos.error : "No pude hablar con la IA ahora.";
         setError(motivo);
         setVueltas((v) => v + 1);
@@ -140,13 +146,15 @@ export function AsistenteEscena({ escena, onEscena, compacta = false, seleccion 
       // La escena se armó desde la foto: la compara con ella (hasta 2 rondas) mientras el usuario ve la primera versión.
       const comparable = foto ? datosDeRefinado((datos as { foto?: unknown }).foto) : null;
       if (foto && comparable && RONDAS_AUTOMATICAS > 0) void refinado.iniciar({ escena: datos.escena, foto, lectura: comparable.lectura, encuadre: comparable.encuadre });
-    } catch {
-      setError("No pude hablar con la IA ahora. Revisa la conexión y vuelve a intentarlo.");
+    } catch (causa) {
+      setError(causa instanceof DOMException && causa.name === "AbortError" ? "Detuve el pedido: no se cambió nada." : "No pude hablar con la IA ahora. Revisa la conexión y vuelve a intentarlo.");
       setVueltas((v) => v + 1);
     } finally {
-      setCargando(false); setLeyendoFoto(false);
+      if (corte.current === mio) corte.current = null;
+      setCargando(false); setLeyendoFoto(false); setVivo(null);
     }
   };
+  const detenerPedido = () => corte.current?.abort();
 
   const deshacer = () => {
     const ultima = previas[previas.length - 1];
@@ -161,7 +169,7 @@ export function AsistenteEscena({ escena, onEscena, compacta = false, seleccion 
   const ocupado = cargando || refinado.refinando !== null;
 
   if (compacta) {
-    return <AsistenteCompacto {...{ texto, setTexto, cargando, leyendoFoto, respuesta, error, cambios, previas: previas.length, historial, pedir, deshacer, vueltas, pregunta, seleccion, fotoIA, refinando: refinado.refinando, detener: refinado.detener }} />;
+    return <AsistenteCompacto {...{ texto, setTexto, cargando, leyendoFoto, respuesta, error, cambios, previas: previas.length, historial, pedir, deshacer, vueltas, pregunta, seleccion, fotoIA, refinando: refinado.refinando, detener: refinado.detener, vivo, detenerPedido }} />;
   }
 
   return (
@@ -180,9 +188,10 @@ export function AsistenteEscena({ escena, onEscena, compacta = false, seleccion 
         <div className="flex gap-2">
           <BotonFotoIA estado={fotoIA} deshabilitado={ocupado} clase={`${BOTON} ${INACTIVO} grid place-items-center px-3`} />
           <button type="submit" disabled={ocupado || (!texto.trim() && !fotoIA.foto)} className={`${BOTON} flex flex-1 items-center justify-center gap-2 bg-taller-primario text-taller-sobre-primario ring-taller-primario disabled:opacity-50`}>
-            {ocupado ? <><Loader2 className="size-4 animate-spin" aria-hidden /> {textoDeProgreso(cargando, leyendoFoto, refinado.refinando)}</> : "Pedir"}
+            {ocupado ? <><Loader2 className="size-4 animate-spin" aria-hidden /> {textoDeProgreso(cargando, leyendoFoto, refinado.refinando, vivo)}</> : "Pedir"}
           </button>
           {refinado.refinando && <BotonDetener alTocar={refinado.detener} clase={`${BOTON} ${INACTIVO} flex items-center justify-center gap-2 px-3 text-xs`} />}
+          {cargando && <BotonDetener alTocar={detenerPedido} etiqueta="Detener el pedido a la IA" clase={`${BOTON} ${INACTIVO} flex items-center justify-center gap-2 px-3 text-xs`} />}
         </div>
       </form>
       {!cargando && !respuesta && !error && (
@@ -217,11 +226,11 @@ type PropsCompacto = {
   cambios: readonly Accion[]; previas: number; historial: readonly Turno[];
   pedir: (mensaje: string) => Promise<void>; deshacer: () => void; vueltas: number;
   pregunta: Pregunta | null; seleccion: SeleccionIA | null; leyendoFoto: boolean; fotoIA: FotoAdjuntaEstado;
-  refinando: ProgresoRefinado | null; detener: () => void;
+  refinando: ProgresoRefinado | null; detener: () => void; vivo: string | null; detenerPedido: () => void;
 };
 
 /** La IA como barra al pie del visor: una línea para pedir; arriba, al abrirse, la conversación, los ejemplos y deshacer. */
-function AsistenteCompacto({ texto, setTexto, cargando, leyendoFoto, respuesta, error, cambios, previas, historial, pedir, deshacer, vueltas, pregunta, seleccion, fotoIA, refinando, detener }: PropsCompacto) {
+function AsistenteCompacto({ texto, setTexto, cargando, leyendoFoto, respuesta, error, cambios, previas, historial, pedir, deshacer, vueltas, pregunta, seleccion, fotoIA, refinando, detener, vivo, detenerPedido }: PropsCompacto) {
   const ocupado = cargando || refinando !== null;
   const [abierta, setAbierta] = useState(false);
   const raiz = useRef<HTMLDivElement>(null);
@@ -252,8 +261,9 @@ function AsistenteCompacto({ texto, setTexto, cargando, leyendoFoto, respuesta, 
           <div aria-live="polite" className="flex flex-col gap-1">
             {ocupado && (
               <p className="flex items-center gap-2 text-taller-suave">
-                <Loader2 className="size-4 animate-spin" aria-hidden /> {textoDeProgreso(cargando, leyendoFoto, refinando)}
+                <Loader2 className="size-4 animate-spin" aria-hidden /> {textoDeProgreso(cargando, leyendoFoto, refinando, vivo)}
                 {refinando && <BotonDetener alTocar={detener} clase="ml-auto inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-taller-borde px-2.5 text-xs text-taller-texto hover:bg-taller-encima" />}
+                {cargando && <BotonDetener alTocar={detenerPedido} etiqueta="Detener el pedido a la IA" clase="ml-auto inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-taller-borde px-2.5 text-xs text-taller-texto hover:bg-taller-encima" />}
               </p>
             )}
             {error && <p role="alert" className="rounded-lg bg-taller-tarjeta p-2 text-xs text-taller-texto ring-1 ring-taller-borde">{error}</p>}
