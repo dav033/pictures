@@ -88,5 +88,8 @@ async function main() {
   writeFileSync(path.join(salida, "resumen.json"), JSON.stringify({ botones, consola, similitudes, barra, resumen }, null, 2));
   console.log(JSON.stringify({ botones, consola, similitudes, barra, resumen }, null, 2));
   await navegador.close();
+  // Con el refinado automático apagado (RONDAS_AUTOMATICAS = 0 en src/components/tres-d/useRefinadoFoto.ts, hasta calibrarlo
+  // con rondas juzgadas por el dueño) no hay ronda que probar: falla en vez de escribir un informe vacío que parece un éxito.
+  if (!respuestas.some((r) => r.refinar)) throw new Error("No hubo ronda de refinado: el refinado automático está apagado (RONDAS_AUTOMATICAS = 0). Este e2e no prueba nada hasta reactivarlo.");
 }
 main().catch((e) => { console.error(e); process.exit(1); });
