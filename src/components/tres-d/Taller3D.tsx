@@ -344,7 +344,10 @@ export function Taller3D() {
   const lienzoDecoraciones = useLienzoDecoraciones({
     lienzoRef, visorRef: escenaRef, activo: editable, escena: escenaVista, armada: armadaEscena, seleccion, copia: copiaElegida,
     onCopia: setCopiaTocada, onSeleccion: elegir, onCambio: cambiarVista, onAviso: setAvisoLienzo, cache: cacheEscena,
-    aEscena: (n) => ({ globos: n.globos.map((g) => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true, confetiHex: papelDeConfeti(n.globos) } : {}) })), tubos: n.tubos.map(tuboAEscena) }),
+    aEscena: (n) => {
+      const papel = n.globos.some((g) => g.confeti) ? papelDeConfeti(n.globos) : null;
+      return { globos: n.globos.map((g) => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true, ...(papel ? { confetiHex: papel } : {}) } : {}) })), tubos: n.tubos.map(tuboAEscena) };
+    },
   });
 
   // ----------------------------------------------------------------------------------------------------------

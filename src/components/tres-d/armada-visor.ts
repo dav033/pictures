@@ -33,6 +33,9 @@ function esDorado(hex: string): boolean {
  * El papel del confeti de una pieza: el cristal «con confeti» no dice de qué color es el papel, así que sale del metal que lo
  * acompaña, que es como se combina en las fotos: si la mayoría de los globos cromados o metal de la pieza son dorados, dorado;
  * si no, plateado (el Cristal 390 con confeti plateado de la tienda).
+ *
+ * TODO(integración): es una heurística. El color del papel debería venir como dato (un `confetiHex` en el globo del motor y de
+ * la lectura de la foto, que hoy solo trae `confeti: boolean`); cuando exista, este cálculo se quita y se lee el dato.
  */
 export function papelDeConfeti(globos: ReadonlyArray<{ codigo: string }>): string {
   let dorados = 0, otros = 0;

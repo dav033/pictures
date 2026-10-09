@@ -1,3 +1,4 @@
+import { MARCA_LUZ_CALIDA } from "./luz-sala";
 import type { Vec3 } from "./modulos";
 import { armarPieza, type AnclaDePieza, type FlorDePieza, type GloboDePieza, type Pieza, type PiezaArmada } from "./piezas";
 import type { TuboDecoracion } from "./decoraciones";
@@ -49,7 +50,8 @@ export type ParedSala = "fondo" | "izquierda" | "derecha";
 
 /**
  * El ambiente de la sala (solo cómo se ve): piso de madera con brillo o liso, luces empotradas en el techo y una franja
- * de ventana. Lo que no se dice vale: madera, con luces y sin ventana.
+ * de ventana. Es opcional: lo que no se dice vale piso liso, sin luces y sin ventana (la sala neutra de siempre, con la luz
+ * neutra del visor). Con madera o luces, la sala se ilumina con una luz cálida de estudio.
  */
 export type AmbienteSala = { piso?: "madera" | "liso"; luces?: boolean; ventana?: boolean };
 
@@ -611,7 +613,9 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     mostrar.piso ? conArticulo(escena.sala.ambiente?.piso === "madera" ? `${tonoEnIngles(tonos.piso)} wooden plank floor` : `${tonoEnIngles(tonos.piso)} floor`) : "",
     mostrar.techo ? conArticulo(escena.sala.ambiente?.luces ? `${tonoEnIngles(tonos.techo)} ceiling with recessed lights` : `${tonoEnIngles(tonos.techo)} ceiling`) : "",
   ].filter(Boolean);
-  if (sala.length) partes.push(`${PREFIJO_SALA} ${enLista(sala)}, all ${escena.sala.ambiente?.piso === "madera" || escena.sala.ambiente?.luces ? "" : "plain and "}empty`);
+  const ambiente = escena.sala.ambiente;
+  const conAmbiente = ambiente?.piso === "madera" || ambiente?.luces || ambiente?.ventana;
+  if (sala.length) partes.push(`${PREFIJO_SALA} ${enLista(sala)}, all ${conAmbiente ? "" : "plain and "}empty${conAmbiente ? `, ${MARCA_LUZ_CALIDA}` : ""}`);
   return partes.filter(Boolean).join(". ");
 }
 
