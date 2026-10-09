@@ -50,6 +50,7 @@ export const INVENTARIO: readonly Punto[] = [
   { id: "gemini-escena-ia", archivo: "src/app/api/escena-ia/route.ts", patron: /\.models\.generateContent\(/, que: "taller 3D: bucle de herramientas que arma la escena (solo texto, sin imágenes)", envoltorio: "getGeminiClient(\"escena_ia\") + conRegistro + decidir por herramienta", enganche: [GEMINI_CENTRAL, { archivo: "src/app/api/escena-ia/route.ts", contiene: /decidir\("herramienta:escena_ia"/ }] },
   { id: "gemini-lectura-foto", archivo: "src/lib/globos3d/leer-foto-ia.ts", patron: /\.models\.generateContent\(/, que: "taller 3D: Gemini lee la foto de una decoración (visión, salida JSON; nunca genera imágenes)", envoltorio: "getGeminiClient(\"lectura_foto_escena\") + registrarGemini + decidir por intento", enganche: [GEMINI_CENTRAL, { archivo: "src/lib/globos3d/leer-foto-ia.ts", contiene: /registrarGemini\(/ }, { archivo: "src/lib/globos3d/leer-foto-ia.ts", contiene: /decidir\("modelo:lectura_foto"/ }] },
   { id: "gemini-deteccion-globos", archivo: "src/lib/globos3d/detectar-globos-ia.ts", patron: /\.models\.generateContent\(/, que: "taller 3D: Gemini detecta los globos (mosaico de 3 × 3) y los fondos de la foto con su caja (visión, salida JSON; nunca genera imágenes)", envoltorio: "getGeminiClient(\"deteccion_globos_foto\") (pedido y respuesta de cada trozo) + registrarGemini + decidir del resultado", enganche: [GEMINI_CENTRAL, { archivo: "src/lib/globos3d/detectar-globos-ia.ts", contiene: /registrarGemini\(/ }, { archivo: "src/lib/globos3d/detectar-globos-ia.ts", contiene: /decidir\("modelo:deteccion_globos"/ }] },
+  { id: "gemini-feedback-resumen", archivo: "src/lib/feedback-ia/resumen-gemini.ts", patron: /\.models\.generateContent\(/, que: "REQ-010: resumen opcional de los huecos recurrentes del feedback (solo texto sobre métricas agregadas, Flash, entrada y salida acotadas, coste máx. US$0,02)", envoltorio: "getGeminiClient(\"feedback_ia_resumen\") + registrarGemini + decidir del resultado", enganche: [GEMINI_CENTRAL, { archivo: "src/lib/feedback-ia/resumen-gemini.ts", contiene: /registrarGemini\(/ }, { archivo: "src/lib/feedback-ia/resumen-gemini.ts", contiene: /decidir\("modelo:feedback_ia_resumen"/ }] },
   { id: "gemini-embedding", archivo: "src/lib/rag/embeddings.ts", patron: /\.models\.embedContent\(/, que: "embeddings de consulta/documento (RAG)", envoltorio: "getGeminiClient(\"embedding\")", enganche: [GEMINI_CENTRAL] },
   // ── @sempertex/agente-core (paquete): adaptador Gemini del ChatPort ──
   { id: "agente-core-cliente", archivo: "packages/agente-core/src/gemini/chat.ts", patron: /new\s+GoogleGenAI|export function crearChatGemini/, que: "ChatPort Gemini (chat clásico, guiado, Amaterasu, venue)", envoltorio: "chatDe()/chatOmoikaneDe() → envolverChatPort(port, { proposito })", enganche: [CHATPORT_CENTRAL] },
@@ -134,6 +135,10 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
   "src/app/api/render-3d-imagen/route.ts": "taller 3D: foto con IA (FLUX)",
   "src/app/api/taller/buscar/route.ts": "taller 3D: búsqueda en la biblioteca (RAG; embedding de la consulta con Gemini)",
   "src/app/api/taller/buscar-foto/route.ts": "taller 3D: búsqueda por foto en la biblioteca (embedding de imagen con Gemini)",
+  "src/app/api/feedback-ia/route.ts": "REQ-010: calificación de un turno de la IA (taller y chat del cliente)",
+  "src/app/api/feedback-ia/capturas/route.ts": "REQ-010: captura JPEG antes/después de un turno (almacén S3)",
+  "src/app/api/feedback-ia/analisis/route.ts": "REQ-010: análisis de huecos a pedido (resumen opcional con Gemini Flash)",
+  "src/app/api/feedback-ia/analisis-cron/route.ts": "REQ-010: análisis semanal de huecos desde un cron (resumen opcional con Gemini Flash)",
 };
 
 /** Rutas /api fuera del flujo de decisiones, con el motivo. Una ruta nueva debe clasificarse aquí o arriba. */
@@ -160,6 +165,9 @@ const RUTAS_EXCLUIDAS: Readonly<Record<string, string>> = {
   "src/app/api/admin/ordenes/[numero]/foto/route.ts": "sirve una foto",
   "src/app/api/admin/ordenes/catalogo-buscar/route.ts": "búsqueda admin",
   "src/app/api/admin/ordenes/estadisticas/route.ts": "estadísticas admin",
+  "src/app/api/feedback-ia/admin/route.ts": "REQ-010: listado y exportación del panel (solo administrador, lectura)",
+  "src/app/api/feedback-ia/admin/[id]/route.ts": "REQ-010: detalle de un turno calificado (solo administrador, lectura)",
+  "src/app/api/feedback-ia/admin/imagen/route.ts": "REQ-010: sirve una captura del almacén (solo administrador)",
 };
 
 /** Código del navegador que llama a rutas del flujo: debe mandar x-conversacion-id. */

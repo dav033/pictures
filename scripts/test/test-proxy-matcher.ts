@@ -7,6 +7,9 @@ const matcher = new RegExp(`^${config.matcher[0]}$`);
 for (const [path, shouldMatch] of [
   ["/api/rag/webhooks/shopify", false],
   ["/api/happie/webhook", false],
+  ["/api/feedback-ia/analisis-cron", false],
+  ["/api/feedback-ia", true],
+  ["/api/feedback-ia/admin", true],
   ["/api/chat", true],
   ["/login", false],
   ["/api/login", false],

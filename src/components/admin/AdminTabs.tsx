@@ -8,11 +8,12 @@ import type { Decoracion, Producto } from "@/lib/types";
 import { ArquitecturaTab } from "./ArquitecturaTab";
 import { CatalogoShopifyTab } from "./CatalogoShopifyTab";
 import { DecoracionesTab } from "./DecoracionesTab";
+import { FeedbackIaTab } from "./feedback-ia/FeedbackIaTab";
 import { MotorIATab } from "./MotorIATab";
 import { OrdenesTab } from "./OrdenesTab";
 import { ProductosTab } from "./ProductosTab";
 
-type Tab = "arquitectura" | "productos" | "decoraciones" | "motor-ia" | "catalogo-shopify" | "ordenes";
+type Tab = "arquitectura" | "productos" | "decoraciones" | "motor-ia" | "catalogo-shopify" | "ordenes" | "feedback-ia";
 
 export function AdminTabs({
   productosIniciales,
@@ -62,6 +63,9 @@ export function AdminTabs({
           <TabsTrigger value="ordenes" activo={tab === "ordenes"}>
             Órdenes (dataset)
           </TabsTrigger>
+          <TabsTrigger value="feedback-ia" activo={tab === "feedback-ia"}>
+            Feedback IA
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -77,6 +81,7 @@ export function AdminTabs({
       {tab === "motor-ia" && <MotorIATab />}
       {tab === "catalogo-shopify" && <CatalogoShopifyTab />}
       {tab === "ordenes" && <OrdenesTab />}
+      {tab === "feedback-ia" && <FeedbackIaTab />}
     </div>
   );
 }
