@@ -26,6 +26,27 @@ const BLANCO: ColorLeido = { nombre: "blanco", hex: "#F5F5F5", peso: 100, acabad
 const fondo = (id: string, x: number, yBase: number, ancho: number, alto: number, extra: Partial<Fondo> = {}): Fondo => ({ tipo: "fondo", id, x, yBase, ancho, alto, colores: [BLANCO], ...extra });
 const cerca = (a: number, b: number, tol = 0.002) => Math.abs(a - b) <= tol;
 
+console.log("Juegos de pedestales");
+const TRES = [{ id: "pedestales", box_2d: [560, 50, 900, 280] }, { id: "pedestales", box_2d: [630, 190, 970, 400] }, { id: "pedestales", box_2d: [630, 400, 890, 520] }];
+prueba("los pedestales detectados uno a uno conservan la caja de cada uno, de izquierda a derecha, además de la unión", () => {
+  const juego = fondo("pedestales", 0.3, 0.9, 0.3, 0.3);
+  const f = medirFondos([juego], [TRES[2]!, TRES[0]!, TRES[1]!], ASPECTO).piezas[0] as Fondo;
+  assert.equal(f.cajas?.length, 3);
+  assert.ok(f.cajas!.every((c, i, v) => i === 0 || v[i - 1]!.x < c.x), JSON.stringify(f.cajas));
+  assert.ok(cerca(f.cajas![0]!.alto, 0.34) && cerca(f.cajas![0]!.yBase, 0.9) && cerca(f.cajas![0]!.ancho, 0.23), JSON.stringify(f.cajas![0]));
+  assert.ok(cerca(f.ancho, 0.47) && cerca(f.yBase, 0.97), `la unión sigue siendo la caja del fondo: ${f.ancho} × ${f.yBase}`);
+});
+
+prueba("un juego con una sola caja detectada la guarda también (no se pierde su sitio y su pie)", () => {
+  const f = medirFondos([fondo("pedestales", 0.3, 0.9, 0.2, 0.3)], [TRES[1]!], ASPECTO).piezas[0] as Fondo;
+  assert.equal(f.cajas?.length, 1);
+});
+
+prueba("los fondos que no son un juego no llevan cajas", () => {
+  const f = medirFondos([fondo("lentejuelas", 0.5, 0.8, 0.5, 0.5)], [{ id: "lentejuelas", box_2d: [200, 250, 800, 750] }], ASPECTO).piezas[0] as Fondo;
+  assert.equal(f.cajas, undefined);
+});
+
 console.log("Filas de piezas");
 prueba("seis sillas detectadas una a una dejan la fila con el ancho de las seis", () => {
   const fila = fondo("silla_tiffany", 0.5, 0.9, 0.4, 0.16, { cantidad: 6 });

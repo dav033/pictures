@@ -53,11 +53,14 @@ function candidatasDe(p: Fondo, leida: Caja, fondos: readonly FondoDetectado[], 
 function cajasDe(p: Fondo, leida: Caja, candidatas: readonly Candidata[]): Candidata[] | null {
   const mejor = candidatas[0];
   if (!mejor) return null;
-  if ((p.cantidad ?? 1) <= 1) return [mejor];
+  if ((p.cantidad ?? 1) <= 1 && !JUEGOS.has(p.id)) return [mejor];
   const grupo = candidatas.filter((c) => c === mejor || cruce(c.caja, leida) > 0);
   if (grupo.length === 1 && mejor.caja.x1 - mejor.caja.x0 < FRACCION_DE_FILA * (leida.x1 - leida.x0)) return null;
   return grupo;
 }
+
+/** Los fondos que son un juego de varios cuerpos (los pedestales): se guarda la caja de cada uno, no solo la unión. */
+const JUEGOS = new Set(["pedestales"]);
 
 /** Una caja detectada que no llega a esta parte de lo leído (de ancho o de alto) es solo un pedazo del fondo. */
 const PARTE_MINIMA_DE_LO_LEIDO = 0.4;
@@ -87,6 +90,9 @@ export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly Fond
         continue;
       }
       const nueva: Fondo = { ...p, x: r3(entre((union.x0 + union.x1) / 2 / aspecto, -0.2, 1.2)), yBase: r3(entre(union.y1, -0.2, 1.2)), ancho: r3(entre(union.x1 - union.x0, 0.005, 2)), alto: r3(entre(union.y1 - union.y0, 0.005, 2)) };
+      // Un juego (los pedestales) conserva el sitio, el pie y el tamaño de cada cuerpo, de izquierda a derecha.
+      const cuerpos = JUEGOS.has(p.id) ? [...cajas].sort((a, b) => a.caja.x0 - b.caja.x0).map((c) => ({ x: r3(entre((c.caja.x0 + c.caja.x1) / 2 / aspecto, -0.2, 1.2)), yBase: r3(entre(c.caja.y1, -0.2, 1.2)), ancho: r3(entre(c.caja.x1 - c.caja.x0, 0.005, 2)), alto: r3(entre(c.caja.y1 - c.caja.y0, 0.005, 2)) })) : [];
+      if (cuerpos.length) nueva.cajas = cuerpos; else delete nueva.cajas;
       salida[i] = nueva;
       sinCaja.delete(i);
       const deFamilia = cajas.some((c) => c.f.id !== p.id) ? ` (detectado como «${cajas[0]!.f.id}»)` : "";

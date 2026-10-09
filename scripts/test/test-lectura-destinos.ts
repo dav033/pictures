@@ -108,4 +108,30 @@ for (const [campo, cambia] of CAMBIOS) {
   });
 }
 
+// Los cuerpos de un juego de pedestales (los agrega `medirFondos` con las cajas detectadas) se compilan uno por uno.
+const PEDESTALES: LecturaFoto = { ...BASE, piezas: [...BASE.piezas, { tipo: "fondo", id: "pedestales", x: 0.3, yBase: 0.92, ancho: 0.4, alto: 0.3, colores: [BLANCO, DORADO], cajas: [{ x: 0.15, yBase: 0.9, ancho: 0.14, alto: 0.3 }, { x: 0.4, yBase: 0.95, ancho: 0.2, alto: 0.35 }] }] };
+const juego = (l: LecturaFoto) => l.piezas[2] as Extract<PiezaLeida, { tipo: "fondo" }>;
+const CAMBIOS_PEDESTALES: Array<[string, (l: LecturaFoto) => void]> = [
+  ["cajas[].x", (l) => { juego(l).cajas![0]!.x = 0.3; }],
+  ["cajas[].yBase", (l) => { juego(l).cajas![1]!.yBase = 0.88; }],
+  ["cajas[].ancho", (l) => { juego(l).cajas![0]!.ancho = 0.22; }],
+  ["cajas[].alto", (l) => { juego(l).cajas![1]!.alto = 0.2; }],
+];
+
+prueba("un juego de pedestales con cajas compila un pedestal por caja, y sin cajas, los que da su ancho", () => {
+  const nodos = compilarLectura(LecturaFotoSchema.parse(PEDESTALES)).escena.nodos.filter((n) => n.id.startsWith("pedestal"));
+  assert.equal(nodos.length, 2);
+  const sinCajas = structuredClone(PEDESTALES);
+  delete juego(sinCajas).cajas;
+  assert.equal(compilarLectura(LecturaFotoSchema.parse(sinCajas)).escena.nodos.filter((n) => n.id.startsWith("pedestales")).length, 1);
+});
+
+for (const [campo, cambia] of CAMBIOS_PEDESTALES) {
+  prueba(`cambiar «${campo}» cambia lo que se compila`, () => {
+    const l = structuredClone(PEDESTALES);
+    cambia(l);
+    assert.notEqual(huella(l), huella(PEDESTALES));
+  });
+}
+
 console.log(`test-lectura-destinos: ${pruebas} pruebas ok`);

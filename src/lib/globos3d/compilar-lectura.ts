@@ -260,6 +260,18 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
           const alto = cm(q.alto) * factor + (telonConPieTapado(q, Y(q.yBase)) ? Y(q.yBase) : 0);
           return { anchoCm: r1(cm(q.ancho) * factor), altoCm: r1(alto), xCm: r1(X(q.x) * factor), yBaseCm: Y(q.yBase), muroZ: muro, ...(delanteCm > 0 ? { zFrenteCm: muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm } : {}) };
         };
+        // Un juego de pedestales detectado cuerpo a cuerpo: cada uno en su sitio, con su diámetro y su alto, y la profundidad que dice su pie (el de delante se ve más grande).
+        if (p.id === "pedestales" && p.cajas?.length) {
+          p.cajas.forEach((c, k) => {
+            const { delanteCm, factor } = profundidadEnElPiso(l, c.yBase);
+            const diametroCm = r0(Math.max(30, cm(c.ancho) * factor));
+            const color = p.colores[k % p.colores.length]!;
+            const elementos = pedestales({ cilindros: [{ diametroCm, altoCm: r0(Math.max(30, cm(c.alto) * factor)), hex: color.hex, acabado: color.acabado === "cromado" ? "metal" as const : "satinado" as const }] });
+            poner("pedestal", `Pedestal ${k + 1}`, { tipo: "escenografia", elementos, mueble: { id: p.id } },
+              { en: "piso", xCm: r1(X(c.x) * factor), zCm: r0(muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm - diametroCm / 2), giroGrados: 0 });
+          });
+          return;
+        }
         const medida = medidaDe(p);
         const mesas = l.piezas.flatMap((q) => (q.tipo === "fondo" ? [mesaLeida(q, medidaDe(q))] : [])).filter((m): m is MesaLeida => m !== null);
         const muebles = mobiliarioLeido(p, medida, notas, mesas);

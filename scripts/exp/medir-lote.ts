@@ -32,8 +32,8 @@ async function main() {
       const sinMedir = `${carpeta}/lectura.json`;
       const lectura = [sinMedir, `${carpeta}/lectura-v3.json`, `${carpeta}/lectura-medida.json`].find((f) => existsSync(f));
       if (!lectura) throw new Error(`Sin lectura en ${carpeta}`);
-      // La de Gemini se mide con las detecciones (como `iterar-foto`) si es la leída; la medida (r01, r02) ya viene medida.
-      const medir = (quien === "gemini" || process.argv.includes("--medir-claude")) && lectura !== `${carpeta}/lectura-medida.json`;
+      // La de Gemini se mide con las detecciones, como `iterar-foto` (las medidas de r01 y r02 se miden otra vez: es idempotente en lo que ya midió).
+      const medir = quien === "gemini" || process.argv.includes("--medir-claude");
       const medidas = await medirCorrida({ foto: `${LOTE}/${FOTOS[id]}`, lectura, detecciones: `${DATOS}/${VERDAD[id]}/detecciones.json`, fondos: `${DATOS}/${VERDAD[id]}/fondos.json`, medir, ...(png ? { png: `${png}/sup-${id}-${quien}.png` } : {}) });
       filas.push({ nombre: `${id} ${quien}`, medidas });
     }
