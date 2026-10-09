@@ -11,6 +11,8 @@ import {
   construirDesactivarAusentes,
   construirInsertPartes,
   construirUpsertEmbedding,
+  construirUpsertEmbeddingsLote,
+  VECTORES_POR_INSERT,
   construirUpsertItem,
   hashEntradaTexto,
   itemsSinEmbeddingVigente,
@@ -208,6 +210,28 @@ function registro(extra: Partial<RegistroParaIndice> = {}): RegistroParaIndice {
   assert.deepEqual(registros[0]!.colores, ["570", "005"]);
   assert.deepEqual(registros[0]!.productos, ["GLOBO REDONDO METAL DORADO"]);
   ok("JSONL: colores y productos como objetos → códigos y nombres");
+}
+
+{
+  // El hash de la ficha es el mismo que guarda el lote de Python en la caché (valor calculado con
+  // `hash_entrada_texto(texto, TAREA_DOCUMENTO)` de insumos_biblioteca.py): si no cuadra, ningún vector de la caché vale.
+  assert.equal(hashEntradaTexto("Columna con uvas · graduación"), "96f82bc758aaf58506389d5efb9ce563c17338e8dddab1a9496693c30be0713c");
+  ok("hash de la ficha igual al del lote de Python");
+}
+
+{
+  // Subir la caché de vectores por lotes: cada INSERT cuadra sus marcadores, no se pierde ni se repite ninguno y conserva
+  // la regla de no reescribir un vector con el mismo hash.
+  const vector = Array.from({ length: DIMENSIONES_VECTOR_TALLER }, (_, i) => i / DIMENSIONES_VECTOR_TALLER);
+  const entradas = Array.from({ length: VECTORES_POR_INSERT * 2 + 7 }, (_, i) => ({ itemId: `idea:${i}`, modalidad: (i % 2 ? "texto" : "imagen_render") as "texto" | "imagen_render", modelo: "gemini-embedding-2", vector, hashEntrada: `h${i}` }));
+  const lotes = construirUpsertEmbeddingsLote(entradas);
+  assert.equal(lotes.length, 3);
+  for (const c of lotes) { marcadoresCuadran(c); assert.match(c.texto, /IS DISTINCT FROM EXCLUDED\.hash_entrada/); }
+  const ids = lotes.flatMap((c) => c.valores.filter((_, k) => k % 6 === 0));
+  assert.deepEqual(ids, entradas.map((e) => e.itemId));
+  assert.deepEqual(construirUpsertEmbeddingsLote([]), []);
+  assert.throws(() => construirUpsertEmbeddingsLote([{ ...entradas[0]!, vector: [1, 2, 3] }]), /768 dimensiones/);
+  ok("embeddings por lotes: marcadores, orden, sin repetir y sin reescribir el mismo hash");
 }
 
 console.log(`\n${casos} casos ok`);

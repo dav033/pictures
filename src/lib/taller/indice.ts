@@ -197,9 +197,16 @@ export function clasificarCambios(
 // Embeddings (se calculan en otro paso; aquí solo se guardan y se decide cuáles faltan)
 // ----------------------------------------------------------------------------------------------------------
 
-/** Hash del texto que se embebe de un item: su ficha. Si no cambia, el vector de texto sigue valiendo. */
+/** La tarea con que el lote de Python embebe las fichas (`TAREA_DOCUMENTO` de `plan_embeddings.py`): entra en el hash. */
+export const TAREA_EMBEDDING_FICHA = "RETRIEVAL_DOCUMENT";
+
+/**
+ * Hash del texto que se embebe de un item: el MISMO que guarda el lote de Python en la caché (`hash_entrada_texto` de
+ * `insumos_biblioteca.py`: sha256 de «tarea|ficha»). Si no cambia, el vector de texto sigue valiendo. Antes era el sha256 de
+ * la ficha sola y ningún vector de la caché cuadraba: el indexador los daba todos por faltantes.
+ */
 export function hashEntradaTexto(ficha: string): string {
-  return createHash("sha256").update(ficha, "utf-8").digest("hex");
+  return createHash("sha256").update(`${TAREA_EMBEDDING_FICHA}|${ficha}`, "utf-8").digest("hex");
 }
 
 export function vectorComoLiteral(vector: readonly number[]): string {
@@ -220,6 +227,37 @@ RETURNING item_id`;
     texto,
     valores: [entrada.itemId, entrada.modalidad, entrada.modelo, DIMENSIONES_VECTOR_TALLER, vectorComoLiteral(entrada.vector), entrada.hashEntrada],
   };
+}
+
+/** Cuántos vectores van por INSERT al subir la caché (6 parámetros cada uno: lejos del tope de 65535 de Postgres). */
+export const VECTORES_POR_INSERT = 200;
+
+/**
+ * Upserts de muchos embeddings a la vez (lotes de `VECTORES_POR_INSERT`), con la misma regla que `construirUpsertEmbedding`:
+ * si el hash de entrada no cambió, no se reescribe. Uno por uno, subir los ~6 500 vectores de la biblioteca a Neon
+ * tardaba más de una hora (una ida y vuelta por vector).
+ */
+export function construirUpsertEmbeddingsLote(entradas: readonly EntradaEmbedding[]): ConsultaSql[] {
+  const consultas: ConsultaSql[] = [];
+  for (let desde = 0; desde < entradas.length; desde += VECTORES_POR_INSERT) {
+    const trozo = entradas.slice(desde, desde + VECTORES_POR_INSERT);
+    const valores: unknown[] = [];
+    const filas = trozo.map((e, k) => {
+      const b = k * 6;
+      valores.push(e.itemId, e.modalidad, e.modelo, DIMENSIONES_VECTOR_TALLER, vectorComoLiteral(e.vector), e.hashEntrada);
+      return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}::integer, $${b + 5}::vector, $${b + 6})`;
+    });
+    consultas.push({
+      texto: `INSERT INTO taller_items_embeddings (item_id, modalidad, modelo, dims, vector, hash_entrada)
+VALUES ${filas.join(", ")}
+ON CONFLICT (item_id, modalidad, modelo) DO UPDATE
+SET dims = EXCLUDED.dims, vector = EXCLUDED.vector, hash_entrada = EXCLUDED.hash_entrada, creado = now()
+WHERE taller_items_embeddings.hash_entrada IS DISTINCT FROM EXCLUDED.hash_entrada
+RETURNING item_id`,
+      valores,
+    });
+  }
+  return consultas;
 }
 
 /** Por cada item activo, el hash con el que se embebió su texto (NULL si no tiene vector de texto de ese modelo). */
