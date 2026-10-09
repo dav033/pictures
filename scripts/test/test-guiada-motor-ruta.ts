@@ -129,10 +129,10 @@ test("el cliente cae a python ante cualquier fallo y pide ?para=plan_nuevo al cr
     assert.equal(init?.cache, "no-store");
     return Response.json(cuerpo, { status: estado });
   };
-  assert.deepEqual(await pedirMotorGuiada({ fetchImpl: responder({ motor: "3d", fuente: "env" }) }), { motor: "3d", fuente: "env" });
-  assert.deepEqual(await pedirMotorGuiada({ para: "plan_nuevo", fetchImpl: responder({ motor: "3d", fuente: "cookie" }) }), { motor: "3d", fuente: "cookie" });
+  assert.deepEqual(await pedirMotorGuiada({ fetchImpl: responder({ motor: "3d", fuente: "env" }) }), { motor: "3d", fuente: "env", detenido: false });
+  assert.deepEqual(await pedirMotorGuiada({ para: "plan_nuevo", fetchImpl: responder({ motor: "3d", fuente: "cookie" }) }), { motor: "3d", fuente: "cookie", detenido: false });
   assert.deepEqual(pedidos, ["/api/guiada/motor", "/api/guiada/motor?para=plan_nuevo"]);
-  const python = { motor: "python", fuente: null };
+  const python = { motor: "python", fuente: null, detenido: false };
   assert.deepEqual(await pedirMotorGuiada({ fetchImpl: responder({ error: "x" }, 401) }), python);
   assert.deepEqual(await pedirMotorGuiada({ fetchImpl: responder({ motor: "cuatro-d", fuente: "env" }) }), python);
   assert.deepEqual(await pedirMotorGuiada({ fetchImpl: responder("texto") }), python);

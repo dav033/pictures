@@ -5,6 +5,7 @@ import { ADORNO_FLOR } from "@/lib/plan/flores-pieza";
 import { claveCruce } from "./crosswalk-variantes";
 import { FORMATOS_GLOBO } from "../formatos";
 import type { CompraMotor, CotizacionDelMotor } from "./cotizar-bom";
+import type { AsignacionPieza } from "./plan-de-compra";
 import type { EspecClienteV1 } from "./espec-cliente-v1";
 import { lineasDeFlores } from "./flores-espec";
 import { MERMA_PORCENTAJE } from "./merma";
@@ -32,6 +33,8 @@ export type EntradaSobre = {
   cotizacion: CotizacionDelMotor;
   concepto: ConceptoPlan;
   requestId: string;
+  /** Huella del navegador que pidió el plan: el token queda atado a él (un token copiado a otro navegador no sirve). */
+  navegador?: string;
 };
 
 export type SobreDelMotor = { ok: true; plan: PlanGuiadoMotor; cotizacion: CotizacionDelMotor["cotizacion"] } | { ok: false; motivo: string };
@@ -68,15 +71,17 @@ function lineaDePieza(piezaId: string, compra: CompraMotor, unidades: number, fl
   };
 }
 
-/** Las líneas de una pieza: los globos del cuerpo y, aparte y marcados como adorno, los de sus flores. */
-function lineasResueltas(piezaId: string, lineas: readonly BomLinea[], flores: readonly BomLinea[], compras: ReadonlyMap<string, CompraMotor>) {
-  const deFlor = new Map(flores.map((l) => [claveCruce(l.formatoId, l.codigo), l.cantidad]));
-  return lineas.flatMap((linea) => {
-    const clave = claveCruce(linea.formatoId, linea.codigo);
-    const compra = compras.get(clave)!;
-    const enFlor = Math.min(linea.cantidad, deFlor.get(clave) ?? 0);
+/**
+ * Las líneas de una pieza: los globos del cuerpo y, aparte y marcados como adorno, los de sus flores. Una pieza puede llevar
+ * globos de un mismo color y talla en más de una variante (la combinación de paquetes más barata): cada una es su línea.
+ */
+function lineasResueltas(piezaId: string, asignaciones: readonly AsignacionPieza<CompraMotor>[], flores: readonly BomLinea[]) {
+  const deFlorPorClave = new Map(flores.map((l) => [claveCruce(l.formatoId, l.codigo), l.cantidad]));
+  return asignaciones.flatMap(({ compra, cantidad }) => {
+    const enFlor = Math.min(cantidad, deFlorPorClave.get(compra.clave) ?? 0);
+    deFlorPorClave.set(compra.clave, (deFlorPorClave.get(compra.clave) ?? 0) - enFlor);
     return [
-      ...(linea.cantidad - enFlor > 0 ? [lineaDePieza(piezaId, compra, linea.cantidad - enFlor, false)] : []),
+      ...(cantidad - enFlor > 0 ? [lineaDePieza(piezaId, compra, cantidad - enFlor, false)] : []),
       ...(enFlor > 0 ? [lineaDePieza(piezaId, compra, enFlor, true)] : []),
     ];
   });
@@ -102,13 +107,15 @@ function mezclaReal(lineas: ReadonlyArray<{ diam_pulg?: number; forma?: string; 
 
 export function sobreDelMotor(entrada: EntradaSobre): SobreDelMotor {
   const { espec, resultado, cotizacion, concepto, requestId } = entrada;
-  const compras = new Map(cotizacion.compras.flatMap((compra) => compra.claves.map((clave) => [clave, compra] as const)));
+  // Una compra por cada (formato, color) para nombrar productos y colores; las cantidades salen de las asignaciones por pieza.
+  const compras = new Map<string, CompraMotor>();
+  for (const compra of cotizacion.compras) if (!compras.has(compra.clave)) compras.set(compra.clave, compra);
   if (resultado.bom.total.some((linea) => !compras.has(claveCruce(linea.formatoId, linea.codigo)))) return { ok: false, motivo: "La cotización no cubre todas las líneas del motor." };
   const plan = proyectarPlan({ espec, porPieza: resultado.bom.porPieza, compras, concepto, avisos: resultado.avisos, planId: uuidDeHash(resultado.especHash) });
   if (!plan.ok) return { ok: false, motivo: plan.motivo };
 
   const estructuras = espec.piezas.map((pieza) => {
-    const lineas = lineasResueltas(pieza.id, resultado.bom.porPieza[pieza.id] ?? [], pieza.flores ? lineasDeFlores(pieza.flores, []) : [], compras);
+    const lineas = lineasResueltas(pieza.id, cotizacion.porPieza[pieza.id] ?? [], pieza.flores ? lineasDeFlores(pieza.flores, []) : []);
     const proyectada = plan.plan.estructuras.find((e) => e.estructura_id === pieza.id)!;
     return {
       estructura_id: pieza.id, nombre: proyectada.nombre, tipo: proyectada.tipo, ubicacion: proyectada.ubicacion, repeticiones: 1, eje_m: null,
@@ -117,9 +124,8 @@ export function sobreDelMotor(entrada: EntradaSobre): SobreDelMotor {
   });
 
   const piezasPorVariante = new Map<string, string[]>();
-  for (const [piezaId, lineas] of Object.entries(resultado.bom.porPieza)) for (const l of lineas) {
-    const variantId = compras.get(claveCruce(l.formatoId, l.codigo))!.variante.variantId;
-    piezasPorVariante.set(variantId, [...new Set([...(piezasPorVariante.get(variantId) ?? []), piezaId])]);
+  for (const [piezaId, asignaciones] of Object.entries(cotizacion.porPieza)) for (const { compra } of asignaciones) {
+    piezasPorVariante.set(compra.variante.variantId, [...new Set([...(piezasPorVariante.get(compra.variante.variantId) ?? []), piezaId])]);
   }
   const comprasEnvoltura = cotizacion.compras.map((compra) => {
     const piezas = piezasPorVariante.get(compra.variante.variantId) ?? [];
@@ -129,9 +135,9 @@ export function sobreDelMotor(entrada: EntradaSobre): SobreDelMotor {
       variant_id: compra.variante.variantId, product_id: compra.variante.productId, sku: null,
       titulo: `${compra.variante.titulo} — ${compra.variante.tituloVariante}`, tamano_codigo: compra.formatoId,
       diam_pulg: formato ? Math.round(formato.diametroMaxCm / PULGADAS_POR_CM) : null, color,
-      unidades_necesarias: compra.cantidad, design_quantity: compra.cantidad, waste_reserve: compra.cantidadConMerma - compra.cantidad,
+      unidades_necesarias: compra.cantidad, design_quantity: compra.cantidad, waste_reserve: compra.reserva,
       required_quantity: compra.cantidadConMerma, unidades_con_merma: compra.cantidadConMerma, unidades_paquete: compra.unidadesPaquete, paquetes: compra.paquetes,
-      purchase_quantity: compra.paquetes * compra.unidadesPaquete, used: compra.cantidad, leftover_inventory: compra.sobrante - (compra.cantidadConMerma - compra.cantidad),
+      purchase_quantity: compra.paquetes * compra.unidadesPaquete, used: compra.cantidad, leftover_inventory: Math.max(0, compra.paquetes * compra.unidadesPaquete - compra.cantidadConMerma),
       consumption_cost: Math.round((compra.cantidad * compra.precioPaquete) / compra.unidadesPaquete), purchase_cost: compra.subtotal,
       additional_package_for_waste: false, sobrante: compra.sobrante, precio_paquete: compra.precioPaquete, subtotal: compra.subtotal,
       estructuras: piezas, elementos_origen: piezas.map((id) => ({ kind: "estructura" as const, id })),
@@ -139,7 +145,7 @@ export function sobreDelMotor(entrada: EntradaSobre): SobreDelMotor {
   });
 
   const diseno = cotizacion.compras.reduce((suma, c) => suma + c.cantidad, 0);
-  const reserva = cotizacion.compras.reduce((suma, c) => suma + (c.cantidadConMerma - c.cantidad), 0);
+  const { reserva } = cotizacion;
   const porTamano: Record<string, number> = {};
   for (const compra of cotizacion.compras) porTamano[compra.formatoId] = (porTamano[compra.formatoId] ?? 0) + compra.cantidad;
   const approval_token = crearTokenPlan({
@@ -148,6 +154,7 @@ export function sobreDelMotor(entrada: EntradaSobre): SobreDelMotor {
     backend: "globos3d",
     catalogSnapshotId: cotizacion.snapshot,
     allowlist: allowlistDesdeMapa(variantesPorProducto(cotizacion.compras)),
+    ...(entrada.navegador ? { navegador: entrada.navegador } : {}),
   });
 
   const sobre = {
@@ -159,14 +166,14 @@ export function sobreDelMotor(entrada: EntradaSobre): SobreDelMotor {
     compras: comprasEnvoltura,
     totales: {
       globos_por_tamano: porTamano, total_unidades: diseno, total_cop: cotizacion.total, design_quantity: diseno,
-      target_waste_reserve: reserva, covered_waste_reserve: reserva, uncovered_waste_reserve: 0,
-      natural_package_surplus: cotizacion.compras.reduce((suma, c) => suma + c.sobrante - (c.cantidadConMerma - c.cantidad), 0),
+      target_waste_reserve: reserva.objetivo, covered_waste_reserve: reserva.cubierta, uncovered_waste_reserve: reserva.sinCubrir,
+      natural_package_surplus: reserva.excedenteNatural,
       purchase_cost: cotizacion.total, consumption_cost: comprasEnvoltura.reduce((suma, c) => suma + c.consumption_cost, 0),
       waste_only_savings_cop: 0, additional_waste_packages: 0, ahorro_paquetes_cop: 0, incluye_iva: true, merma_porcentaje: MERMA_PORCENTAJE,
     },
     comercial: { estado: "VERIFICADO" as const, delta_cop: 0 },
     alternativas: [],
-    merma_log: `Reserva del ${MERMA_PORCENTAJE}% sobre lo que cuenta el motor, antes de redondear a paquetes cerrados (snapshot ${cotizacion.snapshot}).`,
+    merma_log: `Reserva del ${MERMA_PORCENTAJE}% sobre lo que cuenta el motor (política de paquetes «${cotizacion.politica}»), snapshot de precios ${cotizacion.snapshot}.`,
     sustituciones: [],
     sin_cobertura: [],
     advertencias: [],

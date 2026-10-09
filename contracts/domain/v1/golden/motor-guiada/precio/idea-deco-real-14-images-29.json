@@ -2,27 +2,53 @@
  "caso": "idea-deco-real-14-images-29",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "8ba9f0ba87ca6b92a8d2b2d1240e4cdd295058d51119d7aa028472ceac273e75",
+ "especHash": "e5019fbc2ea98f0198ca26ad18411d7f82ceb73b9f08096fbe733711288226ae",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
  "faltantes": [],
+ "reserva": {
+  "objetivo": 9,
+  "cubierta": 9,
+  "sinCubrir": 0
+ },
  "pedido": [
   {
    "formatoId": "R-12",
    "codigo": "005",
-   "cantidad": 56,
-   "cantidadConMerma": 61,
+   "cantidad": 12,
+   "reserva": 0,
+   "paquetes": 1,
    "productId": "8634235781415",
    "variantId": "46594221277479"
   },
   {
    "formatoId": "R-12",
+   "codigo": "005",
+   "cantidad": 44,
+   "reserva": 6,
+   "paquetes": 1,
+   "productId": "8634235781415",
+   "variantId": "46594221343015"
+  },
+  {
+   "formatoId": "R-12",
    "codigo": "080",
-   "cantidad": 56,
-   "cantidadConMerma": 61,
+   "cantidad": 12,
+   "reserva": 0,
+   "paquetes": 1,
    "productId": "8634239516967",
    "variantId": "46594235171111"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "080",
+   "cantidad": 44,
+   "reserva": 3,
+   "paquetes": 1,
+   "productId": "8634239516967",
+   "variantId": "46594235269415"
   }
  ]
 }

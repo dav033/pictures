@@ -2,9 +2,9 @@
  "caso": "oficial-techo_globos",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "6de172cb1369bd834ebe28bbd1c0fdadae4543353215728973bf720a6302ba0a",
+ "especHash": "87bd0f0d9a114c39e05814044c399d3fd3aa32571132c537042e001754ff8eb9",
  "noRepresentable": [],
  "piezas": {
   "EST_01_TECHO_GLOBOS": {

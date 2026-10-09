@@ -2,43 +2,194 @@
  "caso": "idea-deco-real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "a74dabfa01dc8c1f87f9aa3b76542db55d5b499f5c2bc580b90f279d0f2793ad",
+ "especHash": "d1a0d90e2bd29b1bf7d515b576b68ad027b0cd7c9a0e66d8684909f6c2f7d301",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
- "faltantes": [],
+ "politica": "python",
+ "faltantes": [
+  {
+   "formatoId": "R-18",
+   "codigo": "038",
+   "motivo": "talla_no_vendida"
+  }
+ ],
+ "reserva": {
+  "objetivo": 6,
+  "cubierta": 6,
+  "sinCubrir": 0
+ },
  "pedido": [
   {
-   "formatoId": "R-12",
-   "codigo": "015",
-   "cantidad": 8,
-   "cantidadConMerma": 9,
-   "productId": "8634239942951",
-   "variantId": "46594236350759"
+   "formatoId": "R-5",
+   "codigo": "030",
+   "cantidad": 16,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634233618727",
+   "variantId": "46594211610919"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "030",
+   "cantidad": 2,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634233618727",
+   "variantId": "46594211676455"
   },
   {
    "formatoId": "R-12",
    "codigo": "030",
-   "cantidad": 16,
-   "cantidadConMerma": 18,
+   "cantidad": 1,
+   "reserva": 0,
+   "paquetes": 1,
    "productId": "8634233618727",
-   "variantId": "46594211807527"
+   "variantId": "46594211774759"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "030",
+   "cantidad": 1,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634233618727",
+   "variantId": "46594211873063"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "038",
+   "cantidad": 1,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634233979175",
+   "variantId": "46594216591655"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "038",
+   "cantidad": 3,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634233979175",
+   "variantId": "46594216722727"
   },
   {
    "formatoId": "R-12",
-   "codigo": "041",
-   "cantidad": 8,
-   "cantidadConMerma": 9,
-   "productId": "8634239320359",
-   "variantId": "46594232484135"
+   "codigo": "038",
+   "cantidad": 1,
+   "reserva": 6,
+   "paquetes": 1,
+   "productId": "8634233979175",
+   "variantId": "46594216821031"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "061",
+   "cantidad": 1,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634238599463",
+   "variantId": "46594228420903"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "061",
+   "cantidad": 2,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634238599463",
+   "variantId": "46594228519207"
   },
   {
    "formatoId": "R-12",
    "codigo": "061",
-   "cantidad": 8,
-   "cantidadConMerma": 9,
+   "cantidad": 3,
+   "reserva": 0,
+   "paquetes": 1,
    "productId": "8634238599463",
    "variantId": "46594228617511"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "061",
+   "cantidad": 1,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634238599463",
+   "variantId": "46594228748583"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "020",
+   "cantidad": 6,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634239287591",
+   "variantId": "46594231730471"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "020",
+   "cantidad": 3,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634239287591",
+   "variantId": "46594231828775"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "020",
+   "cantidad": 4,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634239287591",
+   "variantId": "46594231927079"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "041",
+   "cantidad": 9,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634239320359",
+   "variantId": "46594232287527"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "041",
+   "cantidad": 3,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634239320359",
+   "variantId": "46594232385831"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "041",
+   "cantidad": 2,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634239320359",
+   "variantId": "46594232484135"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "015",
+   "cantidad": 11,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634239942951",
+   "variantId": "46594236154151"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "015",
+   "cantidad": 3,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634239942951",
+   "variantId": "46594236252455"
   }
  ]
 }

@@ -2,9 +2,9 @@
  "caso": "oficial-aro_circular",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "5ee0b466558b9b7666edeeae5a59d63742f586129f635b50232f3aec2f01812a",
+ "especHash": "b1889a36a5632668c75363aa7f7dd3c1bc461f80701a779a5173c2d0aa6087cb",
  "noRepresentable": [],
  "piezas": {
   "EST_01_ARO_CIRCULAR": {

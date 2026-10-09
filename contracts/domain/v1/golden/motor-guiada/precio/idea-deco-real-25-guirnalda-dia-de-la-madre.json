@@ -2,35 +2,107 @@
  "caso": "idea-deco-real-25-guirnalda-dia-de-la-madre",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "fa29db40a8043ed33f3002ca3516a6983b1ef1543978e155e9ee6ad4f6deef64",
+ "especHash": "5dec75e07bc90c491a32db0b21918d38a752acc6626fc9a64e4bb03b894dd34b",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
  "faltantes": [],
+ "reserva": {
+  "objetivo": 8,
+  "cubierta": 8,
+  "sinCubrir": 0
+ },
  "pedido": [
   {
-   "formatoId": "R-9",
-   "codigo": "018",
-   "cantidad": 24,
-   "cantidadConMerma": 26,
-   "productId": "8634363216167",
-   "variantId": "46594437873959"
+   "formatoId": "R-5",
+   "codigo": "406",
+   "cantidad": 7,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634277921063",
+   "variantId": "46594308440359"
   },
   {
    "formatoId": "R-9",
    "codigo": "406",
-   "cantidad": 24,
-   "cantidadConMerma": 26,
+   "cantidad": 7,
+   "reserva": 0,
+   "paquetes": 1,
    "productId": "8634277921063",
    "variantId": "46594308604199"
   },
   {
+   "formatoId": "R-12",
+   "codigo": "406",
+   "cantidad": 9,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634277921063",
+   "variantId": "46594308702503"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "406",
+   "cantidad": 3,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634277921063",
+   "variantId": "46594308800807"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "059",
+   "cantidad": 2,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634310426919",
+   "variantId": "46594359853351"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "059",
+   "cantidad": 32,
+   "reserva": 8,
+   "paquetes": 1,
+   "productId": "8634310426919",
+   "variantId": "46594359918887"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "018",
+   "cantidad": 17,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634363216167",
+   "variantId": "46594437808423"
+  },
+  {
    "formatoId": "R-9",
-   "codigo": "568",
-   "cantidad": 24,
-   "cantidadConMerma": 26,
-   "productId": "8634258489639",
-   "variantId": "46594271412519"
+   "codigo": "018",
+   "cantidad": 12,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634363216167",
+   "variantId": "46594437873959"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "018",
+   "cantidad": 4,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634363216167",
+   "variantId": "46594438168871"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "018",
+   "cantidad": 1,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634363216167",
+   "variantId": "46594438562087"
   }
  ]
 }

@@ -8,6 +8,7 @@ import { lineasDeFlores } from "./flores-espec";
 import { DENSIDAD_POR_DEFECTO, medidasDe } from "./medidas-espec";
 import type { BomLinea } from "./resultado-motor-v1";
 import { claveCruce } from "./crosswalk-variantes";
+import { colorDeCompra } from "./plan-de-compra";
 
 /**
  * **Espec -> `PlanDecoracion`** (el contrato que la tarjeta, los pasos y la compra ya entienden). Es una PROYECCIÓN: el
@@ -17,8 +18,6 @@ import { claveCruce } from "./crosswalk-variantes";
  * `PlanDecoracionSchema` siga siendo el guardián del sobre.
  */
 export type ConceptoPlan = { titulo: string; descripcion: string; estilo?: string; ocasion?: string };
-
-const PRODUCTO_SIN_COLOR = "otro color";
 
 const UBICACION_POR_LUGAR: Readonly<Record<LugarEspec, string>> = {
   izquierda: "lateral_izquierdo", derecha: "lateral_derecho", fondo: "fondo_pared", techo: "techo", mesa: "sobre_mesa_principal", centro: "piso_frontal",
@@ -32,7 +31,7 @@ const ROLES_MATERIAL = ["principal", "secundario", "acento"] as const;
 /** Lo que se dice de una línea de globos en el plan: nombre del color, acabado y forma, como los escribe el catálogo. */
 export function datosDeLinea(compra: Pick<CompraMotor, "codigo" | "variante" | "formatoId">): { color: string; acabado: string | null } {
   const referencia = referenciaPorCodigo(compra.codigo);
-  return { color: compra.variante.color ?? referencia?.nombre.toLowerCase() ?? PRODUCTO_SIN_COLOR, acabado: referencia ? ACABADO_POR_FAMILIA[referencia.familia] ?? referencia.familia : null };
+  return { color: colorDeCompra(compra.variante, compra.codigo), acabado: referencia ? ACABADO_POR_FAMILIA[referencia.familia] ?? referencia.familia : null };
 }
 
 const ACABADO_POR_FAMILIA: Readonly<Record<string, string>> = {
@@ -95,7 +94,9 @@ export function proyectarPlan(entrada: EntradaProyeccion): ProyeccionPlan {
       const compra = productoDeCodigo(color.codigo, lineas);
       return compra ? [{ color, compra }] : [];
     });
-    if (!conProducto.length) return { ok: false, motivo: `Ningún color de ${pieza.id} tiene un producto de la tienda.` };
+    // Ningún color del cliente se pierde en silencio: si alguno no llegó a la lista de compra, el plan no se arma así.
+    const sinProducto = pieza.colores.filter((color) => !conProducto.some((c) => c.color === color));
+    if (sinProducto.length) return { ok: false, motivo: `Los colores ${sinProducto.map((c) => `${c.nombre} (${c.codigo})`).join(", ")} de ${pieza.id} no están en su lista de materiales.` };
     const pesos = participaciones(conProducto.map(({ color }) => color.peso));
     const sinGeometria = !["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"].includes(oficial.tipoBase);
     const unidades = lineas.reduce((suma, linea) => suma + linea.cantidad, 0);

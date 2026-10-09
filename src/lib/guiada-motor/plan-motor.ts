@@ -1,5 +1,7 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { isAuthenticatedRequest } from "@/lib/auth/request";
+import { exigirEscritura } from "@/lib/feedback-ia/acceso";
 import {
   EspecClienteV1Schema, armarDesdeEspec, especDesdeIdeaGuardada, especDesdePropuesta, especHashDe, sobreDelMotor, sumarIdeaAEspec,
   type ConceptoPlan, type EspecClienteV1, type ResultadoCotizacionBom, type ResultadoMotorV1,
@@ -15,9 +17,10 @@ import type { RespuestaMotor } from "./tipos";
  * y colores, y el motor cuenta. La bandera, la cotización y la auditoría se inyectan para probarla sin red ni base.
  *
  * Reglas:
- * - un plan NUEVO (propuesta, o idea sin plan) pide la bandera en `3d`; sumar una idea a un plan DEL MOTOR 3D sigue en el
- *   motor aunque la bandera haya cambiado (un plan conserva su motor);
+ * - la bandera manda SIEMPRE (marcha atrás inmediata): con `python`, cualquier petición (un plan nuevo, rehacer uno o sumar
+ *   una idea a un plan del 3D) responde `bandera_python` y la vista rehace el plan completo con Python;
  * - un token de Python (`backend: python`) se rechaza: cada plan tiene un solo dueño de sus cantidades;
+ * - el token del 3D va atado al navegador que pidió el plan (cookie `feedback_usuario`): copiado a otro, no sirve;
  * - todo lo que impida el plan 3D es un fallo TIPADO (`fallback.razon`) y la vista resuelve por Python.
  */
 export type DependenciasPlanMotor = {
@@ -50,17 +53,25 @@ const FRASE_POR_RAZON: Readonly<Record<RazonFallback, string>> = {
 };
 
 type BaseVerificada = { espec: EspecClienteV1; concepto: ConceptoPlan };
+type RechazoBase = { codigo: "APROBACION_INVALIDA" | "PLAN_NO_ES_DEL_MOTOR_3D" | "ESPEC_INVALIDA" | "PLAN_ALTERADO"; mensaje: string; estado: number; motivo: string };
 
-/** El plan vigente que se envía como base: token del motor 3D, firma y hash de la espec que trae. Nada de esto se toma del navegador sin comprobar. */
-function verificarBase(base: NonNullable<CuerpoPlanMotor["base"]>): BaseVerificada | Response {
+/** Huella (no reversible) del navegador al que se le dio el plan. */
+export const huellaDeNavegador = (usuarioId: string): string => createHash("sha256").update(`globos3d-navegador:${usuarioId}`).digest("hex");
+
+/**
+ * El plan vigente que se envía como base: token del motor 3D, firma, navegador y hash de la espec que trae. Nada de esto
+ * se toma del navegador sin comprobar.
+ */
+function verificarBase(base: NonNullable<CuerpoPlanMotor["base"]>, navegador: string): BaseVerificada | RechazoBase {
   const contexto = abrirContextoPlan(base.approval_token);
-  if (!contexto || !verificarTokenAprobacion(base.approval_token, base.plan_hash)) return error("APROBACION_INVALIDA", "La aprobación del plan expiró o no corresponde a este plan.", 409);
-  if (contexto.backend !== "globos3d") return error("PLAN_NO_ES_DEL_MOTOR_3D", "Este plan lo armó el motor de Python: el motor 3D no lo toca.", 409);
+  if (!contexto || !verificarTokenAprobacion(base.approval_token, base.plan_hash)) return { codigo: "APROBACION_INVALIDA", mensaje: "La aprobación del plan expiró o no corresponde a este plan.", estado: 409, motivo: contexto ? "hash_distinto" : "token_invalido_o_vencido" };
+  if (contexto.backend !== "globos3d") return { codigo: "PLAN_NO_ES_DEL_MOTOR_3D", mensaje: "Este plan lo armó el motor de Python: el motor 3D no lo toca.", estado: 409, motivo: `backend_${contexto.backend}` };
+  if (contexto.navegador !== navegador) return { codigo: "APROBACION_INVALIDA", mensaje: "La aprobación del plan expiró o no corresponde a este plan.", estado: 409, motivo: contexto.navegador === null ? "token_sin_navegador" : "navegador_distinto" };
   const espec = EspecClienteV1Schema.safeParse((base as { espec?: unknown }).espec);
   const version = (base as { motor?: { version?: unknown } }).motor?.version;
-  if (!espec.success || typeof version !== "string") return error("ESPEC_INVALIDA", "El plan no trae su especificación.", 400);
+  if (!espec.success || typeof version !== "string") return { codigo: "ESPEC_INVALIDA", mensaje: "El plan no trae su especificación.", estado: 400, motivo: "espec_ausente_o_invalida" };
   // El token firma el hash de la espec: si el navegador la cambió, el hash ya no coincide.
-  if (especHashDe(espec.data, version) !== base.plan_hash) return error("PLAN_ALTERADO", "El plan no corresponde a su aprobación.", 409);
+  if (especHashDe(espec.data, version) !== base.plan_hash) return { codigo: "PLAN_ALTERADO", mensaje: "El plan no corresponde a su aprobación.", estado: 409, motivo: "hash_de_la_espec_distinto" };
   return { espec: espec.data, concepto: { titulo: base.plan.concepto.titulo, descripcion: base.plan.concepto.descripcion, ...(base.plan.concepto.estilo ? { estilo: base.plan.concepto.estilo } : {}), ...(base.plan.concepto.ocasion ? { ocasion: base.plan.concepto.ocasion } : {}) } };
 }
 
@@ -98,6 +109,13 @@ function armarEspec(cuerpo: CuerpoPlanMotor, base: BaseVerificada | null, deps: 
 
 export async function atenderPlanMotor(request: Request, deps: DependenciasPlanMotor): Promise<Response> {
   if (!isAuthenticatedRequest(request)) return error("SESION_REQUERIDA", "Sesión requerida.", 401);
+  // La identidad del navegador (cookie aleatoria por navegador): ata el token del plan al navegador que lo pidió.
+  const acceso = exigirEscritura(request);
+  if ("respuesta" in acceso) return acceso.respuesta;
+  return acceso.conCookie(await atender(request, deps, huellaDeNavegador(acceso.usuarioId)));
+}
+
+async function atender(request: Request, deps: DependenciasPlanMotor, navegador: string): Promise<Response> {
   const texto = await request.text().catch(() => "");
   if (!texto || texto.length > MAX_CARACTERES_CUERPO) return error("CUERPO_INVALIDO", "Cuerpo inválido.", 400);
   let json: unknown;
@@ -116,13 +134,16 @@ export async function atenderPlanMotor(request: Request, deps: DependenciasPlanM
     return error(razon === "bandera_python" ? "MOTOR_PYTHON" : "PLAN_NO_ARMABLE_EN_3D", FRASE_POR_RAZON[razon], razon === "bandera_python" ? 409 : 422, { fallback: { razon, ...(detalle ? { detalle } : {}), ...(piezas ? { piezas } : {}) } });
   };
 
+  // La bandera manda siempre: con `python` ni se verifica la base. Un plan del 3D que estaba en pantalla se rehace con Python.
+  if (bandera.motor !== "3d") return fallo("bandera_python");
   let base: BaseVerificada | null = null;
   if (cuerpo.base) {
-    const verificada = verificarBase(cuerpo.base);
-    if (verificada instanceof Response) return verificada;
+    const verificada = verificarBase(cuerpo.base, navegador);
+    if ("codigo" in verificada) {
+      deps.auditar("regla:motor_guiada", "plan de la guiada: la base que mandó el navegador no se acepta", { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "python", razon: verificada.codigo, motivo: verificada.motivo }, { entrada, motivo: verificada.mensaje });
+      return error(verificada.codigo, verificada.mensaje, verificada.estado);
+    }
     base = verificada;
-  } else if (bandera.motor !== "3d") {
-    return fallo("bandera_python");
   }
 
   try {
@@ -136,12 +157,13 @@ export async function atenderPlanMotor(request: Request, deps: DependenciasPlanM
       if (cotizada.razon === "sin_cobertura") return fallo("sin_cobertura", cotizada.faltantes.map((f) => `${f.formatoId} ${f.codigo}: ${f.motivo}`).join("; "));
       return fallo(cotizada.razon === "material_no_disponible" ? "sin_cobertura" : "precio_fallido", cotizada.detalle);
     }
-    const sobre = sobreDelMotor({ espec, resultado: { ...resultado, avisos }, cotizacion: cotizada, concepto, requestId });
+    const sobre = sobreDelMotor({ espec, resultado: { ...resultado, avisos }, cotizacion: cotizada, concepto, requestId, navegador });
     if (!sobre.ok) return fallo("sobre_invalido", sobre.motivo);
     deps.auditar("regla:motor_guiada", "plan de la guiada armado por el motor 3D y cotizado con Python", {
       bandera: bandera.motor, fuente: bandera.fuente, efectivo: "3d", plan_hash: resultado.especHash, motor: resultado.motor,
       piezas: espec.piezas.map((p) => ({ id: p.id, oficial: p.oficial })), globos: resultado.bom.total.reduce((suma, l) => suma + l.cantidad, 0),
-      lineas: cotizada.compras.length, total_cop: cotizada.total, snapshot: cotizada.snapshot, avisos, ms: Date.now() - inicio,
+      lineas: cotizada.compras.length, total_cop: cotizada.total, snapshot_precios: cotizada.snapshot, snapshot_cruce: cotizada.snapshotCruce,
+      politica_paquetes: cotizada.politica, reserva: cotizada.reserva, avisos, ms: Date.now() - inicio,
     }, { entrada });
     return Response.json({ plan: sobre.plan, cotizacion: sobre.cotizacion, nuevas, globosIdea, exacto: avisos.length === 0, avisos: avisos.slice(0, 4) }, { headers: SIN_CACHE });
   } catch (causa) {

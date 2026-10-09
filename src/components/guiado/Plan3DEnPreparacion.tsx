@@ -12,6 +12,9 @@ export const TEXTO_NOTA_PLAN_3D = "Por ahora puedes ver cuántos globos lleva ca
 export const TEXTO_IMAGEN_PLAN_3D = "La imagen de cómo quedaría este plan todavía está en preparación. Mientras tanto puedes ver sus globos, su precio y dónde comprarlo.";
 export const TEXTO_EDICION_PLAN_3D = "Los cambios a este plan todavía están en preparación, así que no lo toqué. Si quieres otra cosa, puedo armar un plan nuevo.";
 
+/** Lo que se le dice al cliente cuando su plan del 3D se rehízo entero con el motor de siempre (marcha atrás o un 3D que no pudo). */
+export const TEXTO_REHECHO_EN_PYTHON = "Rehice tu plan completo con el motor de siempre, así que algunas cantidades pueden cambiar un poco.";
+
 /** El marcador de la vista del plan: una sola vez por tarjeta, bajo las piezas. */
 export function VistaPlanEnPreparacion() {
   return (

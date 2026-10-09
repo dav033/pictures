@@ -37,7 +37,7 @@ export function representacionDe(pieza: PiezaEspec): Representacion {
   if (LIGERAS.has(pieza.oficial)) return { estado: "aproximada", motivo: "No hay variante ligera de cuartetos: se arma orgánica con menos globos." };
   if (pieza.oficial === "bouquet") return { estado: "aproximada", motivo: "El bouquet se arma como un ramo de helio sin variantes de base ni de peso." };
   if (CLASICAS_DE_TRENZA.has(pieza.oficial) && pieza.tamanos === "clasica" && pieza.colores.length > MAX_COLORES_TRENZA) {
-    return { estado: "aproximada", motivo: `La trenza clásica lleva hasta ${MAX_COLORES_TRENZA} colores: los ${pieza.colores.length} van en bandas de dos cuartetos.` };
+    return { estado: "aproximada", motivo: `La trenza clásica lleva hasta ${MAX_COLORES_TRENZA} colores: los ${pieza.colores.length} van en bandas de dos cuartetos y, si el tamaño no alcanza para tantas bandas, se arma orgánica.` };
   }
   if (pieza.oficial === "pared_densa" && pieza.colores.length > MAX_COLORES_PARED) {
     return { estado: "aproximada", motivo: `La pared de malla lleva hasta ${MAX_COLORES_PARED} colores: se usan los ${MAX_COLORES_PARED} primeros.` };

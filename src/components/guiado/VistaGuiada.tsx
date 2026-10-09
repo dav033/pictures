@@ -73,7 +73,7 @@ import { abrirConversacionGuiada, registrarAccionGuiada, registrarFalloGuiado, v
 import { AVISO_VERSION_NUEVA, CABECERA_VERSION_APP, RespuestaIncompatibleError, camposInvalidos, clasificarIncompatible, hayVersionNueva, idParaReintento, turnoSinRespuesta } from "./version-pagina";
 import { borrarEstadoGuiado } from "./empezar-de-nuevo";
 import { useMotorGuiada } from "./usarMotorGuiada";
-import { TEXTO_EDICION_PLAN_3D, TEXTO_IMAGEN_PLAN_3D } from "./Plan3DEnPreparacion";
+import { TEXTO_EDICION_PLAN_3D, TEXTO_IMAGEN_PLAN_3D, TEXTO_REHECHO_EN_PYTHON } from "./Plan3DEnPreparacion";
 import type { MotorGuiada } from "@/lib/guiada-motor/tipos";
 import { ConfirmarEmpezarDeNuevo } from "./ConfirmarEmpezarDeNuevo";
 import { borrarImagenesNavegador, guardarImagenNavegador, leerImagenesNavegador } from "./imagenes-navegador";
@@ -878,11 +878,12 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   }
 
   /**
-   * REQ-007: con la bandera en `3d` (o si el plan que se rehace ya era del 3D) la propuesta se arma con el motor 3D
-   * (`/api/guiada/motor/plan`); si el 3D no la arma (pieza sin constructor, precio que falla) y el plan no era ya del 3D,
-   * sigue por Python y el motivo queda en el registro. Un plan de foto va siempre por Python.
+   * REQ-007: con la bandera en `3d` la propuesta se arma con el motor 3D (`/api/guiada/motor/plan`). La bandera manda
+   * siempre, también sobre un plan que ya era del 3D: con `python`, o si el 3D no la arma (pieza sin constructor, precio
+   * que falla, base rechazada, red), el plan se rehace ENTERO con Python y el motivo queda en el registro; el cliente nunca
+   * se queda sin plan. Un plan de foto va siempre por Python. «Detener» durante la lectura de la bandera no arma ningún plan.
    */
-  async function ejecutarPlanConMotor(mensajeId: string, entrada: { propuesta: Propuesta; anterior3d: PlanGuiado | null; deFoto: boolean }, python: () => ReturnType<typeof ejecutarPlan>): Promise<Awaited<ReturnType<typeof ejecutarPlan>> & { motor: MotorGuiada }> {
+  async function ejecutarPlanConMotor(mensajeId: string, entrada: { propuesta: Propuesta; anterior3d: PlanGuiado | null; deFoto: boolean }, python: () => ReturnType<typeof ejecutarPlan>): Promise<Awaited<ReturnType<typeof ejecutarPlan>> & { motor: MotorGuiada; rehechoEnPython?: true }> {
     const turno = ++turnoRef.current;
     const control = new AbortController();
     controlRef.current = control;
@@ -890,12 +891,14 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     fijarEtapa(mensajeId, "preparando");
     const intento = await planDePropuestaMotor({
       ...entrada, ...(brief ? { brief } : {}), signal: control.signal,
-      alFallback: (fallo) => registrarFallo("plan.motor_3d_fallback", fallo.detalle, { razon: fallo.razon, estado: fallo.estado, accion: entrada.anterior3d ? "el plan es del 3D: no se pasa a Python" : "se arma con Python" }, "warn"),
+      alFallback: (fallo) => registrarFallo("plan.motor_3d_fallback", fallo.detalle, { razon: fallo.razon, estado: fallo.estado, accion: entrada.anterior3d ? "el plan era del 3D: se rehace entero con Python" : "se arma con Python" }, "warn"),
     });
     if (turno !== turnoRef.current) return { turno, estado: "obsoleto", motor: "3d" };
-    if (intento === null) return { ...(await python()), motor: "python" };
+    // «Detener» durante la lectura de la bandera: ni plan del 3D ni plan de Python (que usa el modelo y se paga).
+    if (control.signal.aborted || (intento !== null && !intento.ok && intento.detenido)) return { turno, estado: "detenido", motor: "3d" };
+    if (intento === null) return { ...(await python()), motor: "python", ...(entrada.anterior3d ? { rehechoEnPython: true as const } : {}) };
     if (intento.ok) return { turno, estado: "ok", plan: intento.plan, cotizacion: intento.cotizacion, motor: "3d" };
-    return { turno, estado: intento.detenido ? "detenido" : "fallo", motor: "3d" };
+    return { turno, estado: "fallo", motor: "3d" };
   }
 
   function terminarPlan(turno: number, mensajeId: string): void {
@@ -1080,6 +1083,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     if (resultado.estado === "ok") {
       if (foto?.imagen) fotosRef.current.set(mensajeId, foto.imagen);
       colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, Boolean(foto), idea, foto?.referenciaId, resultado.motor);
+      // Un plan del 3D que se rehízo con Python se dice, sin tecnicismos.
+      if (resultado.rehechoEnPython) actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: `${mensaje.content} ${TEXTO_REHECHO_EN_PYTHON}` }));
     } else {
       actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, widgets: [{ tipo: "propuesta", propuesta, estado: "fallo" }] }));
       const accion: AccionFallo = { tipo: "plan", propuesta, mensajeId, ...(planAnterior ? { planAnterior } : {}), ...(idea ? { idea } : {}) };

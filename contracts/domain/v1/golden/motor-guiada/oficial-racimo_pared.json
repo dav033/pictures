@@ -2,9 +2,9 @@
  "caso": "oficial-racimo_pared",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "cd19d9fc36eb4f69d80b01aaae57a8b4d61065e23b5ee53d7849ba9b00dc0823",
+ "especHash": "ccebae834de3784ee56769b24372c07cd0bf07049668c206357ee955b6785d10",
  "noRepresentable": [],
  "piezas": {
   "EST_01_RACIMO_PARED": {

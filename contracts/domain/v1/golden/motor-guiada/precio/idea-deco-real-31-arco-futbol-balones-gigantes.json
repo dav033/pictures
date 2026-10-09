@@ -2,107 +2,125 @@
  "caso": "idea-deco-real-31-arco-futbol-balones-gigantes",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "3008a7ea9a2ff4041c760e00641fa9c3c4d4b7d3de1602f261c65ef7468e185c",
+ "especHash": "1da6f159f0350da3a0582ebe3282eb5a3958d5e9aa68808531fd51e0e5345e00",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
  "faltantes": [],
+ "reserva": {
+  "objetivo": 15,
+  "cubierta": 15,
+  "sinCubrir": 0
+ },
  "pedido": [
-  {
-   "formatoId": "R-5",
-   "codigo": "005",
-   "cantidad": 19,
-   "cantidadConMerma": 21,
-   "productId": "8634235781415",
-   "variantId": "46594221080871"
-  },
   {
    "formatoId": "R-5",
    "codigo": "031",
    "cantidad": 50,
-   "cantidadConMerma": 54,
+   "reserva": 0,
+   "paquetes": 1,
    "productId": "8634233684263",
-   "variantId": "46594213085479"
-  },
-  {
-   "formatoId": "R-5",
-   "codigo": "080",
-   "cantidad": 38,
-   "cantidadConMerma": 42,
-   "productId": "8634239516967",
-   "variantId": "46594235040039"
-  },
-  {
-   "formatoId": "R-9",
-   "codigo": "005",
-   "cantidad": 12,
-   "cantidadConMerma": 13,
-   "productId": "8634235781415",
-   "variantId": "46594221211943"
+   "variantId": "46594213118247"
   },
   {
    "formatoId": "R-9",
    "codigo": "031",
    "cantidad": 11,
-   "cantidadConMerma": 12,
+   "reserva": 0,
+   "paquetes": 1,
    "productId": "8634233684263",
    "variantId": "46594213151015"
-  },
-  {
-   "formatoId": "R-9",
-   "codigo": "080",
-   "cantidad": 11,
-   "cantidadConMerma": 12,
-   "productId": "8634239516967",
-   "variantId": "46594235072807"
-  },
-  {
-   "formatoId": "R-12",
-   "codigo": "005",
-   "cantidad": 16,
-   "cantidadConMerma": 18,
-   "productId": "8634235781415",
-   "variantId": "46594221310247"
   },
   {
    "formatoId": "R-12",
    "codigo": "031",
    "cantidad": 6,
-   "cantidadConMerma": 7,
+   "reserva": 6,
+   "paquetes": 1,
    "productId": "8634233684263",
    "variantId": "46594213249319"
   },
   {
+   "formatoId": "R-5",
+   "codigo": "005",
+   "cantidad": 19,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634235781415",
+   "variantId": "46594221113639"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "005",
+   "cantidad": 12,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634235781415",
+   "variantId": "46594221179175"
+  },
+  {
    "formatoId": "R-12",
-   "codigo": "080",
-   "cantidad": 8,
-   "cantidadConMerma": 9,
-   "productId": "8634239516967",
-   "variantId": "46594235171111"
+   "codigo": "005",
+   "cantidad": 16,
+   "reserva": 4,
+   "paquetes": 1,
+   "productId": "8634235781415",
+   "variantId": "46594221310247"
   },
   {
    "formatoId": "R-18",
    "codigo": "005",
    "cantidad": 9,
-   "cantidadConMerma": 10,
+   "reserva": 0,
+   "paquetes": 2,
    "productId": "8634235781415",
    "variantId": "46594221474087"
-  },
-  {
-   "formatoId": "R-18",
-   "codigo": "080",
-   "cantidad": 2,
-   "cantidadConMerma": 3,
-   "productId": "8634239516967",
-   "variantId": "46594235302183"
   },
   {
    "formatoId": "R-24",
    "codigo": "005",
    "cantidad": 3,
-   "cantidadConMerma": 4,
+   "reserva": 0,
+   "paquetes": 1,
    "productId": "8634235781415",
    "variantId": "46594221539623"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "080",
+   "cantidad": 38,
+   "reserva": 0,
+   "paquetes": 2,
+   "productId": "8634239516967",
+   "variantId": "46594235007271"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "080",
+   "cantidad": 11,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634239516967",
+   "variantId": "46594235072807"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "080",
+   "cantidad": 8,
+   "reserva": 4,
+   "paquetes": 1,
+   "productId": "8634239516967",
+   "variantId": "46594235171111"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "080",
+   "cantidad": 2,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634239516967",
+   "variantId": "46594235302183"
   }
  ]
 }

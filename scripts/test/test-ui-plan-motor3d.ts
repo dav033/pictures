@@ -27,7 +27,7 @@ import { decoracionDePlan } from "@/components/guiado/plan-compra";
 import { piezasVistaDePlan, tablaGlobos, titulosDelPlan } from "@/components/guiado/piezas-vista";
 import { TEXTO_NOTA_PLAN_3D, TEXTO_VISTA_EN_PREPARACION } from "@/components/guiado/Plan3DEnPreparacion";
 import { cuerpoDeIdea, cuerpoDePropuesta, pedirPlanAlMotor3d } from "@/components/guiado/plan-motor3d";
-import { useMotorGuiada } from "@/components/guiado/usarMotorGuiada";
+import { TIMEOUT_BANDERA_MS, pedirMotorGuiada, useMotorGuiada } from "@/components/guiado/usarMotorGuiada";
 
 type PlanGuiado = z.infer<typeof PlanGuiadoSchema>;
 type Sobre = { id: string; plan: unknown; cotizacion: unknown; globos: number; porPieza: Record<string, number> };
@@ -51,7 +51,7 @@ const propiedades = (plan: PlanGuiado, extra: Record<string, unknown> = {}) => (
 
 async function main(): Promise<void> {
   await caso("hay sobres de ideas y de oficiales para renderizar, todos válidos", () => {
-    assert.ok(sobres.length >= 39, `sobres: ${sobres.length}`);
+    assert.ok(sobres.length >= 38, `sobres: ${sobres.length}`);
     for (const s of sobres) {
       PlanGuiadoSchema.parse(s.plan);
       CotizacionPlanGuiadoSchema.parse(s.cotizacion);
@@ -135,9 +135,10 @@ async function main(): Promise<void> {
     assert.ok(html.includes("Total con IVA"));
     const sobrante = cotizacion.lineas.reduce((suma, l) => suma + (l.sobrante ?? 0), 0);
     assert.ok(sobrante > 0 && html.includes(`te sobran ${entero.format(sobrante)}`), "el sobrante (merma + paquete cerrado) se dice");
+    const usados = cotizacion.lineas.reduce((suma, l) => suma + l.cantidadNecesaria, 0);
+    assert.ok(cotizacion.lineas.reduce((suma, l) => suma + (l.paquetes ?? 0) * (l.unidadesPaquete ?? 0), 0) >= Math.ceil(usados * 1.08), "la compra del plan cubre la reserva del 8 % (una sola para todo el plan)");
     for (const l of cotizacion.lineas) {
       assert.equal(l.cantidadNecesaria + (l.sobrante ?? 0), (l.paquetes ?? 0) * (l.unidadesPaquete ?? 0), `${l.id}: lo usado más lo que sobra es lo que se compra`);
-      assert.ok(((l.cantidadNecesaria + (l.sobrante ?? 0)) >= Math.ceil(l.cantidadNecesaria * 1.08)), "la compra cubre la merma del 8 %");
     }
   });
 
@@ -210,20 +211,85 @@ async function main(): Promise<void> {
     });
   });
 
-  await caso("propuesta: si el 3d no la arma, vuelve a Python y deja el motivo; un plan que ya era del 3d no cae a Python", async () => {
+  await caso("propuesta: si el 3d no la arma vuelve a Python y deja el motivo, también cuando el plan que se rehace era del 3d (nunca queda el cliente sin plan)", async () => {
     await conRed("3d", { motor: sinConstructor }, async () => {
       const motivos: string[] = [];
       assert.equal(await hook().planDePropuesta({ propuesta, anterior3d: null, deFoto: false, signal: senal, alFallback: (f) => motivos.push(f.razon) }), null, "→ Python");
       assert.deepEqual(motivos, ["no_representable"]);
     });
-    await conRed("python", { motor: sinConstructor }, async (llamadas) => {
+    await conRed("3d", { motor: sinConstructor }, async (llamadas) => {
       const motivos: string[] = [];
-      const intento = await hook().planDePropuesta({ propuesta, anterior3d: plan3d, deFoto: true, signal: senal, alFallback: (f) => motivos.push(f.razon) });
-      assert.equal(intento?.ok, false, "el plan era del 3d: el fallo se devuelve, no se pasa a Python");
+      const intento = await hook().planDePropuesta({ propuesta, anterior3d: plan3d, deFoto: false, signal: senal, alFallback: (f) => motivos.push(f.razon) });
+      assert.equal(intento, null, "el plan era del 3d y el 3d ya no puede: se rehace entero con Python");
       assert.deepEqual(motivos, ["no_representable"]);
-      assert.deepEqual(llamadas.map((l) => l.url), ["/api/guiada/motor/plan"], "ni siquiera lee la bandera: el plan conserva su motor");
-      assert.equal((llamadas[0]!.cuerpo as { base?: unknown }).base !== undefined, true, "manda el plan vigente como base para verificar su token");
+      assert.equal((llamadas.find((l) => l.url === "/api/guiada/motor/plan")!.cuerpo as { base?: unknown }).base !== undefined, true, "manda el plan vigente como base para verificar su token");
     });
+    for (const fallo of [() => Response.json({ error: "x", codigo: "APROBACION_INVALIDA" }, { status: 409 }), () => Response.json({ error: "x", codigo: "ERROR_DEL_MOTOR" }, { status: 500 }), () => { throw new Error("sin red"); }]) {
+      await conRed("3d", { motor: fallo }, async () => {
+        assert.equal(await hook().planDePropuesta({ propuesta, anterior3d: plan3d, deFoto: false, signal: senal, alFallback: sinAccion }), null, "base rechazada, error del servidor o red caída: Python");
+      });
+    }
+  });
+
+  await caso("marcha atrás inmediata con un plan 3D en pantalla: la bandera en python rehace el plan con Python, sin llamar al 3D", async () => {
+    await conRed("python", { motor: planOk, planIdea: planPythonIdea }, async (llamadas) => {
+      assert.equal(await hook().planDePropuesta({ propuesta, anterior3d: plan3d, deFoto: false, signal: senal, alFallback: sinAccion }), null, "propuesta → Python");
+      const motivos: string[] = [];
+      const r = await hook().planDeIdea({ ideaId: "deco-real-07", base: { plan: plan3d, motor: "3d" }, signal: senal, alFallback: (f) => motivos.push(f.razon) });
+      assert.deepEqual({ ok: r.ok, motor: r.motor }, { ok: false, motor: "3d" }, "sumar una idea: no se arma en el 3d; quien llama rehace el plan completo desde la propuesta");
+      assert.deepEqual(motivos, ["bandera_python"], "el motivo queda dicho");
+      assert.equal(llamadas.some((l) => l.url === "/api/guiada/motor/plan" || l.url.startsWith("/api/plan-idea")), false, "ni el 3d ni el plan-idea de Python con un plan del 3d");
+    });
+  });
+
+  await caso("la bandera no bloquea: se espera como mucho 1 s, «Detener» durante la lectura no arma plan alguno y una señal ya abortada ni pregunta", async () => {
+    const colgada = (llamadas: string[]) => ((entrada: string | URL | Request, init?: RequestInit) => new Promise<Response>((_resolver, rechazar) => {
+      llamadas.push(String(entrada));
+      init?.signal?.addEventListener("abort", () => rechazar(new DOMException("abortado", "AbortError")));
+    })) as typeof fetch;
+    const original = globalThis.fetch;
+    // `AbortSignal.timeout` no mantiene vivo el proceso de Node: se mantiene con un temporizador mientras dura la prueba.
+    const vivo = setInterval(() => undefined, 20);
+    try {
+      // Tiempo: sin respuesta en timeoutMs, Python.
+      const a: string[] = [];
+      globalThis.fetch = colgada(a);
+      const inicio = Date.now();
+      const lectura = await pedirMotorGuiada({ timeoutMs: 40 });
+      assert.deepEqual({ motor: lectura.motor, detenido: lectura.detenido }, { motor: "python", detenido: false });
+      assert.ok(Date.now() - inicio < 1000, "no espera más de lo pedido");
+      assert.equal(TIMEOUT_BANDERA_MS, 1000, "por defecto, 1 s");
+      // «Detener» durante la lectura de un plan por propuesta: detenido, y NO se llama al 3d ni (por quien llama) a Python.
+      const b: string[] = [];
+      globalThis.fetch = colgada(b);
+      const control = new AbortController();
+      const pendiente = hook().planDePropuesta({ propuesta, anterior3d: null, deFoto: false, signal: control.signal, alFallback: sinAccion });
+      setTimeout(() => control.abort(), 10);
+      const intento = await pendiente;
+      assert.equal(intento !== null && !intento.ok && intento.detenido, true, "detenido, no «null» (que significaría: sigue con Python)");
+      assert.deepEqual(b, ["/api/guiada/motor?para=plan_nuevo"], "solo la lectura de la bandera; ninguna petición de plan");
+      // Idem para una idea.
+      const c: string[] = [];
+      globalThis.fetch = colgada(c);
+      const control2 = new AbortController();
+      const idea = hook().planDeIdea({ ideaId: "deco-real-07", base: null, signal: control2.signal, alFallback: sinAccion });
+      setTimeout(() => control2.abort(), 10);
+      const r = await idea;
+      assert.equal(!r.ok && r.detenido, true);
+      assert.deepEqual(c, ["/api/guiada/motor?para=plan_nuevo"]);
+      // Señal ya abortada: ni se pregunta.
+      const d: string[] = [];
+      globalThis.fetch = colgada(d);
+      const abortada = new AbortController();
+      abortada.abort();
+      const previo = await hook().planDePropuesta({ propuesta, anterior3d: plan3d, deFoto: false, signal: abortada.signal, alFallback: sinAccion });
+      assert.equal(previo !== null && !previo.ok && previo.detenido, true);
+      assert.equal((await pedirMotorGuiada({ signal: abortada.signal })).detenido, true);
+      assert.deepEqual(d, [], "sin ninguna petición");
+    } finally {
+      clearInterval(vivo);
+      globalThis.fetch = original;
+    }
   });
 
   await caso("idea: plan nuevo según la bandera, sumar a un plan según el motor de ESE plan", async () => {
@@ -250,17 +316,17 @@ async function main(): Promise<void> {
       assert.equal(r.motor, "python");
       assert.deepEqual(llamadas.map((l) => l.url), ["/api/plan-idea"], "ni lee la bandera");
     });
-    // Sumar a un plan del 3d: el 3d aunque la bandera diga python; y si no puede, no pasa a Python.
-    await conRed("python", { motor: planOk }, async (llamadas) => {
+    // Sumar a un plan del 3d: el 3d si la bandera dice 3d, con el plan vigente como base; si el 3d no puede, quien llama rehace el plan completo.
+    await conRed("3d", { motor: planOk }, async (llamadas) => {
       const r = await hook().planDeIdea({ ideaId: "deco-real-07", base: { plan: plan3d, motor: "3d" }, signal: senal, alFallback: sinAccion });
       assert.equal(r.ok && r.motor, "3d");
-      assert.deepEqual(llamadas.map((l) => l.url), ["/api/guiada/motor/plan"]);
-      assert.equal((llamadas[0]!.cuerpo as { base?: { plan_hash?: string } }).base?.plan_hash, plan3d.plan_hash);
+      assert.deepEqual(llamadas.map((l) => l.url), ["/api/guiada/motor?para=plan_nuevo", "/api/guiada/motor/plan"]);
+      assert.equal((llamadas[1]!.cuerpo as { base?: { plan_hash?: string } }).base?.plan_hash, plan3d.plan_hash);
     });
     await conRed("3d", { motor: sinConstructor, planIdea: planPythonIdea }, async (llamadas) => {
       const r = await hook().planDeIdea({ ideaId: "deco-real-21", base: { plan: plan3d, motor: "3d" }, signal: senal, alFallback: sinAccion });
       assert.deepEqual({ ok: r.ok, motor: r.motor }, { ok: false, motor: "3d" });
-      assert.equal(llamadas.some((l) => l.url.startsWith("/api/plan-idea")), false, "un plan del 3d no se manda a Python");
+      assert.equal(llamadas.some((l) => l.url.startsWith("/api/plan-idea")), false, "un plan del 3d no se manda al plan-idea de Python (rechaza su token): se rehace desde la propuesta");
     });
   });
 
@@ -272,7 +338,10 @@ async function main(): Promise<void> {
     assert.match(fuente, /colocarPlan\(mensajeId, resultado\.plan, resultado\.cotizacion, Boolean\(foto\), idea, foto\?\.referenciaId, resultado\.motor\)/, "el plan guarda el motor con que se armó");
     assert.doesNotMatch(fuente, /void leerMotorDelPlan\(\)/, "la lectura de la bandera ya no es solo auditoría");
     const hookFuente = readFileSync("src/components/guiado/usarMotorGuiada.ts", "utf8");
-    assert.match(hookFuente, /if \(deFoto && !anterior3d\) return null;/);
+    assert.match(hookFuente, /if \(deFoto\) return null;/);
+    assert.match(fuente, /control\.signal\.aborted \|\| \(intento !== null && !intento\.ok && intento\.detenido\)\) return \{ turno, estado: "detenido"/, "Detener durante la lectura de la bandera no sigue con Python");
+    assert.match(fuente, /rehechoEnPython: true as const/, "el plan 3D que se rehace con Python lo dice");
+    assert.match(fuente, /TEXTO_REHECHO_EN_PYTHON/);
   });
 
   console.log(`test-ui-plan-motor3d: ok (${casos} pruebas, ${sobres.length} sobres)`);

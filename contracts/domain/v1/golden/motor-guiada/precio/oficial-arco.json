@@ -2,33 +2,42 @@
  "caso": "oficial-arco",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "4fca280e6224ed36b163a3a7f9f0ce0f8ac6ab8551f3a30d2e2a2f410c3a2ba1",
+ "especHash": "b8264567d27d7825f9f40848b34317cca090052cb99a5197b193539db9a46625",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
  "faltantes": [],
+ "reserva": {
+  "objetivo": 11,
+  "cubierta": 11,
+  "sinCubrir": 0
+ },
  "pedido": [
   {
    "formatoId": "R-12",
    "codigo": "005",
    "cantidad": 40,
-   "cantidadConMerma": 44,
+   "reserva": 0,
+   "paquetes": 2,
    "productId": "8634235781415",
-   "variantId": "46594221343015"
+   "variantId": "46594221310247"
   },
   {
    "formatoId": "R-12",
    "codigo": "040",
    "cantidad": 48,
-   "cantidadConMerma": 52,
+   "reserva": 1,
+   "paquetes": 1,
    "productId": "8634239385895",
-   "variantId": "46594233893159"
+   "variantId": "46594233925927"
   },
   {
    "formatoId": "R-12",
    "codigo": "970",
    "cantidad": 40,
-   "cantidadConMerma": 44,
+   "reserva": 10,
+   "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264695079"
   }

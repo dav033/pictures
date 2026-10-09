@@ -2,67 +2,137 @@
  "caso": "idea-deco-real-25-guirnalda-dia-de-la-madre",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "fa29db40a8043ed33f3002ca3516a6983b1ef1543978e155e9ee6ad4f6deef64",
+ "especHash": "5dec75e07bc90c491a32db0b21918d38a752acc6626fc9a64e4bb03b894dd34b",
  "noRepresentable": [],
  "piezas": {
   "EST_01_GUIRNALDA": {
    "lineas": [
     {
+     "formatoId": "R-5",
+     "codigo": "018",
+     "cantidad": 17
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "059",
+     "cantidad": 32
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "406",
+     "cantidad": 7
+    },
+    {
      "formatoId": "R-9",
      "codigo": "018",
-     "cantidad": 24
+     "cantidad": 12
     },
     {
      "formatoId": "R-9",
      "codigo": "406",
-     "cantidad": 24
+     "cantidad": 7
     },
     {
-     "formatoId": "R-9",
-     "codigo": "568",
-     "cantidad": 24
+     "formatoId": "R-12",
+     "codigo": "018",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "059",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "406",
+     "cantidad": 9
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "018",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "406",
+     "cantidad": 3
     }
    ],
-   "unidades": 72,
+   "unidades": 94,
    "caja": [
-    -133,
+    -122,
     200,
     -250,
-    133,
-    263,
-    -216
+    122,
+    284,
+    -198
    ]
   }
  },
  "total": {
   "lineas": [
    {
+    "formatoId": "R-5",
+    "codigo": "018",
+    "cantidad": 17
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "059",
+    "cantidad": 32
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "406",
+    "cantidad": 7
+   },
+   {
     "formatoId": "R-9",
     "codigo": "018",
-    "cantidad": 24
+    "cantidad": 12
    },
    {
     "formatoId": "R-9",
     "codigo": "406",
-    "cantidad": 24
+    "cantidad": 7
    },
    {
-    "formatoId": "R-9",
-    "codigo": "568",
-    "cantidad": 24
+    "formatoId": "R-12",
+    "codigo": "018",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "059",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "406",
+    "cantidad": 9
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "018",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "406",
+    "cantidad": 3
    }
   ],
-  "unidades": 72
+  "unidades": 94
  },
  "caja": [
-  -133,
+  -122,
   200,
   -250,
-  133,
-  263,
-  -216
+  122,
+  284,
+  -198
  ],
  "referenciaPython": {
   "globos": 64

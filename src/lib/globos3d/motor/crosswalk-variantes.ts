@@ -182,12 +182,21 @@ export type VarianteElegida = {
   /** Título de la variante: «R-12 / PAQUETE X 50». */
   tituloVariante: string;
   unidadesPaq: number;
+  /** Lo que cuesta ese paquete en el cruce (para decidir, no para cobrar: el precio es el de Python). */
+  precio: number;
   color: string | null;
 };
 export type SinVariante = { ok: false; motivo: MotivoSinCobertura | "desconocida" };
 
+/** Todas las presentaciones (paquetes) que la tienda vende de ese formato y color, o por qué no hay ninguna. */
+export function presentaciones(crosswalk: Crosswalk, formatoId: string, codigo: string): { ok: true; entrada: EntradaCrosswalk } | SinVariante {
+  const clave = claveCruce(formatoId, codigo);
+  const entrada = crosswalk.entradas[clave];
+  return entrada ? { ok: true, entrada } : { ok: false, motivo: crosswalk.sinCobertura[clave] ?? "desconocida" };
+}
+
 /**
- * La variante que se compra para `cantidad` globos de ese formato y color: entre los paquetes que vende la tienda de esa
+ * Política `mas_barato`: la variante que se compra para `cantidad` globos de ese formato y color: entre los paquetes que vende la tienda de esa
  * talla, la que cuesta menos para esa cantidad (paquetes cerrados), y a igual costo el paquete mayor. Lo que cuesta de
  * verdad lo cotiza Python con la variante elegida.
  */
@@ -197,6 +206,6 @@ export function elegirVariante(crosswalk: Crosswalk, formatoId: string, codigo: 
   if (!entrada) return { ok: false, motivo: crosswalk.sinCobertura[clave] ?? "desconocida" };
   const costo = (variante: EntradaCrosswalk["variantes"][number]) => Math.ceil(Math.max(1, cantidad) / variante.unidadesPaq) * variante.precio;
   const mejor = [...entrada.variantes].sort((a, b) => costo(a) - costo(b) || b.unidadesPaq - a.unidadesPaq || (a.variantId < b.variantId ? -1 : 1))[0]!;
-  return { ok: true, productId: entrada.productId, variantId: mejor.variantId, titulo: entrada.titulo, tituloVariante: mejor.titulo, unidadesPaq: mejor.unidadesPaq, color: entrada.color };
+  return { ok: true, productId: entrada.productId, variantId: mejor.variantId, titulo: entrada.titulo, tituloVariante: mejor.titulo, unidadesPaq: mejor.unidadesPaq, precio: mejor.precio, color: entrada.color };
 }
 

@@ -103,6 +103,9 @@ export type RegistroDoradoPrecio = {
   motor: ResultadoMotorV1["motor"];
   especHash: string;
   crosswalk: string;
+  politica: string;
   faltantes: Array<{ formatoId: string; codigo: string; motivo: string }>;
-  pedido: Array<{ formatoId: string; codigo: string; cantidad: number; cantidadConMerma: number; productId: string; variantId: string }>;
+  reserva: { objetivo: number; cubierta: number; sinCubrir: number };
+  /** Una fila por variante que se compra: lo que cuenta el motor (cantidad), la reserva que cubre y los paquetes. */
+  pedido: Array<{ formatoId: string; codigo: string; cantidad: number; reserva: number; paquetes: number; productId: string; variantId: string }>;
 };

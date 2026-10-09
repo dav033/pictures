@@ -10,7 +10,7 @@
  *   con el cruce en vivo, `material_no_disponible` y fallos del servicio como fallos tipados (nunca lanza);
  * - el sobre del plan cumple `PlanGuiadoSchema` y `CotizacionPlanGuiadoSchema`, lleva el token `globos3d` firmado sobre
  *   el hash de la espec, y sus cantidades por pieza, por variante y en total cuadran con la lista del motor;
- * - el carrusel («¿cuánto cuesta?» de una idea) cotiza lo que cuenta el motor: 26 de las 28 ideas; la lista curada queda para el resto;
+ * - el carrusel («¿cuánto cuesta?» de una idea) cotiza lo que cuenta el motor: 25 de las 28 ideas; la lista curada queda para el resto;
  * - los pasos de montaje leen el sobre (la tarjeta, la tabla, la compra y la cotización se prueban en test-ui-plan-motor3d.ts).
  *
  * Run: npx tsx --conditions=react-server scripts/test/test-motor-guiada-precio.ts
@@ -23,13 +23,15 @@ import { CotizacionPlanGuiadoSchema, PlanGuiadoSchema } from "../../src/lib/ia/c
 import { generarPasosPlan } from "../../src/lib/ia/guiado/generar-pasos-plan";
 import { coloresDelFormato, FORMATOS_GLOBO } from "../../src/lib/globos3d/formatos";
 import { abrirContextoPlan, verificarTokenAprobacion } from "../../src/lib/plan/aprobacion";
-import { armarDesdeEspec, cantidadConMerma, cotizarBom, crosswalkIncluido, especHashDe, MERMA, MERMA_PORCENTAJE, sobreDelMotor, type CotizacionDelMotor, type ResultadoMotorV1 } from "../../src/lib/globos3d/motor/v1";
+import { armarDesdeEspec, cantidadConMerma, cotizarBom, crosswalkIncluido, especHashDe, MERMA, MERMA_PORCENTAJE, planearCompra, POLITICA_PAQUETES, sobreDelMotor, type CotizacionDelMotor, type ResultadoMotorV1 } from "../../src/lib/globos3d/motor/v1";
 import { claveCruce, construirCrosswalk, CrosswalkSchema, elegirVariante, MOTIVOS_SIN_COBERTURA, normalizarTitulo, type Crosswalk, type FilaCatalogo } from "../../src/lib/globos3d/motor/crosswalk-variantes";
-import { elegirPedido } from "../../src/lib/globos3d/motor/cotizar-bom";
+import { optimizarCobertura, pulgadasDeFormato, colorDeCompra } from "../../src/lib/globos3d/motor/plan-de-compra";
 import { DIRECTORIO_DORADO, DIRECTORIO_DORADO_PRECIO, todosLosCasos, type CasoMotor, type RegistroDoradoPrecio } from "../lib/casos-motor-guiada";
 import { registroPrecio } from "../motor/generar-golden-precio";
 import { pythonDoble, type PythonDoble } from "../lib/python-doble-precio";
 import { cotizarIdeaConMotor } from "../../src/lib/guiada-motor/cotizar-idea";
+import { decidirCotizacionDelCarrusel } from "../../src/lib/guiada-motor/carrusel";
+import { isPythonAdapterError, llamarPythonListaMateriales } from "../../src/lib/ia/nucleo/python-adapter";
 import { planGuardadoDeIdea } from "../../src/lib/plan/planes-ideas-guardados";
 import { CotizacionGuiadaSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1";
 
@@ -111,7 +113,7 @@ async function main(): Promise<void> {
     }
     console.log(`  fixtures doradas: ${pares.size} pares; ${resueltos.length} resueltos, ${declarados.length} declarados sin_cobertura: ${declarados.join(", ") || "ninguno"}`);
     assert.equal(resueltos.length + declarados.length, pares.size);
-    assert.deepEqual(declarados, ["LOL-12|970 (no_esta_en_la_tienda)"], "el único hueco: la pared densa por defecto pide el Link Reflex Dorado, que la tienda no vende");
+    assert.deepEqual(declarados, ["LOL-12|970 (no_esta_en_la_tienda)", "R-18|038 (talla_no_vendida)"], "los dos huecos: la pared densa por defecto pide el Link Reflex Dorado (la tienda no lo vende) y la columna de la idea 06 pide el Azul Caribe en 18″ (la tienda no lo vende)");
   });
 
   await caso("el emparejamiento de títulos: tienda, marca B2B, siglas y variantes del catálogo", () => {
@@ -148,39 +150,127 @@ async function main(): Promise<void> {
       const dorado = JSON.parse(texto) as RegistroDoradoPrecio;
       assert.doesNotMatch(texto, /precio|subtotal|total_cop|"total"/i, `${c.id}: una fixture con precio guarda cantidades e ids, no pesos`);
       assert.deepEqual(registroPrecio(c), dorado, `${c.id}: cambió el pedido a la tienda (regenera con scripts/motor/generar-golden-precio.ts)`);
-      for (const linea of dorado.pedido) assert.equal(linea.cantidadConMerma, cantidadConMerma(linea.cantidad));
+      assert.equal(dorado.politica, POLITICA_PAQUETES);
+      // Lo que se compra cubre lo que cuenta el motor y su reserva: los paquetes se leen del cruce.
+      for (const linea of dorado.pedido) {
+        const v = cruce.entradas[claveCruce(linea.formatoId, linea.codigo)]!.variantes.find((x) => x.variantId === linea.variantId)!;
+        assert.ok(linea.paquetes * v.unidadesPaq >= linea.cantidad + linea.reserva, `${c.id}: ${linea.variantId} no cubre su cantidad y su reserva`);
+      }
+      assert.equal(dorado.pedido.reduce((suma, l) => suma + l.reserva, 0), dorado.reserva.cubierta);
     }
   });
 
-  await caso("cotizarBom: merma antes del paquete, una variante por línea y el sobre de CotizacionPlanGuiado", async () => {
+  const SIN_CRUCE = new Set(todos.filter((c) => registroPrecio(c).faltantes.length > 0).map((c) => c.id));
+
+  await caso("cotizarBom: paquetes de Python, una reserva para el plan, una variante por compra y la forma CotizacionPlanGuiado", async () => {
     let cotizadas = 0;
     for (const c of ARMABLES) {
       const r = resultados.get(c.id)!;
       const doble = pythonDoble(cruce);
       const cotizada = await cotizarBom(r.bom, dependencias(doble));
-      if (!cotizada.ok) { assert.equal(c.id, "oficial-pared_densa", `${c.id}: ${JSON.stringify(cotizada)}`); assert.equal(cotizada.razon, "sin_cobertura"); assert.equal(doble.llamadas.length, 0, "con un hueco en el cruce no se llama a Python"); continue; }
+      if (SIN_CRUCE.has(c.id)) { assert.equal(cotizada.ok, false, c.id); assert.equal(!cotizada.ok && cotizada.razon, "sin_cobertura"); assert.equal(doble.llamadas.length, 0, "con un hueco en el cruce no se llama a Python"); continue; }
+      assert.ok(cotizada.ok, `${c.id}: ${JSON.stringify(cotizada)}`);
+      if (!cotizada.ok) continue;
       cotizadas += 1;
+      assert.equal(cotizada.politica, "python");
       assert.equal(doble.llamadas.length, 1);
       const pedido = doble.llamadas[0]!;
       assert.equal(pedido.schema_version, "lista-materiales.v1");
       assert.equal(new Set(pedido.materiales.map((m) => m.variant_id)).size, pedido.materiales.length, "Python no admite variantes repetidas");
-      assert.equal(pedido.materiales.reduce((s, m) => s + m.cantidad, 0), r.bom.total.reduce((s, l) => s + cantidadConMerma(l.cantidad), 0), `${c.id}: la cantidad que se cotiza es la del motor con merma, línea por línea`);
-      assert.equal(cotizada.compras.reduce((s, x) => s + x.cantidad, 0), unidades(r.bom.total));
+      assert.equal(cotizada.compras.reduce((s, x) => s + x.cantidad, 0), unidades(r.bom.total), "las compras cubren exactamente lo que cuenta el motor");
+      // UNA reserva para todo el plan: ceil(Σ × 0,08), cubierta primero con lo que sobra de los paquetes.
+      assert.equal(cotizada.reserva.objetivo, Math.ceil(unidades(r.bom.total) * MERMA), `${c.id}: la reserva es del plan entero`);
+      assert.equal(cotizada.reserva.sinCubrir, 0);
+      assert.equal(cotizada.compras.reduce((s, x) => s + x.reserva, 0), cotizada.reserva.cubierta);
       for (const compra of cotizada.compras) {
-        assert.equal(compra.cantidadConMerma, cantidadConMerma(compra.cantidad));
-        assert.equal(compra.paquetes * compra.unidadesPaquete - compra.cantidad, compra.sobrante, "el sobrante incluye la merma y el paquete cerrado");
-        assert.ok(compra.paquetes * compra.unidadesPaquete >= compra.cantidadConMerma, "los paquetes cubren la cantidad con merma");
+        const capacidad = compra.paquetes * compra.unidadesPaquete;
+        assert.equal(compra.cantidadConMerma, compra.cantidad + compra.reserva);
+        assert.equal(capacidad - compra.cantidad, compra.sobrante, "el sobrante incluye la reserva y el paquete cerrado");
+        assert.ok(capacidad >= compra.cantidadConMerma, "los paquetes cubren la cantidad con su reserva");
+        assert.equal(pedido.materiales.find((m) => m.variant_id === compra.variante.variantId)!.cantidad, capacidad, "se pide exactamente lo que cubren los paquetes decididos");
       }
       const cot = CotizacionPlanGuiadoSchema.parse(cotizada.cotizacion);
       assert.equal(cot.mermaPorcentaje, 8);
       assert.equal(cot.incluyeIva, true);
       assert.equal(cot.total, cotizada.compras.reduce((s, x) => s + x.subtotal, 0));
       assert.deepEqual(cot.lineas.map((l) => l.cantidadNecesaria), cotizada.compras.map((x) => x.cantidad));
+      assert.equal(cotizada.snapshot, cruce.snapshot, "sin lector del snapshot publicado, el del cruce");
     }
-    assert.equal(cotizadas, ARMABLES.length - 1);
+    assert.equal(cotizadas, ARMABLES.length - SIN_CRUCE.size);
   });
 
-  await caso("cotizarBom: fallos tipados, reintento con el cruce en vivo y nunca lanza", async () => {
+  await caso("política de paquetes: por defecto «python» y «mas_barato» sigue disponible detrás de la misma constante", async () => {
+    assert.equal(POLITICA_PAQUETES, "python", "el dueño decide (P-035); mientras tanto, como Python");
+    const r = resultados.get("idea-deco-real-07-eb12910e210c94b6184d025127acce95")!;
+    const barato = await cotizarBom(r.bom, { ...dependencias(pythonDoble(cruce)), politica: "mas_barato" });
+    const python = await cotizarBom(r.bom, dependencias(pythonDoble(cruce)));
+    assert.ok(barato.ok && python.ok);
+    if (!barato.ok || !python.ok) return;
+    assert.equal(barato.politica, "mas_barato");
+    // «mas_barato»: la merma de cada línea antes del paquete y la presentación que cuesta menos para esa cantidad.
+    for (const compra of barato.compras) assert.equal(compra.cantidadConMerma, cantidadConMerma(compra.cantidad));
+    assert.equal(barato.compras.length, r.bom.total.length, "una variante por línea del motor");
+  });
+
+  await caso("la política «python» compra lo mismo que `_optimizar_cobertura` y `_consolidate` de plan.py (oráculo con el código de Python)", () => {
+    const grupos = (c: CasoMotor) => {
+      const r = resultados.get(c.id)!;
+      return r.bom.total.map((l) => {
+        const entrada = cruce.entradas[claveCruce(l.formatoId, l.codigo)]!;
+        return { clave: claveCruce(l.formatoId, l.codigo), n: l.cantidad, diam: pulgadasDeFormato(l.formatoId), color: colorDeCompra({ color: entrada.color }, l.codigo), opciones: entrada.variantes.map((v) => ({ variantId: v.variantId, unidades: v.unidadesPaq, precio: v.precio })) };
+      });
+    };
+    const casosOraculo = ARMABLES.filter((c) => !SIN_CRUCE.has(c.id));
+    type Salida = Array<{ compras: Array<{ variantId: string; paquetes: number; cantidad: number; reserva: number }>; reserva: { target_waste_reserve: number; covered_waste_reserve: number; natural_package_surplus: number; uncovered_waste_reserve: number } }>;
+    let salida: Salida;
+    try {
+      salida = JSON.parse(execFileSync("python", [path.join(RAIZ, "scripts", "test", "oraculo-python-compra.py")], { encoding: "utf8", input: JSON.stringify(casosOraculo.map((c) => ({ grupos: grupos(c) }))), maxBuffer: 64 * 1024 * 1024 })) as Salida;
+    } catch {
+      console.log("  (sin python utilizable: se omite el oráculo de plan.py)");
+      return;
+    }
+    casosOraculo.forEach((c, k) => {
+      const plan = planearCompra(resultados.get(c.id)!.bom.total, cruce, "python");
+      assert.ok(plan.ok);
+      if (!plan.ok) return;
+      const esperado = salida[k]!;
+      assert.deepEqual(Object.fromEntries(plan.compras.map((x) => [x.variante.variantId, { paquetes: x.paquetes, cantidad: x.cantidad, reserva: x.reserva }])),
+        Object.fromEntries(esperado.compras.map((x) => [x.variantId, { paquetes: x.paquetes, cantidad: x.cantidad, reserva: x.reserva }])), `${c.id}: lo que compra Python`);
+      assert.deepEqual({ objetivo: plan.reserva.objetivo, cubierta: plan.reserva.cubierta, sinCubrir: plan.reserva.sinCubrir, excedenteNatural: plan.reserva.excedenteNatural },
+        { objetivo: esperado.reserva.target_waste_reserve, cubierta: esperado.reserva.covered_waste_reserve, sinCubrir: esperado.reserva.uncovered_waste_reserve, excedenteNatural: esperado.reserva.natural_package_surplus }, `${c.id}: la reserva`);
+    });
+    // El optimizador solo, contra una combinación conocida: 60 globos con x12 a 3.963 y x50 a 13.037 salen en un x12 y un x50.
+    const mezcla = optimizarCobertura(60, [{ variantId: "a", unidades: 12, precio: 3963 }, { variantId: "b", unidades: 50, precio: 13037 }]);
+    assert.deepEqual(mezcla?.compras.map((x) => [x.variantId, x.paquetes]), [["a", 1], ["b", 1]]);
+    console.log(`  oráculo de plan.py: ${casosOraculo.length} planes comparados`);
+  });
+
+  await caso("ningún color del cliente se pierde: todos están en la lista de materiales de su pieza, o la pieza no se representa", () => {
+    for (const c of ARMABLES) {
+      const r = resultados.get(c.id)!;
+      for (const p of c.espec.piezas) {
+        if (r.noRepresentable.some((n) => n.piezaId === p.id)) continue;
+        const presentes = new Set((r.bom.porPieza[p.id] ?? []).map((l) => l.codigo));
+        for (const color of p.colores) assert.ok(presentes.has(color.codigo), `${c.id}/${p.id}: falta el color ${color.nombre} (${color.codigo})`);
+      }
+    }
+    // La idea 06: seis colores en una columna clásica. Antes perdía dos sin decirlo; ahora lleva los seis y lo dice.
+    const idea06 = todos.find((c) => c.id.startsWith("idea-deco-real-06"))!;
+    const r06 = resultados.get(idea06.id)!;
+    assert.deepEqual(r06.noRepresentable, []);
+    assert.equal(new Set((r06.bom.porPieza["EST_01_COLUMNA"] ?? []).map((l) => l.codigo)).size >= 6, true);
+    assert.ok(r06.avisos.some((a) => /orgánica, con globos de varios tamaños, para que lleve todos/.test(a)), `el aviso es verdadero: ${r06.avisos.join(" | ")}`);
+    // Un color que el armado no reparte no se pierde: la pieza se declara no representable con su motivo.
+    const sinLugar = structuredClone(idea06.espec);
+    sinLugar.piezas[0]!.colores = [{ codigo: "080", nombre: "negro", peso: 0.99 }, { codigo: "005", nombre: "blanco", peso: 0.01 }];
+    sinLugar.piezas[0]!.tamanos = "clasica";
+    sinLugar.piezas[0]!.medidas = { altoM: 0.6 };
+    const rr = armarDesdeEspec(sinLugar);
+    const presentes = new Set((rr.bom.porPieza["EST_01_COLUMNA"] ?? []).map((l) => l.codigo));
+    assert.ok(presentes.has("005") || rr.noRepresentable.some((n) => n.piezaId === "EST_01_COLUMNA" && /no llegan a la lista de materiales/.test(n.motivo)), "o el color blanco llega, o la pieza dice por qué no se arma");
+  });
+
+  await caso("cotizarBom: fallos tipados, reintento con el cruce en vivo, paquete cambiado y nunca lanza", async () => {
     const bom = resultados.get("idea-deco-real-01-305")!.bom;
     // Un hueco en el cruce: ni se llama a Python.
     const sinHueco = pythonDoble(cruce);
@@ -192,24 +282,25 @@ async function main(): Promise<void> {
     const variantes = new Set(Object.values(cruce.entradas).flatMap((e) => e.variantes.map((v) => v.variantId)));
     const caida = pythonDoble(cruce, { sinVariante: variantes });
     const sinVivo = await cotizarBom(bom, dependencias(caida));
-    assert.equal(sinVivo.ok, false);
     assert.equal(!sinVivo.ok && sinVivo.razon, "material_no_disponible");
-    // Con un cruce de OTRO snapshot (el catálogo cambió) se reintenta una vez y sale.
-    const vivo: Crosswalk = { ...cruce, snapshot: "products_catalog:nuevo" };
-    const quitadas = new Set([cruce.entradas[claveCruce("R-12", "005")]!.variantes[0]!.variantId]);
-    const reintento = pythonDoble(cruce, { sinVariante: quitadas });
-    const doble: PythonDoble = { llamadas: reintento.llamadas, cotizarLista: async (entrada) => {
-      // La primera lista (con el cruce viejo) falla; la segunda (con el nuevo) ya no pide la variante retirada.
-      if (reintento.llamadas.length === 0) return reintento.cotizarLista(entrada);
-      reintento.llamadas.push(entrada);
-      return pythonDoble(cruce).cotizarLista(entrada);
-    } };
-    const viejo = [...bom.total];
-    const hayRetirada = viejo.some((l) => l.formatoId === "R-12" && l.codigo === "005" && elegirVariante(cruce, "R-12", "005", cantidadConMerma(l.cantidad)).ok && quitadas.has((elegirVariante(cruce, "R-12", "005", cantidadConMerma(l.cantidad)) as { variantId: string }).variantId));
-    if (hayRetirada) {
-      const recuperada = await cotizarBom(bom, dependencias(doble, { vivo }));
+    // Con un cruce de OTRO snapshot (el catálogo retiró una variante) se reintenta una vez y sale.
+    const plan = planearCompra(bom.total, cruce, "python");
+    assert.ok(plan.ok);
+    const retirada = plan.ok ? plan.compras.find((x) => cruce.entradas[x.clave]!.variantes.length > 1) : undefined;
+    assert.ok(retirada, "hay una compra con más de un paquete disponible");
+    if (retirada) {
+      const vivo: Crosswalk = { ...structuredClone(cruce), snapshot: "products_catalog:nuevo" };
+      vivo.entradas[retirada.clave]!.variantes = vivo.entradas[retirada.clave]!.variantes.filter((v) => v.variantId !== retirada.variante.variantId);
+      const doble: PythonDoble = pythonDoble(vivo, { sinVariante: new Set([retirada.variante.variantId]) });
+      const recuperada = await cotizarBom(bom, { ...dependencias(doble), crosswalk: async () => cruce, crosswalkEnVivo: async () => vivo });
       assert.equal(recuperada.ok, true, "con el cruce en vivo se recupera");
       assert.equal(doble.llamadas.length, 2);
+      assert.equal(recuperada.ok && recuperada.snapshotCruce, "products_catalog:nuevo");
+      // El paquete del catálogo cambió (el cruce dice una cosa y la tienda vende otra): el cruce está viejo, no se cobra con una decisión vieja.
+      const viejoPaquete: Crosswalk = structuredClone(cruce);
+      viejoPaquete.entradas[retirada.clave]!.variantes = viejoPaquete.entradas[retirada.clave]!.variantes.map((v) => (v.variantId === retirada.variante.variantId ? { ...v, unidadesPaq: v.unidadesPaq + 1 } : v));
+      const cambiado = await cotizarBom(bom, { ...dependencias(pythonDoble(cruce)), crosswalk: async () => viejoPaquete });
+      assert.equal(!cambiado.ok && cambiado.razon, "material_no_disponible");
     }
     // Con el mismo snapshot no hay nada nuevo que probar: no se repite en vano.
     const mismo = pythonDoble(cruce, { sinVariante: variantes });
@@ -217,16 +308,20 @@ async function main(): Promise<void> {
     assert.equal(mismo.llamadas.length, 1);
     // Cualquier otro fallo del servicio de precios: precio_fallido, sin reintento y sin lanzar.
     const roto = pythonDoble(cruce, { fallo: new Error("el servicio de precios no responde") });
-    const fallo = await cotizarBom(bom, dependencias(roto, { vivo }));
+    const fallo = await cotizarBom(bom, dependencias(roto, { vivo: { ...cruce, snapshot: "otro" } }));
     assert.deepEqual(fallo.ok ? null : fallo.razon, "precio_fallido");
     assert.equal(roto.llamadas.length, 1);
+    // El snapshot publicado manda sobre el del cruce: si cambió, se arma el cruce con él y se anota de dónde salieron los precios.
+    const publicado = await cotizarBom(bom, { ...dependencias(pythonDoble(cruce), { vivo: { ...cruce, snapshot: "products_catalog:publicado" } }), snapshotPublicado: async () => "products_catalog:publicado" });
+    assert.equal(publicado.ok && publicado.snapshot, "products_catalog:publicado");
+    assert.equal(publicado.ok && publicado.snapshotCruce, "products_catalog:publicado");
+    const sinLector = await cotizarBom(bom, { ...dependencias(pythonDoble(cruce)), snapshotPublicado: async () => { throw new Error("sin base"); } });
+    assert.equal(sinLector.ok && sinLector.snapshot, cruce.snapshot, "si no se puede leer el publicado, el del cruce");
     // Más líneas de las que admite `lista-materiales.v1` (256): se dice, no se manda.
     const claves = Object.keys(cruce.entradas).slice(0, 300).map((k) => k.split("|") as [string, string]);
     const enorme = { total: claves.map(([formatoId, codigo]) => ({ formatoId, codigo, cantidad: 3 })), porPieza: {} };
     const demasiadas = await cotizarBom(enorme, dependencias(pythonDoble(cruce)));
     assert.equal(!demasiadas.ok && demasiadas.razon, "precio_fallido");
-    const pedido = elegirPedido(enorme.total, cruce);
-    assert.ok(pedido.ok && pedido.pedidas.length === 300);
   });
 
   await caso("el sobre del plan: PlanGuiadoSchema + CotizacionPlanGuiadoSchema, token globos3d, hash de la espec y cantidades que cuadran", async () => {
@@ -278,7 +373,7 @@ async function main(): Promise<void> {
         assert.equal(como<{ cantidad: number }>(plan.plan.estructuras.find((e) => e.estructura_id === p.id)!.flores).cantidad, p.flores.cantidad);
       });
     }
-    assert.equal(sobres, ARMABLES.length - 1, "todos los casos armables menos la pared densa (sin cobertura en el cruce) llegan a sobre");
+    assert.equal(sobres, ARMABLES.length - SIN_CRUCE.size, "todos los casos armables sin huecos en el cruce llegan a sobre");
     assert.ok(conFlores >= 1, "la idea del aro con flores de globo");
     console.log(`  sobres válidos: ${sobres}; piezas con flores: ${conFlores}`);
   });
@@ -310,11 +405,62 @@ async function main(): Promise<void> {
       assert.equal(cot.lineas.reduce((s, l) => s + l.cantidadNecesaria, 0), r.globos, "las cantidades de la cotización son las del motor");
       for (const l of cot.lineas) assert.equal(l.cantidadNecesaria + l.sobrante, l.paquetes * l.unidadesPaquete);
     }
-    assert.equal(cotizadas.length, 26);
-    assert.deepEqual(curadas, ["deco-real-03 (no_representable)", "deco-real-27 (no_representable)"], "el centro de mesa con bouquet y el aro parcial siguen con la lista curada");
+    assert.equal(cotizadas.length, 25);
+    assert.deepEqual(curadas, ["deco-real-03 (no_representable)", "deco-real-06 (sin_cobertura)", "deco-real-27 (no_representable)"], "el centro de mesa con bouquet, la columna cuyo azul caribe 18″ no se vende y el aro parcial siguen con la lista curada");
     // Una idea sin plan guardado (las figuras 21, 23 y 26) y la lista curada de siempre (merma 0) siguen siendo válidas.
     assert.deepEqual(await cotizarIdeaConMotor("deco-real-21-figura", { planGuardado: planGuardadoDeIdea, crosswalk: async () => cruce, cotizarLista: pythonDoble(cruce).cotizarLista }), { ok: false, razon: "sin_plan_guardado" });
     assert.equal(CotizacionGuiadaSchema.safeParse({ lineas: [{ id: "1", tamano: "x", cantidadNecesaria: 1, disponible: true, varianteId: "1", nombre: "n", precioPaquete: 1, unidadesPaquete: 1, paquetes: 1, subtotal: 1, sobrante: 0 }], total: 1, mermaPorcentaje: 0, incluyeIva: true, complementosSoportados: false }).success, true);
+  });
+
+  await caso("el adaptador REAL de Python: el 422 material_no_disponible llega como domainCode y cotizarBom lo tipa (sin doble del adaptador)", async () => {
+    const ENTORNO = { PYTHON_BACKEND_URL: "http://python.test", INTERNAL_HMAC_SECRET: "local-only-secret-0123456789abcdef" };
+    const entrada = { schema_version: "lista-materiales.v1" as const, materiales: [{ variant_id: "46594221277479", cantidad: 50 }] };
+    const llamar = (fetchImpl: typeof fetch) => llamarPythonListaMateriales({ entrada, requestId: "00000000-0000-4000-8000-000000000001", correlationId: "00000000-0000-4000-8000-000000000002", deadlineMs: 2_000, env: ENTORNO, fetchImpl });
+    // El cuerpo de error de Python es `{ detail: { code } }` (main.py `_error_body`).
+    const error422 = (codigo: string) => (async () => Response.json({ detail: { code: codigo, request_id: "r", correlation_id: "c" } }, { status: 422 })) as typeof fetch;
+    const rechazo = await llamar(error422("material_no_disponible")).then(() => null, (e: unknown) => e);
+    assert.ok(isPythonAdapterError(rechazo), "el adaptador lanza su error tipado");
+    if (isPythonAdapterError(rechazo)) assert.deepEqual({ code: rechazo.code, status: rechazo.status, domainCode: rechazo.domainCode }, { code: "PYTHON_INVALID_REQUEST", status: 422, domainCode: "material_no_disponible" });
+    const bom = resultados.get("idea-deco-real-01-305")!.bom;
+    const cotizar = (fetchImpl: typeof fetch) => cotizarBom(bom, { crosswalk: async () => cruce, cotizarLista: (e) => llamarPythonListaMateriales({ entrada: e, requestId: "00000000-0000-4000-8000-000000000001", correlationId: "00000000-0000-4000-8000-000000000002", deadlineMs: 2_000, env: ENTORNO, fetchImpl }) });
+    assert.equal((await cotizar(error422("material_no_disponible"))).ok, false);
+    assert.equal(await cotizar(error422("material_no_disponible")).then((r) => !r.ok && r.razon), "material_no_disponible", "con el adaptador real, el 422 todo-o-nada se reconoce");
+    assert.equal(await cotizar(error422("otra_cosa")).then((r) => !r.ok && r.razon), "precio_fallido", "otro 422 no es un cruce viejo");
+    assert.equal(await cotizar((async () => Response.json({ detail: { code: "internal" } }, { status: 500 })) as typeof fetch).then((r) => !r.ok && r.razon), "precio_fallido");
+    // Y la ruta feliz de punta a punta con el adaptador real: la respuesta de Python se valida contra su contrato y se usa.
+    const ok = await cotizar((async (_url: string | URL | Request, init?: RequestInit) => {
+      const pedido = JSON.parse(String(init?.body)) as { materiales: Array<{ variant_id: string; cantidad: number }> };
+      return Response.json({ schema_version: "operational.v1", request_id: "00000000-0000-4000-8000-000000000001", correlation_id: "00000000-0000-4000-8000-000000000002", payload: await (await pythonDoble(cruce).cotizarLista({ schema_version: "lista-materiales.v1", materiales: pedido.materiales })) });
+    }) as typeof fetch);
+    assert.equal(ok.ok, true);
+  });
+
+  await caso("carrusel: la decisión de «¿cuánto cuesta?» con la bandera, y el motor solo se carga con la bandera en 3d", async () => {
+    let cargas = 0;
+    const motorOk = async (id: string) => { cargas += 1; return cotizarIdeaConMotor(id, { planGuardado: planGuardadoDeIdea, crosswalk: async () => cruce, cotizarLista: pythonDoble(cruce).cotizarLista }); };
+    // python: la lista curada, y ni se toca el motor.
+    assert.deepEqual(await decidirCotizacionDelCarrusel("deco-real-07-eb12910e210c94b6184d025127acce95", { leerMotor: async () => "python", cotizarConMotor: motorOk }), { usar: "curada", motivo: "bandera_python" });
+    assert.equal(cargas, 0, "con la bandera en python el motor no se carga");
+    // 3d: el precio del motor.
+    const delMotor = await decidirCotizacionDelCarrusel("deco-real-07-eb12910e210c94b6184d025127acce95", { leerMotor: async () => "3d", cotizarConMotor: motorOk });
+    assert.equal(delMotor.usar, "motor");
+    assert.equal(cargas, 1);
+    if (delMotor.usar === "motor") { assert.equal(delMotor.resultado.cotizacion.mermaPorcentaje, 8); assert.ok(delMotor.resultado.cotizacion.total > 0); }
+    // 3d, pero el motor no la arma (figura sin plan, pieza sin constructor, hueco en la tienda): la curada, con el motivo.
+    for (const [id, motivo] of [["deco-real-21-figura", "sin_plan_guardado"], ["deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1", "no_representable"]] as const) {
+      assert.equal((await decidirCotizacionDelCarrusel(id, { leerMotor: async () => "3d", cotizarConMotor: motorOk })).usar === "curada" && true, true);
+      const d = await decidirCotizacionDelCarrusel(id, { leerMotor: async () => "3d", cotizarConMotor: motorOk });
+      assert.equal(d.usar === "curada" ? d.motivo : null, motivo);
+    }
+    // Un fallo al leer la bandera o del propio motor nunca tumba el turno.
+    assert.deepEqual(await decidirCotizacionDelCarrusel("x", { leerMotor: async () => { throw new Error("sin base"); }, cotizarConMotor: motorOk }), { usar: "curada", motivo: "no_se_pudo_leer_la_bandera" });
+    const roto = await decidirCotizacionDelCarrusel("x", { leerMotor: async () => "3d", cotizarConMotor: async () => { throw new Error("se cayó"); } });
+    assert.deepEqual(roto, { usar: "curada", motivo: "error_del_motor", detalle: "se cayó" });
+    // La ruta del asistente no importa el motor ni el cruce de forma estática: solo con `import()` dentro de la rama 3d.
+    const ruta = readFileSync(path.join(RAIZ, "src", "app", "api", "asistente-guiado", "route.ts"), "utf8");
+    const importesEstaticos = [...ruta.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]!);
+    for (const prohibido of ["@/lib/globos3d/motor/v1", "@/lib/guiada-motor/cotizar-idea", "@/lib/plan/planes-ideas-guardados"]) assert.ok(!importesEstaticos.includes(prohibido), `${prohibido} no debe importarse de forma estática en la ruta`);
+    assert.match(ruta, /import\("@\/lib\/globos3d\/motor\/v1"\)/);
   });
 
   console.log(`test-motor-guiada-precio: ok (${casos} pruebas, ${ARMABLES.length} casos armables de ${todos.length})`);

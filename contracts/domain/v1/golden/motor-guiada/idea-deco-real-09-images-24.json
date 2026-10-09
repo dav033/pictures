@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-09-images-24",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "41fd1680f6cdd7fdcd96982bd552569f28ff40e90e5521109fd028cb8132078d",
+ "especHash": "7f6282bf9727fb3a3815e4270e478b8daaf5545c0a2592c524ab91895eb6a3a8",
  "noRepresentable": [],
  "piezas": {
   "EST_01_GUIRNALDA": {

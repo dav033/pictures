@@ -16,7 +16,7 @@ import type { ResultadoMotorV1 } from "./resultado-motor-v1";
  * doradas de `contracts/domain/v1/golden/motor-guiada/` guardan la versión con que se tomaron y fallan si el motor
  * cambia sin subirla.
  */
-export const VERSION_MOTOR = "1.0.0";
+export const VERSION_MOTOR = "1.1.0";
 
 export type { EspecClienteV1, PiezaEspec } from "./espec-cliente-v1";
 export type { BomLinea, ResultadoMotorV1 } from "./resultado-motor-v1";
@@ -29,7 +29,8 @@ export { especHashDe } from "./hash-espec";
 export type { ResultadoEspec } from "./espec-desde-propuesta";
 // Precio (fase 2): la merma, el cruce con la tienda, la cotización de la lista y el sobre del plan para la vista guiada.
 export { MERMA, MERMA_PORCENTAJE, cantidadConMerma } from "./merma";
-export { crosswalkEnVivo, crosswalkIncluido } from "./crosswalk-vigente";
+export { crosswalkEnVivo, crosswalkIncluido, snapshotPublicado } from "./crosswalk-vigente";
+export { POLITICA_PAQUETES, POLITICAS_PAQUETES, planearCompra, type PoliticaPaquetes, type ReservaPlan } from "./plan-de-compra";
 export { cotizarBom, type CompraMotor, type CotizacionDelMotor, type DependenciasCotizacion, type FalloCotizacion, type ResultadoCotizacionBom } from "./cotizar-bom";
 export { sobreDelMotor, SobreMotorSchema, type EntradaSobre, type PlanGuiadoMotor, type SobreDelMotor } from "./plan-guiado-desde-motor";
 export type { ConceptoPlan } from "./proyeccion-plan";

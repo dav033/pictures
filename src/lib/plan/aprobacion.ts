@@ -49,6 +49,11 @@ export type ContextoPlan = {
    * against the photo's count. `false` for tokens issued without it.
    */
   medidasDelCliente: boolean;
+  /**
+   * Huella del navegador al que se le dio el plan (solo los planes del motor 3D). El token es opaco pero se puede copiar:
+   * atarlo al navegador que lo pidió hace que un token copiado a otro no sirva (REQ-007). `null` si no lo trae.
+   */
+  navegador: string | null;
 };
 
 const TTL_POR_DEFECTO_MS = 24 * 60 * 60 * 1000;
@@ -79,6 +84,8 @@ const PayloadV2Schema = z.object({
   creatividad: z.number().int().min(0).max(5).optional(),
   // Optional for the same reason; only written when true (ADR-0031, finding 33).
   medidasDelCliente: z.literal(true).optional(),
+  // Solo en los planes del motor 3D (REQ-007): huella del navegador que los pidió.
+  navegador: z.string().regex(/^[0-9a-f]{64}$/).optional(),
 }).strict();
 
 const PayloadSchema = z.union([PayloadV2Schema, PayloadV1Schema]);
@@ -142,6 +149,7 @@ function contextoDesdePayload(payload: Payload): ContextoPlan {
       allowlist: payload.allowlist,
       creatividad: payload.creatividad ?? null,
       medidasDelCliente: payload.medidasDelCliente === true,
+      navegador: payload.navegador ?? null,
     };
   }
   // A v1 token predates signed provenance: it can only be re-resolved by the
@@ -155,6 +163,7 @@ function contextoDesdePayload(payload: Payload): ContextoPlan {
     allowlist: [],
     creatividad: null,
     medidasDelCliente: false,
+    navegador: null,
   };
 }
 
@@ -175,6 +184,8 @@ export function crearTokenPlan(
     creatividad?: number;
     /** The customer gave the pieces' measures (ADR-0031, finding 33); omitted when not. */
     medidasDelCliente?: boolean;
+    /** Huella del navegador (solo planes del motor 3D). */
+    navegador?: string;
   },
   ttlMs = TTL_POR_DEFECTO_MS,
 ): string {
@@ -188,6 +199,7 @@ export function crearTokenPlan(
     allowlist: input.allowlist,
     ...(input.creatividad === undefined ? {} : { creatividad: input.creatividad }),
     ...(input.medidasDelCliente === true ? { medidasDelCliente: true as const } : {}),
+    ...(input.navegador ? { navegador: input.navegador } : {}),
   });
 }
 

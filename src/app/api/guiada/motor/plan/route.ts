@@ -1,4 +1,4 @@
-import { crosswalkEnVivo, crosswalkIncluido, cotizarBom } from "@/lib/globos3d/motor/v1";
+import { crosswalkEnVivo, crosswalkIncluido, cotizarBom, snapshotPublicado } from "@/lib/globos3d/motor/v1";
 import { leerMotorGuiada } from "@/lib/guiada-motor/bandera";
 import { atenderPlanMotor, type DependenciasPlanMotor } from "@/lib/guiada-motor/plan-motor";
 import { llamarPythonListaMateriales } from "@/lib/ia/nucleo/python-adapter";
@@ -19,6 +19,7 @@ const dependencias: DependenciasPlanMotor = {
   cotizar: (bom, { requestId, signal }) => cotizarBom(bom, {
     crosswalk: async () => crosswalkIncluido(),
     crosswalkEnVivo: () => crosswalkEnVivo(),
+    snapshotPublicado: () => snapshotPublicado(),
     cotizarLista: (entrada) => llamarPythonListaMateriales({ entrada, requestId: crypto.randomUUID(), correlationId: requestId, parentSignal: signal }),
   }),
   nuevoId: () => crypto.randomUUID(),

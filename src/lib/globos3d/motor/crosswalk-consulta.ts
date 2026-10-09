@@ -44,3 +44,14 @@ export async function leerFilasCatalogo(conexion: ConsultaSql): Promise<FilaCata
     }];
   });
 }
+
+const SQL_SNAPSHOT_PUBLICADO = `
+  SELECT source_snapshot_id FROM rag_source_snapshots
+   WHERE source_kind = 'products_catalog' AND status = 'published'
+   ORDER BY published_at DESC NULLS LAST, fetched_at DESC LIMIT 1`;
+
+/** El snapshot publicado del catálogo: el mismo del que Python saca los precios. */
+export async function leerSnapshotPublicado(conexion: ConsultaSql): Promise<string | null> {
+  const { rows } = await conexion.query(SQL_SNAPSHOT_PUBLICADO);
+  return texto(rows[0]?.source_snapshot_id);
+}

@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-04-71mp5umakml-ac-uf894-1000-ql80",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "d1046f292a710912a99e94d4873a21cad27efc49fa3d0892dfab162e0654a553",
+ "especHash": "0f902137c546e203758f2450dee43b3f124c4aa6c41075a714b4799bcc239ee0",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {

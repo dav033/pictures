@@ -4095,6 +4095,9 @@ export async function llamarPythonListaMateriales(input: {
   correlationId: string;
   deadlineMs?: number;
   parentSignal?: AbortSignal;
+  /** Solo para pruebas: el entorno y el `fetch` con que se llama (por defecto, los reales). */
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
 }): Promise<PythonListaMaterialesResultado> {
   const operationBody = input.entrada;
   const response = await llamarPythonOperacion(PYTHON_LISTA_MATERIALES_PATH, PYTHON_LISTA_MATERIALES_SCOPE, {
@@ -4102,6 +4105,8 @@ export async function llamarPythonListaMateriales(input: {
     correlationId: input.correlationId,
     deadlineMs: input.deadlineMs,
     parentSignal: input.parentSignal,
+    ...(input.env ? { env: input.env } : {}),
+    ...(input.fetchImpl ? { fetchImpl: input.fetchImpl } : {}),
     payload: operationBody,
     operationBody,
     scopes: [PYTHON_LISTA_MATERIALES_SCOPE],

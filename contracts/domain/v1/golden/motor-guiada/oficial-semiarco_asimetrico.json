@@ -2,9 +2,9 @@
  "caso": "oficial-semiarco_asimetrico",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "cef2b69f855ada65029bc5763b27c4567d8b3a7da8e356a76a493dcb4ea1f249",
+ "especHash": "4ec9fa57f95be3e1835217116da06ca5107153a7f80101f42f86abcf21789fd8",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO_ASIMETRICO": {

@@ -2,10 +2,11 @@
  "caso": "oficial-pared_densa",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "a48a1fc22ee3febe019187c3aed98df85d47ec1c4b807ff579dc62e055aed958",
+ "especHash": "3adaaa131cf610b5faed34e0c701e414b466ba229676f65849858081cfba9b87",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
  "faltantes": [
   {
    "formatoId": "LOL-12",
@@ -13,12 +14,18 @@
    "motivo": "no_esta_en_la_tienda"
   }
  ],
+ "reserva": {
+  "objetivo": 13,
+  "cubierta": 13,
+  "sinCubrir": 0
+ },
  "pedido": [
   {
    "formatoId": "LOL-12",
    "codigo": "005",
    "cantidad": 16,
-   "cantidadConMerma": 18,
+   "reserva": 4,
+   "paquetes": 1,
    "productId": "8634217890087",
    "variantId": "46594168979751"
   },
@@ -26,7 +33,8 @@
    "formatoId": "LOL-12",
    "codigo": "040",
    "cantidad": 37,
-   "cantidadConMerma": 40,
+   "reserva": 3,
+   "paquetes": 2,
    "productId": "8634219430183",
    "variantId": "46594171732263"
   },
@@ -34,9 +42,10 @@
    "formatoId": "R-5",
    "codigo": "040",
    "cantidad": 100,
-   "cantidadConMerma": 108,
+   "reserva": 6,
+   "paquetes": 3,
    "productId": "8634239385895",
-   "variantId": "46594233631015"
+   "variantId": "46594233729319"
   }
  ]
 }

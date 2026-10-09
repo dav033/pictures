@@ -2,57 +2,42 @@
  "caso": "idea-deco-real-28-aro-blanco-dorado-y-nude",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "1e776c283aa45b0370bacd4fd8c377fac1c5c52553b882636df1df1b88a13f61",
+ "especHash": "83833c25afd47374f57a3a9ac5113810e62a4ee6e9511399105eb5d798694a53",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "politica": "python",
  "faltantes": [],
+ "reserva": {
+  "objetivo": 18,
+  "cubierta": 18,
+  "sinCubrir": 0
+ },
  "pedido": [
-  {
-   "formatoId": "R-5",
-   "codigo": "073",
-   "cantidad": 15,
-   "cantidadConMerma": 17,
-   "productId": "8634275266855",
-   "variantId": "46594302411047"
-  },
-  {
-   "formatoId": "R-5",
-   "codigo": "806",
-   "cantidad": 64,
-   "cantidadConMerma": 70,
-   "productId": "9661845995815",
-   "variantId": "49475778085159"
-  },
   {
    "formatoId": "R-5",
    "codigo": "970",
    "cantidad": 37,
-   "cantidadConMerma": 40,
+   "reserva": 0,
+   "paquetes": 2,
    "productId": "8634255638823",
    "variantId": "46594264596775"
   },
   {
-   "formatoId": "R-9",
-   "codigo": "073",
-   "cantidad": 29,
-   "cantidadConMerma": 32,
-   "productId": "8634275266855",
-   "variantId": "47466211803431"
-  },
-  {
-   "formatoId": "R-9",
-   "codigo": "806",
-   "cantidad": 22,
-   "cantidadConMerma": 24,
-   "productId": "9661845995815",
-   "variantId": "49475777921319"
+   "formatoId": "R-12",
+   "codigo": "970",
+   "cantidad": 6,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634255638823",
+   "variantId": "46594264662311"
   },
   {
    "formatoId": "R-9",
    "codigo": "970",
    "cantidad": 31,
-   "cantidadConMerma": 34,
+   "reserva": 0,
+   "paquetes": 2,
    "productId": "8634255638823",
    "variantId": "46594264858919"
   },
@@ -60,25 +45,64 @@
    "formatoId": "R-12",
    "codigo": "073",
    "cantidad": 7,
-   "cantidadConMerma": 8,
+   "reserva": 0,
+   "paquetes": 1,
    "productId": "8634275266855",
    "variantId": "46594302181671"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "073",
+   "cantidad": 15,
+   "reserva": 18,
+   "paquetes": 1,
+   "productId": "8634275266855",
+   "variantId": "46594302411047"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "073",
+   "cantidad": 29,
+   "reserva": 0,
+   "paquetes": 3,
+   "productId": "8634275266855",
+   "variantId": "47466211803431"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "806",
+   "cantidad": 22,
+   "reserva": 0,
+   "paquetes": 2,
+   "productId": "9661845995815",
+   "variantId": "49475777921319"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "806",
+   "cantidad": 50,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "9661845995815",
+   "variantId": "49475777986855"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "806",
+   "cantidad": 14,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "9661845995815",
+   "variantId": "49475778085159"
   },
   {
    "formatoId": "R-12",
    "codigo": "806",
    "cantidad": 8,
-   "cantidadConMerma": 9,
+   "reserva": 0,
+   "paquetes": 1,
    "productId": "9661845995815",
    "variantId": "49475778183463"
-  },
-  {
-   "formatoId": "R-12",
-   "codigo": "970",
-   "cantidad": 6,
-   "cantidadConMerma": 7,
-   "productId": "8634255638823",
-   "variantId": "46594264662311"
   }
  ]
 }

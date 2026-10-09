@@ -15,9 +15,9 @@ import assert from "node:assert/strict";
 import test, { afterEach, beforeEach } from "node:test";
 import { PlanGuiadoSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1";
 import { sessionToken, SESSION_COOKIE } from "../../src/lib/auth/session";
-import { crearTokenPlan } from "../../src/lib/plan/aprobacion";
+import { abrirContextoPlan, crearTokenPlan } from "../../src/lib/plan/aprobacion";
 import { planGuardadoDeIdea } from "../../src/lib/plan/planes-ideas-guardados";
-import { atenderPlanMotor, type DependenciasPlanMotor } from "../../src/lib/guiada-motor/plan-motor";
+import { atenderPlanMotor, huellaDeNavegador, type DependenciasPlanMotor } from "../../src/lib/guiada-motor/plan-motor";
 import { FalloPlanMotorSchema, RespuestaPlanMotorSchema } from "../../src/lib/guiada-motor/plan-contrato";
 import { cotizarBom, crosswalkIncluido, type ResultadoCotizacionBom } from "../../src/lib/globos3d/motor/v1";
 import { MENSAJE_PLAN_DEL_MOTOR_3D, rechazarTokenDelMotor3d } from "../../src/lib/plan/token-motor";
@@ -28,6 +28,9 @@ import { pythonDoble, type PythonDoble } from "../lib/python-doble-precio";
 
 const CLAVE_APP = "clave-app-de-prueba";
 const SESION = `${SESSION_COOKIE}=${sessionToken(CLAVE_APP)}`;
+/** La identidad del navegador (`feedback_usuario`): el token del plan queda atado a ella. */
+const NAVEGADOR = "feedback_usuario=" + "a1".repeat(16);
+const OTRO_NAVEGADOR = "feedback_usuario=" + "b2".repeat(16);
 const cruce = crosswalkIncluido();
 const como = <T,>(valor: unknown): T => valor as unknown as T;
 
@@ -55,7 +58,7 @@ function entorno(motor: "3d" | "python" = "3d", opciones: { cotizar?: Dependenci
   return { deps, auditorias, doble };
 }
 
-const pedir = (cuerpo: unknown, cookies: string[] = [SESION]) => new Request("https://app.test/api/guiada/motor/plan", {
+const pedir = (cuerpo: unknown, cookies: string[] = [SESION, NAVEGADOR]) => new Request("https://app.test/api/guiada/motor/plan", {
   method: "POST", headers: { "content-type": "application/json", ...(cookies.length ? { cookie: cookies.join("; ") } : {}) }, body: typeof cuerpo === "string" ? cuerpo : JSON.stringify(cuerpo),
 });
 const PROPUESTA = { frase: "Te propongo un arco y dos columnas.", colores: ["azul", "dorado"], piezas: [{ estructura: "arco", cantidad: 1 }, { estructura: "columna", cantidad: 2 }] };
@@ -193,8 +196,7 @@ async function planBase(idea = "deco-real-07-eb12910e210c94b6184d025127acce95") 
 
 test("sumar una idea a un plan del 3d: las piezas del plan quedan intactas, las nuevas toman ids libres y el origen lo dice", async () => {
   const base = await planBase();
-  // Con la bandera en python: el plan ya era del 3d y conserva su motor.
-  const e = entorno("python");
+  const e = entorno("3d");
   const respuesta = await atenderPlanMotor(pedir({ desde: "idea", idea_id: "deco-real-09-images-24", base }), e.deps);
   assert.equal(respuesta.status, 200, JSON.stringify(await respuesta.clone().json()).slice(0, 300));
   const salida = RespuestaPlanMotorSchema.parse(await respuesta.json());
@@ -205,28 +207,66 @@ test("sumar una idea a un plan del 3d: las piezas del plan quedan intactas, las 
   assert.ok(salida.nuevas.every((id) => !idsBase.includes(id)), "ids nuevos");
   // Los globos de cada pieza (talla, color y cantidad) quedan exactamente como estaban; el paquete que se compra puede cambiar,
   // porque se elige por el total de toda la compra (la idea nueva suma globos a la misma talla y color).
-  const globos = (lineas: unknown[]) => Object.fromEntries((lineas as Array<{ tamano_codigo: string; color: string; acabado: string; unidades: number; adorno?: string }>).map((l) => [`${l.tamano_codigo}|${l.color}|${l.acabado}|${l.adorno ?? ""}`, l.unidades]));
+  const globos = (lineas: unknown[]) => {
+    const suma: Record<string, number> = {};
+    for (const l of lineas as Array<{ tamano_codigo: string; color: string; acabado: string; unidades: number; adorno?: string }>) suma[`${l.tamano_codigo}|${l.color}|${l.acabado}|${l.adorno ?? ""}`] = (suma[`${l.tamano_codigo}|${l.color}|${l.acabado}|${l.adorno ?? ""}`] ?? 0) + l.unidades;
+    return suma;
+  };
   for (const [k, e1] of base.estructuras.entries()) assert.deepEqual(globos(plan.estructuras[k]!.lineas), globos(e1.lineas), `${e1.estructura_id}: los globos de las piezas del plan quedan exactamente como estaban`);
   const espec = (plan as unknown as { espec: { origen: { tipo: string; ideaIds: string[] }; piezas: unknown[] } }).espec;
   assert.equal(espec.origen.tipo, "idea_sumada");
   assert.deepEqual(espec.origen.ideaIds, ["deco-real-07-eb12910e210c94b6184d025127acce95", "deco-real-09-images-24"]);
   assert.equal(plan.plan.concepto.titulo, base.plan.concepto.titulo, "el título del plan no se pisa");
   assert.notEqual(plan.plan_hash, base.plan_hash);
-  assert.equal(e.auditorias[0]!.resultado.bandera, "python");
   assert.equal(e.auditorias[0]!.resultado.efectivo, "3d");
 });
 
-test("rehacer con una propuesta un plan del 3d lo mantiene en el 3d aunque la bandera diga python", async () => {
+test("marcha atrás inmediata: con la bandera en python, un plan 3d en pantalla se rehace con Python (409 tipado) en una propuesta y al sumar una idea", async () => {
   const base = await planBase();
-  const e = entorno("python");
-  const respuesta = await atenderPlanMotor(pedir(propuesta({ base })), e.deps);
-  assert.equal(respuesta.status, 200);
-  assert.equal(RespuestaPlanMotorSchema.parse(await respuesta.json()).plan.plan_hash.length, 64);
+  for (const cuerpo of [propuesta({ base }), { desde: "idea", idea_id: "deco-real-09-images-24", base }]) {
+    let cotizaciones = 0;
+    const e = entorno("python", { cotizar: async () => { cotizaciones += 1; return { ok: false, razon: "precio_fallido", detalle: "no debía llamarse" }; } });
+    const respuesta = await atenderPlanMotor(pedir(cuerpo), e.deps);
+    assert.equal(respuesta.status, 409);
+    const salida = FalloPlanMotorSchema.parse(await respuesta.json());
+    assert.equal(salida.codigo, "MOTOR_PYTHON");
+    assert.equal(salida.fallback?.razon, "bandera_python");
+    assert.equal(cotizaciones, 0);
+    assert.deepEqual(e.auditorias[0]!.resultado, { bandera: "python", fuente: "defecto", efectivo: "python", razon: "bandera_python" });
+  }
+});
+
+test("el token del plan va atado al navegador: copiado a otro no sirve, y la primera respuesta fija la cookie del navegador", async () => {
+  const base = await planBase();
+  const e = entorno("3d");
+  const otro = await atenderPlanMotor(pedir({ desde: "idea", idea_id: "deco-real-09-images-24", base }, [SESION, OTRO_NAVEGADOR]), e.deps);
+  assert.equal(otro.status, 409);
+  assert.equal((await otro.json() as { codigo: string }).codigo, "APROBACION_INVALIDA");
+  assert.equal(e.auditorias.at(-1)!.resultado.motivo, "navegador_distinto", "el rechazo queda en la auditoría con su motivo");
+  const sinCookie = await atenderPlanMotor(pedir({ desde: "idea", idea_id: "deco-real-09-images-24", base }, [SESION]), entorno("3d").deps);
+  assert.equal(sinCookie.status, 409, "sin la cookie del navegador, el token tampoco vale");
+  assert.match(sinCookie.headers.get("set-cookie") ?? "", /^feedback_usuario=[0-9a-f]{32};/, "y se le fija una cookie para que el siguiente plan sí quede atado");
+  // Un token que no trae navegador (de antes de esta regla, o fabricado) no se acepta como base.
+  const claro = abrirContextoPlan(base.approval_token)!;
+  assert.match(claro.navegador ?? "", /^[0-9a-f]{64}$/);
+  assert.equal(claro.navegador, huellaDeNavegador("nav-" + "a1".repeat(16)));
+  const sinNavegador = { ...base, approval_token: crearTokenPlan({ planHash: base.plan_hash, requestId: "r", backend: "globos3d", catalogSnapshotId: "s", allowlist: [] }) };
+  const r = await atenderPlanMotor(pedir({ desde: "idea", idea_id: "deco-real-09-images-24", base: sinNavegador }), entorno("3d").deps);
+  assert.equal(r.status, 409);
+  const primera = await atenderPlanMotor(pedir(propuesta(), [SESION]), entorno("3d").deps);
+  assert.equal(primera.status, 200);
+  assert.match(primera.headers.get("set-cookie") ?? "", /^feedback_usuario=[0-9a-f]{32};/, "un navegador sin identidad recibe la suya con su primer plan");
 });
 
 test("la base se verifica: token de Python, espec alterada, hash ajeno, sin token válido, sin espec", async () => {
   const base = await planBase();
-  const intentar = async (planBase: unknown) => atenderPlanMotor(pedir({ desde: "idea", idea_id: "deco-real-09-images-24", base: planBase }), entorno().deps);
+  const rechazos: string[] = [];
+  const intentar = async (planBase: unknown) => {
+    const e = entorno();
+    const respuesta = await atenderPlanMotor(pedir({ desde: "idea", idea_id: "deco-real-09-images-24", base: planBase }), e.deps);
+    rechazos.push(...e.auditorias.map((a) => String(a.resultado.razon)));
+    return respuesta;
+  };
 
   const deEspec = (base as unknown as { espec: { piezas: Array<{ colores: Array<{ peso: number }> }> } }).espec;
   const alterada = structuredClone(base) as unknown as { espec: typeof deEspec };
@@ -251,6 +291,8 @@ test("la base se verifica: token de Python, espec alterada, hash ajeno, sin toke
   const r5 = await intentar(sinEspec);
   assert.equal(r5.status, 400);
   assert.equal((await r5.json() as { codigo: string }).codigo, "ESPEC_INVALIDA");
+  // Cada rechazo de una base queda en la auditoría de la conversación (decidir), con su código.
+  assert.deepEqual(rechazos, ["PLAN_ALTERADO", "PLAN_NO_ES_DEL_MOTOR_3D", "APROBACION_INVALIDA", "APROBACION_INVALIDA", "ESPEC_INVALIDA"]);
 });
 
 test("tope de piezas: sumar una idea que pasa de 8 devuelve un fallo tipado y deja el plan como estaba", async () => {

@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec",
  "motor": {
   "id": "globos3d",
-  "version": "1.0.0"
+  "version": "1.1.0"
  },
- "especHash": "ee3678158a27dc90c8db98b81a58a86481afb3d186412daf8ca44e157d559d09",
+ "especHash": "56692889acf9ffc33d31aa24fed440c71abddf2408665c0db697f01cd8d66f14",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {

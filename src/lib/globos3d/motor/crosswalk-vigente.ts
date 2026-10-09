@@ -1,5 +1,5 @@
 import { getRagPool } from "@/lib/rag/db";
-import { leerFilasCatalogo, type ConsultaSql } from "./crosswalk-consulta";
+import { leerFilasCatalogo, leerSnapshotPublicado, type ConsultaSql } from "./crosswalk-consulta";
 import archivo from "./datos/crosswalk-vigente.json";
 import { construirCrosswalk, CrosswalkSchema, type Crosswalk } from "./crosswalk-variantes";
 
@@ -40,9 +40,25 @@ export async function crosswalkEnVivo(opciones: OpcionesEnVivo = {}): Promise<Cr
   return consultando;
 }
 
+const TTL_PUBLICADO_MS = 60_000;
+let publicado: { snapshot: string | null; venceEn: number } | null = null;
+
+/**
+ * El snapshot publicado del catálogo (de donde Python saca los precios), recordado un minuto. Si no se puede leer, `null`:
+ * quien cotiza usa entonces el del cruce y lo deja dicho.
+ */
+export async function snapshotPublicado(opciones: OpcionesEnVivo = {}): Promise<string | null> {
+  const ahora = opciones.ahora ?? Date.now;
+  if (publicado && ahora() < publicado.venceEn) return publicado.snapshot;
+  const snapshot = await leerSnapshotPublicado(opciones.conexion ?? getRagPool()).catch(() => null);
+  publicado = { snapshot, venceEn: ahora() + TTL_PUBLICADO_MS };
+  return snapshot;
+}
+
 /** Para las pruebas: olvida lo recordado. */
 export function olvidarCrosswalk(): void {
   incluido = null;
   enVivo = null;
   consultando = null;
+  publicado = null;
 }
