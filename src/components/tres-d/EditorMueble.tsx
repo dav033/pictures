@@ -1,7 +1,7 @@
 "use client";
 
 import { muebleDe } from "@/lib/globos3d/mobiliario-catalogo";
-import { ACABADOS_MUEBLE, limitesDeMueble, NOMBRE_ACABADO_MUEBLE, piezaDeMueble, type OpcionesGuardadas, type PiezaEscenografia } from "@/lib/globos3d/mobiliario-pieza";
+import { ACABADOS_MUEBLE, limitesDeMueble, NOMBRE_ACABADO_MUEBLE, nombreDeMueble, piezaDeMueble, type OpcionesGuardadas, type PiezaEscenografia } from "@/lib/globos3d/mobiliario-pieza";
 import { avisoDeTexto } from "@/lib/globos3d/rotulos";
 import type { Pieza } from "@/lib/globos3d/piezas";
 import { CampoTexto } from "./CampoTexto";
@@ -36,7 +36,7 @@ export function EditorMueble({ pieza, onPieza }: { pieza: PiezaEscenografia & { 
     pon({ colores: Array.from({ length: Math.max(o.colores.length, i + 1) }, (_, k) => (k === i || todosIguales ? hex : color(k))) });
   };
   return (
-    <div className="flex flex-col gap-2.5" aria-label={`Medidas y colores de ${m.nombre}`}>
+    <div className="flex flex-col gap-2.5" aria-label={`Medidas y colores de ${nombreDeMueble(m, o)}`}>
       <Deslizador id="mueble-ancho" etiqueta="Ancho" valor={o.anchoCm} min={l.ancho.min} max={l.ancho.max} paso={5} texto={metros(o.anchoCm)} onCambio={(v) => pon({ anchoCm: v })} />
       {conFondo && <Deslizador id="mueble-fondo" etiqueta="Fondo" valor={o.fondoCm} min={l.fondo.min} max={l.fondo.max} paso={5} texto={metros(o.fondoCm)} onCambio={(v) => pon({ fondoCm: v })} />}
       <Deslizador id="mueble-alto" etiqueta="Alto" valor={o.altoCm} min={l.alto.min} max={l.alto.max} paso={5} texto={metros(o.altoCm)} onCambio={(v) => pon({ altoCm: v })} />

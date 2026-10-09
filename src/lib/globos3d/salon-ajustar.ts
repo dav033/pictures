@@ -3,7 +3,7 @@ import { fallar } from "./herramientas-escena-colores";
 import { MAX_NODOS, SALA_MAXIMA_CM } from "./limites-escena";
 import { ALTO_SALON_CM, falloDeCapacidad, metros, rangoSala, type ResultadoSalon } from "./salon-armar";
 import {
-  distribuirSalon, MAX_INVITADOS_SALON, falloDeSillas, mesasNecesarias, medidasDeMesa, MESAS_SALON, rectDeElemento, type Celda, type DistribucionSalon, type ElementoSalon, type ParamsSalon, type TipoMesaSalon,
+  distribuirSalon, MAX_INVITADOS_SALON, aforoDeMesas, falloDeMesas, falloDeSillas, mesasNecesarias, medidasDeMesa, MESAS_SALON, rectDeElemento, type Celda, type DistribucionSalon, type ElementoSalon, type ParamsSalon, type TipoMesaSalon,
 } from "./salon-evento";
 import { desplazarNodo, nodoDeElemento, paletaDeMesas, ponerElemento, quitarConLoSuyo } from "./salon-nodos";
 import { anclaDeZona, conAnotacion, estaMovida, mesasVivas, miembrosDeZona, registroVivo, type PiezaViva } from "./salon-registro";
@@ -21,7 +21,7 @@ import { cajaDeMueble, cajaDeZona, dentroDe, inflar, seCruzan, ZONAS_SALON, zona
  * - Si las mesas no caben y la sala no es fija, la agranda (y rehace la cuadrícula).
  */
 
-export type PedidoAjuste = { invitados?: number; mesa?: TipoMesaSalon; sillas?: number; anchoCm?: number; fondoCm?: number; agregarZonas?: readonly ZonaSalon[] };
+export type PedidoAjuste = { invitados?: number; /** Número exacto de mesas de invitados (manda sobre `invitados`). */ mesas?: number; mesa?: TipoMesaSalon; sillas?: number; anchoCm?: number; fondoCm?: number; agregarZonas?: readonly ZonaSalon[] };
 
 const elementoDeMesa = (mesa: TipoMesaSalon, sillas: number | undefined, c: Celda): ElementoSalon => {
   const m = medidasDeMesa(mesa, sillas);
@@ -38,7 +38,10 @@ export function ajustarSalon(escena: Escena, p: PedidoAjuste, notas: string[]): 
   const sillas = p.sillas !== undefined ? (p.sillas === MESAS_SALON[mesa].puestos ? undefined : p.sillas) : registro.sillas !== undefined && falloDeSillas(mesa, registro.sillas) === null ? registro.sillas : undefined;
   if (p.sillas === undefined && registro.sillas !== undefined && sillas === undefined) notas.push(`Las ${registro.sillas} sillas por mesa no valen para mesas ${mesa}: puse las de siempre (${MESAS_SALON[mesa].puestos}).`);
   const mismaMesa = mesa === registro.mesa && sillas === registro.sillas;
-  const invitados = p.invitados ?? registro.invitados;
+  const falloMesas = p.mesas === undefined ? null : falloDeMesas(p.mesas);
+  if (falloMesas) fallar(falloMesas);
+  const invitados = p.mesas !== undefined ? aforoDeMesas(p.mesas, mesa, sillas) : p.invitados ?? registro.invitados;
+  if (p.mesas !== undefined) notas.push(`${p.mesas} mesas de ${medidasDeMesa(mesa, sillas).puestos} dan un aforo de ${invitados} invitados${p.invitados !== undefined && p.invitados !== invitados ? ` (no usé invitados = ${p.invitados}: con mesas manda mesas × sillas)` : ""}.`);
   if (invitados > MAX_INVITADOS_SALON) fallar(`Un salón admite hasta ${MAX_INVITADOS_SALON} invitados (me pasaron ${invitados}).`);
   const presentes = zonasPresentes(escena);
   const agregar = ZONAS_SALON.filter((z) => !presentes.includes(z) && p.agregarZonas?.includes(z));

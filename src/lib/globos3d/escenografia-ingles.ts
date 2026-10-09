@@ -19,7 +19,7 @@ export const ESCENOGRAFIA_EN: Readonly<Record<string, string>> = {
   aro_metalico: "metal ring backdrop stand", aro_hexagonal: "metal hexagon frame backdrop stand", arco_metalico: "metal arch frame stand", base_hexagonal: "hexagonal plinth", peldanos: "set of three display steps",
   escalera_decorativa: "decorative wooden ladder", biombo: "three-panel folding screen", jarron_pampas: "tall vase with pampas grass", lampara_pie: "floor lamp", base_pastel: "cake stand",
   neon_cursiva: "cursive neon sign", marco_tela: "fabric backdrop panel in a rectangular frame", rotulo_acrilico: "cut-out cursive name sign floating in front of the backdrop", columna_griega: "white Greek column", alfombra_redonda: "round rug",
-  mesa_redonda_sillas: "round banquet table with a floor-length tablecloth and eight Tiffany chairs around it", mesa_imperial_sillas: "long banquet table with a floor-length tablecloth and ten Tiffany chairs around it",
+  mesa_redonda_sillas: "round banquet table with a floor-length tablecloth and eight Tiffany chairs around it", mesa_redonda10_sillas: "round banquet table with a floor-length tablecloth and ten Tiffany chairs around it", mesa_imperial_sillas: "long banquet table with a floor-length tablecloth and ten Tiffany chairs around it",
   sala_lounge: "lounge set (sofa, two armchairs and a coffee table)",
 };
 
@@ -37,6 +37,7 @@ function colorDeLetrasEn(hex: string, acabado: AcabadoRotulo): string {
   return tonoEnIngles(hex);
 }
 
+const NUMEROS_EN = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
 const LINEAS_EN = ["", "one", "two", "three"];
 
 /**
@@ -70,9 +71,11 @@ function coloresVisibles(elementos: readonly ElementoEscenografia[]): string[] {
  */
 export function fraseDeEscenografia(p: PiezaEscenografia): string | null {
   const id = p.mueble?.id;
-  const nombre = id ? ESCENOGRAFIA_EN[id] : undefined;
-  if (!id || !nombre) return null;
+  const base = id ? ESCENOGRAFIA_EN[id] : undefined;
+  if (!id || !base) return null;
   const o = p.mueble?.opciones;
+  // Una mesa con otro número de sillas lo dice: «…and four Tiffany chairs around it», no las ocho de siempre.
+  const nombre = o?.sillas !== undefined && NUMEROS_EN[o.sillas] ? base.replace(/\b(eight|ten) Tiffany chairs/, `${NUMEROS_EN[o.sillas]} Tiffany chairs`) : base;
   // El rótulo como se arma (el nombre de acrílico lo trae de sus opciones; el de un panel, de mueble.rotulo, con el texto ya partido en líneas).
   const rotulo = rotuloArmado(p);
   const letras = rotulo ? letrasEn(rotulo.texto, rotulo.color, rotulo.acabado) : null;

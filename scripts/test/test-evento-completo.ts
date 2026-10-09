@@ -235,4 +235,16 @@ prueba("A7: un centro que el usuario puso a mano en una mesa suya ni decide ni s
   assert.deepEqual(centrosDe(crece).map((c) => c.id), [suyo.id]);
 });
 
+prueba("A6: las mesas de 2 sillas (tapa de ~60 cm) también llevan centro: uno más chico, no se quedan peladas", () => {
+  const r = herramienta(vacia(), "planificar_evento", { tipo_evento: "cumpleanos", alcance: "rincon", mesas: 6, sillas_por_mesa: 2, colores: ["rosa", "blanco"] });
+  const z = zonasDeEscena(r.escena);
+  assert.equal(z.mesas.length, 6);
+  assert.deepEqual(ordenados(padres(r.escena)), ordenados(z.mesas), "todas con centro");
+  assert.doesNotMatch(r.resumen, /no llevan centro|No quedaron/);
+  apoyados(r.escena); sinHuerfanos(r.escena);
+  // Con tapas normales siguen llevando el centro de siempre (ramo de helio).
+  const normal = herramienta(vacia(), "planificar_evento", { tipo_evento: "cumpleanos", alcance: "rincon", mesas: 3, colores: ["rosa"] }).escena;
+  assert.ok(centrosDe(normal).every((c) => c.pieza.tipo === "decoracion" && c.pieza.decoracion.tipo === "ramo_helio"));
+});
+
 console.log(`\n${pruebas} pruebas pasaron`);

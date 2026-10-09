@@ -2,7 +2,7 @@ import type { Escena, Sala } from "./escena";
 import { fallar } from "./herramientas-escena-colores";
 import { MAX_NODOS, SALA_MAXIMA_CM } from "./limites-escena";
 import {
-  distribuirSalon, FRENTE_PANEL_CM, falloDeSillas, MAX_INVITADOS_SALON, medidasDeMesa, MESAS_SALON, PROFUNDIDAD_FONDO_CM, type DistribucionSalon, type ParamsSalon, type TipoMesaSalon,
+  aforoDeMesas, distribuirSalon, falloDeMesas, falloDeSillas, FRENTE_PANEL_CM, MAX_INVITADOS_SALON, medidasDeMesa, MESAS_SALON, PROFUNDIDAD_FONDO_CM, type DistribucionSalon, type ParamsSalon, type TipoMesaSalon,
 } from "./salon-evento";
 import { desplazarNodo, ponerElemento, quitarConLoSuyo, type PaletaSalon } from "./salon-nodos";
 import { registroVivo } from "./salon-registro";
@@ -24,7 +24,7 @@ export const metros = (cm: number) => `${(cm / 100).toLocaleString("es-CO", { ma
 export const zonasPorDefecto = (invitados: number): ZonaSalon[] => (invitados >= 60 ? [...ZONAS_SALON] : ["fondo_fotos", "mesa_postres"]);
 
 export type PedidoSalon = {
-  invitados?: number; mesa?: TipoMesaSalon; sillas?: number; anchoCm?: number; fondoCm?: number; zonas?: readonly ZonaSalon[]; colores?: PaletaSalon; reemplazar?: boolean;
+  invitados?: number; /** Número exacto de mesas de invitados: manda sobre `invitados` (el aforo es mesas × sillas). */ mesas?: number; mesa?: TipoMesaSalon; sillas?: number; /** Cuánto se reserva al fondo de fotos desde la pared (cm), por lo menos: letras de foil delante de la composición. */ profundidadFondoCm?: number; anchoCm?: number; fondoCm?: number; zonas?: readonly ZonaSalon[]; colores?: PaletaSalon; reemplazar?: boolean;
 };
 
 export type ResultadoSalon = { escena: Escena; resumen: string };
@@ -39,7 +39,10 @@ export const rangoSala = (v: number | undefined, max: number, que: string): numb
 export function falloDeCapacidad(d: DistribucionSalon, mesa: TipoMesaSalon, invitados: number, sillas?: number): never {
   const { puestos } = medidasDeMesa(mesa, sillas);
   const cabe = d.capacidad * puestos;
-  return fallar(`En una sala de ${metros(d.sala.anchoCm)} × ${metros(d.sala.fondoCm)} con esas zonas caben ${d.capacidad} mesas de ${puestos} (${cabe} invitados) y hacen falta ${d.mesasNecesarias} para ${invitados}: ${cabe > 0 ? `pide hasta ${cabe} invitados, ` : ""}agranda la sala (hasta ${SALA_MAXIMA_CM.ancho / 100} × ${SALA_MAXIMA_CM.fondo / 100} m), usa mesas de 10 o quita zonas (la pista y los postres ocupan sitio).`);
+  const maximo = mesa === "imperial" ? 20 : 12;
+  // Una alternativa que de verdad existe: más sillas por mesa mientras haya, y si ya son las más que admite, no se inventa una mesa más grande.
+  const mesasMayores = puestos < maximo ? `usa mesas de más sillas (sillas_por_mesa hasta ${maximo})` : `ya llevan las sillas máximas (${maximo}): baja los invitados`;
+  return fallar(`En una sala de ${metros(d.sala.anchoCm)} × ${metros(d.sala.fondoCm)} con esas zonas caben ${d.capacidad} mesas de ${puestos} (${cabe} invitados) y hacen falta ${d.mesasNecesarias} para ${invitados}: ${cabe > 0 ? `pide hasta ${cabe} invitados, ` : ""}agranda la sala (hasta ${SALA_MAXIMA_CM.ancho / 100} × ${SALA_MAXIMA_CM.fondo / 100} m), ${mesasMayores} o quita zonas (la pista y los postres ocupan sitio).`);
 }
 
 /** Quita lo que armó el salón (y lo que está sobre ello) y todo el registro; lo del usuario, también lo que adoptó, se queda sin anotar. */
@@ -57,20 +60,24 @@ export function armarSalon(escena: Escena, p: PedidoSalon, notas: string[]): Res
   const hay = registroVivo(escena);
   if (hay && !p.reemplazar) fallar(`Ya hay un salón armado (${hay.invitados} invitados). Para cambiar invitados, tipo de mesa, medidas o agregar una zona usa ajustar_salon; para mover o quitar una zona, mover_zona y quitar_zona; para rehacerlo, armar_salon con reemplazar = true (no toca tus piezas).`);
   const base = sinSalon(escena);
-  const invitados = p.invitados ?? 0;
-  if (invitados > MAX_INVITADOS_SALON) fallar(`Un salón admite hasta ${MAX_INVITADOS_SALON} invitados (me pasaron ${invitados}).`);
-  const zonas = p.zonas ?? (invitados > 0 ? zonasPorDefecto(invitados) : []);
-  if (invitados === 0 && zonas.length === 0) fallar("Dime cuántos invitados o qué zonas armar (mesa_principal, pista, mesa_postres, fondo_fotos, entrada).");
   const mesa = p.mesa ?? "redonda8";
   const falloSillas = p.sillas === undefined ? null : falloDeSillas(mesa, p.sillas);
   if (falloSillas) fallar(falloSillas);
   // Las sillas de siempre del tipo de mesa no se guardan: es lo mismo que no pedir nada.
   const sillas = p.sillas === MESAS_SALON[mesa].puestos ? undefined : p.sillas;
+  const falloMesas = p.mesas === undefined ? null : falloDeMesas(p.mesas);
+  if (falloMesas) fallar(falloMesas);
+  const invitados = p.mesas !== undefined ? aforoDeMesas(p.mesas, mesa, sillas) : p.invitados ?? 0;
+  if (p.mesas !== undefined) notas.push(`${p.mesas} mesas de ${medidasDeMesa(mesa, sillas).puestos} dan un aforo de ${invitados} invitados${p.invitados !== undefined && p.invitados !== invitados ? ` (no usé invitados = ${p.invitados}: con mesas manda mesas × sillas)` : ""}.`);
+  if (invitados > MAX_INVITADOS_SALON) fallar(`Un salón admite hasta ${MAX_INVITADOS_SALON} invitados (me pasaron ${invitados}).`);
+  const zonas = p.zonas ?? (invitados > 0 ? zonasPorDefecto(invitados) : []);
+  if (invitados === 0 && zonas.length === 0) fallar("Dime cuántos invitados o qué zonas armar (mesa_principal, pista, mesa_postres, fondo_fotos, entrada); también vale mesas = cuántas mesas.");
   const ancho = rangoSala(p.anchoCm, SALA_MAXIMA_CM.ancho, "ancho_cm"), fondo = rangoSala(p.fondoCm, SALA_MAXIMA_CM.fondo, "fondo_cm");
 
   const propias = piezasDeUsuarioEnElPiso(base, true);
   const bloque = zonas.includes("fondo_fotos") && propias.length ? propias.map((x) => x.caja).reduce(unir) : null;
-  const profundidadFondoCm = bloque ? Math.ceil(Math.max(PROFUNDIDAD_FONDO_CM, FRENTE_PANEL_CM + (bloque.z1 - bloque.z0) + 40)) : undefined;
+  const profundidadBloque = bloque ? Math.ceil(Math.max(PROFUNDIDAD_FONDO_CM, FRENTE_PANEL_CM + (bloque.z1 - bloque.z0) + 40)) : undefined;
+  const profundidadFondoCm = profundidadBloque !== undefined || p.profundidadFondoCm !== undefined ? Math.max(profundidadBloque ?? 0, p.profundidadFondoCm ?? 0) : undefined;
   const fija = ancho !== undefined || fondo !== undefined;
   const distribuir = (reservas: ParamsSalon["reservas"], profundidad: number | undefined): DistribucionSalon => {
     const parametros: ParamsSalon = { invitados, mesa, ...(sillas !== undefined ? { sillas } : {}), zonas, reservas, ...(profundidad ? { profundidadFondoCm: profundidad } : {}), altoSalaCm: Math.max(base.sala.altoCm, ALTO_SALON_CM) };
@@ -83,14 +90,14 @@ export function armarSalon(escena: Escena, p: PedidoSalon, notas: string[]): Res
   let d = distribuir(bloque ? [] : propias.map((x) => x.caja), profundidadFondoCm);
   // Sin sitio para el fondo de fotos, la decoración se queda donde estaba (y las mesas la esquivan).
   const adopta = bloque !== null && !d.sinLugar.includes("fondo_fotos");
-  if (bloque && !adopta) d = distribuir(propias.map((x) => x.caja), undefined);
+  if (bloque && !adopta) d = distribuir(propias.map((x) => x.caja), p.profundidadFondoCm);
   if (d.faltan > 0) falloDeCapacidad(d, mesa, invitados, sillas);
 
   const cambioSala = d.sala.anchoCm !== base.sala.anchoCm || d.sala.fondoCm !== base.sala.fondoCm;
   const sala: Sala = { ...base.sala, anchoCm: d.sala.anchoCm, fondoCm: d.sala.fondoCm, altoCm: cambioSala && Math.max(d.sala.anchoCm, d.sala.fondoCm) >= 900 ? Math.max(base.sala.altoCm, ALTO_SALON_CM) : base.sala.altoCm };
   if (base.nodos.length + d.elementos.length > MAX_NODOS) fallar(`El salón suma ${d.elementos.length} piezas y la escena ya tiene ${base.nodos.length} (máximo ${MAX_NODOS}): quita piezas o usa menos zonas.`);
 
-  const inicial = { invitados, mesa, ...(sillas !== undefined ? { sillas } : {}), profundidadFondoCm: adopta && profundidadFondoCm ? profundidadFondoCm : PROFUNDIDAD_FONDO_CM };
+  const inicial = { invitados, mesa, ...(sillas !== undefined ? { sillas } : {}), profundidadFondoCm: adopta ? profundidadFondoCm ?? PROFUNDIDAD_FONDO_CM : Math.max(PROFUNDIDAD_FONDO_CM, p.profundidadFondoCm ?? 0) };
   let nodos = [...base.nodos];
   if (adopta && bloque) {
     const dx = -(bloque.x0 + bloque.x1) / 2, dz = -sala.fondoCm / 2 + FRENTE_PANEL_CM - bloque.z0;

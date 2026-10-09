@@ -62,6 +62,17 @@ function sillasValidas(m: MuebleCatalogo, v: unknown): number | undefined {
   return v;
 }
 
+/** Cuántas sillas lleva de verdad una mesa con sillas (las de su pieza, o las de siempre del catálogo); `null` si no es de ese tipo. */
+export function sillasDeMueble(m: MuebleCatalogo, opciones?: { sillas?: number }): number | null {
+  return m.sillas ? opciones?.sillas ?? m.sillas.porDefecto : null;
+}
+
+/** El nombre de un mueble como es esa pieza: una mesa con sillas dice las que lleva («Mesa redonda con 4 sillas»), no las del catálogo. */
+export function nombreDeMueble(m: MuebleCatalogo, opciones?: { sillas?: number }): string {
+  const sillas = sillasDeMueble(m, opciones);
+  return sillas === null ? m.nombre : m.nombre.replace(/\d+ sillas/, `${sillas} sillas`);
+}
+
 /** Opciones siempre armables: medidas finitas y dentro de 0,4–2,5 veces el catálogo, fondo según el mueble, colores `#rrggbb` (los que faltan o no valen, de partida), acabado y texto válidos. */
 export function normalizarOpciones(m: MuebleCatalogo, o: Partial<OpcionesGuardadas> | undefined): OpcionesGuardadas {
   const l = limitesDeMueble(m);

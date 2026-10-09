@@ -10,12 +10,13 @@
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { armarEscena, SALA_INICIAL, type Escena } from "../../src/lib/globos3d/escena";
+import { armarEscena, escenaEnIngles, SALA_INICIAL, type Escena } from "../../src/lib/globos3d/escena";
 import { centrosDe, mesasDeEscena, padreDeCentro } from "../../src/lib/globos3d/centros-mesa";
 import { EscenaSchema } from "../../src/lib/globos3d/esquema-escena";
 import { aplicarHerramienta, DECLARACIONES_ESCENA } from "../../src/lib/globos3d/herramientas-escena";
 import { puestosAlrededor } from "../../src/lib/globos3d/mobiliario-disposicion";
-import { elementosDeEscenografia } from "../../src/lib/globos3d/mobiliario-pieza";
+import { muebleDe } from "../../src/lib/globos3d/mobiliario-catalogo";
+import { elementosDeEscenografia, nombreDeMueble, sillasDeMueble } from "../../src/lib/globos3d/mobiliario-pieza";
 import { medidasDeMesa } from "../../src/lib/globos3d/salon-evento";
 import { mesasVivas } from "../../src/lib/globos3d/salon-registro";
 import { zonasDeEscena } from "../../src/lib/globos3d/salon-zonas";
@@ -33,6 +34,7 @@ const falla = (escena: Escena, nombre: string, args: Record<string, unknown>) =>
   assert.ok(!r.ok, `${nombre} ${JSON.stringify(args)} debía fallar`);
   return r.ok ? "" : r.error;
 };
+const ingles = (e: Escena) => escenaEnIngles(e, armarEscena(e));
 const mesas = (e: Escena) => mesasVivas(e).map((v) => v.nodo);
 const opcionesDe = (n: { pieza: Escena["nodos"][number]["pieza"] }) => (n.pieza.tipo === "escenografia" ? n.pieza.mueble?.opciones : undefined);
 /** Los elementos de una mesa del catálogo con N sillas, armada como la arma el salón (con el ancho que le toca). */
@@ -152,7 +154,62 @@ prueba("la declaración de armar_salon y ajustar_salon trae sillas_por_mesa y el
     const d = DECLARACIONES_ESCENA.find((x) => x.name === nombre)!;
     assert.match(JSON.stringify(d.parametersJsonSchema), /sillas_por_mesa/, nombre);
   }
-  assert.match(readFileSync(new URL("../../src/app/api/escena-ia/route.ts", import.meta.url), "utf8"), /«Mesas de N personas» = sillas_por_mesa N/);
+  assert.match(readFileSync(new URL("../../src/app/api/escena-ia/route.ts", import.meta.url), "utf8"), /«mesas de N personas» a secas = sillas_por_mesa N/);
+});
+
+prueba("A2: ver_escena, el editor y la descripción para la imagen dicen las sillas REALES de la mesa, no las del catálogo", () => {
+  const r4 = herramienta(vacia(), "armar_salon", { invitados: 16, sillas_por_mesa: 4, zonas: ["fondo_fotos"] });
+  const vista = herramienta(r4.escena, "ver_escena", {}).resumen;
+  assert.match(vista, /Mesa redonda con 4 sillas/);
+  assert.doesNotMatch(vista, /Mesa redonda con 8 sillas/);
+  const imperial = herramienta(vacia(), "armar_salon", { invitados: 12, mesa: "imperial", sillas_por_mesa: 6, zonas: ["fondo_fotos"] });
+  assert.match(herramienta(imperial.escena, "ver_escena", {}).resumen, /Mesa imperial con 6 sillas/);
+  const normal = herramienta(vacia(), "armar_salon", { invitados: 16, zonas: ["fondo_fotos"] });
+  assert.match(herramienta(normal.escena, "ver_escena", {}).resumen, /Mesa redonda con 8 sillas/, "sin pedir sillas dice las de siempre");
+  assert.match(ingles(r4.escena), /four Tiffany chairs/);
+  assert.doesNotMatch(ingles(r4.escena), /eight Tiffany chairs/);
+  assert.match(ingles(imperial.escena), /six Tiffany chairs/);
+  const m = muebleDe("mesa_redonda_sillas")!;
+  assert.equal(nombreDeMueble(m, { sillas: 3 }), "Mesa redonda con 3 sillas");
+  assert.equal(nombreDeMueble(m), m.nombre);
+  assert.equal(sillasDeMueble(m, {}), 8);
+  assert.equal(sillasDeMueble(muebleDe("silla_tiffany")!), null);
+});
+
+prueba("A3: «6 mesas de 4» tiene camino: mesas = M manda sobre invitados y el aforo es mesas × sillas", () => {
+  const armar = herramienta(vacia(), "armar_salon", { mesas: 6, sillas_por_mesa: 4, invitados: 100 });
+  assert.equal(mesas(armar.escena).length, 6);
+  assert.equal(armar.escena.salon?.invitados, 24);
+  assert.match(armar.resumen, /6 mesas de 4 dan un aforo de 24 invitados \(no usé invitados = 100/);
+  assert.match(armar.resumen, /6 mesas de 4/);
+  // «6 mesas redondas con 4 sillas cada una» + «un centro en cada mesa», de una llamada (sin mesa principal: es un rincón).
+  const evento = herramienta(vacia(), "planificar_evento", { tipo_evento: "cumpleanos", alcance: "rincon", mesas: 6, sillas_por_mesa: 4, colores: ["rosa", "blanco"] }).escena;
+  assert.equal(zonasDeEscena(evento).mesas.length, 6);
+  assert.equal(evento.salon?.invitados, 24);
+  assert.deepEqual(new Set(centrosDe(evento).map((c) => padreDeCentro(c))), new Set(zonasDeEscena(evento).mesas), "un centro en cada mesa");
+  // «cada mesa con 4 sillas» sobre un salón de 6 mesas de 8, sin tocar cuántas mesas: se mantienen las 6.
+  const de8 = herramienta(vacia(), "planificar_evento", { tipo_evento: "cumpleanos", alcance: "rincon", mesas: 6 }).escena;
+  assert.equal(zonasDeEscena(de8).mesas.length, 6);
+  assert.equal(de8.salon?.invitados, 48);
+  const sinMesas = herramienta(de8, "ajustar_salon", { sillas_por_mesa: 4 });
+  assert.equal(zonasDeEscena(sinMesas.escena).mesas.length, 12, "sin decir cuántas mesas, los 48 invitados necesitan 12 de 4");
+  const exacto = herramienta(de8, "ajustar_salon", { sillas_por_mesa: 4, mesas: 6 });
+  assert.equal(zonasDeEscena(exacto.escena).mesas.length, 6);
+  assert.equal(exacto.escena.salon?.invitados, 24);
+  assert.match(exacto.resumen, /6 mesas de 4 dan un aforo de 24 invitados/);
+  assert.equal(zonasDeEscena(herramienta(exacto.escena, "ajustar_salon", { mesas: 8 }).escena).mesas.length, 8, "y se puede cambiar solo cuántas mesas");
+  assert.match(falla(vacia(), "armar_salon", { mesas: 0 }), /mesas = 0 está fuera de rango/);
+  assert.match(falla(vacia(), "armar_salon", { mesas: 151 }), /de 1 a 150/);
+  for (const nombre of ["armar_salon", "ajustar_salon", "planificar_evento"]) assert.match(JSON.stringify(DECLARACIONES_ESCENA.find((x) => x.name === nombre)!.parametersJsonSchema), /"mesas"/, nombre);
+  assert.match(readFileSync(new URL("../../src/app/api/escena-ia/route.ts", import.meta.url), "utf8"), /«M mesas de N» = mesas M \+ sillas_por_mesa N/);
+});
+
+prueba("A7: el error de capacidad no recomienda «mesas de 10» cuando ya piden 12: sugiere algo que existe", () => {
+  const con12 = falla(vacia(), "armar_salon", { invitados: 300, sillas_por_mesa: 12, ancho_cm: 800, fondo_cm: 800 });
+  assert.doesNotMatch(con12, /usa mesas de 10/);
+  assert.match(con12, /ya llevan las sillas máximas \(12\)/);
+  const con8 = falla(vacia(), "armar_salon", { invitados: 300, ancho_cm: 800, fondo_cm: 800 });
+  assert.match(con8, /sillas_por_mesa hasta 12/);
 });
 
 console.log(`\n${pruebas} pruebas pasaron`);

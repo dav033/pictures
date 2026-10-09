@@ -36,6 +36,8 @@ export type RegistroSalon = {
   profundidadFondoCm: number;
   /** La composición del fondo que se pidió («otra opción» = la siguiente): `planificar_evento` con `reemplazar` sigue desde ahí. */
   variante?: number;
+  /** Ocasión, temática y alcance del pedido a que pertenece `variante`: «otra opción» solo sigue la cuenta si el pedido es el mismo. */
+  peticion?: string;
   piezas: Record<string, PiezaSalon>;
 };
 

@@ -1,5 +1,6 @@
 import type { Escena } from "./escena";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
+import { centrosDe, padreDeCentro } from "./centros-mesa";
 import { HERRAMIENTAS_CENTROS } from "./herramientas-escena-centros";
 import { HERRAMIENTAS_TECHO_ZONA } from "./herramientas-escena-techo-zona";
 import { coloresReconocidos, type EstiloSalon } from "./salon-piezas";
@@ -30,12 +31,30 @@ function llamar(escena: Escena, familia: Readonly<Record<string, HerramientaExtr
   }
 }
 
+/** Centros cada vez más chicos para las mesas de tapa chica (una redonda de 2 sillas mide ~60 cm de tapa): el de siempre no cabe en ellas. */
+const CENTROS_CHICOS = [{ tipo: "racimo", alto_cm: 15 }, { tipo: "columna", alto_cm: 25 }] as const;
+
 function centros(escena: Escena, p: PedidoZonas, notas: string[]): Escena {
   const z = zonasDeEscena(escena);
   const mesas = [...z.mesas, ...(z.mesaPrincipal ? [z.mesaPrincipal.id] : [])];
   if (!mesas.length) return escena;
-  const diseno = { tipo: p.estilo === "clasico" ? "racimo" : "ramo_helio", ...(p.colores.length ? { colores: [...p.colores] } : {}) };
-  return llamar(escena, HERRAMIENTAS_CENTROS, "decorar_mesas", { disenos: [diseno], mesas }, notas);
+  const colores = p.colores.length ? { colores: [...p.colores] } : {};
+  const diseno = { tipo: p.estilo === "clasico" ? "racimo" : "ramo_helio", ...colores };
+  const decoradas = (e: Escena) => new Set(centrosDe(e).map((c) => padreDeCentro(c)));
+  const primeras: string[] = [];
+  let actual = llamar(escena, HERRAMIENTAS_CENTROS, "decorar_mesas", { disenos: [diseno], mesas }, primeras);
+  let faltan = mesas.filter((id) => !decoradas(actual).has(id));
+  const chicas: string[] = [];
+  for (const chico of CENTROS_CHICOS) {
+    if (!faltan.length) break;
+    // Las mesas donde no cupo el centro de siempre llevan uno más chico (lo dice el resumen), no se quedan peladas.
+    actual = llamar(actual, HERRAMIENTAS_CENTROS, "decorar_mesas", { disenos: [{ ...chico, ...colores }], mesas: faltan }, chicas);
+    faltan = mesas.filter((id) => !decoradas(actual).has(id));
+  }
+  // Si todas quedaron con centro, el aviso de «no cupo» de la primera pasada ya no vale: solo se dice lo que se puso.
+  notas.push(...(faltan.length ? primeras : primeras.filter((n) => !n.startsWith("No pude aplicar")).map((n) => n.split(" No quedaron")[0]!)), ...chicas.map((n) => n.split(" No quedaron")[0]!));
+  if (faltan.length) notas.push(`${faltan.length} mesa(s) no llevan centro: ni el más chico cabe en su tapa.`);
+  return actual;
 }
 
 /** Dónde y cómo va cada techo: la zona que cubre, la herramienta con que se pide y su nombre. */

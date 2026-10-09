@@ -250,7 +250,7 @@ prueba("A3: la variante se guarda en el registro y «otra opción» (reemplazar 
   let e = tercera.escena;
   for (let i = 3; i < 5; i++) e = decoracion({ tipo_evento: "boda", reemplazar: true }, e).escena;
   const vuelta = decoracion({ tipo_evento: "boda", reemplazar: true }, e);
-  assert.match(vuelta.resumen, /Ya se acabaron las opciones de este pedido/);
+  assert.match(vuelta.resumen, /Ya se acabaron las 5 opciones de este pedido/);
   assert.equal(firma(decoracion({ tipo_evento: "boda", variante: 7 }).escena), firma(decoracion({ tipo_evento: "boda", variante: 7 }).escena));
 });
 
@@ -263,19 +263,19 @@ prueba("A3: las otras opciones van con la ocasión: a una boda no le toca una nu
   }
 });
 
-prueba("A4: las letras de foil van delante de TODO lo de la composición, caben entre las piezas de los lados y se cortan por palabras", () => {
-  for (const variante of [0, 1, 2, 3]) {
-    const r = decoracion({ tipo_evento: "boda", texto: "SOFIAYMATEO12", variante });
+prueba("A4: las letras de foil van delante de TODO lo de la composición, no se encaman con NINGUNA pieza del salón (la mesa principal incluida) y se cortan por palabras", () => {
+  const cruza = (a: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } }, b: typeof a) =>
+    a.min.x < b.max.x - 1 && a.max.x > b.min.x + 1 && a.min.y < b.max.y - 1 && a.max.y > b.min.y + 1 && a.min.z < b.max.z - 1 && a.max.z > b.min.z + 1;
+  for (const tipo of ["boda", "quince"] as const) for (const variante of [0, 1, 2, 3, 4, 5]) {
+    const r = herramienta(vacia(), "planificar_evento", { tipo_evento: tipo, invitados: 80, texto: "SOFIA", variante });
     const armada = armarEscena(r.escena);
     const letras = r.escena.nodos.find((n) => n.nombre === "Letras de foil")!;
     const cajaLetras = armada.porNodo.find((n) => n.id === letras.id)!.caja;
-    for (const v of vivas(r.escena)) {
-      if (v.nodo.id === letras.id || v.nodo.colocacion.en !== "piso" || !v.nodo.id.startsWith("salon-fondo")) continue;
-      const caja = armada.porNodo.find((n) => n.id === v.nodo.id)!.caja;
-      assert.ok(cajaLetras.min.z >= caja.max.z - 1, `variante ${variante}: las letras (z ${cajaLetras.min.z.toFixed(0)}) se encimen con «${v.nodo.nombre}» (hasta z ${caja.max.z.toFixed(0)})`);
+    for (const n of armada.porNodo) {
+      if (n.id === letras.id || n.copias === 0) continue;
+      assert.ok(!cruza(cajaLetras, n.caja), `${tipo} opción ${variante}: las letras se encaman con «${r.escena.nodos.find((x) => x.id === n.id)?.nombre}»`);
     }
     assert.ok(cajaLetras.min.x >= -r.escena.sala.anchoCm / 2 && cajaLetras.max.x <= r.escena.sala.anchoCm / 2, "dentro de la sala");
-    assert.ok(cajaLetras.max.x - cajaLetras.min.x <= r.escena.sala.anchoCm - 160 + 1, "no más anchas que el espacio libre");
   }
   const dos = decoracion({ tipo_evento: "boda", texto: "Mis XV Sofía Valentina" });
   const letras = dos.escena.nodos.find((n) => n.nombre === "Letras de foil")!;
@@ -290,6 +290,28 @@ prueba("A1: los avisos que salen al pasar las ideas de la biblioteca a la paleta
   assert.ok(con.nodos.length > sala.nodos.length, "puso al menos una idea");
   assert.ok(notas.some((n) => /«morado» → \d+/.test(n)), `las notas de color de la idea se perdieron: ${notas.join(" | ").slice(0, 300)}`);
   assert.match(decoracion({ tipo_evento: "halloween", colores: ["morado"] }).resumen, /Idea de la biblioteca/);
+});
+
+prueba("A4: la cuenta de «otra opción» solo sigue si el pedido es el mismo; otro tema, otro alcance u otra ocasión vuelven a la composición del tema", () => {
+  const boda = decoracion({ tipo_evento: "boda" });
+  const otra = decoracion({ tipo_evento: "boda", reemplazar: true }, boda.escena);
+  assert.equal(otra.escena.salon?.variante, 1);
+  const princesas = decoracion({ tipo_evento: "boda", tematica: "princesas", reemplazar: true }, otra.escena);
+  assert.equal(princesas.escena.salon?.variante, 0, "otro tema: vuelve a 0");
+  assert.equal(firma(princesas.escena), firma(decoracion({ tipo_evento: "boda", tematica: "princesas" }).escena), "es la composición del tema, la misma que en un salón vacío");
+  const quince = decoracion({ tipo_evento: "quince", reemplazar: true }, otra.escena);
+  assert.equal(quince.escena.salon?.variante, 0, "otra ocasión: vuelve a 0");
+  const salon = herramienta(vacia(), "planificar_evento", { tipo_evento: "boda", alcance: "salon", invitados: 60 });
+  const rehecho = herramienta(salon.escena, "planificar_evento", { tipo_evento: "boda", alcance: "salon", invitados: 120, reemplazar: true });
+  assert.equal(rehecho.escena.salon?.variante, 1, "mismo pedido con más invitados sigue la cuenta");
+  const otroAlcance = herramienta(salon.escena, "planificar_evento", { tipo_evento: "boda", alcance: "rincon", invitados: 20, reemplazar: true });
+  assert.equal(otroAlcance.escena.salon?.variante, 0, "otro alcance: vuelve a 0");
+});
+
+prueba("A5: al acabarse las opciones, el aviso nombra la composición que se repite (no una cifra suelta)", () => {
+  let e = decoracion({ tipo_evento: "boda" });
+  for (let i = 0; i < 5; i++) e = decoracion({ tipo_evento: "boda", reemplazar: true }, e.escena);
+  assert.match(e.resumen, /Ya se acabaron las 5 opciones de este pedido: la 5 repite la opción 0 \(«arco con columnas y guirnalda»\)/);
 });
 
 console.log(`\n${pruebas} pruebas pasaron`);

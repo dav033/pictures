@@ -17,7 +17,7 @@ export type EntradaSalon = "arco" | "columnas";
 export const ACENTOS_FONDO = ["corazon", "estrella", "nube", "luna", "flor", "redondo"] as const;
 export type AcentoFondo = (typeof ACENTOS_FONDO)[number];
 
-export type Composicion = { fondo: ArquetipoFondo; figura: FiguraFondo; acento: AcentoFondo; entrada: EntradaSalon; semilla: number; /** Se pidió una variante más allá de las opciones que hay: repite desde la primera. */ vuelta: boolean };
+export type Composicion = { fondo: ArquetipoFondo; figura: FiguraFondo; acento: AcentoFondo; entrada: EntradaSalon; semilla: number; /** Cuántas composiciones hay para ese pedido y cuál de ellas es esta (0 es la primera): una variante más allá de las que hay da la vuelta. */ opciones: number; elegida: number };
 export type PedidoComposicion = { tipo: string; tematica?: string; colores?: readonly string[]; estilo?: string; texto?: string; variante?: number };
 
 type Eleccion = { fondo: ArquetipoFondo; figura?: FiguraFondo; acento?: AcentoFondo };
@@ -106,7 +106,7 @@ const OTRAS_POR_DEFECTO: readonly Eleccion[] = [ARO, PANELES, SEMIARCO, LETRAS, 
 /**
  * La composición de un pedido. Con `variante` 0 (la primera) manda el tema o la ocasión, y es la misma cada vez que se pide lo mismo;
  * con 1, 2, 3… sale otra distinta para el mismo pedido (la variante entra también en la semilla, así que cambian los modelos y la entrada).
- * Cuando se acaban las opciones da la vuelta y repite desde la primera: `vuelta` lo dice.
+ * Cuando se acaban las opciones da la vuelta y repite desde la primera: `opciones` y `elegida` lo dicen.
  */
 export function composicionDe(p: PedidoComposicion): Composicion {
   const pedido = plegar([p.tipo, p.tematica ?? "", ...(p.colores ?? []), p.estilo ?? "", p.texto ?? ""].join("|"));
@@ -121,5 +121,5 @@ export function composicionDe(p: PedidoComposicion): Composicion {
   const figura = elegida.figura ?? FIGURAS_POR_SEMILLA[(semilla >>> 8) % FIGURAS_POR_SEMILLA.length]!;
   const acento = elegida.acento ?? ACENTOS_FONDO[(semilla >>> 4) % ACENTOS_FONDO.length]!;
   const entrada: EntradaSalon = p.tipo === "boda" || p.tipo === "quince" || p.tipo === "corporativo" ? "arco" : (semilla >>> 16) % 2 === 0 ? "arco" : "columnas";
-  return { fondo: elegida.fondo, figura, acento, entrada, semilla, vuelta: variante >= opciones.length };
+  return { fondo: elegida.fondo, figura, acento, entrada, semilla, opciones: opciones.length, elegida: variante % opciones.length };
 }

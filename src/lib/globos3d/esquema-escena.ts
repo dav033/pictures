@@ -45,6 +45,7 @@ const RegistroSalonSchema = z.object({
   sillas: z.number().int().min(2).max(20).optional(),
   profundidadFondoCm: z.number().finite().min(0).max(3000),
   variante: z.number().int().min(0).max(1000).optional(),
+  peticion: z.string().max(200).optional(),
   piezas: z.record(z.string().min(1).max(80), z.object({
     zona: z.enum([...ZONAS_SALON, "mesas"]),
     rol: z.enum(["mesa", "ancla", "silla", "adorno", "adoptada"]),

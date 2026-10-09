@@ -142,6 +142,12 @@ export type DistribucionSalon = {
 /** La pista de baile: 0,2 m² por invitado (la mitad baila con ~0,4 m² cada uno), entre 3 y 4,5 m de diámetro. */
 export const diametroPista = (invitados: number): number => Math.min(450, Math.max(300, Math.round((Math.sqrt((invitados * 0.2 * 4) / Math.PI) * 100) / 10) * 10));
 
+/** Por qué no vale ese número exacto de mesas, o `null` si vale. */
+export const falloDeMesas = (mesas: number): string | null => (Number.isInteger(mesas) && mesas >= 1 && mesas <= 150 ? null : `mesas = ${mesas} está fuera de rango: va de 1 a 150 mesas de invitados.`);
+
+/** Los invitados que caben en `mesas` mesas con esas sillas (con `mesas` pedido, el aforo es ese y no los invitados dichos). */
+export const aforoDeMesas = (mesas: number, mesa: TipoMesaSalon, sillas?: number): number => mesas * medidasDeMesa(mesa, sillas).puestos;
+
 export const mesasNecesarias = (invitados: number, mesa: TipoMesaSalon, sillas?: number): number => (invitados > 0 ? Math.ceil(invitados / medidasDeMesa(mesa, sillas).puestos) : 0);
 
 /** Los tramos de [a, b] que quedan al quitar [x0, x1]. */
