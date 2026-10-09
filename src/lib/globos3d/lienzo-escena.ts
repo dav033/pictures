@@ -5,6 +5,7 @@ import {
 } from "./escena";
 import { armarPieza, type Pieza } from "./piezas";
 import { esDePie } from "./halloween";
+import { esGrupoDeSillas } from "./mobiliario-conjunto";
 import { CUELGA_DEL_TECHO_CM } from "./decoraciones-escena";
 import { cubiertaDe } from "./centros-mesa";
 import { cruz, cuerposDeGlobos, normalDeSuperficie, normalSuavizada, rayoContraCuerpos, superficieMasCercana, unitario } from "./superficie-globos";
@@ -44,7 +45,7 @@ export function radioLateral(pieza: Pieza): number {
 
 /** Si una pieza armada sirve de lienzo: tiene globos (o escenografía), está puesta y no es una decoración. */
 export function aceptaDecoraciones(nodo: NodoEscena, armado: NodoArmado | undefined): boolean {
-  if (!armado || !armado.puestas.length || nodo.pieza.tipo === "decoracion") return false;
+  if (!armado || !armado.puestas.length || nodo.pieza.tipo === "decoracion" || esGrupoDeSillas(nodo.pieza)) return false;
   return armado.globos.length > 0 || armado.solidos.length > 0;
 }
 
@@ -188,7 +189,8 @@ function deslizarEnCubierta(escena: Escena, armada: EscenaArmada, nodo: NodoEsce
  */
 export function deslizarSobre(escena: Escena, armada: EscenaArmada, id: string, delta: Vec3, opciones: { iman?: boolean } = {}): Escena {
   const nodo = escena.nodos.find((n) => n.id === id);
-  if (!nodo || nodo.colocacion.en !== "sobre") return escena;
+  // Las sillas de una mesa paramétrica no se deslizan: van con su mesa.
+  if (!nodo || nodo.colocacion.en !== "sobre" || esGrupoDeSillas(nodo.pieza)) return escena;
   const c = nodo.colocacion;
   const actual = sitioDeSobre(armada, c);
   if (!actual) return escena;

@@ -1,4 +1,6 @@
 import type { AcabadoRotulo, ElementoEscenografia } from "./escenografia";
+import { mesaDePieza, sillasDePieza } from "./mobiliario-conjunto";
+import { fraseDeMesaParametrica, fraseDeSillaParametrica } from "./mobiliario-ingles";
 import { elementosDeEscenografia, rotuloArmado, type PiezaEscenografia } from "./mobiliario-pieza";
 import { tonoEnIngles } from "./render-ia";
 import { ACABADO_ROTULO_EN, lineasDeRotulo, textoEnUnaLinea } from "./rotulos";
@@ -70,6 +72,10 @@ function coloresVisibles(elementos: readonly ElementoEscenografia[]): string[] {
  * white fabric backdrop panel in a black rectangular frame»). null si no es del catálogo (queda como «other props»).
  */
 export function fraseDeEscenografia(p: PiezaEscenografia): string | null {
+  // Una mesa o un grupo de sillas paramétricos se describen por lo que son (tipo, medida, mantel, colores), no por su nombre.
+  const mesa = mesaDePieza(p), sillas = sillasDePieza(p);
+  if (mesa) return fraseDeMesaParametrica(mesa);
+  if (sillas) return fraseDeSillaParametrica(sillas);
   const id = p.mueble?.id;
   const base = id ? ESCENOGRAFIA_EN[id] : undefined;
   if (!id || !base) return null;

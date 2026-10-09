@@ -16,6 +16,7 @@ import type { Pieza } from "@/lib/globos3d/piezas";
 import { Deslizador } from "./PanelFlor";
 import { EditorLugar } from "./PanelEscena";
 import { EditorMueble, esMuebleEditable } from "./EditorMueble";
+import { EditorConjuntoMesa, esConjuntoEditable, esSillasDeMesa } from "./EditorConjuntoMesa";
 import { EditorRotulo, esRotulable } from "./EditorRotulo";
 import { PaletaEscena } from "./PaletaEscena";
 import { IconoTipo, padreDe, subtituloPieza } from "./tipos-pieza";
@@ -29,6 +30,8 @@ type Props = {
   /** Una copia de un reparto en anclas que se tocó en el visor. */
   copia: number | null;
   onNodo: (id: string, cambio: Partial<NodoEscena>, agrupar?: string) => void;
+  /** Cambia la escena entera (lo que toca varias piezas a la vez: una mesa y sus sillas). */
+  onEscena: (e: Escena, agrupar?: string) => void;
   onSeleccion: (id: string | null) => void;
   onEditarSola: (id: string) => void;
   onDuplicar: (id: string) => void;
@@ -217,7 +220,7 @@ function LineasMateriales({ materiales }: { materiales: ReadonlyArray<{ formatoI
  * la pieza, lugar, decoraciones colgadas y su lista de compra— o, sin pieza, la escena (colores y sala).
  */
 export function Inspector(props: Props) {
-  const { escena, armada, nodo, copia, onNodo, onSeleccion, onEditarSola, onDuplicar, onEliminar, confirmarEliminar, onConfirmarEliminar, onColgarOtra, onEditarSostiene, paletaEscena, biblioteca, nombreEscena, onSala, onPlantillas, enHoja = false, onMas } = props;
+  const { escena, armada, nodo, copia, onNodo, onEscena, onSeleccion, onEditarSola, onDuplicar, onEliminar, confirmarEliminar, onConfirmarEliminar, onColgarOtra, onEditarSostiene, paletaEscena, biblioteca, nombreEscena, onSala, onPlantillas, enHoja = false, onMas } = props;
   const [avisoColor, setAvisoColor] = useState<{ id: string; texto: string | null } | null>(null);
 
   if (!nodo || !armada) {
@@ -241,7 +244,9 @@ export function Inspector(props: Props) {
   }
 
   const hecho = armada.porNodo.find((n) => n.id === nodo.id);
-  const hijos = escena.nodos.filter((n) => padreDe(n) === nodo.id);
+  const hijos = escena.nodos.filter((n) => padreDe(n) === nodo.id && !esSillasDeMesa(n));
+  const conjunto = esConjuntoEditable(nodo, escena);
+  const sillasDeMesa = esSillasDeMesa(nodo);
   const padreId = padreDe(nodo);
   const padre = padreId ? escena.nodos.find((n) => n.id === padreId) : undefined;
   const ponPieza = (pieza: Pieza) => onNodo(nodo.id, { pieza }, `pieza-${nodo.id}`);
@@ -267,9 +272,13 @@ export function Inspector(props: Props) {
         {hecho?.avisos.map((a) => <p key={a} role="status" className="mt-1 text-xs text-taller-peligro">{a}</p>)}
         {copia !== null && hecho && hecho.copias > 1 && <p className="mt-1 text-xs text-taller-suave">Copia {copia + 1} de {hecho.copias} elegida: las flechas, Q/E y Supr van solo a esa.</p>}
         <div className="mt-3.5 flex gap-2">
-          <button type="button" onClick={() => onEditarSola(nodo.id)} className={`${BTN_PRI} flex-1 justify-center`} title="Abre la pieza sola con todos sus parámetros (Enter)">
-            <Pencil className="size-[18px]" aria-hidden />Editar sola
-          </button>
+          {sillasDeMesa && padre ? (
+            <button type="button" onClick={() => onSeleccion(padre.id)} className={`${BTN_PRI} flex-1 justify-center`} title="Las sillas van con su mesa: elige la mesa para moverlas o duplicarlas">Elegir la mesa</button>
+          ) : (
+            <button type="button" onClick={() => onEditarSola(nodo.id)} className={`${BTN_PRI} flex-1 justify-center`} title="Abre la pieza sola con todos sus parámetros (Enter)">
+              <Pencil className="size-[18px]" aria-hidden />Editar sola
+            </button>
+          )}
           <button type="button" onClick={() => onDuplicar(nodo.id)} aria-label="Duplicar" title="Duplicar (Ctrl+D)" className={BTN_ICO}><Copy className="size-[18px]" aria-hidden /></button>
           <button type="button" onClick={() => onEliminar(nodo.id)} aria-label="Eliminar" title="Eliminar (Supr)" className={`${BTN_ICO} text-taller-peligro`}><Trash2 className="size-[18px]" aria-hidden /></button>
         </div>
@@ -287,7 +296,7 @@ export function Inspector(props: Props) {
 
       <section className="flex flex-col gap-3" aria-label="Medidas">
         <h3 className="taller-rotulo">Medidas</h3>
-        <Medidas pieza={nodo.pieza} hecho={hecho} onPieza={ponPieza} />
+        {conjunto ? <EditorConjuntoMesa nodo={nodo} escena={escena} onEscena={onEscena} /> : <Medidas pieza={nodo.pieza} hecho={hecho} onPieza={ponPieza} />}
       </section>
 
       {hecho && hecho.materiales.length > 0 && (
@@ -299,7 +308,7 @@ export function Inspector(props: Props) {
         </section>
       )}
 
-      <section><Lugar nodo={nodo} escena={escena} armada={armada} onNodo={(cambio, agrupar) => onNodo(nodo.id, cambio, agrupar)} /></section>
+      {!sillasDeMesa && <section><Lugar nodo={nodo} escena={escena} armada={armada} onNodo={(cambio, agrupar) => onNodo(nodo.id, cambio, agrupar)} /></section>}
 
       <section className="flex flex-col gap-2.5" aria-label="Decoraciones colgadas">
         <div className="flex items-center justify-between">
@@ -311,7 +320,7 @@ export function Inspector(props: Props) {
             <button type="button" onClick={() => onSeleccion(padre.id)} className="flex items-center gap-2.5 rounded-[10px] border border-taller-borde bg-taller-tarjeta px-2.5 py-2 text-left text-[13px] hover:border-taller-resalte">
               <span className="text-taller-acento"><IconoTipo pieza={padre.pieza} /></span><span className="min-w-0 flex-1 truncate">{padre.nombre}</span>
             </button>
-            <button type="button" onClick={() => onEditarSostiene(nodo.id)} className="inline-flex min-h-8 items-center gap-1.5 self-start text-xs text-taller-acento hover:underline"><Wrench className="size-3.5" aria-hidden />Editar la estructura que la sostiene</button>
+            {!sillasDeMesa && <button type="button" onClick={() => onEditarSostiene(nodo.id)} className="inline-flex min-h-8 items-center gap-1.5 self-start text-xs text-taller-acento hover:underline"><Wrench className="size-3.5" aria-hidden />Editar la estructura que la sostiene</button>}
           </div>
         ) : hijos.length === 0 ? <p className="text-xs text-taller-suave">Nada colgado todavía.</p> : (
           <ul className="flex flex-col gap-1.5">

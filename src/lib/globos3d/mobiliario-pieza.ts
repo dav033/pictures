@@ -2,7 +2,10 @@ import { z } from "zod";
 import type { AcabadoEscenografia, ElementoEscenografia, RotuloEscenografia } from "./escenografia";
 import { entradaDeCatalogo } from "./fondos-escenografia";
 import { muebleDe } from "./mobiliario-catalogo";
-import type { FondoCatalogo, MuebleCatalogo } from "./mobiliario-tipos";
+import { MesaGuardadaSchema, normalizarMesa, normalizarSillas, SillasGuardadasSchema, type MesaGuardada, type SillasGuardadas } from "./mobiliario-conjunto-tipos";
+import { armarMesa } from "./mobiliario-mesas-param";
+import { armarSillas } from "./mobiliario-sillas-param";
+import { asientosDeEntrada, type FondoCatalogo, type MuebleCatalogo } from "./mobiliario-tipos";
 import type { Pieza } from "./piezas";
 import { cambiarRotulo, conRotulo, limpiarTexto, MAX_TEXTO_ROTULO, normalizarRotulo, RotuloSchema, soporteDeRotulo, type ModoPortador, type PedidoRotulo, type Soporte } from "./rotulos";
 
@@ -15,8 +18,12 @@ import { cambiarRotulo, conRotulo, limpiarTexto, MAX_TEXTO_ROTULO, normalizarRot
  * Las opciones vienen de afuera (la escena guardada, la API, la IA): `normalizarOpciones` las deja siempre armables.
  */
 
-export type OpcionesGuardadas = { anchoCm: number; fondoCm: number; altoCm: number; colores: string[]; acabado?: AcabadoEscenografia; texto?: string; /** Solo en los conjuntos de mesa con sillas, si no lleva las de siempre. */ sillas?: number };
-export type MuebleDePieza = { id: string; opciones?: OpcionesGuardadas; rotulo?: RotuloEscenografia };
+export type OpcionesGuardadas = { anchoCm: number; fondoCm: number; altoCm: number; colores: string[]; acabado?: AcabadoEscenografia; texto?: string; /** Solo en las mesas del catálogo con sillas fijas: cuántas lleva si no son las de siempre (REQ-008). */ sillas?: number };
+/**
+ * `mesa` / `sillas`: la pieza es una mesa paramétrica o el grupo de sillas de una mesa (REQ-012, `mobiliario-conjunto-tipos.ts`); con
+ * ellas el `id` es solo una etiqueta (`mesa_param`, `sillas_param`) y los sólidos salen de esos datos.
+ */
+export type MuebleDePieza = { id: string; opciones?: OpcionesGuardadas; rotulo?: RotuloEscenografia; mesa?: MesaGuardada; sillas?: SillasGuardadas };
 export type PiezaEscenografia = Extract<Pieza, { tipo: "escenografia" }>;
 
 /** Cuánto se puede achicar o agrandar un mueble respecto a su medida de catálogo. */
@@ -38,6 +45,8 @@ export const MuebleDePiezaSchema = z.object({
     acabado: z.enum(ACABADOS_MUEBLE).optional(), texto: z.string().max(MAX_TEXTO_MUEBLE).optional(), sillas: z.number().int().min(2).max(20).optional(),
   }).optional(),
   rotulo: RotuloSchema.optional(),
+  mesa: MesaGuardadaSchema.optional(),
+  sillas: SillasGuardadasSchema.optional(),
 });
 
 const rango = (base: number) => ({ min: Math.max(2, Math.round(base * FACTOR_MINIMO)), max: Math.round(base * FACTOR_MAXIMO) });
@@ -64,7 +73,7 @@ function sillasValidas(m: MuebleCatalogo, v: unknown): number | undefined {
 
 /** Cuántas sillas lleva de verdad una mesa con sillas (las de su pieza, o las de siempre del catálogo); `null` si no es de ese tipo. */
 export function sillasDeMueble(m: MuebleCatalogo, opciones?: { sillas?: number }): number | null {
-  return m.sillas ? opciones?.sillas ?? m.sillas.porDefecto : null;
+  return m.sillas ? asientosDeEntrada(m, opciones) : null;
 }
 
 /** El nombre de un mueble como es esa pieza: una mesa con sillas dice las que lleva («Mesa redonda con 4 sillas»), no las del catálogo. */
@@ -94,6 +103,8 @@ const MARCADOR_SIN_CATALOGO: ElementoEscenografia = { forma: "caja", centro: { x
 
 /** Los elementos de una pieza sin su rótulo: los guardados, o los del mueble paramétrico armado con sus opciones. */
 function elementosBase(p: PiezaEscenografia): ElementoEscenografia[] {
+  if (p.mueble?.mesa) return armarMesa(normalizarMesa(p.mueble.mesa));
+  if (p.mueble?.sillas) return armarSillas(normalizarSillas(p.mueble.sillas));
   if (!p.mueble?.opciones) return p.elementos;
   const mueble = muebleDe(p.mueble.id);
   return mueble ? mueble.armar(normalizarOpciones(mueble, p.mueble.opciones)) : p.elementos.length ? p.elementos : [MARCADOR_SIN_CATALOGO];
