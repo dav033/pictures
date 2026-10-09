@@ -15,6 +15,7 @@ import {
   type Colocacion, type Escena, type EscenaArmada, type LugarColocacion, type NodoEscena, type ParedSala, type Sala,
 } from "@/lib/globos3d/escena";
 import { EditorMueble, esMuebleEditable } from "./EditorMueble";
+import { EditorRotulo, esRotulable } from "./EditorRotulo";
 import { ACTIVO, BOTON, Deslizador, INACTIVO, SelectorColor } from "./PanelFlor";
 import { NOMBRE_TIPO } from "./tipos-pieza";
 
@@ -299,6 +300,7 @@ export function EditorPieza({ pieza, onPieza }: { pieza: Pieza; onPieza: (p: Pie
       )}
       {pieza.tipo === "globo" && <p className="text-[0.7rem] text-texto-suave">Un {pieza.formatoId} suelto de {m(pieza.infladoCm)}: cambia su color con «Colores de la escena».</p>}
       {esMuebleEditable(pieza) && <EditorMueble pieza={pieza} onPieza={onPieza} />}
+      {esRotulable(pieza) && !esMuebleEditable(pieza) && <EditorRotulo pieza={pieza} onPieza={onPieza} />}
       {pieza.tipo === "escenografia" && !esMuebleEditable(pieza) && (pieza.productos?.length
         ? <p className="text-[0.7rem] text-texto-suave">Utilería de fiesta (no es globo): {pieza.productos.map((p) => `${p.cantidad} × ${p.nombre}${p.variante ? ` (${p.variante})` : ""}`).join(", ")}. Sale en «Productos de fiesta» de la lista de compra; muévela con «Lugar».</p>
         : <p className="text-[0.7rem] text-texto-suave">Escenografía (no son globos ni cuentan en los materiales): muévela con «Lugar».</p>)}

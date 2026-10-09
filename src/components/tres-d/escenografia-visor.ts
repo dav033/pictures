@@ -5,6 +5,7 @@ import { geometriaFoil } from "./impresos-visor";
 import { ejePanel, lentejuelasDePanel } from "./lentejuelas-instanciadas";
 import { materialEscenografia } from "./materiales-visor";
 import { calcoMotivo } from "./motivos-utileria";
+import { crearRotulosVisor, type Rasterizador } from "./rotulo-visor";
 
 /**
  * **La escenografía de UN visor** (paneles, muebles, utilería): sus mallas, con los materiales y geometrías compartidos por
@@ -15,6 +16,10 @@ import { calcoMotivo } from "./motivos-utileria";
  * Todo es de ESTE visor: los materiales que reflejan llevan el entorno de su contexto WebGL, así que los cachés nunca son
  * de módulo (un caché de módulo con el reflejo de otro visor ya liberado sale negro: el defecto del foil tras una captura).
  * `liberar()` suelta lo compartido al destruir el visor; el vaciado de cada pieza no lo toca (`userData.compartido`).
+ *
+ * Los rótulos en cursiva (`rotulo` de un sólido) son letras extruidas: la geometría de cada texto se hace una vez por visor
+ * (`rotulo-visor.ts`) y los materiales (vinilo, acrílico mate o espejo) se comparten por color. Un sólido `oculto` con rótulo
+ * (el nombre de acrílico suelto) no dibuja su tablero, pero deja uno invisible del mismo tamaño para poder elegirlo y moverlo.
  */
 
 const CM = 0.01;
@@ -34,7 +39,7 @@ function proyectaSombra(s: SolidoEscenografia): boolean {
 }
 
 /** Los sólidos que se pueden juntar con otros del mismo material en una sola malla: sin calcomanía ni textura propia. */
-const sePuedeFusionar = (s: SolidoEscenografia) => !s.motivo && !ACABADOS_SIN_COMPARTIR.has(s.acabado);
+const sePuedeFusionar = (s: SolidoEscenografia) => !s.motivo && !s.rotulo && !ACABADOS_SIN_COMPARTIR.has(s.acabado);
 
 /** El marco de un sólido (su origen y sus ejes) como matriz, de su espacio a la pieza. */
 function marcoDeSolido(s: SolidoEscenografia): THREE.Matrix4 {
@@ -51,10 +56,15 @@ export type EscenografiaVisor = {
   liberar: () => void;
 };
 
-/** La escenografía de un visor, con `entorno` (el reflejo de ese visor, horneado cuando hace falta). */
-export function crearEscenografiaVisor(entorno: () => THREE.Texture): EscenografiaVisor {
+/**
+ * La escenografía de un visor, con `entorno` (el reflejo de ese visor, horneado cuando hace falta) y, solo para pruebas, el
+ * `rasterizar` que convierte el texto de un rótulo en tinta (por defecto, el lienzo del navegador).
+ */
+export function crearEscenografiaVisor(entorno: () => THREE.Texture, rasterizar?: Rasterizador): EscenografiaVisor {
   const materiales = new Map<string, THREE.Material>();
   const geometrias = new Map<string, THREE.BufferGeometry>();
+  const rotulos = crearRotulosVisor(entorno, rasterizar);
+  let tableroInvisible: THREE.Material | null = null;
 
   const material = (s: SolidoEscenografia): THREE.Material => {
     if (ACABADOS_SIN_COMPARTIR.has(s.acabado)) return materialEscenografia(s, entorno());
@@ -102,12 +112,20 @@ export function crearEscenografiaVisor(entorno: () => THREE.Texture): Escenograf
     return geometria;
   };
 
-  /** Un sólido suelto en su sitio, con su calcomanía y, si es un panel de lentejuelas, sus lentejuelas por instancias. */
+  /** El material de un tablero que no se dibuja (el del nombre de acrílico suelto): sirve para elegirlo y medirlo, no se ve. */
+  const invisible = (): THREE.Material => {
+    if (!tableroInvisible) { tableroInvisible = new THREE.MeshBasicMaterial({ visible: false }); tableroInvisible.userData.compartido = true; }
+    return tableroInvisible;
+  };
+
+  /** Un sólido suelto en su sitio, con su calcomanía, su rótulo y, si es un panel de lentejuelas, sus lentejuelas por instancias. */
   const solido = (s: SolidoEscenografia): THREE.Object3D => {
-    const malla = new THREE.Mesh(geometriaDeSolido(s), material(s));
-    malla.castShadow = proyectaSombra(s);
-    malla.receiveShadow = true;
+    const malla = new THREE.Mesh(geometriaDeSolido(s), s.oculto ? invisible() : material(s));
+    malla.castShadow = !s.oculto && proyectaSombra(s);
+    malla.receiveShadow = !s.oculto;
     marcoDeSolido(s).decompose(malla.position, malla.quaternion, malla.scale);
+    const letras = rotulos.malla(s);
+    if (letras) malla.add(letras);
     // Lo impreso (calavera, «Happy Halloween», lunares…) de la utilería de fiesta, como calcomanía en su cara.
     const calco = calcoMotivo(s);
     if (calco) malla.add(calco);
@@ -123,7 +141,7 @@ export function crearEscenografiaVisor(entorno: () => THREE.Texture): Escenograf
       const lotes = new Map<string, { material: THREE.Material; sombra: boolean; geometrias: THREE.BufferGeometry[]; solidos: SolidoEscenografia[] }>();
       const salida: THREE.Object3D[] = [];
       for (const s of solidos) {
-        if (s.oculto) continue;
+        if (s.oculto && !s.rotulo) continue;
         if (!sePuedeFusionar(s)) { salida.push(solido(s)); continue; }
         const sombra = proyectaSombra(s);
         const clave = `${s.acabado}|${s.hex}|${sombra ? 1 : 0}`;
@@ -149,6 +167,9 @@ export function crearEscenografiaVisor(entorno: () => THREE.Texture): Escenograf
     liberar() {
       for (const m of materiales.values()) m.dispose();
       for (const g of geometrias.values()) g.dispose();
+      rotulos.liberar();
+      tableroInvisible?.dispose();
+      tableroInvisible = null;
       materiales.clear();
       geometrias.clear();
     },

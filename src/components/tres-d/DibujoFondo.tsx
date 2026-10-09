@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { armarEscenografia, puntosSolido, type ElementoEscenografia, type SolidoEscenografia } from "@/lib/globos3d/escenografia";
+import { caraDe, lineasDeRotulo } from "@/lib/globos3d/rotulos";
 import type { Punto2 } from "@/lib/globos3d/trenza";
 
 type Forma = { s: SolidoEscenografia; pts: Punto2[]; huecos: Punto2[][]; z: number };
@@ -17,7 +18,8 @@ const derecho = (s: SolidoEscenografia) => Math.abs(s.ejeX.x - 1) < 1e-6 && Math
 
 /** Cada sólido visto de frente: su silueta (la del panel si va derecho, si no la envolvente de sus puntos) y qué tan al fondo está. */
 function formasDe(elementos: readonly ElementoEscenografia[]): Forma[] {
-  return armarEscenografia(elementos).filter((s) => !s.oculto).map((s) => {
+  // Lo oculto no se dibuja, salvo el nombre de acrílico (su tablero no se ve, sus letras sí).
+  return armarEscenografia(elementos).filter((s) => !s.oculto || s.rotulo).map((s) => {
     const pts3 = puntosSolido(s);
     const z = pts3.reduce((a, p) => a + p.z, 0) / pts3.length;
     if (s.forma === "panel" && derecho(s)) {
@@ -28,7 +30,11 @@ function formasDe(elementos: readonly ElementoEscenografia[]): Forma[] {
   });
 }
 
-type Dibujo = { forma: Forma; d: string }[];
+/** El texto de un rótulo en la tarjeta: su centro, el tamaño de letra, lo más ancho que puede salir (todo en unidades de la tarjeta), color y líneas. */
+type TextoMini = { x: number; y: number; tam: number; anchoMax: number; color: string; lineas: string[] };
+type Dibujo = { forma: Forma; d: string; texto?: TextoMini }[];
+
+const LETRA_CURSIVA = "'Segoe Script','Brush Script MT','Snell Roundhand',cursive";
 
 /** Los dibujos ya hechos por entrada del catálogo: armar 48 siluetas con su envolvente en cada pintada era trabajo tirado (se calculan una vez). */
 const DIBUJOS = new Map<string, { dibujo: Dibujo; vista: { x0: number; y0: number; escala: number; ancho: number } }>();
@@ -42,7 +48,14 @@ function dibujoDe(id: string, elementos: () => readonly ElementoEscenografia[]) 
   const escala = 52 / Math.max(1, x1 - x0, y1 - y0);
   const px = (x: number) => 4 + (x - x0) * escala + (52 - (x1 - x0) * escala) / 2, py = (y: number) => 56 - (y - y0) * escala;
   const trazo = (c: readonly Punto2[]) => `M${c.map((p) => `${px(p.x).toFixed(1)},${py(p.y).toFixed(1)}`).join("L")}Z`;
-  const dibujo = [...formas].sort((a, b) => a.z - b.z).map((f) => ({ forma: f, d: [f.pts, ...f.huecos].map(trazo).join("") }));
+  const textoDe = (s: SolidoEscenografia): TextoMini | undefined => {
+    const r = s.rotulo, cara = caraDe(s);
+    if (!r || !cara) return undefined;
+    const lineas = lineasDeRotulo(r.texto);
+    const alto = Math.min(r.altoCm, cara.altoCm) * escala;
+    return { x: px(s.origen.x + cara.centroXCm), y: py(s.origen.y + cara.baseYCm + r.yCm), tam: Math.max(3, (alto / lineas.length) * 0.8), anchoMax: cara.anchoCm * escala * 0.9, color: r.color, lineas };
+  };
+  const dibujo = [...formas].sort((a, b) => a.z - b.z).map((f) => ({ forma: f, d: f.s.oculto ? "" : [f.pts, ...f.huecos].map(trazo).join(""), texto: textoDe(f.s) }));
   const hecho = { dibujo, vista: { x0, y0, escala, ancho: x1 - x0 } };
   DIBUJOS.set(id, hecho);
   return hecho;
@@ -54,7 +67,17 @@ export const DibujoFondo = memo(function DibujoFondo({ id, elementos }: { id: st
   if (!dibujo.length) return null;
   return (
     <svg viewBox="0 0 60 60" width="52" height="52" aria-hidden>
-      {dibujo.map(({ forma, d }, i) => <path key={i} d={d} fillRule="evenodd" fill={forma.s.hex} stroke="rgba(0,0,0,.25)" strokeWidth={0.4} />)}
+      {dibujo.map(({ forma, d, texto }, i) => (
+        <g key={i}>
+          {d && <path d={d} fillRule="evenodd" fill={forma.s.hex} stroke="rgba(0,0,0,.25)" strokeWidth={0.4} />}
+          {texto && (
+            <text x={texto.x} y={texto.y} textAnchor="middle" fill={texto.color} stroke="rgba(0,0,0,.2)" strokeWidth={0.15} fontFamily={LETRA_CURSIVA} fontStyle="italic" fontSize={texto.tam}
+              {...(texto.lineas.length === 1 && texto.lineas[0]!.length * texto.tam * 0.5 > texto.anchoMax ? { textLength: texto.anchoMax, lengthAdjust: "spacingAndGlyphs" as const } : {})}>
+              {texto.lineas.map((linea, k) => <tspan key={k} x={texto.x} dy={k === 0 ? `${-0.5 * (texto.lineas.length - 1) * 1.1 + 0.3}em` : "1.1em"}>{linea}</tspan>)}
+            </text>
+          )}
+        </g>
+      ))}
     </svg>
   );
 });
