@@ -18,7 +18,7 @@ import { decoracionPredefinida } from "./figuras";
 import { reemplazarColor } from "./recolorear";
 import { arcosChiara, cortina, letrero, mediaLuna, panelRedondo, pedestales } from "./fondos-escenografia";
 import { mesaConMantel, paredLentejuelas, tapete } from "./escenografia";
-import { mesaLeida, mobiliarioLeido, type MedidaLeida } from "./compilar-mobiliario";
+import { mesaLeida, mobiliarioLeido, type MedidaLeida, type MesaLeida } from "./compilar-mobiliario";
 import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
 
 /**
@@ -210,8 +210,8 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
       }
       case "fondo": {
         const medidaDe = (q: typeof p): MedidaLeida => ({ anchoCm: cm(q.ancho), altoCm: cm(q.alto), xCm: X(q.x), yBaseCm: Y(q.yBase), muroZ: muro });
-        const mesa = l.piezas.flatMap((q) => (q.tipo === "fondo" ? [mesaLeida(q, medidaDe(q))] : [])).find((m) => m !== null) ?? null;
-        const muebles = mobiliarioLeido(p, medidaDe(p), notas, mesa);
+        const mesas = l.piezas.flatMap((q) => (q.tipo === "fondo" ? [mesaLeida(q, medidaDe(q))] : [])).filter((m): m is MesaLeida => m !== null);
+        const muebles = mobiliarioLeido(p, medidaDe(p), notas, mesas);
         if (muebles) { for (const m of muebles) poner(m.base, m.nombre, m.pieza, m.colocacion); return; }
         const hex = (k: number) => p.colores[k]?.hex ?? p.colores[0]!.hex;
         const a = cm(p.alto), w = cm(p.ancho), y0 = Y(p.yBase);
