@@ -105,7 +105,7 @@ export const PanelAnadir = memo(function PanelAnadir({ escena, armada, onEscena,
 
   return (
     <div {...soltar.propiedades} className={`flex min-h-0 flex-1 flex-col ${soltar.arrastrando ? "outline outline-2 -outline-offset-2 outline-dashed outline-taller-resalte" : ""}`}>
-      <div className="flex max-h-[50vh] shrink-0 flex-col gap-3 overflow-y-auto overscroll-contain px-4 pb-3 pt-4">
+      <div className="flex max-h-[50vh] shrink-0 flex-col gap-3 overflow-y-auto overscroll-contain px-4 pb-3 pt-4 [&>*]:shrink-0">
         {!enHoja && <h2 className="text-[15px] font-semibold">Añadir a la escena</h2>}
         <div className="flex h-[38px] items-center gap-2 rounded-[10px] border border-taller-solitario-borde bg-taller-tarjeta px-3 focus-within:border-taller-resalte">
           <Search className="size-[18px] shrink-0 text-taller-suave" aria-hidden />
