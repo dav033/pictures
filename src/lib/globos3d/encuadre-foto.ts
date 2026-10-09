@@ -63,5 +63,7 @@ export function salaParaFoto(sala: Sala, e: Encuadre): Sala {
     anchoCm: Math.max(sala.anchoCm, Math.ceil(e.altoCm * e.aspecto * 1.6 + AIRE_CM * 2)),
     altoCm: Math.max(sala.altoCm, Math.ceil(e.centroYCm + e.altoCm / 2 + AIRE_CM)),
     mostrar: { piso: true, fondo: true, laterales: false, techo: false },
+    // La captura para comparar con la foto va con la luz y el piso neutros: lo que la foto tenga de ambiente lo dice la lectura, no esta sala.
+    ambiente: { piso: "liso", luces: false, ventana: false },
   };
 }

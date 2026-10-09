@@ -227,6 +227,9 @@ const ESQUEMAS = {
     mostrar_fondo: z.boolean().optional().describe("pared del fondo"),
     mostrar_laterales: z.boolean().optional().describe("paredes izquierda y derecha"),
     mostrar_techo: z.boolean().optional(),
+    piso_madera: z.boolean().optional().describe("true: piso de tablones de madera con brillo; false: piso liso"),
+    luces_techo: z.boolean().optional().describe("luces empotradas en el techo (y luz cálida de estudio)"),
+    ventana: z.boolean().optional().describe("franja de ventana en la pared derecha (pide paredes laterales)"),
   }),
   agregar_del_catalogo: z.object({
     id: z.enum(CATALOGO_IDS).describe(CATALOGO_DECORACIONES.map((d) => `${d.id}: ${d.nombre}`).join("; ")),
@@ -320,7 +323,7 @@ const DESCRIPCIONES: Readonly<Record<NombreHerramienta, string>> = {
   cambiar_pieza: "Cambia medidas, formato, patrón, colores o nombre de UNA pieza existente; solo lo que se pase.",
   quitar_pieza: "Quita una pieza de la escena.",
   duplicar_pieza: "Copia una pieza (con sus medidas y colores); opcionalmente la pone en otro sitio.",
-  cambiar_sala: "Cambia las medidas de la sala, sus tonos o qué superficies se ven (paredes, techo, piso).",
+  cambiar_sala: "Cambia las medidas de la sala, sus tonos, qué superficies se ven (paredes, techo, piso) o su ambiente (piso de madera, luces del techo, ventana).",
   agregar_del_catalogo: "Suma una decoración real digitalizada del catálogo Sempertex (no toca las demás).",
   listar_colores: "Lista los colores Sempertex que se fabrican en un formato, con código y nombre.",
   poner_sobre: "Pone una decoración nueva SOBRE una estructura (columna, arco, aro, guirnalda, pared de globos) en el punto que se describe con altura, lado o ángulo y corrimiento: queda apoyada en los globos mirando hacia fuera. No toca lo demás.",
@@ -1199,6 +1202,10 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
         altoCm: a.alto_cm !== undefined ? enRango(a.alto_cm, RANGOS.sala.alto_cm, "alto_cm") : s.altoCm,
         tonos: { piso: hex(a.tono_piso, "tono_piso", s.tonos.piso), paredes: hex(a.tono_paredes, "tono_paredes", s.tonos.paredes), techo: hex(a.tono_techo, "tono_techo", s.tonos.techo) },
         mostrar: { piso: a.mostrar_piso ?? s.mostrar.piso, fondo: a.mostrar_fondo ?? s.mostrar.fondo, laterales: a.mostrar_laterales ?? s.mostrar.laterales, techo: a.mostrar_techo ?? s.mostrar.techo },
+        // El ambiente que ya tenía se conserva; solo cambia lo que se pide.
+        ...(a.piso_madera !== undefined || a.luces_techo !== undefined || a.ventana !== undefined || s.ambiente
+          ? { ambiente: { ...s.ambiente, ...(a.piso_madera !== undefined ? { piso: a.piso_madera ? "madera" as const : "liso" as const } : {}), ...(a.luces_techo !== undefined ? { luces: a.luces_techo } : {}), ...(a.ventana !== undefined ? { ventana: a.ventana } : {}) } }
+          : {}),
       };
       for (const n of escena.nodos) comprobarAltura(n.pieza, n.colocacion, sala);
       const nueva = { ...escena, sala };

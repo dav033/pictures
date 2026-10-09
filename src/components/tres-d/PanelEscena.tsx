@@ -388,6 +388,20 @@ export function EditorSala({ sala, onSala, plegable = true }: { sala: Sala; onSa
         <legend className="mb-1 text-xs font-semibold text-texto">Tonos</legend>
         <div className="flex gap-3">{tono("piso", "Piso")}{tono("paredes", "Paredes")}{tono("techo", "Techo")}</div>
       </fieldset>
+      <fieldset className="flex flex-col gap-1">
+        <legend className="mb-1 text-xs font-semibold text-texto">Ambiente</legend>
+        <div className="grid grid-cols-2 gap-1">
+          <label className="flex items-center gap-2 text-sm text-texto" htmlFor="sala-madera">
+            <input id="sala-madera" type="checkbox" checked={sala.ambiente?.piso === "madera"} onChange={(e) => pon({ ambiente: { ...sala.ambiente, piso: e.target.checked ? "madera" : "liso" } })} /> Piso de madera
+          </label>
+          <label className="flex items-center gap-2 text-sm text-texto" htmlFor="sala-luces">
+            <input id="sala-luces" type="checkbox" checked={sala.ambiente?.luces ?? false} onChange={(e) => pon({ ambiente: { ...sala.ambiente, luces: e.target.checked } })} /> Luces del techo (y luz cálida)
+          </label>
+          <label className="flex items-center gap-2 text-sm text-texto" htmlFor="sala-ventana">
+            <input id="sala-ventana" type="checkbox" checked={sala.ambiente?.ventana ?? false} disabled={!sala.mostrar.laterales} onChange={(e) => pon({ ambiente: { ...sala.ambiente, ventana: e.target.checked } })} /> Ventana a la derecha{!sala.mostrar.laterales && <span className="text-[0.7rem] text-texto-suave"> (pide paredes laterales)</span>}
+          </label>
+        </div>
+      </fieldset>
       <p className="flex items-start gap-1 text-[0.7rem] text-texto-suave"><ArrowDownToLine className="mt-0.5 size-3 shrink-0" aria-hidden /> Al girar la cámara por detrás de una pared o por encima del techo, esa superficie se oculta sola para que veas dentro.</p>
     </div>
   );
