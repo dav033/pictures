@@ -7,14 +7,12 @@
  * - escalas: solo la decoración (sin mesas), un rincón (2 a 6 mesas o solo postres), un salón mediano y uno grande;
  * - ajustar_salon: 120 → 60 quita las últimas mesas sin mover las demás; 60 → 120 las agrega; otro tipo de mesa; sala más grande o
  *   más chica; una zona que falta; mover_zona y quitar_zona; lo del usuario siempre queda;
- * - planificar_evento: arma el evento de una llamada, con los colores pedidos, y llama a decorar_mesas / decorar_techo solo si están registradas;
+ * - planificar_evento: arma el evento de una llamada, con los colores pedidos (los centros de mesa y el techo, en test-evento-completo.ts);
  * - los esquemas de las herramientas son chicos (cabrían en Gemini): sin enumeraciones largas.
  */
 import assert from "node:assert/strict";
 import { armarEscena, SALA_INICIAL, type Escena, type NodoEscena } from "../../src/lib/globos3d/escena";
 import { aplicarHerramienta, DECLARACIONES_ESCENA } from "../../src/lib/globos3d/herramientas-escena";
-import { crearPlanificarEvento } from "../../src/lib/globos3d/herramientas-escena-evento";
-import { HERRAMIENTAS_SALON } from "../../src/lib/globos3d/herramientas-escena-salon";
 import { MAX_NODOS } from "../../src/lib/globos3d/limites-escena";
 import { distribuirSalon, ENTRADA_RETIRO_CM, MESAS_SALON, PASILLO_CM, TIPOS_MESA_SALON, type ElementoSalon } from "../../src/lib/globos3d/salon-evento";
 import { esDelSalon, mesasVivas } from "../../src/lib/globos3d/salon-registro";
@@ -329,7 +327,6 @@ prueba("planificar_evento: boda de 120 en blanco y dorado, de una llamada, con a
   assert.ok(armarEscena(e).globos.length > 300, "hay globos de verdad");
   sinEncimar(e);
   for (const [id, caja] of cajas(e)) assert.ok(dentro(caja, e.sala, 5), `${id} fuera`);
-  assert.match(r.resumen, /decorar_mesas/, "dice que faltan los centros de mesa si la otra herramienta no está");
 });
 
 prueba("planificar_evento en estilo clásico arma arco y columnas de cuartetos", () => {
@@ -344,26 +341,6 @@ prueba("planificar_evento sobre una decoración existente la conserva y no le su
   for (const n of antes.nodos) assert.deepEqual(r.escena.nodos.find((x) => x.id === n.id)?.pieza, n.pieza);
   assert.ok(!r.escena.nodos.some((n) => n.id === "salon-fondo-arco"), "su decoración es el fondo de fotos");
   assert.ok(r.escena.nodos.some((n) => n.id === "salon-entrada-arco"));
-});
-
-prueba("planificar_evento llama a decorar_mesas y decorar_techo solo si están registradas, con { colores, estilo }", () => {
-  const llamadas: Array<{ nombre: string; args: unknown; mesasVistas: number }> = [];
-  const falsa = (nombre: string) => ({
-    esquema: HERRAMIENTAS_SALON.quitar_zona!.esquema,
-    descripcion: nombre,
-    aplicar: (escena: Escena, args: unknown) => { llamadas.push({ nombre, args, mesasVistas: zonasDeEscena(escena).mesas.length }); return { escena, resumen: `${nombre} aplicado` }; },
-  });
-  const sin = crearPlanificarEvento(() => ({})).aplicar(vacia(), { tipo_evento: "boda", invitados: 80, colores: ["blanco", "dorado"] });
-  assert.equal(llamadas.length, 0);
-  assert.match(sin.resumen, /Aún no hay decorar_mesas ni decorar_techo/);
-  const con = crearPlanificarEvento(() => ({ decorar_mesas: falsa("decorar_mesas"), decorar_techo: falsa("decorar_techo") })).aplicar(vacia(), { tipo_evento: "boda", invitados: 80, colores: ["blanco", "dorado"] });
-  assert.deepEqual(llamadas.map((l) => l.nombre), ["decorar_mesas", "decorar_techo"]);
-  assert.deepEqual(llamadas[0]!.args, { colores: ["blanco", "dorado"], estilo: "organico" });
-  assert.equal(llamadas[0]!.mesasVistas, 10, "las ven ya armadas en la escena");
-  assert.match(con.resumen, /decorar_mesas aplicado/);
-  const soloDeco = crearPlanificarEvento(() => ({ decorar_mesas: falsa("decorar_mesas") })).aplicar(vacia(), { tipo_evento: "boda" });
-  assert.equal(llamadas.length, 2, "sin mesas no hay nada que decorar por zona");
-  assert.ok(soloDeco.escena.nodos.length > 0);
 });
 
 prueba("planificar_evento sobre un salón ya armado no lo pisa", () => {

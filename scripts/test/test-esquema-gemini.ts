@@ -12,11 +12,18 @@
  * Run: npx tsx --conditions=react-server scripts/test/test-esquema-gemini.ts
  */
 import assert from "node:assert/strict";
+import { DECLARACIONES_ESCENA } from "../../src/lib/globos3d/herramientas-escena";
 import { esquemaLecturaParaGemini } from "../../src/lib/globos3d/leer-foto-ia";
 import { construirPromptLectura } from "../../src/lib/globos3d/prompt-lectura-foto";
 
 const MAXIMO_BYTES = 22 * 1024;
 const MAXIMO_ENUMS = 170;
+/** Todas las declaraciones de herramientas de la IA de escena juntas (hoy 42, ~112 KB): que no crezcan sin que alguien lo decida. */
+const MAXIMO_DECLARACIONES_BYTES = 120 * 1024;
+const MAXIMO_HERRAMIENTAS = 46;
+/** Las herramientas de salón, centros y techo (2026-10-09): cada una cabe en un esquema chico. */
+const FAMILIA_EVENTO = ["armar_salon", "ajustar_salon", "mover_zona", "quitar_zona", "planificar_evento", "decorar_mesas", "completar_centros", "cambiar_centros", "quitar_centros", "techo_por_zona"];
+const MAXIMO_FAMILIA_EVENTO_BYTES = 3 * 1024;
 
 let pruebas = 0;
 const prueba = (nombre: string, fn: () => void) => { fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
@@ -57,6 +64,23 @@ prueba("el prompt dice lo que el esquema ya no explica", () => {
   const prompt = construirPromptLectura();
   for (const frase of ["cromado = espejo", "perla = satinado", "confeti = transparente con confeti", "parte iluminada del globo", "formatoGigante", "diametroMediano", "FONDOS DEL CATÁLOGO", "DECORACIONES DEL CATÁLOGO", "panel_redondo", "racimos: 0 = cuerpo parejo", "centro de la BASE", "lo que ocupa la columna de lado a lado", "de abajo arriba", "la altura del eje del tubo", "cuánto baja su centro", "en el MISMO orden que colores", "el nombre del color que domina ese tramo, tal como va en colores", "los globos grandes y gigantes uno por uno", "Las letras que BRILLAN (neón, LED, luz) son SIEMPRE una pieza neon_cursiva aparte", "solo las letras impresas, de vinilo o de acrílico van en el texto del panel"]) {
     assert.ok(prompt.includes(frase), `falta «${frase}» en el prompt`);
+  }
+});
+
+const bytesDe = (d: unknown) => Buffer.byteLength(JSON.stringify(d));
+const totalDeclaraciones = DECLARACIONES_ESCENA.reduce((suma, d) => suma + bytesDe(d), 0);
+console.log(`declaraciones de la IA de escena: ${DECLARACIONES_ESCENA.length} herramientas, ${totalDeclaraciones} B`);
+
+prueba(`las ${MAXIMO_HERRAMIENTAS} herramientas de la IA de escena pesan juntas a lo más ${MAXIMO_DECLARACIONES_BYTES / 1024} KB`, () => {
+  assert.ok(DECLARACIONES_ESCENA.length <= MAXIMO_HERRAMIENTAS, `${DECLARACIONES_ESCENA.length} herramientas`);
+  assert.ok(totalDeclaraciones <= MAXIMO_DECLARACIONES_BYTES, `${totalDeclaraciones} B`);
+});
+
+prueba(`y cada herramienta del salón, los centros de mesa y el techo declara a lo más ${MAXIMO_FAMILIA_EVENTO_BYTES / 1024} KB`, () => {
+  for (const nombre of FAMILIA_EVENTO) {
+    const d = DECLARACIONES_ESCENA.find((x) => x.name === nombre);
+    assert.ok(d, `${nombre} no está declarada`);
+    assert.ok(bytesDe(d) <= MAXIMO_FAMILIA_EVENTO_BYTES, `${nombre}: ${bytesDe(d)} B`);
   }
 });
 

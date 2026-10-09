@@ -3,28 +3,26 @@ import type { Escena } from "./escena";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
 import { coloresDeMuebles } from "./herramientas-escena-salon";
 import { armarSalon } from "./salon-armar";
-import { decorarSalon, ESTILOS_SALON, type EstiloSalon } from "./salon-decoracion";
+import { decorarSalon, ESTILOS_SALON } from "./salon-decoracion";
 import { MAX_INVITADOS_SALON, mesasNecesarias, TIPOS_MESA_SALON } from "./salon-evento";
 import { vivas } from "./salon-registro";
 import { ZONAS_SALON, zonasDeEscena, type ZonaSalon } from "./salon-zonas";
 import { MAX_NODOS } from "./limites-escena";
+import { decorarMesasYTecho } from "./salon-decorar-zonas";
 import { fallar } from "./herramientas-escena-colores";
 
 /**
  * **planificar_evento** (REQ-008): el pedido completo («boda de 120 en un salón, blanco y dorado») en UNA llamada. Elige la
  * escala (`alcance`): `solo_decoracion` (fondo de fotos y entrada, sin mesas), `rincon` (unas pocas mesas con postres y fondo de
  * fotos) o `salon` (la sala completa). Arma el salón (salon-armar.ts), lo decora con globos de los colores del pedido
- * (salon-decoracion.ts) y, si están registradas, llama a las herramientas que decoran por zona (centros de mesa y techo, de otra rama).
- * Después el modelo afina con las herramientas de siempre y ajustar_salon / mover_zona / quitar_zona.
+ * (salon-decoracion.ts) y le pone un centro de mesa a cada mesa y el techo de la pista (salon-decorar-zonas.ts, con `decorar_mesas` y
+ * `techo_por_zona`). Después el modelo afina con las herramientas de siempre y ajustar_salon / mover_zona / quitar_zona.
  */
 
 export const TIPOS_EVENTO = ["boda", "quince", "cumpleanos", "bautizo", "baby_shower", "corporativo"] as const;
 export type TipoEvento = (typeof TIPOS_EVENTO)[number];
 export const ALCANCES_EVENTO = ["solo_decoracion", "rincon", "salon"] as const;
 export type AlcanceEvento = (typeof ALCANCES_EVENTO)[number];
-
-/** Las herramientas de decoración por zona que viven en otra rama: se llaman solo si están registradas (por nombre), con `{ colores, estilo }`; las zonas las leen de la escena (`zonasDeEscena`). */
-export const HERRAMIENTAS_POR_ZONA = ["decorar_mesas", "decorar_techo"] as const;
 
 const EventoSchema = z.object({
   tipo_evento: z.enum(TIPOS_EVENTO).describe("boda y quince: salón completo con mesa principal y pista; corporativo: sin pista ni postres; cumpleanos, bautizo y baby_shower: fondo de fotos, postres y entrada"),
@@ -56,28 +54,7 @@ const INVITADOS_POR_DEFECTO: Readonly<Record<AlcanceEvento, number>> = { solo_de
 export const alcanceDe = (alcance: AlcanceEvento | undefined, invitados: number | undefined): AlcanceEvento =>
   alcance ?? (invitados === undefined ? "solo_decoracion" : invitados <= 40 ? "rincon" : "salon");
 
-type Registro = Readonly<Record<string, HerramientaExtra>>;
-
-/** Llama a las herramientas de decoración por zona que estén registradas; las que faltan se dicen, no se inventan. */
-function decorarPorZona(escena: Escena, registro: Registro, args: { colores: string[]; estilo: EstiloSalon }, notas: string[]): Escena {
-  let actual = escena;
-  const faltan: string[] = [];
-  for (const nombre of HERRAMIENTAS_POR_ZONA) {
-    const herramienta = registro[nombre];
-    if (!herramienta) { faltan.push(nombre); continue; }
-    try {
-      const r = herramienta.aplicar(actual, args);
-      actual = r.escena;
-      notas.push(r.resumen);
-    } catch (error) {
-      notas.push(`No pude aplicar ${nombre}: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-  if (faltan.length) notas.push(`Aún no hay ${faltan.join(" ni ")} en el taller: el salón queda sin ${faltan.includes("decorar_mesas") ? "centros de mesa" : "su decoración de mesas"}${faltan.includes("decorar_techo") ? " ni decoración de techo" : ""}.`);
-  return actual;
-}
-
-function planificar(escena: Escena, argumentos: unknown, registro: Registro): { escena: Escena; resumen: string } {
+function planificar(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string } {
   const a = EventoSchema.parse(argumentos ?? {});
   const notas: string[] = [];
   const alcance = alcanceDe(a.alcance, a.invitados);
@@ -94,16 +71,16 @@ function planificar(escena: Escena, argumentos: unknown, registro: Registro): { 
   const adoptada = vivas(salon.escena).some((v) => v.info.rol === "adoptada");
   const decorada = decorarSalon(salon.escena, zonasDeEscena(salon.escena), { colores: a.colores ?? [], estilo, fondo: !adoptada, entrada: true }, notas);
   if (decorada.nodos.length > MAX_NODOS) fallar(`El evento sumaría ${decorada.nodos.length} piezas y el máximo es ${MAX_NODOS}: usa menos zonas o menos invitados.`);
-  const final = invitados > 0 ? decorarPorZona(decorada, registro, { colores: a.colores ?? [], estilo }, notas) : decorada;
+  // Centros de mesa y techo según la escala: solo_decoracion no lleva mesas ni techo; el rincón, un grupito de globos sobre su mesa principal o de postres; el salón, festones sobre la pista.
+  const final = alcance === "solo_decoracion" ? decorada : decorarMesasYTecho(decorada, { colores: a.colores ?? [], estilo, techo: alcance === "salon" ? "pista" : "rincon" }, notas);
   const piezasNuevas = final.nodos.length - escena.nodos.length;
   return { escena: final, resumen: [`Evento ${a.tipo_evento} (${alcance}): ${salon.resumen} ${piezasNuevas} piezas nuevas con globos ${estilo === "organico" ? "orgánicos" : "clásicos"}.`, ...new Set(notas)].join(" ") };
 }
 
-/** La herramienta, con el registro de herramientas (para llamar a las de otra rama por nombre sin importarlas en círculo). */
-export function crearPlanificarEvento(registro: () => Registro): HerramientaExtra {
-  return {
+export const HERRAMIENTAS_EVENTO: Readonly<Record<string, HerramientaExtra>> = {
+  planificar_evento: {
     esquema: EventoSchema,
-    descripcion: "Para pedidos de EVENTO o SALÓN (boda, XV años, cumpleaños, baby shower, bautizo, evento corporativo; «el salón completo», «solo la decoración», «un rincón de postres»): ÚSALA PRIMERO, en una sola llamada. Arma el salón (mesas con sillas en cuadrícula con pasillos, mesa principal, pista, postres, entrada, dentro de una sala que agranda a lo necesario), el fondo de fotos con arco, columnas y guirnalda, y el arco de la entrada, con los colores del pedido; conserva lo que ya había. Después afina con ajustar_salon, mover_zona, quitar_zona y las demás herramientas. alcance: solo_decoracion (sin mesas), rincon (pocas mesas) o salon.",
-    aplicar: (escena, argumentos) => planificar(escena, argumentos, registro()),
-  };
-}
+    descripcion: "Para pedidos de un EVENTO NUEVO o un SALÓN (boda, XV años, cumpleaños, baby shower, bautizo, evento corporativo; «el salón completo», «solo la decoración», «un rincón de postres»): ÚSALA PRIMERO, en una sola llamada. Arma el salón (mesas con sillas en cuadrícula con pasillos, mesa principal, pista, postres, entrada, dentro de una sala que agranda a lo necesario), el fondo de fotos con arco, columnas y guirnalda, el arco de la entrada, un centro de mesa en cada mesa y el techo de la pista (en un rincón, un grupito de globos sobre su mesa), con los colores del pedido; conserva lo que ya había. Después afina con las herramientas chicas: ajustar_salon, mover_zona, quitar_zona, decorar_mesas / cambiar_centros, techo_por_zona. alcance: solo_decoracion (sin mesas ni techo), rincon (pocas mesas) o salon.",
+    aplicar: planificar,
+  },
+};

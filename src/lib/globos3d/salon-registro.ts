@@ -84,6 +84,12 @@ export function sinAnotar(escena: Escena, ids: readonly string[]): Escena {
   return { ...escena, salon: { ...escena.salon, piezas } };
 }
 
+/** Anota en el registro una pieza que ya está en la escena y no la armó el salón (el techo de la pista); sin registro, no hace nada. */
+export function anotarPieza(escena: Escena, id: string, info: PiezaSalon): Escena {
+  if (!escena.salon || !escena.nodos.some((n) => n.id === id)) return escena;
+  return { ...escena, salon: { ...escena.salon, piezas: { ...escena.salon.piezas, [id]: info } } };
+}
+
 /** Cambia lo anotado de una pieza (por ejemplo su posición). */
 export function conAnotacion(escena: Escena, id: string, cambio: Partial<PiezaSalon>): Escena {
   const registro = escena.salon;

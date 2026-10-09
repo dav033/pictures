@@ -5,6 +5,7 @@ import { hexDeColor } from "./mobiliario-colores";
 import { ajustarSalon } from "./salon-ajustar";
 import { armarSalon } from "./salon-armar";
 import { MAX_INVITADOS_SALON, TIPOS_MESA_SALON } from "./salon-evento";
+import { centrosPerdidos, sincronizarCentros } from "./salon-centros";
 import { moverZona, quitarZona } from "./salon-zonas-editar";
 import { ZONAS_SALON } from "./salon-zonas";
 
@@ -12,7 +13,7 @@ import { ZONAS_SALON } from "./salon-zonas";
  * **Herramientas del salón de eventos** (REQ-008): `armar_salon` (mesas con sillas en cuadrícula, mesa principal, pista, postres,
  * fondo de fotos y entrada), y para ajustarlo sin rehacerlo, `ajustar_salon` (invitados, tipo de mesa, medidas, zonas que
  * faltan), `mover_zona` y `quitar_zona`. Solo tocan las piezas `salon-…`; las del usuario se conservan.
- * El composite `planificar_evento` está en herramientas-escena-evento.ts.
+ * El composite `planificar_evento` está en herramientas-escena-evento.ts; los centros de mesa que acompañan a las mesas, en salon-centros.ts.
  */
 
 const Zona = z.enum(ZONAS_SALON);
@@ -65,6 +66,8 @@ export const HERRAMIENTAS_SALON: Readonly<Record<string, HerramientaExtra>> = {
       const a = ArmarSchema.parse(argumentos ?? {});
       const notas: string[] = [];
       const r = armarSalon(escena, { invitados: a.invitados, mesa: a.mesa, anchoCm: a.ancho_cm, fondoCm: a.fondo_cm, zonas: a.zonas, colores: coloresDeMuebles(a.colores, notas), reemplazar: a.reemplazar }, notas);
+      const perdidos = centrosPerdidos(escena, r.escena);
+      if (perdidos) notas.push(`${perdidos} centro(s) de mesa del salón anterior se fueron con sus mesas: vuelve a ponerlos con decorar_mesas.`);
       return { escena: r.escena, resumen: unir(r.resumen, notas) };
     },
   },
@@ -76,7 +79,7 @@ export const HERRAMIENTAS_SALON: Readonly<Record<string, HerramientaExtra>> = {
       if (a.invitados === undefined && !a.mesa && a.ancho_cm === undefined && a.fondo_cm === undefined && !a.agregar_zonas?.length) fallar("Dime qué cambiar: invitados, mesa, ancho_cm, fondo_cm o agregar_zonas.");
       const notas: string[] = [];
       const r = ajustarSalon(escena, { invitados: a.invitados, mesa: a.mesa, anchoCm: a.ancho_cm, fondoCm: a.fondo_cm, agregarZonas: a.agregar_zonas }, notas);
-      return { escena: r.escena, resumen: unir(r.resumen, notas) };
+      return { escena: sincronizarCentros(escena, r.escena, notas), resumen: unir(r.resumen, notas) };
     },
   },
   mover_zona: {

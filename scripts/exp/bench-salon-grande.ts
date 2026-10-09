@@ -1,7 +1,8 @@
 /**
  * Banco de rendimiento de un salón de eventos (REQ-008): arma la escena de una boda de 120 invitados con ~2 500 globos y mide
  * `armarEscena` (lo que hace la app cada vez que cambia la escena) en frío y en caliente. Sin red ni GPU.
- *   NODE_OPTIONS=--use-system-ca npx tsx --conditions=react-server scripts/exp/bench-salon-grande.ts [globos_objetivo]
+ *   NODE_OPTIONS=--use-system-ca npx tsx --conditions=react-server scripts/exp/bench-salon-grande.ts [globos_objetivo] [invitados]
+ * El evento ya trae un centro en cada mesa y el techo de la pista (planificar_evento), así que esos globos cuentan. Con globos_objetivo 0 mide el evento tal cual.
  * Presupuesto: armarEscena en frío <= 1 500 ms y en caliente <= 600 ms con ~2 500 globos y ~60 piezas.
  */
 import assert from "node:assert/strict";
@@ -9,13 +10,15 @@ import { armarEscena, SALA_INICIAL, type Escena } from "../../src/lib/globos3d/e
 import { aplicarHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 
 const objetivo = Number(process.argv[2] ?? 2500);
+const invitados = Number(process.argv[3] ?? 120);
 const aplicar = (e: Escena, nombre: string, args: Record<string, unknown>): Escena => {
   const r = aplicarHerramienta(e, nombre, args);
   if (!r.ok) throw new Error(`${nombre}: ${r.error}`);
   return r.escena;
 };
 
-let escena = aplicar({ sala: { ...SALA_INICIAL }, nodos: [] }, "planificar_evento", { tipo_evento: "boda", invitados: 120, colores: ["blanco", "dorado"] });
+let escena = aplicar({ sala: { ...SALA_INICIAL }, nodos: [] }, "planificar_evento", { tipo_evento: "boda", invitados, colores: ["blanco", "dorado"] });
+const globosDelEvento = armarEscena(escena).globos.length;
 // Columnas orgánicas a lo largo de las paredes laterales hasta llegar a los globos pedidos.
 let k = 0;
 while (armarEscena(escena).globos.length < objetivo && k < 60) {
@@ -29,7 +32,7 @@ const frio = tiempo(() => armarEscena(escena));
 const calientes = Array.from({ length: 5 }, () => tiempo(() => armarEscena(escena))).sort((a, b) => a - b);
 const armada = armarEscena(escena);
 const resultado = {
-  globos: armada.globos.length, piezas: escena.nodos.length, salaM: `${escena.sala.anchoCm / 100} x ${escena.sala.fondoCm / 100} x ${escena.sala.altoCm / 100}`,
+  invitados, globosDelEvento, globos: armada.globos.length, piezas: escena.nodos.length, salaM: `${escena.sala.anchoCm / 100} x ${escena.sala.fondoCm / 100} x ${escena.sala.altoCm / 100}`,
   armarEscenaFrioMs: Math.round(frio), armarEscenaCalienteMedianaMs: Math.round(calientes[2]!), solidos: armada.solidos.length,
 };
 console.log(JSON.stringify(resultado, null, 2));

@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { paraGoogleSchema } from "@/lib/ia/nucleo/esquema-google";
 import type { Escena } from "./escena";
+import { HERRAMIENTAS_CENTROS } from "./herramientas-escena-centros";
 import { HERRAMIENTAS_DISPOSICION } from "./herramientas-escena-disposicion";
 import { HERRAMIENTA_FOTO, MODELAR_DESDE_FOTO } from "./herramientas-escena-foto";
 import { HERRAMIENTAS_GRUPOS, type HerramientaExtra } from "./herramientas-escena-grupos";
 import { HERRAMIENTAS_MOBILIARIO } from "./herramientas-escena-mobiliario";
-import { crearPlanificarEvento } from "./herramientas-escena-evento";
+import { HERRAMIENTAS_EVENTO } from "./herramientas-escena-evento";
+import { HERRAMIENTAS_TECHO_ZONA } from "./herramientas-escena-techo-zona";
 import { HERRAMIENTAS_PINTAR } from "./herramientas-escena-pintar";
 import { HERRAMIENTAS_REMATE } from "./herramientas-escena-remate";
 import { HERRAMIENTAS_SALON } from "./herramientas-escena-salon";
@@ -20,6 +22,8 @@ import { HERRAMIENTAS_SALON } from "./herramientas-escena-salon";
  * - pintar (herramientas-escena-pintar.ts): pintar_en_malla, una letra o figura pintada dentro de una pared de globos;
  * - mobiliario (herramientas-escena-mobiliario.ts): agregar_mobiliario, sillas, mesas y fondos que no son globos (en fila o alrededor de una mesa);
  * - salón de eventos (herramientas-escena-salon.ts y -evento.ts, REQ-008): armar_salon, ajustar_salon, mover_zona, quitar_zona y el composite planificar_evento;
+ * - centros (herramientas-escena-centros.ts): decorar_mesas, completar_centros, cambiar_centros, quitar_centros, el centro de mesa de cada mesa;
+ * - techo por zona (herramientas-escena-techo-zona.ts): techo_por_zona, festones, red, helio o tiras sobre un rectángulo, una pieza o toda la sala;
  * - foto (herramientas-escena-foto.ts): modelar_desde_foto, aplica la foto adjunta leída por la IA de visión (la atiende la ruta);
  * - preguntar_usuario: la ruta corta el turno y el taller muestra la pregunta con sus opciones como botones.
  */
@@ -48,7 +52,7 @@ const PREGUNTAR: HerramientaExtra = {
   },
 };
 
-export const HERRAMIENTAS_EXTRA: Readonly<Record<string, HerramientaExtra>> = { ...HERRAMIENTAS_GRUPOS, ...HERRAMIENTAS_DISPOSICION, ...HERRAMIENTAS_REMATE, ...HERRAMIENTAS_PINTAR, ...HERRAMIENTAS_MOBILIARIO, ...HERRAMIENTAS_SALON, planificar_evento: crearPlanificarEvento(() => HERRAMIENTAS_EXTRA), [PREGUNTAR_USUARIO]: PREGUNTAR, [MODELAR_DESDE_FOTO]: HERRAMIENTA_FOTO };
+export const HERRAMIENTAS_EXTRA: Readonly<Record<string, HerramientaExtra>> = { ...HERRAMIENTAS_GRUPOS, ...HERRAMIENTAS_DISPOSICION, ...HERRAMIENTAS_REMATE, ...HERRAMIENTAS_PINTAR, ...HERRAMIENTAS_MOBILIARIO, ...HERRAMIENTAS_CENTROS, ...HERRAMIENTAS_TECHO_ZONA, ...HERRAMIENTAS_SALON, ...HERRAMIENTAS_EVENTO, [PREGUNTAR_USUARIO]: PREGUNTAR, [MODELAR_DESDE_FOTO]: HERRAMIENTA_FOTO };
 export const NOMBRES_EXTRA = Object.keys(HERRAMIENTAS_EXTRA);
 
 /** Las declaraciones para Gemini de las herramientas extra (mismo formato que `DECLARACIONES_ESCENA`). */

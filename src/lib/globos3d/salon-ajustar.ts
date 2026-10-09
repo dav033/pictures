@@ -96,7 +96,6 @@ export function ajustarSalon(escena: Escena, p: PedidoAjuste, notas: string[]): 
   let quitadas = 0, quitar: string[] = [];
   let siguiente = Math.max(0, ...delSalon.map((v) => v.info.ranura ?? 0)) + 1;
   const cambiarTipo = (n: NodoEscena, c: Celda): NodoEscena => ({ ...n, pieza: nodoDeElemento(elementoDeMesa(mesa, c), paleta, n.id).pieza });
-  let agregadas = 0;
   if (rehacer) {
     const sueltas = delSalon.filter((v) => !movidas.includes(v));
     const objetivo = Math.max(0, necesarias - movidas.length);
@@ -110,11 +109,11 @@ export function ajustarSalon(escena: Escena, p: PedidoAjuste, notas: string[]): 
     if (mesa !== registro.mesa) for (const v of movidas) retocadas.set(v.nodo.id, cambiarTipo(v.nodo, { xCm: 0, zCm: 0 }));
     e = { ...e, nodos: e.nodos.map((n) => retocadas.get(n.id) ?? n) };
     for (const [id, n] of retocadas) { const c = n.colocacion; if (c.en === "piso" && !movidas.some((v) => v.nodo.id === id)) e = conAnotacion(e, id, { pos: { x: c.xCm, z: c.zCm } }); }
-    for (let i = sueltas.length; i < objetivo && d.celdas[i]; i++) { e = ponerElemento(e, elementoDeMesa(mesa, d.celdas[i]!), paleta, inicial, siguiente++); agregadas++; }
+    for (let i = sueltas.length; i < objetivo && d.celdas[i]; i++) { e = ponerElemento(e, elementoDeMesa(mesa, d.celdas[i]!), paleta, inicial, siguiente++); }
   } else {
     const sobran = necesarias < previas ? Math.max(0, delSalon.length - necesarias) : 0;
     quitar = delSalon.slice(delSalon.length - sobran).map((v) => v.nodo.id);
-    for (const celda of sitiosLibres(d).slice(0, Math.max(0, necesarias - previas))) { e = ponerElemento(e, elementoDeMesa(mesa, celda), paleta, inicial, siguiente++); agregadas++; }
+    for (const celda of sitiosLibres(d).slice(0, Math.max(0, necesarias - previas))) { e = ponerElemento(e, elementoDeMesa(mesa, celda), paleta, inicial, siguiente++); }
   }
   if (quitar.length) { const r = quitarConLoSuyo(e, quitar); e = r.escena; quitadas = r.deMas; }
   if (e.nodos.length > MAX_NODOS) fallar(`El ajuste dejaría ${e.nodos.length} piezas y el máximo es ${MAX_NODOS}.`);
@@ -124,7 +123,6 @@ export function ajustarSalon(escena: Escena, p: PedidoAjuste, notas: string[]): 
     const fuera = piezasDeUsuarioEnElPiso(e, false).filter((x) => !dentroDe(x.caja, e.sala.anchoCm, e.sala.fondoCm)).length;
     if (fuera) notas.push(`${fuera} pieza(s) tuyas quedaron fuera de la sala nueva: muévelas (no las toqué).`);
   }
-  if (agregadas) notas.push(`${agregadas} mesa(s) nueva(s) sin centro de mesa ni decoración: si el salón los llevaba, vuelve a decorarlas.`);
   if (quitar.length) notas.push(`Quité ${quitar.length} mesa(s) del final${quitadas ? ` y ${quitadas} pieza(s) que estaban sobre ellas` : ""}.`);
   if (movidas.length) notas.push(`${movidas.length} mesa(s) que moviste a mano se quedaron donde las pusiste.`);
   for (const z of d.sinLugar) if (!presentes.includes(z)) notas.push(`La zona ${z} no cabe en la sala: no se armó.`);
