@@ -16,7 +16,7 @@ import { descripcionRender3d, formatoEnIngles } from "@/lib/globos3d/render-ia";
 import { GeneradorIA } from "./GeneradorIA";
 import { PaletaEscena } from "./PaletaEscena";
 import { reemplazarColor } from "@/lib/globos3d/recolorear";
-import { armarEscena, escenaEnIngles, idNuevo, type Escena, type EscenaArmada, type NodoEscena } from "@/lib/globos3d/escena";
+import { armarEscena, escenaEnIngles, idNuevo, SALA_INICIAL, type Escena, type EscenaArmada, type NodoEscena } from "@/lib/globos3d/escena";
 import { ESCENAS_PREDEFINIDAS, escenaPredefinida } from "@/lib/globos3d/escenas-presets";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
 import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdicionEscena";
@@ -47,6 +47,7 @@ import { ListaCompra } from "./ListaCompra";
 import { BarraHerramientas, EtiquetaElegida, ReglaAlturas, type Herramienta } from "./SobreVisor";
 import { medidaPrincipal, NOMBRE_TIPO } from "./tipos-pieza";
 import { leerGuardada, guardarEscena } from "./guardado-escena";
+import { conSalaNueva } from "@/lib/globos3d/salon-techos";
 import { claveNueva } from "./guardado-conversacion";
 import { useInsetTeclado } from "./useInsetTeclado";
 import type { PestanaAnadir } from "./PanelAnadir";
@@ -131,10 +132,10 @@ export function Taller3D() {
   const [guardadaAlAbrir] = useState(() => (typeof window === "undefined" ? null : leerGuardada()));
   // La clave nueva lleva la hora: en el servidor (prerender) Next no admite `Date.now()`, y allí no se usa (no hay conversación que cargar).
   const [claveInicial] = useState(() => guardadaAlAbrir?.clave ?? (typeof window === "undefined" ? "servidor" : claveNueva()));
-  const historialEscena = useHistorialEscena(() => guardadaAlAbrir?.escena ?? escenaPredefinida("arco_organico_columnas_guirnalda"), claveInicial);
+  const historialEscena = useHistorialEscena(() => guardadaAlAbrir?.escena ?? { sala: structuredClone(SALA_INICIAL), nodos: [] }, claveInicial);
   const escenaEdit = historialEscena.escena;
   const setEscenaEdit = historialEscena.cambiar;
-  const [nombreEscena, setNombreEscena] = useState(() => guardadaAlAbrir?.nombre ?? ESCENAS_PREDEFINIDAS.find((p) => p.id === "arco_organico_columnas_guirnalda")?.nombre ?? "Mi escena");
+  const [nombreEscena, setNombreEscena] = useState(() => guardadaAlAbrir?.nombre ?? "Escena nueva");
   const cargada = useSyncExternalStore(sinSuscripcion, () => true, () => false);
   const [ultimoGuardado, setUltimoGuardado] = useState<{ escena: Escena; nombre: string; ok: boolean } | null>(null);
   const guardado = !ultimoGuardado ? (guardadaAlAbrir ? "guardado" : "guardando") : ultimoGuardado.escena !== escenaEdit || ultimoGuardado.nombre !== nombreEscena ? "guardando" : ultimoGuardado.ok ? "guardado" : "sin-guardar";
@@ -636,7 +637,7 @@ export function Taller3D() {
   const panelSala = (
     <div className="flex min-h-0 flex-1 flex-col">
       {esAncho && <h2 className="px-4 pb-3 pt-4 text-[15px] font-semibold">Sala</h2>}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4"><EditorSala sala={escenaVista.sala} onSala={(sala) => cambiarVista({ ...escenaVista, sala }, { agrupar: "sala" })} plegable={false} /></div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4"><EditorSala sala={escenaVista.sala} onSala={(sala) => { const nueva = conSalaNueva(escenaVista, sala); cambiarVista(nueva.escena, { agrupar: "sala" }); if (nueva.avisos.length) setAvisoLienzo(nueva.avisos.join(" ")); }} plegable={false} /></div>
     </div>
   );
 

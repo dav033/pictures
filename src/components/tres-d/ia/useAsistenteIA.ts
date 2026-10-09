@@ -14,6 +14,7 @@ import { resumenDeRefinado, type RondaHecha } from "@/lib/globos3d/refinado/bucl
 import { datosDeRefinado, leerRespuestaIA, mensajeDeError } from "@/lib/globos3d/respuesta-escena-ia";
 import { esDeEstaEscena, historialParaModelo, siguienteNumero, tiempoTipico, type AmbitoTurno, type PasoTurno, type TurnoPanel } from "@/lib/globos3d/turnos-ia";
 import { RONDAS_AUTOMATICAS, useRefinadoFoto } from "../useRefinadoFoto";
+import { crearRegistroFeedback, pasosDelFlujo } from "./registro-feedback";
 
 /** Cuánto se queda marcado en el visor lo que acaba de cambiar la IA. */
 const DESTELLO_MS = 5000;
@@ -38,6 +39,9 @@ export type EntradaAsistenteIA = {
 
 export type EnvioIA = { texto: string; foto: FotoAdjuntaIA | null; alcance: AlcanceResuelto; escenaEnteraConElegida: boolean };
 
+/** El id de un turno de «comparando con la foto»: distinto en cada sesión, porque estos turnos se guardan con la escena. */
+const idDeRonda = (ronda: number): string => `r${Date.now().toString(36)}${ronda}`;
+
 const pasoDe = (p: { herramienta: string; resumen: string; consulta: boolean }): PasoTurno => ({ herramienta: p.herramienta, resumen: p.resumen, consulta: p.consulta });
 
 /**
@@ -54,7 +58,11 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
   const [destello, setDestello] = useState<readonly Marca[]>([]);
   /** Lo que se le dijo a la persona al deshacer o rehacer un turno (no se guarda). */
   const [avisos, setAvisos] = useState<Readonly<Record<string, string>>>({});
+  /** Los turnos que la persona deshizo con el botón «Deshacer turno» (Ctrl+Z no cuenta aquí): solo ellos cuentan como «deshecho» al calificar. */
+  const [deshechosConBoton, setDeshechosConBoton] = useState<ReadonlySet<string>>(() => new Set());
   const control = useRef<AbortController | null>(null);
+  /** Escenas, solicitud y pasos de cada turno para calificarlo (REQ-010). */
+  const [registroFeedback] = useState(crearRegistroFeedback);
   const reloj = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Dónde se pidió la comparación con la foto: si se cambia de escena o de editor, las rondas paran. */
   const origenRefinado = useRef<{ clave: string; ambito: AmbitoTurno } | null>(null);
@@ -78,8 +86,10 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
       const aplicada = aplicarTurno(u.escena, r.antes, r.escena, diff);
       u.aplicar(aplicada.escena, `Ronda ${r.ronda} con la foto`);
       destacar(idsParaResaltar(aplicada.diff));
+      const idRonda = idDeRonda(r.ronda);
+      registroFeedback.guardar(idRonda, { pasos: [], escenaAntes: r.antes, escenaDespues: aplicada.escena });
       setTurnos((t) => [...t, {
-        id: `r${Date.now().toString(36)}${r.ronda}`, numero: siguienteNumero(t), pedido: `Ronda ${r.ronda} con la foto`, contexto: "comparando con la foto", ambito: u.ambito, clave: u.clave, foto: true,
+        id: idRonda, numero: siguienteNumero(t), pedido: `Ronda ${r.ronda} con la foto`, contexto: "comparando con la foto", ambito: u.ambito, clave: u.clave, foto: true,
         respuesta: r.respuesta.slice(0, 1400), pasos: r.cambios.map(pasoDe), diff: aplicada.diff, pregunta: null, costeUsd: null, ms: 0, estado: "aplicado", nota: textoAplicarTurno(aplicada.conservadas),
       }]);
     },
@@ -105,6 +115,7 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
     const mio = new AbortController();
     control.current = mio;
     const vistos: PasoTurno[] = [];
+    const pasosFlujo: PasoIA[] = [];
     setAntesId(null);
     setEnCurso({ pedido, contexto: envio.alcance.contexto, foto: envio.foto !== null, inicio, fase: envio.foto ? "leyendo_foto" : "pensando", pasos: [] });
     const base = { id: `t${inicio.toString(36)}`, numero: siguienteNumero(turnos), pedido, contexto: envio.alcance.contexto, ambito, clave, foto: envio.foto !== null };
@@ -113,7 +124,7 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
       return false;
     };
     try {
-      const { estado, datos } = await pedirEscenaIA({
+      const { estado, datos, solicitudId } = await pedirEscenaIA({
         cuerpo: construirCuerpoEscenaIA({
           escena: antes, mensaje: mensajeConAlcance(pedido, envio.alcance, envio.escenaEnteraConElegida), historial: historialParaModelo(turnos.filter((t) => esDeEstaEscena(t, clave, ambito))),
           seleccion: envio.alcance.seleccion, foto: envio.foto,
@@ -121,7 +132,7 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
         cabeceras: cabecerasConversacion("3d"),
         signal: mio.signal,
         alEvento: (e) => {
-          if (e.tipo === "paso") vistos.push(pasoDe(e));
+          if (e.tipo === "paso") { vistos.push(pasoDe(e)); pasosFlujo.push(e); }
           setEnCurso((c) => (c ? (e.tipo === "fase" ? { ...c, fase: e.fase } : { ...c, pasos: [...c.pasos, e] }) : c));
         },
       });
@@ -130,6 +141,8 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
       const completo = r.acciones.some((a) => !a.consulta) ? diffEscenas(antes, r.escena, { cache: ultima.current.cache }) : null;
       let diff: DiffEscena | null = completo && !diffVacio(completo) ? completo : null;
       let nota: string | null = null;
+      /** La escena que quedó con este turno (la de antes si no se aplicó nada). */
+      let despues: Escena = antes;
       if (diff) {
         const u = ultima.current;
         if (!esDeEstaEscena({ clave, ambito }, u.clave, u.ambito)) {
@@ -139,10 +152,12 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
           const aplicada = aplicarTurno(u.escena, antes, r.escena, diff);
           diff = aplicada.diff;
           u.aplicar(aplicada.escena, `Turno ${base.numero} de la IA`);
+          despues = aplicada.escena;
           nota = textoAplicarTurno(aplicada.conservadas);
           destacar(idsParaResaltar(diff));
         }
       }
+      registroFeedback.guardar(base.id, { ...(solicitudId ? { solicitudId } : {}), pasos: pasosDelFlujo(pasosFlujo), escenaAntes: antes, escenaDespues: despues });
       agregar({
         ...base, respuesta: r.respuesta, pasos: r.acciones.map(pasoDe), diff, pregunta: r.pregunta, costeUsd: r.costeEstimadoUsd, ms: Date.now() - inicio,
         estado: diff ? "aplicado" : "sin_cambios", nota,
@@ -180,6 +195,7 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
     const r = deshacerTurno(u.escena, turno.diff);
     if (r.revertidas.length) {
       u.aplicar(r.escena, `Deshacer turno ${turno.numero}`);
+      setDeshechosConBoton((s) => new Set(s).add(id));
       destacar(r.revertidas.filter((x) => x !== "sala").map((x) => ({ id: x, nueva: false })));
     }
     setAntesId(null);
@@ -194,6 +210,7 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
     const r = aplicarDiff(u.escena, turno.diff);
     if (r.escena !== u.escena) {
       u.aplicar(r.escena, `Rehacer turno ${turno.numero}`);
+      setDeshechosConBoton((s) => { const n = new Set(s); n.delete(id); return n; });
       destacar(idsParaResaltar(r.diff));
       setTurnos((t) => t.map((x) => (x.id === id ? { ...x, diff: r.diff } : x)));
     }
@@ -215,13 +232,15 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
     return salida;
   }, [turnos, escena, ambito, clave]);
 
-  const borrar = () => { if (control.current) return; setTurnos([]); setAntesId(null); setDestello([]); setAvisos({}); };
+  const borrar = () => { if (control.current) return; registroFeedback.vaciar(); setDeshechosConBoton(new Set()); setTurnos([]); setAntesId(null); setDestello([]); setAvisos({}); };
   const ultimoTurno = turnos[turnos.length - 1];
   const preguntaPendiente = !enCurso && ultimoTurno?.pregunta && esDeEstaEscena(ultimoTurno, clave, ambito) ? { turnoId: ultimoTurno.id, ...ultimoTurno.pregunta } : null;
 
   return {
     turnos, enCurso, refinando: refinado.refinando, ocupado: enCurso !== null || refinado.refinando !== null,
-    enviar, detener, deshacer, rehacer, verAntes, antesId: escenaAntes ? antesId : null, escenaAntes, borrar, preguntaPendiente, estados, avisos,
+    enviar, detener, deshacer, rehacer, verAntes, antesId: escenaAntes ? antesId : null, escenaAntes, borrar, preguntaPendiente, estados, avisos, deshechosConBoton,
+    /** Escenas, solicitud y pasos del turno para calificarlo (REQ-010); `undefined` si es de una sesión anterior. */
+    datosFeedback: registroFeedback.leer,
     /** Qué piezas marca el visor: lo que se señala con el cursor y, si no, lo que acaba de cambiar la IA. */
     marcas: apuntadas ?? destello, apuntar: setApuntadas,
     tiempo: tiempoTipico(turnos),

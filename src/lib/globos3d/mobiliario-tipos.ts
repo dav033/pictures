@@ -7,7 +7,7 @@ import type { AcabadoEscenografia, ElementoEscenografia } from "./escenografia";
  */
 
 export type MedidasMueble = { anchoCm: number; fondoCm: number; altoCm: number };
-export type OpcionesMueble = MedidasMueble & { colores: readonly string[]; acabado?: AcabadoEscenografia; texto?: string };
+export type OpcionesMueble = MedidasMueble & { colores: readonly string[]; acabado?: AcabadoEscenografia; texto?: string; /** Un conjunto de mesa con sillas: cuántas lleva (si falta, las de siempre). */ sillas?: number };
 
 export type GrupoCatalogo = "fondo" | "asiento" | "mesa" | "decorado";
 
@@ -37,6 +37,8 @@ export type MuebleCatalogo = EntradaComun & {
   grupo: Exclude<GrupoCatalogo, "fondo">;
   /** Las medidas **totales** de partida (cm): lo que mide la pieza armada. `anchoCm` es el diámetro en lo redondo. */
   medidas: MedidasMueble;
+  /** Solo en los conjuntos de mesa con sillas: cuántas lleva de partida y cuántas admite (`par`: las imperiales llevan una en cada cabecera y las demás por pares a los lados). */
+  sillas?: { porDefecto: number; min: number; max: number; par: boolean };
   /** Colores de partida (`#rrggbb`), en el orden en que se piden. */
   colores: readonly string[];
   /** Para qué sirve cada color, en ese orden («estructura», «cojín»…). */
