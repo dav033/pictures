@@ -17,6 +17,7 @@ import { DESCRIPCION_EDITAR_GLOBOS, ESQUEMA_EDITAR_GLOBOS, editarGlobos } from "
 import { ZONAS_ORGANICAS } from "./zonas-organicas";
 import { SILUETAS_TRAZO, cajaTrazo } from "./trazo-organico";
 import { buscarEnBiblioteca, describirItem, itemDeBiblioteca } from "./herramientas-escena-biblioteca";
+import { CAMPOS_FILTROS_BIBLIOTECA, avisoFiltrosSinEfecto, celebracionesDePedido } from "./herramientas-escena-biblioteca-filtros";
 import { DESCRIPCION_BUSCAR_EN_ESCENA, DESCRIPCION_VER_PIEZA, ESQUEMA_BUSCAR_EN_ESCENA, ESQUEMA_VER_PIEZA, buscarEnEscena, contenidoCompacto, verPieza } from "./herramientas-escena-inventario";
 import { PATRONES_COLUMNA, type PatronColumna } from "./columnas";
 import { PATRONES_MALLA, type PatronMalla } from "./paredes";
@@ -268,6 +269,7 @@ const ESQUEMAS = {
     colores: z.array(z.string().min(1).max(60)).max(4).optional().describe("que lleve estos colores (nombre o código)"),
     tipo_pieza: z.enum(TIPOS_PIEZA).optional().describe("el tipo de su estructura (organico = columnas, arcos, guirnaldas y semiarcos orgánicos de las ideas)"),
     limite: z.number().int().min(1).max(15).optional().describe("cuántos (8 por defecto)"),
+    ...CAMPOS_FILTROS_BIBLIOTECA,
   }),
   ajustar_tamanos: z.object({
     id: IdSchema.describe("id de la pieza orgánica (arco orgánico, columna/guirnalda/semiarco/aro/marco orgánicos, trazo orgánico, orgánicos de la biblioteca)"),
@@ -855,6 +857,9 @@ function colocacionDeLugar(lugar: LugarPieza, pieza: Pieza): Colocacion {
 // Aplicar una llamada
 // ----------------------------------------------------------------------------------------------------------
 
+/** El esquema de `buscar_en_biblioteca`, para quien resuelve esa búsqueda por su cuenta (`escena-ia-biblioteca.ts`). */
+export const ESQUEMA_BUSCAR_EN_BIBLIOTECA = ESQUEMAS.buscar_en_biblioteca;
+
 export type ResultadoHerramienta =
   | { ok: true; escena: Escena; resumen: string; consulta: boolean }
   | { ok: false; escena: Escena; error: string };
@@ -1076,10 +1081,12 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
     case "buscar_en_biblioteca": {
       const a = ESQUEMAS.buscar_en_biblioteca.parse(argumentos);
       const colores = a.colores?.map((c) => { const codigos = codigosDePedido(c); return codigos.length ? codigos : fallar(`No encontré el color «${c}» en la tabla Sempertex.`); });
-      const lista = buscarEnBiblioteca({ texto: a.texto, tipo: a.tipo, ocasion: a.ocasion, colores, tipoPieza: a.tipo_pieza, limite: a.limite });
+      const ocasion = a.ocasion ?? (a.celebracion ? celebracionesDePedido(a.celebracion)[0] : undefined);
+      const lista = buscarEnBiblioteca({ texto: a.texto, tipo: a.tipo, ocasion, colores, tipoPieza: a.tipo_pieza, limite: a.limite });
+      const aviso = avisoFiltrosSinEfecto(a);
       return {
         escena, consulta: true,
-        resumen: lista.length ? `${lista.length} de la biblioteca (ponlo con insertar_de_biblioteca y su id):\n${lista.map(describirItem).join("\n")}` : "No hay nada en la biblioteca con eso: prueba con menos palabras, sin filtros o con otro tipo.",
+        resumen: lista.length ? `${lista.length} de la biblioteca (ponlo con insertar_de_biblioteca y su id):\n${lista.map(describirItem).join("\n")}${aviso}` : `No hay nada en la biblioteca con eso: prueba con menos palabras, sin filtros o con otro tipo.${aviso}`,
       };
     }
 

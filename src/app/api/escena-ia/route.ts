@@ -2,7 +2,8 @@ import { ThinkingLevel, type Content, type Part } from "@google/genai";
 import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { conRegistro, decidir } from "@/lib/registro/servidor";
-import { DECLARACIONES_ESCENA, MAX_NODOS, TIPOS_PIEZA, aplicarHerramienta, idsDeEscena } from "@/lib/globos3d/herramientas-escena";
+import { DECLARACIONES_ESCENA, MAX_NODOS, TIPOS_PIEZA, idsDeEscena } from "@/lib/globos3d/herramientas-escena";
+import { aplicarHerramientaAsincrona } from "@/lib/globos3d/escena-ia-biblioteca";
 import { seccionVocabularioEscena } from "@/lib/globos3d/prompt-escena";
 import type { Colocacion, Escena } from "@/lib/globos3d/escena";
 import type { Pieza } from "@/lib/globos3d/piezas";
@@ -71,7 +72,7 @@ QUÉ ES CADA COSA (no las confundas):
 - «columna» a secas = columna (clásica de cuartetos, lisa). «columna orgánica» (o «de varios tamaños», «tipo burbuja», «inclinada/torcida») = columna_organica. «columna irregular» = trazo_organico con silueta columna_recta; «columna de forma libre/rara/de racimos/en S» = trazo_organico con silueta columna_racimos, columna_s o columna_inclinada.
 - Guirnalda orgánica con forma (que cruza arriba y baja por un lado, en esquina, medio arco, asimétrica, como la de una foto) = trazo_organico con su silueta (o puntos); con hojas o flores de tela: follaje («monstera», «palma», «helecho», «eucalipto», «hoja_seca dorada», «rosa»). Lo mismo: «guirnalda orgánica» = guirnalda_organica (la guirnalda a secas es la clásica de cuartetos), «arco orgánico» = arco_organico, «semiarco» = semiarco_organico, «aro» = aro_organico, «marco» = marco_organico.
 - También creas de cero: pared_trenzas, forma (figura corazon/estrella/nube/castillo… rellena, esfera o cono), letras (texto), metalizado (foil: número, letras, corazón, estrella…), mural, techo, arbol (palmera), globo suelto, decoracion (flor, moño, estrella). Cada una con sus parámetros: alto_cm, ancho_cm, grosor_cm, inclinacion_cm, colores (con acabado: «rojo metal», «verde reflex»), pesos (proporción de cada color en lo orgánico), tamanos (al CREAR: los R-24, R-18, R-12, R-9, R-5 que se mezclan), flores.
-- Biblioteca: «toma/usa X de la biblioteca», «como la idea Y», «la columna con flores de la biblioteca» → buscar_en_biblioteca y luego insertar_de_biblioteca con el id elegido (queda como piezas normales); si además pide cambios («más alto», «en dorado», «con flores»), cámbiala después con cambiar_pieza sobre el id principal que devuelve. Si hay varias que encajan, usa la primera que coincida con lo pedido y dilo.
+- Biblioteca: «toma/usa X de la biblioteca», «como la idea Y», «la columna con flores de la biblioteca» → buscar_en_biblioteca y luego insertar_de_biblioteca con el id elegido (queda como piezas normales). buscar_en_biblioteca filtra también por celebracion, tematica, formato (R-24…), parte, alto_cm/ancho_cm aproximados y fuente (referencias_dueno, ideas_sempertex, revista_celebra, bases_organicas): úsalos cuando el pedido los diga, y si no sale nada, quita los de formato, parte o medidas; si además pide cambios («más alto», «en dorado», «con flores»), cámbiala después con cambiar_pieza sobre el id principal que devuelve. Si hay varias que encajan, usa la primera que coincida con lo pedido y dilo.
 EDICIÓN PRECISA DE LO ORGÁNICO (arco, columna, guirnalda, semiarco, aro, marco y trazo orgánicos, y los orgánicos de la biblioteca): «más R-24», «más globos grandes», «menos globos chicos», «quita los R-5», «un 40 % de R-18», «que tenga 6 R-24», «los R-24 solo abajo», «que los grandes sean azules», «más tupida», «más abultada» → ajustar_tamanos con el id. Grandes = R-24 (y R-36), medianos = R-18 y R-12, chicos = R-9 y R-5. NO uses cambiar_pieza con tamanos para eso (reemplaza toda la mezcla) y NUNCA contestes un pedido de tamaños cambiando solo colores. ver_escena dice cuántos globos hay de cada tamaño y color: míralo antes; ajustar_tamanos devuelve cuántos había y cuántos hay (antes → ahora): dile al usuario esos números, y si engrosó el cuerpo para que quepan, dilo. Si vuelve a pedir «más», vuelve a llamarla con mas.
 Decoraciones EN un punto de una estructura (la estructura es un lienzo): poner_sobre con padre_id + altura_cm desde el piso + lado (frente, izquierda, derecha, atras) o angulo_grados alrededor + x_cm a lo ancho (en un arco las patas están en ±ancho/2). Para llevar una que ya existe a otro punto: mover_sobre (si está repetida en varias anclas, indica copia). separar_copia saca UNA copia de un reparto. agregar_pieza con donde.en = "ancla" solo para repartir muchas iguales a lo largo de una pieza.
 Colores: código Sempertex o nombre («rosado pastel», «dorado»). Si una herramienta responde error, corrige con su sugerencia y reintenta una vez.
@@ -150,10 +151,11 @@ async function atenderPOST(request: Request) {
       for (const llamada of funciones) {
         const nombre = llamada.name ?? "";
         llamadas += 1;
-        const hecho = llamadas > MAX_LLAMADAS
-          ? { ok: false as const, escena, error: `Tope de ${MAX_LLAMADAS} herramientas por mensaje: no se aplicó.` }
-          : aplicarHerramienta(escena, nombre, llamada.args ?? {});
-        decidir("herramienta:escena_ia", `aplicar ${nombre} a la escena del taller 3D`, hecho.ok ? { ok: true, resumen: hecho.resumen, piezas: hecho.escena.nodos.length } : { ok: false, error: hecho.error }, { entrada: { herramienta: nombre, argumentos: llamada.args ?? {}, paso: pasos } });
+        // `buscar_en_biblioteca` va por la búsqueda de la biblioteca (async, con TALLER_RAG_ENABLED); el resto, síncrono como siempre.
+        const { resultado: hecho, busqueda } = llamadas > MAX_LLAMADAS
+          ? { resultado: { ok: false as const, escena, error: `Tope de ${MAX_LLAMADAS} herramientas por mensaje: no se aplicó.` }, busqueda: null }
+          : await aplicarHerramientaAsincrona(escena, nombre, llamada.args ?? {});
+        decidir("herramienta:escena_ia", `aplicar ${nombre} a la escena del taller 3D`, hecho.ok ? { ok: true, resumen: hecho.resumen, piezas: hecho.escena.nodos.length, ...(busqueda ? { busqueda: { fuente: busqueda.fuente, ids: busqueda.ids, motivo: busqueda.motivo ?? null } } : {}) } : { ok: false, error: hecho.error }, { entrada: { herramienta: nombre, argumentos: llamada.args ?? {}, paso: pasos, ...(busqueda?.entrada ? { busqueda: busqueda.entrada } : {}) } });
         if (hecho.ok) {
           escena = hecho.escena;
           acciones.push({ herramienta: nombre, resumen: hecho.consulta ? corto(hecho.resumen.split("\n")[0] ?? hecho.resumen, 140) : corto(hecho.resumen, 400), consulta: hecho.consulta });
