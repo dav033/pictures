@@ -7,6 +7,7 @@ import type { SolidoEscenografia } from "@/lib/globos3d/escenografia";
 import { calcoMotivo } from "./motivos-utileria";
 import type { ImpresoGlobo } from "@/lib/globos3d/estampados";
 import { calcoCorazon, cascaraImpresa, geometriaFoil, materialFoil } from "./impresos-visor";
+import { entornoMetal, registrarEntornoMetal, soltarEntornoMetal } from "./entorno-metal";
 import { colorPropio, geometriaParteFlor, materialParteFlor, partesFlor } from "./flores-visor";
 import type { TipoFlorArtificial } from "@/lib/globos3d/flores-artificiales";
 import { MEDIR_VISOR, cronometrar, infoDe, registrarVisor, type VisorMedible } from "./medicion-visor";
@@ -169,11 +170,10 @@ const FONDO_ESTANDAR = 0xe6e6e9;
 const MAX_APARCADOS = 160;
 
 /**
- * Entorno propio de los metalizados. La escena atenúa su entorno (`environmentIntensity`) para que el látex mate no se
- * lave; un cromado que refleja ese entorno atenuado se ve casi negro. Con el mapa puesto en el material, la
+ * Entorno propio de los metalizados (`entorno-metal.ts`). La escena atenúa su entorno (`environmentIntensity`) para que el
+ * látex mate no se lave; un cromado que refleja ese entorno atenuado se ve casi negro. Con el mapa puesto en el material, la
  * atenuación de la escena no le aplica y la plata se ve plata.
  */
-let entornoMetal: THREE.Texture | null = null;
 
 /**
  * Calidad del dibujo: «editor» para trabajar (perfiles y vueltas más bajos, cristal sin la pasada de transmisión, que
@@ -207,9 +207,9 @@ function materialDe(familia: string, hex: string, calidad: Calidad = "alta"): TH
   switch (familia) {
     case "reflex":
       // El entorno de la escena va atenuado (el látex mate se lavaba); el cromado necesita reflejar más para verse plateado y no negro.
-      return new THREE.MeshPhysicalMaterial({ color, metalness: 1, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05, envMap: entornoMetal, envMapIntensity: 1.3 });
+      return new THREE.MeshPhysicalMaterial({ color, metalness: 1, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05, envMap: entornoMetal(), envMapIntensity: 1.3 });
     case "metal":
-      return new THREE.MeshPhysicalMaterial({ color, metalness: 0.55, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.25, envMap: entornoMetal, envMapIntensity: 1.1 });
+      return new THREE.MeshPhysicalMaterial({ color, metalness: 0.55, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.25, envMap: entornoMetal(), envMapIntensity: 1.1 });
     case "silk":
     case "satin":
       return new THREE.MeshPhysicalMaterial({ color, metalness: 0.15, roughness: 0.32, sheen: 1, sheenColor: new THREE.Color("#ffffff"), sheenRoughness: 0.4, iridescence: 0.35, iridescenceIOR: 1.3, clearcoat: 0.7, clearcoatRoughness: 0.2 });
@@ -489,18 +489,18 @@ function materialEscenografia(s: SolidoEscenografia): THREE.Material {
     case "lentejuelas": {
       const mapa = texturaLentejuelas(s.hex);
       if (mapa && s.forma === "caja") mapa.repeat.set(Math.max(1, s.tamano.x / 12), Math.max(1, s.tamano.y / 12));
-      return new THREE.MeshStandardMaterial({ color: 0xffffff, map: mapa, metalness: 0.7, roughness: 0.3, envMap: entornoMetal, envMapIntensity: 1.2 });
+      return new THREE.MeshStandardMaterial({ color: 0xffffff, map: mapa, metalness: 0.7, roughness: 0.3, envMap: entornoMetal(), envMapIntensity: 1.2 });
     }
     case "brillante": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.22, clearcoat: 0.9, clearcoatRoughness: 0.15 });
     case "satinado": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.35 });
     case "tela": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.95, sheen: 0.6, sheenColor: color.clone().lerp(new THREE.Color(0xffffff), 0.3), sheenRoughness: 0.7 });
     case "madera": return new THREE.MeshStandardMaterial({ color, roughness: 0.72 });
     // Utilería de fiesta: el metal de los cubiertos y bandejas metalizadas, y la llama de una vela (se ve encendida).
-    case "metal": return new THREE.MeshStandardMaterial({ color, metalness: 0.85, roughness: 0.25, envMap: entornoMetal, envMapIntensity: 1 });
+    case "metal": return new THREE.MeshStandardMaterial({ color, metalness: 0.85, roughness: 0.25, envMap: entornoMetal(), envMapIntensity: 1 });
     case "llama": return new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.4, roughness: 0.6 });
     // Globo metalizado: papel metalizado espejo o satinado.
-    case "foil": return materialFoil(s.hex, false, entornoMetal);
-    case "foil_mate": return materialFoil(s.hex, true, entornoMetal);
+    case "foil": return materialFoil(s.hex, false, entornoMetal());
+    case "foil_mate": return materialFoil(s.hex, true, entornoMetal());
     default: return new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
   }
 }
@@ -599,7 +599,7 @@ function extrasDeGlobo(globo: GloboColocadoEnEscena, indice: number, conConfeti:
   // Lo impreso como textura (letrero, patrón, cara): cáscara sobre el redondo.
   const impreso = globo.estampado?.impreso;
   if (impreso) {
-    const cascara = cascaraImpresa(perfilRedondo(globo.infladoCm, extra), centroCuerpo("redondo", globo.infladoCm) + extra, impreso, entornoMetal);
+    const cascara = cascaraImpresa(perfilRedondo(globo.infladoCm, extra), centroCuerpo("redondo", globo.infladoCm) + extra, impreso, entornoMetal());
     if (cascara) salida.push(cascara);
   }
   return salida;
@@ -613,7 +613,7 @@ function objetoCompleto(globo: GloboColocadoEnEscena, indice: number): THREE.Obj
   if (impreso && globo.formato.tipo === "corazon") {
     // La calcomanía en la cara del corazón.
     const malla = objeto.children.find((hijo): hijo is THREE.Mesh => hijo instanceof THREE.Mesh && hijo.geometry instanceof THREE.ExtrudeGeometry);
-    const calco = malla ? calcoCorazon(malla, globo.infladoCm, impreso, entornoMetal) : null;
+    const calco = malla ? calcoCorazon(malla, globo.infladoCm, impreso, entornoMetal()) : null;
     if (malla && calco) malla.add(calco);
   }
   orientacionDe(globo, objeto.quaternion);
@@ -723,7 +723,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const pmrem = new THREE.PMREMGenerator(renderer);
   const entorno = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   escena.environment = entorno;
-  entornoMetal = entorno;
+  registrarEntornoMetal(entorno);
   // Menos luz de entorno: con la sala completa el látex mate se veía lavado (el rosado 009 salía casi blanco).
   escena.environmentIntensity = 0.55;
 
@@ -1819,6 +1819,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       for (const partes of juegos.values()) for (const parte of partes) parte.geometria.dispose();
       for (const g of geometriasSueltas.values()) g.dispose();
       for (const m of materiales.values()) m.dispose();
+      soltarEntornoMetal(entorno);
       entorno.dispose();
       pmrem.dispose();
       renderer.dispose();
