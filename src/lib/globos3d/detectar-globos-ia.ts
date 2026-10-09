@@ -8,6 +8,7 @@ import { costeFlashUsd, type FotoLectura, type UsoModelo } from "./leer-foto-ia"
 import { COLORES_DETECCION } from "./medir-colores";
 import type { FondoDetectado, GloboDetectado } from "./medir-con-detecciones";
 import { fundirRepetidas, trozosDelMosaico } from "./mosaico-deteccion";
+import { cajasSospechosas, recorteDeCaja } from "./racimos-detectados";
 
 export { fundirRepetidas, trozosDelMosaico } from "./mosaico-deteccion";
 export type { FondoDetectado } from "./medir-con-detecciones";
@@ -17,7 +18,7 @@ export type { FondoDetectado } from "./medir-con-detecciones";
  * lo que mejor mide el modelo, y con lo que `medir-con-detecciones.ts` corrige la lectura (escala, tamaños, grosor y mezcla
  * de cada tramo, colores, fondos). En la foto entera se salta la mitad de los globos (los chicos y los tapados), así que se
  * parte en un mosaico de 3 × 3 con solape, cada trozo ampliado, en paralelo; las cajas vuelven a coordenadas de la foto y las
- * repetidas del solape se funden (`mosaico-deteccion.ts`). La foto se decodifica una sola vez. Solo lee: nunca genera
+ * repetidas del solape se funden (`mosaico-deteccion.ts`); las cajas que se salen del tamaño de las demás se le enseñan recortadas a la IA y las que encierran un racimo entero se quitan (`racimos-detectados.ts`). La foto se decodifica una sola vez. Solo lee: nunca genera
  * imágenes. Cada llamada queda en la telemetría con su coste (≈ US$0,001 por trozo).
  *
  * La taxonomía de telemetría no tiene una capacidad aparte para esto: va como inventario de análisis de referencias, y
@@ -31,6 +32,10 @@ const TOKENS_SALIDA_TROZO = 16_000;
 const TOKENS_SALIDA_FONDOS = 4000;
 const TEMPERATURA_DETECCION = 0.5;
 const TEMPERATURA_FONDOS = 0.3;
+const LADO_RECORTE_PX = 512;
+/** Una caja con al menos estos globos distintos dentro es un racimo (con 2 puede ser un globo y su reflejo, o uno que asoma). */
+const GLOBOS_DE_UN_RACIMO = 3;
+const TOKENS_SALIDA_RACIMOS = 2000;
 
 const PEDIDO = "Detecta TODOS los globos de látex visibles en esta imagen, uno por uno: grandes, medianos y los chiquitos (5 pulgadas), también los parcialmente tapados si se ve al menos media esfera. No cuentes globos de foil (letras, números, figuras). Devuelve una lista JSON de objetos {\"box_2d\": [ymin, xmin, ymax, xmax] normalizado 0-1000, \"color\": el color del globo}. No te saltes ninguno.";
 
@@ -117,11 +122,58 @@ export async function detectarGlobos(foto: FotoLectura, opciones: { signal?: Abo
     decidir("modelo:deteccion_globos", "ningún trozo de la foto respondió: sin detección de globos", { trozos: trozos.length, fallidos }, { entrada: { bytesFoto: foto.bytes.byteLength } });
     throw new Error("La IA no pudo detectar los globos de la foto.");
   }
-  const uso = sumarUso(resultados.reduce<UsoModelo>((s, r) => sumarUso(s, r.uso), SIN_USO), fondos.uso);
-  const globos = fundirRepetidas(resultados.flatMap((r) => r.globos));
+  let uso = sumarUso(resultados.reduce<UsoModelo>((s, r) => sumarUso(s, r.uso), SIN_USO), fondos.uso);
+  const racimos = await descartarRacimos(cliente, { data, width, height, channels }, fundirRepetidas(resultados.flatMap((r) => r.globos)), { signal: opciones.signal, superficie });
+  const globos = racimos.globos;
+  uso = sumarUso(uso, racimos.uso);
   const costeEstimadoUsd = costeFlashUsd(uso);
   decidir("modelo:deteccion_globos", "globos y fondos detectados en la foto", { globos: globos.length, fondos: fondos.fondos.map((f) => f.id), trozos: trozos.length, fallidos, tokens: uso, costeEstimadoUsd }, { entrada: { bytesFoto: foto.bytes.byteLength } });
   return { globos, fondos: fondos.fondos, uso, costeEstimadoUsd, trozos: trozos.length, fallidos };
+}
+
+// ----------------------------------------------------------------------------------------------------------
+// Racimos tomados por un globo
+// ----------------------------------------------------------------------------------------------------------
+
+type Pixeles = { data: Buffer; width: number; height: number; channels: 1 | 2 | 3 | 4 };
+
+/**
+ * Las cajas que se salen del tamaño de las demás (`cajasSospechosas`) se recortan y se le enseñan a la IA en UNA llamada:
+ * las que son varios globos (un racimo entero en una caja) se quitan antes de medir, para que no pasen por globos gigantes.
+ * Si la llamada falla, se queda todo como estaba (y queda registrado).
+ */
+export async function descartarRacimos(cliente: NonNullable<ReturnType<typeof getGeminiClient>>, px: Pixeles, globos: GloboDetectado[], opciones: { signal?: AbortSignal; superficie: string }): Promise<{ globos: GloboDetectado[]; uso: UsoModelo }> {
+  const sospechosas = cajasSospechosas(globos);
+  if (!sospechosas.length) return { globos, uso: SIN_USO };
+  const inicio = Date.now();
+  try {
+    const recortes = await Promise.all(sospechosas.map(async (i) => {
+      const r = recorteDeCaja(globos[i]!);
+      const left = Math.floor(r.x0 * px.width), top = Math.floor(r.y0 * px.height);
+      const ancho = Math.max(1, Math.floor((r.x1 - r.x0) * px.width)), alto = Math.max(1, Math.floor((r.y1 - r.y0) * px.height));
+      return sharp(px.data, { raw: { width: px.width, height: px.height, channels: px.channels } }).extract({ left, top, width: ancho, height: alto }).resize({ width: LADO_RECORTE_PX, height: LADO_RECORTE_PX, fit: "inside" }).jpeg({ quality: CALIDAD_JPEG }).toBuffer();
+    }));
+    const pedido = `Te paso ${recortes.length} recortes de una foto de decoración con globos, numerados del 1 al ${recortes.length} en orden. En cada uno hay una caja en el centro que alguien marcó como «un globo». Cuenta cuántos globos DISTINTOS ocupan esa caja central: cada globo es un contorno redondo propio. Un globo cromado, perlado o metalizado refleja otros globos y la sala en su superficie: esos reflejos NO son globos, sigue siendo 1. Los globos vecinos que solo asoman por el borde del recorte no cuentan. Devuelve una lista JSON con un objeto por recorte: {"recorte": número, "globos": cuántos globos distintos ocupan la caja central}.`;
+    const partes = recortes.flatMap((bytes, k) => [{ text: `Recorte ${k + 1}:` }, { inlineData: { mimeType: "image/jpeg", data: bytes.toString("base64") } }]);
+    const esquema = { type: "array", items: { type: "object", properties: { recorte: { type: "integer" }, globos: { type: "integer" } }, required: ["recorte", "globos"] } };
+    const r = await cliente.models.generateContent({
+      model: MODELO_CHAT,
+      contents: [{ role: "user", parts: [...partes, { text: pedido }] }],
+      config: { responseMimeType: "application/json", responseJsonSchema: esquema, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: TOKENS_SALIDA_RACIMOS, temperature: TEMPERATURA_FONDOS, abortSignal: opciones.signal },
+    });
+    registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: `${opciones.superficie}:racimos` }, usage: r.usageMetadata, bytesImagenEntrada: recortes.reduce((s, b) => s + b.byteLength, 0), thinkingLevel: "low", finishReason: r.candidates?.[0]?.finishReason });
+    const crudo = jsonDe(r.candidates?.[0]?.content?.parts);
+    const racimos = new Set((Array.isArray(crudo) ? crudo : []).flatMap((v: unknown) => {
+      const k = (v as { recorte?: unknown }).recorte, n = (v as { globos?: unknown }).globos;
+      return typeof k === "number" && typeof n === "number" && n >= GLOBOS_DE_UN_RACIMO && sospechosas[k - 1] !== undefined ? [sospechosas[k - 1]!] : [];
+    }));
+    decidir("modelo:deteccion_globos", "cajas grandes revisadas: los racimos tomados por un globo no se miden", { revisadas: sospechosas.length, racimos: racimos.size, cajas: [...racimos].map((i) => globos[i]!.box_2d) });
+    return { globos: globos.filter((_, i) => !racimos.has(i)), uso: usoDe(r.usageMetadata) };
+  } catch (error) {
+    registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: `${opciones.superficie}:racimos` }, thinkingLevel: "low" });
+    decidir("modelo:deteccion_globos", "no se pudieron revisar las cajas grandes: se miden todas", { revisadas: sospechosas.length, error: error instanceof Error ? error.message.slice(0, 300) : String(error) });
+    return { globos, uso: SIN_USO };
+  }
 }
 
 // ----------------------------------------------------------------------------------------------------------
