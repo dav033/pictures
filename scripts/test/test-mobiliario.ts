@@ -23,7 +23,7 @@ import { CATALOGO_MOBILIARIO, muebleDe } from "../../src/lib/globos3d/mobiliario
 import { colocacionPorDefecto } from "../../src/lib/globos3d/mobiliario-colocar";
 import { hexDeColor } from "../../src/lib/globos3d/mobiliario-colores";
 import { puestosAlrededor } from "../../src/lib/globos3d/mobiliario-disposicion";
-import { elementosDeEscenografia, piezaDeEntrada, piezaDeMueble } from "../../src/lib/globos3d/mobiliario-pieza";
+import { elementosDeEscenografia, MuebleDePiezaSchema, opcionesDeMueble, piezaDeEntrada, piezaDeMueble } from "../../src/lib/globos3d/mobiliario-pieza";
 import { RETIRO_PISO_CM, retiroDe } from "../../src/lib/globos3d/mobiliario-tipos";
 import { armarPieza, type Pieza } from "../../src/lib/globos3d/piezas";
 
@@ -206,10 +206,10 @@ prueba("el retiro por defecto es uno; la base de pastel va encima de la mesa y d
   assert.equal(retiroDe(FONDOS_CATALOGO.find((f) => f.id === "panel_redondo")!), RETIRO_PISO_CM);
   const sala = vacia();
   const silla = mueble("silla_tiffany");
-  const una = colocacionPorDefecto(sala, silla, silla.medidas);
+  const una = colocacionPorDefecto(sala, silla, silla.medidas).colocacion;
   assert.ok(una.en === "piso" && una.zCm === Math.round(-sala.sala.fondoCm / 2 + silla.retiroCm!));
   const e1: Escena = { ...sala, nodos: [{ id: "silla-tiffany", nombre: "Silla", pieza: piezaDeEntrada(silla), colocacion: una }] };
-  const dos = colocacionPorDefecto(e1, silla, silla.medidas);
+  const dos = colocacionPorDefecto(e1, silla, silla.medidas).colocacion;
   assert.ok(dos.en === "piso" && Math.abs(dos.xCm - 0) >= 45, "la segunda silla se corre a un lado");
   // Base de pastel: con mesa, encima; sin mesa, en el piso.
   assert.equal(agregar(vacia(), { id: "base_pastel" }).escena.nodos[0]!.colocacion.en, "piso");
@@ -284,6 +284,159 @@ prueba("el inventario en inglés para FLUX nombra muebles, colores y el texto de
   assert.match(texto, /banquet table with a floor-length tablecloth in white/);
   assert.match(texto, /3 × Tiffany \(chiavari\) chair in [^,]*#D6B25A/);
   assert.match(texto, /cursive neon sign on a dark panel in [^,]*reading "Mia 15"/);
+});
+
+prueba("MAYOR 1: ningún deslizador engaña: lo que dice respetar el fondo lo respeta, y lo redondo trae su fondo = ancho", () => {
+  for (const m of CATALOGO_MOBILIARIO) {
+    if (m.lugar === "pared") continue;
+    const modo = m.fondo ?? "libre";
+    const pedido = Math.round(m.medidas.fondoCm * 1.5);
+    const pieza = piezaDeMueble(m, { ...opcionesDeMueble(m), fondoCm: pedido });
+    const guardado = (pieza as Extract<Pieza, { tipo: "escenografia" }>).mueble!.opciones!;
+    if (modo === "libre") {
+      cerca(medidasDe(pieza).fondo, pedido, Math.max(4, pedido * 0.12), `${m.id}: pidió fondo ${pedido} y mide ${medidasDe(pieza).fondo.toFixed(0)} (si no, es redondo o fijo: dale su modo)`);
+    } else {
+      assert.notEqual(guardado.fondoCm, pedido, `${m.id}: ${modo} no guarda un fondo que no respeta`);
+      if (modo === "igual_ancho") assert.equal(guardado.fondoCm, guardado.anchoCm, `${m.id} es redondo: fondo = ancho`);
+    }
+  }
+  const mesa = agregar(vacia(), { id: "mesa_redonda_mantel" });
+  const c = cambiar(mesa.escena, { id: mesa.escena.nodos[0]!.id, fondo_cm: 80 });
+  assert.ok(c.ok && /redondo/.test(c.resumen) && /ignoré fondo_cm/.test(c.resumen), c.ok ? c.resumen : c.error);
+  if (c.ok) { const r = medidasDe(c.escena.nodos[0]!.pieza); cerca(r.fondo, r.ancho, 0.5, "la mesa redonda sigue redonda"); }
+  const grande = cambiar(mesa.escena, { id: mesa.escena.nodos[0]!.id, ancho_cm: 200 });
+  assert.ok(grande.ok);
+  if (grande.ok) { const r = medidasDe(grande.escena.nodos[0]!.pieza); cerca(r.fondo, r.ancho, 0.5, "ancho y fondo van juntos"); cerca(r.ancho, 200, 2, "ancho nuevo (total)"); }
+});
+
+prueba("MAYOR 2: las medidas se acotan (0,4–2,5×), 0 y negativas son error, y lo guardado basura se arma igual", () => {
+  const a = agregar(vacia(), { id: "silla_tiffany" });
+  const id = a.escena.nodos[0]!.id;
+  for (const malo of [-40, 0]) { const r = cambiar(a.escena, { id, alto_cm: malo }); assert.ok(!r.ok && /mayor que 0/.test(r.error), `alto_cm ${malo}`); }
+  const enorme = cambiar(a.escena, { id, alto_cm: 3000, ancho_cm: 1 });
+  assert.ok(enorme.ok, enorme.ok ? "" : enorme.error);
+  if (enorme.ok) {
+    const r = medidasDe(enorme.escena.nodos[0]!.pieza);
+    cerca(r.alto, 225, 2, "alto acotado a 2,5 veces");
+    assert.ok(r.ancho >= 17, `ancho acotado a 0,4 veces (${r.ancho.toFixed(0)})`);
+    assert.match(enorme.resumen, /no es razonable/);
+  }
+  assert.ok(!aplicarHerramienta(vacia(), "agregar_mobiliario", { id: "sofa", alto_cm: -3 }).ok);
+  const grande = agregar(vacia(), { id: "sofa", ancho_cm: 1100 });
+  cerca(medidasDe(grande.escena.nodos[0]!.pieza).ancho, 500, 2, "un sofá de 11 m queda en 2,5 veces");
+  assert.match(grande.resumen, /no es razonable/);
+  // Lo guardado viene de afuera (escena guardada, API): se normaliza al armar.
+  const sucio: Pieza = { tipo: "escenografia", elementos: [], mueble: { id: "mesa_imperial", opciones: { anchoCm: Number.NaN, fondoCm: -5, altoCm: 1e9, colores: ["rojo", "#12"] as string[], acabado: "oro" as never, texto: "x".repeat(99) } } };
+  const r = medidasDe(sucio);
+  assert.ok(Number.isFinite(r.ancho) && r.alto <= 75 * 2.5 + 1 && r.fondo > 0, JSON.stringify(r));
+  const api = (m: unknown) => MuebleDePiezaSchema.safeParse(m).success;
+  assert.ok(api({ id: "silla_tiffany", opciones: { anchoCm: 45, fondoCm: 45, altoCm: 90, colores: ["#d6b25a"] } }) && api({ id: "panel_redondo" }));
+  assert.ok(!api({ id: "silla_tiffany", opciones: { anchoCm: -1, fondoCm: 45, altoCm: 90, colores: ["#d6b25a"] } }), "ancho negativo");
+  assert.ok(!api({ id: "x", opciones: { anchoCm: 45, fondoCm: 45, altoCm: 9e9, colores: ["#d6b25a"] } }), "alto de 9e9");
+  assert.ok(!api({ id: "x", opciones: { anchoCm: 45, fondoCm: 45, altoCm: 90, colores: ["rojo"] } }), "color que no es hex");
+  assert.ok(!api({ id: "x", opciones: { anchoCm: 45, fondoCm: 45, altoCm: 90, colores: ["#d6b25a"], texto: "x".repeat(40) } }), "texto de 40");
+  // Un id que el catálogo ya no tiene: se ve (caja roja) y avisa.
+  const huerfano: Escena = { ...vacia(), nodos: [{ id: "x", nombre: "Mueble viejo", pieza: { tipo: "escenografia", elementos: [], mueble: { id: "silla_voladora", opciones: { anchoCm: 45, fondoCm: 45, altoCm: 90, colores: ["#d6b25a"] } } }, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] };
+  const armada = armarEscena(huerfano);
+  assert.ok(armada.solidos.length === 1 && armada.avisos.some((x) => /silla_voladora/.test(x)), armada.avisos.join("|"));
+});
+
+prueba("MAYOR 3: las sillas leídas van alrededor de la mesa de sentarse que les toca, no de la de la torta ni de una lejana", () => {
+  const base = { aspecto: 1.4, escala: { altoImagenCm: 300, referencia: "mesa de 75 cm" }, pisoY: 0.9, sala: { pared: "#eeeeee", piso: "#d8cbbb" } };
+  const compilar = (piezas: unknown[]) => compilarLectura(LecturaFotoSchema.parse({ resumen: "Fiesta con varias mesas", ...base, piezas }));
+  const blanco = [color("blanco", "#f5f5f0")], dorado = [color("dorado", "#d4af5a")];
+  const radiosDe = (r: ReturnType<typeof compilar>, de: string) => {
+    const mesa = r.escena.nodos.find((n) => n.id === de) ?? assert.fail(`falta ${de}`);
+    return r.escena.nodos.filter((n) => n.id.startsWith("silla-tiffany")).map((n) => Math.hypot(piso(n).x - piso(mesa).x, piso(n).z - piso(mesa).z));
+  };
+  // La mesa de la torta (mesa_mantel) a la izquierda y la redonda a la derecha, con las sillas a la derecha.
+  const r1 = compilar([
+    { tipo: "fondo", id: "mesa_mantel", x: 0.2, yBase: 0.9, ancho: 0.4, alto: 0.2, colores: blanco },
+    { tipo: "fondo", id: "mesa_redonda_mantel", x: 0.72, yBase: 0.9, ancho: 0.25, alto: 0.2, colores: blanco },
+    { tipo: "fondo", id: "silla_tiffany", x: 0.72, yBase: 0.95, ancho: 0.3, alto: 0.3, cantidad: 4, colores: dorado },
+  ]);
+  const a = radiosDe(r1, "mesa-redonda-mantel");
+  assert.equal(a.length, 4);
+  assert.ok(Math.max(...a) - Math.min(...a) < 1.5, "las 4 alrededor de la redonda");
+  // Solo la mesa de la torta: las sillas NO la rodean (van en fila).
+  const r2 = compilar([
+    { tipo: "fondo", id: "mesa_mantel", x: 0.5, yBase: 0.9, ancho: 0.4, alto: 0.2, colores: blanco },
+    { tipo: "fondo", id: "silla_tiffany", x: 0.5, yBase: 0.95, ancho: 0.3, alto: 0.3, cantidad: 4, colores: dorado },
+  ]);
+  assert.ok(new Set(r2.escena.nodos.filter((n) => n.id.startsWith("silla-tiffany")).map((n) => piso(n).z)).size === 1, "en fila, no alrededor de la torta");
+  // Una mesa redonda lejos de las sillas (sin solaparse): tampoco.
+  const r3 = compilar([
+    { tipo: "fondo", id: "mesa_redonda_mantel", x: 0.12, yBase: 0.9, ancho: 0.15, alto: 0.2, colores: blanco },
+    { tipo: "fondo", id: "silla_tiffany", x: 0.8, yBase: 0.95, ancho: 0.2, alto: 0.3, cantidad: 3, colores: dorado },
+  ]);
+  assert.ok(new Set(r3.escena.nodos.filter((n) => n.id.startsWith("silla-tiffany")).map((n) => piso(n).z)).size === 1, "la mesa lejana no se lleva las sillas");
+  // Dos redondas: se lleva las sillas la más cercana.
+  const r4 = compilar([
+    { tipo: "fondo", id: "mesa_redonda_mantel", x: 0.2, yBase: 0.9, ancho: 0.4, alto: 0.2, colores: blanco },
+    { tipo: "fondo", id: "mesa_redonda", x: 0.55, yBase: 0.9, ancho: 0.4, alto: 0.2, colores: blanco },
+    { tipo: "fondo", id: "silla_tiffany", x: 0.55, yBase: 0.95, ancho: 0.4, alto: 0.3, cantidad: 4, colores: dorado },
+  ]);
+  const cercana = radiosDe(r4, "mesa-redonda");
+  assert.ok(cercana.length === 4 && Math.max(...cercana) - Math.min(...cercana) < 1.5, "alrededor de la más cercana (la sin mantel)");
+});
+
+prueba("MENORES: sitio libre contra las cajas, aviso sin lugar, colores opcionales, avisos, alfombra, mensajes y texto", () => {
+  // Una cóctel por defecto no cae dentro de una imperial de 254 cm puesta en el mismo sitio.
+  const imperial = agregar(vacia(), { id: "mesa_imperial_mantel" });
+  const coctel = agregar(imperial.escena, { id: "mesa_coctel" });
+  const ci = armarEscena(coctel.escena).porNodo;
+  const cm = ci[0]!.caja, cc = ci[1]!.caja;
+  assert.ok(cc.min.x >= cm.max.x - 0.5 || cc.max.x <= cm.min.x + 0.5 || cc.min.z >= cm.max.z || cc.max.z <= cm.min.z, "la cóctel no pisa la imperial");
+  // Sin lugar: una sala angosta con una mesa que la llena → aviso, no un punto ocupado en silencio.
+  const angosta: Escena = { ...vacia(), sala: { ...SALA_INICIAL, anchoCm: 300 } };
+  const llena = agregar(angosta, { id: "mesa_imperial", ancho_cm: 290 });
+  const sinLugar = aplicarHerramienta(llena.escena, "agregar_mobiliario", { id: "mesa_imperial" });
+  assert.ok(sinLugar.ok && /No hay lugar libre/.test(sinLugar.resumen), sinLugar.ok ? sinLugar.resumen : sinLugar.error);
+  assert.match(colocacionPorDefecto(llena.escena, mueble("mesa_imperial"), mueble("mesa_imperial").medidas).aviso ?? "", /No hay lugar libre/);
+  // Colores opcionales leídos de una foto: el vidrio de la mesa hexagonal se conserva.
+  const lectura = LecturaFotoSchema.parse({ resumen: "Mesa hexagonal con vidrio", aspecto: 1.2, escala: { altoImagenCm: 300, referencia: "x" }, pisoY: 0.9, sala: { pared: "#eeeeee", piso: "#d8cbbb" }, piezas: [{ tipo: "fondo", id: "mesa_hexagonal", x: 0.5, yBase: 0.9, ancho: 0.1, alto: 0.2, colores: [color("dorado", "#d4af5a"), color("vidrio", "#dfe9ee")] }] });
+  assert.equal((compilarLectura(lectura).escena.nodos[0]!.pieza as Extract<Pieza, { tipo: "escenografia" }>).mueble?.opciones?.colores.length, 2);
+  // El aviso falso de «lleva 1 color» no sale cuando se pone el vidrio.
+  const hex = agregar(vacia(), { id: "mesa_hexagonal" });
+  const conVidrio = cambiar(hex.escena, { id: hex.escena.nodos[0]!.id, colores: ["dorado", "vidrio"] });
+  assert.ok(conVidrio.ok && !/ignoré los demás/.test(conVidrio.resumen) && (conVidrio.escena.nodos[0]!.pieza as Extract<Pieza, { tipo: "escenografia" }>).mueble?.opciones?.colores.length === 2, conVidrio.ok ? conVidrio.resumen : conVidrio.error);
+  // La alfombra sin ribete sigue al primer color también al editarlo; con ribete propio, no.
+  const alf = agregar(vacia(), { id: "alfombra_redonda" });
+  const rosa = cambiar(alf.escena, { id: alf.escena.nodos[0]!.id, colores: ["rosa"] });
+  assert.ok(rosa.ok && JSON.stringify((rosa.escena.nodos[0]!.pieza as Extract<Pieza, { tipo: "escenografia" }>).mueble?.opciones?.colores) === JSON.stringify(["#f0b8c8", "#f0b8c8"]), rosa.ok ? "" : rosa.error);
+  const conRibete = agregar(vacia(), { id: "alfombra_redonda", colores: ["rosa", "negro"] });
+  const azul = cambiar(conRibete.escena, { id: conRibete.escena.nodos[0]!.id, colores: ["azul"] });
+  assert.ok(azul.ok && (azul.escena.nodos[0]!.pieza as Extract<Pieza, { tipo: "escenografia" }>).mueble?.opciones?.colores[1] === "#1c1c1c", "el ribete propio no se toca");
+  // Mensajes: el nombre de la pieza, y sin sugerir agregar_mobiliario para utilería.
+  const fijo: Escena = { ...vacia(), nodos: [{ id: "panel", nombre: "Mi panel dorado", pieza: piezaDeEntrada(FONDOS_CATALOGO.find((f) => f.id === "panel_redondo")!), colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] };
+  const mal = cambiar(fijo, { id: "panel", colores: ["rojo"] });
+  assert.ok(!mal.ok && /«Mi panel dorado»/.test(mal.error) && /agregar_mobiliario/.test(mal.error));
+  const plato: Escena = { ...vacia(), nodos: [{ id: "plato", nombre: "Platos naranja", pieza: { tipo: "escenografia", elementos: [{ forma: "cilindro", base: { x: 0, y: 0, z: 0 }, radioCm: 10, altoCm: 1, hex: "#ff8800", acabado: "mate" }], utileria: "plato", productos: [{ nombre: "Platos", url: "/products/x", cantidad: 1 }] }, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] };
+  const noPlato = cambiar(plato, { id: "plato", colores: ["rojo"] });
+  assert.ok(!noPlato.ok && /utilería/.test(noPlato.error) && !/agregar_mobiliario/.test(noPlato.error), noPlato.ok ? "" : noPlato.error);
+  // ver_escena no dice «colores .» de una escenografía sin colores que decir.
+  const v = aplicarHerramienta(plato, "ver_escena", {});
+  assert.ok(v.ok && !/colores \./.test(v.resumen), v.ok ? v.resumen : v.error);
+  const cambioNombre = cambiar(plato, { id: "plato", nombre: "Platos de fiesta" });
+  assert.ok(cambioNombre.ok && !/colores \./.test(cambioNombre.resumen), cambioNombre.ok ? cambioNombre.resumen : cambioNombre.error);
+  // Texto: el mismo tope (24) en la herramienta y en lo leído de una foto.
+  assert.ok(!aplicarHerramienta(vacia(), "agregar_mobiliario", { id: "neon_cursiva", texto: "x".repeat(25) }).ok);
+  const larga = compilarLectura(LecturaFotoSchema.parse({ resumen: "Un neón largo", aspecto: 1.2, escala: { altoImagenCm: 300, referencia: "x" }, pisoY: 0.9, sala: { pared: "#eeeeee", piso: "#d8cbbb" }, piezas: [{ tipo: "fondo", id: "neon_cursiva", texto: "Feliz cumpleaños Valentina 15", x: 0.5, yBase: 0.5, ancho: 0.3, alto: 0.15, colores: [color("negro", "#000000"), color("rosa", "#ff66aa")] }] }));
+  assert.equal(armarPieza(larga.escena.nodos[0]!.pieza).solidos?.[0]?.motivo?.texto?.length, 24);
+  assert.ok(larga.notas.some((n) => /pasa de 24 letras/.test(n)));
+});
+
+prueba("VISUAL: el aro tiene travesaño que une sus patines y las tapas de mantel no comparten cara con la falda", () => {
+  for (const id of ["aro_metalico", "aro_hexagonal"]) {
+    const travesano = (armado(id).solidos ?? []).find((s) => s.forma === "caja" && s.tamano.x > 60 && s.tamano.y < 4);
+    assert.ok(travesano, `${id}: travesaño`);
+  }
+  const redonda = armado("mesa_redonda_mantel").solidos ?? [];
+  const tapa = redonda.find((s) => s.forma === "cilindro" && s.altoCm === 3), falda = redonda.find((s) => s.forma === "cilindro" && s.altoCm > 3);
+  assert.ok(tapa && falda && tapa.forma === "cilindro" && falda.forma === "cilindro" && tapa.radioCm > falda.radioArribaCm + 0.1, "la tapa sobresale de la falda");
+  const imp = armado("mesa_imperial_mantel").solidos ?? [];
+  const tapaR = imp.find((s) => s.forma === "caja" && s.tamano.y === 3);
+  assert.ok(tapaR && tapaR.forma === "caja" && tapaR.tamano.x > 240 + 2.2, "la tapa rectangular sobresale de los paños");
 });
 
 console.log(`test-mobiliario: ${pruebas} pruebas ok`);
