@@ -133,6 +133,8 @@ export type EscenaGlobos = {
   resaltarLugares: (cajas: readonly CajaEnEscena[], sala: boolean) => void;
   /** La caja de UNA copia bajo el puntero (lo que se puede coger), o nada. */
   resaltarEncima: (caja: CajaEnEscena | null) => void;
+  /** Lo que cambió la IA, marcado en este visor: cajas verdes para lo nuevo y ámbar para lo cambiado. Lista vacía lo quita. */
+  resaltarCambios: (marcas: ReadonlyArray<{ caja: CajaEnEscena; nueva: boolean }>) => void;
   /** La vista previa (fantasma, semitransparente) de una decoración donde caería; listas vacías la quitan. */
   mostrarFantasma: (globos: readonly GloboColocadoEnEscena[], tubos: readonly TuboEnEscena[]) => void;
   /** Esconde lo de esa pieza que cae dentro de `caja` (la copia que se está moviendo); `null` lo vuelve a mostrar todo. */
@@ -639,7 +641,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const fantasma = new THREE.Group();
   const marcasLugares = new THREE.Group();
   const marcaEncima = new THREE.Group();
-  lienzoAyudas.add(marcasLugares, marcaEncima, fantasma);
+  const marcaCambios = new THREE.Group();
+  lienzoAyudas.add(marcasLugares, marcaEncima, marcaCambios, fantasma);
   escena.add(sala, ayudas, lienzoAyudas);
   /** La caja de la pieza elegida tal como se armó (al arrastrar se corre desde aquí). */
   let resaltado: { caja: THREE.Box3; ayuda: THREE.Box3Helper } | null = null;
@@ -1431,6 +1434,13 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     pedirCuadro();
   }
 
+  function resaltarCambios(marcas: ReadonlyArray<{ caja: CajaEnEscena; nueva: boolean }>) {
+    if (!marcas.length && !marcaCambios.children.length) return;
+    vaciar(marcaCambios);
+    for (const m of marcas) marcaCambios.add(cajaDeAyuda(m.caja, m.nueva ? 0x10b981 : 0xf59e0b, 3));
+    pedirCuadro();
+  }
+
   /** Un globo suelto con las geometrías compartidas del editor y el material que se pida (la vista previa). */
   function objetoSuelto(globo: GloboColocadoEnEscena, indice: number, materialPara: (familia: string, hex: string) => THREE.Material): THREE.Object3D {
     const plantilla = plantillaDe(globo);
@@ -1550,6 +1560,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     lugarEn,
     resaltarLugares,
     resaltarEncima,
+    resaltarCambios,
     mostrarFantasma: (globos, tubos) => cronometrar(medible, "mostrarFantasma", () => mostrarFantasma(globos, tubos)),
     ocultarCopia,
     vistaCamara: () => ({
@@ -1734,7 +1745,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       vaciar(fila);
       vaciar(sala);
       vaciar(ayudas);
-      for (const g of [marcasLugares, marcaEncima, fantasma]) vaciar(g);
+      for (const g of [marcasLugares, marcaEncima, marcaCambios, fantasma]) vaciar(g);
       for (const partes of juegos.values()) for (const parte of partes) parte.geometria.dispose();
       for (const g of geometriasSueltas.values()) g.dispose();
       for (const m of materiales.values()) m.dispose();

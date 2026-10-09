@@ -1,5 +1,5 @@
 /**
- * Prueba de punta a punta de la barra «Pídele a la IA» con una foto (REQ-001 paso 9), con Playwright sin cabeza contra un
+ * Prueba de punta a punta del panel de la IA (pestaña «IA», D-021) con una foto (REQ-001 paso 9), con Playwright sin cabeza contra un
  * servidor de desarrollo PROPIO: adjunta la foto, pide armarla, y mira que tras la primera respuesta arranque la ronda
  * «Comparando con la foto…» (segunda petición con `refinar` y su captura), que luego se revise si mejoró (petición a
  * `/api/escena-ia/similitud`: la ronda se queda solo si mejora, P-016) y que la escena quede donde la foto la tiene.
@@ -14,6 +14,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright";
+import { abrirIA, cuerpoDeRespuesta, textoComparando, textoDelHilo, trabajando } from "./ayudas-ia-ui";
 
 const arg = (n: string) => (process.argv.includes(n) ? process.argv[process.argv.indexOf(n) + 1] : undefined);
 const fotoArg = arg("--foto");
@@ -42,35 +43,35 @@ async function main() {
     if (r.url().endsWith("/api/escena-ia/similitud")) { similitudes.push({ estado: r.status(), ...(await r.json().catch(() => ({}))) }); return; }
     if (!r.url().endsWith("/api/escena-ia")) return;
     const pedido = JSON.parse(r.request().postData() ?? "{}") as { refinar?: unknown };
-    respuestas.push({ refinar: Boolean(pedido.refinar), estado: r.status(), cuerpo: (await r.json().catch(() => ({}))) as RespuestaIA });
+    respuestas.push({ refinar: Boolean(pedido.refinar), estado: r.status(), cuerpo: (await cuerpoDeRespuesta(r)) as RespuestaIA });
   });
 
   await pagina.goto(`${url}/3d`, { waitUntil: "load", timeout: 180_000 });
-  await pagina.waitForSelector("#escena-ia-linea", { timeout: 120_000 });
+  await abrirIA(pagina);
   await pagina.setInputFiles('input[type="file"]', foto);
   await pagina.waitForSelector('img[alt="Foto adjunta"]', { timeout: 30_000 });
-  await pagina.fill("#escena-ia-linea", mensaje);
+  await pagina.fill("#ia-pedido", mensaje);
   await pagina.screenshot({ path: path.join(salida, "1-antes.png") });
-  await pagina.press("#escena-ia-linea", "Enter");
+  await pagina.press("#ia-pedido", "Enter");
 
   const botones: string[] = [];
   let primera = false, vistaRonda = false, revisada = false;
   const inicio = Date.now();
   while (Date.now() - inicio < 240_000) {
     await pagina.waitForTimeout(700);
-    const t = await pagina.locator('button[aria-label="Enviar a la IA"]').innerText().catch(() => "");
-    if (botones[botones.length - 1] !== t) { botones.push(t); console.log(`[${Math.round((Date.now() - inicio) / 1000)} s] botón: «${t}»`); }
+    const ocupada = await trabajando(pagina);
+    const comparando = await textoComparando(pagina);
+    const t = comparando || (ocupada ? "Trabajando" : "Libre");
+    if (botones[botones.length - 1] !== t) { botones.push(t); console.log(`[${Math.round((Date.now() - inicio) / 1000)} s] estado: «${t}»`); }
     if (!primera && respuestas.length >= 1) { primera = true; await pagina.screenshot({ path: path.join(salida, "2-primera-respuesta.png") }); }
-    if (!vistaRonda && /^Foto \d\/\d$/.test(t)) { vistaRonda = true; await pagina.screenshot({ path: path.join(salida, "3-comparando.png") }); }
+    if (!vistaRonda && /^Comparando con la foto/.test(comparando)) { vistaRonda = true; await pagina.screenshot({ path: path.join(salida, "3-comparando.png") }); }
     if (similitudes.length && !revisada) { revisada = true; await pagina.screenshot({ path: path.join(salida, "3b-revisada.png") }); }
-    if (t === "Pedir" && respuestas.length >= 1 && Date.now() - inicio > 8_000) { await pagina.waitForTimeout(1500); if (await pagina.locator('button[aria-label="Enviar a la IA"]').innerText().catch(() => "") === "Pedir") break; }
+    if (!ocupada && respuestas.length >= 1 && Date.now() - inicio > 8_000) { await pagina.waitForTimeout(1500); if (!(await trabajando(pagina))) break; }
   }
   await pagina.waitForTimeout(1000);
-  // Abre la conversación para que la captura final muestre lo que dijo la IA.
-  await pagina.locator('button[aria-label="Ver la conversación y los ejemplos"]').click({ timeout: 2000 }).catch(() => undefined);
   await pagina.screenshot({ path: path.join(salida, "4-despues.png") });
-  const barra = (await pagina.locator('section[aria-label="Conversación con la IA"]').innerText().catch(() => "")).slice(0, 1500);
-  // Cierra la conversación y mira la escena de frente: lo que el usuario se queda viendo.
+  const barra = (await textoDelHilo(pagina)).slice(0, 1500);
+  // Mira la escena de frente: lo que el usuario se queda viendo (el panel de la IA no tapa el visor).
   await pagina.mouse.click(420, 160);
   await pagina.getByRole("button", { name: "Frente", exact: true }).click({ timeout: 2000 }).catch(() => undefined);
   await pagina.waitForTimeout(1500);

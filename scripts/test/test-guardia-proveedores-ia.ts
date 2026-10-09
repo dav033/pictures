@@ -70,6 +70,8 @@ export const INVENTARIO: readonly Punto[] = [
   { id: "herramientas-omoikane", archivo: "src/lib/ia/omoikane/ejecutar.ts", patron: /crearRegistroHerramientas\(/, que: "herramientas del chat clásico (buscar_catalogo_rag, armar_plan, ...)", envoltorio: "registro: envolverRegistroHerramientas(crearRegistroHerramientas(...))", enganche: [{ archivo: "src/lib/ia/omoikane/ejecutar.ts", contiene: /envolverRegistroHerramientas\(/ }] },
   { id: "bucle-chat-clasico", archivo: "src/app/api/chat/route.ts", patron: /ejecutarConversacionStream\(\s*\{/, que: "bucle de tool-calling del chat clásico", envoltorio: "cubierto por herramientas-omoikane + chatOmoikaneDe", enganche: [{ archivo: "src/lib/ia/omoikane/ejecutar.ts", contiene: /envolverRegistroHerramientas\(/ }, CHATPORT_CENTRAL] },
   { id: "herramientas-guiado", archivo: "src/app/api/asistente-guiado/route.ts", patron: /protegerHerramientas\(|ejecutarConversacionStream\(\s*\{/, que: "bucle y herramientas de la vista guiada (guardar_brief_guiado, buscar_decoraciones_sempertex, proponer_composicion, costear_decoracion, ...)", envoltorio: "registro: envolverRegistroHerramientas(protegerHerramientas(registro)) + conRegistro + decidir(...)", enganche: [{ archivo: "src/app/api/asistente-guiado/route.ts", contiene: /envolverRegistroHerramientas\(/ }, CHATPORT_CENTRAL] },
+  // ── Dictado por voz (REQ-009): Whisper propio en el VPS ──
+  { id: "voz-whisper-vps", archivo: "src/lib/voz/config.ts", patron: /VOZ_URL/, que: "dictado por voz: audio → texto con faster-whisper en el VPS (firmado con HMAC, sin coste por llamada; ni audio ni texto se guardan)", envoltorio: "ruta /api/voz/transcribir: auditarLlamadaIa({ proveedor: \"whisper-vps\", proposito: \"dictado_voz\" }, () => transcribirEnVps(...)) con auditarSalida apagado", enganche: [{ archivo: "src/app/api/voz/transcribir/route.ts", contiene: /auditarLlamadaIa\(/ }, { archivo: "src/app/api/voz/transcribir/route.ts", contiene: /proveedor:\s*"whisper-vps"/ }, { archivo: "src/app/api/voz/transcribir/route.ts", contiene: /auditarEntrada:\s*false,\s*auditarSalida:\s*false/ }] },
   // ── Operaciones del Python que ejecutan un modelo (consumidores) ──
   { id: "py-ia-intent-parse", archivo: "src/lib/ia/inari/parse.ts", patron: /llamarPythonIntentParse\(/, que: "parser de intención vía Python", envoltorio: "propositoIa(/ia/intent-parse) = \"parser_intencion\"", enganche: [PYTHON_CENTRAL, PYTHON_IA] },
   { id: "py-ia-happie", archivo: "src/lib/happie/generador-python.ts", patron: /llamarPythonHappieGenerate\(/, que: "Happie vía Python", envoltorio: "envolverFuncionIa en ia-recomendacion/conversacion-webhook (no duplicar en propositoIa)", enganche: [PYTHON_CENTRAL, { archivo: "src/lib/happie/ia-recomendacion.ts", contiene: /envolverFuncionIa\(/ }] },
@@ -95,6 +97,7 @@ const DETECTORES: ReadonlyArray<{ id: string; re: RegExp }> = [
   { id: "fabrica-chatport", re: /export\s+(async\s+)?function\s+crearChat\w*\s*\(/ },
   { id: "bucle-herramientas", re: /\bejecutarConversacion(Stream)?\s*\(\s*\{/ },
   { id: "registro-herramientas", re: /(?<!function\s+)\b(crearRegistroHerramientas|protegerHerramientas)\s*\(/ },
+  { id: "transcripcion-voz", re: /VOZ_URL/ },
   { id: "python-con-modelo", re: /(?<!function\*?\s+)\bllamarPython(IntentParse|HappieGenerate|ReferenceTurn|PatronReferencia|BouquetReferencia|ConteoReferencia|GuirnaldaReferencia|LecturaUnica|FluxGenerate|ChatTurnStream|Embedding)\s*\(/ },
 ];
 
@@ -133,6 +136,7 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
   "src/app/api/escena-ia/similitud/route.ts": "taller 3D: criterio de aceptación del refinado (embeddings de imagen con Gemini: foto vs capturas)",
   "src/app/api/escena-desde-foto/route.ts": "taller 3D: foto de una decoración → escena (Gemini visión lee la foto; embedding de imagen para las plantillas)",
   "src/app/api/render-3d-imagen/route.ts": "taller 3D: foto con IA (FLUX)",
+  "src/app/api/voz/transcribir/route.ts": "dictado por voz (REQ-009): Whisper en el VPS, proveedor «whisper-vps»",
   "src/app/api/taller/buscar/route.ts": "taller 3D: búsqueda en la biblioteca (RAG; embedding de la consulta con Gemini)",
   "src/app/api/taller/buscar-foto/route.ts": "taller 3D: búsqueda por foto en la biblioteca (embedding de imagen con Gemini)",
   "src/app/api/feedback-ia/route.ts": "REQ-010: calificación de un turno de la IA (taller y chat del cliente)",
