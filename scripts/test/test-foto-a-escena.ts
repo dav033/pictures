@@ -23,6 +23,7 @@ import { FotoCuerpoSchema, REGLAS_FOTO, aplicarModeladoDeFoto, prepararFotoAdjun
 import { primerArchivoDeImagen, validarArchivoFoto } from "@/lib/globos3d/foto-cliente";
 import { DECLARACIONES_ESCENA, NOMBRES_HERRAMIENTAS, aplicarHerramienta } from "@/lib/globos3d/herramientas-escena";
 import { MODELAR_DESDE_FOTO } from "@/lib/globos3d/herramientas-escena-foto";
+import { SINONIMOS_DE_FONDO, idDeFondoConocido } from "@/lib/globos3d/fondos-sinonimos";
 import { LecturaFotoSchema, type LecturaFoto } from "@/lib/globos3d/lectura-foto";
 import { ErrorLecturaFoto, costeFlashUsd, esquemaLecturaParaGemini, leerFotoConIA, validarLectura, type Generacion, type PeticionLectura } from "@/lib/globos3d/leer-foto-ia";
 import { compararLecturas, distanciaTrazos, familiaDeColor, siluetaDeTrazo } from "@/lib/globos3d/comparar-lecturas";
@@ -125,6 +126,33 @@ await prueba("validarLectura: JSON roto, lectura buena y parcial", () => {
   assert.equal(validarLectura(buena).ok, true);
   const parcial = validarLectura(JSON.stringify({ ...LECTURA, piezas: [LECTURA.piezas[0], { tipo: "x" }] }));
   assert.ok(!parcial.ok && parcial.parcial?.lectura.piezas.length === 1);
+});
+
+await prueba("un id de fondo inventado se corrige o pasa a «otro» sin gastar la segunda lectura", async () => {
+  const fondo = { tipo: "fondo", id: "Mesa de Postres", x: 0.3, yBase: 0.9, ancho: 0.3, alto: 0.2, colores: [{ nombre: "blanco", hex: "#ffffff", peso: 100, acabado: "mate" }] };
+  const raro = { ...fondo, id: "carroza_de_cenicienta", x: 0.7, texto: "Asher" };
+  const otroRaro = { ...fondo, id: "globo_gigante_de_unicornio", x: 0.9 };
+  const g = generador([JSON.stringify({ ...LECTURA, piezas: [...LECTURA.piezas, fondo, raro, otroRaro] })]);
+  const r = await leerFotoConIA(FOTO, { generar: g.generar });
+  assert.equal(r.intentos, 1, "no hubo segunda lectura");
+  assert.equal(g.peticiones.length, 1);
+  assert.deepEqual(r.descartadas, []);
+  const nuevas = r.lectura.piezas.slice(LECTURA.piezas.length);
+  assert.equal(nuevas.length, 3);
+  assert.equal(nuevas[0]!.tipo === "fondo" && nuevas[0]!.id, "mesa_postres");
+  assert.ok(nuevas[1]!.tipo === "otro" && /carroza_de_cenicienta/.test(nuevas[1]!.descripcion) && /Asher/.test(nuevas[1]!.descripcion));
+  assert.ok(nuevas[2]!.tipo === "otro" && /globo_gigante_de_unicornio/.test(nuevas[2]!.descripcion));
+  const v = validarLectura(JSON.stringify({ ...LECTURA, piezas: [...LECTURA.piezas, fondo, raro, otroRaro] }));
+  assert.ok(v.ok && v.correcciones.length === 3, JSON.stringify(v.correcciones));
+});
+await prueba("los ids de fondo del catálogo y los ya correctos no se tocan", () => {
+  assert.equal(idDeFondoConocido("mesa_mantel"), "mesa_mantel");
+  assert.equal(idDeFondoConocido("Pedestal"), "pedestales");
+  assert.equal(idDeFondoConocido("Alfombra"), "alfombra_redonda");
+  assert.equal(idDeFondoConocido("Cortina con luces"), "cortina_luces");
+  assert.equal(idDeFondoConocido("nada_que_ver"), null);
+  for (const destino of Object.values(SINONIMOS_DE_FONDO)) assert.ok(idDeFondoConocido(destino) === destino, `el sinónimo apunta a «${destino}», que no existe`);
+  assert.equal(validarLectura(buena).ok && validarLectura(buena).correcciones.length, 0);
 });
 
 console.log("Foto → escena");

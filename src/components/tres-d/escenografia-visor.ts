@@ -4,7 +4,7 @@ import type { SolidoEscenografia } from "@/lib/globos3d/escenografia";
 import { geometriaFoil } from "./impresos-visor";
 import { ejePanel, lentejuelasDePanel } from "./lentejuelas-instanciadas";
 import { materialEscenografia } from "./materiales-visor";
-import { calcoMotivo } from "./motivos-utileria";
+import { crearMotivosVisor } from "./motivos-utileria";
 import { crearTexturaPluma, geometriaPluma, materialPluma } from "./pampa-visor";
 import { crearRotulosVisor, type OpcionesRotulos } from "./rotulo-visor";
 
@@ -68,6 +68,7 @@ export function crearEscenografiaVisor(entorno: () => THREE.Texture, opcionesRot
   const materiales = new Map<string, THREE.Material>();
   const geometrias = new Map<string, THREE.BufferGeometry>();
   const rotulos = crearRotulosVisor(entorno, opcionesRotulos);
+  const motivos = crearMotivosVisor();
   let tableroInvisible: THREE.Material | null = null;
   let texturaPampa: THREE.Texture | null = null;
 
@@ -136,7 +137,7 @@ export function crearEscenografiaVisor(entorno: () => THREE.Texture, opcionesRot
     if (letras) malla.add(letras);
     // Lo impreso (calavera, «Happy Halloween», lunares…) de la utilería de fiesta, como calcomanía en su cara. El neón se dibuja con la letra de
     // los rótulos: hasta que llegue (el visor rehace la pieza entonces) no hay calcomanía, y no se dibuja con otra letra.
-    const calco = s.motivo?.estilo === "neon" && !rotulos.letraLista() ? null : calcoMotivo(s);
+    const calco = s.motivo?.estilo === "neon" && !rotulos.letraLista() ? null : motivos.calco(s);
     if (calco) malla.add(calco);
     if (s.forma === "caja" && s.acabado === "lentejuelas") {
       const eje = ejePanel(s.tamano);
@@ -177,6 +178,7 @@ export function crearEscenografiaVisor(entorno: () => THREE.Texture, opcionesRot
       for (const m of materiales.values()) m.dispose();
       for (const g of geometrias.values()) g.dispose();
       rotulos.liberar();
+      motivos.liberar();
       tableroInvisible?.dispose();
       tableroInvisible = null;
       texturaPampa?.dispose();

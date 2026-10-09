@@ -4,6 +4,7 @@ import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { paraGoogleSchema } from "@/lib/ia/nucleo/esquema-google";
 import { registrarGemini, resultadoTelemetria } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { decidir } from "@/lib/registro/servidor";
+import { corregirFondosLeidos } from "./fondos-sinonimos";
 import { ESQUEMA_LECTURA_FOTO, LecturaFotoSchema, PiezaLeidaSchema, type LecturaFoto } from "./lectura-foto";
 import { PEDIDO_LECTURA, construirPromptLectura } from "./prompt-lectura-foto";
 
@@ -98,26 +99,29 @@ export function esquemaLecturaParaGemini(): Record<string, unknown> {
 
 const textoDeIssues = (error: z.ZodError) => error.issues.slice(0, 8).map((i) => `${i.path.join(".") || "(raíz)"}: ${i.message}`).join("; ");
 
-export type Validacion = { ok: true; lectura: LecturaFoto } | { ok: false; error: string; parcial: { lectura: LecturaFoto; descartadas: string[] } | null };
+/** `correcciones`: los ids de fondo inventados que se arreglaron antes de validar (`fondos-sinonimos.ts`), para el registro. */
+export type Validacion = { ok: true; lectura: LecturaFoto; correcciones: string[] } | { ok: false; error: string; correcciones: string[]; parcial: { lectura: LecturaFoto; descartadas: string[] } | null };
 
 /** La lectura del texto del modelo; si falla, el motivo y, si hay piezas buenas, la lectura parcial con las descartadas. */
 export function validarLectura(texto: string): Validacion {
-  let crudo: unknown;
-  try { crudo = JSON.parse(texto); } catch (e) { return { ok: false, error: `La respuesta no es JSON válido (${e instanceof Error ? e.message : String(e)}).`, parcial: null }; }
+  let sinCorregir: unknown;
+  try { sinCorregir = JSON.parse(texto); } catch (e) { return { ok: false, error: `La respuesta no es JSON válido (${e instanceof Error ? e.message : String(e)}).`, correcciones: [], parcial: null }; }
+  // Un id de fondo inventado no justifica una segunda lectura entera: se mapea a un sinónimo o la pieza pasa a «otro».
+  const { crudo, correcciones } = corregirFondosLeidos(sinCorregir);
   const completo = LecturaFotoSchema.safeParse(crudo);
-  if (completo.success) return { ok: true, lectura: completo.data };
+  if (completo.success) return { ok: true, lectura: completo.data, correcciones };
   const error = textoDeIssues(completo.error);
   const piezas = typeof crudo === "object" && crudo !== null && Array.isArray((crudo as { piezas?: unknown }).piezas) ? (crudo as { piezas: unknown[] }).piezas : null;
-  if (!piezas) return { ok: false, error, parcial: null };
+  if (!piezas) return { ok: false, error, correcciones, parcial: null };
   const cabecera = LecturaFotoSchema.omit({ piezas: true }).safeParse(crudo);
-  if (!cabecera.success) return { ok: false, error, parcial: null };
+  if (!cabecera.success) return { ok: false, error, correcciones, parcial: null };
   const buenas: LecturaFoto["piezas"] = [], descartadas: string[] = [];
   piezas.forEach((p, i) => {
     const r = PiezaLeidaSchema.safeParse(p);
     if (r.success) buenas.push(r.data);
     else descartadas.push(`Pieza ${i + 1} (${typeof p === "object" && p !== null && "tipo" in p ? String((p as { tipo: unknown }).tipo) : "?"}): ${textoDeIssues(r.error)}`);
   });
-  return { ok: false, error, parcial: buenas.length ? { lectura: { ...cabecera.data, piezas: buenas.slice(0, 30) }, descartadas } : null };
+  return { ok: false, error, correcciones, parcial: buenas.length ? { lectura: { ...cabecera.data, piezas: buenas.slice(0, 30) }, descartadas } : null };
 }
 
 // ----------------------------------------------------------------------------------------------------------
@@ -182,7 +186,7 @@ export async function leerFotoConIA(foto: FotoLectura, opciones: OpcionesLectura
     const validada = validarLectura(g.texto);
     decidir("modelo:lectura_foto", validada.ok ? "lectura de la foto válida" : "lectura de la foto con errores de esquema", {
       intento, ok: validada.ok, error: validada.ok ? null : corto(validada.error, 400), tokens: g.uso, costeEstimadoUsd: costeFlashUsd(g.uso), modelo: MODELO_CHAT, finishReason: g.finishReason ?? null,
-      piezas: validada.ok ? validada.lectura.piezas.map((p) => p.tipo) : null,
+      piezas: validada.ok ? validada.lectura.piezas.map((p) => p.tipo) : null, ...(validada.correcciones.length ? { fondosCorregidos: validada.correcciones } : {}),
     }, { entrada: { bytesFoto: foto.bytes.byteLength, mime: foto.mime } });
     if (validada.ok) return { lectura: validada.lectura, descartadas: [], uso, costeEstimadoUsd: costeFlashUsd(uso), intentos: intento, modelo: MODELO_CHAT };
     ultimo = validada;

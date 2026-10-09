@@ -621,6 +621,8 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
   const sala = [
     paredes.length ? (mostrar.laterales ? `${tonoEnIngles(tonos.paredes)} ${paredes.join(" and ")} walls` : conArticulo(`${tonoEnIngles(tonos.paredes)} back wall`)) : "",
     mostrar.piso ? conArticulo(escena.sala.ambiente?.piso === "madera" ? `${tonoEnIngles(tonos.piso)} wooden plank floor` : `${tonoEnIngles(tonos.piso)} floor`) : "",
+    // El visor solo dibuja la ventana (en la pared derecha) con las paredes laterales.
+    escena.sala.ambiente?.ventana && mostrar.laterales ? "a tall window with bright daylight on the right side wall" : "",
     mostrar.techo ? conArticulo(escena.sala.ambiente?.luces ? `${tonoEnIngles(tonos.techo)} ceiling with recessed lights` : `${tonoEnIngles(tonos.techo)} ceiling`) : "",
   ].filter(Boolean);
   const ambiente = escena.sala.ambiente;

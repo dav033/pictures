@@ -3,6 +3,7 @@ import { coloresDe, coloresPorEscalonDe, dominanteDe, indiceDeDetectado } from "
 import { ejeMedido, globosDe, largosDelEje, mediana, normalEnPunto, percentil, proyectar, r3, type CajaDetectada, type Globo, type P } from "./medir-geometria";
 import { medirTamanos, repartoDe } from "./medir-tamanos";
 import type { Escalon } from "./mezcla-lectura";
+import { FONDOS_CON_SUPERFICIE } from "./fondos-familias";
 import { medirFondos, type FondoDetectado } from "./medir-fondos";
 
 export type { FondoDetectado } from "./medir-fondos";
@@ -189,8 +190,6 @@ function dentroDeOtraPieza(g: Globo, p: PiezaLeida, aspecto: number): boolean {
   }
 }
 
-/** Los fondos que se paran en el piso: lo que hay sobre ellos (dulces, globos sueltos) no es de la guirnalda. */
-const FONDOS_DE_PISO: ReadonlySet<string> = new Set(["mesa_mantel", "pedestales", "tapete_redondo"]);
 /** Una caja detectada es el propio fondo (y no un globo) si se le parece tanto como esto (IoU). */
 const IOU_ES_EL_FONDO = 0.3;
 
@@ -202,7 +201,7 @@ function esDeUnFondo(g: Globo, p: PiezaLeida, aspecto: number): boolean {
   const dentro = Math.max(0, Math.min(f.x1, b.x1) - Math.max(f.x0, b.x0)) * Math.max(0, Math.min(f.y1, b.y1) - Math.max(f.y0, b.y0));
   const union = (f.x1 - f.x0) * (f.y1 - f.y0) + g.w * g.h - dentro;
   if (union > 0 && dentro / union >= IOU_ES_EL_FONDO) return true;
-  return FONDOS_DE_PISO.has(p.id) && g.x >= f.x0 && g.x <= f.x1 && g.y >= f.y0 && g.y <= f.y1;
+  return FONDOS_CON_SUPERFICIE.has(p.id) && g.x >= f.x0 && g.x <= f.x1 && g.y >= f.y0 && g.y <= f.y1;
 }
 
 // ----------------------------------------------------------------------------------------------------------

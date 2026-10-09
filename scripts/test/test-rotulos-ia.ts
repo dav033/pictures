@@ -97,7 +97,7 @@ prueba("ver_escena dice el texto, su material, su color y su tamaño; FLUX recib
   const b = herramienta(a.escena, "agregar_mobiliario", { id: "rotulo_acrilico", texto: "Isabella", colores: ["dorado"] });
   assert.match(escenaEnIngles(b.escena, armarEscena(b.escena)), /gold \(#D6B25A\) cursive mirror acrylic cut-out lettering "Isabella"/);
   const panel = herramienta(vacia(), "agregar_mobiliario", { id: "panel_redondo", texto: "Hola", acabado_texto: "acrilico_mate" });
-  assert.match(escenaEnIngles(panel.escena, armarEscena(panel.escena)), /round backdrop panel, with [^,]*cursive matte acrylic cut-out lettering "Hola" on it/);
+  assert.match(escenaEnIngles(panel.escena, armarEscena(panel.escena)), /round backdrop panel in [^,]*, with [^,]*cursive matte acrylic cut-out lettering "Hola" on it/);
   assert.match(herramienta(panel.escena, "ver_escena", {}).resumen, /Panel redondo[^\n]*texto "Hola" en acrílico mate/);
 });
 

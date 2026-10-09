@@ -13,12 +13,18 @@ import { fraccionesDe } from "./zonas-organicas";
  *
  * - Por escalón (`coloresPorEscalon`): cada color va con el peso de ese escalón y solo en sus formatos; los formatos de los
  *   escalones sin reparto propio llevan los pesos de la pieza.
- * - Por tramo (`dominante` de un punto): en ese trecho del recorrido el color dominante suma otro tanto como todo el resto
- *   junto (queda en ~2/3 de los globos del trecho).
+ * - Por tramo (`dominante` de un punto): en ese trecho del recorrido el color dominante pesa `DOMINANTE_VECES` el resto
+ *   junto (~85 % de los globos del trecho): las fotos con zonas casi puras (blanco → nude → vino → salvia) no llevan cada color en
+ *   todas partes.
+ * - Precedencia entre el color del tramo y el del escalón: si la lectura da colores propios a los CHICOS, esos globos conservan SU
+ *   color (el escalón manda: «los chicos, todos plateados») y el color del tramo manda en el resto de formatos. Los demás escalones
+ *   con colores propios (gigantes, grandes) compiten con el del tramo, que pesa 5 veces más.
  */
 
 const r0 = (n: number) => Math.round(n);
 const FAMILIA_ACABADO: Readonly<Record<ColorLeido["acabado"], string>> = { mate: "", brillante: "", cromado: "reflex", perla: "silk", cristal: "cristal", confeti: "cristal" };
+/** Cuánto pesa el color dominante de un tramo frente a todo el resto de la paleta en ese tramo (5 → ~85 % de sus globos). */
+export const DOMINANTE_VECES = 5;
 const CRISTAL = "390";
 const FORMATOS_ORGANICOS: readonly string[] = ["R-36", "R-24", "R-18", "R-12", "R-9", "R-5"];
 const FORMATOS_CRISTAL: readonly string[] = ["R-12", "R-18", "R-24"];
@@ -114,15 +120,17 @@ export function paletaDeLectura(p: PiezaConColores, altoImagenCm: number, notas:
   const conDominantes = Boolean(p.puntos?.some((q) => q.dominante));
   if (!porEscalon.length && !conDominantes) return coloresOrganicos(p.colores, notas);
   const codigos = p.colores.map((c) => codigoDeColor(c, ["R-12"], notas));
+  const formatosDe = formatosDeEscalones(p.mezcla, altoImagenCm);
+  // Los chicos con colores propios no admiten el del tramo (ver arriba).
+  const formatosDelTramo = porEscalon.some((e) => e.escalon === "chicos") ? FORMATOS_ORGANICOS.filter((f) => !formatosDe.chicos.includes(f)) : null;
   const salida: ColorOrganico[] = [];
   const empujar = (x: ColorOrganico | null) => { if (x) salida.push(x); };
   if (porEscalon.length) {
-    const formatos = formatosDeEscalones(p.mezcla, altoImagenCm);
-    const propios = new Set(porEscalon.flatMap((e) => formatos[e.escalon]));
+    const propios = new Set(porEscalon.flatMap((e) => formatosDe[e.escalon]));
     const resto = FORMATOS_ORGANICOS.filter((f) => !propios.has(f));
     p.colores.forEach((c, k) => empujar(entrada(c, codigos[k]!, c.peso, resto)));
     // Cada escalón, con el color resuelto en SU formato (el Reflex Dorado no se fabrica en 36": ahí va el Metal Dorado).
-    for (const e of porEscalon) p.colores.forEach((c, k) => empujar(entrada(c, formatos[e.escalon].length === 1 ? codigoDeColor(c, formatos[e.escalon], notas) : codigos[k]!, e.pesos[k] ?? 0, formatos[e.escalon])));
+    for (const e of porEscalon) p.colores.forEach((c, k) => empujar(entrada(c, formatosDe[e.escalon].length === 1 ? codigoDeColor(c, formatosDe[e.escalon], notas) : codigos[k]!, e.pesos[k] ?? 0, formatosDe[e.escalon])));
   } else {
     salida.push(...coloresOrganicos(p.colores, notas));
   }
@@ -135,7 +143,7 @@ export function paletaDeLectura(p: PiezaConColores, altoImagenCm: number, notas:
       const k = indiceDeColor(p.colores, q.dominante);
       if (k < 0) { notas.push(`El color dominante «${q.dominante}» no está entre los colores de la pieza.`); return; }
       const desde = i === 0 ? 0 : (fr[i - 1]! + fr[i]!) / 2, hasta = i === fr.length - 1 ? 1 : (fr[i]! + fr[i + 1]!) / 2;
-      const base = entrada(p.colores[k]!, codigos[k]!, total, null);
+      const base = entrada(p.colores[k]!, codigos[k]!, total * DOMINANTE_VECES, formatosDelTramo);
       if (base) salida.push({ ...base, franjas: [{ desde: Math.round(desde * 1000) / 1000, hasta: Math.round(hasta * 1000) / 1000 }] });
     });
   }

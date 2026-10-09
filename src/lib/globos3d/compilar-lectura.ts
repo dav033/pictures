@@ -13,7 +13,7 @@ import { PROFUNDIDAD_DE_LA_FOTO_CM } from "./proyeccion-foto";
 import { columnaClasica } from "./escenas-presets";
 import { decoracionPredefinida } from "./figuras";
 import { reemplazarColor } from "./recolorear";
-import { arcosChiara, cortina, letrero, mediaLuna, panelRedondo, pedestales } from "./fondos-escenografia";
+import { arcosChiara, cortina, entradaDeCatalogo, letrero, mediaLuna, panelRedondo, pedestales } from "./fondos-escenografia";
 import { mesaConMantel, paredLentejuelas, tapete } from "./escenografia";
 import { conTextoPieza } from "./mobiliario-pieza";
 import { acabadoRotuloLeido, avisoDeTexto, limpiarTexto } from "./rotulos";
@@ -45,6 +45,22 @@ const r1 = (n: number) => Math.round(n * 10) / 10;
 const FOIL_DELANTE_DE_LA_PARED_CM = 60;
 /** Los fondos de la lectura que admiten un nombre en cursiva (el letrero conserva su texto impreso). */
 const ADMITEN_ROTULO = new Set(["panel_redondo", "arcos_chiara", "lentejuelas"]);
+
+/**
+ * ¿El fondo se para en el piso por delante de la pared (muebles, pedestales, mesa, tapete)? Los paneles y la pared de lentejuelas
+ * (de piso, pegados a la pared) fijan la escala de la foto y los de la pared o el aire no tienen pie en el piso.
+ */
+/** Hasta este retiro (cm) un mueble es un telón pegado a la pared (marco con tela, aros, arco metálico, biombo): no avanza hacia la cámara. */
+const RETIRO_DE_TELON_CM = 40;
+
+function seApoyaEnElPiso(q: Extract<PiezaLeida, { tipo: "fondo" }>): boolean {
+  const e = entradaDeCatalogo(q.id);
+  if (!e || e.lugar !== "piso" || e.flotaCm !== undefined) return false;
+  // Un telón (poco retiro) va contra la pared aunque su pie se vea más abajo: la profundidad del pie solo vale para lo que
+  // se para delante (pedestales, mesas, sillas).
+  if (e.retiroCm !== undefined && e.retiroCm <= RETIRO_DE_TELON_CM) return false;
+  return e.clase === "mueble" || e.retiroCm !== undefined;
+}
 
 const SILUETA_COLUMNA: Readonly<Record<string, SiluetaTrazo>> = { recta: "columna_recta", racimos: "columna_racimos", s: "columna_s", inclinada: "columna_inclinada" };
 
@@ -213,9 +229,14 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         return;
       }
       case "fondo": {
-        const medidaDe = (q: typeof p): MedidaLeida => ({ anchoCm: cm(q.ancho), altoCm: cm(q.alto), xCm: X(q.x), yBaseCm: Y(q.yBase), muroZ: muro });
+        const medidaDe = (q: typeof p): MedidaLeida => {
+          // Lo apoyado en el piso cuyo pie se ve más abajo que la línea del piso está más cerca de la cámara: se ve más grande de lo que es.
+          const { delanteCm, factor } = seApoyaEnElPiso(q) ? profundidadEnElPiso(l, q.yBase) : { delanteCm: 0, factor: 1 };
+          return { anchoCm: r1(cm(q.ancho) * factor), altoCm: r1(cm(q.alto) * factor), xCm: r1(X(q.x) * factor), yBaseCm: Y(q.yBase), muroZ: muro, ...(delanteCm > 0 ? { zFrenteCm: muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm } : {}) };
+        };
+        const medida = medidaDe(p);
         const mesas = l.piezas.flatMap((q) => (q.tipo === "fondo" ? [mesaLeida(q, medidaDe(q))] : [])).filter((m): m is MesaLeida => m !== null);
-        const muebles = mobiliarioLeido(p, medidaDe(p), notas, mesas);
+        const muebles = mobiliarioLeido(p, medida, notas, mesas);
         if (muebles) { for (const m of muebles) poner(m.base, m.nombre, m.pieza, m.colocacion); return; }
         // Los colores del fondo son solo `colores`; las letras traen su color y su acabado aparte (colorTexto, acabadoTexto).
         const tinta = p.texto ? tintaLeida(p, notas) : undefined;
@@ -224,7 +245,9 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         if (avisoTexto) notas.push(`${p.id.replace(/_/g, " ")}: ${avisoTexto}`);
         // El letrero imprime su texto en una línea y su nombre lo cita como dato (nunca el texto crudo en una frase).
         const textoLetrero = p.id === "letrero" && p.texto ? limpiarTexto(p.texto, 1) : "";
-        const a = cm(p.alto), w = cm(p.ancho), y0 = Y(p.yBase);
+        const a = medida.altoCm, w = medida.anchoCm, y0 = Y(p.yBase);
+        // Dónde va un fondo de piso: delante de la pared a su retiro o, si su pie se ve más abajo que el piso, en la profundidad que dice ese pie.
+        const zEnElPiso = (retiroCm: number, fondoCm: number) => (medida.zFrenteCm !== undefined ? r0(medida.zFrenteCm - fondoCm / 2) : muro + retiroCm);
         let elementos: ElementoEscenografia[];
         let lugar: "piso" | "pared" = "piso", z = muro + 5;
         switch (p.id) {
@@ -232,9 +255,9 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
           case "media_luna": elementos = mediaLuna({ diametroCm: a, hex: hex(0) }); break;
           case "arcos_chiara": elementos = arcosChiara({ arcos: p.colores.slice(0, 3).map((c, k) => ({ anchoCm: r0(w * (1 - k * 0.15) / 1.6), altoCm: r0(a * (1 - k * 0.12)), hex: c.hex, xCm: r0((k - 1) * w * 0.12) })) }); break;
           case "lentejuelas": elementos = [paredLentejuelas({ anchoCm: w, altoCm: a, hex: hex(0) })]; break;
-          case "pedestales": z = muro + 120; elementos = pedestales({ cilindros: p.colores.map((c, k) => ({ diametroCm: r0(Math.max(30, w / Math.max(1, p.colores.length) - 4)), altoCm: r0(a * (0.7 + 0.15 * k)), hex: c.hex, acabado: c.acabado === "cromado" ? "metal" as const : "satinado" as const })) }); break;
-          case "mesa_mantel": z = muro + 120; elementos = mesaConMantel({ anchoCm: w, fondoCm: 75, altoCm: Math.min(110, Math.max(60, a)), mantel: hex(0) }); break;
-          case "tapete_redondo": z = muro + 160; elementos = tapete({ anchoCm: w, fondoCm: r0(w * 0.7), hex: hex(0) }); break;
+          case "pedestales": { const diametroCm = r0(Math.max(30, w / Math.max(1, p.colores.length) - 4)); z = zEnElPiso(120, diametroCm); elementos = pedestales({ cilindros: p.colores.map((c, k) => ({ diametroCm, altoCm: r0(a * (0.7 + 0.15 * k)), hex: c.hex, acabado: c.acabado === "cromado" ? "metal" as const : "satinado" as const })) }); break; }
+          case "mesa_mantel": z = zEnElPiso(120, 75); elementos = mesaConMantel({ anchoCm: w, fondoCm: 75, altoCm: Math.min(110, Math.max(60, a)), mantel: hex(0) }); break;
+          case "tapete_redondo": z = zEnElPiso(160, r0(w * 0.7)); elementos = tapete({ anchoCm: w, fondoCm: r0(w * 0.7), hex: hex(0) }); break;
           case "cortina_luces": lugar = "pared"; elementos = cortina({ anchoCm: w, altoCm: a, hex: hex(0), luces: true }); break;
           default: lugar = "pared"; elementos = letrero({ texto: textoLetrero, anchoCm: w, altoCm: a, hex: hex(0), tinta: tinta ?? hex(1) });
         }
@@ -242,7 +265,7 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         // Un nombre sobre un panel, un arco o la pared de lentejuelas: el texto leído es su rótulo, con el color y el acabado que se leyeron en las letras (sin color, el que se lee sobre el fondo).
         const pieza = p.texto && ADMITEN_ROTULO.has(p.id) && sinRotulo.tipo === "escenografia" ? conTextoPieza(sinRotulo, { texto: p.texto, acabado: acabadoRotuloLeido(p.acabadoTexto), ...(tinta ? { color: tinta } : {}) }) : sinRotulo;
         poner(p.id.replace(/_/g, "-"), textoLetrero ? `Letrero ${JSON.stringify(textoLetrero)}` : p.id.replace(/_/g, " "), pieza,
-          lugar === "pared" ? { en: "pared", pared: "fondo", aLoLargoCm: X(p.x), alturaCm: p.id === "letrero" ? r0(y0) : 0 } : { en: "piso", xCm: X(p.x), zCm: z, giroGrados: 0 });
+          lugar === "pared" ? { en: "pared", pared: "fondo", aLoLargoCm: X(p.x), alturaCm: p.id === "letrero" ? r0(y0) : 0 } : { en: "piso", xCm: medida.xCm, zCm: z, giroGrados: 0 });
         return;
       }
       case "otro":

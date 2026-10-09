@@ -209,7 +209,7 @@ await prueba("decidirRonda: sigue si hay diferencias significativas y cambios; p
 });
 await prueba("las reglas de la ronda dicen qué comparar, reportar primero, corregir con las herramientas y no inventar", () => {
   const r = reglasDeRonda(2);
-  for (const clave of [REPORTAR_COMPARACION, "mezcla_tamanos", "silueta", "grosor", "colores", "ajustar_tamanos", "NUNCA agregues piezas", "ronda 2 de 2"]) assert.ok(r.includes(clave), clave);
+  for (const clave of [REPORTAR_COMPARACION, "mezcla_tamanos", "silueta", "grosor", "colores", "ajustar_tamanos", "NUNCA agregues piezas", "ronda 2 de 2", "agregar_mobiliario", "cambiar_pieza y texto"]) assert.ok(r.includes(clave), clave);
   assert.ok(MAX_PASOS_REFINAR < 12);
   assert.equal(MAX_RONDAS_REFINAR, 2);
 });

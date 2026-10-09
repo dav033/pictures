@@ -12,11 +12,12 @@
  */
 import assert from "node:assert/strict";
 import { compilarLectura } from "../../src/lib/globos3d/compilar-lectura";
-import { fijosDeAnclas, paletaDeLectura } from "../../src/lib/globos3d/colores-lectura";
+import { codigoDeColor, fijosDeAnclas, paletaDeLectura } from "../../src/lib/globos3d/colores-lectura";
 import { compararLecturas } from "../../src/lib/globos3d/comparar-lecturas";
 import { FONDO_SALA_FOTO_CM, profundidadEnElPiso } from "../../src/lib/globos3d/encuadre-foto";
 import { FOV_FOTO_GRADOS, PROFUNDIDAD_DE_LA_FOTO_CM } from "../../src/lib/globos3d/proyeccion-foto";
 import type { ColorLeido, LecturaFoto, MezclaLeida, PiezaLeida } from "../../src/lib/globos3d/lectura-foto";
+import { armarEscena } from "../../src/lib/globos3d/escena";
 import { globosPorFormatoDe } from "../../src/lib/globos3d/mezcla-escena";
 import { lineaDePiezaLeida } from "../../src/lib/globos3d/modelar-desde-foto";
 import { piezaConMezcla } from "../../src/lib/globos3d/relleno-por-mezcla";
@@ -140,6 +141,52 @@ prueba("el color dominante de un punto va solo en su tramo del recorrido", () =>
   assert.ok(paleta.filter((c) => !c.franjas?.length).length >= 2, "la paleta de la pieza sigue entera");
 });
 
+const colorMate = (nombre: string, hex: string, acabado: ColorLeido["acabado"] = "mate"): ColorLeido => ({ nombre, hex, peso: 20, acabado });
+const CUATRO_ZONAS = [colorMate("blanco", "#F5F5F5"), colorMate("nude", "#d9b8a0"), colorMate("azul marino", "#1d2b5c"), colorMate("verde salvia", "#9caf88")];
+const PLATEADO = colorMate("plateado", "#c0c0c0", "cromado");
+/** Una guirnalda recta de punta a punta en cuatro zonas casi puras (dos puntos por zona), con o sin los chicos todos plateados. */
+const guirnaldaEnZonas = (conChicosPlateados: boolean) => {
+  const dominantes = CUATRO_ZONAS.flatMap((c) => [c.nombre, c.nombre]);
+  const puntos = dominantes.map((dominante, i) => ({ x: 0.1 + (i * 0.8) / 7, y: 0.3, grosor: 0.18, dominante }));
+  const mezcla: MezclaLeida = { gigantes: 5, grandes: 25, medianos: 50, chicos: 20, diametroGigante: 0.25, diametroGrande: 0.13, diametroMediano: 0.09, diametroChico: 0.05, formatoGigante: "R-36", formatoGrande: "R-18", formatoMediano: "R-12", formatoChico: "R-5" };
+  const colores = conChicosPlateados ? [...CUATRO_ZONAS, PLATEADO] : CUATRO_ZONAS;
+  return lectura([{ tipo: "guirnalda_organica", puntos, tamanos: {}, racimos: 0.3, colores, mezcla, ...(conChicosPlateados ? { coloresPorEscalon: [{ escalon: "chicos" as const, pesos: [0, 0, 0, 0, 100] }] } : {}) }], { aspecto: 2.2, escala: { altoImagenCm: 400, referencia: "prueba" } });
+};
+/** Los globos del trecho central (70 %) de cada cuarta parte del largo, con el código del color de esa zona. */
+function globosPorZona(globos: ReadonlyArray<{ nudo: { x: number }; formatoId: string; codigo: string }>) {
+  const xs = globos.map((b) => b.nudo.x), minimo = Math.min(...xs), maximo = Math.max(...xs);
+  return CUATRO_ZONAS.map((c, z) => {
+    const desde = z / 4 + 0.075, hasta = (z + 1) / 4 - 0.075;
+    return { esperado: codigoDeColor(c, ["R-12"], []), globos: globos.filter((b) => { const f = (b.nudo.x - minimo) / (maximo - minimo); return f >= desde && f <= hasta; }) };
+  });
+}
+
+prueba("en un tramo con color dominante, al menos el 75 % de sus globos llevan ese color (la guirnalda compilada en cuatro zonas)", () => {
+  const globos = armarEscena(compilarLectura(guirnaldaEnZonas(false)).escena).porNodo[0]!.globos;
+  assert.ok(globos.length >= 50, `${globos.length} globos`);
+  for (const { esperado, globos: deZona } of globosPorZona(globos)) {
+    assert.ok(deZona.length >= 12, `${deZona.length} globos en la zona`);
+    const con = deZona.filter((b) => b.codigo === esperado).length / deZona.length;
+    assert.ok(con >= 0.75, `zona ${esperado}: ${(con * 100).toFixed(0)} %`);
+  }
+});
+
+prueba("precedencia: los chicos con color propio por escalón lo conservan y el color del tramo manda en el resto", () => {
+  const globos = armarEscena(compilarLectura(guirnaldaEnZonas(true)).escena).porNodo[0]!.globos;
+  const chicos = globos.filter((b) => b.formatoId === "R-5");
+  assert.ok(chicos.length >= 8, `${chicos.length} chicos`);
+  assert.equal(new Set(chicos.map((b) => b.codigo)).size, 1, "todos los chicos del mismo color");
+  assert.equal(chicos[0]!.codigo, codigoDeColor(PLATEADO, ["R-5"], []));
+  for (const { esperado, globos: deZona } of globosPorZona(globos)) {
+    const resto = deZona.filter((b) => b.formatoId !== "R-5");
+    const con = resto.filter((b) => b.codigo === esperado).length / resto.length;
+    assert.ok(con >= 0.75, `zona ${esperado}: ${(con * 100).toFixed(0)} % del resto`);
+  }
+  const paleta = paletaDeLectura({ colores: [...CUATRO_ZONAS, PLATEADO], mezcla: { gigantes: 5, grandes: 25, medianos: 50, chicos: 20, diametroGigante: 0.25, diametroGrande: 0.13, diametroMediano: 0.09, diametroChico: 0.05, formatoGigante: "R-36", formatoGrande: "R-18", formatoMediano: "R-12", formatoChico: "R-5" }, coloresPorEscalon: [{ escalon: "chicos", pesos: [0, 0, 0, 0, 100] }], puntos: [{ x: 0.1, y: 0.3, dominante: "nude" }, { x: 0.9, y: 0.3 }] }, 300, []);
+  const franja = paleta.find((c) => c.franjas?.length)!;
+  assert.ok(franja.formatos && !franja.formatos.includes("R-5") && franja.formatos.includes("R-12"), JSON.stringify(franja.formatos));
+});
+
 console.log("Notas del lector");
 prueba("lo que el lector anota de una pieza llega a las notas del compilador", () => {
   const l = lectura([{ tipo: "globo", x: 0.5, y: 0.5, diametro: 0.1, en: "aire", colores: [BLANCO], nota: "el color podría ser marfil" }]);
@@ -170,6 +217,10 @@ prueba("cada tipo de pieza leída tiene su línea para el agente", () => {
     assert.ok(linea.length > `${i + 1}) ${p.tipo}: `.length + 2, `${p.tipo}: sin detalle`);
   });
   assert.match(lineaDePiezaLeida(UNA_DE_CADA[2]!, 2, 260), /montón de piso de 52 cm de ancho y 39 cm de alto · dorado cromado 60%, blanco 40%/);
+  const fila: PiezaLeida = { tipo: "fondo", id: "silla_tiffany", x: 0.5, yBase: 0.9, ancho: 0.4, alto: 0.2, cantidad: 6, colores: [DORADO] };
+  assert.match(lineaDePiezaLeida(fila, 0, 260), /silla_tiffany ×6/);
+  const nombre: PiezaLeida = { tipo: "fondo", id: "panel_redondo", x: 0.5, yBase: 0.9, ancho: 0.4, alto: 0.4, texto: "Asher", colorTexto: "negro", acabadoTexto: "cromado", colores: [DORADO] };
+  assert.match(lineaDePiezaLeida(nombre, 0, 260), /panel_redondo «Asher» en negro \((cromado)\)/);
   assert.throws(() => lineaDePiezaLeida({ tipo: "pieza_nueva" } as unknown as PiezaLeida, 0, 260), /sin línea para el agente/);
 });
 
