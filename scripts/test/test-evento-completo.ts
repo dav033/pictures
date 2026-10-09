@@ -80,13 +80,13 @@ prueba("planificar_evento en estilo clásico pone racimos, no ramos de helio", (
 });
 
 prueba("un color que no se fabrica no tumba el evento", () => {
-  const r = boda({ colores: ["azul rey", "plateado"] });
+  const r = boda({ colores: ["terracota", "vino"] });
   assert.equal(zonasDeEscena(r.escena).mesas.length, 15);
   assert.ok(centrosDe(r.escena).length > 0);
 });
 
 prueba("rincón de cumpleaños para 20: centros en sus mesas y un grupito de globos sobre la mesa de postres, sin pista", () => {
-  const e = herramienta(vacia(), "planificar_evento", { tipo_evento: "cumpleanos", alcance: "rincon", invitados: 20, colores: ["rosa", "blanco"] }).escena;
+  const e = herramienta(vacia(), "planificar_evento", { tipo_evento: "cumpleanos", alcance: "rincon", invitados: 20, tematica: "unicornio", colores: ["rosa", "blanco"] }).escena;
   const z = zonasDeEscena(e);
   assert.equal(z.mesas.length, 3);
   assert.equal(z.mesaPrincipal, null);
@@ -100,13 +100,13 @@ prueba("rincón de cumpleaños para 20: centros en sus mesas y un grupito de glo
   apoyados(e); sinHuerfanos(e);
 });
 
-prueba("solo_decoracion no lleva centros ni techo; el salón corporativo, con centros pero sin pista, no lleva techo", () => {
-  const solo = herramienta(vacia(), "planificar_evento", { tipo_evento: "cumpleanos", alcance: "solo_decoracion", colores: ["rosa"] }).escena;
+prueba("solo_decoracion no lleva centros ni techo; el salón corporativo, con centros pero sin pista, no lleva techo de pista", () => {
+  const solo = herramienta(vacia(), "planificar_evento", { tipo_evento: "cumpleanos", alcance: "solo_decoracion", tematica: "unicornio", colores: ["rosa"] }).escena;
   assert.equal(centrosDe(solo).length, 0);
   assert.equal(techos(solo).length, 0);
   const corp = herramienta(vacia(), "planificar_evento", { tipo_evento: "corporativo", invitados: 80 }).escena;
   assert.ok(centrosDe(corp).length > 0);
-  assert.equal(techos(corp).length, 0);
+  assert.ok(techos(corp).every((n) => !/pista/i.test(n.nombre)), "sin pista no hay techo de pista");
 });
 
 prueba("ajustar_salon con más invitados: las mesas nuevas reciben el mismo centro, solas, y el resumen lo dice", () => {

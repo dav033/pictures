@@ -33,7 +33,7 @@ import { type Pieza, type PiezaArmada, type TipoPieza } from "./piezas";
 import { CACHE_ARMADO, alturaDePieza, armadaDe } from "./altura-pieza";
 import { armarEscena, descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo, NOMBRE_PARED, type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoEscena, type ParedSala, type Sala } from "./escena";
 import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
-import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, guirnaldaFeston, piezaNueva } from "./escenas-presets";
+import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, esPlantillaSinTocar, guirnaldaFeston, piezaNueva } from "./escenas-presets";
 import { avisosDeColor } from "./avisos-color-escena";
 import { cambiarMobiliario, resumenDeEscenografia } from "./herramientas-escena-mobiliario";
 import { elementosDeEscenografia } from "./mobiliario-pieza";
@@ -447,7 +447,7 @@ export function resumenEscena(escena: Escena): string {
   const vistas = [s.mostrar.fondo && "pared del fondo", s.mostrar.laterales && "paredes laterales", s.mostrar.techo && "techo", s.mostrar.piso && "piso"].filter(Boolean).join(", ") || "nada";
   const lineas = [
     `Sala ${r0(s.anchoCm)}×${r0(s.fondoCm)}×${r0(s.altoCm)} cm (ancho×fondo×alto): x de −${r0(s.anchoCm / 2)} a ${r0(s.anchoCm / 2)}, z de −${r0(s.fondoCm / 2)} (pared del fondo) a ${r0(s.fondoCm / 2)} (frente). Se ve: ${vistas}.`,
-    escena.nodos.length ? `${escena.nodos.length} piezas:` : "La sala está vacía.",
+    escena.nodos.length ? `${escena.nodos.length} piezas:${esPlantillaSinTocar(escena) ? " (es la PLANTILLA de partida sin tocar: si piden una decoración nueva, se reemplaza)" : ""}` : "La sala está vacía.",
     ...escena.nodos.map((n) => `- ${n.id} · «${n.nombre}» · ${n.pieza.tipo} (${NOMBRE_TIPO[n.pieza.tipo]}) · ${medidasDe(n.pieza)} · colores: ${coloresTexto(n.pieza) || "—"} · ${dondeTexto(n.colocacion, escena, armada)}${copias(n)}${contenidoCompacto(n.pieza, armadaDe)}`),
   ];
   return lineas.join("\n");

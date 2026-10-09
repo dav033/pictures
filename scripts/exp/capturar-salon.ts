@@ -2,7 +2,7 @@
  * Capturas de un salón de eventos (REQ-008) en el taller real, sin cabeza y sin gasto: arma la escena con la herramienta (sin Gemini),
  * la deja guardada en el navegador (la misma clave que usa el taller al abrir /3d) y saca una captura de la página.
  *   npx next dev -p 3022 -H 127.0.0.1     # en otra terminal; con node_modules enlazado Turbopack pide `turbopack.root` en next.config.ts (solo para la captura, sin versionarlo)
- *   NODE_OPTIONS=--use-system-ca npx tsx --conditions=react-server scripts/exp/capturar-salon.ts <carpeta_salida> [url_base]
+ *   NODE_OPTIONS=--use-system-ca npx tsx --conditions=react-server scripts/exp/capturar-salon.ts <carpeta_salida> [url_base] [archivos,separados,por,coma]
  */
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -22,17 +22,22 @@ const aplicar = (e: Escena, nombre: string, args: Record<string, unknown>): Esce
 };
 const vacia = (): Escena => ({ sala: { ...SALA_INICIAL }, nodos: [] });
 
-const boda = aplicar(vacia(), "planificar_evento", { tipo_evento: "boda", invitados: 120, colores: ["blanco", "dorado"] });
+const evento = (args: Record<string, unknown>) => aplicar(vacia(), "planificar_evento", args);
 const escenas: Array<{ archivo: string; escena: Escena }> = [
-  { archivo: "boda-120-blanco-dorado", escena: boda },
-  { archivo: "boda-ajustada-60", escena: aplicar(boda, "ajustar_salon", { invitados: 60 }) },
-  { archivo: "rincon-cumpleanos-20", escena: aplicar(vacia(), "planificar_evento", { tipo_evento: "cumpleanos", invitados: 20, colores: ["rosa", "dorado"] }) },
-  { archivo: "solo-decoracion", escena: aplicar(vacia(), "planificar_evento", { tipo_evento: "boda", alcance: "solo_decoracion", colores: ["blanco", "dorado"] }) },
+  { archivo: "boda-120-blanco-dorado", escena: evento({ tipo_evento: "boda", invitados: 120, colores: ["blanco", "dorado"] }) },
+  { archivo: "rincon-cumpleanos-20", escena: evento({ tipo_evento: "cumpleanos", alcance: "rincon", invitados: 20, colores: ["rosa", "dorado"] }) },
+  { archivo: "solo-decoracion", escena: evento({ tipo_evento: "cumpleanos", alcance: "solo_decoracion", colores: ["rosa", "dorado"] }) },
+  // Variedad: el mismo camino de herramientas con otros temas da otras composiciones (no siempre arco, dos columnas y guirnalda).
+  { archivo: "variedad-safari", escena: evento({ tipo_evento: "baby_shower", alcance: "solo_decoracion", tematica: "safari" }) },
+  { archivo: "variedad-frozen", escena: evento({ tipo_evento: "cumpleanos", alcance: "solo_decoracion", tematica: "Frozen", colores: ["azul", "plateado"] }) },
+  { archivo: "variedad-graduacion", escena: evento({ tipo_evento: "graduacion", alcance: "solo_decoracion", colores: ["azul"], texto: "2026" }) },
+  { archivo: "variedad-halloween", escena: evento({ tipo_evento: "halloween", alcance: "solo_decoracion" }) },
 ];
+const soloEstas = process.argv[4] ? new Set(process.argv[4].split(",")) : null;
 
 async function principal() {
   const navegador = await chromium.launch({ headless: true, args: ["--ignore-gpu-blocklist", "--enable-gpu", "--use-angle=d3d11"] });
-  for (const { archivo, escena } of escenas) {
+  for (const { archivo, escena } of escenas.filter((x) => !soloEstas || soloEstas.has(x.archivo))) {
     const pagina = await navegador.newPage({ viewport: { width: 1500, height: 950 }, deviceScaleFactor: 1 });
     pagina.setDefaultTimeout(120_000);
     pagina.on("console", (m) => { if (m.type() === "error") console.log(`  [consola] ${m.text().slice(0, 160)}`); });

@@ -2,7 +2,7 @@ import type { Escena } from "./escena";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
 import { HERRAMIENTAS_CENTROS } from "./herramientas-escena-centros";
 import { HERRAMIENTAS_TECHO_ZONA } from "./herramientas-escena-techo-zona";
-import type { EstiloSalon } from "./salon-decoracion";
+import { coloresReconocidos, type EstiloSalon } from "./salon-piezas";
 import { anclaDeZona, anotarPieza } from "./salon-registro";
 import { zonasDeEscena, type ZonaSalon } from "./salon-zonas";
 
@@ -12,11 +12,11 @@ import { zonasDeEscena, type ZonaSalon } from "./salon-zonas";
  * adorno de su zona, así que `mover_zona`, `quitar_zona` y `armar_salon` con reemplazar lo llevan o lo quitan con ella.
  * - centros: el mismo diseño en cada mesa de invitados y en la principal (ramo de helio; racimo si el estilo es clásico);
  * - techo `pista`: festones alrededor de la pista de baile, si hay pista; `rincon`: un grupito de globos de helio sobre la mesa
- *   principal o, si no hay, sobre la de postres.
+ *   principal o, si no hay, sobre la de postres; `fondo`: globos de helio sobre el fondo de fotos (la composición «columnas y techo»).
  */
 
-export type TechoDelEvento = "pista" | "rincon" | null;
-export type PedidoZonas = { colores: readonly string[]; estilo: EstiloSalon; techo: TechoDelEvento };
+export type TechoDelEvento = "pista" | "rincon" | "fondo";
+export type PedidoZonas = { colores: readonly string[]; estilo: EstiloSalon; centros: boolean; techos: readonly TechoDelEvento[] };
 
 /** Llama a una herramienta; si falla, dice por qué en las notas y deja la escena como estaba (el salón no se tumba por un adorno). */
 function llamar(escena: Escena, familia: Readonly<Record<string, HerramientaExtra>>, nombre: string, argumentos: unknown, notas: string[]): Escena {
@@ -38,21 +38,26 @@ function centros(escena: Escena, p: PedidoZonas, notas: string[]): Escena {
   return llamar(escena, HERRAMIENTAS_CENTROS, "decorar_mesas", { disenos: [diseno], mesas }, notas);
 }
 
-function techo(escena: Escena, p: PedidoZonas, notas: string[]): Escena {
-  if (!p.techo) return escena;
-  const zona: ZonaSalon | null = p.techo === "pista" ? (anclaDeZona(escena, "pista") ? "pista" : null) : anclaDeZona(escena, "mesa_principal") ? "mesa_principal" : anclaDeZona(escena, "mesa_postres") ? "mesa_postres" : null;
+/** Dónde y cómo va cada techo: la zona que cubre, la herramienta con que se pide y su nombre. */
+const TECHOS: Readonly<Record<TechoDelEvento, { zonas: readonly ZonaSalon[]; pedido: Record<string, unknown> }>> = {
+  pista: { zonas: ["pista"], pedido: { tipo: "festones", margen_cm: 60, nombre: "Techo de la pista de baile" } },
+  rincon: { zonas: ["mesa_principal", "mesa_postres"], pedido: { tipo: "helio", densidad: "baja", margen_cm: 60, nombre: "Techo del rincón" } },
+  fondo: { zonas: ["fondo_fotos"], pedido: { tipo: "helio", densidad: "media", margen_cm: 120, nombre: "Techo del fondo de fotos" } },
+};
+
+function techo(escena: Escena, cual: TechoDelEvento, p: PedidoZonas, notas: string[]): Escena {
+  const { zonas, pedido } = TECHOS[cual];
+  const zona = zonas.find((z) => anclaDeZona(escena, z));
   const ancla = zona && anclaDeZona(escena, zona);
   if (!zona || !ancla) return escena;
-  const colores = p.colores.length ? { colores: [...p.colores] } : {};
-  const pedido = p.techo === "pista"
-    ? { tipo: "festones", sobre_pieza: ancla.nodo.id, margen_cm: 60, nombre: "Techo de la pista de baile", ...colores }
-    : { tipo: "helio", densidad: "baja", sobre_pieza: ancla.nodo.id, margen_cm: 60, nombre: "Techo del rincón", ...colores };
-  const nueva = llamar(escena, HERRAMIENTAS_TECHO_ZONA, "techo_por_zona", pedido, notas);
+  const nueva = llamar(escena, HERRAMIENTAS_TECHO_ZONA, "techo_por_zona", { ...pedido, sobre_pieza: ancla.nodo.id, ...(p.colores.length ? { colores: [...p.colores] } : {}) }, notas);
   const puesta = nueva.nodos.find((n) => !escena.nodos.some((x) => x.id === n.id));
   return puesta ? anotarPieza(nueva, puesta.id, { zona, rol: "adorno" }) : nueva;
 }
 
 /** Pone los centros de mesa y el techo que pide el evento sobre un salón ya armado. */
-export function decorarMesasYTecho(escena: Escena, p: PedidoZonas, notas: string[]): Escena {
-  return techo(centros(escena, p, notas), p, notas);
+export function decorarMesasYTecho(escena: Escena, pedido: PedidoZonas, notas: string[]): Escena {
+  // Un color que no se fabrica se salta (y se avisa) en vez de tumbar los centros y el techo; sin ninguno, las herramientas usan blanco y dorado.
+  const p = { ...pedido, colores: pedido.colores.length ? coloresReconocidos(pedido.colores, notas) : [] };
+  return p.techos.reduce((e, cual) => techo(e, cual, p, notas), p.centros ? centros(escena, p, notas) : escena);
 }

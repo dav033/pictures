@@ -417,3 +417,10 @@ export function escenaPredefinida(id: string): Escena {
   const preset = ESCENAS_PREDEFINIDAS.find((p) => p.id === id) ?? ESCENAS_PREDEFINIDAS[0]!;
   return structuredClone(preset.escena);
 }
+
+/** ¿La escena es una plantilla de partida tal cual, sin que nadie la haya tocado? Así se sabe que se puede reemplazar al diseñar algo nuevo. */
+export function esPlantillaSinTocar(escena: Escena): boolean {
+  if (!escena.nodos.length) return false;
+  const nodos = JSON.stringify(escena.nodos);
+  return ESCENAS_PREDEFINIDAS.some((p) => JSON.stringify(p.escena.nodos) === nodos);
+}
