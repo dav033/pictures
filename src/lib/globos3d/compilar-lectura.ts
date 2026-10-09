@@ -3,7 +3,7 @@ import type { Pieza } from "./piezas";
 import type { ElementoEscenografia } from "./escenografia";
 import { crearEstructura } from "./herramientas-escena-estructuras";
 import { PULGADAS_METALIZADO, PULGADA_CM } from "./metalizados";
-import { floresPedidas } from "./herramientas-escena-trazo";
+import { floresLeidas } from "./herramientas-escena-trazo";
 import { piezaDeGenerador } from "./generadores-organicos";
 import { cajaTrazo, puntosDeSilueta, type SiluetaTrazo } from "./trazo-organico";
 import { formatoPorDiametro, grosorMinimoDePesos, pesosDeLectura, pesosDeTramo, traeMezcla } from "./mezcla-lectura";
@@ -128,7 +128,8 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         const x0 = r1((Math.min(...puntos.map((q) => q.x)) + Math.max(...puntos.map((q) => q.x))) / 2);
         const fijos = fijosDeAnclas(p, H, notas).map((f) => ({ ...f, x: r1(X(f.x) - x0), y: r1(Y(f.y)) }));
         const trazo = { puntos: puntos.map((q) => ({ ...q, x: r1(q.x - x0) })), mezcla: pesos, colores: paletaDeLectura(p, H, notas), racimos: p.racimos, semilla: 11 + i, ...(fijos.length ? { fijos } : {}) };
-        const flores = p.follaje?.length ? floresPedidas(p.follaje) : null;
+        const { flores, notas: notasFollaje } = p.follaje?.length ? floresLeidas(p.follaje) : { flores: null, notas: [] };
+        notas.push(...notasFollaje.map((n) => `Pieza ${i + 1} (guirnalda_organica): ${n}`));
         const largo = puntos.slice(1).reduce((s, q, k) => s + Math.hypot(q.x - puntos[k]!.x, q.y - puntos[k]!.y), 0);
         const huecos = Math.max(4, Math.min(30, r0(largo / 45)));
         const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, flores, huecos, p.mezcla).pieza : piezaDeGenerador({ tipo: "trazo", trazo }, flores, huecos);

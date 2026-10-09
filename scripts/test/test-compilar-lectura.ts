@@ -47,6 +47,20 @@ LecturaFotoSchema.parse(conPampa);
 const floresLeidas = armarEscena(compilarLectura(conPampa).escena).flores;
 assert.ok(floresLeidas.length > 0 && floresLeidas.every((f) => f.tipo === "pampa" && f.hex === FLORES_ARTIFICIALES.pampa.colores.find((c) => c.id === "beige")!.hex), `${floresLeidas.length} flores leídas`);
 
+// Un adorno mal nombrado nunca tira la guirnalda: color plural («pampas doradas»), color que esa flor no trae y follaje inventado.
+for (const [follaje, esperado, notasEsperadas] of [
+  [["pampas doradas"], ["pampa dorada"], 0], [["pampas doradas", "girasol azul"], ["pampa dorada"], 1], [["pampas moradas"], ["pampa beige"], 1], [["girasol"], [], 1],
+] as const) {
+  const lectura = structuredClone(REFERENCIAS_DUENO[0]!.lectura);
+  for (const p of lectura.piezas) if (p.tipo === "guirnalda_organica") p.follaje = [...follaje];
+  LecturaFotoSchema.parse(lectura);
+  const r = compilarLectura(lectura);
+  assert.ok(!r.omitidas.some((o) => /guirnalda_organica/.test(o)), `${follaje.join("+")}: la guirnalda se perdió: ${r.omitidas.join(" | ")}`);
+  const sacadas = new Set(armarEscena(r.escena).flores.map((f) => `${f.tipo} ${FLORES_ARTIFICIALES[f.tipo].colores.find((c) => c.hex === f.hex)!.id}`));
+  assert.deepEqual([...sacadas].sort(), [...esperado], follaje.join("+"));
+  assert.equal(r.notas.filter((n) => /Follaje|no viene en/.test(n)).length, notasEsperadas, `${follaje.join("+")}: ${r.notas.join(" | ")}`);
+}
+
 // Colores.
 const notas: string[] = [];
 assert.equal(codigoDeColor({ nombre: "azul marino", hex: "#1d2b5c", peso: 50, acabado: "mate" }, ["R-12"], notas), "044");

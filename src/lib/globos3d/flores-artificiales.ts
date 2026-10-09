@@ -73,8 +73,8 @@ export const FLORES_ARTIFICIALES: Readonly<Record<TipoFlorArtificial, FlorArtifi
   pampa: {
     tipo: "pampa", nombre: "Pampa (plumas)", diametroCm: 52,
     colores: [
+      { id: "beige", nombre: "beige", hex: "#c2a67c" },
       { id: "crema", nombre: "crema", hex: "#e8dcc2" },
-      { id: "beige", nombre: "beige", hex: "#cdb48a" },
       { id: "blanca", nombre: "blanca", hex: "#f6f1e8" },
       { id: "dorada", nombre: "dorada", hex: "#c29d57" },
       { id: "rosa", nombre: "rosa", hex: "#e3b8b0" },
@@ -84,21 +84,44 @@ export const FLORES_ARTIFICIALES: Readonly<Record<TipoFlorArtificial, FlorArtifi
   },
 };
 
+const sinTildes = (t: string) => t.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+
 /** Cómo llaman al follaje en la calle y en las fotos, además del nombre del catálogo (los más largos primero). */
 const ALIAS_FOLLAJE: ReadonlyArray<readonly [string, TipoFlorArtificial]> = [
-  ["pasto de la pampa", "pampa"], ["pasto de pampa", "pampa"], ["hierba de la pampa", "pampa"], ["hierba de pampa", "pampa"], ["pampas grass", "pampa"],
+  ["pasto de la pampa", "pampa"], ["pasto de pampa", "pampa"], ["hierba de la pampa", "pampa"], ["hierba de pampa", "pampa"], ["pampas grass", "pampa"], ["pampa grass", "pampa"],
   ["plumas de pampas", "pampa"], ["plumas de pampa", "pampa"], ["pluma de pampa", "pampa"], ["pampas", "pampa"],
 ];
 
 /** Separa «pasto de la pampa beige» o «palma dorada» en el nombre del follaje (el del catálogo o uno de sus alias) y el color que lo sigue. */
 export function separarFollaje(pedido: string): { tipo: string; resto: string } {
   const texto = pedido.trim().toLowerCase().replace(/\s+/g, " ");
-  const sinTildes = texto.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+  const limpio = sinTildes(texto);
   for (const [alias, tipo] of ALIAS_FOLLAJE) {
-    if (sinTildes === alias || sinTildes.startsWith(`${alias} `)) return { tipo, resto: sinTildes.slice(alias.length).trim() };
+    if (limpio === alias || limpio.startsWith(`${alias} `)) return { tipo, resto: limpio.slice(alias.length).trim() };
   }
-  const [tipo = "", ...resto] = texto.split(" ");
+  const [nombre = "", ...resto] = texto.split(" ");
+  // «rosas», «hortensias», «palmas»…: el plural es el mismo follaje.
+  const tipo = [nombre, nombre.replace(/s$/, ""), nombre.replace(/es$/, "")].find((n) => Object.hasOwn(FLORES_ARTIFICIALES, n)) ?? nombre;
   return { tipo, resto: resto.join(" ") };
+}
+
+/** Cómo llaman a un color de follaje además de su nombre: «natural», «café» y «tostada» son el beige de la pampa. */
+const SINONIMOS_COLOR: Readonly<Record<string, string>> = { natural: "beige", cafe: "beige", marron: "beige", tostada: "beige", arena: "beige", champana: "beige" };
+
+/**
+ * El color de `flor` que nombra `texto`, aunque venga en plural o concordado («doradas», «dorado», «blancas», «rosas», «beiges»,
+ * «natural», «café»); `undefined` si esa flor no viene en ese color.
+ */
+export function colorDeFollaje(flor: FlorArtificial, texto: string): ColorFlor | undefined {
+  const palabra = sinTildes(texto.trim().toLowerCase()).replace(/\s+/g, " ");
+  const claves = new Set<string>();
+  for (const base of [palabra, palabra.replace(/s$/, ""), palabra.replace(/es$/, "")]) {
+    claves.add(base);
+    claves.add(base.replace(/o$/, "a"));
+    const sinonimo = SINONIMOS_COLOR[base];
+    if (sinonimo) claves.add(sinonimo);
+  }
+  return flor.colores.find((c) => claves.has(sinTildes(c.id).replace(/_/g, " ")) || claves.has(sinTildes(c.nombre)));
 }
 
 export type ProporcionFlor = { tipo: TipoFlorArtificial; colorId: string; peso: number };
