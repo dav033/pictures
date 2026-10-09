@@ -294,6 +294,8 @@ export function Taller3D() {
         .map((f) => ({ formato: f, infladoCm: f.infladoDecoracionCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion" }));
       visor.mostrar(fila);
       encuadradoRef.current = null;
+      // Una vista «desde la foto» pendiente no espera: si no se aplica aquí, saltaría después, en otro dibujo.
+      vistaFotoPendiente.current = null;
       return;
     }
     // Si la pieza elegida cuelga de otra, se ven las anclas de esa otra; en el editor solitario, las de la raíz si se piden.
@@ -315,7 +317,7 @@ export function Taller3D() {
       resaltado: solitario.activo && seleccion === solitario.solitario?.raizId ? null : (copiaElegida ? hecho?.puestas[copiaElegida.copia]?.caja : undefined) ?? hecho?.caja ?? null, encuadrar,
     });
     if (encuadrar) setVistaFija("3d");
-    if (vistaVuelta) visor.ponerVistaCamara(vistaVuelta);
+    if (vistaVuelta) { visor.ponerVistaCamara(vistaVuelta); vistaFotoPendiente.current = null; }
     else if (vistaFotoPendiente.current) {
       visor.ponerVistaCamara(vistaDeFoto(vistaFotoPendiente.current, armadaMostrada.sala));
       vistaFotoPendiente.current = null;

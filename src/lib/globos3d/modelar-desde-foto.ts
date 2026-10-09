@@ -58,6 +58,7 @@ export async function modelarDesdeFoto(foto: FotoLectura, deps: DependenciasMode
   const medida = deteccion ? medirConDetecciones(leida.lectura, deteccion.globos, deteccion.fondos) : { lectura: leida.lectura, notas: [] };
   if (deteccion) decidir("regla:foto_medida_con_detecciones", "la lectura de la foto medida con los globos y fondos detectados", { globos: deteccion.globos.length, fondos: deteccion.fondos.length, racimos: deteccion.racimos, notas: medida.notas.length, escalaLeidaCm: leida.lectura.escala.altoImagenCm, escalaMedidaCm: medida.lectura.escala.altoImagenCm });
   const compilada = compilarLectura(medida.lectura);
+  if (compilada.decoracionesOmitidas.length) decidir("regla:foto_decoracion_omitida", "decoraciones de la lectura que no se pudieron armar y se omitieron (la pieza se armó sin ellas)", { decoraciones: compilada.decoracionesOmitidas });
   return {
     escena: compilada.escena, lectura: medida.lectura, notas: [...medida.notas, ...compilada.notas], omitidas: compilada.omitidas, descartadas: leida.descartadas, plantillas, avisos,
     uso: {

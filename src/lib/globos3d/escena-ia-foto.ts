@@ -67,7 +67,7 @@ export async function prepararFotoAdjunta(foto: FotoCuerpo, escena: Escena, deps
   const vacia = escena.nodos.length === 0;
   const armada = vacia ? combinarEscenaDeFoto(escena, modelado.escena, "reemplazar", maxNodos) : null;
   const aplicada = armada !== null;
-  const resumenAccion = aplicada ? `Armé en la escena lo que leí de la foto: ${piezasEnTexto(armada.nodos.length)}${modelado.omitidas.length ? `; ${modelado.omitidas.length} cosas de la foto no son del taller y no se armaron` : ""}.` : null;
+  const resumenAccion = aplicada ? `Armé en la escena lo que leí de la foto: ${piezasEnTexto(armada.nodos.length)}${modelado.omitidas.length ? `; ${modelado.omitidas.length} cosas de la foto no se armaron (no son del taller o no se pudieron armar)` : ""}.` : null;
   const estado = aplicada
     ? `YA SE ARMÓ en la escena (${armada.nodos.map((n) => n.id).join(", ")}). Ya está contra la pared del fondo, a la altura que tiene en la foto: NO la muevas ni cambies su altura aunque el pedido diga «en la pared del fondo».`
     : "NO se aplicó todavía (la sala ya tiene piezas): llama modelar_desde_foto con el modo que pida el usuario. Las piezas quedan contra la pared del fondo, a la altura de la foto.";

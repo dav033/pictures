@@ -123,6 +123,6 @@ export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly Fond
   }
   // Lo detectado que el lector no leyó y va sobre una mesa (los pasteles) se vuelve pieza.
   const sobrantes = fondos.filter((f) => !usados.has(f)).flatMap((f) => { const caja = cajaDeDeteccion(f, aspecto); return caja ? [{ id: f.id, caja }] : []; });
-  const nuevas = fondosSinLeer(sobrantes, aspecto, Math.max(0, MAXIMO_PIEZAS - salida.length));
-  return { piezas: [...salida, ...nuevas.piezas], notas: [...[...notaDe.entries()].sort((a, b) => a[0] - b[0]).map(([, n]) => n), ...nuevas.notas] };
+  const nuevas = fondosSinLeer(sobrantes, aspecto, Math.max(0, MAXIMO_PIEZAS - salida.length), salida);
+  return { piezas: [...salida, ...nuevas.piezas, ...nuevas.otros], notas: [...[...notaDe.entries()].sort((a, b) => a[0] - b[0]).map(([, n]) => n), ...nuevas.notas] };
 }

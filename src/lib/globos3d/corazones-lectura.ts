@@ -47,7 +47,7 @@ export function pilaDeCorazones(n: number): Array<{ x: number; fila: number }> {
  */
 export function corazonesLeidos(p: CorazonLeido, centro: { xCm: number; yCm: number; zCm: number }, notas: string[]): NodoCorazon[] {
   const formato = formatoPorId(FORMATO_CORAZON)!;
-  const codigos = p.colores.map((c) => codigoDeColor(c, ["R-12"], notas));
+  const codigos = p.colores.map((c) => codigoDeColor(c, [FORMATO_CORAZON], notas));
   const coloreados = repartoPorColor(p.colores, p.cantidad).flatMap((n, k) => Array.from({ length: n }, () => codigos[k]!));
   const pila = pilaDeCorazones(p.cantidad);
   const filas = Math.max(...pila.map((q) => q.fila)) + 1;

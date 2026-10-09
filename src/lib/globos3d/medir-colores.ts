@@ -53,6 +53,16 @@ export const ALFA_DOMINANTE = 0.05;
  */
 export const DISTANCIA_MAXIMA_NEUTRO = 15;
 export const DISTANCIA_MAXIMA_METAL = 60;
+/** El tono (grados) de un hex #rrggbb. */
+function tonoDe(hex: string): number {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number];
+  const max = Math.max(r, g, b), croma = max - Math.min(r, g, b);
+  if (croma === 0) return 0;
+  const h = max === r ? ((g - b) / croma) % 6 : max === g ? (b - r) / croma + 2 : (r - g) / croma + 4;
+  return (h * 60 + 360) % 360;
+}
+/** Un cromado es «dorado» (champaña, oro) y no «oro rosa» o plata si su tono cae en el amarillo-naranja. */
+const esTonoDorado = (hex: string) => { const t = tonoDe(hex); return t >= 28 && t <= 62; };
 const PALABRAS_NEUTRAS: ReadonlySet<string> = new Set(["nude", "beige"]);
 
 /** El índice del color de la pieza que corresponde a cada color detectado (memoizado), o -1. */
@@ -64,15 +74,18 @@ export function indiceDeDetectado(colores: readonly ColorLeido[]): (color: strin
     if (c === "transparente") return colores.findIndex((x) => x.acabado === "cristal");
     const hex = (HEX_DE_COLOR_DETECTADO as Readonly<Record<string, string>>)[c];
     if (!hex) return -1;
-    const metal = c === "dorado" && colores.some((x) => x.acabado === "cromado");
-    const limite = metal ? DISTANCIA_MAXIMA_METAL : PALABRAS_NEUTRAS.has(c) ? DISTANCIA_MAXIMA_NEUTRO : DISTANCIA_MAXIMA_COLOR;
-    let mejor = -1, mejorD = Infinity;
-    colores.forEach((x, k) => {
-      if (x.acabado === "confeti" || x.acabado === "cristal" || (metal && x.acabado !== "cromado")) return;
-      const d = distanciaLab(hex, x.hex);
-      if (d < mejorD) { mejorD = d; mejor = k; }
-    });
-    return mejorD <= limite ? mejor : -1;
+    const mejorEntre = (admite: (x: ColorLeido) => boolean, limite: number): number => {
+      let mejor = -1, mejorD = Infinity;
+      colores.forEach((x, k) => {
+        if (x.acabado === "confeti" || x.acabado === "cristal" || !admite(x)) return;
+        const d = distanciaLab(hex, x.hex);
+        if (d < mejorD) { mejorD = d; mejor = k; }
+      });
+      return mejorD <= limite ? mejor : -1;
+    };
+    const normal = mejorEntre(() => true, PALABRAS_NEUTRAS.has(c) ? DISTANCIA_MAXIMA_NEUTRO : DISTANCIA_MAXIMA_COLOR);
+    // El champaña 971 de una guirnalda es «dorado» para el detector aunque su hex quede a 43 del dorado típico: si ningún color se le parece, casa con el cromado más cercano.
+    return normal >= 0 || c !== "dorado" ? normal : mejorEntre((x) => x.acabado === "cromado" && esTonoDorado(x.hex), DISTANCIA_MAXIMA_METAL);
   };
   return (color) => {
     if (!memo.has(color)) memo.set(color, calcular(color));

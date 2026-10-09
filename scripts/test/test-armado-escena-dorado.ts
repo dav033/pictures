@@ -10,6 +10,8 @@
  * La foto se sacó del motor de la rama principal (251c58bd) y no debe cambiar por funciones nuevas que son opcionales.
  * Re-escrita una vez (2026-10-09) por las pasadas de proporciones de la lectura de fotos de main (compilar-lectura: puntas, montones al pie,
  * fondos en el piso, apoyo del racimo, colgado delante): cambiaron 15 nodos de 11 escenas «referencia:…», los mismos con y sin las ramas del salón.
+ * Re-escrita otra vez (2026-10-09, foto del cumpleaños): un telón colgado de la pared (la cortina) cuenta como fondo de lo que cuelga delante: el letrero de
+ * «referencia:dino-jungla-mesa», que estaba pegado a la cortina de luces (mismo plano, tapado), pasa 4 cm adelante (z −250…−248 → −246…−244). Es el único nodo que cambió.
  */
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";

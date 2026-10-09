@@ -286,7 +286,7 @@ export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDe
       piezas[i] = m.pieza;
       notas.push(...m.notas);
     });
-    escala = escalaCorregida(l, escalas, notas, escalaPorMesas(fondos)) ?? l.escala;
+    escala = escalaCorregida(l, escalas, notas, escalaPorMesas(fondos, l.piezas, l.aspecto)) ?? l.escala;
   }
   const valida = LecturaFotoSchema.safeParse({ ...l, escala, piezas });
   if (!valida.success) {

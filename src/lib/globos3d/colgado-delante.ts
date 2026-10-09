@@ -23,9 +23,15 @@ const esEscenografia = (n: NodoEscena) => n.pieza.tipo === "escenografia";
  */
 const esPanelDeFondo = (n: NodoEscena) => n.pieza.tipo === "escenografia" && n.pieza.mueble !== undefined && esTelon(n.pieza.mueble.id);
 
+/**
+ * Un telón colgado de la pared del fondo (la cortina de flecos, la cortina de luces) es también un fondo: lo que cuelga delante de él (el neón) tiene que
+ * verse sobre él. Los letreros con texto no son telón aunque el catálogo los deje contra la pared.
+ */
+const esTelonColgado = (n: NodoEscena) => esPanelDeFondo(n) && n.colocacion.en === "pared" && n.colocacion.pared === "fondo" && !esLetreroConTexto(n) && n.pieza.tipo === "escenografia" && n.pieza.mueble?.id !== "letrero";
+
 export function colgadoDelanteDePaneles(escena: Escena, notas: string[]): Escena {
-  const colgados = escena.nodos.filter((n) => esEscenografia(n) && n.colocacion.en === "pared" && n.colocacion.pared === "fondo");
-  const paneles = escena.nodos.filter((n) => esPanelDeFondo(n) && n.colocacion.en === "piso");
+  const colgados = escena.nodos.filter((n) => esEscenografia(n) && n.colocacion.en === "pared" && n.colocacion.pared === "fondo" && !esTelonColgado(n));
+  const paneles = escena.nodos.filter((n) => (esPanelDeFondo(n) && n.colocacion.en === "piso") || esTelonColgado(n));
   if (!colgados.length || !paneles.length) return escena;
   // Solo la escenografía: armarla es rápido (sin globos) y da las cajas en el mundo.
   const cajas = new Map(armarEscena({ ...escena, nodos: [...colgados, ...paneles] }).porNodo.map((n) => [n.id, n.caja]));

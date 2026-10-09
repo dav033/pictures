@@ -53,6 +53,8 @@ export const FORMATOS_GLOBO: readonly FormatoGlobo[] = [
  */
 export const COLORES_ATESTIGUADOS: Readonly<Record<string, ReadonlyArray<{ codigo: string; fuente: string }>>> = {
   "C-6": [{ codigo: "012", fuente: "Celebra ed. 27, p. 42: Corazón 6 Fashion Fucsia" }],
+  // Decisión del dueño: un solo tamaño de corazón (C-12) y en cualquier color de la paleta. Lo que la tienda no vende como corazón sale en la lista de compra como «sin cobertura».
+  "C-12": TABLA_SEMPERTEX.referencias.map((r) => ({ codigo: r.codigo, fuente: "dueño 2026-10-09: todos los colores, un tamaño" })),
 };
 
 export function formatoPorId(id: string): FormatoGlobo | undefined {
@@ -63,6 +65,19 @@ export function formatoPorId(id: string): FormatoGlobo | undefined {
 export function coloresDelFormato(id: string): ReferenciaSempertex[] {
   const atestiguados = new Set((COLORES_ATESTIGUADOS[id] ?? []).map((c) => c.codigo));
   return TABLA_SEMPERTEX.referencias.filter((referencia) => referencia.formatos.includes(id) || atestiguados.has(referencia.codigo));
+}
+
+/** ¿La tienda vende ese color en ese formato (la tabla oficial de color lo trae, o es uno de los pocos que el catálogo tiene fuera de ella)? Lo atestiguado a mano no cuenta: el corazón C-12 sale en cualquier color, pero solo se vende en estos. */
+export function colorSeVendeEnFormato(id: string, codigo: string): boolean {
+  return TABLA_SEMPERTEX.referencias.some((r) => r.codigo === codigo && r.formatos.includes(id)) || (id === "C-12" && CORAZONES_C12_FUERA_DE_LA_TABLA.has(codigo));
+}
+
+/** Los Corazón 12 que la tienda vende aunque la tabla oficial no los traiga (lo muestra el cruce con el catálogo: «Corazón Fashion Fucsia»). `test-foto-cumple` los compara con el cruce incluido. */
+export const CORAZONES_C12_FUERA_DE_LA_TABLA: ReadonlySet<string> = new Set(["012"]);
+
+/** Los corazones de una lista de materiales cuyo color la tienda no vende como corazón: «sin cobertura» (no hay producto que comprar). */
+export function corazonesSinCobertura<T extends { formatoId: string; codigo: string }>(materiales: readonly T[]): T[] {
+  return materiales.filter((m) => formatoPorId(m.formatoId)?.tipo === "corazon" && m.formatoId === "C-12" && !colorSeVendeEnFormato(m.formatoId, m.codigo));
 }
 
 /** Familias de acabado de la tabla oficial, con su nombre comercial. */

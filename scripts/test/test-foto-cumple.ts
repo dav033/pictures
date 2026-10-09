@@ -15,7 +15,7 @@
  * 8 un montón de piso no atraviesa la pared del fondo
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { armarEscena, type Escena } from "../../src/lib/globos3d/escena";
 import { compilarLectura } from "../../src/lib/globos3d/compilar-lectura";
 import { colorDeFollaje, FLORES_ARTIFICIALES, type TipoFlorArtificial } from "../../src/lib/globos3d/flores-artificiales";
@@ -34,7 +34,10 @@ import { muebleDe } from "../../src/lib/globos3d/mobiliario-catalogo";
 import { piezaDeMueble } from "../../src/lib/globos3d/mobiliario-pieza";
 import { coloresPorParte } from "../../src/lib/globos3d/colores-por-parte";
 import { TABLA_SEMPERTEX } from "../../src/lib/plan/referencia-sempertex";
-import { globosDe } from "../../src/lib/globos3d/medir-geometria";
+import { COLORES_ATESTIGUADOS, colorSeVendeEnFormato, coloresDelFormato, corazonesSinCobertura } from "../../src/lib/globos3d/formatos";
+import { presentaciones, type Crosswalk } from "../../src/lib/globos3d/motor/crosswalk-variantes";
+import { planearCompra } from "../../src/lib/globos3d/motor/plan-de-compra";
+import { globosDe, kMedias1D } from "../../src/lib/globos3d/medir-geometria";
 import { escalaPorMesas, escalaReconciliada } from "../../src/lib/globos3d/escala-por-muebles";
 import { medirTamanos } from "../../src/lib/globos3d/medir-tamanos";
 import { centroDe } from "../../src/lib/globos3d/letras";
@@ -89,13 +92,16 @@ prueba("1 · la lectura del registro (eucalipto, hoja_seca dorada, gypsophila) a
 });
 
 prueba("1 · una decoración que falla se omite con su nota y la pieza se arma igual", () => {
-  const notas: string[] = [];
-  const r = conNotaSiFalla("Pieza 1 (guirnalda_organica): el follaje", notas, () => { throw new Error("«Rama de eucalipto» viene en verde grisáceo."); }, "sin follaje");
+  const notas: string[] = [], omitidas: string[] = [];
+  const r = conNotaSiFalla("Pieza 1 (guirnalda_organica): el follaje", notas, omitidas, () => { throw new Error("«Rama de eucalipto» viene en verde grisáceo."); }, "sin follaje");
   assert.equal(r, "sin follaje");
   assert.equal(notas.length, 1);
   assert.match(notas[0]!, /el follaje.*verde grisáceo.*el resto de la pieza se arma igual/);
-  assert.equal(conNotaSiFalla("x", notas, () => 7, 0), 7);
+  assert.deepEqual(omitidas.length, 1, "además de la nota, queda entre lo que no se armó");
+  assert.match(omitidas[0]!, /el follaje: no se armó.*verde grisáceo/);
+  assert.equal(conNotaSiFalla("x", notas, omitidas, () => 7, 0), 7);
   assert.equal(notas.length, 1);
+  assert.equal(omitidas.length, 1);
 });
 
 // ---------------------------------------------------------------------------------------------------------- 2
@@ -142,10 +148,10 @@ prueba("3 · los pasteles quedan SOBRE la mesa de postres, a su altura y dentro 
   assert.ok(c.omitidas.every((o) => !/pastel|torta.*arm/i.test(o) || /tortas y postres/.test(o)));
 });
 
-prueba("3 · sin mesa debajo, el pastel va al piso con su nota; el pastel de 1 a 3 pisos sale de su alto", () => {
+prueba("3 · sin mesa debajo no se inventa el pastel (queda en lo no armado con su motivo); el pastel de 1 a 3 pisos sale de su alto", () => {
   const c = compilarLectura(lectura([fondoDe("pastel", { ancho: 0.1, alto: 0.1 })]));
-  assert.equal(nodo(c.escena, "pastel").colocacion.en, "piso");
-  assert.ok(c.notas.some((n) => /no hay una mesa/.test(n)));
+  assert.ok(!c.escena.nodos.some((n) => n.id.startsWith("pastel")), "no hay pastel flotando ni en el piso");
+  assert.ok(c.omitidas.some((n) => /pastel.*no hay una mesa debajo/.test(n)), c.omitidas.join(" | "));
   const pieza = (alto: number) => solidosDe(piezaDeMueble(muebleDe("pastel")!, { anchoCm: 28, fondoCm: 28, altoCm: alto, colores: ["#f4efe4", "#d6b25a"] }));
   const pisos = (alto: number) => pieza(alto).filter((s) => s.forma === "cilindro" && s.radioCm > 5 && s.altoCm > 5).length;
   assert.deepEqual([pisos(20), pisos(30), pisos(40)], [1, 2, 3]);
@@ -239,17 +245,40 @@ prueba("6 · 90 % blanco + 10 % dorado: tapa y patas blancas, el dorado de adorn
   assert.deepEqual(opciones.colores, ["#f0ebdf", "#f0ebdf", "#c5a76e"]);
 });
 
-prueba("6 · colores por parte: acento sin parte de adorno se avisa; pesos parecidos conservan el orden", () => {
+prueba("6 · colores por parte: solo con una parte de adorno se reparte por parte; sin ella, el orden de la lectura", () => {
   const blanco = color("blanco", "#ffffff", 90), oro = color("dorado", "#c5a76e", 10);
   assert.deepEqual(coloresPorParte(["tapa", "patas", "adorno (opcional)"], [blanco, oro]).porParte, [blanco, blanco, oro]);
   const sinAdorno = coloresPorParte(["tapa", "patas"], [blanco, oro]);
-  assert.deepEqual(sinAdorno.porParte, [blanco, blanco]);
-  assert.deepEqual(sinAdorno.sobran, [oro]);
+  assert.deepEqual(sinAdorno.porParte, [blanco, oro], "sin adorno: la tapa blanca y las patas doradas, como lo leyó el lector");
+  assert.deepEqual(sinAdorno.sobran, []);
   const parejo = [color("crema", "#e9dfcd", 60), color("dorado", "#c9a14a", 40)];
   assert.deepEqual(coloresPorParte(["tapa", "patas", "adorno (opcional)"], parejo).porParte, [parejo[0], parejo[1], undefined]);
-  // Una silla: la estructura y el cojín siguen el orden de la lectura aunque el cojín sea poco.
-  const silla = coloresPorParte(["estructura", "cojín"], [color("dorado", "#d6b25a", 85), color("crema", "#f4efe4", 15)]);
-  assert.equal(silla.porParte[1]?.nombre, "crema");
+});
+
+prueba("6 · con pesos reales (90/10 y 85/15), las patas doradas de una silla, el sofá y la mesa sin adorno siguen como se leyeron", () => {
+  const compilar = (id: string, colores: ColorLeido[]) => {
+    const c = compilarLectura(lectura([fondoDe(id, { colores })]));
+    const n = c.escena.nodos[0]!;
+    return { colores: n.pieza.tipo === "escenografia" ? n.pieza.mueble?.opciones?.colores : undefined, notas: c.notas };
+  };
+  const dorado = (peso: number) => color("dorado", "#d6b25a", peso, "cromado"), crema = (peso: number) => color("crema", "#f4efe4", peso);
+  // Silla Tiffany: estructura dorada (85) y cojín crema (15): el cojín crema no se pierde ni se avisa como «sin usar».
+  const silla = compilar("silla_tiffany", [dorado(85), crema(15)]);
+  assert.deepEqual(silla.colores, ["#d6b25a", "#f4efe4"]);
+  assert.ok(!silla.notas.some((n) => /es un acento/.test(n)), silla.notas.join(" | "));
+  // Silla con patas doradas (85) y asiento blanco (15), el orden del catálogo de la moderna: patas primero.
+  const moderna = compilar("silla_moderna", [dorado(85), crema(15)]);
+  assert.deepEqual(moderna.colores, ["#d6b25a", "#f4efe4"], "patas doradas, asiento crema");
+  // Un sofá: estructura (90) y cojín (10): cada uno el suyo.
+  const sofa = compilar("sofa", [color("gris", "#8a8a8a", 90), color("blanco", "#ffffff", 10)]);
+  assert.equal(sofa.colores?.[0], "#8a8a8a");
+  assert.equal(sofa.colores?.[1], "#ffffff");
+  // Una mesa sin parte de adorno (mesa de centro: tapa, patas): blanca 90 + dorada 10 = tapa blanca, patas doradas, y no se dice «acento sin usar».
+  const mesa = compilar("mesa_centro", [color("blanco", "#ffffff", 90), dorado(10)]);
+  assert.deepEqual(mesa.colores, ["#ffffff", "#d6b25a"]);
+  assert.ok(!mesa.notas.some((n) => /es un acento/.test(n)), mesa.notas.join(" | "));
+  // Y la de postres sí tiene adorno: tapa y patas blancas y el dorado de filete.
+  assert.deepEqual(compilar("mesa_postres", [color("blanco", "#ffffff", 90), dorado(10)]).colores, ["#ffffff", "#ffffff", "#d6b25a"]);
 });
 
 prueba("6 · la mesa de postres con adorno es la ornamentada (patas torneadas); sin él, la consola de siempre", () => {
@@ -318,11 +347,9 @@ prueba("8 · ningún montón de piso atraviesa la pared del fondo ni los costado
 
 // ---------------------------------------------------------------------------------------------------------- 9
 prueba("9 · la foto con las detecciones reconstruidas mide ~300 cm de alto (no 480): los globos chicos no son el R-12", () => {
-  const escalaDeGlobos = Number(/(\d+) cm por los globos/.exec(medida.notas.join(" | "))?.[1]);
   const final = compilarLectura(medida.lectura);
   assert.ok(final.escena.nodos.length > 5);
   assert.ok(medida.lectura.escala.altoImagenCm >= 255 && medida.lectura.escala.altoImagenCm <= 345, `${medida.lectura.escala.altoImagenCm} cm: ${medida.notas.filter((n) => /Escala/.test(n)).join(" | ")}`);
-  assert.ok(escalaDeGlobos >= 220 && escalaDeGlobos <= 320, `los globos solos: ${escalaDeGlobos} cm`);
   // Los globos de la guirnalda forman tres tamaños (≈ 5, 9 y 12 % del alto), no unos chicos partidos en dos y medianos y grandes juntos.
   const guirnalda = cruda.piezas.find((p) => p.tipo === "guirnalda_organica")!;
   const t = medirTamanos(guirnalda.mezcla, globosDe(detecciones, cruda.aspecto).filter((g) => g.y < 0.75), cruda.pisoY, true);
@@ -331,9 +358,28 @@ prueba("9 · la foto con las detecciones reconstruidas mide ~300 cm de alto (no 
   assert.ok(t.escalaCm! > 230 && t.escalaCm! < 320, `${t.escalaCm}`);
 });
 
-prueba("9 · solo las mesas de altura conocida dan escala: pasteles, cortina, rótulo y corazones no la mueven", () => {
-  assert.ok(Math.abs(escalaPorMesas(fondos)! - 318) < 5, `${escalaPorMesas(fondos)}`);
-  assert.equal(escalaPorMesas(fondos.filter((f) => f.id !== "mesa_postres")), null, "sin la mesa no hay escala por muebles");
+prueba("9 · la k-medias no mueve lo que ya medía bien: con tres modos separados da los mismos centros que el arranque de siempre", () => {
+  const modos = [...Array.from({ length: 20 }, (_, i) => Math.log(0.05 + i * 0.0005)), ...Array.from({ length: 20 }, (_, i) => Math.log(0.1 + i * 0.0007)), ...Array.from({ length: 8 }, (_, i) => Math.log(0.17 + i * 0.001))];
+  const c = kMedias1D(modos, 3).map((x) => Math.exp(x));
+  assert.ok(Math.abs(c[0]! - 0.055) < 0.006 && Math.abs(c[1]! - 0.107) < 0.006 && Math.abs(c[2]! - 0.1735) < 0.006, c.map((x) => x.toFixed(3)).join(" "));
+  // El caso partido de la foto del cumpleaños (dos chicos al lado de nueve un poco mayores): se rehace con el otro arranque.
+  const logs = globosDe(detecciones, cruda.aspecto).filter((g) => g.y < 0.75).map((g) => Math.log(g.d));
+  const centros = kMedias1D(logs, 3).map((x) => Math.exp(x));
+  assert.ok(centros[1]! > 0.07 && centros[0]! < 0.07, centros.map((x) => x.toFixed(3)).join(" "));
+});
+
+prueba("9 · solo las mesas que el lector confirmó, de altura conocida y con la caja entera dan escala; pasteles, cortina, rótulo y corazones no la mueven", () => {
+  // La caja de la mesa de esta foto llega a 0,981 (toca el borde de abajo): no se fía.
+  assert.equal(escalaPorMesas(fondos, cruda.piezas, cruda.aspecto), null, "la mesa de esta foto sale cortada por abajo");
+  const mesaEntera: FondoDetectado = { box_2d: [650, 307, 940, 709], id: "mesa_postres" };
+  const leidaEntera = lectura([fondoDe("mesa_postres", { x: 0.51, yBase: 0.94, ancho: 0.4, alto: 0.29 })]).piezas;
+  assert.ok(Math.abs(escalaPorMesas([mesaEntera], leidaEntera, 1)! - 90 / 0.29) < 1, "una caja entera da 90 cm / su alto");
+  assert.equal(escalaPorMesas([mesaEntera], lectura([fondoDe("mesa_coctel", { x: 0.51, yBase: 0.94, ancho: 0.4, alto: 0.29 })]).piezas, 1), null, "una mesa de cóctel que la detección llamó «de postres» no mueve la escala");
+  assert.equal(escalaPorMesas([mesaEntera], lectura([fondoDe("pastel")]).piezas, 1), null, "sin la mesa leída no hay escala");
+  assert.equal(escalaPorMesas([{ ...mesaEntera, box_2d: [650, 307, 985, 709] }], leidaEntera, 1), null, "una caja que toca el borde de abajo no vale");
+  assert.equal(escalaPorMesas([{ ...mesaEntera, box_2d: [100, 800, 300, 950] }], leidaEntera, 1), null, "una caja que no cae sobre lo leído no vale");
+  const sinMesa = fondos.filter((f) => f.id !== "mesa_postres");
+  assert.equal(escalaPorMesas(sinMesa, cruda.piezas, cruda.aspecto), null, "sin la mesa no hay escala por muebles");
   const solo = medirConDetecciones(cruda, detecciones, fondos.filter((f) => f.id === "mesa_postres"));
   assert.equal(solo.lectura.escala.altoImagenCm, medida.lectura.escala.altoImagenCm, "la escala es la misma con o sin pasteles, cortina y rótulo detectados");
   const enormes: FondoDetectado[] = [...fondos, { box_2d: [100, 100, 150, 200], id: "pastel" }, { box_2d: [10, 10, 990, 990], id: "cortina_luces" }];
@@ -389,6 +435,99 @@ prueba("10 · un «Happy Birthday» leído como nombre de acrílico (cursiva) o 
     const letrero = armada.porNodo.find((x) => x.id === n.id)!;
     assert.ok(letrero.solidos.some((s) => s.motivo?.texto === "Happy Birthday" || s.rotulo?.texto === "Happy Birthday"), `${id}: el texto en cursiva sigue en el sólido`);
   }
+});
+
+// ---------------------------------------------------------------------------------------------------------- 11
+prueba("11 · el corazón C-12 queda atestiguado en todos los colores (decisión del dueño); lo que la tienda no vende como corazón sale «sin cobertura»", () => {
+  assert.equal(coloresDelFormato("C-12").length, TABLA_SEMPERTEX.referencias.length, "todos los colores de la paleta");
+  assert.ok(COLORES_ATESTIGUADOS["C-12"]!.every((c) => /dueño 2026-10-09: todos los colores, un tamaño/.test(c.fuente)));
+  assert.equal(COLORES_ATESTIGUADOS["C-12"]!.length, TABLA_SEMPERTEX.referencias.length);
+  const noVendido = TABLA_SEMPERTEX.referencias.find((r) => !colorSeVendeEnFormato("C-12", r.codigo))!;
+  const vendido = TABLA_SEMPERTEX.referencias.find((r) => colorSeVendeEnFormato("C-12", r.codigo))!;
+  assert.ok(!colorSeVendeEnFormato("C-12", noVendido.codigo) && colorSeVendeEnFormato("C-12", vendido.codigo));
+  const lista = [{ formatoId: "C-12", codigo: noVendido.codigo, cantidad: 2 }, { formatoId: "C-12", codigo: vendido.codigo, cantidad: 1 }, { formatoId: "R-12", codigo: noVendido.codigo, cantidad: 9 }, { formatoId: "C-6", codigo: "012", cantidad: 1 }];
+  assert.deepEqual(corazonesSinCobertura(lista).map((m) => m.codigo), [noVendido.codigo], "solo el corazón C-12 en un color que no se vende así");
+  // Y la lista de compra de la escena de dos corazones en un color que la tienda no vende como corazón lo trae.
+  const c = compilarLectura(lectura([corazon(2, [color(noVendido.nombreCompleto, noVendido.hexGlobo, 100, "mate")])]));
+  assert.equal(corazonesSinCobertura(armarEscena(c.escena).materiales).reduce((s, m) => s + m.cantidad, 0), 2);
+});
+
+prueba("11 · lo que la tienda vende como Corazón 12 coincide con el cruce incluido del catálogo (ni de más ni de menos)", () => {
+  const archivo = readdirSync("data/motor").find((f) => /^crosswalk-.*\.json$/.test(f));
+  assert.ok(archivo, "falta el cruce incluido en data/motor");
+  const cruce = JSON.parse(readFileSync(`data/motor/${archivo}`, "utf8")) as Crosswalk;
+  const conVariante = Object.keys(cruce.entradas).filter((k) => k.startsWith("C-12|")).map((k) => k.slice(5));
+  for (const codigo of conVariante) assert.ok(colorSeVendeEnFormato("C-12", codigo), `C-12 ${codigo} tiene variante en la tienda`);
+  const declarados = TABLA_SEMPERTEX.referencias.filter((r) => colorSeVendeEnFormato("C-12", r.codigo)).map((r) => r.codigo);
+  for (const codigo of declarados) assert.ok(conVariante.includes(codigo) || `C-12|${codigo}` in cruce.sinCobertura, `C-12 ${codigo} está en el cruce`);
+});
+
+prueba("11 · en el cruce de la guiada, un corazón en un color que no se vende dice «el corazón en ese color no se vende», no «desconocida»", () => {
+  const cruce: Crosswalk = { version: 1, snapshot: "prueba", entradas: {}, sinCobertura: {} };
+  const noVendido = TABLA_SEMPERTEX.referencias.find((r) => !colorSeVendeEnFormato("C-12", r.codigo))!;
+  assert.deepEqual(presentaciones(cruce, "C-12", noVendido.codigo), { ok: false, motivo: "corazon_color_no_vendido" });
+  assert.deepEqual(presentaciones(cruce, "R-12", noVendido.codigo), { ok: false, motivo: "desconocida" }, "lo que no es corazón sigue como antes");
+  const plan = planearCompra([{ formatoId: "C-12", codigo: noVendido.codigo, cantidad: 3 }], cruce);
+  assert.deepEqual(!plan.ok ? plan.faltantes : null, [{ formatoId: "C-12", codigo: noVendido.codigo, motivo: "corazon_color_no_vendido" }]);
+});
+
+// ---------------------------------------------------------------------------------------------------------- 12
+prueba("12 · un neón colgado de la pared delante de una cortina de flecos queda delante de las tiras", () => {
+  const c = compilarLectura(lectura([
+    fondoDe("cortina_flecos", { x: 0.5, yBase: 0.92, ancho: 0.6, alto: 0.7, colores: [color("plata", "#c9cfd0", 100, "cromado")] }),
+    fondoDe("neon_cursiva", { texto: "Happy Birthday", x: 0.5, yBase: 0.55, ancho: 0.3, alto: 0.1, colores: [color("blanco", "#ffffff", 100)] }),
+  ]));
+  const cortina = armarEscena(c.escena).porNodo.find((n) => n.id === "cortina-flecos")!;
+  const neon = nodo(c.escena, "neon-cursiva");
+  const caja = cajaDe(c.escena, "neon-cursiva");
+  assert.equal(neon.colocacion.en, "libre", "pasó de la pared a suelto, delante");
+  assert.ok(caja.min.z >= cortina.caja.max.z, `el neón (z desde ${caja.min.z}) está delante de las tiras (hasta ${cortina.caja.max.z})`);
+  assert.equal(nodo(c.escena, "cortina-flecos").colocacion.en, "pared", "la cortina se queda en la pared");
+  assert.ok(c.notas.some((n) => /Letrero de neón.*delante del panel/.test(n)), c.notas.join(" | "));
+  // Un letrero colgado SOLO (sin cortina) no se mueve.
+  const sola = compilarLectura(lectura([fondoDe("neon_cursiva", { texto: "Hola", x: 0.5, yBase: 0.55, ancho: 0.3, alto: 0.1 })]));
+  assert.equal(nodo(sola.escena, "neon-cursiva").colocacion.en, "pared");
+});
+
+// ---------------------------------------------------------------------------------------------------------- 13
+prueba("13 · el pastel solo se crea con una mesa debajo (en x y a la altura de su tapa); si no, queda en lo no armado con su motivo", () => {
+  const mesa = medidaDelRegistro.piezas.find((p) => p.tipo === "fondo" && p.id === "mesa_postres")!;
+  const flotando: FondoDetectado[] = [{ box_2d: [100, 100, 240, 200], id: "base_pastel" }, { box_2d: [525, 458, 663, 552], id: "base_pastel" }];
+  const m = medirConDetecciones(lectura([mesa, guirnaldaDelRegistro]), detecciones, [fondos.find((f) => f.id === "mesa_postres")!, ...flotando]);
+  const pasteles = m.lectura.piezas.filter((p) => p.tipo === "fondo" && p.id === "pastel");
+  assert.equal(pasteles.length, 1, "solo el que está sobre la mesa");
+  const otros = m.lectura.piezas.filter((p) => p.tipo === "otro");
+  assert.ok(otros.some((o) => o.tipo === "otro" && /pastel.*sin una mesa debajo/.test(o.descripcion)), JSON.stringify(otros));
+  assert.ok(compilarLectura(m.lectura).omitidas.some((o) => /pastel.*sin una mesa debajo/.test(o)));
+  // Una mesa a otro lado (el pastel cae fuera de su tapa en x) tampoco lo recibe.
+  const lejos = medirConDetecciones(lectura([{ ...mesa, x: 0.12, ancho: 0.15 } as PiezaLeida, guirnaldaDelRegistro]), detecciones, [{ box_2d: [525, 458, 663, 552], id: "base_pastel" }]);
+  assert.ok(!lejos.lectura.piezas.some((p) => p.tipo === "fondo" && p.id === "pastel"));
+});
+
+prueba("13 · los pasteles que ya están sobre la tapa cuentan: dos juntos no se encaraman (se corre uno o se omite) y el color es el de catálogo, dicho como tal", () => {
+  const mesa = fondoDe("mesa_postres", { x: 0.5, yBase: 0.9, ancho: 0.4, alto: 0.28 });
+  const pastel = (x: number) => fondoDe("pastel", { x, yBase: 0.64, ancho: 0.09, alto: 0.13 });
+  const c = compilarLectura(lectura([mesa, pastel(0.5), pastel(0.51), pastel(0.52)], { aspecto: 1 }));
+  const pasteles = c.escena.nodos.filter((n) => n.id.startsWith("pastel"));
+  assert.ok(pasteles.length >= 2 && pasteles.length <= 3, `${pasteles.length} pasteles`);
+  for (let i = 0; i < pasteles.length; i++) for (let j = i + 1; j < pasteles.length; j++) {
+    const a = cajaDe(c.escena, pasteles[i]!.id), b = cajaDe(c.escena, pasteles[j]!.id);
+    assert.ok(a.max.x <= b.min.x + 0.5 || b.max.x <= a.min.x + 0.5, `${pasteles[i]!.id} y ${pasteles[j]!.id} no se solapan en x`);
+  }
+  if (pasteles.length < 3) assert.ok(c.omitidas.some((o) => /no cabe.*sin encimarse/.test(o)), c.omitidas.join(" | "));
+  // El color de un pastel detectado sin leer es el de catálogo y la lectura lo dice así.
+  const sin = medida.lectura.piezas.find((p) => p.tipo === "fondo" && p.id === "pastel")!;
+  assert.ok(sin.tipo === "fondo" && /catálogo/.test(sin.colores[0]!.nombre) && /color es el de catálogo/.test(sin.nota ?? ""), JSON.stringify(sin));
+  assert.ok(!sin.tipo || sin.tipo !== "fondo" || sin.colores[0]!.nombre.toLowerCase() !== "marfil");
+});
+
+// ---------------------------------------------------------------------------------------------------------- 14
+prueba("14 · lo omitido por fallar una decoración entra en lo no armado (omitidas), de donde sale el resumen de la persona", () => {
+  const notas: string[] = [], omitidas: string[] = [];
+  conNotaSiFalla("Pieza 3 (panel_redondo): el rótulo «Ñ»", notas, omitidas, () => { throw new Error("letra no admitida"); }, null);
+  assert.equal(omitidas.length, 1);
+  assert.match(omitidas[0]!, /Pieza 3.*rótulo.*letra no admitida/);
+  assert.deepEqual(compilarLectura(medidaDelRegistro).decoracionesOmitidas, [], "sin fallos, no hay nada que decir");
 });
 
 console.log(`test-foto-cumple: ${pruebas} pruebas ok, ${fallos} con fallas`);

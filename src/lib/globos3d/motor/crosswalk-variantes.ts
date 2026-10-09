@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TABLA_SEMPERTEX } from "@/lib/plan/referencia-sempertex";
-import { coloresDelFormato, FORMATOS_GLOBO, type TipoGlobo } from "../formatos";
+import { colorSeVendeEnFormato, coloresDelFormato, FORMATOS_GLOBO, type TipoGlobo } from "../formatos";
 import { nombreEsperado, NO_ESTAN_EN_LA_TIENDA } from "../productos-tienda";
 
 /**
@@ -162,6 +162,8 @@ export function construirCrosswalk(filas: readonly FilaCatalogo[], snapshot: str
     for (const referencia of coloresDelFormato(formato.id)) {
       const clave = claveCruce(formato.id, referencia.codigo);
       if (entradas[clave]) continue;
+      // Un corazón en un color que la tabla no le da a ese formato (lo atestiguado por el dueño): no es un hueco del catálogo; `presentaciones` dice el motivo.
+      if (formato.id === "C-12" && !colorSeVendeEnFormato(formato.id, referencia.codigo)) continue;
       const par = `${formato.tipo}|${referencia.codigo}`;
       sinCobertura[clave] = noEnTienda.has(par) ? "no_esta_en_la_tienda" : productosPorPar.has(par) ? "talla_no_vendida" : "sin_producto_en_el_catalogo";
     }
@@ -186,13 +188,20 @@ export type VarianteElegida = {
   precio: number;
   color: string | null;
 };
-export type SinVariante = { ok: false; motivo: MotivoSinCobertura | "desconocida" };
+/** El corazón C-12 se arma en cualquier color (decisión del dueño) pero la tienda solo lo vende en los de la tabla: en los demás, ese es el motivo (no «desconocida»). */
+export type MotivoCruce = MotivoSinCobertura | "corazon_color_no_vendido" | "desconocida";
+export type SinVariante = { ok: false; motivo: MotivoCruce };
+
+/** Por qué no hay variante para un par que ni el cruce ni su lista de huecos mencionan. */
+export function motivoSinEntrada(formatoId: string, codigo: string): MotivoCruce {
+  return formatoId === "C-12" && !colorSeVendeEnFormato(formatoId, codigo) ? "corazon_color_no_vendido" : "desconocida";
+}
 
 /** Todas las presentaciones (paquetes) que la tienda vende de ese formato y color, o por qué no hay ninguna. */
 export function presentaciones(crosswalk: Crosswalk, formatoId: string, codigo: string): { ok: true; entrada: EntradaCrosswalk } | SinVariante {
   const clave = claveCruce(formatoId, codigo);
   const entrada = crosswalk.entradas[clave];
-  return entrada ? { ok: true, entrada } : { ok: false, motivo: crosswalk.sinCobertura[clave] ?? "desconocida" };
+  return entrada ? { ok: true, entrada } : { ok: false, motivo: crosswalk.sinCobertura[clave] ?? motivoSinEntrada(formatoId, codigo) };
 }
 
 /**
@@ -203,7 +212,7 @@ export function presentaciones(crosswalk: Crosswalk, formatoId: string, codigo: 
 export function elegirVariante(crosswalk: Crosswalk, formatoId: string, codigo: string, cantidad: number): VarianteElegida | SinVariante {
   const clave = claveCruce(formatoId, codigo);
   const entrada = crosswalk.entradas[clave];
-  if (!entrada) return { ok: false, motivo: crosswalk.sinCobertura[clave] ?? "desconocida" };
+  if (!entrada) return { ok: false, motivo: crosswalk.sinCobertura[clave] ?? motivoSinEntrada(formatoId, codigo) };
   const costo = (variante: EntradaCrosswalk["variantes"][number]) => Math.ceil(Math.max(1, cantidad) / variante.unidadesPaq) * variante.precio;
   const mejor = [...entrada.variantes].sort((a, b) => costo(a) - costo(b) || b.unidadesPaq - a.unidadesPaq || (a.variantId < b.variantId ? -1 : 1))[0]!;
   return { ok: true, productId: entrada.productId, variantId: mejor.variantId, titulo: entrada.titulo, tituloVariante: mejor.titulo, unidadesPaq: mejor.unidadesPaq, precio: mejor.precio, color: entrada.color };

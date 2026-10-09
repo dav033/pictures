@@ -46,7 +46,11 @@ export { codigoDeColor } from "./colores-lectura";
  *   piso (mesa, pedestales, globos sueltos) más adelante.
  * Lo que no es del taller (`otro`) no se arma: queda en `omitidas`.
  */
-export type EscenaCompilada = { escena: Escena; notas: string[]; omitidas: string[] };
+export type EscenaCompilada = {
+  escena: Escena; notas: string[]; omitidas: string[];
+  /** De `omitidas`, las decoraciones (follaje, rótulo) que fallaron al armarse y quedaron fuera de una pieza que sí se armó: para el registro de auditoría. */
+  decoracionesOmitidas: string[];
+};
 
 const r0 = (n: number) => Math.round(n);
 const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -117,7 +121,7 @@ function engrosarParaGrandes<T extends { x: number; y: number; grosor: number; p
 }
 
 export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
-  const notas: string[] = [], omitidas: string[] = [];
+  const notas: string[] = [], omitidas: string[] = [], decoracionesOmitidas: string[] = [];
   const l = montonesAlPie(leida, notas);
   const H = l.escala.altoImagenCm;
   const piso = pisoDeLectura(l);
@@ -165,7 +169,7 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         const fijos = fijosDeAnclas(p, H, notas).map((f) => ({ ...f, x: r1(X(f.x) - x0), y: r1(Y(f.y)) }));
         const trazo = { puntos: puntos.map((q) => ({ ...q, x: r1(q.x - x0) })), mezcla: pesos, colores: paletaDeLectura(p, H, notas), racimos: p.racimos, semilla: 11 + i, ...(fijos.length ? { fijos } : {}) };
         const sinFollaje: ReturnType<typeof floresLeidas> = { flores: null, notas: [] };
-        const { flores, notas: notasFollaje } = p.follaje?.length ? conNotaSiFalla(`Pieza ${i + 1} (guirnalda_organica): el follaje`, notas, () => floresLeidas(p.follaje!), sinFollaje) : sinFollaje;
+        const { flores, notas: notasFollaje } = p.follaje?.length ? conNotaSiFalla(`Pieza ${i + 1} (guirnalda_organica): el follaje`, notas, decoracionesOmitidas, () => floresLeidas(p.follaje!), sinFollaje) : sinFollaje;
         notas.push(...notasFollaje.map((n) => `Pieza ${i + 1} (guirnalda_organica): ${n}`));
         const largo = puntos.slice(1).reduce((s, q, k) => s + Math.hypot(q.x - puntos[k]!.x, q.y - puntos[k]!.y), 0);
         const huecos = Math.max(4, Math.min(30, r0(largo / 45)));
@@ -343,7 +347,7 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         }
         const sinRotulo: Pieza = { tipo: "escenografia", elementos, mueble: { id: p.id } };
         // Un nombre sobre un panel, un arco o la pared de lentejuelas: el texto leído es su rótulo, con el color y el acabado que se leyeron en las letras (sin color, el que se lee sobre el fondo).
-        const pieza = p.texto && ADMITEN_ROTULO.has(p.id) && sinRotulo.tipo === "escenografia" ? conNotaSiFalla(`Pieza ${i + 1} (${p.id}): el rótulo «${p.texto}»`, notas, () => conTextoPieza(sinRotulo, { texto: p.texto!, acabado: acabadoRotuloLeido(p.acabadoTexto), ...(tinta ? { color: tinta } : {}) }), sinRotulo) : sinRotulo;
+        const pieza = p.texto && ADMITEN_ROTULO.has(p.id) && sinRotulo.tipo === "escenografia" ? conNotaSiFalla(`Pieza ${i + 1} (${p.id}): el rótulo «${p.texto}»`, notas, decoracionesOmitidas, () => conTextoPieza(sinRotulo, { texto: p.texto!, acabado: acabadoRotuloLeido(p.acabadoTexto), ...(tinta ? { color: tinta } : {}) }), sinRotulo) : sinRotulo;
         poner(p.id.replace(/_/g, "-"), textoLetrero ? `Letrero ${JSON.stringify(textoLetrero)}` : p.id.replace(/_/g, " "), pieza,
           lugar === "pared" ? { en: "pared", pared: "fondo", aLoLargoCm: X(p.x), alturaCm: p.id === "letrero" ? r0(y0) : 0 } : { en: "piso", xCm: medida.xCm, zCm: z, giroGrados: 0 });
         return;
@@ -354,7 +358,7 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
     }
   }
 
-  escena = ponerSobreMesas(escena, sobreMesa, notas);
+  escena = ponerSobreMesas(escena, sobreMesa, notas, omitidas);
   escena = montonesDentroDeLaSala(escena, montones, notas);
   // Los corazones: en el montón de piso que los tiene debajo (por su x), delante de su centro, y si no, a la profundidad de siempre.
   for (const { pieza: c, indice } of corazones) {
@@ -371,5 +375,5 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
   }
   // Lo colgado de la pared que un panel de fondo (parado delante) taparía va delante del panel.
   escena = letrerosDelanteDeGlobos(colgadoDelanteDePaneles(escena, notas), notas);
-  return { escena, notas: [...new Set(notas)], omitidas };
+  return { escena, notas: [...new Set(notas)], omitidas: [...omitidas, ...decoracionesOmitidas], decoracionesOmitidas };
 }
