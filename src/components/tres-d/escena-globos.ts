@@ -4,10 +4,9 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import type { FormatoGlobo } from "@/lib/globos3d/formatos";
 import { centroCuerpo, contornoCorazon, perfilLink, perfilRedondo, type PuntoPerfil } from "@/lib/globos3d/geometria";
 import type { SolidoEscenografia } from "@/lib/globos3d/escenografia";
-import { calcoMotivo } from "./motivos-utileria";
 import type { ImpresoGlobo } from "@/lib/globos3d/estampados";
-import { calcoCorazon, cascaraImpresa, geometriaFoil } from "./impresos-visor";
-import { colorDeLatex, materialDe, materialEscenografia, type Calidad } from "./materiales-visor";
+import { calcoCorazon, cascaraImpresa } from "./impresos-visor";
+import { colorDeLatex, materialDe, type Calidad } from "./materiales-visor";
 import { colorPropio, geometriaParteFlor, materialParteFlor, partesFlor } from "./flores-visor";
 import type { TipoFlorArtificial } from "@/lib/globos3d/flores-artificiales";
 import { MEDIR_VISOR, cronometrar, infoDe, registrarVisor, type VisorMedible } from "./medicion-visor";
@@ -17,7 +16,7 @@ import { ambienteActivo, ambienteDe, crearLucesDeSala, lucesDeTecho, materialPis
 import { CONFETI_PLATA, TOPE_CONFETI, discosConfeti, geometriaConfeti, materialConfeti, tinteDeConfeti, topePorGlobo } from "./confeti-visor";
 import { achatadoDe } from "./deformacion-globo";
 import type { AmbienteSala } from "@/lib/globos3d/escena";
-import { ejePanel, lentejuelasDePanel } from "./lentejuelas-instanciadas";
+import { crearEscenografiaVisor } from "./escenografia-visor";
 
 /**
  * La escena de /3d con three.js, sin React: un globo (o la fila de todos los formatos) sobre un piso con
@@ -391,43 +390,6 @@ function partesCorazon(anchoCm: number, calidad: Calidad): ParteGlobo[] {
   ];
 }
 
-/** Un sólido de escenografía en su sitio: geometría en su marco (cm → m) y el marco puesto con su base de ejes. */
-function solidoEscenografia(s: SolidoEscenografia, entorno: THREE.Texture): THREE.Object3D {
-  let geometria: THREE.BufferGeometry;
-  if (s.forma === "caja") {
-    geometria = new THREE.BoxGeometry(s.tamano.x * CM, s.tamano.y * CM, s.tamano.z * CM);
-  } else if (s.forma === "cilindro") {
-    geometria = new THREE.CylinderGeometry(s.radioArribaCm * CM, s.radioCm * CM, s.altoCm * CM, 64);
-    geometria.translate(0, (s.altoCm / 2) * CM, 0);
-  } else if (s.acabado === "foil" || s.acabado === "foil_mate") {
-    // Un globo metalizado: el contorno inflado como almohada, de z = 0 a z = grosor.
-    geometria = geometriaFoil(s.contorno, s.huecos, s.grosorCm);
-  } else {
-    const forma = new THREE.Shape(s.contorno.map((p) => new THREE.Vector2(p.x * CM, p.y * CM)));
-    for (const hueco of s.huecos) forma.holes.push(new THREE.Path(hueco.map((p) => new THREE.Vector2(p.x * CM, p.y * CM))));
-    // Un bisel fino redondea el canto: al girar, el panel se ve como un tablero cortado y no como una lámina.
-    const bisel = Math.min(0.5, s.grosorCm / 4) * CM;
-    geometria = new THREE.ExtrudeGeometry(forma, { depth: Math.max(0.1 * CM, s.grosorCm * CM - 2 * bisel), bevelEnabled: true, bevelThickness: bisel, bevelSize: bisel, bevelSegments: 2, curveSegments: 24 });
-    geometria.translate(0, 0, bisel);
-  }
-  const malla = new THREE.Mesh(geometria, materialEscenografia(s, entorno));
-  malla.castShadow = true;
-  malla.receiveShadow = true;
-  const ejes = new THREE.Matrix4().makeBasis(
-    new THREE.Vector3(s.ejeX.x, s.ejeX.y, s.ejeX.z), new THREE.Vector3(s.ejeY.x, s.ejeY.y, s.ejeY.z), new THREE.Vector3(s.ejeZ.x, s.ejeZ.y, s.ejeZ.z),
-  );
-  malla.quaternion.setFromRotationMatrix(ejes);
-  malla.position.set(s.origen.x * CM, s.origen.y * CM, s.origen.z * CM);
-  // Lo impreso (calavera, «Happy Halloween», lunares…) de la utilería de fiesta, como calcomanía en su cara.
-  const calco = calcoMotivo(s);
-  if (calco) malla.add(calco);
-  if (s.forma === "caja" && s.acabado === "lentejuelas") {
-    const eje = ejePanel(s.tamano);
-    if (eje !== null) malla.add(lentejuelasDePanel(s.tamano, eje, s.hex, entorno));
-  }
-  return malla;
-}
-
 /** Un globo completo con sus propias geometrías y su material (calidad alta): el globo suelto y lo que no va por instancias. */
 function construir(globo: GloboEnEscena, entorno: THREE.Texture): THREE.Object3D {
   const material = materialDe(globo.familia, globo.hex, "alta", entorno);
@@ -620,6 +582,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   // visor (un recurso de su contexto WebGL: nunca va a una variable de módulo) y se hornea la primera vez que hace falta.
   let entornoEstudio: THREE.Texture | null = null;
   const entornoMetal = (): THREE.Texture => (entornoEstudio ??= crearEntornoEstudio(renderer));
+  // La escenografía (muebles, paneles, utilería) de este visor, con sus materiales y geometrías compartidos.
+  const escenografia = crearEscenografiaVisor(entornoMetal);
   // Menos luz de entorno: con la sala completa el látex mate se veía lavado (el rosado 009 salía casi blanco).
   escena.environmentIntensity = 0.55;
 
@@ -627,6 +591,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   sol.position.set(1.5, 3, 2);
   sol.castShadow = true;
   sol.shadow.mapSize.set(1024, 1024);
+  // Sin sesgo, las caras casi verticales y algo inclinadas (la falda de un mantel) se autosombrean en rayas: 1,5 cm de sesgo por la normal las quita.
+  sol.shadow.normalBias = 0.015;
   escena.add(sol, new THREE.AmbientLight(0xffffff, 0.08));
   // Con una sala con ambiente, luz de estudio cálida; sin él, la neutra de siempre.
   const lucesDeSala = crearLucesDeSala(escena, sol);
@@ -880,7 +846,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     }
     // Escenografía (paneles, mesas, tapete): con su pieza, para elegirla y arrastrarla como a las demás.
     // Lo oculto (amarres internos) sostiene y da su caja, pero no se dibuja.
-    for (const s of c.solidos) if (!s.oculto) grupo.add(solidoEscenografia(s, entornoMetal()));
+    for (const malla of escenografia.piezas(c.solidos)) grupo.add(malla);
     modulo.add(grupo);
     return { huella, ref: ref.clone(), base: new THREE.Vector3(), grupo, instancias, caja: null };
   }
@@ -1750,6 +1716,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       for (const g of geometriasSueltas.values()) g.dispose();
       for (const m of materiales.values()) m.dispose();
       entorno.dispose();
+      escenografia.liberar();
       entornoEstudio?.dispose();
       tablones?.dispose();
       lucesDeSala.liberar();

@@ -12,6 +12,8 @@ import { arbolEnIngles } from "./arboles-globos";
 import { sumarMateriales } from "./mezcla";
 import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
+import { fraseDeEscenografia, propsEnIngles } from "./escenografia-ingles";
+import { avisoDeEscenografia } from "./mobiliario-pieza";
 import { PREFIJO_SALA, PREFIJO_UTILERIA, colorDeGloboEnIngles, coloresEnIngles, enLista, tonoEnIngles } from "./render-ia";
 import { contornoEnIngles, huecosEnIngles } from "./silueta-ia";
 import { referenciaPorCodigo } from "../plan/referencia-sempertex";
@@ -418,6 +420,8 @@ function crearArmador(escena: Escena, cache?: Map<string, PiezaArmada>, sembrado
     } catch (error) {
       resultado = vacio(nodo, `«${nodo.nombre}» no se pudo armar: ${error instanceof Error ? error.message : String(error)}`);
     }
+    const avisoMueble = nodo.pieza.tipo === "escenografia" ? avisoDeEscenografia(nodo.pieza) : null;
+    if (avisoMueble) resultado = { ...resultado, avisos: [...resultado.avisos, `«${nodo.nombre}»: ${avisoMueble}`] };
     enCurso.delete(nodo.id);
     hechos.set(nodo.id, resultado);
     return resultado;
@@ -567,11 +571,17 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
   const sueltas: Entrada[] = [], pegadas: Entrada[] = [];
   // La escenografía (paneles, mesas, tapete) no es decoración de globos: va junta en una frase, sin numerar.
   let escenografia = 0;
+  const escenografiaPorNombre = new Map<string, number>();
   for (const nodo of escena.nodos) {
     const hecho = armada.porNodo.find((n) => n.id === nodo.id);
     if (!hecho || hecho.copias === 0) continue;
     const c = nodo.colocacion;
-    if (nodo.pieza.tipo === "escenografia") { escenografia += hecho.copias; continue; }
+    if (nodo.pieza.tipo === "escenografia") {
+      escenografia += hecho.copias;
+      const en = fraseDeEscenografia(nodo.pieza);
+      if (en) escenografiaPorNombre.set(en, (escenografiaPorNombre.get(en) ?? 0) + hecho.copias);
+      continue;
+    }
     const x = (hecho.caja.min.x + hecho.caja.max.x) / 2;
     const lugar = c.en === "piso" ? "standing on the floor" : c.en === "pared" ? LUGAR_EN[c.pared] : c.en === "techo" ? "hanging from the ceiling" : c.en === "libre" ? "set on the arrangement" : "";
     // Lo orgánico, con su silueta vista de frente (si mira a la cámara): sin ella FLUX completaba una media guirnalda.
@@ -604,7 +614,7 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     }),
     // Lo que NO hay (pared vacía bajo un extremo): sin esto FLUX cerraba una guirnalda y una pata en un marco.
     huecosEnIngles(armada.globos),
-    escenografia ? `${PREFIJO_UTILERIA} ${escenografia} party ${escenografia === 1 ? "prop" : "props"} (backdrop panels, tables or rug), exactly as in the input` : "",
+    escenografia ? `${PREFIJO_UTILERIA} ${escenografia} party ${escenografia === 1 ? "prop" : "props"} (${propsEnIngles(escenografiaPorNombre, escenografia)}), exactly as in the input` : "",
   ];
   const { tonos, mostrar } = escena.sala;
   const paredes = [mostrar.fondo ? "back" : "", mostrar.laterales ? "side" : ""].filter(Boolean);

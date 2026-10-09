@@ -142,7 +142,7 @@ export const TIPOS_TALLER: readonly EntradaGlosario[] = [
   { clase: "tipo", canon: "mural", nombre: "mural pixelado", tipos: ["mural"], terminos: ["mural", "murales", "pixelado", "pixel"] },
   { clase: "tipo", canon: "techo", nombre: "decoración de techo", tipos: ["techo"], terminos: ["techo", "decoración de techo", "ceiling"] },
   { clase: "tipo", canon: "globo", nombre: "globo suelto", tipos: ["globo"], terminos: ["globo suelto", "globos sueltos"] },
-  { clase: "tipo", canon: "escenografia", nombre: "escenografía (no es globo)", tipos: ["escenografia"], terminos: ["escenografía", "panel", "paneles", "mesa", "mesas", "tapete", "cilindro", "cilindros"] },
+  { clase: "tipo", canon: "escenografia", nombre: "escenografía (no es globo)", tipos: ["escenografia"], terminos: ["escenografía", "panel", "paneles", "mesa", "mesas", "silla", "sillas", "taburete", "sofa", "mueble", "muebles", "mobiliario", "tapete", "cilindro", "cilindros"] },
   { clase: "tipo", canon: "modulo", nombre: "módulo suelto", tipos: ["modulo"], terminos: ["módulo", "módulos"] },
 ];
 

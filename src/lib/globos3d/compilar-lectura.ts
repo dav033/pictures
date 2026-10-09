@@ -18,6 +18,7 @@ import { decoracionPredefinida } from "./figuras";
 import { reemplazarColor } from "./recolorear";
 import { arcosChiara, cortina, letrero, mediaLuna, panelRedondo, pedestales } from "./fondos-escenografia";
 import { mesaConMantel, paredLentejuelas, tapete } from "./escenografia";
+import { mesaLeida, mobiliarioLeido, type MedidaLeida, type MesaLeida } from "./compilar-mobiliario";
 import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
 
 /**
@@ -208,6 +209,10 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         return;
       }
       case "fondo": {
+        const medidaDe = (q: typeof p): MedidaLeida => ({ anchoCm: cm(q.ancho), altoCm: cm(q.alto), xCm: X(q.x), yBaseCm: Y(q.yBase), muroZ: muro });
+        const mesas = l.piezas.flatMap((q) => (q.tipo === "fondo" ? [mesaLeida(q, medidaDe(q))] : [])).filter((m): m is MesaLeida => m !== null);
+        const muebles = mobiliarioLeido(p, medidaDe(p), notas, mesas);
+        if (muebles) { for (const m of muebles) poner(m.base, m.nombre, m.pieza, m.colocacion); return; }
         const hex = (k: number) => p.colores[k]?.hex ?? p.colores[0]!.hex;
         const a = cm(p.alto), w = cm(p.ancho), y0 = Y(p.yBase);
         let elementos: ElementoEscenografia[];
@@ -223,7 +228,7 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
           case "cortina_luces": lugar = "pared"; elementos = cortina({ anchoCm: w, altoCm: a, hex: hex(0), luces: true }); break;
           default: lugar = "pared"; elementos = letrero({ texto: p.texto ?? "", anchoCm: w, altoCm: a, hex: hex(0), tinta: hex(1) });
         }
-        const pieza: Pieza = { tipo: "escenografia", elementos };
+        const pieza: Pieza = { tipo: "escenografia", elementos, mueble: { id: p.id } };
         poner(p.id.replace(/_/g, "-"), p.id === "letrero" && p.texto ? `Letrero «${p.texto}»` : p.id.replace(/_/g, " "), pieza,
           lugar === "pared" ? { en: "pared", pared: "fondo", aLoLargoCm: X(p.x), alturaCm: p.id === "letrero" ? r0(y0) : 0 } : { en: "piso", xCm: X(p.x), zCm: z, giroGrados: 0 });
         return;

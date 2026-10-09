@@ -3,6 +3,7 @@ import type { Colocacion, Escena } from "./escena";
 import { MAX_NODOS, TIPOS_PIEZA } from "./herramientas-escena";
 import type { Pieza } from "./piezas";
 import { AmbienteSalaSchema } from "./ambiente-sala";
+import { MuebleDePiezaSchema } from "./mobiliario-pieza";
 
 /** La escena como la valida el servidor cuando llega del navegador (`/api/escena-ia`, `/api/escena-ia/similitud`): no se confía en lo que manda el cliente. */
 
@@ -23,7 +24,12 @@ const ColocacionSchema: z.ZodType<Colocacion> = z.discriminatedUnion("en", [
  * La pieza la arma el taller (que ya valida sus datos al armar): aquí basta con que sea un objeto de un tipo conocido.
  * Todos los tipos: una escena con formas, letras, metalizados, murales, techo o árboles (las de la biblioteca) también vale.
  */
-const PiezaSchema = z.custom<Pieza>((v) => typeof v === "object" && v !== null && (TIPOS_PIEZA as readonly unknown[]).includes((v as { tipo?: unknown }).tipo), "Pieza desconocida");
+const PiezaSchema = z.custom<Pieza>((v) => {
+  if (typeof v !== "object" || v === null || !(TIPOS_PIEZA as readonly unknown[]).includes((v as { tipo?: unknown }).tipo)) return false;
+  // Un mueble del catálogo guarda sus medidas y colores: esos sí se validan (el resto lo valida el taller al armar).
+  const mueble = (v as { tipo: string; mueble?: unknown }).tipo === "escenografia" ? (v as { mueble?: unknown }).mueble : undefined;
+  return mueble === undefined || MuebleDePiezaSchema.safeParse(mueble).success;
+}, "Pieza desconocida o con un mueble de medidas o colores no válidos");
 
 export const EscenaSchema: z.ZodType<Escena> = z.object({
   sala: z.object({

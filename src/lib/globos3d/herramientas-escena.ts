@@ -34,6 +34,8 @@ import { armarEscena, descendientes, duplicarNodo, idNuevo, marcoDePared, quitar
 import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
 import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, guirnaldaFeston, piezaNueva } from "./escenas-presets";
 import { avisosDeColor } from "./avisos-color-escena";
+import { cambiarMobiliario, resumenDeEscenografia } from "./herramientas-escena-mobiliario";
+import { elementosDeEscenografia } from "./mobiliario-pieza";
 import { HERRAMIENTAS_EXTRA, NOMBRES_EXTRA, declaracionesExtra } from "./herramientas-escena-extra";
 
 /**
@@ -185,6 +187,7 @@ const PropiedadesSchema = z.object({
     .describe("trazo_organico: en vez de silueta, el recorrido exacto en el plano de la pared (x a la derecha desde el centro de la pieza, y hacia arriba desde el piso), en orden; un extremo con y ≤ grosor/2 nace del piso"),
   follaje: z.array(z.string().min(3).max(30)).min(1).max(4).optional().describe(`trazo_organico: flores y hojas de tela entre los globos (${TIPOS_FOLLAJE.join(", ")}), con color opcional («monstera», «palma dorada», «rosa marfil», «hoja_seca beige»); el primero es el que más se ve`),
   racimos: z.number().min(0).max(1).optional().describe("trazo_organico: 0 = cuerpo parejo, 1 = muy abultado en racimos (0,35 por defecto)"),
+  fondo_cm: z.number().optional().describe("mobiliario (escenografía): fondo total, de frente a atrás"),
   decoracion_id: z.enum(DECORACION_IDS).optional().describe(`decoracion: cuál (${DECORACIONES_PREDEFINIDAS.map((d) => `${d.id} = ${d.nombre}`).join("; ")})`),
 });
 type Propiedades = z.infer<typeof PropiedadesSchema>;
@@ -367,7 +370,7 @@ function medidasDe(p: Pieza): string {
     case "pared_trenzas": return `${r0(p.opciones.anchoCm)}×${r0(p.opciones.altoCm)} cm · ${p.opciones.patron}`;
     case "organico": return `${medidasCaja(p)}${p.flores ? " · con flores" : ""}${conteoOrganico(p)}`;
     case "decoracion": return `${p.decoracion.tipo}`;
-    case "escenografia": return `escenografía (${p.elementos.length} elementos, sin globos)`;
+    case "escenografia": { const m = resumenDeEscenografia(p); return m ? `${m.medidas} (escenografía, sin globos)` : `escenografía (${elementosDeEscenografia(p).length} elementos, sin globos)`; }
     case "globo": return `${p.formatoId} · ${r0(p.infladoCm)} cm`;
     case "forma": return `${nombreForma(p.forma)} · ${medidasCaja(p)}`;
     case "letras": return `«${p.letras.texto}» · ${r0(p.letras.altoCm)} cm de alto cada letra · ${p.letras.tecnica} ${p.letras.formatoId}`;
@@ -406,7 +409,11 @@ function medidasCaja(p: Pieza): string {
   } catch { return "sin medidas"; }
 }
 
+/** «, colores X» o nada si la pieza no tiene colores que decir (una escenografía armada). */
+const coloresDicho = (p: Pieza) => { const t = coloresTexto(p); return t ? `, colores ${t}` : ""; };
+
 function coloresTexto(p: Pieza): string {
+  if (p.tipo === "escenografia") return resumenDeEscenografia(p)?.colores ?? "";
   if (p.tipo === "arco_organico" || p.tipo === "organico") {
     const colores = p.tipo === "arco_organico" ? p.arco.colores : p.opciones.colores;
     const total = colores.reduce((s, c) => s + c.peso, 0) || 1;
@@ -639,11 +646,12 @@ function textoMetalizado(m: Extract<Pieza, { tipo: "metalizado" }>["metalizado"]
 }
 
 /** Aplica las propiedades pedidas a una pieza (nueva o existente). Solo cambia lo que viene. */
-function aplicarPropiedades(base: Pieza, entrada: Propiedades, notas: string[]): Pieza {
+function aplicarPropiedades(base: Pieza, entrada: Propiedades, notas: string[], nombre?: string): Pieza {
   const t = base.tipo;
   soloPara(entrada, "formato", ["columna", "arco", "guirnalda", "pared_malla", "globo"], t);
-  soloPara(entrada, "alto_cm", ["columna", "arco", "arco_organico", "pared_malla", "pared_trenzas", "organico", "forma", "letras", "arbol_globos"], t);
-  soloPara(entrada, "ancho_cm", ["arco", "arco_organico", "guirnalda", "pared_malla", "pared_trenzas", "organico", "forma"], t);
+  soloPara(entrada, "alto_cm", ["columna", "arco", "arco_organico", "pared_malla", "pared_trenzas", "organico", "forma", "letras", "arbol_globos", "escenografia"], t);
+  soloPara(entrada, "ancho_cm", ["arco", "arco_organico", "guirnalda", "pared_malla", "pared_trenzas", "organico", "forma", "escenografia"], t);
+  soloPara(entrada, "fondo_cm", ["escenografia"], t);
   soloPara(entrada, "caida_cm", ["guirnalda"], t);
   soloPara(entrada, "forma", ["arco"], t);
   soloPara(entrada, "patron", ["columna", "arco", "guirnalda", "pared_malla"], t);
@@ -652,7 +660,7 @@ function aplicarPropiedades(base: Pieza, entrada: Propiedades, notas: string[]):
   soloPara(entrada, "grosor_cm", ["arco_organico", "organico"], t);
   soloPara(entrada, "tamanos", ["arco_organico", "organico"], t);
   soloPara(entrada, "decoracion_id", ["decoracion"], t);
-  soloPara(entrada, "texto", ["letras", "metalizado"], t);
+  soloPara(entrada, "texto", ["letras", "metalizado", "escenografia"], t);
   soloPara(entrada, "pulgadas", ["metalizado"], t);
   soloPara(entrada, "color_metalizado", ["metalizado"], t);
   soloPara(entrada, "forma_metalizado", ["metalizado"], t);
@@ -782,8 +790,8 @@ function aplicarPropiedades(base: Pieza, entrada: Propiedades, notas: string[]):
       return g;
     }
     case "escenografia":
-      // No es globo de látex: no tiene colores Sempertex que cambiar.
-      return base;
+      // No es globo de látex: no tiene colores Sempertex. Un mueble cambia de medida, color y texto; lo demás avisa.
+      return cambiarMobiliario(base, props, notas, nombre ?? base.mueble?.id ?? "esta pieza");
     case "mural":
     case "techo":
       return props.colores ? recolorearEnOrden(base, props.colores, notas) : base;
@@ -952,7 +960,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       comprobarAltura(pieza, colocacion, escena.sala);
       const nodo: NodoEscena = { id, nombre: a.nombre ?? hecho.nombre, pieza, colocacion };
       const nueva = insertar(escena, nodo);
-      return { escena: nueva, resumen: conNotas(`Agregué «${nodo.nombre}» (id ${id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}, colores ${coloresTexto(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas) };
+      return { escena: nueva, resumen: conNotas(`Agregué «${nodo.nombre}» (id ${id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas) };
     }
 
     case "agregar_del_catalogo": {
@@ -989,8 +997,9 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
     case "cambiar_pieza": {
       const a = ESQUEMAS.cambiar_pieza.parse(argumentos);
       const nodo = nodoPorId(escena, a.id);
-      let pieza = aplicarPropiedades(nodo.pieza, a, notas);
-      for (const { de, a: hacia } of a.reemplazar_colores ?? []) {
+      let pieza = aplicarPropiedades(nodo.pieza, a, notas, nodo.nombre);
+      // En un mueble el cambio de colores ya lo hizo `aplicarPropiedades` (sus colores son `#rrggbb`, no códigos Sempertex).
+      for (const { de, a: hacia } of pieza.tipo === "escenografia" ? [] : a.reemplazar_colores ?? []) {
         const usados = coloresDeDato(pieza);
         const deCodigo = de.match(/\b(\d{3})\b/)?.[1] ?? usados.find((u) => usaColor(u.codigo, de))?.codigo;
         const actual = usados.find((u) => u.codigo === deCodigo) ?? fallar(`La pieza no usa el color «${de}». Usa: ${usados.map((u) => nombreColor(u.codigo)).join(", ")}.`);
@@ -1003,7 +1012,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       comprobarAltura(pieza, nodo.colocacion, escena.sala);
       const nodoNuevo: NodoEscena = { ...nodo, pieza, nombre: a.nombre ?? nodo.nombre };
       if (JSON.stringify(nodoNuevo) === JSON.stringify(nodo)) return { escena, resumen: conNotas(`«${nodo.nombre}» ya estaba así: no cambió nada.`, notas) };
-      return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza), resumen: conNotas(`Cambié «${nodoNuevo.nombre}» (${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}, colores ${coloresTexto(pieza)}.`, notas) };
+      return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza), resumen: conNotas(`Cambié «${nodoNuevo.nombre}» (${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}.`, notas) };
     }
 
     case "ajustar_tamanos": {
@@ -1050,7 +1059,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       if (colgadas.length) notas.push(`lo que va en ella (${colgadas.join(", ")}) sigue con ella; revisa que encaje`);
       const nodoNuevo: NodoEscena = { id: nodo.id, nombre, pieza, colocacion };
       const nueva = reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza);
-      return { escena: nueva, resumen: conNotas(`Cambié «${nodo.nombre}» (${NOMBRE_TIPO[nodo.pieza.tipo]}) por «${nombre}» (mismo id ${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}, colores ${coloresTexto(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas) };
+      return { escena: nueva, resumen: conNotas(`Cambié «${nodo.nombre}» (${NOMBRE_TIPO[nodo.pieza.tipo]}) por «${nombre}» (mismo id ${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas) };
     }
 
     case "recolorear_escena": {
@@ -1111,7 +1120,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       const nueva: Escena = { ...base, nodos };
       const raiz = nodos.find((n) => n.id === hecho.raizId);
       const otros = hecho.ids.filter((id) => id !== hecho.raizId);
-      const principal = raiz ? `Principal: ${raiz.id} · «${raiz.nombre}» · ${NOMBRE_TIPO[raiz.pieza.tipo]} · ${medidasDe(raiz.pieza)} · colores ${coloresTexto(raiz.pieza)} · ${dondeTexto(raiz.colocacion, nueva)}.` : "";
+      const principal = raiz ? `Principal: ${raiz.id} · «${raiz.nombre}» · ${NOMBRE_TIPO[raiz.pieza.tipo]} · ${medidasDe(raiz.pieza)}${coloresDicho(raiz.pieza).replace(/^,/, " ·")} · ${dondeTexto(raiz.colocacion, nueva)}.` : "";
       const lista = otros.length ? ` Con ella: ${otros.slice(0, 14).map((id) => { const n = nodos.find((x) => x.id === id)!; return `${id} (${n.pieza.tipo})`; }).join(", ")}${otros.length > 14 ? ` y ${otros.length - 14} más` : ""}.` : "";
       const sala = base !== escena ? " Tomé también su sala." : "";
       return { escena: nueva, resumen: conNotas(`Puse de la biblioteca «${item.nombre}» (${item.id}) como ${hecho.ids.length} pieza${hecho.ids.length === 1 ? "" : "s"} normales y editables.${sala} ${principal}${lista} Para cambiarla usa cambiar_pieza con su id.`, notas) };

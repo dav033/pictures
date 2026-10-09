@@ -31,7 +31,7 @@ export const REPORTAR_COMPARACION = "reportar_comparacion";
  * agregar piezas), no las de armar de cero (biblioteca, presets, grupos, disposición). Las declaraciones pesan ~80 000
  * caracteres y se reenvían en cada vuelta: con estas son la mitad, y una ronda cuesta casi la mitad.
  */
-export const HERRAMIENTAS_REFINAR: readonly string[] = ["ver_escena", "ver_pieza", "contar_globos", "ajustar_tamanos", "cambiar_pieza", "editar_globos", "recolorear_escena", "poner_remate", "mover_pieza", "girar_pieza", "agregar_pieza", "quitar_pieza"];
+export const HERRAMIENTAS_REFINAR: readonly string[] = ["ver_escena", "ver_pieza", "contar_globos", "ajustar_tamanos", "cambiar_pieza", "editar_globos", "recolorear_escena", "poner_remate", "mover_pieza", "girar_pieza", "agregar_pieza", "agregar_mobiliario", "quitar_pieza"];
 
 /** Las declaraciones de una ronda: las de corregir más la de reportar. */
 export const declaracionesDeRefinado = (todas: readonly DeclaracionHerramienta[]): DeclaracionHerramienta[] => [...todas.filter((d) => HERRAMIENTAS_REFINAR.includes(d.name)), DECLARACION_REPORTAR];

@@ -15,6 +15,7 @@ import { NOMBRE_PARED, type Colocacion, type Escena, type EscenaArmada, type Nod
 import type { Pieza } from "@/lib/globos3d/piezas";
 import { Deslizador } from "./PanelFlor";
 import { EditorLugar } from "./PanelEscena";
+import { EditorMueble, esMuebleEditable } from "./EditorMueble";
 import { PaletaEscena } from "./PaletaEscena";
 import { IconoTipo, padreDe, subtituloPieza } from "./tipos-pieza";
 import { BTN_ICO, BTN_PRI, DATO, centimetros, metros } from "./ui-taller";
@@ -146,6 +147,9 @@ function Medidas({ pieza, hecho, onPieza }: { pieza: Pieza; hecho: NodoArmado | 
     }
     case "decoracion":
       return <div className="grid grid-cols-2 gap-2"><Dato rotulo="Tipo">{TIPOS_DECORACION.find((t) => t.id === pieza.decoracion.tipo)?.nombre ?? "Decoración"}</Dato><Dato rotulo="Ancho"><span className="font-mono">{nf(ancho)} cm</span></Dato></div>;
+    case "escenografia":
+      if (esMuebleEditable(pieza)) return <EditorMueble pieza={pieza} onPieza={onPieza} />;
+      return <div className="grid grid-cols-2 gap-2"><Dato rotulo="Alto"><span className="font-mono">{metros(alto)}</span></Dato><Dato rotulo="Ancho"><span className="font-mono">{metros(ancho)}</span></Dato></div>;
     default:
       return <div className="grid grid-cols-2 gap-2"><Dato rotulo="Alto"><span className="font-mono">{metros(alto)}</span></Dato><Dato rotulo="Ancho"><span className="font-mono">{metros(ancho)}</span></Dato></div>;
   }
