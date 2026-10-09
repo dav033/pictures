@@ -39,12 +39,23 @@ export type ClaseFalloImagen = "red" | "tiempo" | "servidor" | "rechazo" | "resp
 export class ErrorImagen extends Error {
   readonly clase: ClaseFalloImagen;
   readonly status: number | undefined;
-  constructor(clase: ClaseFalloImagen, mensaje: string, status?: number) {
+  /** El `codigo` que el servidor puso en su rechazo (`{ error, codigo }`), si lo trajo. */
+  readonly codigo: string | undefined;
+  constructor(clase: ClaseFalloImagen, mensaje: string, status?: number, codigo?: string) {
     super(mensaje);
     this.name = "ErrorImagen";
     this.clase = clase;
     this.status = status;
+    this.codigo = codigo;
   }
+}
+
+/** Rechazos 429 que NO son pasajeros aunque el estado lo parezca: otra imagen en un rato, no en un reintento ni en una consulta. */
+const CODIGOS_DEFINITIVOS: ReadonlySet<string> = new Set(["TOPE_DE_IMAGENES_NAVEGADOR"]);
+
+const CODIGO_DEL_SERVIDOR = z.object({ codigo: z.string().min(1).max(60) }).passthrough();
+async function codigoDeLaRespuesta(respuesta: Response): Promise<string | undefined> {
+  try { return CODIGO_DEL_SERVIDOR.safeParse(await respuesta.json() as unknown).data?.codigo; } catch { return undefined; }
 }
 
 export type ImagenObtenida = {
@@ -157,7 +168,9 @@ export async function pedirImagenConRecuperacion(opciones: OpcionesPedirImagen):
         signal: tope.senal,
       });
       if (!respuesta.ok) {
-        throw new ErrorImagen(statusPasajero(respuesta.status) ? "servidor" : "rechazo", `${ruta} respondió con estado ${respuesta.status}.`, respuesta.status);
+        const codigo = await codigoDeLaRespuesta(respuesta);
+        const pasajero = statusPasajero(respuesta.status) && !(codigo && CODIGOS_DEFINITIVOS.has(codigo));
+        throw new ErrorImagen(pasajero ? "servidor" : "rechazo", `${ruta} respondió con estado ${respuesta.status}.`, respuesta.status, codigo);
       }
       let datos: unknown;
       try {

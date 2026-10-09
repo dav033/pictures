@@ -48,6 +48,8 @@ type Props = {
   /** Lo que la imagen muestra y no se cotiza (mesa, torta, luces del entorno del evento): va bajo la imagen, como en la clásica. */
   avisoImagen?: string;
   estadoImagen: EstadoImagen;
+  /** Con `estadoImagen` en error: por qué falló y si repetir sirve. Sin él, el genérico (se puede reintentar). */
+  falloImagen?: { texto: string; reintentable: boolean };
   /** Costeo abierto para ESTE plan (no global): personal, negocio o ninguno. */
   usoCosteo: Uso | null;
   compraAbierta: boolean;
@@ -97,7 +99,7 @@ function sinAjuste(): void {}
  * con él, con una acción principal clara («Ver cómo quedaría») y el resto a mano. Las cantidades son de Python.
  */
 export function TarjetaPlan(props: Props) {
-  const { plan, cotizacion, imagen, avisoImagen, estadoImagen, usoCosteo, usoConocido, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes, onSugerencia } = props;
+  const { plan, cotizacion, imagen, avisoImagen, estadoImagen, falloImagen, usoCosteo, usoConocido, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes, onSugerencia } = props;
   const ultimoAjuste = ajustes?.at(-1);
   const es3d = props.motor === "3d";
   // La espec firmada con la que el servidor vuelve a armar la vista 3D; un plan 3D que no la trae (guardado antes) no tiene vista.
@@ -153,6 +155,7 @@ export function TarjetaPlan(props: Props) {
     // Abrir con el uso ya sabido es costear con él: queda registrado y la acción, hecha.
     if (abrir && usoCosteo === null && usoConocido) onCosteo(usoConocido, "conocido");
   };
+  const sinReintento = estadoImagen === "error" && falloImagen?.reintentable === false;
   const bloqueado = ocupado || estadoImagen === "cargando" || recalculando;
   // Tras un ajuste, la paleta del concepto ya no dice los colores que lleva el plan: se muestran los que Python resolvió.
   const paleta = (plan.plan.concepto.paleta.length && !ajustes?.length ? plan.plan.concepto.paleta : [...new Set(desglose.globos.map((globo) => globo.color))]).slice(0, 6);
@@ -163,7 +166,7 @@ export function TarjetaPlan(props: Props) {
     [plan, cotizacion, contextoCompra.evento, contextoCompra.tematica, contextoCompra.edad],
   );
   const hecha = (accion: AccionPlan) => hechas.includes(accion);
-  const etiquetaPrincipal = estadoImagen === "error" ? "Reintentar imagen" : estadoImagen === "lista" ? "Dibujar otra versión" : "Ver cómo quedaría";
+  const etiquetaPrincipal = estadoImagen === "error" ? (sinReintento ? "Ver cómo quedaría" : "Reintentar imagen") : estadoImagen === "lista" ? "Dibujar otra versión" : "Ver cómo quedaría";
   // Un color de la foto que el plan no compra ni con el reintento se dice en una frase, no se pierde en silencio
   // (`avisoColoresFoto`). Solo los de la paleta del plan: con «Otros colores» la foto ya no manda. Tras un ajuste, no.
   const avisoColores = useMemo(() => (ajustes?.length ? null : avisoColoresFoto(plan, plan.plan.concepto.paleta.length ? { soloEstos: plan.plan.concepto.paleta } : {})), [plan, ajustes]);
@@ -365,7 +368,7 @@ export function TarjetaPlan(props: Props) {
                   propio: el principal, justo debajo, dice «Reintentar imagen»; la vista anuncia el fallo. */}
               {estadoImagen === "error" && (
                 <p className="rounded-xl bg-aviso-suave px-3 py-2 text-sm text-texto">
-                  La imagen no alcanzó a llegar esta vez. Tu plan sigue guardado: toca «Reintentar imagen».
+                  {falloImagen?.texto ?? "La imagen no alcanzó a llegar esta vez. Tu plan sigue guardado: toca «Reintentar imagen»."}
                 </p>
               )}
             </div>
@@ -378,7 +381,7 @@ export function TarjetaPlan(props: Props) {
         <motion.div variants={hijoEscalonado} className="mt-4 space-y-2">
           <motion.button
             type="button"
-            disabled={bloqueado || (es3d && !firma3d)}
+            disabled={bloqueado || sinReintento || (es3d && !firma3d)}
             onClick={() => onAccion("ver")}
             whileTap={bloqueado ? undefined : { scale: 0.97 }}
             transition={RESORTE}

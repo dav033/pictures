@@ -74,6 +74,7 @@ import { AVISO_VERSION_NUEVA, CABECERA_VERSION_APP, RespuestaIncompatibleError, 
 import { borrarEstadoGuiado } from "./empezar-de-nuevo";
 import { useMotorGuiada } from "./usarMotorGuiada";
 import { pedirImagenPlan3D } from "./imagen-plan-3d";
+import { mensajeErrorImagen } from "./mensaje-error-imagen";
 import { firmaDePlan } from "./motor3d/firma-plan";
 import { TEXTO_EDICION_PLAN_3D, TEXTO_IMAGEN_PLAN_3D, TEXTO_REHECHO_EN_PYTHON } from "./Plan3DEnPreparacion";
 import type { MotorGuiada } from "@/lib/guiada-motor/tipos";
@@ -1263,9 +1264,10 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       if (sesion !== sesionRef.current) return;
       registrarFallo("imagen.fallo", causa, { mensajeId, plan_hash: plan.plan_hash, clase: causa instanceof ErrorImagen ? causa.clase : null });
       console.warn("[asistente-guiado] no se pudo dibujar la decoración", causa);
-      // Sin tarjeta de error aparte: la del plan dice que la imagen no alcanzó a llegar y su botón principal es «Reintentar imagen».
-      actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, errorImagen: true }));
-      setAnuncio("La imagen no alcanzó a llegar. Puedes reintentarla");
+      // Sin tarjeta de error aparte: la del plan dice por qué falló y, solo si repetir puede servir, su botón principal es «Reintentar imagen».
+      const fallo = mensajeErrorImagen(causa);
+      actualizarWidget(mensajeId, "plan", (actual) => ({ ...actual, errorImagen: true, falloImagen: fallo }));
+      setAnuncio(fallo.texto);
     } finally {
       if (imagenControlRef.current === control) imagenControlRef.current = null;
       if (imagenEnCursoRef.current === mensajeId) { imagenEnCursoRef.current = null; setImagenEnCurso(null); }
@@ -1751,6 +1753,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
             imagen={imagen}
             {...(widget.avisoImagen ? { avisoImagen: widget.avisoImagen } : {})}
             estadoImagen={estadoImagen}
+            {...(widget.falloImagen ? { falloImagen: widget.falloImagen } : {})}
             motor={widget.motor}
             usoCosteo={widget.usoCosteo ?? null}
             usoConocido={uso}

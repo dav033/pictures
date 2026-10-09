@@ -30,7 +30,10 @@ export const WidgetGuiadoSchema = z.discriminatedUnion("tipo", [
     motor: MotorGuiadaSchema.catch(MOTOR_POR_DEFECTO), cotizacion: CotizacionPlanGuiadoSchema.optional(), pasos: z.array(PasoPlanSchema).optional(), fotoInspiracion: z.boolean().optional(),
     /** Con `fotoInspiracion`: el mensaje que trae la lectura de la foto de la que salió el plan (y sus versiones rehechas). */
     referenciaId: z.string().min(1).max(80).optional(),
-    imagen: z.union([z.string().url(), z.string().startsWith("/api/guiada-imagen/")]).optional(), errorImagen: z.boolean().optional(), compraAbierta: z.boolean().optional(),
+    imagen: z.union([z.string().url(), z.string().startsWith("/api/guiada-imagen/")]).optional(), errorImagen: z.boolean().optional(),
+    /** Por qué falló la imagen, en palabras de cliente, y si repetir la petición puede servir (`mensaje-error-imagen.ts`). Sin él, el fallo es el genérico y se puede reintentar. */
+    falloImagen: z.object({ texto: z.string().min(1).max(300), reintentable: z.boolean() }).strict().optional(),
+    compraAbierta: z.boolean().optional(),
     /**
      * Lo que la imagen muestra y no se cotiza (mesa, torta, regalos, luces del entorno del evento, o lo que conserva de
      * la foto): el `avisoNoCotizado` de /api/generate, el mismo que ve la clásica junto a su imagen.
