@@ -27,6 +27,11 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [new URL("https://cdn.shopify.com/s/files/**")],
   },
+  // Las letras de `public/fonts/` llevan la versión en el nombre (great-vibes-5.3.0-latin-400.woff2): un archivo nuevo es otra url, así que el
+  // navegador puede guardarlas para siempre (sin esto Next las sirve con max-age=0 y las vuelve a pedir en cada visita).
+  async headers() {
+    return [{ source: "/fonts/:archivo*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] }];
+  },
 };
 
 export default nextConfig;
