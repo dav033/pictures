@@ -1,12 +1,14 @@
 import { ambienteNormalizado, type Escena } from "@/lib/globos3d/escena";
+import { leerTurnos, turnosParaGuardar, type TurnoPanel } from "@/lib/globos3d/turnos-ia";
 
 /**
  * La escena del taller guardada en este navegador (localStorage): se guarda sola tras cada cambio y se recupera al
  * volver a /3d. Lo que no cuadra (otra versión, datos dañados) se descarta y el taller abre su escena de partida.
+ * La conversación con la IA (sus turnos, con lo que cambió cada uno) se guarda con la escena y vuelve al recargar.
  */
 const CLAVE = "taller3d:escena:v1";
 
-export type EscenaGuardada = { nombre: string; escena: Escena };
+export type EscenaGuardada = { nombre: string; escena: Escena; conversacion?: TurnoPanel[] };
 
 const esObjeto = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const numero = (v: unknown) => typeof v === "number" && Number.isFinite(v);
@@ -29,7 +31,7 @@ export function leerGuardada(): EscenaGuardada | null {
     // El ambiente de la sala es opcional: lo que no cuadra se descarta (la sala queda neutra), no la escena entera.
     const ambiente = ambienteNormalizado((datos.escena.sala as { ambiente?: unknown }).ambiente);
     if (ambiente) datos.escena.sala.ambiente = ambiente; else delete datos.escena.sala.ambiente;
-    return datos;
+    return { ...datos, conversacion: leerTurnos((datos as { conversacion?: unknown }).conversacion) };
   } catch {
     return null;
   }
@@ -38,7 +40,7 @@ export function leerGuardada(): EscenaGuardada | null {
 /** `false` si el navegador no dejó guardarla (almacenamiento lleno o bloqueado). */
 export function guardarEscena(g: EscenaGuardada): boolean {
   try {
-    window.localStorage.setItem(CLAVE, JSON.stringify(g));
+    window.localStorage.setItem(CLAVE, JSON.stringify({ ...g, ...(g.conversacion ? { conversacion: turnosParaGuardar(g.conversacion) } : {}) }));
     return true;
   } catch {
     return false;

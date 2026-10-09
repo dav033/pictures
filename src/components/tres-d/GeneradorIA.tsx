@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Sparkles, LoaderCircle, Trash2 } from "lucide-react";
 import { AMBIENTES_RENDER, AMBIENTE_POR_DEFECTO, type AmbienteRender } from "@/lib/globos3d/render-ia";
+import { TIEMPO_FOTO, resumenFotoRealista } from "@/lib/globos3d/foto-realista";
 import type { AspectoCaptura } from "./escena-globos";
 import { MAXIMO, borrarImagen, guardarImagen, leerImagenes, type ImagenGuardada } from "./imagenes-guardadas";
 import { VisorFoto } from "./VisorFoto";
@@ -13,7 +14,7 @@ const fecha = new Intl.DateTimeFormat("es", { day: "numeric", month: "short", ho
 const tituloDe = (g: ImagenGuardada) => `${g.escena ? `${g.escena} · ` : ""}${AMBIENTES_RENDER.find((a) => a.id === g.ambiente)?.nombre ?? ""} · ${fecha.format(new Date(g.creada))}`;
 
 /**
- * «Generar imagen con IA»: captura lo que se ve en el visor y lo convierte en una foto realista con FLUX (la
+ * «Foto realista»: captura lo que se ve en el visor y lo convierte en una foto realista con FLUX (la
  * decoración se conserva: forma, cantidades y colores; FLUX pone el látex real y el salón). Cada foto queda guardada
  * en este navegador (`imagenes-guardadas.ts`, las últimas 40) y sigue ahí al volver; nada se guarda en el servidor.
  */
@@ -60,7 +61,7 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-2xl bg-superficie p-3 ring-1 ring-borde" aria-label="Imagen con IA">
+    <section className="flex flex-col gap-3 rounded-2xl bg-superficie p-3 ring-1 ring-borde" aria-label="Foto realista">
       <div className="flex flex-wrap items-end gap-2">
         <label htmlFor="ambiente-ia" className="grid gap-1 text-xs text-texto-suave">
           Lugar
@@ -71,9 +72,9 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
         <button type="button" onClick={() => void generar()} disabled={cargando}
           className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-acento px-4 text-sm font-semibold text-sobre-acento disabled:opacity-60">
           {cargando ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : <Sparkles className="size-4" aria-hidden />}
-          {cargando ? "Generando la foto… (20–40 s)" : "Generar imagen con IA"}
+          {cargando ? `Generando la foto… (${TIEMPO_FOTO})` : "Generar foto realista"}
         </button>
-        <p className="text-xs text-texto-suave">Usa lo que se ve en el visor (gíralo antes para elegir el ángulo).</p>
+        <p className="text-xs text-texto-suave">Usa lo que se ve en el visor (gíralo antes para elegir el ángulo). {resumenFotoRealista()}.</p>
       </div>
       {error && <p role="alert" className="text-sm text-texto">{error}</p>}
       {aviso && <p role="status" className="text-sm text-texto-suave">{aviso}</p>}
