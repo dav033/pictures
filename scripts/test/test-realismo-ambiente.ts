@@ -24,6 +24,8 @@ import { ejePanel, lentejuelasDePanel } from "@/components/tres-d/lentejuelas-in
 import { MINIMO_CONFETI, PRESUPUESTO_CONFETI, TOPE_CONFETI, cantidadConfeti, discosConfeti, radioEscamaCm, topePorGlobo } from "@/components/tres-d/confeti-visor";
 import { achatadoDe } from "@/components/tres-d/deformacion-globo";
 import { papelDeConfeti } from "@/components/tres-d/armada-visor";
+import { MARCA_LUZ_CALIDA } from "@/lib/globos3d/luz-sala";
+import { promptRender3d } from "@/lib/globos3d/render-ia";
 
 let fallos = 0;
 function prueba(nombre: string, f: () => void) {
@@ -200,6 +202,14 @@ prueba("confeti: el reparto de un tamaño y variante se reutiliza (mismas matric
   assert.notEqual(discosConfeti(0.15, 6, 200), a);
 });
 
+prueba("confeti: el reparto no depende de qué globo lo pidió primero (la caché no cambia el resultado)", () => {
+  // Dos radios que caen en el mismo escalón de la caché dan el mismo reparto, pidan primero uno u otro.
+  const cercano = discosConfeti(0.1502, 9, 150).map((m) => Array.from(m.elements));
+  const lejano = discosConfeti(0.1498, 9, 150).map((m) => Array.from(m.elements));
+  assert.deepEqual(cercano, lejano);
+  assert.equal(discosConfeti(0.1502, 9, 150), discosConfeti(0.1498, 9, 150));
+});
+
 prueba("confeti: el papel sale del metal de la pieza (dorado con dorados, plateado si no)", () => {
   assert.equal(papelDeConfeti([{ codigo: "970" }, { codigo: "970" }, { codigo: "971" }]), "#e0b33f");
   assert.equal(papelDeConfeti([{ codigo: "981" }, { codigo: "970" }]), "#d9d9e0");
@@ -210,17 +220,39 @@ prueba("confeti: el papel sale del metal de la pieza (dorado con dorados, platea
 // Achatado
 // ----------------------------------------------------------------------------------------------------------
 prueba("achatadoDe: el nudo (el origen) no se mueve, es determinista y varía poco", () => {
-  const nudo = { x: 12.5, y: 80, z: -40 };
-  const a = achatadoDe(nudo, 25, "R-12"), b = achatadoDe({ ...nudo }, 25, "R-12");
+  const nudo = { x: 12.5, y: 80, z: -40 }, ref = { x: 10, y: 75, z: -45 };
+  const a = achatadoDe("arco", nudo, ref, 25, "R-12"), b = achatadoDe("arco", { ...nudo }, { ...ref }, 25, "R-12");
   assert.deepEqual(Array.from(a.elements), Array.from(b.elements));
   const origen = new THREE.Vector3(0, 0, 0).applyMatrix4(a);
   assert.deepEqual(origen.toArray(), [0, 0, 0]);
   const escala = new THREE.Vector3().setFromMatrixScale(a);
   for (const e of [escala.x, escala.y, escala.z]) assert.ok(e > 0.92 && e < 1.08, `escala ${e}`);
-  const distintos = new Set(Array.from({ length: 30 }, (_, i) => achatadoDe({ x: i * 7, y: 50, z: i }, 25, "R-12").elements[5]!.toFixed(4)));
+  const distintos = new Set(Array.from({ length: 30 }, (_, i) => achatadoDe("arco", { x: i * 7, y: 50, z: i }, ref, 25, "R-12").elements[5]!.toFixed(4)));
   assert.ok(distintos.size > 20, "cada globo sale distinto");
-  // No depende del lugar del globo en una lista: solo cuentan su nudo, su tamaño y su formato.
-  assert.notDeepEqual(Array.from(achatadoDe(nudo, 30, "R-12").elements), Array.from(a.elements));
+  assert.notDeepEqual(Array.from(achatadoDe("arco", nudo, ref, 30, "R-12").elements), Array.from(a.elements));
+  assert.notDeepEqual(Array.from(achatadoDe("otra", nudo, ref, 25, "R-12").elements), Array.from(a.elements), "cada pieza tiene su azar");
+});
+
+prueba("achatadoDe: mover la pieza no cambia ningún globo (arrastrar, recargar y capturar dan lo mismo)", () => {
+  const referencia = { x: 100, y: 40, z: -150 };
+  const nudos = Array.from({ length: 60 }, (_, i) => ({ x: referencia.x + (i % 8) * 12.25 - 33.3, y: referencia.y + Math.floor(i / 8) * 11.5, z: referencia.z + (i % 5) * 3.75 }));
+  for (const [dx, dy, dz] of [[0.5, 0, 0], [37.1, 0, -12.3], [-250, 0, 400], [0.25, 0.25, 0.25], [1e-9, 0, 0]] as const) {
+    const movida = { x: referencia.x + dx, y: referencia.y + dy, z: referencia.z + dz };
+    for (const n of nudos) {
+      const a = achatadoDe("arco", n, referencia, 25, "R-12");
+      const b = achatadoDe("arco", { x: n.x + dx, y: n.y + dy, z: n.z + dz }, movida, 25, "R-12");
+      assert.deepEqual(Array.from(b.elements), Array.from(a.elements), `desplazamiento ${dx}, ${dy}, ${dz}`);
+    }
+  }
+});
+
+prueba("la frase de la sala dice que la luz es cálida y el prompt de FLUX no pide quitarla (y sin ambiente sigue neutra)", () => {
+  const frase = (e: Escena) => escenaEnIngles(e, armarEscena(e));
+  assert.ok(frase(conAmbiente).includes(MARCA_LUZ_CALIDA));
+  assert.ok(!frase(vacia).includes(MARCA_LUZ_CALIDA));
+  const calido = promptRender3d(frase(conAmbiente), "igual_visor"), neutro = promptRender3d(frase(vacia), "igual_visor");
+  assert.ok(/warm studio lighting/.test(calido) && !/do not warm/.test(calido), calido);
+  assert.ok(/do not warm or darken/.test(neutro) && !/warm studio lighting/.test(neutro), neutro);
 });
 
 prueba("armar una escena con ambiente no cambia lo armado (el ambiente es solo visual)", () => {

@@ -49,9 +49,17 @@ async function luminosidadDelFoil(png: Buffer): Promise<{ media: number; oscuros
 /**
  * La escena completa de una foto con lentejuelas, confeti y cromados, con piso de madera y luces de techo, en el visor que sigue
  * vivo: piso, lentejuelas, confeti y cromado se crean DESPUÉS de una captura fuera de pantalla (`__capturarFoto`) y deben
- * salir idénticos a los de una página donde no hubo ninguna captura (mismo hash), y no negros. Dos dibujos seguidos también son idénticos.
+ * salir iguales a los de una página donde no hubo ninguna captura (salvo unos píxeles de borde por redondeo), y no negros. Dos dibujos seguidos también son idénticos.
  */
 const AMBIENTE = { piso: "madera", luces: true } as const;
+/** Cuántos píxeles difieren en algún canal más de 24 niveles entre dos PNG del mismo tamaño. */
+async function pixelesDistintos(a: Buffer, b: Buffer): Promise<number> {
+  const [x, y] = await Promise.all([sharp(a).removeAlpha().raw().toBuffer(), sharp(b).removeAlpha().raw().toBuffer()]);
+  let n = 0;
+  for (let i = 0; i < x.length; i += 3) if (Math.max(Math.abs(x[i]! - y[i]!), Math.abs(x[i + 1]! - y[i + 1]!), Math.abs(x[i + 2]! - y[i + 2]!)) > 24) n++;
+  return n;
+}
+
 async function verificarEscenaCompleta(navegador: import("playwright").Browser) {
   const lectura = REFERENCIAS_DUENO.find((r) => r.numero === 3)!.lectura;
   const escena = compilarLectura(lectura).escena;
@@ -82,7 +90,11 @@ async function verificarEscenaCompleta(navegador: import("playwright").Browser) 
   const res = { limpia1: hash(a1), limpia2: hash(a2), trasCaptura: hash(b1), oscuros: lum.oscuros };
   console.log(JSON.stringify(res));
   if (res.limpia1 !== res.limpia2) { console.error("FALLA: dos dibujos seguidos de la misma escena no son idénticos"); process.exit(1); }
-  if (res.limpia1 !== res.trasCaptura) { console.error("FALLA: la escena dibujada después de una captura no es idéntica a la de una página sin captura (¿entorno liberado?)"); process.exit(1); }
+  // Una pieza que el visor ya tenía de la escena anterior se reutiliza corrida (suma un desplazamiento a sus matrices): puede diferir en
+  // unos pocos píxeles de borde por el redondeo; un material con el entorno liberado cambiaría miles.
+  const distintos = await pixelesDistintos(a1, b1);
+  console.log(`píxeles distintos (> 24 de 255) entre la página limpia y la de después de la captura: ${distintos}`);
+  if (distintos > 40) { console.error("FALLA: la escena dibujada después de una captura no es igual a la de una página sin captura (¿entorno liberado?)"); process.exit(1); }
   if (lum.oscuros > 0.12) { console.error(`FALLA: demasiado negro tras la captura (${(lum.oscuros * 100).toFixed(1)} %)`); process.exit(1); }
   console.log("OK: piso, lentejuelas, confeti y cromado salen iguales y con color después de una captura.");
 }

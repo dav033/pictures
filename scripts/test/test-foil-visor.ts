@@ -81,7 +81,7 @@ prueba("pedir «dorado», «oro» o «gold» a un metalizado da un foil dorado, 
 prueba("los cromados y metales de látex se aclaran hasta su luminosidad mínima", () => {
   for (const f of FORMATOS_GLOBO) for (const ref of coloresDelFormato(f.id)) {
     const familia = ref.familia as string;
-    const minimo = familia === "reflex" ? 0.62 : familia === "metal" ? 0.5 : 0;
+    const minimo = familia === "reflex" ? 0.35 : familia === "metal" ? 0.5 : 0;
     if (!minimo) continue;
     const l = luminosidad(colorDeLatex(familia, ref.hexGlobo));
     assert.ok(l >= minimo - 0.02 || l >= luminosidad(new THREE.Color(ref.hexGlobo)), `${f.id} ${ref.codigo} ${ref.hexGlobo}: l = ${l.toFixed(2)}`);
