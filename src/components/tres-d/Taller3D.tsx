@@ -129,7 +129,8 @@ export function Taller3D() {
   // La última escena guardada en este navegador (si hay) en vez de la de partida. En el servidor no hay navegador: hasta
   // hidratar (`cargada`) no se pinta nada que dependa de la escena, así lo del servidor y lo del navegador coinciden.
   const [guardadaAlAbrir] = useState(() => (typeof window === "undefined" ? null : leerGuardada()));
-  const [claveInicial] = useState(() => guardadaAlAbrir?.clave ?? claveNueva());
+  // La clave nueva lleva la hora: en el servidor (prerender) Next no admite `Date.now()`, y allí no se usa (no hay conversación que cargar).
+  const [claveInicial] = useState(() => guardadaAlAbrir?.clave ?? (typeof window === "undefined" ? "servidor" : claveNueva()));
   const historialEscena = useHistorialEscena(() => guardadaAlAbrir?.escena ?? escenaPredefinida("arco_organico_columnas_guirnalda"), claveInicial);
   const escenaEdit = historialEscena.escena;
   const setEscenaEdit = historialEscena.cambiar;
