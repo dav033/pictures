@@ -54,6 +54,18 @@ prueba("el tablero de acrílico del neón llega a FLUX como «clear acrylic» (n
   assert.match(frase ?? "", /cursive neon sign in clear acrylic and /);
 });
 
+prueba("un fondo de foto fijo (sin opciones) llega a FLUX con sus colores, no solo con su nombre", () => {
+  const frase = (pieza: LecturaFoto["piezas"][number]) => {
+    const nodo = compilarLectura({ ...base, piezas: [pieza] }).escena.nodos[0]!;
+    return fraseDeEscenografia(nodo.pieza as Parameters<typeof fraseDeEscenografia>[0]) ?? "";
+  };
+  const panel = frase({ tipo: "fondo", id: "panel_redondo", x: 0.5, yBase: 0.8, ancho: 0.4, alto: 0.4, colores: [{ nombre: "crema", hex: "#f3e7cf", peso: 60, acabado: "mate" }, { nombre: "dorado", hex: "#d8b25a", peso: 40, acabado: "cromado" }] });
+  assert.match(panel, /^round backdrop panel in .+ and .+/, panel);
+  assert.ok(!/gray|grey/i.test(panel), `el pie del panel no es un color principal: ${panel}`);
+  assert.match(frase(lentejuelas), /^sequin wall panel in /);
+  assert.match(frase({ tipo: "fondo", id: "mesa_mantel", x: 0.5, yBase: 0.8, ancho: 0.4, alto: 0.2, colores: [BLANCO] }), /^table with a floor-length tablecloth in /);
+});
+
 prueba("sin panel delante, lo colgado sigue en la pared", () => {
   const { nodo } = opcionesDe({ ...base, piezas: [neon] }, "neon_cursiva");
   assert.equal(nodo.colocacion.en, "pared");

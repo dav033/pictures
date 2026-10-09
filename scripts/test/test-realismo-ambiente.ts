@@ -89,6 +89,13 @@ prueba("la frase de la sala para FLUX dice piso de tablones solo con piso de mad
   assert.ok(!/plain and empty/.test(madera), madera);
 });
 
+prueba("la ventana de la sala se describe para FLUX (solo con paredes laterales, que es cuando el visor la dibuja)", () => {
+  const frase = (mostrar: Partial<typeof SALA_INICIAL.mostrar>) => { const e: Escena = { sala: { ...SALA_INICIAL, mostrar: { ...SALA_INICIAL.mostrar, ...mostrar }, ambiente: { ventana: true } }, nodos: [] }; return escenaEnIngles(e, armarEscena(e)); };
+  assert.match(frase({ laterales: true }), /window with bright daylight on the right side wall/);
+  assert.ok(!/window/.test(frase({ laterales: false })), "sin paredes laterales no hay ventana");
+  assert.ok(!/window/.test(escenaEnIngles(conAmbiente, armarEscena(conAmbiente))), "sin ventana, ni se nombra");
+});
+
 // ----------------------------------------------------------------------------------------------------------
 // Lentejuelas
 // ----------------------------------------------------------------------------------------------------------

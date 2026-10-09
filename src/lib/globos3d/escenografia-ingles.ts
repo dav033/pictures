@@ -1,4 +1,4 @@
-import type { AcabadoRotulo } from "./escenografia";
+import type { AcabadoRotulo, ElementoEscenografia } from "./escenografia";
 import { elementosDeEscenografia, rotuloArmado, type PiezaEscenografia } from "./mobiliario-pieza";
 import { tonoEnIngles } from "./render-ia";
 import { ACABADO_ROTULO_EN, lineasDeRotulo, textoEnUnaLinea } from "./rotulos";
@@ -48,6 +48,21 @@ const letrasEn = (texto: string, color: string, acabado: AcabadoRotulo): string 
   return `${colorDeLetrasEn(color, acabado)} cursive ${ACABADO_ROTULO_EN[acabado]} lettering ${JSON.stringify(textoEnUnaLinea(texto))}${lineas > 1 ? ` set on ${LINEAS_EN[Math.min(lineas, 3)]} lines` : ""}`;
 };
 
+/** Lo que ocupa un elemento de cara a la cámara (cm²): para saber cuáles son sus colores principales y cuáles un detalle (el pie de un panel). */
+function areaVisible(e: ElementoEscenografia): number {
+  if (e.forma === "caja") return Math.max(e.tamano.x * e.tamano.y, e.tamano.x * e.tamano.z, e.tamano.y * e.tamano.z);
+  if (e.forma === "cilindro") return 2 * Math.max(e.radioCm, e.radioArribaCm ?? 0) * e.altoCm;
+  const xs = e.contorno.map((q) => q.x), ys = e.contorno.map((q) => q.y);
+  return (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys));
+}
+
+/** Hasta tres colores de lo que se ve de una pieza fija, de delante hacia atrás, sin los detalles (menos de un cuarto del elemento mayor). */
+function coloresVisibles(elementos: readonly ElementoEscenografia[]): string[] {
+  const mayor = Math.max(0, ...elementos.map(areaVisible));
+  const principales = elementos.filter((e) => areaVisible(e) >= mayor / 4);
+  return [...new Set(principales.map((e) => e.hex.toLowerCase()).reverse())].slice(0, 3);
+}
+
 /**
  * La frase de una pieza de escenografía del catálogo para FLUX: su nombre en inglés, con sus colores (nombre y hex) y, en un
  * letrero con texto o con un rótulo en cursiva, lo que dice y cómo está hecho («black cursive vinyl lettering "David y Dayan" on a
@@ -67,13 +82,14 @@ export function fraseDeEscenografia(p: PiezaEscenografia): string | null {
     const base = `${tonoEnIngles(tela)} fabric backdrop panel in a ${tonoEnIngles(marco)} rectangular frame`;
     return letras ? `${letras} on a ${base}` : base;
   }
-  if (!o) return letras ? `${nombre}, with ${letras} on it` : nombre;
-  const distintos = [...new Set(o.colores.slice(0, 2))];
   // El material de cada color sale de la pieza armada: un tablero de acrílico es «clear acrylic», no su color (que es casi blanco).
-  const acrilicos = new Set(elementosDeEscenografia(p).filter((e) => e.acabado === "acrilico").map((e) => e.hex.toLowerCase()));
+  const elementos = elementosDeEscenografia(p);
+  const acrilicos = new Set(elementos.filter((e) => e.acabado === "acrilico").map((e) => e.hex.toLowerCase()));
   const tono = (hex: string) => (acrilicos.has(hex.toLowerCase()) ? "clear acrylic" : tonoEnIngles(hex));
+  // Un fondo de foto fijo (panel, pedestales, arcos) viene sin opciones: sus colores son los de lo que se ve de él.
+  const distintos = o ? [...new Set(o.colores.slice(0, 2))] : coloresVisibles(elementos);
   const colores = distintos.length ? ` in ${distintos.map(tono).join(" and ")}` : "";
-  return `${nombre}${colores}${o.texto ? ` reading ${JSON.stringify(textoEnUnaLinea(o.texto))}` : ""}${letras ? `, with ${letras} on it` : ""}`;
+  return `${nombre}${colores}${o?.texto ? ` reading ${JSON.stringify(textoEnUnaLinea(o.texto))}` : ""}${letras ? `, with ${letras} on it` : ""}`;
 }
 
 /** Qué son los props de escenografía: lo que se sabe del catálogo («6 × Tiffany chair in …, a round banquet table in …») o, si no, la frase de siempre. */
