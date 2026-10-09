@@ -267,7 +267,7 @@ const BASE: readonly MuebleCatalogo[] = [
     id: "rotulo_acrilico", fondo: "fijo", nombre: "Nombre de acrílico", grupo: "decorado", lugar: "piso", retiroCm: 34, flotaCm: 115, conTexto: true, textoPorDefecto: TEXTO_ROTULO_ACRILICO, lineasTexto: 3,
     acabadosPropios: [["metal", "Espejo"], ["mate", "Mate"]],
     descripcion: "Nombre o frase recortado en acrílico de 6 mm, letra cursiva unida (texto a elegir), suelto y en el aire, delante de un aro o arco; dorado espejo (acabado metal = espejo, mate = liso).",
-    medidas: { anchoCm: 120, fondoCm: 0.6, altoCm: 30 }, colores: ["#d6b25a"], coloresDe: ["letras"], armar: deDecorado(rotuloAcrilico, "metal", "metal"),
+    medidas: { anchoCm: 120, fondoCm: 0.6, altoCm: 40 }, colores: ["#d6b25a"], coloresDe: ["letras"], armar: deDecorado(rotuloAcrilico, "metal", "metal"),
   }),
   mueble({
     id: "columna_griega", fondo: "igual_ancho", nombre: "Columna griega", grupo: "decorado", retiroCm: 40,

@@ -185,7 +185,7 @@ function conRotuloPedido(pieza: PiezaEscenografia, props: Props, notas: string[]
 
 /** Cómo se dice un rótulo en `ver_escena`. */
 const dichoRotulo = (r: NonNullable<NonNullable<PiezaEscenografia["mueble"]>["rotulo"]>) =>
-  `texto «${textoEnUnaLinea(r.texto)}» en ${NOMBRE_ACABADO_ROTULO[r.acabado].toLowerCase()} ${r.color}, ${r0(r.altoCm)} cm de alto, centrado a ${r0(r.yCm)} cm del borde de abajo`;
+  `texto ${JSON.stringify(textoEnUnaLinea(r.texto))} en ${NOMBRE_ACABADO_ROTULO[r.acabado].toLowerCase()} ${r.color}, ${r0(r.altoCm)} cm de alto, centrado a ${r0(r.yCm)} cm del borde de abajo`;
 
 /** Por qué una escenografía que no es un mueble no cambia de medida ni de color, y qué hacer. */
 function motivoFija(p: PiezaEscenografia, nombre: string, pedidos: readonly string[]): string {
@@ -207,10 +207,18 @@ export function cambiarMobiliario(base: PiezaEscenografia, props: Props, notas: 
   const o = base.mueble?.opciones;
   if (!m || !o) {
     // Un fondo fijo con rótulo (panel, arcos, lentejuelas, letrero) solo cambia su texto; lo demás avisa.
-    const delRotulo = admiteRotulo(base) ? pedidos.filter((k) => (CAMBIOS_ROTULO as readonly string[]).includes(k)) : [];
+    const delRotulo = admiteRotulo(base) ? pedidos.filter((k) => k === "reemplazar_colores" || (CAMBIOS_ROTULO as readonly string[]).includes(k)) : [];
     const otros = pedidos.filter((k) => !delRotulo.includes(k));
     if (otros.length) fallar(motivoFija(base, nombre, otros));
-    return delRotulo.length ? conRotuloPedido(base, props, notas, nombre) : base;
+    // En un fondo fijo el único color que se cambia es el del texto: reemplazar_colores de ese color.
+    let propsDeTexto: Props = props;
+    for (const r of Array.isArray(props.reemplazar_colores) ? (props.reemplazar_colores as Array<{ de?: unknown; a?: unknown }>) : []) {
+      if (typeof r.de !== "string" || typeof r.a !== "string") continue;
+      const actual = base.mueble?.rotulo?.color;
+      if (!actual || hexDeColor(r.de, notas) !== actual) fallar(`«${nombre}» es un fondo fijo: solo cambia el color de su texto${actual ? ` (texto ${actual})` : " (todavía no lleva texto)"}.`);
+      propsDeTexto = { ...propsDeTexto, color_texto: hexDeColor(r.a, notas) };
+    }
+    return delRotulo.length ? conRotuloPedido(base, propsDeTexto, notas, nombre) : base;
   }
   const fuera = pedidos.filter((k) => !CAMBIOS_MUEBLE.has(k));
   if (fuera.length) notas.push(`Un mueble solo cambia de medidas, colores, acabado y texto: ignoré ${fuera.join(", ")}.`);
@@ -233,15 +241,17 @@ export function cambiarMobiliario(base: PiezaEscenografia, props: Props, notas: 
     ...(typeof props.texto === "string" && m.conTexto ? { texto: props.texto } : {}),
   };
   const reemplazos = Array.isArray(props.reemplazar_colores) ? (props.reemplazar_colores as Array<{ de?: unknown; a?: unknown }>) : [];
+  let colorDelTexto: string | undefined;
   for (const r of reemplazos) {
     if (typeof r.de !== "string" || typeof r.a !== "string") continue;
     const de = hexDeColor(r.de, notas);
     const i = nuevas.colores.findIndex((c) => c === de);
-    if (i < 0) fallar(`«${nombre}» no usa el color «${r.de}». Usa: ${nuevas.colores.map((c, k) => `${m.coloresDe[k]} ${c}`).join(", ")}.`);
+    if (i < 0 && de === base.mueble?.rotulo?.color) { colorDelTexto = hexDeColor(r.a, notas); continue; }
+    if (i < 0) fallar(`«${nombre}» no usa el color «${r.de}». Usa: ${[...nuevas.colores.map((c, k) => `${m.coloresDe[k]} ${c}`), ...(base.mueble?.rotulo ? [`texto ${base.mueble.rotulo.color}`] : [])].join(", ")}.`);
     nuevas.colores[i] = hexDeColor(r.a, notas);
   }
   const cambiada = piezaDeMueble(m, nuevas, base.mueble?.rotulo);
-  if (m.rotulable && cambiada.tipo === "escenografia") return conRotuloPedido(cambiada, props, notas, nombre);
+  if (m.rotulable && cambiada.tipo === "escenografia") return conRotuloPedido(cambiada, colorDelTexto ? { ...props, color_texto: colorDelTexto } : props, notas, nombre);
   if (CAMBIOS_ROTULO.slice(1).some((k) => props[k] !== undefined)) notas.push(`«${nombre}» no lleva un rótulo aparte: ignoré color_texto, acabado_texto, alto_texto_cm y altura_texto_cm.`);
   return cambiada;
 }
@@ -258,7 +268,7 @@ export function resumenDeEscenografia(p: PiezaEscenografia): { medidas: string; 
   }
   const acabadoPropio = m.acabadosPropios?.find(([id]) => id === (o.acabado ?? "metal"))?.[1];
   return {
-    medidas: `${m.nombre} · ${textoMedidas(medidasReales(p))}${o.texto ? ` · «${textoEnUnaLinea(o.texto)}»` : ""}${acabadoPropio ? ` · ${acabadoPropio.toLowerCase()}` : ""}${rotulo ? ` · ${dichoRotulo(rotulo)}` : ""}`,
+    medidas: `${m.nombre} · ${textoMedidas(medidasReales(p))}${o.texto ? ` · texto ${JSON.stringify(textoEnUnaLinea(o.texto))}` : ""}${acabadoPropio ? ` · ${acabadoPropio.toLowerCase()}` : ""}${rotulo ? ` · ${dichoRotulo(rotulo)}` : ""}`,
     colores: o.colores.map((c, i) => `${m.coloresDe[i] ?? "color"} ${c}`).join(", "),
   };
 }

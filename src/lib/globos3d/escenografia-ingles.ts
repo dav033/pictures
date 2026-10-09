@@ -1,9 +1,7 @@
 import type { AcabadoRotulo } from "./escenografia";
-import { muebleDe } from "./mobiliario-catalogo";
-import type { PiezaEscenografia } from "./mobiliario-pieza";
+import { rotuloArmado, type PiezaEscenografia } from "./mobiliario-pieza";
 import { tonoEnIngles } from "./render-ia";
-import { TEXTO_ROTULO_ACRILICO } from "./mobiliario-decorado";
-import { ACABADO_ROTULO_EN, textoEnUnaLinea } from "./rotulos";
+import { ACABADO_ROTULO_EN, lineasDeRotulo, textoEnUnaLinea } from "./rotulos";
 
 /**
  * Cómo se llama en inglés cada pieza del catálogo de fondos y mobiliario (`FONDOS_CATALOGO`), para el inventario cerrado
@@ -39,8 +37,16 @@ function colorDeLetrasEn(hex: string, acabado: AcabadoRotulo): string {
   return tonoEnIngles(hex);
 }
 
-/** Las letras en cursiva de un rótulo para FLUX: «black cursive vinyl lettering "David y Dayan"». */
-const letrasEn = (texto: string, color: string, acabado: AcabadoRotulo): string => `${colorDeLetrasEn(color, acabado)} cursive ${ACABADO_ROTULO_EN[acabado]} lettering "${textoEnUnaLinea(texto)}"`;
+const LINEAS_EN = ["", "one", "two", "three"];
+
+/**
+ * Las letras en cursiva de un rótulo para FLUX: «black cursive vinyl lettering "David y Dayan"» y, si van en varias líneas, «set on
+ * three lines». El texto va entre comillas como dato (`JSON.stringify` escapa lo que pudiera cerrarlas; ya viene limpio de comillas).
+ */
+const letrasEn = (texto: string, color: string, acabado: AcabadoRotulo): string => {
+  const lineas = lineasDeRotulo(texto).length;
+  return `${colorDeLetrasEn(color, acabado)} cursive ${ACABADO_ROTULO_EN[acabado]} lettering ${JSON.stringify(textoEnUnaLinea(texto))}${lineas > 1 ? ` set on ${LINEAS_EN[Math.min(lineas, 3)]} lines` : ""}`;
+};
 
 /**
  * La frase de una pieza de escenografía del catálogo para FLUX: su nombre en inglés, con sus colores (nombre y hex) y, en un
@@ -52,12 +58,10 @@ export function fraseDeEscenografia(p: PiezaEscenografia): string | null {
   const nombre = id ? ESCENOGRAFIA_EN[id] : undefined;
   if (!id || !nombre) return null;
   const o = p.mueble?.opciones;
-  const rotulo = p.mueble?.rotulo;
+  // El rótulo como se arma (el nombre de acrílico lo trae de sus opciones; el de un panel, de mueble.rotulo, con el texto ya partido en líneas).
+  const rotulo = rotuloArmado(p);
   const letras = rotulo ? letrasEn(rotulo.texto, rotulo.color, rotulo.acabado) : null;
-  if (id === "rotulo_acrilico" && o) {
-    const espejo = o.acabado === undefined || o.acabado === "metal" || o.acabado === "brillante";
-    return `${letrasEn(o.texto || TEXTO_ROTULO_ACRILICO, o.colores[0] ?? muebleDe(id)?.colores[0] ?? "#d6b25a", espejo ? "acrilico_espejo" : "acrilico_mate")}, ${nombre}`;
-  }
+  if (id === "rotulo_acrilico") return letras ? `${letras}, ${nombre}` : nombre;
   if (id === "marco_tela" && o) {
     const [marco, tela] = [o.colores[0] ?? "#1c1c1c", o.colores[1] ?? "#f7f6f2"];
     const base = `${tonoEnIngles(tela)} fabric backdrop panel in a ${tonoEnIngles(marco)} rectangular frame`;
@@ -66,7 +70,7 @@ export function fraseDeEscenografia(p: PiezaEscenografia): string | null {
   if (!o) return letras ? `${nombre}, with ${letras} on it` : nombre;
   const distintos = [...new Set(o.colores.slice(0, 2))];
   const colores = distintos.length ? ` in ${distintos.map(tonoEnIngles).join(" and ")}` : "";
-  return `${nombre}${colores}${o.texto ? ` reading "${o.texto}"` : ""}${letras ? `, with ${letras} on it` : ""}`;
+  return `${nombre}${colores}${o.texto ? ` reading ${JSON.stringify(textoEnUnaLinea(o.texto))}` : ""}${letras ? `, with ${letras} on it` : ""}`;
 }
 
 /** Qué son los props de escenografía: lo que se sabe del catálogo («6 × Tiffany chair in …, a round banquet table in …») o, si no, la frase de siempre. */

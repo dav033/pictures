@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { armarEscenografia, puntosSolido, type ElementoEscenografia, type SolidoEscenografia } from "@/lib/globos3d/escenografia";
-import { caraDe, lineasDeRotulo } from "@/lib/globos3d/rotulos";
 import type { Punto2 } from "@/lib/globos3d/trenza";
+import { FUENTE_ROTULOS, useFuenteRotulos } from "./fuente-rotulos";
+import { AVANCE_LINEA_EM, textoDeMiniatura, type TextoMiniatura } from "./miniatura-rotulo";
 
 type Forma = { s: SolidoEscenografia; pts: Punto2[]; huecos: Punto2[][]; z: number };
 
@@ -30,11 +31,7 @@ function formasDe(elementos: readonly ElementoEscenografia[]): Forma[] {
   });
 }
 
-/** El texto de un rótulo en la tarjeta: su centro, el tamaño de letra, lo más ancho que puede salir (todo en unidades de la tarjeta), color y líneas. */
-type TextoMini = { x: number; y: number; tam: number; anchoMax: number; color: string; lineas: string[] };
-type Dibujo = { forma: Forma; d: string; texto?: TextoMini }[];
-
-const LETRA_CURSIVA = "'Segoe Script','Brush Script MT','Snell Roundhand',cursive";
+type Dibujo = { forma: Forma; d: string; texto?: TextoMiniatura }[];
 
 /** Los dibujos ya hechos por entrada del catálogo: armar 48 siluetas con su envolvente en cada pintada era trabajo tirado (se calculan una vez). */
 const DIBUJOS = new Map<string, { dibujo: Dibujo; vista: { x0: number; y0: number; escala: number; ancho: number } }>();
@@ -48,14 +45,7 @@ function dibujoDe(id: string, elementos: () => readonly ElementoEscenografia[]) 
   const escala = 52 / Math.max(1, x1 - x0, y1 - y0);
   const px = (x: number) => 4 + (x - x0) * escala + (52 - (x1 - x0) * escala) / 2, py = (y: number) => 56 - (y - y0) * escala;
   const trazo = (c: readonly Punto2[]) => `M${c.map((p) => `${px(p.x).toFixed(1)},${py(p.y).toFixed(1)}`).join("L")}Z`;
-  const textoDe = (s: SolidoEscenografia): TextoMini | undefined => {
-    const r = s.rotulo, cara = caraDe(s);
-    if (!r || !cara) return undefined;
-    const lineas = lineasDeRotulo(r.texto);
-    const alto = Math.min(r.altoCm, cara.altoCm) * escala;
-    return { x: px(s.origen.x + cara.centroXCm), y: py(s.origen.y + cara.baseYCm + r.yCm), tam: Math.max(3, (alto / lineas.length) * 0.8), anchoMax: cara.anchoCm * escala * 0.9, color: r.color, lineas };
-  };
-  const dibujo = [...formas].sort((a, b) => a.z - b.z).map((f) => ({ forma: f, d: f.s.oculto ? "" : [f.pts, ...f.huecos].map(trazo).join(""), texto: textoDe(f.s) }));
+  const dibujo = [...formas].sort((a, b) => a.z - b.z).map((f) => ({ forma: f, d: f.s.oculto ? "" : [f.pts, ...f.huecos].map(trazo).join(""), texto: textoDeMiniatura(f.s, px, py, escala) }));
   const hecho = { dibujo, vista: { x0, y0, escala, ancho: x1 - x0 } };
   DIBUJOS.set(id, hecho);
   return hecho;
@@ -64,6 +54,8 @@ function dibujoDe(id: string, elementos: () => readonly ElementoEscenografia[]) 
 /** Dibujo plano del fondo o mueble, de frente y con sus colores (de sus propios elementos), para la tarjeta del panel. */
 export const DibujoFondo = memo(function DibujoFondo({ id, elementos }: { id: string; elementos: () => readonly ElementoEscenografia[] }) {
   const { dibujo } = dibujoDe(id, elementos);
+  // La letra de los rótulos es la del visor (se baja la primera vez y las miniaturas con texto se vuelven a pintar con ella).
+  useFuenteRotulos();
   if (!dibujo.length) return null;
   return (
     <svg viewBox="0 0 60 60" width="52" height="52" aria-hidden>
@@ -71,9 +63,8 @@ export const DibujoFondo = memo(function DibujoFondo({ id, elementos }: { id: st
         <g key={i}>
           {d && <path d={d} fillRule="evenodd" fill={forma.s.hex} stroke="rgba(0,0,0,.25)" strokeWidth={0.4} />}
           {texto && (
-            <text x={texto.x} y={texto.y} textAnchor="middle" fill={texto.color} stroke="rgba(0,0,0,.2)" strokeWidth={0.15} fontFamily={LETRA_CURSIVA} fontStyle="italic" fontSize={texto.tam}
-              {...(texto.lineas.length === 1 && texto.lineas[0]!.length * texto.tam * 0.5 > texto.anchoMax ? { textLength: texto.anchoMax, lengthAdjust: "spacingAndGlyphs" as const } : {})}>
-              {texto.lineas.map((linea, k) => <tspan key={k} x={texto.x} dy={k === 0 ? `${-0.5 * (texto.lineas.length - 1) * 1.1 + 0.3}em` : "1.1em"}>{linea}</tspan>)}
+            <text x={texto.x} y={texto.y} textAnchor="middle" fill={texto.color} stroke="rgba(0,0,0,.2)" strokeWidth={0.12} fontFamily={`"${FUENTE_ROTULOS.familia}"`} fontSize={texto.tam}>
+              {texto.lineas.map((linea, k) => <tspan key={k} x={texto.x} dy={k === 0 ? `${0.3 - 0.5 * (texto.lineas.length - 1) * AVANCE_LINEA_EM}em` : `${AVANCE_LINEA_EM}em`}>{linea}</tspan>)}
             </text>
           )}
         </g>

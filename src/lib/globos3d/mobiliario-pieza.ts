@@ -4,7 +4,7 @@ import { entradaDeCatalogo } from "./fondos-escenografia";
 import { muebleDe } from "./mobiliario-catalogo";
 import type { FondoCatalogo, MuebleCatalogo } from "./mobiliario-tipos";
 import type { Pieza } from "./piezas";
-import { cambiarRotulo, conRotulo, limpiarTexto, MAX_TEXTO_ROTULO, normalizarRotulo, RotuloSchema, type PedidoRotulo } from "./rotulos";
+import { cambiarRotulo, conRotulo, limpiarTexto, MAX_TEXTO_ROTULO, normalizarRotulo, RotuloSchema, soporteDeRotulo, type ModoPortador, type PedidoRotulo, type Soporte } from "./rotulos";
 
 /**
  * El mueble **como se guarda en la escena**: la pieza de escenografía lleva `mueble: { id, opciones }` (medidas, colores,
@@ -81,20 +81,28 @@ function elementosBase(p: PiezaEscenografia): ElementoEscenografia[] {
 /** ¿Admite esta pieza un rótulo en cursiva? (su entrada del catálogo es `rotulable`). */
 export const admiteRotulo = (p: PiezaEscenografia): boolean => Boolean(p.mueble && entradaDeCatalogo(p.mueble.id)?.rotulable);
 
+/** Qué elemento de la pieza lleva el rótulo: el último o, en unos arcos escalonados, el mayor. */
+const modoDe = (p: PiezaEscenografia): ModoPortador => (p.mueble && entradaDeCatalogo(p.mueble.id)?.rotulable === "mayor" ? "mayor" : "ultimo");
+
 /** Los sólidos de una pieza de escenografía: los guardados, o los del mueble paramétrico armado con sus opciones, y su rótulo si lo lleva. */
 export function elementosDeEscenografia(p: PiezaEscenografia): ElementoEscenografia[] {
   const base = elementosBase(p);
-  return p.mueble?.rotulo && admiteRotulo(p) ? conRotulo(base, p.mueble.rotulo) : base;
+  return p.mueble?.rotulo && admiteRotulo(p) ? conRotulo(base, p.mueble.rotulo, modoDe(p)) : base;
 }
 
-/** El último elemento de una pieza (el que lleva el rótulo): para saber su cara y normalizar lo que se le pide. */
-export const portadorDeRotulo = (p: PiezaEscenografia): ElementoEscenografia | undefined => elementosBase(p).at(-1);
+/** El elemento que da la cara del rótulo de una pieza: para saber sus medidas y normalizar lo que se le pide. */
+export const soporteDeRotuloPieza = (p: PiezaEscenografia): Soporte | null => soporteDeRotulo(elementosBase(p), modoDe(p));
+export const portadorDeRotulo = (p: PiezaEscenografia): ElementoEscenografia | undefined => soporteDeRotuloPieza(p)?.elemento;
+
+/** El rótulo tal como se arma (con el texto ya partido en líneas si hizo falta), o undefined si la pieza no lleva. */
+export const rotuloArmado = (p: PiezaEscenografia): RotuloEscenografia | undefined => elementosDeEscenografia(p).find((e) => e.rotulo)?.rotulo;
 
 /** La pieza con ese rótulo (normalizado a su cara) o, con `null`, sin rótulo. Una pieza que no admite rótulo vuelve igual. */
 export function conRotuloPieza(p: PiezaEscenografia, rotulo: Partial<RotuloEscenografia> | null): Pieza {
   if (!p.mueble || !admiteRotulo(p)) return p;
   const mueble: MuebleDePieza = { id: p.mueble.id, ...(p.mueble.opciones ? { opciones: p.mueble.opciones } : {}) };
-  const nuevo = rotulo ? normalizarRotulo(rotulo, portadorDeRotulo(p)) : null;
+  const soporte = soporteDeRotuloPieza(p);
+  const nuevo = rotulo ? normalizarRotulo(rotulo, soporte?.elemento) : null;
   return { ...p, mueble: nuevo ? { ...mueble, rotulo: nuevo } : mueble };
 }
 
@@ -104,7 +112,10 @@ export function avisoDeEscenografia(p: PiezaEscenografia): string | null {
 }
 
 /** La pieza con su rótulo cambiado según `pedido` (texto, color, acabado, alto, altura): se crea con el texto o, si ya lo tenía, solo cambia lo pedido; un texto vacío lo quita. */
-export const conTextoPieza = (p: PiezaEscenografia, pedido: PedidoRotulo): Pieza => conRotuloPieza(p, cambiarRotulo(p.mueble?.rotulo, pedido, portadorDeRotulo(p)));
+export function conTextoPieza(p: PiezaEscenografia, pedido: PedidoRotulo): Pieza {
+  const soporte = soporteDeRotuloPieza(p);
+  return conRotuloPieza(p, cambiarRotulo(p.mueble?.rotulo, pedido, soporte?.elemento));
+}
 
 /** Las opciones completas de un mueble: lo pedido y, de lo que falta, medidas y colores de partida (o el primer color, si `seguirPrimero`). */
 export function opcionesDeMueble(m: MuebleCatalogo, pedido: { anchoCm?: number; fondoCm?: number; altoCm?: number; colores?: readonly string[]; acabado?: AcabadoEscenografia; texto?: string } = {}): OpcionesGuardadas {

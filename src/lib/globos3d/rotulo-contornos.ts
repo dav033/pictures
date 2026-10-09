@@ -118,21 +118,53 @@ function lazos(m: Mascara): Punto2[][] {
   return resultado;
 }
 
+/** ¿Se cruzan (de verdad, no solo se tocan) dos segmentos? */
+function seCruzan(a: Punto2, b: Punto2, c: Punto2, d: Punto2): boolean {
+  const giro = (o: Punto2, p: Punto2, q: Punto2) => (p.x - o.x) * (q.y - o.y) - (p.y - o.y) * (q.x - o.x);
+  const d1 = giro(c, d, a), d2 = giro(c, d, b), d3 = giro(a, b, c), d4 = giro(a, b, d);
+  return d1 * d2 < 0 && d3 * d4 < 0;
+}
+
+/** ¿Algún lado de un contorno cruza algún lado del otro? */
+export function contornosSeCruzan(x: readonly Punto2[], y: readonly Punto2[]): boolean {
+  for (let i = 0; i < x.length; i++) for (let j = 0; j < y.length; j++) if (seCruzan(x[i]!, x[(i + 1) % x.length]!, y[j]!, y[(j + 1) % y.length]!)) return true;
+  return false;
+}
+
+/** Un punto de tinta pegado al borde de un hueco: a un cuarto de píxel del primer lado, hacia donde está la tinta (a la derecha de la marcha). Nunca cae sobre un borde. */
+function puntoDeTintaJuntoA(hueco: readonly Punto2[]): Punto2 {
+  const a = hueco[0]!, b = hueco[1]!;
+  const dx = Math.sign(b.x - a.x), dy = Math.sign(b.y - a.y);
+  return { x: (a.x + b.x) / 2 - dy * 0.25, y: (a.y + b.y) / 2 + dx * 0.25 };
+}
+
 /**
- * Los contornos de la tinta de una máscara: cada mancha con sus huecos. `tolerancia` (px) es cuánto se puede apartar el
- * contorno simplificado del borde de los píxeles; las manchas de menos de `minimoPx` píxeles de área (polvo) se descartan.
+ * Los contornos de la tinta de una máscara: cada mancha con sus huecos. `tolerancia` (px) es cuánto se puede apartar el contorno
+ * simplificado del borde de los píxeles; las manchas de menos de `minimoPx` píxeles de área (polvo) se descartan.
+ *
+ * Cada hueco es de la mancha más chica que contiene un punto de tinta pegado a su borde (se decide con los lazos exactos de los
+ * píxeles, antes de simplificar: un vértice del hueco puede tocar el borde de afuera). Si al simplificar un contorno de una mancha
+ * cruza otro de la misma mancha (una pared de un píxel entre dos curvas), se simplifica menos hasta que no se crucen.
  */
 export function contornosDeMascara(m: Mascara, tolerancia = 0.75, minimoPx = 4): ContornoTinta[] {
-  const todos = lazos(m).map((l) => simplificarContorno(sinRectas(l), tolerancia)).filter((l) => l.length >= 3);
-  const externos = todos.filter((l) => areaConSigno(l) > 0 && Math.abs(areaConSigno(l)) / 2 >= minimoPx);
-  const huecos = todos.filter((l) => areaConSigno(l) < 0 && Math.abs(areaConSigno(l)) / 2 >= minimoPx);
-  const salida: ContornoTinta[] = externos.map((externo) => ({ externo, huecos: [] }));
-  for (const hueco of huecos) {
-    // El hueco es de la mancha más chica que lo contiene.
-    const dueno = salida.filter((s) => puntoEnPoligono(hueco[0]!, s.externo)).sort((a, b) => Math.abs(areaConSigno(a.externo)) - Math.abs(areaConSigno(b.externo)))[0];
+  const crudos = lazos(m).map(sinRectas).filter((l) => l.length >= 3);
+  const grandes = (l: readonly Punto2[]) => Math.abs(areaConSigno(l)) / 2 >= minimoPx;
+  const externos = crudos.filter((l) => areaConSigno(l) > 0 && grandes(l));
+  const manchas = externos.map((externo) => ({ externo, huecos: [] as Punto2[][] }));
+  for (const hueco of crudos.filter((l) => areaConSigno(l) < 0 && grandes(l))) {
+    const punto = puntoDeTintaJuntoA(hueco);
+    const dueno = manchas.filter((s) => puntoEnPoligono(punto, s.externo)).sort((a, b) => Math.abs(areaConSigno(a.externo)) - Math.abs(areaConSigno(b.externo)))[0];
     dueno?.huecos.push(hueco);
   }
-  return salida;
+  return manchas.map((mancha) => {
+    for (let tol = tolerancia; tol > 0.05; tol /= 2) {
+      const externo = simplificarContorno(mancha.externo, tol), huecos = mancha.huecos.map((h) => simplificarContorno(h, tol));
+      const todos = [externo, ...huecos];
+      const cruza = todos.some((a, i) => todos.slice(i + 1).some((b) => contornosSeCruzan(a, b)));
+      if (!cruza) return { externo, huecos };
+    }
+    return mancha;
+  });
 }
 
 /** El rectángulo de tinta de una máscara (en píxeles) o null si está vacía. */

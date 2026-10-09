@@ -4,6 +4,7 @@ import { MAX_NODOS, TIPOS_PIEZA } from "./herramientas-escena";
 import type { Pieza } from "./piezas";
 import { AmbienteSalaSchema } from "./ambiente-sala";
 import { MuebleDePiezaSchema } from "./mobiliario-pieza";
+import { RotuloSchema } from "./rotulos";
 
 /** La escena como la valida el servidor cuando llega del navegador (`/api/escena-ia`, `/api/escena-ia/similitud`): no se confía en lo que manda el cliente. */
 
@@ -27,9 +28,13 @@ const ColocacionSchema: z.ZodType<Colocacion> = z.discriminatedUnion("en", [
 const PiezaSchema = z.custom<Pieza>((v) => {
   if (typeof v !== "object" || v === null || !(TIPOS_PIEZA as readonly unknown[]).includes((v as { tipo?: unknown }).tipo)) return false;
   // Un mueble del catálogo guarda sus medidas y colores: esos sí se validan (el resto lo valida el taller al armar).
-  const mueble = (v as { tipo: string; mueble?: unknown }).tipo === "escenografia" ? (v as { mueble?: unknown }).mueble : undefined;
-  return mueble === undefined || MuebleDePiezaSchema.safeParse(mueble).success;
-}, "Pieza desconocida o con un mueble de medidas o colores no válidos");
+  const esEscenografia = (v as { tipo: string }).tipo === "escenografia";
+  const mueble = esEscenografia ? (v as { mueble?: unknown }).mueble : undefined;
+  // El rótulo de un elemento guardado (una idea o una pieza vieja) también va validado: lo dibuja el visor tal cual.
+  const elementos = esEscenografia ? (v as { elementos?: unknown }).elementos : undefined;
+  const rotulosBuenos = !Array.isArray(elementos) || elementos.every((e) => typeof e !== "object" || e === null || !("rotulo" in e) || (e as { rotulo?: unknown }).rotulo === undefined || RotuloSchema.safeParse((e as { rotulo: unknown }).rotulo).success);
+  return rotulosBuenos && (mueble === undefined || MuebleDePiezaSchema.safeParse(mueble).success);
+}, "Pieza desconocida o con un mueble o un rótulo de medidas, colores o texto no válidos");
 
 export const EscenaSchema: z.ZodType<Escena> = z.object({
   sala: z.object({

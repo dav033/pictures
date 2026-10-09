@@ -4,6 +4,7 @@ import { admiteRotulo, conTextoPieza, portadorDeRotulo, type PiezaEscenografia }
 import type { Pieza } from "@/lib/globos3d/piezas";
 import { ACABADOS_ROTULO, caraDe, esAcabadoRotulo, limpiarTexto, MAX_LINEAS_ROTULO, MAX_TEXTO_ROTULO, NOMBRE_ACABADO_ROTULO } from "@/lib/globos3d/rotulos";
 import { CampoTexto } from "./CampoTexto";
+import { useFuenteRotulos } from "./fuente-rotulos";
 import { Deslizador } from "./PanelFlor";
 
 const centimetros = (cm: number) => `${Math.round(cm)} cm`;
@@ -19,6 +20,7 @@ export const esRotulable = (p: Pieza): p is PiezaEscenografia => p.tipo === "esc
  */
 export function EditorRotulo({ pieza, onPieza }: { pieza: PiezaEscenografia; onPieza: (p: Pieza) => void }) {
   const rotulo = pieza.mueble?.rotulo;
+  const fuente = useFuenteRotulos();
   const portador = portadorDeRotulo(pieza);
   const cara = portador ? caraDe(portador) : null;
   if (!cara) return null;
@@ -32,6 +34,7 @@ export function EditorRotulo({ pieza, onPieza }: { pieza: PiezaEscenografia; onP
   }
   return (
     <div className="flex flex-col gap-2.5" aria-label="Nombre en cursiva">
+      {fuente === "fallo" && <p role="alert" className="text-xs text-red-600">No se pudo cargar la letra cursiva: el nombre se ve como una marca roja. Recarga la página.</p>}
       {/* Vaciar el campo no quita el texto (para eso está el botón): se queda el último. */}
       <CampoTexto etiqueta="Nombre o frase en cursiva" valor={rotulo.texto} lineas={MAX_LINEAS_ROTULO} maxLength={MAX_TEXTO_ROTULO} onTexto={(t) => { if (limpiarTexto(t)) pon({ texto: t }); }} />
       <div className="grid grid-cols-2 gap-2">

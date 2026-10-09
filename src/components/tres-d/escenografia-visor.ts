@@ -5,7 +5,7 @@ import { geometriaFoil } from "./impresos-visor";
 import { ejePanel, lentejuelasDePanel } from "./lentejuelas-instanciadas";
 import { materialEscenografia } from "./materiales-visor";
 import { calcoMotivo } from "./motivos-utileria";
-import { crearRotulosVisor, type Rasterizador } from "./rotulo-visor";
+import { crearRotulosVisor, type OpcionesRotulos } from "./rotulo-visor";
 
 /**
  * **La escenografía de UN visor** (paneles, muebles, utilería): sus mallas, con los materiales y geometrías compartidos por
@@ -57,13 +57,13 @@ export type EscenografiaVisor = {
 };
 
 /**
- * La escenografía de un visor, con `entorno` (el reflejo de ese visor, horneado cuando hace falta) y, solo para pruebas, el
- * `rasterizar` que convierte el texto de un rótulo en tinta (por defecto, el lienzo del navegador).
+ * La escenografía de un visor, con `entorno` (el reflejo de ese visor, horneado cuando hace falta) y las opciones de sus rótulos:
+ * `alFuenteLista` (el visor rehace las piezas con rótulo cuando la letra termina de cargar) y, solo para pruebas, `rasterizar`.
  */
-export function crearEscenografiaVisor(entorno: () => THREE.Texture, rasterizar?: Rasterizador): EscenografiaVisor {
+export function crearEscenografiaVisor(entorno: () => THREE.Texture, opcionesRotulos: OpcionesRotulos = {}): EscenografiaVisor {
   const materiales = new Map<string, THREE.Material>();
   const geometrias = new Map<string, THREE.BufferGeometry>();
-  const rotulos = crearRotulosVisor(entorno, rasterizar);
+  const rotulos = crearRotulosVisor(entorno, opcionesRotulos);
   let tableroInvisible: THREE.Material | null = null;
 
   const material = (s: SolidoEscenografia): THREE.Material => {

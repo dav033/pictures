@@ -556,6 +556,8 @@ type NodoDibujado = {
   grupo: THREE.Group;
   instancias: Instancia[];
   caja: THREE.Box3 | null;
+  /** Lleva un rótulo: si su letra aún no había cargado, se rehace cuando cargue. */
+  conRotulo: boolean;
 };
 /** Una copia de una geometría compartida: en qué lote va, su marco (en el módulo) y su color (`null`: el del material). */
 type Instancia = { lote: string; matriz: THREE.Matrix4; color: THREE.Color | null };
@@ -583,7 +585,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   let entornoEstudio: THREE.Texture | null = null;
   const entornoMetal = (): THREE.Texture => (entornoEstudio ??= crearEntornoEstudio(renderer));
   // La escenografía (muebles, paneles, utilería) de este visor, con sus materiales y geometrías compartidos.
-  const escenografia = crearEscenografiaVisor(entornoMetal);
+  const escenografia = crearEscenografiaVisor(entornoMetal, { alFuenteLista: () => rehacerRotulos() });
   // Menos luz de entorno: con la sala completa el látex mate se veía lavado (el rosado 009 salía casi blanco).
   escena.environmentIntensity = 0.55;
 
@@ -744,6 +746,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const desplazamientos = new Map<string, THREE.Vector3>();
   let anclasMalla: THREE.InstancedMesh | null = null;
   /** Lo que se mostró la última vez (si llega lo mismo, no se mira pieza por pieza). */
+  let repetirModulo: (() => void) | null = null;
   let entrada: { globos: unknown; tubos: unknown; flores: unknown; cilindros: unknown; solidos: unknown } | null = null;
   let claveSala: string | null = null;
   /** Escamas de confeti por globo: el presupuesto de confeti del visor repartido entre los globos que lo llevan. */
@@ -848,7 +851,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     // Lo oculto (amarres internos) sostiene y da su caja, pero no se dibuja.
     for (const malla of escenografia.piezas(c.solidos)) grupo.add(malla);
     modulo.add(grupo);
-    return { huella, ref: ref.clone(), base: new THREE.Vector3(), grupo, instancias, caja: null };
+    return { huella, ref: ref.clone(), base: new THREE.Vector3(), grupo, instancias, caja: null, conRotulo: c.solidos.some((x) => x.rotulo !== undefined) };
   }
 
   function quitarNodo(dibujado: NodoDibujado) {
@@ -1177,7 +1180,16 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     return true;
   }
 
+  /** Vuelve a mostrar lo último que se mostró, con las piezas con rótulo rehechas (la letra cursiva terminó de cargar: antes eran una marca). */
+  function rehacerRotulos() {
+    if (!vivo || !repetirModulo) return;
+    for (const d of [...nodos.values(), ...[...aparcados.values()]]) if (d.conRotulo) d.huella = "";
+    entrada = null;
+    repetirModulo();
+  }
+
   function mostrarModulo(globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos: readonly TuboEnEscena[] = NADA, extras: ExtrasEscena = {}) {
+    repetirModulo = () => mostrarModulo(globos, anclas, tubos, extras);
     vaciar(fila);
     const flores = extras.flores ?? NADA, cilindros = extras.cilindros ?? NADA, solidos = extras.solidos ?? NADA;
     // Lo corrido al arrastrar y lo oculto vuelve a su sitio (lo siguiente que se muestra lo dibuja todo en su sitio).

@@ -1,13 +1,15 @@
 import * as THREE from "three";
-import type { SolidoEscenografia } from "@/lib/globos3d/escenografia";
+import type { RotuloEscenografia, SolidoEscenografia } from "@/lib/globos3d/escenografia";
 import { cajaDeTinta, contornosDeMascara, type Mascara } from "@/lib/globos3d/rotulo-contornos";
-import { caraDe, colocarRotulo, GROSOR_ACRILICO_CM, GROSOR_VINILO_CM, lineasDeRotulo } from "@/lib/globos3d/rotulos";
+import { aspectoEstimado, caraDe, colocarRotulo, type CaraRotulo, GROSOR_ACRILICO_CM, GROSOR_VINILO_CM, lineasDeRotulo } from "@/lib/globos3d/rotulos";
+import { cargarFuenteRotulos, estadoFuenteRotulos, FUENTE_ROTULOS, fuenteDeRotulos } from "./fuente-rotulos";
 import { colorDeLatex } from "./materiales-visor";
 
 /**
  * **El rótulo de un sólido en el visor**: el texto en cursiva como letras recortadas de verdad (un vinilo de 0,8 mm o acrílico de
- * 6 mm), con las letras unidas como las de la letra manuscrita. El texto se dibuja en un lienzo con una fuente cursiva del sistema,
- * se saca el contorno de la tinta (`rotulo-contornos.ts`) y se extruye. La geometría es de proporción 1 (alto 1, profundidad 1): cada
+ * 6 mm), con las letras unidas como las de la letra manuscrita. El texto se dibuja en un lienzo con la letra de los rótulos (Great
+ * Vibes, `fuente-rotulos.ts`: la misma en todos los equipos), se saca el contorno de la tinta (`rotulo-contornos.ts`) y se extruye.
+ * Mientras la letra carga, o si falla, el rótulo es una marca (gris al cargar, roja si falló) del tamaño que tendría el texto. La geometría es de proporción 1 (alto 1, profundidad 1): cada
  * rótulo la escala a su tamaño, así que un mismo texto cuesta una sola geometría en todo el visor aunque salga en varios sólidos.
  *
  * Todo es de ESTE visor (regla D-017): la geometría de cada texto y los materiales (el espejo lleva el entorno de su contexto
@@ -15,21 +17,30 @@ import { colorDeLatex } from "./materiales-visor";
  */
 
 const CM = 0.01;
-/** Cuántos textos distintos se guardan por visor: al escribir un nombre letra por letra pasan por aquí todos los intermedios; al llegar al tope sale el que lleva más tiempo sin usarse. */
-const MAXIMO_TEXTOS = 48;
+/**
+ * Cuántos textos distintos se guardan por visor. Al escribir un nombre letra por letra pasan por aquí los intermedios (el campo espera
+ * a que se deje de teclear, pero no todos los intermedios se evitan): al llegar al tope sale el que lleva más tiempo sin usarse.
+ * Cada texto cuesta ~1–3 mil triángulos (unos 100 KB de GPU): 12 son un tope bajo y un nombre se rehace en ~50–100 ms.
+ */
+const MAXIMO_TEXTOS = 12;
 const LETRA_PX = 150;
-const FUENTE = (px: number) => `italic 400 ${px}px "Segoe Script", "Brush Script MT", "Snell Roundhand", "Apple Chancery", cursive`;
 
-/** Convierte un texto en la máscara de su tinta (recortada a ella), o null si no hay dónde dibujarlo (sin lienzo). */
-export type Rasterizador = (texto: string) => Mascara | null;
+/**
+ * Convierte un texto en la máscara de su tinta (recortada a ella). `"pendiente"`: la letra aún carga (hay que volver a pedirlo
+ * cuando esté); `null`: no se puede dibujar (la letra falló o no hay lienzo).
+ */
+export type Rasterizador = (texto: string) => Mascara | "pendiente" | null;
 
-/** El texto dibujado con la fuente cursiva del navegador: tinta = píxeles con opacidad. Las letras se engrosan un poco (el recorte de acrílico no tiene pelos). */
+/** El texto dibujado con la letra de los rótulos: tinta = píxeles con opacidad. Las letras se engrosan un poco (el recorte de acrílico no tiene pelos). */
 export const rasterizarTexto: Rasterizador = (texto) => {
   if (typeof document === "undefined") return null;
+  const estado = estadoFuenteRotulos();
+  if (estado === "pendiente" || estado === "cargando") { void cargarFuenteRotulos(); return "pendiente"; }
+  if (estado === "fallo") return null;
   const lineas = lineasDeRotulo(texto);
   const medidor = document.createElement("canvas").getContext("2d");
   if (!medidor || !lineas.length) return null;
-  medidor.font = FUENTE(LETRA_PX);
+  medidor.font = fuenteDeRotulos(LETRA_PX);
   const ancho = Math.ceil(Math.max(...lineas.map((l) => medidor.measureText(l).width)) + LETRA_PX * 1.2);
   const paso = LETRA_PX * 1.3;
   const alto = Math.ceil(paso * lineas.length + LETRA_PX * 0.8);
@@ -38,7 +49,7 @@ export const rasterizarTexto: Rasterizador = (texto) => {
   lienzo.height = alto;
   const p = lienzo.getContext("2d", { willReadFrequently: true });
   if (!p) return null;
-  p.font = FUENTE(LETRA_PX);
+  p.font = fuenteDeRotulos(LETRA_PX);
   p.textAlign = "center";
   p.textBaseline = "middle";
   p.lineJoin = "round";
@@ -78,42 +89,70 @@ function geometriaDeMascara(m: Mascara): TextoListo | null {
 }
 
 export type RotulosVisor = {
-  /** Las letras de un sólido (hijas de su malla, en su marco); null si no lleva rótulo o no se pudo dibujar el texto. */
+  /**
+   * Las letras de un sólido (hijas de su malla, en su marco); null si no lleva rótulo. Si la letra aún carga o falló, una marca del
+   * tamaño que tendría el texto (gris al cargar, roja si falló).
+   */
   malla: (s: SolidoEscenografia) => THREE.Mesh | null;
   /** Suelta las geometrías y los materiales de este visor. */
   liberar: () => void;
 };
 
-/** Los rótulos de UN visor: `entorno` es el reflejo de ese visor y `rasterizar` convierte un texto en su tinta (el lienzo del navegador por defecto). */
-export function crearRotulosVisor(entorno: () => THREE.Texture, rasterizar: Rasterizador = rasterizarTexto): RotulosVisor {
-  const textos = new Map<string, TextoListo>();
-  const materiales = new Map<string, THREE.Material>();
+export type OpcionesRotulos = {
+  /** Convierte un texto en su tinta (el lienzo del navegador por defecto): para las pruebas. */
+  rasterizar?: Rasterizador;
+  /** Se llama (una vez por espera) cuando la letra termina de cargar: el visor rehace las piezas con rótulo. */
+  alFuenteLista?: () => void;
+};
 
-  const textoListo = (texto: string): TextoListo | null => {
-    const guardado = textos.get(texto);
-    if (guardado) { textos.delete(texto); textos.set(texto, guardado); return guardado; }
+/**
+ * Los rótulos de UN visor: `entorno` es el reflejo de ese visor. El visor es el DUEÑO de todo lo que crea aquí (la geometría de cada
+ * texto, los materiales, la marca): las mallas de las piezas lo usan prestado y nunca lo liberan (todo va marcado `compartido`).
+ * Un texto que sale del tope se suelta de la GPU al momento; si una pieza viva aún lo usa, se vuelve a subir al dibujarla y se
+ * libera con el visor (`retiradas`).
+ */
+export function crearRotulosVisor(entorno: () => THREE.Texture, opciones: OpcionesRotulos = {}): RotulosVisor {
+  const rasterizar = opciones.rasterizar ?? rasterizarTexto;
+  const textos = new Map<string, TextoListo>();
+  const retiradas = new Set<THREE.BufferGeometry>();
+  const materiales = new Map<string, THREE.Material>();
+  let marca: THREE.BoxGeometry | null = null;
+  let esperando = false, vivo = true, avisoFallo = false;
+
+  /** La letra aún carga: cuando esté lista, el visor rehace lo que dibujó como marca. */
+  const avisarCuandoEsteLista = () => {
+    if (esperando) return;
+    esperando = true;
+    void cargarFuenteRotulos().then(() => { esperando = false; if (vivo) opciones.alFuenteLista?.(); });
+  };
+
+  const textoListo = (texto: string): TextoListo | "pendiente" | null => {
+    const clave = `${FUENTE_ROTULOS.version}|${texto}`;
+    const guardado = textos.get(clave);
+    if (guardado) { textos.delete(clave); textos.set(clave, guardado); return guardado; }
     const mascara = rasterizar(texto);
+    if (mascara === "pendiente") return "pendiente";
     const hecho = mascara ? geometriaDeMascara(mascara) : null;
     if (!hecho) return null;
     hecho.geometria.userData.compartido = true;
-    textos.set(texto, hecho);
+    textos.set(clave, hecho);
     if (textos.size > MAXIMO_TEXTOS) {
-      // Se suelta de la GPU y deja de ser compartida: si una pieza viva aún la usa, se vuelve a subir al dibujar y la libera esa pieza al vaciarse.
-      const [viejo, geometria] = textos.entries().next().value!;
+      const [viejo, saliente] = textos.entries().next().value!;
       textos.delete(viejo);
-      geometria.geometria.userData.compartido = false;
-      geometria.geometria.dispose();
+      saliente.geometria.dispose();
+      retiradas.add(saliente.geometria);
     }
     return hecho;
   };
 
-  const material = (acabado: "vinilo" | "acrilico_espejo" | "acrilico_mate", hex: string): THREE.Material => {
+  const material = (acabado: "vinilo" | "acrilico_espejo" | "acrilico_mate" | "marca" | "falla", hex: string): THREE.Material => {
     const clave = `${acabado}|${hex}`;
     let m = materiales.get(clave);
     if (!m) {
-      // El espejo se ve brillante desde cualquier lado: refleja el estudio con más fuerza y trae un resplandor propio mínimo (sin él, de frente refleja lo oscuro de la sala).
-      if (acabado === "acrilico_espejo") { const c = colorDeLatex("metal", hex); m = new THREE.MeshStandardMaterial({ color: c, metalness: 1, roughness: 0.1, envMap: entorno(), envMapIntensity: 2.6, emissive: c, emissiveIntensity: 0.22 }); }
+      // El espejo refleja el estudio con fuerza y casi sin brillo propio: las letras toman el color de lo que las rodea, como un espejo.
+      if (acabado === "acrilico_espejo") m = new THREE.MeshStandardMaterial({ color: colorDeLatex("metal", hex), metalness: 1, roughness: 0.08, envMap: entorno(), envMapIntensity: 3.2, emissive: colorDeLatex("metal", hex), emissiveIntensity: 0.05 });
       else if (acabado === "acrilico_mate") m = new THREE.MeshStandardMaterial({ color: hex, metalness: 0.05, roughness: 0.4 });
+      else if (acabado === "marca" || acabado === "falla") m = new THREE.MeshBasicMaterial({ color: acabado === "falla" ? 0xd94b4b : 0x9a9a9a, transparent: true, opacity: 0.4 });
       else m = new THREE.MeshStandardMaterial({ color: hex, roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
       m.userData.compartido = true;
       materiales.set(clave, m);
@@ -121,12 +160,26 @@ export function crearRotulosVisor(entorno: () => THREE.Texture, rasterizar: Rast
     return m;
   };
 
+  /** La marca de un texto que no se pudo dibujar (todavía o nunca): una placa del tamaño que tendría, con la proporción estimada del texto. */
+  const placa = (r: RotuloEscenografia, cara: CaraRotulo, falla: boolean): THREE.Mesh => {
+    marca ??= new THREE.BoxGeometry(1, 1, 1);
+    const colocado = colocarRotulo(cara, r, aspectoEstimado(r.texto));
+    const objeto = new THREE.Mesh(marca, material(falla ? "falla" : "marca", "#000000"));
+    objeto.scale.set(colocado.anchoCm * CM, colocado.altoCm * CM, 0.2 * CM);
+    objeto.position.set(colocado.xCm * CM, colocado.yCm * CM, (colocado.zCm + 0.1) * CM);
+    return objeto;
+  };
+
   return {
     malla(s) {
       const r = s.rotulo, cara = s.forma === "cilindro" ? null : caraDe(s);
       if (!r || !cara) return null;
       const texto = textoListo(r.texto);
-      if (!texto) return null;
+      if (texto === "pendiente") { avisarCuandoEsteLista(); return placa(r, cara, false); }
+      if (!texto) {
+        if (!avisoFallo && typeof document !== "undefined") { avisoFallo = true; console.warn("[rótulos] No se pudo dibujar un texto (la letra cursiva no cargó): se muestra una marca roja en su lugar."); }
+        return typeof document === "undefined" ? null : placa(r, cara, true);
+      }
       const colocado = colocarRotulo(cara, r, texto.aspecto);
       const vinilo = r.acabado === "vinilo";
       const objeto = new THREE.Mesh(texto.geometria, material(r.acabado, r.color));
@@ -137,10 +190,15 @@ export function crearRotulosVisor(entorno: () => THREE.Texture, rasterizar: Rast
       return objeto;
     },
     liberar() {
+      vivo = false;
       for (const t of textos.values()) t.geometria.dispose();
+      for (const g of retiradas) g.dispose();
+      marca?.dispose();
       for (const m of materiales.values()) m.dispose();
       textos.clear();
+      retiradas.clear();
       materiales.clear();
+      marca = null;
     },
   };
 }

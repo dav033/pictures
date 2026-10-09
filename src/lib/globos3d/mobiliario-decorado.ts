@@ -1,7 +1,7 @@
 import type { ElementoEscenografia, MotivoEscenografia } from "./escenografia";
 import type { Punto2 } from "./trenza";
 import { barra, caja, cilindro, losa, mat, poligono, r1, v, type Material } from "./mobiliario-base";
-import { GROSOR_ACRILICO_CM, limpiarTexto } from "./rotulos";
+import { conRotulo, GROSOR_ACRILICO_CM, limpiarTexto } from "./rotulos";
 
 /**
  * **Decorado de pie** (cm): marcos metálicos (aro, hexágono, arco) con su pie, base hexagonal, peldaños de
@@ -203,8 +203,7 @@ export function rotuloAcrilico(o: OpcionesDecorado): ElementoEscenografia[] {
   const { anchoCm: w, altoCm: h, principal } = o;
   const espejo = principal.acabado === "metal" || principal.acabado === "brillante";
   const texto = limpiarTexto(o.texto ?? "") || TEXTO_ROTULO_ACRILICO;
-  return [{
-    forma: "caja", centro: v(0, h / 2, 0), tamano: v(w, h, GROSOR_ACRILICO_CM), hex: principal.hex, acabado: principal.acabado, oculto: true,
-    rotulo: { texto, color: principal.hex, acabado: espejo ? "acrilico_espejo" : "acrilico_mate", altoCm: h, yCm: h / 2 },
-  }];
+  const rotulo = { texto, color: principal.hex, acabado: espejo ? "acrilico_espejo" as const : "acrilico_mate" as const, altoCm: h, yCm: h / 2 };
+  // El tablero invisible lleva el rótulo; con varias palabras y poco alto, se parte en líneas si así salen más grandes las letras.
+  return conRotulo([{ forma: "caja", centro: v(0, h / 2, 0), tamano: v(w, h, GROSOR_ACRILICO_CM), hex: principal.hex, acabado: principal.acabado, oculto: true }], rotulo);
 }

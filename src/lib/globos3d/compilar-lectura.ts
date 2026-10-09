@@ -19,8 +19,8 @@ import { reemplazarColor } from "./recolorear";
 import { arcosChiara, cortina, letrero, mediaLuna, panelRedondo, pedestales } from "./fondos-escenografia";
 import { mesaConMantel, paredLentejuelas, tapete } from "./escenografia";
 import { conTextoPieza } from "./mobiliario-pieza";
-import { MAX_TEXTO_ROTULO } from "./rotulos";
-import { mesaLeida, mobiliarioLeido, type MedidaLeida, type MesaLeida } from "./compilar-mobiliario";
+import { acabadoRotuloLeido, MAX_TEXTO_ROTULO } from "./rotulos";
+import { mesaLeida, mobiliarioLeido, tintaLeida, type MedidaLeida, type MesaLeida } from "./compilar-mobiliario";
 import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
 
 /**
@@ -44,11 +44,8 @@ const FAMILIA_ACABADO: Readonly<Record<ColorLeido["acabado"], string>> = { mate:
 const CRISTAL = "390";
 /** Un foil (letras, números) cuelga por delante de la guirnalda y no pegado a la pared: así se ve entero, como en las fotos. */
 const FOIL_DELANTE_DE_LA_PARED_CM = 60;
-/**
- * Los fondos que admiten un nombre en vinilo, y cuántos colores de la lectura necesita cada uno como mínimo: si el fondo trae texto y
- * más colores que esos, el ÚLTIMO es la tinta del texto y los demás son del fondo (el aro del panel, un arco más).
- */
-const COLORES_MINIMOS_CON_ROTULO: Readonly<Record<string, number>> = { panel_redondo: 1, arcos_chiara: 1, lentejuelas: 1 };
+/** Los fondos de la lectura que admiten un nombre en cursiva (el letrero conserva su texto impreso). */
+const ADMITEN_ROTULO = new Set(["panel_redondo", "arcos_chiara", "lentejuelas"]);
 
 /** Un color leído → código Sempertex (en los formatos pedidos): por nombre y acabado, si no por el hex medido. */
 export function codigoDeColor(c: ColorLeido, formatos: readonly string[], notas: string[]): string {
@@ -220,28 +217,27 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         const mesas = l.piezas.flatMap((q) => (q.tipo === "fondo" ? [mesaLeida(q, medidaDe(q))] : [])).filter((m): m is MesaLeida => m !== null);
         const muebles = mobiliarioLeido(p, medidaDe(p), notas, mesas);
         if (muebles) { for (const m of muebles) poner(m.base, m.nombre, m.pieza, m.colocacion); return; }
-        const conRotuloLeido = Boolean(p.texto) && p.id in COLORES_MINIMOS_CON_ROTULO && p.colores.length > COLORES_MINIMOS_CON_ROTULO[p.id]!;
-        const tinta = conRotuloLeido ? p.colores.at(-1)?.hex : undefined;
-        const delFondo = conRotuloLeido ? p.colores.slice(0, -1) : p.colores;
-        const hex = (k: number) => delFondo[k]?.hex ?? delFondo[0]!.hex;
-        if (p.texto && p.texto.length > MAX_TEXTO_ROTULO && p.id in COLORES_MINIMOS_CON_ROTULO) notas.push(`${p.id.replace(/_/g, " ")}: el texto leído pasa de ${MAX_TEXTO_ROTULO} letras; quedó «${p.texto.slice(0, MAX_TEXTO_ROTULO)}».`);
+        // Los colores del fondo son solo `colores`; las letras traen su color y su acabado aparte (colorTexto, acabadoTexto).
+        const tinta = p.texto ? tintaLeida(p, notas) : undefined;
+        const hex = (k: number) => p.colores[k]?.hex ?? p.colores[0]!.hex;
+        if (p.texto && p.texto.length > MAX_TEXTO_ROTULO && ADMITEN_ROTULO.has(p.id)) notas.push(`${p.id.replace(/_/g, " ")}: el texto leído pasa de ${MAX_TEXTO_ROTULO} letras; quedó «${p.texto.slice(0, MAX_TEXTO_ROTULO)}».`);
         const a = cm(p.alto), w = cm(p.ancho), y0 = Y(p.yBase);
         let elementos: ElementoEscenografia[];
         let lugar: "piso" | "pared" = "piso", z = muro + 5;
         switch (p.id) {
-          case "panel_redondo": elementos = panelRedondo({ diametroCm: a, alturaCentroCm: r0(y0 + a / 2), hex: hex(0), aro: delFondo[1] ? { hex: hex(1), anchoCm: 4 } : null }); break;
+          case "panel_redondo": elementos = panelRedondo({ diametroCm: a, alturaCentroCm: r0(y0 + a / 2), hex: hex(0), aro: p.colores[1] ? { hex: hex(1), anchoCm: 4 } : null }); break;
           case "media_luna": elementos = mediaLuna({ diametroCm: a, hex: hex(0) }); break;
-          case "arcos_chiara": elementos = arcosChiara({ arcos: delFondo.slice(0, 3).map((c, k) => ({ anchoCm: r0(w * (1 - k * 0.15) / 1.6), altoCm: r0(a * (1 - k * 0.12)), hex: c.hex, xCm: r0((k - 1) * w * 0.12) })) }); break;
+          case "arcos_chiara": elementos = arcosChiara({ arcos: p.colores.slice(0, 3).map((c, k) => ({ anchoCm: r0(w * (1 - k * 0.15) / 1.6), altoCm: r0(a * (1 - k * 0.12)), hex: c.hex, xCm: r0((k - 1) * w * 0.12) })) }); break;
           case "lentejuelas": elementos = [paredLentejuelas({ anchoCm: w, altoCm: a, hex: hex(0) })]; break;
           case "pedestales": z = muro + 120; elementos = pedestales({ cilindros: p.colores.map((c, k) => ({ diametroCm: r0(Math.max(30, w / Math.max(1, p.colores.length) - 4)), altoCm: r0(a * (0.7 + 0.15 * k)), hex: c.hex, acabado: c.acabado === "cromado" ? "metal" as const : "satinado" as const })) }); break;
           case "mesa_mantel": z = muro + 120; elementos = mesaConMantel({ anchoCm: w, fondoCm: 75, altoCm: Math.min(110, Math.max(60, a)), mantel: hex(0) }); break;
           case "tapete_redondo": z = muro + 160; elementos = tapete({ anchoCm: w, fondoCm: r0(w * 0.7), hex: hex(0) }); break;
           case "cortina_luces": lugar = "pared"; elementos = cortina({ anchoCm: w, altoCm: a, hex: hex(0), luces: true }); break;
-          default: lugar = "pared"; elementos = letrero({ texto: p.texto ?? "", anchoCm: w, altoCm: a, hex: hex(0), tinta: hex(1) });
+          default: lugar = "pared"; elementos = letrero({ texto: p.texto ?? "", anchoCm: w, altoCm: a, hex: hex(0), tinta: tinta ?? hex(1) });
         }
         const sinRotulo: Pieza = { tipo: "escenografia", elementos, mueble: { id: p.id } };
-        // Un nombre en vinilo sobre un panel, un arco o la pared de lentejuelas: el texto leído es su rótulo, con la tinta que viene al final de los colores (o la que se lee sobre el fondo).
-        const pieza = p.texto && p.id in COLORES_MINIMOS_CON_ROTULO && sinRotulo.tipo === "escenografia" ? conTextoPieza(sinRotulo, { texto: p.texto, ...(tinta ? { color: tinta } : {}) }) : sinRotulo;
+        // Un nombre sobre un panel, un arco o la pared de lentejuelas: el texto leído es su rótulo, con el color y el acabado que se leyeron en las letras (sin color, el que se lee sobre el fondo).
+        const pieza = p.texto && ADMITEN_ROTULO.has(p.id) && sinRotulo.tipo === "escenografia" ? conTextoPieza(sinRotulo, { texto: p.texto, acabado: acabadoRotuloLeido(p.acabadoTexto), ...(tinta ? { color: tinta } : {}) }) : sinRotulo;
         poner(p.id.replace(/_/g, "-"), p.id === "letrero" && p.texto ? `Letrero «${p.texto}»` : p.id.replace(/_/g, " "), pieza,
           lugar === "pared" ? { en: "pared", pared: "fondo", aLoLargoCm: X(p.x), alturaCm: p.id === "letrero" ? r0(y0) : 0 } : { en: "piso", xCm: X(p.x), zCm: z, giroGrados: 0 });
         return;
