@@ -1,4 +1,5 @@
 import { FONDOS_CATALOGO } from "./fondos-escenografia";
+import { descripcionConColores } from "./mobiliario-tipos";
 import { coloresDelFormato } from "./formatos";
 import { RACIMOS_PREDEFINIDOS } from "./racimos-globos";
 import { REFERENCIAS_DUENO, type ReferenciaDueno } from "./referencias-dueno";
@@ -61,7 +62,7 @@ Responde SOLO el JSON.`;
 
 const nombresDeColor = () => [...new Set(coloresDelFormato("R-12").map((c) => c.nombreCompleto))].join(", ");
 
-const fondosDelCatalogo = () => FONDOS_CATALOGO.map((f) => `${f.id}: ${f.descripcion}`).join(" ");
+const fondosDelCatalogo = () => FONDOS_CATALOGO.map((f) => `${f.id}: ${descripcionConColores(f)}`).join(" ");
 
 const racimosDelCatalogo = () => RACIMOS_PREDEFINIDOS.map((r) => `${r.id}: ${r.descripcion}`).join(" ");
 
