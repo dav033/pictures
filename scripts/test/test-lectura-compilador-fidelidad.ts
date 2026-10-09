@@ -131,6 +131,16 @@ prueba("los gigantes de un color que no viene en R-36 (Reflex Dorado) van en R-2
   assert.ok(notas.some((n) => /no viene en R-36: sus gigantes van en R-24, del mismo color/.test(n)), notas.join(" | "));
 });
 
+prueba("un escalón chico en R-9 de un color que no viene en R-9 nunca sube a un formato mayor (antes salía en R-24)", () => {
+  const notas: string[] = [];
+  const ROSA_REFLEX: ColorLeido = { nombre: "Reflex Rosado", hex: "#e8a3b8", peso: 60, acabado: "cromado" };
+  const mezcla: MezclaLeida = { grandes: 20, medianos: 50, chicos: 30, diametroGrande: 0.15, diametroMediano: 0.1, diametroChico: 0.06, formatoGrande: "R-18", formatoMediano: "R-12", formatoChico: "R-9" };
+  const paleta = paletaDeLectura({ colores: [ROSA_REFLEX, BLANCO], mezcla, coloresPorEscalon: [{ escalon: "chicos", pesos: [70, 30] }] }, 260, notas);
+  const deChicos = paleta.filter((c) => c.formatos?.length === 1 && c.peso === 70);
+  assert.ok(deChicos.length === 1, JSON.stringify(paleta));
+  assert.ok(["R-9", "R-5"].includes(deChicos[0]!.formatos![0]!), `los chicos van en ${deChicos[0]!.formatos![0]} · ${notas.join(" | ")}`);
+});
+
 prueba("un gigante dorado cromado baja a R-24 pero sigue contando como gigante, con el diámetro medido", () => {
   const notas: string[] = [];
   const fijos = fijosDeAnclas({ colores: [DORADO, BLANCO], mezcla: MEZCLA_GIGANTES, anclas: [

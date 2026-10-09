@@ -35,6 +35,10 @@ const TEMPERATURA_FONDOS = 0.3;
 const LADO_RECORTE_PX = 512;
 /** Una caja con al menos estos globos distintos dentro es un racimo (con 2 puede ser un globo y su reflejo, o uno que asoma). */
 const GLOBOS_DE_UN_RACIMO = 3;
+/** Si el globo más grande ocupa al menos este % del ancho de la caja, la caja es ese globo (con otros pegados), no un racimo. */
+const PARTE_DEL_MAYOR_EN_UN_GLOBO = 70;
+/** Pausa antes de reintentar la revisión (una cuota pasajera tras los nueve trozos). */
+const ESPERA_REINTENTO_MS = 1500;
 const TOKENS_SALIDA_RACIMOS = 2000;
 
 const PEDIDO = "Detecta TODOS los globos de látex visibles en esta imagen, uno por uno: grandes, medianos y los chiquitos (5 pulgadas), también los parcialmente tapados si se ve al menos media esfera. No cuentes globos de foil (letras, números, figuras). Devuelve una lista JSON de objetos {\"box_2d\": [ymin, xmin, ymax, xmax] normalizado 0-1000, \"color\": el color del globo}. No te saltes ninguno.";
@@ -147,37 +151,59 @@ type Pixeles = { data: Buffer; width: number; height: number; channels: 1 | 2 | 
 export async function descartarRacimos(cliente: NonNullable<ReturnType<typeof getGeminiClient>>, px: Pixeles, globos: GloboDetectado[], opciones: { signal?: AbortSignal; superficie: string }): Promise<{ globos: GloboDetectado[]; uso: UsoModelo; revision: RevisionRacimos }> {
   const sospechosas = cajasSospechosas(globos);
   if (!sospechosas.length) return { globos, uso: SIN_USO, revision: { revisadas: 0, quitadas: 0 } };
-  const inicio = Date.now();
+  // Sin revisión se miden todas, como antes, y queda dicho por qué.
+  const sinRevisar = (fallo: string, uso: UsoModelo = SIN_USO) => {
+    decidir("modelo:deteccion_globos", "no se pudieron revisar las cajas grandes: se miden todas", { revisadas: sospechosas.length, fallo });
+    return { globos, uso, revision: { revisadas: sospechosas.length, quitadas: 0, fallo } };
+  };
+  const mensaje = (error: unknown) => (error instanceof Error ? error.message : String(error)).slice(0, 200);
+  let recortes: Buffer[];
   try {
-    const recortes = await Promise.all(sospechosas.map(async (i) => {
+    recortes = await Promise.all(sospechosas.map(async (i) => {
       const r = recorteDeCaja(globos[i]!);
       const left = Math.floor(r.x0 * px.width), top = Math.floor(r.y0 * px.height);
       const ancho = Math.max(1, Math.floor((r.x1 - r.x0) * px.width)), alto = Math.max(1, Math.floor((r.y1 - r.y0) * px.height));
       return sharp(px.data, { raw: { width: px.width, height: px.height, channels: px.channels } }).extract({ left, top, width: ancho, height: alto }).resize({ width: LADO_RECORTE_PX, height: LADO_RECORTE_PX, fit: "inside" }).jpeg({ quality: CALIDAD_JPEG }).toBuffer();
     }));
-    const pedido = `Te paso ${recortes.length} recortes de una foto de decoración con globos, numerados del 1 al ${recortes.length} en orden. En cada uno hay una caja en el centro que alguien marcó como «un globo». Cuenta cuántos globos DISTINTOS ocupan esa caja central: cada globo es un contorno redondo propio. Un globo cromado, perlado o metalizado refleja otros globos y la sala en su superficie: esos reflejos NO son globos, sigue siendo 1. Los globos vecinos que solo asoman por el borde del recorte no cuentan. Devuelve una lista JSON con un objeto por recorte: {"recorte": número, "globos": cuántos globos distintos ocupan la caja central}.`;
-    const partes = recortes.flatMap((bytes, k) => [{ text: `Recorte ${k + 1}:` }, { inlineData: { mimeType: "image/jpeg", data: bytes.toString("base64") } }]);
-    const esquema = { type: "array", items: { type: "object", properties: { recorte: { type: "integer" }, globos: { type: "integer" } }, required: ["recorte", "globos"] } };
-    const pedir = () => cliente.models.generateContent({
-      model: MODELO_CHAT,
-      contents: [{ role: "user", parts: [...partes, { text: pedido }] }],
-      config: { responseMimeType: "application/json", responseJsonSchema: esquema, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: TOKENS_SALIDA_RACIMOS, temperature: TEMPERATURA_FONDOS, abortSignal: opciones.signal },
+  } catch (error) {
+    // Un recorte que falla no es una llamada a la IA: no va a su telemetría.
+    return sinRevisar(`no se pudieron recortar las cajas: ${mensaje(error)}`);
+  }
+  const pedido = `Te paso ${recortes.length} recortes de una foto de decoración con globos, numerados del 1 al ${recortes.length} en orden. En cada uno hay una caja en el centro que alguien marcó como «un globo». Para cada recorte dime: "globos", cuántos globos DISTINTOS ocupan esa caja central (cada globo es un contorno redondo propio; un globo cromado, perlado o metalizado refleja otros globos y la sala en su superficie: esos reflejos NO son globos; los vecinos que solo asoman por el borde no cuentan), y "mayor", qué parte del ANCHO de la caja ocupa el globo más grande que hay en ella, de 0 a 100 (un globo gigante que llena la caja es 90 o más aunque tenga globos chicos pegados delante; en un racimo de globos parecidos, el mayor ocupa la mitad o menos). Devuelve una lista JSON con un objeto por recorte: {"recorte": número, "globos": número, "mayor": número}.`;
+  const partes = recortes.flatMap((bytes, k) => [{ text: `Recorte ${k + 1}:` }, { inlineData: { mimeType: "image/jpeg", data: bytes.toString("base64") } }]);
+  const esquema = { type: "array", items: { type: "object", properties: { recorte: { type: "integer" }, globos: { type: "integer" }, mayor: { type: "integer" } }, required: ["recorte", "globos", "mayor"] } };
+  const pedir = () => cliente.models.generateContent({
+    model: MODELO_CHAT,
+    contents: [{ role: "user", parts: [...partes, { text: pedido }] }],
+    config: { responseMimeType: "application/json", responseJsonSchema: esquema, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: TOKENS_SALIDA_RACIMOS, temperature: TEMPERATURA_FONDOS, abortSignal: opciones.signal },
+  });
+  const inicio = Date.now();
+  let r: Awaited<ReturnType<typeof pedir>>;
+  try {
+    // Llega justo después de los nueve trozos y los fondos: un fallo pasajero (cuota, red) se reintenta una vez, tras una pausa.
+    r = await pedir().catch(async (error: unknown) => {
+      if (opciones.signal?.aborted) throw error;
+      await new Promise((listo) => setTimeout(listo, ESPERA_REINTENTO_MS));
+      return pedir();
     });
-    // Llega justo después de los nueve trozos y los fondos: un fallo pasajero (cuota, red) se reintenta una vez.
-    const r = await pedir().catch((error: unknown) => { if (opciones.signal?.aborted) throw error; return pedir(); });
-    registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: `${opciones.superficie}:racimos` }, usage: r.usageMetadata, bytesImagenEntrada: recortes.reduce((s, b) => s + b.byteLength, 0), thinkingLevel: "low", finishReason: r.candidates?.[0]?.finishReason });
-    const crudo = jsonDe(r.candidates?.[0]?.content?.parts);
-    const racimos = new Set((Array.isArray(crudo) ? crudo : []).flatMap((v: unknown) => {
-      const k = (v as { recorte?: unknown }).recorte, n = (v as { globos?: unknown }).globos;
-      return typeof k === "number" && typeof n === "number" && n >= GLOBOS_DE_UN_RACIMO && sospechosas[k - 1] !== undefined ? [sospechosas[k - 1]!] : [];
-    }));
-    decidir("modelo:deteccion_globos", "cajas grandes revisadas: los racimos tomados por un globo no se miden", { revisadas: sospechosas.length, racimos: racimos.size, cajas: [...racimos].map((i) => globos[i]!.box_2d) });
-    return { globos: globos.filter((_, i) => !racimos.has(i)), uso: usoDe(r.usageMetadata), revision: { revisadas: sospechosas.length, quitadas: racimos.size } };
   } catch (error) {
     registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: `${opciones.superficie}:racimos` }, thinkingLevel: "low" });
-    decidir("modelo:deteccion_globos", "no se pudieron revisar las cajas grandes: se miden todas", { revisadas: sospechosas.length, error: error instanceof Error ? error.message.slice(0, 300) : String(error) });
-    return { globos, uso: SIN_USO, revision: { revisadas: sospechosas.length, quitadas: 0, fallo: error instanceof Error ? error.message.slice(0, 200) : String(error) } };
+    // Lo que canceló el usuario se cancela, no se mide a medias.
+    if (opciones.signal?.aborted) throw error;
+    return sinRevisar(mensaje(error));
   }
+  registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: `${opciones.superficie}:racimos` }, usage: r.usageMetadata, bytesImagenEntrada: recortes.reduce((s, b) => s + b.byteLength, 0), thinkingLevel: "low", finishReason: r.candidates?.[0]?.finishReason });
+  let crudo: unknown;
+  try { crudo = jsonDe(r.candidates?.[0]?.content?.parts); } catch { crudo = null; }
+  if (!Array.isArray(crudo)) return sinRevisar(`la respuesta no trae la lista de recortes (${r.candidates?.[0]?.finishReason ?? "sin motivo"})`, usoDe(r.usageMetadata));
+  const racimos = new Set(crudo.flatMap((v: unknown) => {
+    const k = (v as { recorte?: unknown }).recorte, n = (v as { globos?: unknown }).globos, mayor = (v as { mayor?: unknown }).mayor;
+    // Un racimo: varios globos y ninguno que llene la caja (un gigante con globos chicos pegados delante sigue siendo un globo).
+    const esRacimo = typeof n === "number" && n >= GLOBOS_DE_UN_RACIMO && typeof mayor === "number" && mayor < PARTE_DEL_MAYOR_EN_UN_GLOBO;
+    return typeof k === "number" && esRacimo && sospechosas[k - 1] !== undefined ? [sospechosas[k - 1]!] : [];
+  }));
+  decidir("modelo:deteccion_globos", "cajas grandes revisadas: los racimos tomados por un globo no se miden", { revisadas: sospechosas.length, racimos: racimos.size, cajas: [...racimos].map((i) => globos[i]!.box_2d) });
+  return { globos: globos.filter((_, i) => !racimos.has(i)), uso: usoDe(r.usageMetadata), revision: { revisadas: sospechosas.length, quitadas: racimos.size } };
 }
 
 // ----------------------------------------------------------------------------------------------------------

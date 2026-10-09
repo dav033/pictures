@@ -1,5 +1,6 @@
 import { mismaFamiliaDeFondo } from "./fondos-familias";
 import type { PiezaLeida } from "./lectura-foto";
+import { muebleDe } from "./mobiliario-catalogo";
 
 /**
  * **Los fondos y muebles de la lectura puestos en su caja detectada** (`detectarFondos`, `detectar-globos-ia.ts`): el lector
@@ -75,9 +76,12 @@ export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly Fond
       if (!cajas) continue;
       cajas.forEach((c) => usados.add(c.f));
       const union = { x0: Math.min(...cajas.map((c) => c.caja.x0)), x1: Math.max(...cajas.map((c) => c.caja.x1)), y0: Math.min(...cajas.map((c) => c.caja.y0)), y1: Math.max(...cajas.map((c) => c.caja.y1)) };
-      // Una caja mucho menor que lo leído es un pedazo (el pie de un aro que los globos tapan, una de las mesas del juego):
-      // se queda lo leído antes que encoger el fondo hasta esconderlo detrás de los globos.
-      if (union.x1 - union.x0 < PARTE_MINIMA_DE_LO_LEIDO * p.ancho || union.y1 - union.y0 < PARTE_MINIMA_DE_LO_LEIDO * p.alto) {
+      // Una caja mucho menor que lo leído puede ser un pedazo (el pie de un aro que los globos tapan, una de las mesas del
+      // juego) o lo leído a ojo exagerado (una mesa leída 2,5 veces más grande). Es un pedazo si se quedó corta en UNA sola
+      // medida, o si el fondo es un telón (aro, arco, marco: los globos lo tapan casi siempre); entonces se queda lo
+      // leído antes que encoger el fondo hasta esconderlo. Si se quedó corta en las dos y no es un telón, manda la caja.
+      const cortoAncho = union.x1 - union.x0 < PARTE_MINIMA_DE_LO_LEIDO * p.ancho, cortoAlto = union.y1 - union.y0 < PARTE_MINIMA_DE_LO_LEIDO * p.alto;
+      if ((cortoAncho !== cortoAlto) || ((cortoAncho || cortoAlto) && Boolean(muebleDe(p.id)?.telon))) {
         sinCaja.delete(i);
         notaDe.set(i, `«${p.id}»: la caja detectada (${r3(union.x1 - union.x0)} × ${r3(union.y1 - union.y0)}) es un pedazo de lo leído (${p.ancho} × ${p.alto}): se queda lo leído.`);
         continue;

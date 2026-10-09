@@ -60,6 +60,13 @@ prueba("una caja que es un pedazo de lo leído (el pie del aro que los globos ta
   const r = medirFondos([aro], [{ id: "aro_metalico", box_2d: [450, 380, 620, 620] }], ASPECTO);
   assert.deepEqual(r.piezas[0], aro);
   assert.match(r.notas.join(" "), /es un pedazo de lo leído/);
+  // Una mesa leída a ojo 2,5 veces más grande (corta en las dos medidas, no es un telón): manda la caja.
+  const mesa = fondo("mesa_mantel", 0.5, 0.9, 0.5, 0.4);
+  const medida = medirFondos([mesa], [{ id: "mesa_mantel", box_2d: [750, 400, 900, 590] }], ASPECTO).piezas[0] as Fondo;
+  assert.ok(cerca(medida.ancho, 0.19) && cerca(medida.alto, 0.15), JSON.stringify(medida));
+  // Un juego de mesas del que solo se detectó una (corta solo de ancho): se queda lo leído.
+  const nido = fondo("mesas_nido_hexagonales", 0.5, 0.8, 0.42, 0.33);
+  assert.deepEqual(medirFondos([nido], [{ id: "mesas_nido_hexagonales", box_2d: [480, 420, 800, 584] }], ASPECTO).piezas[0], nido);
   // Una caja de su tamaño (aunque algo menor) sí lo mide.
   const bien = medirFondos([aro], [{ id: "aro_metalico", box_2d: [60, 330, 620, 640] }], ASPECTO).piezas[0] as Fondo;
   assert.ok(cerca(bien.alto, 0.56) && cerca(bien.ancho, 0.31), JSON.stringify(bien));

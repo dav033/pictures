@@ -56,12 +56,19 @@ async function main() {
 
   await prueba("los recortes que la IA ve como varios globos se quitan antes de medir; los que son un globo se quedan", async () => {
     const pedidos: unknown[] = [];
-    const r = await descartarRacimos(clienteQueResponde([{ recorte: 1, globos: 6 }, { recorte: 2, globos: 1 }, { recorte: 3, globos: 6 }, { recorte: 4, globos: 6 }, { recorte: 5, globos: 6 }], pedidos), await pixeles(), foto05, { superficie: "prueba" });
+    const r = await descartarRacimos(clienteQueResponde([{ recorte: 1, globos: 6, mayor: 40 }, { recorte: 2, globos: 1, mayor: 95 }, { recorte: 3, globos: 6, mayor: 40 }, { recorte: 4, globos: 6, mayor: 40 }, { recorte: 5, globos: 6, mayor: 40 }], pedidos), await pixeles(), foto05, { superficie: "prueba" });
     assert.equal(pedidos.length, 1, "una sola llamada");
     assert.equal(r.globos.length, 31);
     assert.ok(r.globos.includes(foto05[31]!), "el globo blanco grande de verdad se queda");
     assert.ok(!r.globos.includes(foto05[30]!), "el racimo dorado se va");
     assert.ok(r.uso.entrada > 0);
+  });
+
+  await prueba("un gigante con globos chicos pegados delante (varios globos, pero uno llena la caja) no se quita", async () => {
+    const r = await descartarRacimos(clienteQueResponde([{ recorte: 1, globos: 4, mayor: 92 }, { recorte: 2, globos: 5, mayor: 45 }]), await pixeles(), foto05, { superficie: "prueba" });
+    assert.ok(r.globos.includes(foto05[30]!), "el gigante con chicos pegados se queda");
+    assert.ok(!r.globos.includes(foto05[31]!), "el racimo se va");
+    assert.deepEqual(r.revision, { revisadas: 5, quitadas: 1 });
   });
 
   await prueba("si la IA falla o no hay sospechosas, se mide todo como estaba (sin llamar de más)", async () => {
@@ -72,8 +79,17 @@ async function main() {
     assert.equal(pedidos.length, 0);
   });
 
+  await prueba("una respuesta sin lista se mide todo y dice por qué; una cancelación del usuario se cancela", async () => {
+    const r = await descartarRacimos(clienteQueResponde({ nada: true }), await pixeles(), foto05, { superficie: "prueba" });
+    assert.equal(r.globos.length, foto05.length);
+    assert.match(r.revision.fallo ?? "", /no trae la lista/);
+    const corte = new AbortController();
+    const cancelado = { models: { generateContent: async () => { corte.abort(); throw new Error("abortado"); } } } as unknown as Cliente;
+    await assert.rejects(descartarRacimos(cancelado, await pixeles(), foto05, { superficie: "prueba", signal: corte.signal }), /abortado/);
+  });
+
   await prueba("una respuesta con números de recorte que no existen no quita nada", async () => {
-    const r = await descartarRacimos(clienteQueResponde([{ recorte: 9, globos: 6 }, { recorte: 0, globos: 6 }]), await pixeles(), foto05, { superficie: "prueba" });
+    const r = await descartarRacimos(clienteQueResponde([{ recorte: 9, globos: 6, mayor: 40 }, { recorte: 0, globos: 6, mayor: 40 }]), await pixeles(), foto05, { superficie: "prueba" });
     assert.equal(r.globos.length, foto05.length);
   });
 

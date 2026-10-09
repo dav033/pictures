@@ -63,6 +63,7 @@ const SILUETA_COLUMNA: Readonly<Record<string, SiluetaTrazo>> = { recta: "column
 
 /** El diámetro de un pedestal (cilindro) de fiesta típico: con él se cuentan los que caben en lo leído si no dice cuántos. */
 const DIAMETRO_PEDESTAL_TIPICO_CM = 45;
+/** Lo más que se deduce del ancho (los leídos uno por color o con `cantidad` van todos). */
 const MAXIMO_PEDESTALES = 5;
 
 /** Cuánto más grueso que el mínimo se deja el cuerpo: las siluetas con nombre afinan las puntas y el motor solo pone un formato donde cabe. */
@@ -259,7 +260,8 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
           case "lentejuelas": elementos = [paredLentejuelas({ anchoCm: w, altoCm: a, hex: hex(0) })]; break;
           case "pedestales": {
             // Cuántos: los que dice `cantidad`; si no, uno por color leído o, si son más anchos de lo que da un pedestal típico, los que caben (tres pedestales blancos leídos con un solo color no son un tambor de 2 m).
-            const cuantos = Math.min(MAXIMO_PEDESTALES, Math.max(1, p.cantidad ?? Math.max(p.colores.length, Math.round(w / DIAMETRO_PEDESTAL_TIPICO_CM))));
+            // Los colores leídos nunca se pierden: el tope solo limita los que se deducen del ancho.
+            const cuantos = Math.max(1, p.cantidad ?? Math.max(p.colores.length, Math.min(MAXIMO_PEDESTALES, Math.round(w / DIAMETRO_PEDESTAL_TIPICO_CM))));
             const diametroCm = r0(Math.max(30, w / cuantos - 4)); z = zEnElPiso(120, diametroCm);
             elementos = pedestales({ cilindros: Array.from({ length: cuantos }, (_, k) => { const c = p.colores[k % p.colores.length]!; return { diametroCm, altoCm: r0(a * (0.7 + 0.15 * (k % 3))), hex: c.hex, acabado: c.acabado === "cromado" ? "metal" as const : "satinado" as const }; }) });
             break;

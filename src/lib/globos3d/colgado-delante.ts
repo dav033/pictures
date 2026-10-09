@@ -48,6 +48,11 @@ export function colgadoDelanteDePaneles(escena: Escena, notas: string[]): Escena
   return { ...escena, nodos };
 }
 
+/** Los globos que atraviesan el plano del letrero: su parte de atrás a lo más esto delante de su cara (cm). */
+const PEGADOS_AL_LETRERO_CM = 10;
+/** Lo más que se corre un letrero hacia la sala para quedar delante de los globos (cm): más que eso ya no es «encima de la guirnalda». */
+const MAXIMO_ADELANTE_LETRERO_CM = 70;
+
 /** Un letrero con texto (el nombre de acrílico, el neón): lo que se lee tiene que verse. */
 const esLetrero = (n: NodoEscena) => n.pieza.tipo === "escenografia" && Boolean(n.pieza.mueble && muebleDe(n.pieza.mueble.id)?.conTexto);
 
@@ -66,9 +71,15 @@ export function letrerosDelanteDeGlobos(escena: Escena, notas: string[]): Escena
     if (!letreros.includes(n)) return n;
     const c = cajas.get(n.id);
     if (!c) return n;
-    // Los globos cuyo disco cae sobre el letrero (de frente) y que asoman por delante de su cara.
-    const frente = globos.reduce((m, g) => (g.c.x + g.r > c.min.x && g.c.x - g.r < c.max.x && g.c.y + g.r > c.min.y && g.c.y - g.r < c.max.y ? Math.max(m, g.c.z + g.r) : m), -Infinity);
+    // Los globos cuyo disco cae sobre el letrero (de frente) y que lo atraviesan: su parte de atrás no está más de
+    // `PEGADOS_AL_LETRERO_CM` delante de su cara. Un montón de piso que está metros delante tapa al letrero de verdad, como en
+    // la foto: no lo arrastra hacia la sala.
+    const frente = globos.reduce((m, g) => (g.c.x + g.r > c.min.x && g.c.x - g.r < c.max.x && g.c.y + g.r > c.min.y && g.c.y - g.r < c.max.y && g.c.z - g.r <= c.max.z + PEGADOS_AL_LETRERO_CM ? Math.max(m, g.c.z + g.r) : m), -Infinity);
     if (!(frente > c.max.z)) return n;
+    if (frente - c.max.z > MAXIMO_ADELANTE_LETRERO_CM) {
+      notas.push(`«${n.nombre}» queda tapado por globos que van ${Math.round(frente - c.max.z)} cm delante de él: se deja donde está.`);
+      return n;
+    }
     const local = armarPieza(n.pieza).caja;
     notas.push(`«${n.nombre}» quedaba detrás de los globos que le pasan por delante: va delante de ellos.`);
     return { ...n, colocacion: { en: "libre" as const, xCm: r1(c.min.x - local.min.x), yCm: r1(c.min.y - local.min.y), zCm: r1(frente + SEPARACION_CM - local.min.z), giroGrados: 0 } };

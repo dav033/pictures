@@ -111,6 +111,7 @@ prueba("pedestales leídos con un solo color: tantos como caben a lo ancho (o lo
   assert.equal(cuantos(fondo("pedestales", PISO, 0.18, 0.3)), 1, "uno angosto: uno");
   assert.equal(cuantos(fondo("pedestales", PISO, 0.45, 0.35, { cantidad: 2 })), 2, "cantidad manda");
   assert.equal(cuantos(fondo("pedestales", PISO, 0.18, 0.3, { colores: [BLANCO, BLANCO] })), 2, "uno por color leído, como siempre");
+  assert.equal(cuantos(fondo("pedestales", PISO, 0.5, 0.3, { colores: Array.from({ length: 6 }, () => BLANCO) })), 6, "seis colores leídos: seis, el tope no se come ninguno");
 });
 
 console.log(`test-compilar-fondos-profundidad: ${pruebas} pruebas ok`);

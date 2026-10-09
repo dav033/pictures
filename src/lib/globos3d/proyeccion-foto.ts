@@ -16,6 +16,9 @@ export const FOV_FOTO_GRADOS = 35;
 /** A qué profundidad de la pared de fondo se mide la escala de la foto: donde suele estar la decoración (cm hacia el frente). */
 export const PROFUNDIDAD_DE_LA_FOTO_CM = 40;
 
+/** Lo más que se inclina la cámara de la foto hacia abajo (las 13 fotos del dueño: de 0 a 4°). */
+export const INCLINACION_MAXIMA_GRADOS = 10;
+
 /** `inclinacion`: radianes hacia abajo (0 = de frente). `tangente`: la de la mitad del campo vertical. */
 export type CamaraNumerica = { x: number; y: number; z: number; tangente: number; aspecto: number; inclinacion: number };
 
@@ -26,9 +29,10 @@ export type PuntoPantalla = { x: number; y: number; prof: number };
 function camaraEnPlano(encuadre: Encuadre, planoZ: number): CamaraNumerica {
   const tangente = Math.tan((FOV_FOTO_GRADOS / 2) * Math.PI / 180);
   const distancia = encuadre.altoCm / 2 / tangente;
+  // Lo que sube la cámara sobre el centro, sin pasar de `INCLINACION_MAXIMA_GRADOS`: el compilador coloca lo colgado con una
+  // escala lineal (de frente), que con más inclinación ya no calza con la captura (un encuadre cercano de 1 m inclinaba 37°).
   const alzada = Math.max(0, (encuadre.camaraYCm ?? encuadre.centroYCm) - encuadre.centroYCm);
-  // Más alta que la distancia no mira la decoración: se queda de frente (nunca pasa con una foto real).
-  const subida = alzada < distancia * 0.9 ? alzada : 0;
+  const subida = Math.min(alzada, distancia * Math.sin((INCLINACION_MAXIMA_GRADOS * Math.PI) / 180));
   // A `distancia` del centro de la imagen a lo largo de la mirada: la escala del centro es la misma que de frente.
   return { x: 0, y: encuadre.centroYCm + subida, z: planoZ + Math.sqrt(distancia ** 2 - subida ** 2), tangente, aspecto: encuadre.aspecto, inclinacion: Math.asin(subida / distancia) };
 }

@@ -115,6 +115,14 @@ export type PiezaConColores = {
 };
 
 const seFabricaEn = (formatoId: string, codigo: string) => coloresDelFormato(formatoId).some((r) => r.codigo === codigo);
+/** Los formatos redondos de la técnica orgánica, de mayor a menor. */
+const ESCALERA_ORGANICA: readonly string[] = ["R-36", "R-24", "R-18", "R-12", "R-9", "R-5"];
+/** El formato de abajo más cercano a `formatoId` en que se fabrica el color (nunca uno mayor); `null` si no hay. */
+function formatoMenorConColor(formatoId: string, codigo: string): string | null {
+  const desde = ESCALERA_ORGANICA.indexOf(formatoId);
+  if (desde < 0) return null;
+  return ESCALERA_ORGANICA.slice(desde + 1).find((f) => seFabricaEn(f, codigo)) ?? null;
+}
 const nombreDeCodigo = (codigo: string) => { const r = referenciaPorCodigo(codigo); return r ? `${r.codigo} ${r.nombreCompleto}` : codigo; };
 
 /** La paleta de una pieza orgánica leída, con sus colores por escalón y por tramo si los trae. */
@@ -133,15 +141,18 @@ export function paletaDeLectura(p: PiezaConColores, altoImagenCm: number, notas:
     const resto = FORMATOS_ORGANICOS.filter((f) => !propios.has(f));
     p.colores.forEach((c, k) => empujar(entrada(c, codigos[k]!, c.peso, resto)));
     // Cada escalón con sus colores en SU formato. Nunca se cambia el color por el tamaño: si el color no se fabrica en el
-    // formato del escalón (el Reflex Dorado no viene en 36"), esos globos van en el más grande de abajo en que sí viene
-    // (un gigante dorado cromado es un R-24 Reflex Dorado, no un R-36 Latte), como las anclas (`formatoConColor`).
+    // formato del escalón (el Reflex Dorado no viene en 36"), esos globos van en el formato de ABAJO más cercano en que sí
+    // viene (un gigante dorado cromado es un R-24 Reflex Dorado, no un R-36 Latte); nunca en uno más grande. Si no viene en
+    // ninguno de abajo, el más parecido en ese formato (`codigoDeColor`), como antes.
     for (const e of porEscalon) p.colores.forEach((c, k) => {
       const suyos = formatosDe[e.escalon];
-      const codigo = codigos[k]!;
       const unico = suyos.length === 1 ? suyos[0]! : null;
-      const formatos = unico && c.acabado !== "cristal" && c.acabado !== "confeti" && !seFabricaEn(unico, codigo) ? [formatoConColor(unico, codigo)] : suyos;
-      if (formatos !== suyos) notas.push(`${nombreDeCodigo(codigo)} no viene en ${unico}: sus ${e.escalon} van en ${formatos[0]}, del mismo color.`);
-      empujar(entrada(c, codigo, e.pesos[k] ?? 0, formatos));
+      if (!unico || c.acabado === "cristal" || c.acabado === "confeti") { empujar(entrada(c, unico ? codigoDeColor(c, suyos, notas) : codigos[k]!, e.pesos[k] ?? 0, suyos)); return; }
+      const codigo = codigos[k]!;
+      const menor = seFabricaEn(unico, codigo) ? unico : formatoMenorConColor(unico, codigo);
+      if (!menor) { empujar(entrada(c, codigoDeColor(c, suyos, notas), e.pesos[k] ?? 0, suyos)); return; }
+      if (menor !== unico) notas.push(`${nombreDeCodigo(codigo)} no viene en ${unico}: sus ${e.escalon} van en ${menor}, del mismo color.`);
+      empujar(entrada(c, codigo, e.pesos[k] ?? 0, [menor]));
     });
   } else {
     salida.push(...coloresOrganicos(p.colores, notas));

@@ -79,6 +79,18 @@ prueba("un tablero leído «transparente» se queda de acrílico transparente (n
   assert.match(frase ?? "", /clear acrylic/);
 });
 
+prueba("una mesa hexagonal con la cubierta leída «transparente» queda sin cubierta (el catálogo no trae color para ella)", () => {
+  const mesa = { tipo: "fondo" as const, id: "mesa_hexagonal", x: 0.5, yBase: 0.9, ancho: 0.15, alto: 0.2, colores: [{ nombre: "dorado", hex: "#c9a24e", peso: 70, acabado: "cromado" as const }, { nombre: "vidrio transparente", hex: "#ffffff", peso: 30, acabado: "brillante" as const }] };
+  const { opciones } = opcionesDe({ ...base, piezas: [mesa] }, "mesa_hexagonal");
+  assert.deepEqual([...opciones.colores].map((c) => c.toLowerCase()), ["#c9a24e"]);
+});
+
+prueba("«acrílico rosa» es un color de verdad: el nombre de acrílico sale rosa, no con el dorado de catálogo", () => {
+  const rosa = { tipo: "fondo" as const, id: "rotulo_acrilico", x: 0.5, yBase: 0.4, ancho: 0.22, alto: 0.08, texto: "Ana", colores: [{ nombre: "acrílico rosa", hex: "#f4a6c8", peso: 100, acabado: "mate" as const }] };
+  const { opciones } = opcionesDe({ ...base, piezas: [rosa] }, "rotulo_acrilico");
+  assert.equal(opciones.colores[0]?.toLowerCase(), "#f4a6c8");
+});
+
 prueba("un nombre de acrílico con una guirnalda que le pasa por detrás va delante de los globos que se le cruzan", () => {
   const ROSA = { nombre: "rosado", hex: "#f4b6c8", peso: 100, acabado: "mate" as const };
   const rotulo = { tipo: "fondo" as const, id: "rotulo_acrilico", x: 0.5, yBase: 0.32, ancho: 0.22, alto: 0.08, texto: "Isabella", colorTexto: "dorado", acabadoTexto: "cromado" as const, colores: [{ nombre: "dorado", hex: "#d6b45a", peso: 100, acabado: "cromado" as const }] };
@@ -94,6 +106,15 @@ prueba("un nombre de acrílico con una guirnalda que le pasa por detrás va dela
   assert.ok(cruzan.every((g) => centroDe(g).z + g.infladoCm / 2 <= letrero.caja.min.z + 0.5), "ningún globo de los que se le cruzan queda delante");
   assert.ok(notas.some((n) => /va delante de ellos/.test(n)), notas.join(" | "));
   assert.ok(!compilarLectura({ ...base, piezas: [rotulo] }).notas.some((n) => /va delante de ellos/.test(n)), "sin globos se queda donde estaba");
+});
+
+prueba("un montón de piso que está delante de un neón lo tapa como en la foto: el neón no salta hacia la sala", () => {
+  const ROSA = { nombre: "rosado", hex: "#f4b6c8", peso: 100, acabado: "mate" as const };
+  const monton = { tipo: "racimo_piso" as const, x: 0.52, yPie: 0.97, yArriba: 0.55, ancho: 0.3, tamanos: {}, racimos: 0.6, colores: [ROSA] };
+  const { escena, notas } = compilarLectura({ ...base, piezas: [neon, monton] });
+  const n = escena.nodos.find((x) => x.id.startsWith("neon-cursiva"))!;
+  assert.equal(n.colocacion.en, "pared", JSON.stringify(n.colocacion));
+  assert.ok(!notas.some((x) => /va delante de ellos/.test(x)), notas.join(" | "));
 });
 
 prueba("sin panel delante, lo colgado sigue en la pared", () => {
