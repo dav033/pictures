@@ -21,6 +21,7 @@ import { mesaLeida, mobiliarioLeido, tintaLeida, type MedidaLeida, type MesaLeid
 import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
 import { codigoDeColor, fijosDeAnclas, paletaDeLectura } from "./colores-lectura";
 import { recogerPuntas } from "./puntas-lectura";
+import { apoyoDeRacimo } from "./apoyo-racimo";
 import { colgadoDelanteDePaneles, letrerosDelanteDeGlobos } from "./colgado-delante";
 
 export { codigoDeColor } from "./colores-lectura";
@@ -60,10 +61,15 @@ function seApoyaEnElPiso(q: Extract<PiezaLeida, { tipo: "fondo" }>): boolean {
   return e.clase === "mueble" || e.retiroCm !== undefined;
 }
 
+/** Un extremo de guirnalda a esta fracción del borde de la foto sigue fuera del encuadre: no se recoge (la foto la corta). */
+const BORDE_DE_LA_FOTO = 0.02;
+/** Cuánto se retira de la pared un pedestal cuyo pie no dice profundidad (está sobre la línea del piso o tapado): el retiro del catálogo, que lo deja delante de cualquier panel. */
+const RETIRO_PEDESTALES_CM = 120;
+
 /** Un montón de piso con el pie a más de esto sobre la línea del piso está en el aire (colgado de un aro), no en el piso. */
 const RACIMO_ALZADO_CM = 20;
-/** Los telones de piso cuyo `alto` es un diámetro (panel redondo, media luna): su pie no se prolonga hasta el piso. */
-const TELONES_DE_DIAMETRO = new Set(["panel_redondo", "media_luna"]);
+/** Los telones de piso cuyo `alto` es un diámetro (panel redondo, media luna, aros): su pie no se prolonga hasta el piso (un aro de 200 × 200 con el pie tapado saldría ovalado). */
+const TELONES_DE_DIAMETRO = new Set(["panel_redondo", "media_luna", "aro_metalico", "aro_hexagonal"]);
 /** Un pie a más de esto sobre la línea del piso está tapado (por los pedestales, por los globos): el telón no flota. */
 const PIE_TAPADO_CM = 10;
 
@@ -142,9 +148,9 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         const pesos = pesosDeLectura(p, H);
         const medidos = p.puntos.map((q) => {
           const tramo = pesosDeTramo(p.mezcla, q.mezcla, H);
-          return { x: X(q.x), y: Y(q.y), grosor: Math.min(140, Math.max(20, cm(q.grosor))), ...(tramo ? { pesos: tramo } : {}) };
+          return { x: X(q.x), y: Y(q.y), grosor: Math.min(140, Math.max(20, cm(q.grosor))), enBorde: q.x <= BORDE_DE_LA_FOTO || q.x >= 1 - BORDE_DE_LA_FOTO, ...(tramo ? { pesos: tramo } : {}) };
         });
-        const puntos = recogerPuntas(engrosarParaGrandes(medidos, grosorMinimoDePesos(pesos), notas));
+        const puntos = recogerPuntas(engrosarParaGrandes(medidos, grosorMinimoDePesos(pesos), notas)).map(({ enBorde: _, ...q }) => q);
         const x0 = r1((Math.min(...puntos.map((q) => q.x)) + Math.max(...puntos.map((q) => q.x))) / 2);
         const fijos = fijosDeAnclas(p, H, notas).map((f) => ({ ...f, x: r1(X(f.x) - x0), y: r1(Y(f.y)) }));
         const trazo = { puntos: puntos.map((q) => ({ ...q, x: r1(q.x - x0) })), mezcla: pesos, colores: paletaDeLectura(p, H, notas), racimos: p.racimos, semilla: 11 + i, ...(fijos.length ? { fijos } : {}) };
@@ -171,9 +177,14 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
         const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, null, 0, p.mezcla).pieza : piezaDeGenerador({ tipo: "trazo", trazo });
         // Si su pie se ve más arriba de la línea del piso, no se apoya en él (un montón colgado de un aro, prendido a la estructura): va a esa altura, en el plano de la decoración.
         const alzadoCm = Y(p.yPie);
-        poner("racimo-piso", "Racimo de piso", pieza, alzadoCm > RACIMO_ALZADO_CM
-          ? { en: "libre", xCm: X(p.x), yCm: alzadoCm, zCm: muro + PROFUNDIDAD_DE_LA_FOTO_CM, giroGrados: 0 }
-          : { en: "piso", xCm: r1(X(p.x) * factor), zCm: r0(muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm - g / 2), giroGrados: 0 });
+        // Sobre una mesa o un pedestal, cuyo tope está a la altura de su pie, se asienta encima; si no, cuelga y se dice.
+        const apoyo = alzadoCm > RACIMO_ALZADO_CM ? apoyoDeRacimo(l, p, muro, { X, Y, cm }) : null;
+        if (alzadoCm > RACIMO_ALZADO_CM && !apoyo) notas.push(`Pieza ${i + 1} (racimo_piso): su pie se ve ${Math.round(alzadoCm)} cm sobre la línea del piso y no hay mesa ni pedestal debajo: se cuelga en el aire, en el plano de la decoración.`);
+        poner("racimo-piso", "Racimo de piso", pieza, apoyo
+          ? { en: "libre", xCm: X(p.x), yCm: apoyo.yCm, zCm: apoyo.zCm, giroGrados: 0 }
+          : alzadoCm > RACIMO_ALZADO_CM
+            ? { en: "libre", xCm: X(p.x), yCm: alzadoCm, zCm: muro + PROFUNDIDAD_DE_LA_FOTO_CM, giroGrados: 0 }
+            : { en: "piso", xCm: r1(X(p.x) * factor), zCm: r0(muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm - g / 2), giroGrados: 0 });
         return;
       }
       case "columna_organica": {
@@ -273,7 +284,7 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
             const color = p.colores[k % p.colores.length]!;
             const elementos = pedestales({ cilindros: [{ diametroCm, altoCm: r0(Math.max(30, cm(c.alto) * factor)), hex: color.hex, acabado: color.acabado === "cromado" ? "metal" as const : "satinado" as const }] });
             poner("pedestal", `Pedestal ${k + 1}`, { tipo: "escenografia", elementos, mueble: { id: p.id } },
-              { en: "piso", xCm: r1(X(c.x) * factor), zCm: r0(muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm - diametroCm / 2), giroGrados: 0 });
+              { en: "piso", xCm: r1(X(c.x) * factor), zCm: delanteCm > 0 ? r0(muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm - diametroCm / 2) : muro + RETIRO_PEDESTALES_CM, giroGrados: 0 });
           });
           return;
         }
