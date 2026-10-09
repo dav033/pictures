@@ -25,8 +25,12 @@ export function tintaLeida(p: Pick<FondoLeido, "id" | "colorTexto">, notas: stri
   try { return hexDeColor(p.colorTexto, notas); } catch { notas.push(`${p.id.replace(/_/g, " ")}: no reconocí el color del texto «${p.colorTexto}»; usé el que se lee sobre el fondo.`); return undefined; }
 }
 export type NodoMobiliario = { base: string; nombre: string; pieza: Pieza; colocacion: Colocacion };
-/** La medida de lo leído, ya en cm de la sala (`muroZ`: dónde está la pared del fondo). */
-export type MedidaLeida = { anchoCm: number; altoCm: number; xCm: number; yBaseCm: number; muroZ: number };
+/**
+ * La medida de lo leído, ya en cm de la sala (`muroZ`: dónde está la pared del fondo). Si el pie se ve más abajo que la línea del piso
+ * (`profundidadEnElPiso`), `zFrenteCm` es dónde está su cara de delante, las medidas ya vienen a su escala real y la pieza se pone ahí;
+ * sin él, a su retiro de la pared.
+ */
+export type MedidaLeida = { anchoCm: number; altoCm: number; xCm: number; yBaseCm: number; muroZ: number; zFrenteCm?: number };
 /** Una mesa de la foto donde se sientan los asientos leídos: su centro y su caja en el piso. */
 export type MesaLeida = { x: number; z: number; anchoCm: number; fondoCm: number };
 
@@ -52,10 +56,10 @@ function medidasDe(m: MuebleCatalogo, medida: MedidaLeida, enFila: boolean, nota
 export function mesaLeida(p: FondoLeido, medida: MedidaLeida): MesaLeida | null {
   if (!MESA_PARA_SENTARSE.test(p.id)) return null;
   const m = muebleDe(p.id);
-  const z = medida.muroZ + (m?.retiroCm ?? 120);
-  if (!m) return { x: medida.xCm, z, anchoCm: medida.anchoCm, fondoCm: 75 };
+  const retiro = medida.muroZ + (m?.retiroCm ?? 120);
+  if (!m) return { x: medida.xCm, z: medida.zFrenteCm !== undefined ? medida.zFrenteCm - 75 / 2 : retiro, anchoCm: medida.anchoCm, fondoCm: 75 };
   const t = medidasDe(m, medida, false, []);
-  return { x: medida.xCm, z, anchoCm: t.anchoCm, fondoCm: t.fondoCm };
+  return { x: medida.xCm, z: medida.zFrenteCm !== undefined ? medida.zFrenteCm - t.fondoCm / 2 : retiro, anchoCm: t.anchoCm, fondoCm: t.fondoCm };
 }
 
 /** La mesa donde se sienta un grupo de asientos leído: la más cercana en x de las que se solapan con lo que ocupa el grupo, o null (entonces van en fila). */
@@ -105,7 +109,7 @@ export function mobiliarioLeido(p: FondoLeido, medida: MedidaLeida, notas: strin
     if (puestos.length < n) notas.push(`${mueble.nombre}: alrededor de la mesa solo caben ${puestos.length} de ${n}.`);
     return puestos.map((q, i) => nodo(i, { en: "piso", xCm: r0(q.x), zCm: q.z, giroGrados: q.giroGrados }));
   }
-  const z = medida.muroZ + (mueble.retiroCm ?? 120);
+  const z = medida.zFrenteCm !== undefined ? medida.zFrenteCm - t.fondoCm / 2 : medida.muroZ + (mueble.retiroCm ?? 120);
   const separacionCm = n > 1 ? Math.max(t.anchoCm + 6, (medida.anchoCm - t.anchoCm) / (n - 1)) : 0;
   return puestosEnFila({ cx: medida.xCm, cz: z, cantidad: n, separacionCm }).map((q, i) => nodo(i, { en: "piso", xCm: r0(q.x), zCm: q.z, giroGrados: 0 }));
 }
