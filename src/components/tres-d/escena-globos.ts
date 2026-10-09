@@ -6,12 +6,18 @@ import { centroCuerpo, contornoCorazon, perfilLink, perfilRedondo, type PuntoPer
 import type { SolidoEscenografia } from "@/lib/globos3d/escenografia";
 import { calcoMotivo } from "./motivos-utileria";
 import type { ImpresoGlobo } from "@/lib/globos3d/estampados";
-import { calcoCorazon, cascaraImpresa, geometriaFoil, materialFoil } from "./impresos-visor";
-import { entornoMetal, registrarEntornoMetal, soltarEntornoMetal } from "./entorno-metal";
+import { calcoCorazon, cascaraImpresa, geometriaFoil } from "./impresos-visor";
+import { colorDeLatex, materialDe, materialEscenografia, type Calidad } from "./materiales-visor";
 import { colorPropio, geometriaParteFlor, materialParteFlor, partesFlor } from "./flores-visor";
 import type { TipoFlorArtificial } from "@/lib/globos3d/flores-artificiales";
 import { MEDIR_VISOR, cronometrar, infoDe, registrarVisor, type VisorMedible } from "./medicion-visor";
 import { camaraEstandar, type VistaEstandar } from "./camara-estandar";
+import { crearEntornoEstudio } from "./entorno-estudio";
+import { ambienteActivo, ambienteDe, crearLucesDeSala, lucesDeTecho, materialPiso, texturaTablones, ventanaDerecha } from "./sala-ambiente";
+import { CONFETI_PLATA, TOPE_CONFETI, discosConfeti, geometriaConfeti, materialConfeti, tinteDeConfeti, topePorGlobo } from "./confeti-visor";
+import { achatadoDe } from "./deformacion-globo";
+import type { AmbienteSala } from "@/lib/globos3d/escena";
+import { ejePanel, lentejuelasDePanel } from "./lentejuelas-instanciadas";
 
 /**
  * La escena de /3d con three.js, sin React: un globo (o la fila de todos los formatos) sobre un piso con
@@ -29,7 +35,7 @@ export type GloboEnEscena = { formato: FormatoGlobo; infladoCm: number; hex: str
  * mueve todo lo suyo junto.
  */
 export type DeNodo = { nodo?: string };
-export type GloboColocadoEnEscena = GloboEnEscena & DeNodo & { nudo: Punto3; direccion: Punto3; frente?: Punto3; confeti?: boolean; estampado?: EstampadoEnEscena };
+export type GloboColocadoEnEscena = GloboEnEscena & DeNodo & { nudo: Punto3; direccion: Punto3; frente?: Punto3; confeti?: boolean; /** El papel del confeti (hex); sin él, plateado. */ confetiHex?: string; estampado?: EstampadoEnEscena };
 export type Punto3 = { x: number; y: number; z: number };
 
 /**
@@ -60,6 +66,7 @@ export type SalaEnEscena = {
   anchoCm: number; fondoCm: number; altoCm: number;
   tonos: { piso: string; paredes: string; techo: string };
   mostrar: { piso: boolean; fondo: boolean; laterales: boolean; techo: boolean };
+  ambiente?: AmbienteSala;
 };
 export type CajaEnEscena = { min: Punto3; max: Punto3 };
 /**
@@ -169,67 +176,11 @@ const FONDO_ESTANDAR = 0xe6e6e9;
 /** Cuántas piezas que dejaron de verse se guardan dibujadas por si vuelven (ver `aparcados`). */
 const MAX_APARCADOS = 160;
 
-/**
- * Entorno propio de los metalizados (`entorno-metal.ts`). La escena atenúa su entorno (`environmentIntensity`) para que el
- * látex mate no se lave; un cromado que refleja ese entorno atenuado se ve casi negro. Con el mapa puesto en el material, la
- * atenuación de la escena no le aplica y la plata se ve plata.
- */
-
-/**
- * Calidad del dibujo: «editor» para trabajar (perfiles y vueltas más bajos, cristal sin la pasada de transmisión, que
- * vuelve a dibujar toda la escena) y «alta» para la captura que va a la IA y la vista de un globo suelto.
- */
-export type Calidad = "editor" | "alta";
+export type { Calidad };
 const CALIDAD: Readonly<Record<Calidad, { pasos: number; vueltas: number; tubo: readonly [number, number]; curva: number; bisel: number }>> = {
   alta: { pasos: 48, vueltas: 72, tubo: [120, 32], curva: 64, bisel: 10 },
   editor: { pasos: 24, vueltas: 32, tubo: [60, 16], curva: 24, bisel: 4 },
 };
-
-/**
- * El color con que se pinta un globo. En el cromado (Reflex) y el metal, el color es lo que el espejo REFLEJA: el hex
- * de la tabla es el tono promedio de la foto del globo (con sus reflejos oscuros), y multiplicado por el reflejo de la
- * sala quedaba casi negro (el Reflex Azul 940 #417693 salía negro; el dorado, que es claro, no). Se aclara hasta una
- * luminosidad mínima conservando el tono y la saturación.
- */
-export function colorDeLatex(familia: string, hex: string): THREE.Color {
-  const color = new THREE.Color(hex);
-  const minimo = familia === "reflex" ? 0.62 : familia === "metal" ? 0.5 : 0;
-  if (!minimo) return color;
-  const hsl = { h: 0, s: 0, l: 0 };
-  color.getHSL(hsl);
-  if (hsl.l < minimo) color.setHSL(hsl.h, Math.min(1, hsl.s * 1.1), minimo);
-  return color;
-}
-
-/** Material de látex según la familia Sempertex. */
-function materialDe(familia: string, hex: string, calidad: Calidad = "alta"): THREE.MeshPhysicalMaterial {
-  const color = colorDeLatex(familia, hex);
-  switch (familia) {
-    case "reflex":
-      // El entorno de la escena va atenuado (el látex mate se lavaba); el cromado necesita reflejar más para verse plateado y no negro.
-      return new THREE.MeshPhysicalMaterial({ color, metalness: 1, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05, envMap: entornoMetal(), envMapIntensity: 1.3 });
-    case "metal":
-      return new THREE.MeshPhysicalMaterial({ color, metalness: 0.55, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.25, envMap: entornoMetal(), envMapIntensity: 1.1 });
-    case "silk":
-    case "satin":
-      return new THREE.MeshPhysicalMaterial({ color, metalness: 0.15, roughness: 0.32, sheen: 1, sheenColor: new THREE.Color("#ffffff"), sheenRoughness: 0.4, iridescence: 0.35, iridescenceIOR: 1.3, clearcoat: 0.7, clearcoatRoughness: 0.2 });
-    case "cristal":
-      // En el editor, transparente con brillo: la transmisión obliga a dibujar la escena dos veces en cada cuadro.
-      if (calidad === "editor") return new THREE.MeshPhysicalMaterial({ color, metalness: 0, roughness: 0.04, transparent: true, opacity: 0.42, depthWrite: false, clearcoat: 1, clearcoatRoughness: 0.02 });
-      return new THREE.MeshPhysicalMaterial({ color, metalness: 0, roughness: 0.04, transmission: 0.92, thickness: 0.004, ior: 1.42, transparent: true, clearcoat: 1, clearcoatRoughness: 0.02 });
-    case "neon":
-      return new THREE.MeshPhysicalMaterial({ color, roughness: 0.5, clearcoat: 0.3, emissive: color, emissiveIntensity: 0.18 });
-    case "papel":
-      // No es látex: papel o cartulina mate, visible por las dos caras.
-      return new THREE.MeshPhysicalMaterial({ color, roughness: 0.92, metalness: 0, side: THREE.DoubleSide });
-    case "pastelMate":
-    case "pastelDusk":
-      return new THREE.MeshPhysicalMaterial({ color, roughness: 0.68, clearcoat: 0.15, clearcoatRoughness: 0.6 });
-    default:
-      // Fashion: látex mate con el brillo suave de la superficie estirada.
-      return new THREE.MeshPhysicalMaterial({ color, roughness: 0.5, clearcoat: 0.35, clearcoatRoughness: 0.45 });
-  }
-}
 
 /** Azar determinista (cada globo o flor siempre igual entre recargas). */
 function azar(semilla: number): () => number {
@@ -237,31 +188,13 @@ function azar(semilla: number): () => number {
   return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return ((x >>> 0) % 100000) / 100000; };
 }
 
-/** Dónde va cada disco del confeti de un globo de cristal (coordenadas locales del globo). */
-function discosConfeti(centroY: number, radio: number, semilla: number): THREE.Matrix4[] {
-  const cantidad = Math.max(18, Math.round(radio / CM * 2.2));
-  const r = azar(semilla);
-  const q = new THREE.Quaternion();
-  const uno = new THREE.Vector3(1, 1, 1);
-  const salida: THREE.Matrix4[] = [];
-  for (let i = 0; i < cantidad; i++) {
-    // Más confeti abajo (se pega por la estática al fondo y a las paredes), pero repartido por todo el globo.
-    const u = r() * 2 - 1, t = r() * Math.PI * 2, k = Math.cbrt(0.35 + 0.65 * r()) * radio * 0.86;
-    const s = Math.sqrt(1 - u * u);
-    q.setFromEuler(new THREE.Euler(r() * Math.PI, r() * Math.PI, r() * Math.PI));
-    salida.push(new THREE.Matrix4().compose(new THREE.Vector3(s * Math.cos(t) * k, centroY + u * k - radio * 0.08, s * Math.sin(t) * k), q, uno));
-  }
-  return salida;
-}
-
-const geometriaConfeti = () => new THREE.CircleGeometry(0.65 * CM, 10);
-const materialConfeti = () => new THREE.MeshStandardMaterial({ color: 0xd9d9e0, metalness: 1, roughness: 0.25, side: THREE.DoubleSide });
-
-/** Confeti plateado dentro de un globo de cristal: discos finos repartidos en la esfera del cuerpo (coordenadas locales). */
-function confetiDentro(centroY: number, radio: number, semilla: number): THREE.InstancedMesh {
-  const discos = discosConfeti(centroY, radio, semilla);
-  const malla = new THREE.InstancedMesh(geometriaConfeti(), materialConfeti(), discos.length);
-  discos.forEach((m, i) => malla.setMatrixAt(i, m));
+/** Confeti dentro de un globo de cristal suelto (no por instancias): las escamas pegadas a la pared del cuerpo (coordenadas locales). */
+function confetiDentro(centroY: number, radio: number, semilla: number, hex: string, entorno: THREE.Texture): THREE.InstancedMesh {
+  const discos = discosConfeti(radio, semilla, TOPE_CONFETI);
+  const malla = new THREE.InstancedMesh(geometriaConfeti(), materialConfeti(hex, entorno), discos.length);
+  const sube = new THREE.Matrix4().makeTranslation(0, centroY, 0), m = new THREE.Matrix4();
+  discos.forEach((d, i) => malla.setMatrixAt(i, m.multiplyMatrices(sube, d)));
+  malla.castShadow = false;
   return malla;
 }
 
@@ -456,57 +389,8 @@ function partesCorazon(anchoCm: number, calidad: Calidad): ParteGlobo[] {
   ];
 }
 
-/** Textura de lentejuelas: discos oscuros con brillos al azar (cada uno refleja distinto). Una casilla = 12 cm. */
-function texturaLentejuelas(hex: string): THREE.CanvasTexture | null {
-  if (typeof document === "undefined") return null;
-  const lienzo = document.createElement("canvas");
-  lienzo.width = 128;
-  lienzo.height = 128;
-  const pincel = lienzo.getContext("2d");
-  if (!pincel) return null;
-  const base = new THREE.Color(hex);
-  pincel.fillStyle = `#${base.clone().multiplyScalar(0.55).getHexString()}`;
-  pincel.fillRect(0, 0, 128, 128);
-  const r = azar(17);
-  const lado = 128 / 6;
-  for (let fila = 0; fila < 7; fila++) for (let col = 0; col < 7; col++) {
-    const brillo = 0.7 + r() * 1.4;
-    pincel.fillStyle = `#${base.clone().multiplyScalar(brillo).addScalar(r() < 0.12 ? 0.25 : 0).getHexString()}`;
-    pincel.beginPath();
-    pincel.arc(col * lado + (fila % 2) * lado / 2, fila * lado, lado * 0.47, 0, Math.PI * 2);
-    pincel.fill();
-  }
-  const textura = new THREE.CanvasTexture(lienzo);
-  textura.colorSpace = THREE.SRGBColorSpace;
-  textura.wrapS = THREE.RepeatWrapping;
-  textura.wrapT = THREE.RepeatWrapping;
-  return textura;
-}
-
-function materialEscenografia(s: SolidoEscenografia): THREE.Material {
-  const color = new THREE.Color(s.hex);
-  switch (s.acabado) {
-    case "lentejuelas": {
-      const mapa = texturaLentejuelas(s.hex);
-      if (mapa && s.forma === "caja") mapa.repeat.set(Math.max(1, s.tamano.x / 12), Math.max(1, s.tamano.y / 12));
-      return new THREE.MeshStandardMaterial({ color: 0xffffff, map: mapa, metalness: 0.7, roughness: 0.3, envMap: entornoMetal(), envMapIntensity: 1.2 });
-    }
-    case "brillante": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.22, clearcoat: 0.9, clearcoatRoughness: 0.15 });
-    case "satinado": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.35 });
-    case "tela": return new THREE.MeshPhysicalMaterial({ color, roughness: 0.95, sheen: 0.6, sheenColor: color.clone().lerp(new THREE.Color(0xffffff), 0.3), sheenRoughness: 0.7 });
-    case "madera": return new THREE.MeshStandardMaterial({ color, roughness: 0.72 });
-    // Utilería de fiesta: el metal de los cubiertos y bandejas metalizadas, y la llama de una vela (se ve encendida).
-    case "metal": return new THREE.MeshStandardMaterial({ color, metalness: 0.85, roughness: 0.25, envMap: entornoMetal(), envMapIntensity: 1 });
-    case "llama": return new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 1.4, roughness: 0.6 });
-    // Globo metalizado: papel metalizado espejo o satinado.
-    case "foil": return materialFoil(s.hex, false, entornoMetal());
-    case "foil_mate": return materialFoil(s.hex, true, entornoMetal());
-    default: return new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
-  }
-}
-
 /** Un sólido de escenografía en su sitio: geometría en su marco (cm → m) y el marco puesto con su base de ejes. */
-function solidoEscenografia(s: SolidoEscenografia): THREE.Object3D {
+function solidoEscenografia(s: SolidoEscenografia, entorno: THREE.Texture): THREE.Object3D {
   let geometria: THREE.BufferGeometry;
   if (s.forma === "caja") {
     geometria = new THREE.BoxGeometry(s.tamano.x * CM, s.tamano.y * CM, s.tamano.z * CM);
@@ -524,7 +408,7 @@ function solidoEscenografia(s: SolidoEscenografia): THREE.Object3D {
     geometria = new THREE.ExtrudeGeometry(forma, { depth: Math.max(0.1 * CM, s.grosorCm * CM - 2 * bisel), bevelEnabled: true, bevelThickness: bisel, bevelSize: bisel, bevelSegments: 2, curveSegments: 24 });
     geometria.translate(0, 0, bisel);
   }
-  const malla = new THREE.Mesh(geometria, materialEscenografia(s));
+  const malla = new THREE.Mesh(geometria, materialEscenografia(s, entorno));
   malla.castShadow = true;
   malla.receiveShadow = true;
   const ejes = new THREE.Matrix4().makeBasis(
@@ -535,12 +419,16 @@ function solidoEscenografia(s: SolidoEscenografia): THREE.Object3D {
   // Lo impreso (calavera, «Happy Halloween», lunares…) de la utilería de fiesta, como calcomanía en su cara.
   const calco = calcoMotivo(s);
   if (calco) malla.add(calco);
+  if (s.forma === "caja" && s.acabado === "lentejuelas") {
+    const eje = ejePanel(s.tamano);
+    if (eje !== null) malla.add(lentejuelasDePanel(s.tamano, eje, s.hex, entorno));
+  }
   return malla;
 }
 
 /** Un globo completo con sus propias geometrías y su material (calidad alta): el globo suelto y lo que no va por instancias. */
-function construir(globo: GloboEnEscena): THREE.Object3D {
-  const material = materialDe(globo.familia, globo.hex);
+function construir(globo: GloboEnEscena, entorno: THREE.Texture): THREE.Object3D {
+  const material = materialDe(globo.familia, globo.hex, "alta", entorno);
   const { formato, infladoCm } = globo;
   const largoTubo = formato.tipo === "tubito" ? formato.largoCm ?? 150 : formato.tipo === "link" ? formato.largoCm : undefined;
   if (largoTubo) {
@@ -589,35 +477,37 @@ function marcoDeGlobo(globo: GloboColocadoEnEscena): THREE.Matrix4 {
 }
 
 /** Lo impreso de un globo redondo (estampado, cáscara impresa) y, si se pide, su confeti: en el marco del globo. */
-function extrasDeGlobo(globo: GloboColocadoEnEscena, indice: number, conConfeti: boolean): THREE.Object3D[] {
+function extrasDeGlobo(globo: GloboColocadoEnEscena, indice: number, conConfeti: boolean, entorno: THREE.Texture): THREE.Object3D[] {
   const salida: THREE.Object3D[] = [];
   if (globo.formato.tipo !== "redondo") return salida;
   const extra = globo.cuelloExtraCm ?? 0;
-  if (conConfeti && globo.confeti) salida.push(confetiDentro((centroCuerpo("redondo", globo.infladoCm) + extra) * CM, (globo.infladoCm / 2) * CM, indice + 1));
+  if (conConfeti && globo.confeti) salida.push(confetiDentro((centroCuerpo("redondo", globo.infladoCm) + extra) * CM, (globo.infladoCm / 2) * CM, indice + 1, globo.confetiHex ?? CONFETI_PLATA, entorno));
   // Lo impreso (iris, cara de calabaza) pegado a la superficie, en el marco del globo.
   if (globo.estampado) salida.push(estampadoSobre(globo.infladoCm, extra, globo.estampado));
   // Lo impreso como textura (letrero, patrón, cara): cáscara sobre el redondo.
   const impreso = globo.estampado?.impreso;
   if (impreso) {
-    const cascara = cascaraImpresa(perfilRedondo(globo.infladoCm, extra), centroCuerpo("redondo", globo.infladoCm) + extra, impreso, entornoMetal());
+    const cascara = cascaraImpresa(perfilRedondo(globo.infladoCm, extra), centroCuerpo("redondo", globo.infladoCm) + extra, impreso, entorno);
     if (cascara) salida.push(cascara);
   }
   return salida;
 }
 
 /** Un globo colocado entero, con sus propias geometrías y material (calidad alta): lo que no va por instancias. */
-function objetoCompleto(globo: GloboColocadoEnEscena, indice: number): THREE.Object3D {
-  const objeto = construir(globo);
-  objeto.add(...extrasDeGlobo(globo, indice, true));
+function objetoCompleto(globo: GloboColocadoEnEscena, indice: number, entorno: THREE.Texture): THREE.Object3D {
+  const objeto = construir(globo, entorno);
+  objeto.add(...extrasDeGlobo(globo, indice, true, entorno));
   const impreso = globo.estampado?.impreso;
   if (impreso && globo.formato.tipo === "corazon") {
     // La calcomanía en la cara del corazón.
     const malla = objeto.children.find((hijo): hijo is THREE.Mesh => hijo instanceof THREE.Mesh && hijo.geometry instanceof THREE.ExtrudeGeometry);
-    const calco = malla ? calcoCorazon(malla, globo.infladoCm, impreso, entornoMetal()) : null;
+    const calco = malla ? calcoCorazon(malla, globo.infladoCm, impreso, entorno) : null;
     if (malla && calco) malla.add(calco);
   }
   orientacionDe(globo, objeto.quaternion);
   objeto.position.set(globo.nudo.x * CM, globo.nudo.y * CM, globo.nudo.z * CM);
+  // El mismo achatado que el de los globos por instancias (el nudo no se mueve).
+  if (globo.formato.tipo === "redondo") objeto.scale.setFromMatrixScale(achatadoDe(globo.nudo, globo.infladoCm, globo.formato.id));
   objeto.traverse((hijo) => { if (hijo instanceof THREE.Mesh) hijo.castShadow = true; });
   return objeto;
 }
@@ -661,7 +551,7 @@ function referenciaDe(c: ContenidoNodo): THREE.Vector3 {
   return p ? new THREE.Vector3(p.x, p.y, p.z) : new THREE.Vector3();
 }
 
-function huellaDe(c: ContenidoNodo, ref: THREE.Vector3): string {
+function huellaDe(c: ContenidoNodo, ref: THREE.Vector3, topeConfeti: number): string {
   const h = new Huella();
   const pos = (p: Punto3) => { h.num(p.x - ref.x, 100); h.num(p.y - ref.y, 100); h.num(p.z - ref.z, 100); };
   const dir = (p: Punto3) => { h.num(p.x, 1e4); h.num(p.y, 1e4); h.num(p.z, 1e4); };
@@ -670,6 +560,7 @@ function huellaDe(c: ContenidoNodo, ref: THREE.Vector3): string {
     pos(g.nudo); dir(g.direccion);
     if (g.frente) dir(g.frente); else h.entero(-3);
     h.entero(g.confeti ? i + 1 : 0);
+    if (g.confeti) { h.texto(g.confetiHex ?? ""); h.entero(topeConfeti); }
     if (g.estampado) h.texto(jsonDe(g.estampado)); else h.entero(-4);
   }
   h.entero(-5);
@@ -723,7 +614,10 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const pmrem = new THREE.PMREMGenerator(renderer);
   const entorno = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
   escena.environment = entorno;
-  registrarEntornoMetal(entorno);
+  // Lo que refleja (cromado, metal, foil, lentejuelas, piso) mira un estudio con luces fuertes, no la sala blanca. Es de ESTE
+  // visor (un recurso de su contexto WebGL: nunca va a una variable de módulo) y se hornea la primera vez que hace falta.
+  let entornoEstudio: THREE.Texture | null = null;
+  const entornoMetal = (): THREE.Texture => (entornoEstudio ??= crearEntornoEstudio(renderer));
   // Menos luz de entorno: con la sala completa el látex mate se veía lavado (el rosado 009 salía casi blanco).
   escena.environmentIntensity = 0.55;
 
@@ -732,6 +626,11 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   sol.castShadow = true;
   sol.shadow.mapSize.set(1024, 1024);
   escena.add(sol, new THREE.AmbientLight(0xffffff, 0.08));
+  // Con una sala con ambiente, luz de estudio cálida; sin él, la neutra de siempre.
+  const lucesDeSala = crearLucesDeSala(escena, sol);
+  /** La textura de tablones (una sola, neutra: el tono lo pone el material), hecha la primera vez que un piso la pide. */
+  let tablones: THREE.CanvasTexture | null | undefined;
+  const anisotropia = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
   const piso = new THREE.Mesh(new THREE.CircleGeometry(6, 64), new THREE.ShadowMaterial({ opacity: 0.18 }));
   piso.rotation.x = -Math.PI / 2;
@@ -859,7 +758,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   /** El material de látex de una familia (blanco: el color va por copia), salvo el neón, que brilla en su propio color. */
   const materialGlobo = (familia: string, hex: string, calidad: Calidad) => {
     const propio = familia === "neon";
-    return material(`globo|${familia}|${propio ? hex : ""}|${calidad}`, () => materialDe(familia, propio ? hex : "#ffffff", calidad));
+    return material(`globo|${familia}|${propio ? hex : ""}|${calidad}`, () => materialDe(familia, propio ? hex : "#ffffff", calidad, entornoMetal()));
   };
 
   // ----------------------------------------------------------------------------------------------------------
@@ -879,16 +778,21 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   /** Lo que se mostró la última vez (si llega lo mismo, no se mira pieza por pieza). */
   let entrada: { globos: unknown; tubos: unknown; flores: unknown; cilindros: unknown; solidos: unknown } | null = null;
   let claveSala: string | null = null;
+  /** Escamas de confeti por globo: el presupuesto de confeti del visor repartido entre los globos que lo llevan. */
+  let topeConfeti = TOPE_CONFETI;
 
   function asegurarDef(clave: string, crear: () => DefLote) { if (!defs.has(clave)) defs.set(clave, crear()); }
 
   /** Un globo de una pieza: por instancias en sus lotes (y lo impreso aparte, en su marco). */
   function agregarGlobo(globo: GloboColocadoEnEscena, indice: number, grupo: THREE.Group, instancias: Instancia[]) {
     const plantilla = plantillaDe(globo);
-    if (!plantilla) { grupo.add(objetoCompleto(globo, indice)); return; }
-    const marco = marcoDeGlobo(globo);
+    if (!plantilla) { grupo.add(objetoCompleto(globo, indice, entornoMetal())); return; }
+    // El látex de verdad no es una esfera perfecta: cada globo sale un poco apretado o alargado (solo al dibujar).
+    const marco = globo.formato.tipo === "redondo" ? marcoDeGlobo(globo).multiply(achatadoDe(globo.nudo, globo.infladoCm, globo.formato.id)) : marcoDeGlobo(globo);
     const propio = globo.familia === "neon";
-    const color = propio ? null : colorDeLatex(globo.familia, globo.hex);
+    const confetiHex = globo.confetiHex ?? CONFETI_PLATA;
+    const base = propio ? null : colorDeLatex(globo.familia, globo.hex);
+    const color = base && globo.confeti ? base.lerp(tinteDeConfeti(confetiHex), 0.5) : base;
     const escalado = plantilla.escala !== 1 ? marco.clone().scale(new THREE.Vector3(plantilla.escala, plantilla.escala, plantilla.escala)) : marco;
     juego(plantilla.clave, "editor").forEach((parte, k) => {
       const lote = `${plantilla.clave}#${k}|${globo.familia}|${propio ? globo.hex : ""}`;
@@ -900,14 +804,17 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       instancias.push({ lote, matriz: escalado.clone().multiply(parte.local), color });
     });
     if (globo.confeti && globo.formato.tipo === "redondo") {
-      asegurarDef("confeti", () => {
-        const g = geometria("confeti", geometriaConfeti), m = material("confeti", materialConfeti);
+      // Las escamas van en un lote por color de papel, sin sombra propia (miles de discos que no se notan en el piso).
+      const loteConfeti = `confeti|${confetiHex}`;
+      asegurarDef(loteConfeti, () => {
+        const g = geometria("confeti", geometriaConfeti), m = material(loteConfeti, () => materialConfeti(confetiHex, entornoMetal()));
         return { geometria: () => g, material: () => m, conColor: false };
       });
       const centroY = (centroCuerpo("redondo", globo.infladoCm) + (globo.cuelloExtraCm ?? 0)) * CM;
-      for (const disco of discosConfeti(centroY, (globo.infladoCm / 2) * CM, indice + 1)) instancias.push({ lote: "confeti", matriz: marco.clone().multiply(disco), color: null });
+      const sobre = marco.clone().multiply(new THREE.Matrix4().makeTranslation(0, centroY, 0));
+      for (const disco of discosConfeti((globo.infladoCm / 2) * CM, indice + 1, topeConfeti)) instancias.push({ lote: loteConfeti, matriz: sobre.clone().multiply(disco), color: null });
     }
-    const extras = extrasDeGlobo(globo, indice, false);
+    const extras = extrasDeGlobo(globo, indice, false, entornoMetal());
     if (extras.length) {
       const soporte = new THREE.Group();
       marco.decompose(soporte.position, soporte.quaternion, soporte.scale);
@@ -918,7 +825,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   }
 
   /** El material (compartido) del cuerpo de un tubito; el de cristal, sin transmisión (como en el editor). */
-  const materialTubo = (familia: string, hex: string) => material(`tubo|${familia}|${hex}`, () => materialDe(familia, hex, familia === "cristal" ? "editor" : "alta"));
+  const materialTubo = (familia: string, hex: string) => material(`tubo|${familia}|${hex}`, () => materialDe(familia, hex, familia === "cristal" ? "editor" : "alta", entornoMetal()));
 
   function agregarTubo(tramo: TuboEnEscena, grupo: THREE.Group, instancias: Instancia[]) {
     const m = materialTubo(tramo.familia, tramo.hex);
@@ -971,7 +878,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     }
     // Escenografía (paneles, mesas, tapete): con su pieza, para elegirla y arrastrarla como a las demás.
     // Lo oculto (amarres internos) sostiene y da su caja, pero no se dibuja.
-    for (const s of c.solidos) if (!s.oculto) grupo.add(solidoEscenografia(s));
+    for (const s of c.solidos) if (!s.oculto) grupo.add(solidoEscenografia(s, entornoMetal()));
     modulo.add(grupo);
     return { huella, ref: ref.clone(), base: new THREE.Vector3(), grupo, instancias, caja: null };
   }
@@ -1008,6 +915,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
 
   /** Pieza por pieza: rehace solo las que cambiaron y corre las que solo se movieron. Devuelve si cambió algo. */
   function actualizarNodos(globos: readonly GloboColocadoEnEscena[], tubos: readonly TuboEnEscena[], flores: readonly FlorEnEscena[], cilindros: readonly CilindroEnEscena[], solidos: readonly SolidoEnEscena[]): boolean {
+    topeConfeti = topePorGlobo(globos.reduce((n, g) => n + (g.confeti ? 1 : 0), 0));
     const porNodo = new Map<string, ContenidoNodo>();
     const de = (nodo: string | undefined): ContenidoNodo => {
       const id = nodo ?? "";
@@ -1024,7 +932,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     for (const [id, dibujado] of nodos) if (!porNodo.has(id)) { aparcar(id, dibujado); nodos.delete(id); cambio = true; }
     for (const [id, c] of porNodo) {
       const ref = referenciaDe(c);
-      const huella = huellaDe(c, ref);
+      const huella = huellaDe(c, ref, topeConfeti);
       let previo = nodos.get(id);
       if (!previo) {
         // Una pieza que vuelve (salir del editor solitario): se recupera la dibujada, sin rehacerla.
@@ -1089,7 +997,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
         if (lote) quitarLote(lote);
         const capacidad = Math.ceil(lista.length * 1.25) + 4;
         const malla = new THREE.InstancedMesh(def.geometria("editor"), def.material("editor"), capacidad);
-        malla.castShadow = true;
+        malla.castShadow = !clave.startsWith("confeti|");
         malla.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         lote = { def, malla, capacidad, nodos: [], bases: new Float32Array(capacidad * 16), ocultos: new Set() };
         // Con qué pieza va cada copia (para elegirla con un clic).
@@ -1131,7 +1039,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
         const materialesHijo = Array.isArray(hijo.material) ? hijo.material : [hijo.material];
         for (const m of materialesHijo) {
           if (m.userData.compartido) continue;
-          if (m instanceof THREE.MeshStandardMaterial) m.map?.dispose();
+          if ((m instanceof THREE.MeshStandardMaterial || m instanceof THREE.MeshBasicMaterial) && m.map && !m.map.userData.compartido) m.map.dispose();
           m.dispose();
         }
         if (hijo instanceof THREE.InstancedMesh) hijo.dispose();
@@ -1160,22 +1068,39 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     const conPiso = Boolean(datos?.mostrar.piso);
     piso.visible = !conPiso;
     cuadricula.visible = !datos;
-    if (!datos) return true;
+    if (!datos) { lucesDeSala.aplicar(false); return true; }
     const ancho = datos.anchoCm * CM, fondo = datos.fondoCm * CM, alto = datos.altoCm * CM;
-    const plano = (w: number, h: number, hex: string, colocar: (m: THREE.Mesh) => void, superficie: SuperficieSalaEnEscena) => {
-      const malla = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ color: new THREE.Color(hex), roughness: 0.92, metalness: 0, side: THREE.FrontSide }));
+    const ambiente = ambienteDe(datos.ambiente);
+    lucesDeSala.aplicar(ambienteActivo(datos.ambiente));
+    const plano = (w: number, h: number, hex: string, colocar: (m: THREE.Mesh) => void, superficie: SuperficieSalaEnEscena, material?: THREE.Material) => {
+      const malla = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material ?? new THREE.MeshStandardMaterial({ color: new THREE.Color(hex), roughness: 0.92, metalness: 0, side: THREE.FrontSide }));
       malla.receiveShadow = true;
       malla.userData.superficie = superficie;
       colocar(malla);
       sala.add(malla);
     };
-    if (datos.mostrar.piso) plano(ancho, fondo, datos.tonos.piso, (m) => { m.rotation.x = -Math.PI / 2; m.position.y = -0.001; }, "piso");
+    if (datos.mostrar.piso) {
+      if (ambiente.piso === "madera" && tablones === undefined) tablones = texturaTablones(anisotropia);
+      const material = ambiente.piso === "madera" && tablones ? materialPiso(datos.tonos.piso, tablones, entornoMetal(), ancho, fondo) : undefined;
+      plano(ancho, fondo, datos.tonos.piso, (m) => { m.rotation.x = -Math.PI / 2; m.position.y = -0.001; }, "piso", material);
+    }
     if (datos.mostrar.fondo) plano(ancho, alto, datos.tonos.paredes, (m) => { m.position.set(0, alto / 2, -fondo / 2); }, "fondo");
     if (datos.mostrar.laterales) {
       plano(fondo, alto, datos.tonos.paredes, (m) => { m.rotation.y = Math.PI / 2; m.position.set(-ancho / 2, alto / 2, 0); }, "izquierda");
       plano(fondo, alto, datos.tonos.paredes, (m) => { m.rotation.y = -Math.PI / 2; m.position.set(ancho / 2, alto / 2, 0); }, "derecha");
     }
-    if (datos.mostrar.techo) plano(ancho, fondo, datos.tonos.techo, (m) => { m.rotation.x = Math.PI / 2; m.position.y = alto; }, "techo");
+    if (datos.mostrar.techo) {
+      // El techo mira hacia abajo y casi no le llega luz: un poco de emisión lo deja del tono que se eligió.
+      const techo = new THREE.MeshStandardMaterial({ color: new THREE.Color(datos.tonos.techo), roughness: 0.92, metalness: 0, side: THREE.FrontSide });
+      if (ambiente.luces) {
+        techo.emissive = new THREE.Color(datos.tonos.techo);
+        techo.emissiveIntensity = 0.5;
+        techo.userData.emisionBase = { color: techo.emissive.clone(), intensidad: 0.5 };
+      }
+      plano(ancho, fondo, datos.tonos.techo, (m) => { m.rotation.x = Math.PI / 2; m.position.y = alto; }, "techo", techo);
+      if (ambiente.luces) sala.add(lucesDeTecho(ancho, fondo, alto));
+    }
+    if (ambiente.ventana && datos.mostrar.laterales) sala.add(ventanaDerecha(ancho, fondo));
     return true;
   }
 
@@ -1240,7 +1165,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     dibujarSala(undefined);
     resaltar(null);
     let x = 0;
-    const objetos = globos.map((globo) => construir(globo));
+    const objetos = globos.map((globo) => construir(globo, entornoMetal()));
     const separacion = 0.06;
     const total = objetos.reduce((suma, o) => suma + ancho(o), 0) + separacion * Math.max(0, objetos.length - 1);
     x = -total / 2;
@@ -1501,8 +1426,9 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     for (const caja of cajas) marcasLugares.add(cajaDeAyuda(caja, 0x10b981, 4));
     sala.traverse((hijo) => {
       if (hijo instanceof THREE.Mesh && hijo.material instanceof THREE.MeshStandardMaterial) {
-        hijo.material.emissive.set(conSala ? 0x10b981 : 0x000000);
-        hijo.material.emissiveIntensity = conSala ? 0.16 : 1;
+        const base = hijo.material.userData.emisionBase as { color: THREE.Color; intensidad: number } | undefined;
+        hijo.material.emissive.set(conSala ? 0x10b981 : base?.color ?? 0x000000);
+        hijo.material.emissiveIntensity = conSala ? 0.16 : base?.intensidad ?? 1;
       }
     });
     pedirCuadro();
@@ -1518,7 +1444,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   /** Un globo suelto con las geometrías compartidas del editor y el material que se pida (la vista previa). */
   function objetoSuelto(globo: GloboColocadoEnEscena, indice: number, materialPara: (familia: string, hex: string) => THREE.Material): THREE.Object3D {
     const plantilla = plantillaDe(globo);
-    if (!plantilla) return objetoCompleto(globo, indice);
+    if (!plantilla) return objetoCompleto(globo, indice, entornoMetal());
     const objeto = new THREE.Group();
     const m = materialPara(globo.familia, globo.hex);
     const escala = new THREE.Matrix4().makeScale(plantilla.escala, plantilla.escala, plantilla.escala);
@@ -1527,7 +1453,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       escala.clone().multiply(parte.local).decompose(malla.position, malla.quaternion, malla.scale);
       objeto.add(malla);
     }
-    const extras = extrasDeGlobo(globo, indice, true);
+    const extras = extrasDeGlobo(globo, indice, true, entornoMetal());
     if (extras.length) objeto.add(...extras);
     orientacionDe(globo, objeto.quaternion);
     objeto.position.set(globo.nudo.x * CM, globo.nudo.y * CM, globo.nudo.z * CM);
@@ -1544,7 +1470,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     const materialPara = (familia: string, hex: string) => {
       const clave = `${familia}|${hex}`;
       let m = propios.get(clave);
-      if (!m) { m = materialDe(familia, hex, "editor"); translucido(m); propios.set(clave, m); }
+      if (!m) { m = materialDe(familia, hex, "editor", entornoMetal()); translucido(m); propios.set(clave, m); }
       return m;
     };
     for (const [indice, globo] of globos.entries()) fantasma.add(objetoSuelto(globo, indice, materialPara));
@@ -1819,8 +1745,10 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       for (const partes of juegos.values()) for (const parte of partes) parte.geometria.dispose();
       for (const g of geometriasSueltas.values()) g.dispose();
       for (const m of materiales.values()) m.dispose();
-      soltarEntornoMetal(entorno);
       entorno.dispose();
+      entornoEstudio?.dispose();
+      tablones?.dispose();
+      lucesDeSala.liberar();
       pmrem.dispose();
       renderer.dispose();
     },

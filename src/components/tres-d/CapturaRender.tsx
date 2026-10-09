@@ -5,7 +5,7 @@ import { vistaRenderDe, vistaPorForma, esVistaRender, type VistaRender } from "@
 import { crearResolverItems, salaNeutra } from "./captura-items";
 import { mostrarArmada } from "./armada-visor";
 import type { EscenaGlobos } from "./escena-globos";
-import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
+import { armarEscena, type AmbienteSala, type Escena, type EscenaArmada } from "@/lib/globos3d/escena";
 import type { Encuadre } from "@/lib/globos3d/encuadre-foto";
 import { capturarEscenaParaRefinar } from "./captura-refinar";
 
@@ -22,6 +22,8 @@ declare global {
   interface Window {
     __captura?: EstadoCaptura;
     __capturarItem?: (id: string, vista?: string | null) => Promise<EstadoCaptura>;
+    /** Una escena entera (con el ambiente de sala que se pida) en el visor que sigue vivo, como un item: para verificar materiales. */
+    __capturarEscena?: (escena: Escena, ambiente?: AmbienteSala) => Promise<EstadoCaptura>;
     /** La escena desde la cámara de una foto (JPEG en base64): lo que ve el refinado de «Comparando con la foto». */
     __capturarFoto?: (escena: Escena, encuadre: Encuadre) => Promise<{ mime: string; base64: string }>;
   }
@@ -96,7 +98,27 @@ export function CapturaRender({ item, vista }: { item: string | null; vista: str
       }
     };
 
+    const capturarEscena = async (escena: Escena, ambiente?: AmbienteSala): Promise<EstadoCaptura> => {
+      const publicar = (estado: EstadoCaptura): EstadoCaptura => { if (vivo) window.__captura = estado; return estado; };
+      try {
+        const armada = armarEscena(escena);
+        const v = await obtenerVisor();
+        if (!vivo) { v.destruir(); visor = null; throw new Error("Página desmontada"); }
+        mostrarArmada(v, armada, { ...salaNeutra(armada.sala), ...(ambiente ? { ambiente } : {}) });
+        await esperarCuadro();
+        await esperarCuadro();
+        const dataUrl = v.renderEstandar("frente", LADO);
+        rendersDelVisor++;
+        return publicar({ listo: true, dataUrl, error: null, id: null, vista: null, ms: 0 });
+      } catch (causa) {
+        visor?.destruir();
+        visor = null;
+        return publicar({ listo: true, dataUrl: null, error: mensaje(causa), id: null, vista: null, ms: 0 });
+      }
+    };
+
     window.__capturarItem = capturarItem;
+    window.__capturarEscena = capturarEscena;
     window.__capturarFoto = (escena, encuadre) => capturarEscenaParaRefinar(escena, encuadre);
     window.__captura = { listo: false, dataUrl: null, error: null, id: item, vista: null, ms: 0 };
     if (item) void capturarItem(item, vista);
@@ -105,6 +127,7 @@ export function CapturaRender({ item, vista }: { item: string | null; vista: str
       visor?.destruir();
       visor = null;
       delete window.__capturarItem;
+      delete window.__capturarEscena;
       delete window.__capturarFoto;
     };
   }, [item, vista]);

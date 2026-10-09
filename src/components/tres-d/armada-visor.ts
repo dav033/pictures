@@ -3,6 +3,7 @@ import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import type { GloboDecoracion, TuboDecoracion } from "@/lib/globos3d/decoraciones";
 import type { EscenaArmada, Sala } from "@/lib/globos3d/escena";
 import type { EscenaGlobos, GloboColocadoEnEscena, TuboEnEscena } from "./escena-globos";
+import { CONFETI_ORO, CONFETI_PLATA } from "./confeti-visor";
 
 /**
  * Una escena armada, tal como la dibuja el visor (lo mismo que hace la pestaña Escena, sin elegir ni arrastrar): para
@@ -18,6 +19,31 @@ function globoAVisor(g: GloboDecoracion & { confeti?: boolean }): GloboColocadoE
   };
 }
 
+/** ¿Es un dorado (tono entre ámbar y amarillo, con color)? Para decidir el papel del confeti. */
+function esDorado(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  if (max === 0 || (max - min) / max < 0.25) return false;
+  const h = max === r ? ((g - b) / (max - min)) * 60 : max === g ? (2 + (b - r) / (max - min)) * 60 : (4 + (r - g) / (max - min)) * 60;
+  const grados = (h + 360) % 360;
+  return grados >= 25 && grados <= 62;
+}
+
+/**
+ * El papel del confeti de una pieza: el cristal «con confeti» no dice de qué color es el papel, así que sale del metal que lo
+ * acompaña, que es como se combina en las fotos: si la mayoría de los globos cromados o metal de la pieza son dorados, dorado;
+ * si no, plateado (el Cristal 390 con confeti plateado de la tienda).
+ */
+export function papelDeConfeti(globos: ReadonlyArray<{ codigo: string }>): string {
+  let dorados = 0, otros = 0;
+  for (const g of globos) {
+    const ref = referenciaPorCodigo(g.codigo);
+    if (!ref || (ref.familia !== "reflex" && ref.familia !== "metal")) continue;
+    if (esDorado(ref.hexGlobo)) dorados++; else otros++;
+  }
+  return dorados > otros ? CONFETI_ORO : CONFETI_PLATA;
+}
+
 function tuboAVisor(t: TuboDecoracion): TuboEnEscena {
   if (t.papel) return { puntos: t.puntos, grosorCm: t.grosorCm, hex: t.papel.hex, familia: "papel", cerrado: t.cerrado, ...(t.papel.relleno ? { relleno: true } : {}) };
   const ref = referenciaPorCodigo(t.codigo);
@@ -27,7 +53,10 @@ function tuboAVisor(t: TuboDecoracion): TuboEnEscena {
 /** Dibuja la escena armada (con su sala, o la que se pida) y encuadra. */
 export function mostrarArmada(visor: EscenaGlobos, armada: EscenaArmada, sala: Sala = armada.sala): void {
   visor.mostrarModulo(
-    armada.porNodo.flatMap((n) => n.globos.map((g) => ({ ...globoAVisor(g), nodo: n.id }))),
+    armada.porNodo.flatMap((n) => {
+      const papel = n.globos.some((g) => (g as { confeti?: boolean }).confeti) ? papelDeConfeti(n.globos) : null;
+      return n.globos.map((g) => ({ ...globoAVisor(g), nodo: n.id, ...(papel && (g as { confeti?: boolean }).confeti ? { confetiHex: papel } : {}) }));
+    }),
     [],
     armada.porNodo.flatMap((n) => n.tubos.map((t) => ({ ...tuboAVisor(t), nodo: n.id }))),
     {

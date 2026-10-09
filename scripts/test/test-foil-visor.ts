@@ -3,18 +3,22 @@
  * - cada color de foil × cada forma (números 0–9, letras A–Z, palabras como «Love»/«LOVE»/«HBD», corazón, estrella, redondo,
  *   luna, flor, nube) arma paneles cuyo material tiene el color del foil y NO es negro ni casi negro (salvo el foil negro),
  *   con el entorno que se le dio puesto en el material: sin entorno, un metal se ve negro;
- * - el entorno de los metalizados (`entorno-metal.ts`): cada visor se registra y se da de baja; una captura fuera de
- *   pantalla que se crea y se destruye en medio (la del refinado) no deja al visor del taller con un entorno liberado.
- *   Esta es la causa del «Love» dorado negro: la ronda de refinado capturaba la escena, destruía su visor y el foil nuevo
- *   se creaba con el mapa liberado;
+ * - el entorno de los metalizados es de cada visor y llega a las fábricas de materiales como parámetro (foil, cromado, metal,
+ *   lentejuelas, confeti, piso): una captura fuera de pantalla (la del refinado) que se crea y se destruye en medio no toca
+ *   los materiales del taller, ni al revés. Esa era la causa del «Love» dorado negro, y no queda ninguna variable de módulo con un entorno;
  * - los colores de látex cromado y metal se aclaran hasta su luminosidad mínima (no salen negros).
  *
  * Run: npx tsx scripts/test/test-foil-visor.ts
  */
 import assert from "node:assert/strict";
 import * as THREE from "three";
-import { colorDeLatex } from "@/components/tres-d/escena-globos";
-import { entornoMetal, registrarEntornoMetal, soltarEntornoMetal } from "@/components/tres-d/entorno-metal";
+import { colorDeLatex, materialDe, materialEscenografia } from "@/components/tres-d/materiales-visor";
+import { lentejuelasDePanel } from "@/components/tres-d/lentejuelas-instanciadas";
+import { materialConfeti } from "@/components/tres-d/confeti-visor";
+import { materialPiso } from "@/components/tres-d/sala-ambiente";
+import type { SolidoEscenografia } from "@/lib/globos3d/escenografia";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import path from "node:path";
 import { materialFoil } from "@/components/tres-d/impresos-visor";
 import { metalizadoMasParecido, referenciaDePedido } from "@/lib/globos3d/herramientas-escena-colores";
 import { CARACTERES_METALIZADO, COLORES_METALIZADO, armarMetalizado, type ColorMetalizado, type FormaMetalizado } from "@/lib/globos3d/metalizados";
@@ -84,35 +88,45 @@ prueba("los cromados y metales de látex se aclaran hasta su luminosidad mínima
   }
 });
 
-prueba("entorno de los metalizados: el visor vivo más reciente; sin visores, ninguno", () => {
-  assert.equal(entornoMetal(), null);
-  const taller = new THREE.Texture();
-  registrarEntornoMetal(taller);
-  assert.equal(entornoMetal(), taller);
-  soltarEntornoMetal(taller);
-  assert.equal(entornoMetal(), null);
-});
+/**
+ * El entorno es de cada visor y llega como parámetro: nunca hay «el entorno de ahora». Un entorno es un recurso de un
+ * contexto WebGL; con una variable de módulo (o un registro), la captura fuera de pantalla del refinado (otro visor, otro
+ * contexto) pisaba el del taller y lo liberaba, o los materiales del taller se quedaban con el de la captura: negros.
+ */
+const caja = (acabado: SolidoEscenografia["acabado"], hex = "#d4af5a"): SolidoEscenografia => ({
+  forma: "caja", tamano: { x: 100, y: 100, z: 2 }, origen: { x: 0, y: 0, z: 0 }, ejeX: { x: 1, y: 0, z: 0 }, ejeY: { x: 0, y: 1, z: 0 }, ejeZ: { x: 0, y: 0, z: 1 }, hex, acabado,
+} as SolidoEscenografia);
+const envMapDe = (m: THREE.Material) => (m as THREE.MeshStandardMaterial).envMap;
 
-prueba("una captura que se crea y se destruye en medio no deja al visor del taller sin entorno (el «Love» negro)", () => {
+prueba("cada fábrica de materiales usa el entorno que se le da, sin importar los de otros visores", () => {
   const taller = new THREE.Texture(), captura = new THREE.Texture();
-  registrarEntornoMetal(taller);
-  registrarEntornoMetal(captura);
-  assert.equal(entornoMetal(), captura, "mientras la captura vive, sus materiales usan su entorno");
-  soltarEntornoMetal(captura);
-  captura.dispose();
-  assert.equal(entornoMetal(), taller, "al destruirse la captura, el foil nuevo del taller usa el entorno del taller");
-  const foil = materialFoil("#e2b64c", false, entornoMetal());
-  assert.equal(foil.envMap, taller);
-  soltarEntornoMetal(taller);
+  const fabricas: Array<[string, (e: THREE.Texture) => THREE.Material]> = [
+    ["reflex", (e) => materialDe("reflex", "#a08344", "alta", e)], ["metal", (e) => materialDe("metal", "#deb25b", "editor", e)],
+    ["foil", (e) => materialEscenografia(caja("foil"), e)], ["foil mate", (e) => materialEscenografia(caja("foil_mate"), e)],
+    ["metal de utilería", (e) => materialEscenografia(caja("metal"), e)], ["lentejuelas (bloque grueso, con textura)", (e) => materialEscenografia({ ...caja("lentejuelas"), tamano: { x: 50, y: 50, z: 30 } } as SolidoEscenografia, e)],
+    ["lentejuelas (instancias)", (e) => lentejuelasDePanel({ x: 100, y: 100, z: 2 }, 2, "#d4af5a", e).material as THREE.Material],
+    ["confeti", (e) => materialConfeti("#e0b33f", e)], ["piso de madera", (e) => materialPiso("#d8cbbb", new THREE.Texture() as THREE.CanvasTexture, e, 600, 500)],
+  ];
+  for (const [nombre, hacer] of fabricas) {
+    const deTaller = hacer(taller);
+    const deCaptura = hacer(captura);
+    // Crear y liberar la captura en medio no toca el material del taller, ni el que se cree después con el del taller.
+    captura.dispose();
+    assert.equal(envMapDe(deTaller), taller, `${nombre}: el material del taller lleva el entorno del taller`);
+    assert.equal(envMapDe(deCaptura), captura, `${nombre}: el de la captura lleva el de la captura`);
+    assert.equal(envMapDe(hacer(taller)), taller, `${nombre}: lo que el taller crea después de la captura lleva el del taller`);
+  }
 });
 
-prueba("dar de baja un visor dos veces o uno que no está no rompe nada", () => {
-  const a = new THREE.Texture(), b = new THREE.Texture();
-  registrarEntornoMetal(a);
-  soltarEntornoMetal(b);
-  soltarEntornoMetal(a);
-  soltarEntornoMetal(a);
-  assert.equal(entornoMetal(), null);
+prueba("no queda un entorno global: el módulo del registro no existe y ninguna variable de módulo guarda un entorno", () => {
+  const dir = path.resolve(__dirname, "../../src/components/tres-d");
+  assert.equal(existsSync(path.join(dir, "entorno-metal.ts")), false, "entorno-metal.ts (el registro) ya no existe");
+  const culpables: string[] = [];
+  for (const archivo of readdirSync(dir).filter((f) => /\.(ts|tsx)$/.test(f))) {
+    const texto = readFileSync(path.join(dir, archivo), "utf8");
+    if (/^(export )?let \w*[eE]ntorno\w*\s*[:=]/m.test(texto) || /entorno-metal/.test(texto)) culpables.push(archivo);
+  }
+  assert.deepEqual(culpables, [], "variables de módulo con un entorno");
 });
 
 if (fallos) { console.log(`\n${fallos} prueba(s) con fallas.`); process.exit(1); }
