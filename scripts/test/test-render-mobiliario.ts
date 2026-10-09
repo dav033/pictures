@@ -13,7 +13,7 @@ import { aplicarHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 import { armarEscena, escenaEnIngles, SALA_INICIAL, type Escena } from "../../src/lib/globos3d/escena";
 import { escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
 import {
-  AMBIENTES_RENDER, NADA_MAS, STRENGTH_FIEL_MOBILIARIO, TAMANO_BASE_FIEL, usaCaminoFiel, NADA_MAS_CON_MOBILIARIO, PREFIJO_MOBILIARIO, descripcionRender3d, promptRender3d, promptRender3dFiel, traeMobiliario,
+  AMBIENTES_RENDER, NADA_MAS, STRENGTH_FIEL, TAMANO_BASE_FIEL, usaCaminoFiel, NADA_MAS_CON_MOBILIARIO, PREFIJO_MOBILIARIO, descripcionRender3d, promptRender3d, promptRender3dFiel, traeMobiliario,
 } from "../../src/lib/globos3d/render-ia";
 
 let pruebas = 0;
@@ -61,7 +61,7 @@ prueba("no queda ninguna frase que niegue las mesas o vacíe la sala", () => {
     assert.match(p, /Keep every table, chair and centrepiece exactly as shown/);
     assert.match(p, /no extra tables or chairs/);
   }
-  assert.match(promptRender3d(d, "igual_visor"), /plain walls with the furniture and decorations described below standing in it/);
+  assert.match(promptRender3d(d, "igual_visor"), /plain walls with the furniture and decorations described below in place/);
   assert.doesNotMatch(promptRender3dFiel(d, "igual_visor"), /plain empty room/);
 });
 prueba("el mobiliario sobrevive al tope de la descripción (va antes de la lista de piezas)", () => {
@@ -96,25 +96,17 @@ prueba("la marca del mobiliario se lee en el texto, no en un nombre cualquiera",
 });
 
 console.log("Camino fiel");
-prueba("con mobiliario y el lugar del visor la foto va por FLUX.1 imagen-a-imagen; sin mobiliario o con otro lugar, como siempre", () => {
-  const d = textoDe(boda());
-  assert.equal(usaCaminoFiel(d, "igual_visor"), true);
-  for (const a of AMBIENTES_RENDER.filter((x) => x.id !== "igual_visor")) assert.equal(usaCaminoFiel(d, a.id), false, a.id);
-  assert.equal(usaCaminoFiel(textoDe(escenaPredefinida("arco_organico_columnas_guirnalda")), "igual_visor"), false);
-});
-prueba("una mesa de postres sola (sin sillas) sigue por FLUX.2: el camino fiel es para salones con mesas y sillas", () => {
-  const e = paso({ sala: { ...SALA_INICIAL }, nodos: [] }, "agregar_mobiliario", { id: "mesa_postres_mantel" });
-  const d = textoDe(e);
-  assert.ok(traeMobiliario(d));
-  assert.equal(usaCaminoFiel(d, "igual_visor"), false);
+prueba("toda foto con el lugar del visor va por FLUX.1 imagen-a-imagen (con o sin mobiliario); con otro lugar, FLUX.2 como siempre", () => {
+  for (const e of [boda(), escenaPredefinida("arco_organico_columnas_guirnalda")]) assert.equal(usaCaminoFiel("igual_visor"), true, textoDe(e).slice(0, 40));
+  for (const a of AMBIENTES_RENDER.filter((x) => x.id !== "igual_visor")) assert.equal(usaCaminoFiel(a.id), false, a.id);
 });
 prueba("la base de FLUX.1 cabe en 1 MP (se cobra 1 MP) con múltiplos de 8, y la ruta usa el camino fiel", () => {
   for (const [aspecto, { ancho, alto }] of Object.entries(TAMANO_BASE_FIEL)) {
     assert.ok(ancho * alto <= 1_000_000 && ancho % 8 === 0 && alto % 8 === 0, aspecto);
   }
-  assert.ok(STRENGTH_FIEL_MOBILIARIO > 0.4 && STRENGTH_FIEL_MOBILIARIO < 0.7, "dentro de lo medido: más arriba cambia el arco y borra el panel");
+  assert.ok(STRENGTH_FIEL > 0.4 && STRENGTH_FIEL < 0.7, "dentro de lo medido: más arriba cambia el arco y borra el panel");
   const ruta = readFileSync("src/app/api/render-3d-imagen/route.ts", "utf8");
-  assert.match(ruta, /usaCaminoFiel\(descripcion/);
+  assert.match(ruta, /usaCaminoFiel\(ambiente/);
   assert.match(ruta, /generarConFluxFiel\(prompt, \{/);
   for (const aspecto of ["3:2", "1:1", "2:3", "16:9"]) assert.ok(aspecto in TAMANO_BASE_FIEL && ruta.includes(`"${aspecto}"`), aspecto);
 });

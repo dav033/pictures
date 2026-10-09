@@ -3,7 +3,7 @@ import { conRegistro, decidir } from "@/lib/registro/servidor";
 import sharp from "sharp";
 import { generarConFluxFiel, generarConSempertexFlux } from "@/lib/ia/kagutsuchi/flux";
 import { aligerarImagenGenerada } from "@/lib/generacion/imagen-liviana";
-import { AMBIENTE_POR_DEFECTO, MAX_DESCRIPCION, STRENGTH_FIEL_MOBILIARIO, TAMANO_BASE_FIEL, promptRender3d, promptRender3dFiel, usaCaminoFiel, type AmbienteRender } from "@/lib/globos3d/render-ia";
+import { AMBIENTE_POR_DEFECTO, MAX_DESCRIPCION, STRENGTH_FIEL, TAMANO_BASE_FIEL, promptRender3d, promptRender3dFiel, usaCaminoFiel, type AmbienteRender } from "@/lib/globos3d/render-ia";
 import { TOPE_FOTOS_POR_HORA } from "@/lib/globos3d/foto-realista";
 
 /**
@@ -40,9 +40,9 @@ async function atenderPOST(request: Request) {
 
   const partes = render.match(/^data:(image\/(?:png|jpeg));base64,([\s\S]*)$/);
   if (!partes) return Response.json({ error: "La captura no tiene formato válido." }, { status: 400 });
-  const fiel = usaCaminoFiel(descripcion, ambiente as AmbienteRender);
+  const fiel = usaCaminoFiel(ambiente as AmbienteRender);
   const prompt = fiel ? promptRender3dFiel(descripcion, ambiente as AmbienteRender) : promptRender3d(descripcion, ambiente as AmbienteRender);
-  decidir("regla:render_3d_prompt", "texto e imagen base que van a FLUX desde el taller 3D", { prompt, largo: prompt.length, ambiente, aspecto, camino: fiel ? "flux1_i2i_fiel" : "flux2_edit", ...(fiel ? { strength: STRENGTH_FIEL_MOBILIARIO } : {}), bytesCaptura: Math.round((partes[2]!.length * 3) / 4) });
+  decidir("regla:render_3d_prompt", "texto e imagen base que van a FLUX desde el taller 3D", { prompt, largo: prompt.length, ambiente, aspecto, camino: fiel ? "flux1_i2i_fiel" : "flux2_edit", ...(fiel ? { strength: STRENGTH_FIEL } : {}), bytesCaptura: Math.round((partes[2]!.length * 3) / 4) });
 
   ventana.usadas += 1;
   try {
@@ -50,7 +50,7 @@ async function atenderPOST(request: Request) {
       const { ancho, alto } = TAMANO_BASE_FIEL[aspecto];
       const base = await sharp(Buffer.from(partes[2]!, "base64")).resize(ancho, alto, { fit: "fill" }).png().toBuffer();
       const hecha = await generarConFluxFiel(prompt, {
-        imagen: { base64: base.toString("base64"), mime: "image/png", ancho, alto }, strength: STRENGTH_FIEL_MOBILIARIO,
+        imagen: { base64: base.toString("base64"), mime: "image/png", ancho, alto }, strength: STRENGTH_FIEL,
         signal: request.signal, telemetria: { superficie: "taller-3d" },
       });
       const liviana = await aligerarImagenGenerada(hecha);

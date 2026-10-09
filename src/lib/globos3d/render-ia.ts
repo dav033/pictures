@@ -63,12 +63,12 @@ const NO_ANADIR_CON_MOBILIARIO = "Add nothing that is not in the input: no extra
 const CONSERVAR_MOBILIARIO = "Keep every table, chair and centrepiece exactly as shown in the input: same number, same layout, same positions and sizes; the tables and chairs are main subjects of the photograph and must be clearly visible, not removed, merged or hidden.";
 
 /**
- * El camino fiel para escenas con mobiliario («Igual al visor»): FLUX.1 [dev] imagen-a-imagen sobre la captura, que conserva mesas, sillas,
+ * El camino fiel de la foto («Igual al visor»): FLUX.1 [dev] imagen-a-imagen sobre la captura, que conserva mesas, sillas,
  * disposición y cámara. FLUX.2 `/edit` (sin control de fuerza) devolvía la sala reencuadrada, sin el panel o con otra disposición. Medido
  * el 2026-10-09 con la boda de prueba (scripts/exp/render-boda.ts): 0,40 casi no cambia la captura; 0,55 conserva mesas, sillas, marco y rótulo y
  * suma tela y látex más reales (los colores se corren un poco); 0,70 ya cambia el arco y borra el panel; con ControlNet salió peor.
  */
-export const STRENGTH_FIEL_MOBILIARIO = 0.55;
+export const STRENGTH_FIEL = 0.55;
 
 /** Tamaño (px) de la base de FLUX.1 por proporción: menos de 1 MP (se cobra 1 MP) y múltiplos de 8. */
 export const TAMANO_BASE_FIEL: Readonly<Record<"3:2" | "1:1" | "2:3" | "16:9", { ancho: number; alto: number }>> = {
@@ -76,16 +76,13 @@ export const TAMANO_BASE_FIEL: Readonly<Record<"3:2" | "1:1" | "2:3" | "16:9", {
 };
 
 /**
- * ¿Esta foto va por el camino fiel? Con mesas Y sillas (la disposición de un salón es lo que no se puede perder) y el lugar de la captura (con otro
- * lugar hay que rehacer paredes y luz, y FLUX.1 no lo hace). Una mesa de postres sola sigue por FLUX.2, que da la foto real.
+ * ¿Esta foto va por el camino fiel? Toda foto con el lugar de la captura («Igual al visor»): con otro lugar hay que rehacer paredes y luz, y FLUX.1 no lo hace.
+ * Antes solo la escena con mesas y sillas; la de globos solos (2026-10-09, 11:35) también salía de FLUX.2 `/edit`, que la reencuadraba y reinterpretaba.
  */
-export function usaCaminoFiel(descripcion: string, ambiente: AmbienteRender): boolean {
-  if (ambiente !== "igual_visor" || !traeMobiliario(descripcion)) return false;
-  // Solo la frase del mobiliario: el cierre («no extra tables or chairs») también nombra sillas.
-  const frase = descripcion.slice(descripcion.indexOf(PREFIJO_MOBILIARIO)).split(PREFIJO_SALA)[0]!.split("Nothing else is in the room")[0]!;
-  // «has 4 chairs…» (las sillas de una mesa) o «24 × … chair» (el inventario); «has no chairs» no cuenta.
-  return /\bhas [1-9]\d* chairs?\b/.test(frase) || /\b\d+ × [^,.]*\bchair\b/.test(frase);
-}
+export const usaCaminoFiel = (ambiente: AmbienteRender): boolean => ambiente === "igual_visor";
+
+/** ¿La descripción trae globos colgados del techo o flotando contra él? (La sala «lisa y vacía» los contradiría.) */
+export const colgadoDelTecho = (descripcion: string): boolean => /(?:from|against) the ceiling/.test(descripcion);
 
 /** ¿La descripción trae mesas o sillas como parte de la escena? (`mobiliarioEnIngles` deja su marca.) */
 export const traeMobiliario = (descripcion: string): boolean => descripcion.includes(PREFIJO_MOBILIARIO);
@@ -105,10 +102,11 @@ function decoracionPara(descripcion: string, ambiente: AmbienteRender): string {
 export function promptRender3d(descripcion: string, ambiente: AmbienteRender): string {
   const decoracion = decoracionPara(descripcion, ambiente);
   const mobiliario = traeMobiliario(descripcion);
-  // Con mesas y sillas en la escena «vacía» y «sin muebles» las contradicen: la sala es lisa, pero no está vacía.
+  // Con mesas y sillas, o con globos colgados del techo, «vacía» y «sin muebles» contradicen la escena: la sala es lisa, pero no está vacía.
+  const conCosas = mobiliario || colgadoDelTecho(descripcion);
   const sala = ambiente === "igual_visor"
-    ? `Keep the room exactly as shown: same walls, floor, ceiling, colors and perspective, ${mobiliario ? "plain walls with the furniture and decorations described below standing in it" : "all plain and empty"}; only make it a real photographed room (real paint, a real floor, natural light and soft shadows).`
-    : `Restyle only the walls, floor and light as ${lugarDe(ambiente).frase}; same room geometry and perspective, the walls stay plain${mobiliario ? ", with the furniture and decorations described below standing in the room" : " and empty"}.`;
+    ? `Keep the room exactly as shown: same walls, floor, ceiling, colors and perspective, ${conCosas ? "plain walls with the furniture and decorations described below in place (including whatever hangs from or floats against the ceiling)" : "all plain and empty"}; only make it a real photographed room (real paint, a real floor, natural light and soft shadows).`
+    : `Restyle only the walls, floor and light as ${lugarDe(ambiente).frase}; same room geometry and perspective, the walls stay plain${conCosas ? ", with the furniture and decorations described below in place (including whatever hangs from or floats against the ceiling)" : " and empty"}.`;
   return [
     "Turn this 3D preview into a real professional event photograph.",
     "Keep the balloon decoration exactly as shown: same overall shape, height and width, same number, size, position and color of every balloon and of every decoration; do not add, remove, merge or recolor balloons.",
@@ -130,7 +128,7 @@ export function promptRender3d(descripcion: string, ambiente: AmbienteRender): s
  */
 export function promptRender3dFiel(descripcion: string, ambiente: AmbienteRender): string {
   const decoracion = decoracionPara(descripcion, ambiente);
-  const mobiliario = traeMobiliario(descripcion);
+  const mobiliario = traeMobiliario(descripcion) || colgadoDelTecho(descripcion);
   const sala = ambiente === "igual_visor" ? `${mobiliario ? "A room with plain real painted walls and a real floor" : "A plain empty room with real painted walls and a real floor"}, natural light and soft shadows.` : `The room: ${lugarDe(ambiente).frase}.`;
   return [
     "A real professional event photograph of a latex balloon decoration, photorealistic, not a 3D render.",

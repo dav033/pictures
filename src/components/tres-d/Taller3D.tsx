@@ -12,7 +12,7 @@ import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { papelDeConfeti } from "./armada-visor";
 import type { EscenaGlobos, GloboColocadoEnEscena, GloboEnEscena, TuboEnEscena, VistaFija } from "./escena-globos";
 import { DIBUJO_VACIO, globoAEscena, materialesEnIngles, R12, tuboAEscena, type DibujoEscena } from "./dibujo-escena";
-import { descripcionRender3d, formatoEnIngles, traeMobiliario } from "@/lib/globos3d/render-ia";
+import { descripcionRender3d, formatoEnIngles } from "@/lib/globos3d/render-ia";
 import { GeneradorIA } from "./GeneradorIA";
 import { PaletaEscena } from "./PaletaEscena";
 import { reemplazarColor } from "@/lib/globos3d/recolorear";
@@ -256,7 +256,7 @@ export function Taller3D() {
     const dibujo: DibujoEscena = {
       globos: armadaMostrada.porNodo.flatMap((n) => {
         const papel = n.globos.some((g) => g.confeti) ? papelDeConfeti(n.globos) : null;
-        return n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true, ...(papel ? { confetiHex: papel } : {}) } : {}), nodo: n.id }));
+        return n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true, ...(papel ? { confetiHex: papel } : {}) } : {}), ...(n.enTecho ? { sinSombra: true } : {}), nodo: n.id }));
       }),
       tubos: armadaMostrada.porNodo.flatMap((n) => n.tubos.map((t): TuboEnEscena => ({ ...tuboAEscena(t), nodo: n.id }))),
       flores: armadaMostrada.porNodo.flatMap((n) => n.flores.map((f) => ({ ...f, nodo: n.id }))),
@@ -953,7 +953,7 @@ export function Taller3D() {
       <DialogoTaller abierto={dialogo === "imagen"} onCerrar={() => setDialogo(null)} titulo="Foto realista">
         <div className="p-4">
           <p className="mb-3 text-sm text-taller-suave">Convierte lo que se ve en el visor en una foto realista con IA (gíralo antes para elegir el ángulo). {solitario.activo ? "Solo la pieza que estás editando." : "La escena entera, como la ves."}</p>
-          {listo && <GeneradorIA capturar={async () => { const visor = escenaRef.current; if (!visor) return null; await visor.esperarRotulos(); return visor.capturar({ escenaEntera: traeMobiliario(descripcionIA) }); }} descripcion={descripcionIA} escena={nombreFoto} />}
+          {listo && <GeneradorIA capturar={async () => { const visor = escenaRef.current; if (!visor) return null; await visor.esperarRotulos(); return visor.capturar({ escenaEntera: true }); }} descripcion={descripcionIA} escena={nombreFoto} />}
         </div>
       </DialogoTaller>
       <DialogoTaller abierto={dialogo === "ayuda"} onCerrar={() => setDialogo(null)} titulo="Ayuda y atajos">

@@ -157,6 +157,21 @@ export function mesaCilindrica(o: { diametroCm: number; altoCm: number; hex: str
 }
 
 /**
+ * Un `#rrggbb` multiplicado por `k` (< 1 lo oscurece): la falda de un mantel cae a la sombra de la tapa. Un mantel blanco contra paredes
+ * blancas se veía como una losa plana (2026-10-09); con la tapa en su color y la falda un poco más oscura se lee la forma y el borde de arriba.
+ */
+export function sombrear(hex: string, k: number): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1]!, 16);
+  const c = (v: number) => Math.max(0, Math.min(255, Math.round(v * k))).toString(16).padStart(2, "0");
+  return `#${c((n >> 16) & 255)}${c((n >> 8) & 255)}${c(n & 255)}`;
+}
+
+/** Cuánto más oscura que la tapa es la falda de un mantel. */
+export const SOMBRA_FALDA = 0.93;
+
+/**
  * Mesa rectangular con mantel hasta el piso (que se abre un poco abajo), un camino de otro color que cruza la tapa y
  * cae por delante, y, si se piden, tarimas (bandejas elevadas) sobre la tapa.
  */
@@ -170,7 +185,7 @@ export function mesaConMantel(o: {
     // La tapa con el mantel encima: 2 mm más ancha que la falda, para que sus caras no coincidan con las de los paños (z-fighting).
     { forma: "caja", centro: { x: 0, y: h - 1.5, z: 0 }, tamano: { x: a + 2.4, y: 3, z: f + 2.4 }, hex: o.mantel, acabado: "brillante" },
     // La falda: cuatro paños que bajan al piso y suben 1,5 cm DENTRO de la tapa (sin costura a la vista).
-    ...faldaMantel(a + 2, f + 2, h - 1.5, 6, o.mantel),
+    ...faldaMantel(a + 2, f + 2, h - 1.5, 6, sombrear(o.mantel, SOMBRA_FALDA)),
   ];
   if (o.camino) {
     const c = o.camino;

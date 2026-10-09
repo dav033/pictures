@@ -9,7 +9,7 @@ import { seccionVocabularioEscena } from "@/lib/globos3d/prompt-escena";
 import { REGLAS_AGENTE, SeleccionSchema, seleccionValida, textoSeleccion } from "@/lib/globos3d/escena-ia-agente";
 import { PREGUNTAR_USUARIO, preguntaDe, type PreguntaUsuario } from "@/lib/globos3d/herramientas-escena-extra";
 import { verificarCambios } from "@/lib/globos3d/verificacion-escena";
-import { conHonestidad, fallosPendientes, objetivoDe, type Intento } from "@/lib/globos3d/honestidad-respuesta";
+import { avisosParaElUsuario, conHonestidad, fallosPendientes, objetivoDe, type Intento } from "@/lib/globos3d/honestidad-respuesta";
 import { problemasNuevos } from "@/lib/globos3d/problemas-escena";
 import { tomarCupoEscenaIA, TOPE_POR_HORA } from "@/lib/globos3d/cupo-escena-ia";
 import { FotoCuerpoSchema, REGLAS_FOTO, aplicarModeladoDeFoto, prepararFotoAdjunta, type FotoPreparada } from "@/lib/globos3d/escena-ia-foto";
@@ -170,6 +170,8 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   let pregunta: PreguntaUsuario | null = null;
   // Cada herramienta que se intentó, con su resultado: la respuesta final no puede callar lo que falló (honestidad-respuesta.ts).
   const intentos: Intento[] = [];
+  // Lo que una herramienta que SÍ funcionó manda decirle al usuario (un color sustituido): también llega a la respuesta final.
+  const avisosUsuario: string[] = [];
 
   try {
     for (;;) {
@@ -208,6 +210,7 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
         avisar?.({ tipo: "paso", n: llamadas, herramienta: nombre, resumen: corto((hecho.ok ? hecho.resumen : hecho.error).split("\n")[0] ?? "", 140), consulta: hecho.ok && hecho.consulta, ok: hecho.ok });
         if (hecho.ok) {
           escena = hecho.escena;
+          avisosUsuario.push(...avisosParaElUsuario(hecho.resumen));
           acciones.push({ herramienta: nombre, resumen: hecho.consulta ? corto(hecho.resumen.split("\n")[0] ?? hecho.resumen, 140) : corto(hecho.resumen, 400), consulta: hecho.consulta });
           if (!hecho.consulta) ultimoCambio = respuestas.length;
           // Preguntar termina el turno: lo que venía después en esta vuelta no se aplica.
@@ -231,7 +234,7 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
     decidir("modelo:escena_ia", "el asistente de escena no pudo terminar", { error: corto(texto, 300), pasos, llamadas, acciones }, { entrada: { mensaje } });
     if (acciones.some((a) => !a.consulta)) {
       // Lo ya aplicado se devuelve: el usuario puede deshacerlo con un clic.
-      return Response.json({ escena, respuesta: conHonestidad("La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer.", fallosPendientes(intentos), problemasNuevos(base, escena)), acciones, uso: { pasos, llamadas, costeEstimadoUsd: costeUsd(tokens, adjunta?.modelado.uso.costeEstimadoUsd ?? 0) } });
+      return Response.json({ escena, respuesta: conHonestidad("La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer.", fallosPendientes(intentos), problemasNuevos(base, escena), avisosUsuario), acciones, uso: { pasos, llamadas, costeEstimadoUsd: costeUsd(tokens, adjunta?.modelado.uso.costeEstimadoUsd ?? 0) } });
     }
     return Response.json({ error: cuota ? "La IA no tiene cuota disponible ahora. Inténtalo en un rato." : "No pude hablar con la IA ahora. Vuelve a intentarlo." }, { status: cuota ? 429 : 502 });
   }
@@ -242,7 +245,7 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   // Lo que falló o quedó mal se dice aunque el modelo lo calle (una pregunta corta el turno: no hay nada que afirmar todavía).
   const fallos = fallosPendientes(intentos);
   const problemas = problemasNuevos(base, escena);
-  if (!pregunta) respuesta = conHonestidad(respuesta, fallos, problemas);
+  if (!pregunta) respuesta = conHonestidad(respuesta, fallos, problemas, avisosUsuario);
   const costeLecturaUsd = adjunta?.modelado.uso.costeEstimadoUsd ?? 0;
   const costeEstimadoUsd = costeUsd(tokens, costeLecturaUsd);
   const ronda = refinar ? decidirRonda(refinar.ronda, reportes, cambios.length) : null;

@@ -119,6 +119,8 @@ export type NodoArmado = {
   flores: FlorDePieza[];
   /** Escenografía (paneles, mesas, tapete) en el mundo. */
   solidos: SolidoEscenografia[];
+  /** Cuelga del techo (decoración de techo): el visor no le da sombra. */
+  enTecho?: boolean;
   /** Anclas en el mundo (las de todas sus copias): ahí se cuelgan otras piezas. */
   anclas: AnclaDePieza[];
   materiales: MaterialDecoracion[];
@@ -432,6 +434,7 @@ function crearArmador(escena: Escena, cache?: Map<string, PiezaArmada>, sembrado
     }
     const avisoMueble = nodo.pieza.tipo === "escenografia" ? avisoDeEscenografia(nodo.pieza) : null;
     if (avisoMueble) resultado = { ...resultado, avisos: [...resultado.avisos, `«${nodo.nombre}»: ${avisoMueble}`] };
+    if (nodo.colocacion.en === "techo") resultado = { ...resultado, enTecho: true };
     enCurso.delete(nodo.id);
     hechos.set(nodo.id, resultado);
     return resultado;
@@ -632,7 +635,8 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
       return `Attached to ${padre ? `piece (${padre})` : "the structure"}: ${p.copias > 1 ? `${p.copias} × ` : ""}${p.frase.replace(/^an? /, "")}`;
     }),
     // Lo que NO hay (pared vacía bajo un extremo): sin esto FLUX cerraba una guirnalda y una pata en un marco.
-    huecosEnIngles(armada.globos),
+    // El hueco es el de la pared bajo las estructuras: los globos del techo y los centros de las mesas no cuentan (decían «no leg» de un arco con patas).
+    huecosEnIngles(armada.porNodo.filter((n) => { const c = escena.nodos.find((x) => x.id === n.id)?.colocacion; return c !== undefined && c.en !== "techo" && !(c.en === "sobre" && mesas.has(c.padreId)); }).flatMap((n) => n.globos)),
     escenografia ? `${PREFIJO_UTILERIA} ${escenografia} party ${escenografia === 1 ? "prop" : "props"} (${propsEnIngles(escenografiaPorNombre, escenografia)}), exactly as in the input` : "",
   ];
   const { tonos, mostrar } = escena.sala;
@@ -647,7 +651,9 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
   const ambiente = escena.sala.ambiente;
   const conAmbiente = ambiente?.piso === "madera" || ambiente?.luces || ambiente?.ventana;
   // Con mesas y sillas la sala es lisa pero no «vacía»: decirlo así es lo que hacía a FLUX borrar el mobiliario.
-  const estado = conMobiliario ? (conAmbiente ? "" : ", all plain") : `, all ${conAmbiente ? "" : "plain and "}empty`;
+  // «Vacía» solo si de verdad lo está: con mesas y sillas, o con globos colgados del techo, la sala es lisa pero tiene cosas.
+  const conTecho = escena.nodos.some((n) => n.colocacion.en === "techo");
+  const estado = conMobiliario || conTecho ? (conAmbiente ? "" : ", all plain") : `, all ${conAmbiente ? "" : "plain and "}empty`;
   if (sala.length) partes.push(`${PREFIJO_SALA} ${enLista(sala)}${estado}${conAmbiente ? `, ${MARCA_LUZ_CALIDA}` : ""}`);
   return partes.filter(Boolean).join(". ");
 }

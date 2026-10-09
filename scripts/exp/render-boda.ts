@@ -15,7 +15,7 @@
  * Resultado 2026-10-09 (6 imágenes, US$0,261 de 0,40; carpeta scratchpad/render-fiel con la captura junto a cada una): a) y b) dan foto real pero
  * reencuadran la sala, cambian sillas y rótulo o la disposición (b borró el panel «Boda Real»); c) 0,55 y e) 0,40 conservan mesas, 4 sillas por mesa,
  * centros, marco, panel y cámara; d) ControlNet sale peor (rótulo ilegible, globos manchados); f) 0,70 ya cambia el arco y borra el panel. Ganó c) 0,55:
- * es lo que usa ahora /api/render-3d-imagen con mobiliario y el lugar «Igual al visor» (`STRENGTH_FIEL_MOBILIARIO`). Ninguna da una foto real de una sala.
+ * es lo que usa ahora /api/render-3d-imagen con mobiliario y el lugar «Igual al visor» (`STRENGTH_FIEL`). Ninguna da una foto real de una sala.
  *
  * Para la variante a) hace falta la versión anterior del texto (se borró de src al terminar):
  *   git show dca3aebd:src/lib/globos3d/render-ia.ts > src/lib/globos3d/_render-ia-viejo.ts

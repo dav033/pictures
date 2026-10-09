@@ -32,6 +32,7 @@ import { COLORES_METALIZADO, PULGADAS_METALIZADO, nombreMetalizado } from "./met
 import { type Pieza, type PiezaArmada, type TipoPieza } from "./piezas";
 import { CACHE_ARMADO, alturaDePieza, armadaDe } from "./altura-pieza";
 import { armarEscena, descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo, NOMBRE_PARED, type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoEscena, type ParedSala, type Sala } from "./escena";
+import { claveDesconocida } from "./argumentos-desconocidos";
 import { cubiertaDeNodo } from "./cubierta-mesa";
 import { sitioSobreMesa } from "./herramientas-escena-sobre-mesa";
 import { comprobarNombreMueble, muebleDeNodo } from "./descripcion-mobiliario";
@@ -1247,6 +1248,9 @@ export function aplicarHerramienta(escena: Escena, nombre: string, argumentos: u
   if (!NOMBRES_HERRAMIENTAS.includes(nombre)) return { ok: false, escena, error: `No existe la herramienta «${nombre}». Hay: ${NOMBRES_HERRAMIENTAS.join(", ")}.` };
   try {
     const extra = HERRAMIENTAS_EXTRA[nombre];
+    // Una clave que la herramienta no conoce (`cuelga` por `cuelga_cm`) es un error con la clave buena, no algo que se descarta en silencio.
+    const desconocida = claveDesconocida(extra ? extra.esquema : (ESQUEMAS as Record<string, z.ZodType>)[nombre], argumentos ?? {}, nombre);
+    if (desconocida) return { ok: false, escena, error: desconocida };
     const hecho = extra ? extra.aplicar(escena, argumentos ?? {}) : ejecutar(escena, nombre as NombreHerramienta, argumentos ?? {});
     const avisoColor = hecho.consulta ? "" : avisosDeColor(escena, hecho.escena);
     return { ok: true, escena: hecho.escena, resumen: avisoColor && !hecho.resumen.includes(avisoColor) ? `${hecho.resumen} ${avisoColor}` : hecho.resumen, consulta: hecho.consulta ?? false };
