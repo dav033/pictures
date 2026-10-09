@@ -599,22 +599,24 @@ function solidoEscenografia(s: SolidoEscenografia): THREE.Object3D {
  * con cada sólido ya en su sitio. Una silla Tiffany pasa de 17 mallas a 3; ocho sillas y una mesa, de 150 a unas 12.
  */
 function escenografiaDePieza(solidos: readonly SolidoEscenografia[]): THREE.Object3D[] {
-  const lotes = new Map<string, { material: THREE.Material; sombra: boolean; geometrias: THREE.BufferGeometry[] }>();
+  const lotes = new Map<string, { material: THREE.Material; sombra: boolean; geometrias: THREE.BufferGeometry[]; solidos: SolidoEscenografia[] }>();
   const salida: THREE.Object3D[] = [];
   for (const s of solidos) {
     if (s.oculto) continue;
     if (!sePuedeFusionar(s)) { salida.push(solidoEscenografia(s)); continue; }
     const sombra = proyectaSombra(s);
     const clave = `${s.acabado}|${s.hex}|${sombra ? 1 : 0}`;
-    const lote = lotes.get(clave) ?? { material: materialEscenografia(s), sombra, geometrias: [] };
+    const lote = lotes.get(clave) ?? { material: materialEscenografia(s), sombra, geometrias: [], solidos: [] };
+    lote.solidos.push(s);
     const g = geometriaDeSolido(s).clone();
     g.applyMatrix4(marcoDeSolido(s));
     lote.geometrias.push(g.index ? g.toNonIndexed() : g);
     lotes.set(clave, lote);
   }
-  for (const { material, sombra, geometrias } of lotes.values()) {
+  for (const { material, sombra, geometrias, solidos: delLote } of lotes.values()) {
     const geometria = geometrias.length === 1 ? geometrias[0]! : mergeGeometries(geometrias);
-    if (!geometria) continue;
+    // Si no se pudieron juntar (atributos que no calzan), cada sólido va como siempre: nunca desaparece una pieza.
+    if (!geometria) { for (const s of delLote) salida.push(solidoEscenografia(s)); continue; }
     const malla = new THREE.Mesh(geometria, material);
     malla.castShadow = sombra;
     malla.receiveShadow = true;
@@ -817,6 +819,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   sol.position.set(1.5, 3, 2);
   sol.castShadow = true;
   sol.shadow.mapSize.set(1024, 1024);
+  // Sin sesgo, las caras casi verticales y algo inclinadas (la falda de un mantel) se autosombrean en rayas: 1,5 cm de sesgo por la normal las quita.
+  sol.shadow.normalBias = 0.015;
   escena.add(sol, new THREE.AmbientLight(0xffffff, 0.08));
 
   const piso = new THREE.Mesh(new THREE.CircleGeometry(6, 64), new THREE.ShadowMaterial({ opacity: 0.18 }));

@@ -35,8 +35,9 @@ export function mesaRedondaMantel(o: OpcionesMesa): ElementoEscenografia[] {
   const { anchoCm: dia, altoCm: h, tapa } = o;
   const r = dia / 2;
   const salida: ElementoEscenografia[] = [
-    cilindro(v(0, h - 3, 0), r + 1, 3, tapa),
-    cilindro(v(0, 0, 0), r + 7, h - 3, tapa, r + 1),
+    // La tapa 2 mm más ancha que el arranque de la falda: sin caras coincidentes no hay línea de puntos.
+    cilindro(v(0, h - 3, 0), r + 1.2, 3, tapa),
+    cilindro(v(0, 0, 0), r + 7, h - 1.5, tapa, r + 1),
   ];
   if (o.extra) salida.push(caja(v(0, h + 0.25, 0), v(r * 1.45, 0.5, r * 1.45), o.extra, 45));
   return salida;
@@ -133,7 +134,8 @@ export function carritoDulces(o: OpcionesMesa): ElementoEscenografia[] {
   }
   const frascos = 5;
   for (let i = 0; i < frascos; i++) {
-    const x = -w / 2 + (w * (i + 0.5)) / frascos;
+    // Los frascos quedan dentro de los postes (a 12 cm de cada lado), no pegados a ellos.
+    const x = -w / 2 + 12 + ((w - 24) * (i + 0.5)) / frascos;
     const claro = i % 2 === 0;
     salida.push(
       cilindro(v(x, 41.5, 4), 5, 14, claro ? mat("#f2d36b", "brillante") : acento), cilindro(v(x, 55.5, 4), 5.4, 2, metal),

@@ -146,10 +146,10 @@ export function mesaConMantel(o: {
 }): ElementoEscenografia[] {
   const { anchoCm: a, fondoCm: f, altoCm: h } = o;
   const salida: ElementoEscenografia[] = [
-    // La tapa con el mantel encima.
-    { forma: "caja", centro: { x: 0, y: h - 1.5, z: 0 }, tamano: { x: a + 2, y: 3, z: f + 2 }, hex: o.mantel, acabado: "brillante" },
-    // La falda: cuatro paños que bajan de la tapa al piso.
-    ...faldaMantel(a + 2, f + 2, h - 3, 6, o.mantel),
+    // La tapa con el mantel encima: 2 mm más ancha que la falda, para que sus caras no coincidan con las de los paños (z-fighting).
+    { forma: "caja", centro: { x: 0, y: h - 1.5, z: 0 }, tamano: { x: a + 2.4, y: 3, z: f + 2.4 }, hex: o.mantel, acabado: "brillante" },
+    // La falda: cuatro paños que bajan al piso y suben 1,5 cm DENTRO de la tapa (sin costura a la vista).
+    ...faldaMantel(a + 2, f + 2, h - 1.5, 6, o.mantel),
   ];
   if (o.camino) {
     const c = o.camino;

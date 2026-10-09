@@ -27,8 +27,10 @@ function contornoArcoMarco(ancho: number, alto: number, banda: number): Punto2[]
 export function marcoMetalico(o: OpcionesDecorado & { forma: "aro" | "hexagono" | "arco" }): ElementoEscenografia[] {
   const { anchoCm: dia, altoCm: alto, principal: metal, forma } = o;
   const banda = 3, grosor = 2.2;
+  // Dos patines (de atrás hacia adelante) unidos por un travesaño: el mástil del aro baja hasta él.
   const pie = (ancho: number): ElementoEscenografia[] => [
     caja(v(-ancho / 2, 1.25, 0), v(5, 2.5, 34), metal), caja(v(ancho / 2, 1.25, 0), v(5, 2.5, 34), metal),
+    caja(v(0, 1.25, -1.2), v(ancho, 2.5, 5), metal),
   ];
   if (forma === "arco") {
     const contorno = contornoArcoMarco(dia, alto, banda);
