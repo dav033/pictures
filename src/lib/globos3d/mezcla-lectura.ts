@@ -49,7 +49,7 @@ function formatosDelEscalon(m: MezclaLeida, escalon: Escalon, altoImagenCm: numb
   const formato = m[CAMPOS[escalon].formato] as string | undefined;
   if (formato) return { [formato]: 1 };
   const diametro = m[CAMPOS[escalon].diametro] as number | undefined;
-  return diametro === undefined ? { ...ESCALON_POR_OMISION[escalon] } : { [formatoPorDiametro(diametro * altoImagenCm).formatoId]: 1 };
+  return diametro === undefined ? { ...ESCALON_POR_OMISION[escalon] } : { [formatoOrganicoPorDiametro(diametro * altoImagenCm)]: 1 };
 }
 
 /** Los pesos por formato de un reparto por escalón (el de la pieza o el de un tramo) con los formatos de la `mezcla` de la pieza. */
@@ -61,6 +61,11 @@ function pesosDeReparto(m: MezclaLeida, reparto: MezclaTramo, altoImagenCm: numb
     for (const [f, w] of Object.entries(formatosDelEscalon(m, escalon, altoImagenCm))) acumulado[f] = (acumulado[f] ?? 0) + parte * w;
   }
   return normalizar(acumulado);
+}
+
+/** El formato que el motor orgánico dibuja más cerca de `cm`, por proporción (en escala logarítmica). */
+export function formatoOrganicoPorDiametro(cm: number): string {
+  return INFLADOS_ORGANICOS_CM.reduce((m, o) => (Math.abs(Math.log(o[1] / cm)) < Math.abs(Math.log(m[1] / cm)) ? o : m))[0];
 }
 
 /** Los pesos por formato de una `mezcla` medida (vacío si no trae ningún globo). */

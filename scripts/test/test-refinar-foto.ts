@@ -46,7 +46,9 @@ await prueba("el diámetro medido decide el formato con la escala de la foto (0,
   const m: MezclaLeida = { grandes: 40, medianos: 30, chicos: 30, diametroGrande: 0.2, diametroMediano: 0.1, diametroChico: 0.05 };
   assert.deepEqual(pesosDeMezclaLeida(m, 260), { "R-24": 0.4, "R-12": 0.3, "R-5": 0.3 });
   // La misma foto con otra escala (la foto mide 150 cm de alto): los mismos diámetros dan globos menores.
-  assert.deepEqual(pesosDeMezclaLeida(m, 150), { "R-12": 0.4, "R-5": 0.6 });
+  // Los diámetros de una pieza orgánica se pasan a formato con la tabla de lo orgánico (R-24 48 cm, R-18 34, R-12 25, R-9 17, R-5 12):
+  // 30 cm es un R-18, 15 cm un R-9 y 7,5 cm un R-5.
+  assert.deepEqual(pesosDeMezclaLeida(m, 150), { "R-18": 0.4, "R-9": 0.3, "R-5": 0.3 });
 });
 await prueba("sin diámetros, cada escalón usa sus formatos de siempre y los pesos suman 1", () => {
   const w = pesosDeMezclaLeida({ grandes: 50, medianos: 30, chicos: 20, diametroGrande: 0.2 }, 260);
