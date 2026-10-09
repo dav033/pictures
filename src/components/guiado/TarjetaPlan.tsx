@@ -11,7 +11,9 @@ import { ComprarMateriales } from "./ComprarMateriales";
 import { CostosMateriales } from "./CostosMateriales";
 import { EsperaImagen } from "./EsperaImagen";
 import { FilaPieza } from "./FilaPieza";
+import { IconoEstructura } from "@/components/plan/IconoEstructura";
 import { GraficaMotorGuiada } from "./GraficaMotorGuiada";
+import { NotaPlan3D, VistaPlanEnPreparacion } from "./Plan3DEnPreparacion";
 import { ModificarPieza, piezaModificable } from "./ModificarPieza";
 import { SelectorUsoCosteo, type OrigenUsoCosteo } from "./SelectorUsoCosteo";
 import { leyendaDePieza, motorDePieza } from "./motor-pieza";
@@ -47,6 +49,8 @@ type Props = {
   /** Costeo abierto para ESTE plan (no global): personal, negocio o ninguno. */
   usoCosteo: Uso | null;
   compraAbierta: boolean;
+  /** Qué motor armó el plan (REQ-007). Con `3d` no hay dibujo del motor de Python, ni imagen, ni cambios: ver `Plan3DEnPreparacion`. */
+  motor?: "3d" | "python";
   /** El plan vigente (el último). Las versiones anteriores quedan atenuadas y sin acciones. */
   vigente: boolean;
   /** Hay un turno en curso: las acciones se desactivan. */
@@ -93,6 +97,7 @@ function sinAjuste(): void {}
 export function TarjetaPlan(props: Props) {
   const { plan, cotizacion, imagen, avisoImagen, estadoImagen, usoCosteo, usoConocido, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes, onSugerencia } = props;
   const ultimoAjuste = ajustes?.at(-1);
+  const es3d = props.motor === "3d";
   const reducido = useReducedMotion();
   const desglose = useMemo(() => generarPasosPlan(plan), [plan]);
   const piezas = plan.plan.estructuras;
@@ -120,7 +125,7 @@ export function TarjetaPlan(props: Props) {
   // Mientras Python rehace el plan (un ajuste del panel o un cambio pedido por chat), el total y los colores muestran su
   // esqueleto y las acciones esperan.
   const recalculando = ajuste.guardando || Boolean(props.recalculandoPorChat);
-  const ajustable = vigente && Boolean(onPlanAjustado);
+  const ajustable = vigente && Boolean(onPlanAjustado) && !es3d;
   // Las piezas que se abren con su dibujo (las arma un motor): «Cambiar la forma» desde «Ajustar mi plan».
   const modificables = useMemo(() => new Set(piezas.filter((pieza) => piezaModificable(plan, pieza.estructura_id)).map((pieza) => pieza.estructura_id)), [plan, piezas]);
   const costeoAbierto = costeoVisible ?? usoCosteo !== null;
@@ -238,9 +243,9 @@ export function TarjetaPlan(props: Props) {
               pieza={vista}
               indice={indice}
               recalculando={recalculando}
-              ayudaDibujo={indice === piezaConAyudaDibujo}
+              ayudaDibujo={!es3d && indice === piezaConAyudaDibujo}
               ayudaTamanos={indice === 0}
-              dibujo={<GraficaMotorGuiada plan={plan.plan} version={plan.plan_hash} pieza={pieza} mezclaReal={mezclaReal} colores={tonosPorPieza.get(pieza.estructura_id)} id={vista.oficial ?? "arco"} nombre={pieza.nombre} />}
+              dibujo={es3d ? <IconoEstructura id={vista.oficial ?? "arco"} className="size-9" /> : <GraficaMotorGuiada plan={plan.plan} version={plan.plan_hash} pieza={pieza} mezclaReal={mezclaReal} colores={tonosPorPieza.get(pieza.estructura_id)} id={vista.oficial ?? "arco"} nombre={pieza.nombre} />}
               {...(abrir ? { onModificar: abrir } : {})}
               {...(modificable ? {
                 accion: (
@@ -261,6 +266,7 @@ export function TarjetaPlan(props: Props) {
           );
         })}
       </motion.ul>
+      {es3d && <VistaPlanEnPreparacion />}
       {ajustable && (
         <ModificarPieza
           plan={plan}
@@ -368,7 +374,7 @@ export function TarjetaPlan(props: Props) {
         <motion.div variants={hijoEscalonado} className="mt-4 space-y-2">
           <motion.button
             type="button"
-            disabled={bloqueado}
+            disabled={bloqueado || es3d}
             onClick={() => onAccion("ver")}
             whileTap={bloqueado ? undefined : { scale: 0.97 }}
             transition={RESORTE}
@@ -392,9 +398,10 @@ export function TarjetaPlan(props: Props) {
             <BotonSecundario icono={<GraduationCap className="size-4" />} hecha={seleccion === "aprender"} deshabilitado={bloqueado} onClick={() => elegirAccion("aprender")}>Aprender a hacerlo</BotonSecundario>
             <BotonSecundario icono={<UserRound className="size-4" />} hecha={seleccion === "contratar"} deshabilitado={bloqueado} onClick={() => elegirAccion("contratar")}>Contratar decorador</BotonSecundario>
           </div>
+          {es3d && <NotaPlan3D />}
           <button
             type="button"
-            disabled={bloqueado}
+            disabled={bloqueado || es3d}
             // «Cambiar algo» abre «Ajustar mi plan», donde están todos los cambios (también los que rehace el asistente).
             onClick={() => { if (ajustable) { setAjusteAbierto(true); filaAjusteRef.current?.scrollIntoView({ block: "start", behavior: reducido ? "auto" : "smooth" }); } onAccion("cambiar"); }}
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-medium text-acento transition-colors hover:bg-acento-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 disabled:opacity-50"

@@ -1,0 +1,11 @@
+{
+ "caso": "oficial-pared_no_densa",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "69fe642e96e3c3f82160f146d3944df7d03453e765469d1d72ee6d01cc014a27",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "faltantes": [],
+ "pedido": []
+}

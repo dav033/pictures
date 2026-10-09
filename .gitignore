@@ -47,6 +47,7 @@ yarn-error.log*
 !/data/captions/
 !/data/manifests/
 !/data/biblioteca-real/
+!/data/motor/
 # Nombres reales de clientes y URLs de sus fotos (lo genera `ordenes:index`):
 # vive solo en la máquina que lo arma, nunca en git.
 /data/manifests/revie-reviews-index.json

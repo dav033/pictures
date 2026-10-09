@@ -1,5 +1,4 @@
 import "server-only";
-import planesIdeasRaw from "@/lib/biblioteca-sempertex/planes-ideas.json";
 import { getRagPool } from "@/lib/rag/db";
 import { encolarEscrituraObservabilidad, registrarPlanAudit } from "@/lib/rag/observability/log";
 import { decidir } from "@/lib/registro/servidor";
@@ -11,7 +10,8 @@ import { claveResolucion, recordarResolucion } from "./cache-resoluciones";
 import { conFotosDeCatalogo } from "./cotizacion-fotos";
 import { PlanEditError } from "./edicion-error";
 import type { BasePlan } from "./edicion-esquemas";
-import { PlanesIdeasArchivoSchema, planConIdea, unirAllowlist, type PlanIdeaGuardado } from "./plan-de-idea";
+import { planConIdea, unirAllowlist } from "./plan-de-idea";
+import { planGuardadoDeIdea } from "./planes-ideas-guardados";
 import { resolverPlan } from "./resolver-backend";
 import { PlanDecoracionSchema, type PlanDecoracion } from "./tipos";
 
@@ -22,22 +22,7 @@ import { PlanDecoracionSchema, type PlanDecoracion } from "./tipos";
  * idea. Solo usa `/plan/resolve`, que el Python del VPS (e447cfe) ya tiene.
  */
 
-let planes: Readonly<Record<string, PlanIdeaGuardado>> | null = null;
-
-function planesIdeas(): Readonly<Record<string, PlanIdeaGuardado>> {
-  if (planes) return planes;
-  const leido = PlanesIdeasArchivoSchema.safeParse(planesIdeasRaw);
-  if (!leido.success) {
-    console.warn("[plan-desde-idea] planes-ideas.json no es válido: las ideas van por el camino del modelo.", leido.error.issues.slice(0, 3));
-    planes = {};
-  } else planes = leido.data.ideas;
-  return planes;
-}
-
-/** El plan guardado de una idea, o null si no tiene (entonces va por el camino de siempre, con el modelo). */
-export function planGuardadoDeIdea(id: string): PlanIdeaGuardado | null {
-  return planesIdeas()[id] ?? null;
-}
+export { planGuardadoDeIdea };
 
 type Entrada = { ideaId: string; base?: BasePlan; signal?: AbortSignal };
 

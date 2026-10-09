@@ -1,0 +1,42 @@
+{
+ "caso": "oficial-pared_densa",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "a48a1fc22ee3febe019187c3aed98df85d47ec1c4b807ff579dc62e055aed958",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "faltantes": [
+  {
+   "formatoId": "LOL-12",
+   "codigo": "970",
+   "motivo": "no_esta_en_la_tienda"
+  }
+ ],
+ "pedido": [
+  {
+   "formatoId": "LOL-12",
+   "codigo": "005",
+   "cantidad": 16,
+   "cantidadConMerma": 18,
+   "productId": "8634217890087",
+   "variantId": "46594168979751"
+  },
+  {
+   "formatoId": "LOL-12",
+   "codigo": "040",
+   "cantidad": 37,
+   "cantidadConMerma": 40,
+   "productId": "8634219430183",
+   "variantId": "46594171732263"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "040",
+   "cantidad": 100,
+   "cantidadConMerma": 108,
+   "productId": "8634239385895",
+   "variantId": "46594233631015"
+  }
+ ]
+}

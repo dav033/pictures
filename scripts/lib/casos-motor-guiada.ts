@@ -89,3 +89,20 @@ export function clasificar(espec: EspecClienteV1): ClasificacionIdea {
   const estado = piezas.reduce<Representacion["estado"]>((peor, { r }) => (orden.indexOf(r.estado) > orden.indexOf(peor) ? r.estado : peor), "representable");
   return { estado, razones: piezas.filter(({ r }) => r.estado !== "representable").map(({ p, r }) => `${p.oficial}: ${r.motivo}`) };
 }
+
+// --- Fase 2: la lista de materiales con su variante de la tienda (sin precios) ---------------------------------------
+
+export const DIRECTORIO_DORADO_PRECIO = path.join(DIRECTORIO_DORADO, "precio");
+
+/**
+ * Lo que se compra para un caso: por cada línea del motor, la variante de la tienda y la cantidad con merma. Solo
+ * cantidades e ids de variante: los precios cambian con el catálogo y no son estables como fixture (los pone Python).
+ */
+export type RegistroDoradoPrecio = {
+  caso: string;
+  motor: ResultadoMotorV1["motor"];
+  especHash: string;
+  crosswalk: string;
+  faltantes: Array<{ formatoId: string; codigo: string; motivo: string }>;
+  pedido: Array<{ formatoId: string; codigo: string; cantidad: number; cantidadConMerma: number; productId: string; variantId: string }>;
+};

@@ -1,0 +1,132 @@
+{
+ "caso": "idea-deco-real-17-img-2939-1-600x600",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "239b3ef442b66f229e206ba157243c34b6aadddfbc5b80f0db1b9c2294c42f5c",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "faltantes": [],
+ "pedido": [
+  {
+   "formatoId": "R-5",
+   "codigo": "009",
+   "cantidad": 9,
+   "cantidadConMerma": 10,
+   "productId": "8634239844647",
+   "variantId": "46594235564327"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "620",
+   "cantidad": 12,
+   "cantidadConMerma": 13,
+   "productId": "8634249937191",
+   "variantId": "46594251620647"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "968",
+   "cantidad": 42,
+   "cantidadConMerma": 46,
+   "productId": "8634249838887",
+   "variantId": "46594251391271"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "970",
+   "cantidad": 23,
+   "cantidadConMerma": 25,
+   "productId": "8634255638823",
+   "variantId": "46594264596775"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "009",
+   "cantidad": 6,
+   "cantidadConMerma": 7,
+   "productId": "8634239844647",
+   "variantId": "46594235662631"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "620",
+   "cantidad": 5,
+   "cantidadConMerma": 6,
+   "productId": "8634249937191",
+   "variantId": "46594251686183"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "970",
+   "cantidad": 13,
+   "cantidadConMerma": 15,
+   "productId": "8634255638823",
+   "variantId": "46594264858919"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "009",
+   "cantidad": 12,
+   "cantidadConMerma": 13,
+   "productId": "8634239844647",
+   "variantId": "46594235793703"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "620",
+   "cantidad": 10,
+   "cantidadConMerma": 11,
+   "productId": "8634249937191",
+   "variantId": "46594251751719"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "968",
+   "cantidad": 2,
+   "cantidadConMerma": 3,
+   "productId": "8634249838887",
+   "variantId": "46594251424039"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "970",
+   "cantidad": 6,
+   "cantidadConMerma": 7,
+   "productId": "8634255638823",
+   "variantId": "46594264662311"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "009",
+   "cantidad": 3,
+   "cantidadConMerma": 4,
+   "productId": "8634239844647",
+   "variantId": "46594235859239"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "620",
+   "cantidad": 3,
+   "cantidadConMerma": 4,
+   "productId": "8634249937191",
+   "variantId": "46594251817255"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "968",
+   "cantidad": 2,
+   "cantidadConMerma": 3,
+   "productId": "8634249838887",
+   "variantId": "46594251489575"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "970",
+   "cantidad": 4,
+   "cantidadConMerma": 5,
+   "productId": "8634255638823",
+   "variantId": "46594264727847"
+  }
+ ]
+}

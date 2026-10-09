@@ -24,6 +24,15 @@ export type { ArmadaCompactaV1 } from "./armada-compacta";
 export { EspecClienteV1Schema } from "./espec-cliente-v1";
 export { especDesdePropuesta } from "./espec-desde-propuesta";
 export { especDesdePlan } from "./espec-desde-plan";
+export { especDesdeIdeaGuardada, sumarIdeaAEspec, type SumaDeIdea } from "./espec-desde-idea";
+export { especHashDe } from "./hash-espec";
+export type { ResultadoEspec } from "./espec-desde-propuesta";
+// Precio (fase 2): la merma, el cruce con la tienda, la cotización de la lista y el sobre del plan para la vista guiada.
+export { MERMA, MERMA_PORCENTAJE, cantidadConMerma } from "./merma";
+export { crosswalkEnVivo, crosswalkIncluido } from "./crosswalk-vigente";
+export { cotizarBom, type CompraMotor, type CotizacionDelMotor, type DependenciasCotizacion, type FalloCotizacion, type ResultadoCotizacionBom } from "./cotizar-bom";
+export { sobreDelMotor, SobreMotorSchema, type EntradaSobre, type PlanGuiadoMotor, type SobreDelMotor } from "./plan-guiado-desde-motor";
+export type { ConceptoPlan } from "./proyeccion-plan";
 
 export function armarDesdeEspec(entrada: EspecClienteV1): ResultadoMotorV1 {
   const espec = EspecClienteV1Schema.parse(entrada);

@@ -16,7 +16,6 @@ import { RespuestasRapidas, dedupeOpciones, separarOpciones } from "./Respuestas
 import { TarjetaEleccion } from "./TarjetaEleccion";
 import type { DatosAgregarIdea, EstadoAgregarIdea } from "./AgregarIdea";
 import { estadoAgregarIdea, ideasQueSiguenEnPlan, propuestaAgregarIdea } from "./agregar-idea";
-import { pedirPlanDeIdea } from "./plan-exacto-idea";
 import { TarjetasProveedores } from "./TarjetasProveedores";
 import { ReferenciaInspiracion } from "./ReferenciaInspiracion";
 import { acabadosFotoSinComprar } from "./acabados-foto-plan";
@@ -74,6 +73,8 @@ import { abrirConversacionGuiada, registrarAccionGuiada, registrarFalloGuiado, v
 import { AVISO_VERSION_NUEVA, CABECERA_VERSION_APP, RespuestaIncompatibleError, camposInvalidos, clasificarIncompatible, hayVersionNueva, idParaReintento, turnoSinRespuesta } from "./version-pagina";
 import { borrarEstadoGuiado } from "./empezar-de-nuevo";
 import { useMotorGuiada } from "./usarMotorGuiada";
+import { TEXTO_EDICION_PLAN_3D, TEXTO_IMAGEN_PLAN_3D } from "./Plan3DEnPreparacion";
+import type { MotorGuiada } from "@/lib/guiada-motor/tipos";
 import { ConfirmarEmpezarDeNuevo } from "./ConfirmarEmpezarDeNuevo";
 import { borrarImagenesNavegador, guardarImagenNavegador, leerImagenesNavegador } from "./imagenes-navegador";
 
@@ -217,7 +218,7 @@ function nuevoId(): string { return crypto.randomUUID(); }
 export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) {
   const { modo, cambiar } = useModoVista();
   const reducido = useReducedMotion();
-  const { alCrearPlan: leerMotorDelPlan } = useMotorGuiada();
+  const { planDePropuesta: planDePropuestaMotor, planDeIdea: planDeIdeaMotor } = useMotorGuiada();
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [brief, setBrief] = useState<BriefGuiado>({});
   const [entrada, setEntrada] = useState("");
@@ -876,6 +877,27 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     return respaldo ? { turno, estado: "ok", ...respaldo } : { turno, estado: "fallo", ...(sinConverger ? { sinConverger: true as const } : {}) };
   }
 
+  /**
+   * REQ-007: con la bandera en `3d` (o si el plan que se rehace ya era del 3D) la propuesta se arma con el motor 3D
+   * (`/api/guiada/motor/plan`); si el 3D no la arma (pieza sin constructor, precio que falla) y el plan no era ya del 3D,
+   * sigue por Python y el motivo queda en el registro. Un plan de foto va siempre por Python.
+   */
+  async function ejecutarPlanConMotor(mensajeId: string, entrada: { propuesta: Propuesta; anterior3d: PlanGuiado | null; deFoto: boolean }, python: () => ReturnType<typeof ejecutarPlan>): Promise<Awaited<ReturnType<typeof ejecutarPlan>> & { motor: MotorGuiada }> {
+    const turno = ++turnoRef.current;
+    const control = new AbortController();
+    controlRef.current = control;
+    marcarCargando(true);
+    fijarEtapa(mensajeId, "preparando");
+    const intento = await planDePropuestaMotor({
+      ...entrada, ...(brief ? { brief } : {}), signal: control.signal,
+      alFallback: (fallo) => registrarFallo("plan.motor_3d_fallback", fallo.detalle, { razon: fallo.razon, estado: fallo.estado, accion: entrada.anterior3d ? "el plan es del 3D: no se pasa a Python" : "se arma con Python" }, "warn"),
+    });
+    if (turno !== turnoRef.current) return { turno, estado: "obsoleto", motor: "3d" };
+    if (intento === null) return { ...(await python()), motor: "python" };
+    if (intento.ok) return { turno, estado: "ok", plan: intento.plan, cotizacion: intento.cotizacion, motor: "3d" };
+    return { turno, estado: intento.detenido ? "detenido" : "fallo", motor: "3d" };
+  }
+
   function terminarPlan(turno: number, mensajeId: string): void {
     quitarEtapa(mensajeId);
     if (turno === turnoRef.current) { marcarCargando(false); controlRef.current = null; }
@@ -885,21 +907,19 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
    * Deja el plan en el MISMO mensaje (la propuesta pasa a «Tu plan») y marca como versión anterior el que había. Con
    * `idea` («Agregar al plan»), el plan nuevo recuerda las ideas que lleva y dice qué se agregó y cuántos globos tiene.
    */
-  function colocarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, fotoInspiracion: boolean, idea?: IdeaAgregada, referenciaId?: string): void {
+  function colocarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, fotoInspiracion: boolean, idea?: IdeaAgregada, referenciaId?: string, motor: MotorGuiada = "python"): void {
     const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacionCruda);
     const cotizacion = precio.success ? { ...precio.data, lineas: precio.data.lineas.map((linea) => ({ ...linea, nombre: nombreLineaCliente(linea) })) } : undefined;
     const armado = generarPasosPlan(plan);
     const resumen = resumenPlanGuiado(plan);
     const total = totalDePlan(plan);
-    // Fase 0: el plan sigue saliendo de Python; la lectura de la bandera solo queda en la auditoría. Las fases 1 y 2 la usarán antes de crear el plan.
-    void leerMotorDelPlan();
     setMensajes((actuales) => {
       const previo = buscarPlanVigente(actuales.filter((mensaje) => mensaje.id !== mensajeId));
       const totalAnterior = previo ? totalDePlan(previo.widget.plan) : undefined;
       // Las ideas solo se heredan al agregar otra: un plan rehecho por «Cambiar algo» ya no sabe qué ideas lleva.
       const ideas = idea ? [...new Set([...(previo?.widget.ideas ?? []), idea.id])].slice(-12) : [];
       const nuevo: WidgetPlan = {
-        tipo: "plan", plan, pasos: armado.pasos, motor: "python",
+        tipo: "plan", plan, pasos: armado.pasos, motor,
         ...(cotizacion ? { cotizacion } : {}),
         ...(totalAnterior !== undefined ? { totalAnterior } : {}),
         ...(fotoInspiracion ? { fotoInspiracion: true, ...(referenciaId ? { referenciaId } : {}) } : {}),
@@ -983,6 +1003,13 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
 
   async function aplicarEdicionChat(pedido: PedidoEdicionPlan, destino: { planMensajeId: string; base: PlanGuiado; mensajeId: string; signal?: AbortSignal }): Promise<void> {
     const { planMensajeId, base, mensajeId, signal } = destino;
+    // Los cambios a un plan del motor 3D son de la fase 5: no se mandan a Python y el plan no se toca.
+    if (planDelMensaje(mensajes.find((mensaje) => mensaje.id === planMensajeId))?.motor === "3d") {
+      registrarAccion("plan.edicion_chat.pendiente_motor_3d", { pedido, mensajeId, plan_hash: base.plan_hash });
+      actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: TEXTO_EDICION_PLAN_3D }));
+      setAnuncio(TEXTO_EDICION_PLAN_3D);
+      return;
+    }
     const transcurrido = cronometro();
     registrarAccion("plan.edicion_chat.pedir", { pedido, mensajeId, planMensajeId, plan_hash: base.plan_hash });
     setFallo(null);
@@ -1047,11 +1074,12 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     // Piezas SIEMPRE individuales y, con foto, la foto y su lectura (`cuerpoPlanGuiado`).
     const armar = (reintento: boolean, faltantes?: readonly ColorFotoFaltante[]) => cuerpoPlanGuiado(propuesta, { reintento, ...(planAnterior ? { planAnterior } : {}), foto, ...(faltantes?.length ? { faltantes } : {}), cliente });
     // Con foto, de sus colores solo se exigen los que siguen en la propuesta: «Otros colores» los cambió el cliente.
-    const resultado = await ejecutarPlan(mensajeId, armar, Boolean(opciones.reintento), propuesta.colores);
+    const anterior3d = planAnterior && planVigente?.widget.motor === "3d" ? planVigente.widget.plan : null;
+    const resultado = await ejecutarPlanConMotor(mensajeId, { propuesta, anterior3d, deFoto: Boolean(foto) }, () => ejecutarPlan(mensajeId, armar, Boolean(opciones.reintento), propuesta.colores));
     if (resultado.estado === "obsoleto") return "obsoleto";
     if (resultado.estado === "ok") {
       if (foto?.imagen) fotosRef.current.set(mensajeId, foto.imagen);
-      colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, Boolean(foto), idea, foto?.referenciaId);
+      colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, Boolean(foto), idea, foto?.referenciaId, resultado.motor);
     } else {
       actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, widgets: [{ tipo: "propuesta", propuesta, estado: "fallo" }] }));
       const accion: AccionFallo = { tipo: "plan", propuesta, mensajeId, ...(planAnterior ? { planAnterior } : {}), ...(idea ? { idea } : {}) };
@@ -1172,6 +1200,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     if (imagenEnCursoRef.current) return;
     const widget = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
     if (!widget || widget.reemplazado) return;
+    // La imagen de un plan del motor 3D es de la fase 4: no se manda a Python (otro dueño de las cantidades).
+    if (widget.motor === "3d") { registrarAccion("imagen.pendiente_motor_3d", { mensajeId, plan_hash: widget.plan.plan_hash }); setAnuncio(TEXTO_IMAGEN_PLAN_3D); return; }
     const sesion = sesionRef.current;
     imagenEnCursoRef.current = mensajeId;
     setImagenEnCurso(mensajeId);
@@ -1335,12 +1365,15 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     let porTiempo = false;
     const reloj = window.setTimeout(() => { porTiempo = true; control.abort("tiempo"); }, LIMITE_PLAN_IDEA_MS);
     try {
-      const resultado = await pedirPlanDeIdea(decoracion.id, base, control.signal);
+      const resultado = await planDeIdeaMotor({
+        ideaId: decoracion.id, base: base ? { plan: base, motor: planVigente?.widget.motor ?? "python" } : null, signal: control.signal,
+        alFallback: (fallo) => registrarFallo("plan.motor_3d_fallback", fallo.detalle, { razon: fallo.razon, estado: fallo.estado, idea: decoracion.id, accion: base ? "se sigue en el 3D (propuesta)" : "se arma con Python" }, "warn"),
+      });
       if (turno !== turnoRef.current) return "obsoleto";
       if (resultado.ok) {
         registrarAccion("idea.plan_exacto", { id: decoracion.id, plan_hash: resultado.plan.plan_hash, nuevas: resultado.nuevas, globosIdea: resultado.globosIdea, globosPlan: totalDePlan(resultado.plan), sumada: idea.sumada, exacto: resultado.exacto, avisos: resultado.avisos });
         // Si no salió exacto, la tarjeta dice por qué en una línea discreta (antes el cliente no se enteraba).
-        colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, false, resultado.avisos.length ? { ...idea, avisos: resultado.avisos } : idea);
+        colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, false, resultado.avisos.length ? { ...idea, avisos: resultado.avisos } : idea, undefined, resultado.motor);
         return "ok";
       }
       if (resultado.detenido && !porTiempo) {
@@ -1705,6 +1738,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
             imagen={imagen}
             {...(widget.avisoImagen ? { avisoImagen: widget.avisoImagen } : {})}
             estadoImagen={estadoImagen}
+            motor={widget.motor}
             usoCosteo={widget.usoCosteo ?? null}
             usoConocido={uso}
             compraAbierta={Boolean(widget.compraAbierta)}

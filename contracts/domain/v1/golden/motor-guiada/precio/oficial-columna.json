@@ -1,0 +1,36 @@
+{
+ "caso": "oficial-columna",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "5d978dc56877e89a5c48bb7db2ed6a1923e46f950dcca6143535754437904575",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "faltantes": [],
+ "pedido": [
+  {
+   "formatoId": "R-12",
+   "codigo": "005",
+   "cantidad": 12,
+   "cantidadConMerma": 13,
+   "productId": "8634235781415",
+   "variantId": "46594221310247"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "040",
+   "cantidad": 16,
+   "cantidadConMerma": 18,
+   "productId": "8634239385895",
+   "variantId": "46594233893159"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "970",
+   "cantidad": 8,
+   "cantidadConMerma": 9,
+   "productId": "8634255638823",
+   "variantId": "46594264662311"
+  }
+ ]
+}

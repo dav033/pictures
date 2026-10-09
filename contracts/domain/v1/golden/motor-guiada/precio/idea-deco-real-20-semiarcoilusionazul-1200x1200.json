@@ -1,0 +1,100 @@
+{
+ "caso": "idea-deco-real-20-semiarcoilusionazul-1200x1200",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "a0e0d945d9fa6a0a1b32c7a1cc03f995a1faf96872d224a91405b1839e526a61",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "faltantes": [],
+ "pedido": [
+  {
+   "formatoId": "R-5",
+   "codigo": "040",
+   "cantidad": 24,
+   "cantidadConMerma": 26,
+   "productId": "8634239385895",
+   "variantId": "46594233631015"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "044",
+   "cantidad": 42,
+   "cantidadConMerma": 46,
+   "productId": "8869949341991",
+   "variantId": "47466207019303"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "640",
+   "cantidad": 19,
+   "cantidadConMerma": 21,
+   "productId": "8634259374375",
+   "variantId": "46594272821543"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "040",
+   "cantidad": 12,
+   "cantidadConMerma": 13,
+   "productId": "8634239385895",
+   "variantId": "46594233794855"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "044",
+   "cantidad": 15,
+   "cantidadConMerma": 17,
+   "productId": "8869949341991",
+   "variantId": "47466208100647"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "640",
+   "cantidad": 7,
+   "cantidadConMerma": 8,
+   "productId": "8634259374375",
+   "variantId": "46594272887079"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "040",
+   "cantidad": 7,
+   "cantidadConMerma": 8,
+   "productId": "8634239385895",
+   "variantId": "46594233860391"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "044",
+   "cantidad": 5,
+   "cantidadConMerma": 6,
+   "productId": "8869949341991",
+   "variantId": "47230981046567"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "640",
+   "cantidad": 2,
+   "cantidadConMerma": 3,
+   "productId": "8634259374375",
+   "variantId": "46594272952615"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "040",
+   "cantidad": 3,
+   "cantidadConMerma": 4,
+   "productId": "8634239385895",
+   "variantId": "46594233991463"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "640",
+   "cantidad": 2,
+   "cantidadConMerma": 3,
+   "productId": "8634259374375",
+   "variantId": "46594273018151"
+  }
+ ]
+}

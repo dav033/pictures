@@ -1,0 +1,20 @@
+{
+ "caso": "idea-deco-real-24-guirnalda-verde-salvia-flores",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "1bf4ddab9699093a56f2ef65bc99b849ec706c73702cbb468d4f99681bf48417",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "faltantes": [],
+ "pedido": [
+  {
+   "formatoId": "R-9",
+   "codigo": "027",
+   "cantidad": 72,
+   "cantidadConMerma": 78,
+   "productId": "8634236010791",
+   "variantId": "46594222719271"
+  }
+ ]
+}

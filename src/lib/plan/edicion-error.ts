@@ -18,7 +18,9 @@ export type CausaEdicionPlan =
   /** Redistributing the colors of a piece whose pattern decides them (ADR-0028 §9). */
   | "PATRON_ACTIVO"
   /** The bouquet assembly breaks a rule Python owns (ADR-0030); `patron` says which. */
-  | "ARMADO_INVALIDO";
+  | "ARMADO_INVALIDO"
+  /** The plan was counted by the 3D engine (token backend `globos3d`): the Python routes do not edit or draw it (REQ-007). */
+  | "PLAN_DEL_MOTOR_3D";
 
 /** What Python said about a rejected color pattern or bouquet assembly: a stable rule and a sentence for the decorator. */
 export type RechazoPatron = { motivo: string; mensaje: string };

@@ -23,6 +23,7 @@ import { targetBoxesFor } from "@/lib/ia/uzume/venue-placement";
 import { chatDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
+import { CODIGO_PLAN_DEL_MOTOR_3D, MENSAJE_PLAN_DEL_MOTOR_3D, contextoDelMotor3d } from "@/lib/plan/token-motor";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { buildFluxEditPrompt, generarConSempertexFlux, FLUX_EDIT_PROMPT_MAX_LENGTH, referenciasParaFluxEdit, reservaNotaGuiaEscena, reservaNotasGuia, type ImagenEditFlux, type ImagenGuiaFlux } from "@/lib/ia/kagutsuchi/flux";
 import { costeEntradasUsdEstimado, elegirCaptionConGuia, generacionAdmiteGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
@@ -568,6 +569,8 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     if (!contextoPlan) {
       throw new Error("APROBACION_REQUERIDA: el plan debe aprobarse desde la tarjeta antes de generar.");
     }
+    // Un plan del motor 3D no se dibuja con esta ruta: Python contaría otra cosa que el plan que el cliente aprobó (REQ-007).
+    if (contextoDelMotor3d(contextoPlan)) throw new Error(`${CODIGO_PLAN_DEL_MOTOR_3D}: ${MENSAJE_PLAN_DEL_MOTOR_3D}`);
     // Una propuesta con procedencia "next" ya no se puede re-resolver: ese
     // resolutor desapareció (ADR-0023 paso 5). Los tokens caducan a las 24 h.
     if (contextoPlan.backend !== "python") {
@@ -1337,6 +1340,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     const responder = (cuerpo: Record<string, unknown>, status: number) => Response.json({ ...cuerpo, ui_error: uiError }, { status });
     if (error instanceof Error && error.message.startsWith("IMAGEN_SOLO_FLUX:")) {
       return responder({ error: error.message }, 409);
+    }
+    if (error instanceof Error && error.message.startsWith(`${CODIGO_PLAN_DEL_MOTOR_3D}:`)) {
+      return responder({ error: MENSAJE_PLAN_DEL_MOTOR_3D, causa: CODIGO_PLAN_DEL_MOTOR_3D }, 409);
     }
     if (error instanceof FluxRevisionTranslationError) {
       return responder({ error: error.message }, 503);

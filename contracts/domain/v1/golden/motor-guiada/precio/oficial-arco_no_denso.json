@@ -1,0 +1,116 @@
+{
+ "caso": "oficial-arco_no_denso",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "b248df0298d8e766a6875de9e0308d58486b290f9666ccb1841d3a489ae2ba00",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "faltantes": [],
+ "pedido": [
+  {
+   "formatoId": "R-5",
+   "codigo": "005",
+   "cantidad": 81,
+   "cantidadConMerma": 88,
+   "productId": "8634235781415",
+   "variantId": "46594221146407"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "040",
+   "cantidad": 91,
+   "cantidadConMerma": 99,
+   "productId": "8634239385895",
+   "variantId": "46594233729319"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "970",
+   "cantidad": 49,
+   "cantidadConMerma": 53,
+   "productId": "8634255638823",
+   "variantId": "46594264596775"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "005",
+   "cantidad": 46,
+   "cantidadConMerma": 50,
+   "productId": "8634235781415",
+   "variantId": "46594221244711"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "040",
+   "cantidad": 32,
+   "cantidadConMerma": 35,
+   "productId": "8634239385895",
+   "variantId": "46594233794855"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "970",
+   "cantidad": 59,
+   "cantidadConMerma": 64,
+   "productId": "8634255638823",
+   "variantId": "46594264891687"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "005",
+   "cantidad": 8,
+   "cantidadConMerma": 9,
+   "productId": "8634235781415",
+   "variantId": "46594221277479"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "040",
+   "cantidad": 11,
+   "cantidadConMerma": 12,
+   "productId": "8634239385895",
+   "variantId": "46594233860391"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "970",
+   "cantidad": 17,
+   "cantidadConMerma": 19,
+   "productId": "8634255638823",
+   "variantId": "46594264662311"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "005",
+   "cantidad": 1,
+   "cantidadConMerma": 2,
+   "productId": "8634235781415",
+   "variantId": "46594221474087"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "040",
+   "cantidad": 2,
+   "cantidadConMerma": 3,
+   "productId": "8634239385895",
+   "variantId": "46594233991463"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "970",
+   "cantidad": 9,
+   "cantidadConMerma": 10,
+   "productId": "8634255638823",
+   "variantId": "46594264727847"
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "970",
+   "cantidad": 2,
+   "cantidadConMerma": 3,
+   "productId": "8634255638823",
+   "variantId": "46594264793383"
+  }
+ ]
+}

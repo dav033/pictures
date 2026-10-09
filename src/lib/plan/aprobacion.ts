@@ -6,8 +6,14 @@ import { z } from "zod";
  * plan with a different backend can legitimately produce a different hash, so
  * the backend travels with the context: `/api/generate` and `/api/plan-editar`
  * re-resolve with the same one that issued the plan instead of guessing.
+ *
+ * `globos3d` (REQ-007): the plan was counted by the 3D engine from a signed
+ * `EspecClienteV1`, not resolved by Python. Its `planHash` is the spec hash. Each
+ * plan has exactly one quantity owner: the Python routes (`/api/generate`,
+ * `/api/plan-editar`) reject these tokens (`token-motor.ts`) and the 3D routes
+ * reject `python` ones.
  */
-export type BackendPlan = "next" | "python";
+export type BackendPlan = "next" | "python" | "globos3d";
 
 export type EntradaAllowlistPlan = { product_id: string; variant_ids: string[] };
 
@@ -66,7 +72,7 @@ const PayloadV2Schema = z.object({
   planHash: z.string().min(1),
   requestId: z.string().min(1),
   expiresAt: z.number().int().positive(),
-  backend: z.enum(["next", "python"]),
+  backend: z.enum(["next", "python", "globos3d"]),
   catalogSnapshotId: z.string().min(1).nullable(),
   allowlist: z.array(EntradaAllowlistSchema),
   // Optional so v2 tokens issued before the field existed keep opening.

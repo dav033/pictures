@@ -1,0 +1,188 @@
+{
+ "caso": "idea-deco-real-11-images-26",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "dde33af2b0b4813a0e4c393e71a4d7c4d34ca19768bcbb4e06050b5576a7e659",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "faltantes": [],
+ "pedido": [
+  {
+   "formatoId": "R-5",
+   "codigo": "005",
+   "cantidad": 9,
+   "cantidadConMerma": 10,
+   "productId": "8634235781415",
+   "variantId": "46594221080871"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "009",
+   "cantidad": 60,
+   "cantidadConMerma": 65,
+   "productId": "8634239844647",
+   "variantId": "46594235564327"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "037",
+   "cantidad": 37,
+   "cantidadConMerma": 40,
+   "productId": "8634233094439",
+   "variantId": "46594210595111"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "050",
+   "cantidad": 28,
+   "cantidadConMerma": 31,
+   "productId": "8634232996135",
+   "variantId": "46594210234663"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "051",
+   "cantidad": 6,
+   "cantidadConMerma": 7,
+   "productId": "8634239353127",
+   "variantId": "46594233106727"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "570",
+   "cantidad": 1,
+   "cantidadConMerma": 2,
+   "productId": "8634250199335",
+   "variantId": "46594252603687"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "005",
+   "cantidad": 9,
+   "cantidadConMerma": 10,
+   "productId": "8634235781415",
+   "variantId": "46594221179175"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "009",
+   "cantidad": 7,
+   "cantidadConMerma": 8,
+   "productId": "8634239844647",
+   "variantId": "46594235662631"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "037",
+   "cantidad": 9,
+   "cantidadConMerma": 10,
+   "productId": "8634233094439",
+   "variantId": "46594210627879"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "050",
+   "cantidad": 12,
+   "cantidadConMerma": 13,
+   "productId": "8634232996135",
+   "variantId": "46594210365735"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "051",
+   "cantidad": 4,
+   "cantidadConMerma": 5,
+   "productId": "8634239353127",
+   "variantId": "46594233205031"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "570",
+   "cantidad": 1,
+   "cantidadConMerma": 2,
+   "productId": "8634250199335",
+   "variantId": "46594252701991"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "005",
+   "cantidad": 9,
+   "cantidadConMerma": 10,
+   "productId": "8634235781415",
+   "variantId": "46594221277479"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "009",
+   "cantidad": 4,
+   "cantidadConMerma": 5,
+   "productId": "8634239844647",
+   "variantId": "46594235760935"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "037",
+   "cantidad": 5,
+   "cantidadConMerma": 6,
+   "productId": "8634233094439",
+   "variantId": "46594210726183"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "050",
+   "cantidad": 6,
+   "cantidadConMerma": 7,
+   "productId": "8634232996135",
+   "variantId": "46594210431271"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "051",
+   "cantidad": 6,
+   "cantidadConMerma": 7,
+   "productId": "8634239353127",
+   "variantId": "46594233368871"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "570",
+   "cantidad": 2,
+   "cantidadConMerma": 3,
+   "productId": "8634250199335",
+   "variantId": "46594252833063"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "005",
+   "cantidad": 2,
+   "cantidadConMerma": 3,
+   "productId": "8634235781415",
+   "variantId": "46594221474087"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "050",
+   "cantidad": 3,
+   "cantidadConMerma": 4,
+   "productId": "8634232996135",
+   "variantId": "50195453477159"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "051",
+   "cantidad": 2,
+   "cantidadConMerma": 3,
+   "productId": "8634239353127",
+   "variantId": "46594233467175"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "570",
+   "cantidad": 1,
+   "cantidadConMerma": 2,
+   "productId": "8634250199335",
+   "variantId": "46594252931367"
+  }
+ ]
+}

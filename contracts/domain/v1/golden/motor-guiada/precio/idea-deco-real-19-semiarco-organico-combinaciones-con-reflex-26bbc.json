@@ -1,0 +1,116 @@
+{
+ "caso": "idea-deco-real-19-semiarco-organico-combinaciones-con-reflex-26bbc",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "26bc8ade9df36393e366e749b29613ae083f16cbbd25062c846e864a953e9243",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "faltantes": [],
+ "pedido": [
+  {
+   "formatoId": "R-5",
+   "codigo": "009",
+   "cantidad": 11,
+   "cantidadConMerma": 12,
+   "productId": "8634239844647",
+   "variantId": "46594235564327"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "012",
+   "cantidad": 7,
+   "cantidadConMerma": 8,
+   "productId": "8634239451431",
+   "variantId": "46594234319143"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "915",
+   "cantidad": 16,
+   "cantidadConMerma": 18,
+   "productId": "8634258161959",
+   "variantId": "46594270363943"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "970",
+   "cantidad": 22,
+   "cantidadConMerma": 24,
+   "productId": "8634255638823",
+   "variantId": "46594264596775"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "009",
+   "cantidad": 7,
+   "cantidadConMerma": 8,
+   "productId": "8634239844647",
+   "variantId": "46594235662631"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "012",
+   "cantidad": 7,
+   "cantidadConMerma": 8,
+   "productId": "8634239451431",
+   "variantId": "46594234417447"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "970",
+   "cantidad": 5,
+   "cantidadConMerma": 6,
+   "productId": "8634255638823",
+   "variantId": "46594264858919"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "009",
+   "cantidad": 7,
+   "cantidadConMerma": 8,
+   "productId": "8634239844647",
+   "variantId": "46594235760935"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "012",
+   "cantidad": 4,
+   "cantidadConMerma": 5,
+   "productId": "8634239451431",
+   "variantId": "46594234548519"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "970",
+   "cantidad": 4,
+   "cantidadConMerma": 5,
+   "productId": "8634255638823",
+   "variantId": "46594264662311"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "009",
+   "cantidad": 1,
+   "cantidadConMerma": 2,
+   "productId": "8634239844647",
+   "variantId": "46594235859239"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "012",
+   "cantidad": 2,
+   "cantidadConMerma": 3,
+   "productId": "8634239451431",
+   "variantId": "46594234712359"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "970",
+   "cantidad": 1,
+   "cantidadConMerma": 2,
+   "productId": "8634255638823",
+   "variantId": "46594264727847"
+  }
+ ]
+}

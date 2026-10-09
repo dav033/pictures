@@ -18,6 +18,7 @@ import {
 } from "@/lib/plan/aplicar-edicion";
 import { BasePlanSchema, EdicionArmadoArcoOrganicoSchema, EdicionArmadoArcoSchema, EdicionArmadoColumnaOrganicaSchema, EdicionArmadoColumnaSchema, EdicionArmadoGuirnaldaOrganicaSchema, EdicionArmadoGuirnaldaSchema, EdicionArmadoSchema, EdicionFloresSchema, EdicionFormaSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionPropiedadesSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
 import { conRegistro } from "@/lib/registro/servidor";
+import { rechazarTokenDelMotor3d } from "@/lib/plan/token-motor";
 import { agregarColorPlan, agregarPiezaPlan, editarPiezaPlan, quitarPiezaPlan, reemplazarColorPlan } from "@/lib/plan/ajuste-plan-entero";
 import { OFICIALES_AGREGABLES, UBICACIONES_PIEZA_NUEVA } from "@/lib/plan/pieza-nueva";
 
@@ -165,6 +166,8 @@ async function atenderPOST(request: Request) {
   }
   try {
     const body = BodySchema.parse(json);
+    // Un plan del motor 3D no se edita aquí: cada plan tiene un solo dueño de sus cantidades (REQ-007).
+    rechazarTokenDelMotor3d("base" in body ? body.base.approval_token : body.approval_token);
     const pool = getRagPool();
 
     if (body.modo === "buscar") {

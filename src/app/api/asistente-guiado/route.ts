@@ -15,6 +15,10 @@ import { ChatSseEventV1Schema, CHAT_SSE_CONTRACT_VERSION } from "@/lib/ia/contra
 import { ListaMaterialesRequestSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { crearDeadlineSignal } from "@/lib/ia/contracts/operational-v1";
 import { llamarPythonListaMateriales } from "@/lib/ia/nucleo/python-adapter";
+import { crosswalkEnVivo, crosswalkIncluido } from "@/lib/globos3d/motor/v1";
+import { leerMotorGuiada } from "@/lib/guiada-motor/bandera";
+import { cotizarIdeaConMotor } from "@/lib/guiada-motor/cotizar-idea";
+import { planGuardadoDeIdea } from "@/lib/plan/planes-ideas-guardados";
 import { ErrorIA } from "@/lib/ia/nucleo/tipos";
 import type { ErrorCodeV1 } from "@/lib/ia/contracts/chat-v1";
 import { decoracionCotizableCoincide, normalizarCiudad, protegerHerramientas } from "@/lib/ia/guiado/utilidades";
@@ -361,6 +365,17 @@ async function turnoGuiado(request: Request) {
           datos.cotizacion = null;
           return { ok: false, motivo: "costeo_pendiente_datos_de_catalogo", aviso: "Esta decoración todavía no tiene productos asociados en el catálogo; no inventes un precio." };
         }
+        // REQ-007 (ruling Q3): con el motor 3D, el precio sale de lo que el motor cuenta para esta idea; la lista curada queda para lo que no arma (las figuras).
+        const delMotor = (await leerMotorGuiada(request)).motor === "3d" ? await cotizarIdeaConMotor(decoracion.id, {
+          planGuardado: planGuardadoDeIdea, crosswalk: async () => crosswalkIncluido(), crosswalkEnVivo: () => crosswalkEnVivo(),
+          cotizarLista: (entrada) => llamarPythonListaMateriales({ entrada, requestId: crypto.randomUUID(), correlationId: requestId, parentSignal: deadline.signal }),
+        }) : null;
+        if (delMotor?.ok) {
+          datos.cotizacion = delMotor.cotizacion;
+          decidir("regla:cotizacion_guiada", "precio de los materiales de la idea elegida, contados por el motor 3D (Python cotiza)", { cotiza: true, motor: "3d", total: delMotor.cotizacion.total, lineas: delMotor.cotizacion.lineas.length, globos: delMotor.globos }, { entrada: { decoracionId: decoracion.id, uso: usoConfirmado } });
+          return { cotizacion: delMotor.cotizacion, incluyeIva: true, uso: usoConfirmado, aviso: "Precio de los materiales en la tienda en línea, con IVA, incluida una reserva del 8 % por globos que se revientan. No incluye montaje." };
+        }
+        if (delMotor) decidir("regla:cotizacion_guiada", "el motor 3D no cotiza esta idea: se usa la lista curada", { motor: "python", razon: delMotor.razon, ...(delMotor.detalle ? { detalle: delMotor.detalle } : {}) }, { entrada: { decoracionId: decoracion.id } });
         const entradaCotizacion = ListaMaterialesRequestSchema.parse({ schema_version: "lista-materiales.v1", materiales: decoracion.materiales.map((material) => ({ variant_id: material.variantId, cantidad: material.cantidad })) });
         const cotizada = await llamarPythonListaMateriales({ entrada: entradaCotizacion, requestId: crypto.randomUUID(), correlationId: requestId, parentSignal: deadline.signal });
         const cotizacion = CotizacionGuiadaSchema.parse({

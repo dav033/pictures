@@ -1,0 +1,92 @@
+{
+ "caso": "idea-deco-real-12-images-27",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "b876a2d5263324afea97c0cf6c8bc07636175ac68935be357d83170a7c06ef19",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "faltantes": [],
+ "pedido": [
+  {
+   "formatoId": "R-5",
+   "codigo": "650",
+   "cantidad": 29,
+   "cantidadConMerma": 32,
+   "productId": "8634258424103",
+   "variantId": "46594270953767"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "951",
+   "cantidad": 46,
+   "cantidadConMerma": 50,
+   "productId": "8634269008167",
+   "variantId": "46594290680103"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "981",
+   "cantidad": 12,
+   "cantidadConMerma": 13,
+   "productId": "8634257211687",
+   "variantId": "46594267611431"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "650",
+   "cantidad": 11,
+   "cantidadConMerma": 12,
+   "productId": "8634258424103",
+   "variantId": "46594271052071"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "981",
+   "cantidad": 12,
+   "cantidadConMerma": 13,
+   "productId": "8634257211687",
+   "variantId": "46594267840807"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "650",
+   "cantidad": 11,
+   "cantidadConMerma": 12,
+   "productId": "8634258424103",
+   "variantId": "46594271117607"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "951",
+   "cantidad": 11,
+   "cantidadConMerma": 12,
+   "productId": "8634269008167",
+   "variantId": "46594290712871"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "981",
+   "cantidad": 12,
+   "cantidadConMerma": 13,
+   "productId": "8634257211687",
+   "variantId": "46594267676967"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "650",
+   "cantidad": 8,
+   "cantidadConMerma": 9,
+   "productId": "8634258424103",
+   "variantId": "46594271183143"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "981",
+   "cantidad": 5,
+   "cantidadConMerma": 6,
+   "productId": "8634257211687",
+   "variantId": "46594267742503"
+  }
+ ]
+}

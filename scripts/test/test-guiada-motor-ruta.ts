@@ -52,12 +52,12 @@ test("GET devuelve {motor, fuente} sin caché", async () => {
   assert.equal(auditorias.length, 0, "una lectura sin ?para=plan_nuevo no llena la auditoría");
 });
 
-test("GET ?para=plan_nuevo deja decidir(regla:motor_guiada) con la bandera leída y el motor efectivo (python)", async () => {
+test("GET ?para=plan_nuevo deja decidir(regla:motor_guiada) con la bandera leída y el motor con que se intentará el plan", async () => {
   const { deps, auditorias } = dependencias("3d", "cookie");
   await atenderLecturaMotor(get("/api/guiada/motor?para=plan_nuevo"), deps);
   assert.equal(auditorias.length, 1);
   assert.equal(auditorias[0]!.quien, "regla:motor_guiada");
-  assert.deepEqual(auditorias[0]!.resultado, { bandera: "3d", fuente: "cookie", efectivo: "python" }, "en la fase 0 el plan sale de Python aunque la bandera diga 3d");
+  assert.deepEqual(auditorias[0]!.resultado, { bandera: "3d", fuente: "cookie", efectivo: "3d" }, "desde la fase 2 el plan se intenta con el motor que dice la bandera");
   assert.deepEqual(auditorias[0]!.entrada, { para: "plan_nuevo" });
 });
 

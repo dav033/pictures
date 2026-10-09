@@ -1,0 +1,11 @@
+{
+ "caso": "oficial-centro_mesa",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "68fc039d6bd914bd3dcdf0cef76496a203880b23bdbfeaa72caec0f66d9e5bca",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "faltantes": [],
+ "pedido": []
+}

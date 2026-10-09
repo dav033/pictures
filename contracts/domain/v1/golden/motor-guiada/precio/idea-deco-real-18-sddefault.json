@@ -1,0 +1,100 @@
+{
+ "caso": "idea-deco-real-18-sddefault",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "d9809a43345f212ff6b0d98a40fc496b385f3b01dd0903706637436f73256a45",
+ "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "faltantes": [],
+ "pedido": [
+  {
+   "formatoId": "R-5",
+   "codigo": "005",
+   "cantidad": 6,
+   "cantidadConMerma": 7,
+   "productId": "8634235781415",
+   "variantId": "46594221080871"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "609",
+   "cantidad": 54,
+   "cantidadConMerma": 59,
+   "productId": "8634253967655",
+   "variantId": "46594260795687"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "970",
+   "cantidad": 16,
+   "cantidadConMerma": 18,
+   "productId": "8634255638823",
+   "variantId": "46594264596775"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "005",
+   "cantidad": 7,
+   "cantidadConMerma": 8,
+   "productId": "8634235781415",
+   "variantId": "46594221179175"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "609",
+   "cantidad": 13,
+   "cantidadConMerma": 15,
+   "productId": "8634253967655",
+   "variantId": "46594260959527"
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "970",
+   "cantidad": 3,
+   "cantidadConMerma": 4,
+   "productId": "8634255638823",
+   "variantId": "46594264858919"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "005",
+   "cantidad": 6,
+   "cantidadConMerma": 7,
+   "productId": "8634235781415",
+   "variantId": "46594221277479"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "609",
+   "cantidad": 3,
+   "cantidadConMerma": 4,
+   "productId": "8634253967655",
+   "variantId": "46594261025063"
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "970",
+   "cantidad": 1,
+   "cantidadConMerma": 2,
+   "productId": "8634255638823",
+   "variantId": "46594264662311"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "609",
+   "cantidad": 2,
+   "cantidadConMerma": 3,
+   "productId": "8634253967655",
+   "variantId": "46594261090599"
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "970",
+   "cantidad": 1,
+   "cantidadConMerma": 2,
+   "productId": "8634255638823",
+   "variantId": "46594264727847"
+  }
+ ]
+}
