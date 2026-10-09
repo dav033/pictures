@@ -609,8 +609,12 @@ const escena795 = (): Escena => {
   const florHojas = deco(florTubito(burbujas("T-260", 5, ["970"], 8, 45, 0, 8), R("R-5", 8, "609"), null, { ...R("R-5", 8, "640"), cantidad: 6 }));
   // Las plumas de pampa, saliendo del centro de la flor entre las hojas.
   const PAMPA = "#efe5cc";
-  const pampas: ElementoEscenografia[] = [100, 62, 30, -18, 145, 205, 250].map((a, k) =>
-    tablon(v(PUNTO_FLOR.x, PUNTO_FLOR.y, Z_ARO + 9), v(r2(PUNTO_FLOR.x + (44 + (k % 3) * 6) * Math.cos(rad(a))), r2(PUNTO_FLOR.y + (44 + (k % 3) * 6) * Math.sin(rad(a))), Z_ARO + 9), 7, 0.6, PAMPA, "tela"));
+  const pampas: ElementoEscenografia[] = [100, 62, 30, -18, 145, 205, 250].flatMap((a, k) => {
+    const desde = v(PUNTO_FLOR.x, PUNTO_FLOR.y, Z_ARO + 9), largoPluma = 44 + (k % 3) * 6;
+    const punta = v(r2(desde.x + largoPluma * Math.cos(rad(a))), r2(desde.y + largoPluma * Math.sin(rad(a))), Z_ARO + 9);
+    const inicio = v(r2(desde.x + (punta.x - desde.x) * 0.45), r2(desde.y + (punta.y - desde.y) * 0.45), Z_ARO + 9);
+    return [tubo(desde, inicio, 0.3, "#a8895a", "mate"), tubo(inicio, punta, 4.5, PAMPA, "pampa")];
+  });
   // El aro de metal dorado: tramos rectos de tubo alrededor del círculo.
   const ORO = "#c9a64a";
   const aroMetal: ElementoEscenografia[] = Array.from({ length: 36 }, (_, i) => tubo(mas(enAro(i * 10), v(0, 0, Z_ARO)), mas(enAro((i + 1) * 10), v(0, 0, Z_ARO)), 1.2, ORO));

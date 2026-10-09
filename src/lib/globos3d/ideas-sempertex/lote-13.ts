@@ -263,7 +263,7 @@ function barra(desde: Vec3, hasta: Vec3, radioCm: number, hex: string, acabado: 
   const x = unitario(Math.abs(y.y) < 0.95 ? cruz(y, ARRIBA) : cruz(y, AL_FRENTE));
   return { forma: "cilindro", base: v(0, 0, 0), radioCm: r2(radioCm), altoCm: r2(largo(d)), hex, acabado, en: { origen: redondo(desde), ejeX: redondo(x), ejeY: redondo(y) } };
 }
-/** Un tablón inclinado (pluma, hoja de pampa, tira): una caja con su propio marco, de `desde` a `hasta`. */
+/** Un tablón inclinado (pluma, tira): una caja con su propio marco, de `desde` a `hasta`. */
 function tablon(desde: Vec3, hasta: Vec3, anchoCm: number, gruesoCm: number, hex: string, acabado: Acabado = "mate"): ElementoEscenografia {
   const d = menos(hasta, desde);
   const x = unitario(d);
@@ -609,7 +609,12 @@ const escena553 = (): Escena => {
   const ramoIzq = ramo([R("R-12", 30, "062"), R("R-12", 30, "023"), R("R-12", 30, "970"), R("R-12", 30, "062"), R("R-12", 30, "970")], 236, "#e8dcc4", "#c9a35c", [{ impresoId: TERRA, globos: [0, 1, 3] }]);
   const ramoDer = ramo([R("R-12", 30, "390"), R("R-12", 30, "023"), R("R-12", 30, "630")], 240, "#e8dcc4", "#c9a35c", [{ impresoId: "infinity-graffiti-marmol-fashion-transparente", globos: [0] }]);
   const MIMBRE = "#b8905e", BLANCO = "#f6f4f1";
-  const pampa = (base: Vec3, puntas: Vec3[]): ElementoEscenografia[] => puntas.map((p) => tablon(base, p, 4, 0.6, "#c9a27a", "papel"));
+  // Una pampa seca: tallo fino hasta la punta y, en la mitad de arriba (40 cm como mucho), su pluma esponjosa (acabado «pampa»).
+  const pampa = (base: Vec3, puntas: Vec3[]): ElementoEscenografia[] => puntas.flatMap((p) => {
+    const d = menos(p, base), n = largo(d), k = 1 - Math.min(40, n * 0.5) / n;
+    const inicio = v(r2(base.x + d.x * k), r2(base.y + d.y * k), r2(base.z + d.z * k));
+    return [barra(base, inicio, 0.3, "#a8895a", "mate"), barra(inicio, p, 5, "#c9a27a", "pampa")];
+  });
   const puerta: ElementoEscenografia[] = [
     caja(v(0, 121, 0), v(87, 242, 5), BLANCO, "satinado"),
     ...[[60, 70], [160, 100]].map(([y, h]) => caja(v(0, y!, 2.8), v(64, h!, 0.6), "#eceae6", "satinado")),
