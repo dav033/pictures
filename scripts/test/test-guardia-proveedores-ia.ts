@@ -48,6 +48,7 @@ export const INVENTARIO: readonly Punto[] = [
   { id: "gemini-parser-intencion", archivo: "src/lib/ia/inari/parse.ts", patron: /\.models\.generateContent\(/, que: "Inari: parser de intención (JSON) cuando INTENT_PARSER_PYTHON está apagado", envoltorio: "getGeminiClient(\"parser_intencion\")", enganche: [GEMINI_CENTRAL] },
   { id: "gemini-traduccion-revision", archivo: "src/app/api/generate/route.ts", patron: /\.models\.generateContent\(/, que: "traducción al inglés de la revisión pedida para FLUX", envoltorio: "getGeminiClient(\"traduccion_revision\")", enganche: [GEMINI_CENTRAL] },
   { id: "gemini-escena-ia", archivo: "src/app/api/escena-ia/route.ts", patron: /\.models\.generateContent\(/, que: "taller 3D: bucle de herramientas que arma la escena (solo texto, sin imágenes)", envoltorio: "getGeminiClient(\"escena_ia\") + conRegistro + decidir por herramienta", enganche: [GEMINI_CENTRAL, { archivo: "src/app/api/escena-ia/route.ts", contiene: /decidir\("herramienta:escena_ia"/ }] },
+  { id: "gemini-lectura-foto", archivo: "src/lib/globos3d/leer-foto-ia.ts", patron: /\.models\.generateContent\(/, que: "taller 3D: Gemini lee la foto de una decoración (visión, salida JSON; nunca genera imágenes)", envoltorio: "getGeminiClient(\"lectura_foto_escena\") + registrarGemini + decidir por intento", enganche: [GEMINI_CENTRAL, { archivo: "src/lib/globos3d/leer-foto-ia.ts", contiene: /registrarGemini\(/ }, { archivo: "src/lib/globos3d/leer-foto-ia.ts", contiene: /decidir\("modelo:lectura_foto"/ }] },
   { id: "gemini-embedding", archivo: "src/lib/rag/embeddings.ts", patron: /\.models\.embedContent\(/, que: "embeddings de consulta/documento (RAG)", envoltorio: "getGeminiClient(\"embedding\")", enganche: [GEMINI_CENTRAL] },
   // ── @sempertex/agente-core (paquete): adaptador Gemini del ChatPort ──
   { id: "agente-core-cliente", archivo: "packages/agente-core/src/gemini/chat.ts", patron: /new\s+GoogleGenAI|export function crearChatGemini/, que: "ChatPort Gemini (chat clásico, guiado, Amaterasu, venue)", envoltorio: "chatDe()/chatOmoikaneDe() → envolverChatPort(port, { proposito })", enganche: [CHATPORT_CENTRAL] },
@@ -127,6 +128,7 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
   "src/app/api/admin/ordenes/[numero]/recaption/route.ts": "caption de orden con opencode (IA)",
   "src/app/api/internal/ai/echo/route.ts": "eco Next → Python (diagnóstico)",
   "src/app/api/escena-ia/route.ts": "taller 3D: la IA arma la escena con herramientas (Gemini texto)",
+  "src/app/api/escena-desde-foto/route.ts": "taller 3D: foto de una decoración → escena (Gemini visión lee la foto; embedding de imagen para las plantillas)",
   "src/app/api/render-3d-imagen/route.ts": "taller 3D: foto con IA (FLUX)",
   "src/app/api/taller/buscar/route.ts": "taller 3D: búsqueda en la biblioteca (RAG; embedding de la consulta con Gemini)",
   "src/app/api/taller/buscar-foto/route.ts": "taller 3D: búsqueda por foto en la biblioteca (embedding de imagen con Gemini)",

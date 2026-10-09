@@ -10,13 +10,19 @@ import type { Pieza } from "@/lib/globos3d/piezas";
 import { REGLAS_AGENTE, SeleccionSchema, seleccionValida, textoSeleccion } from "@/lib/globos3d/escena-ia-agente";
 import { PREGUNTAR_USUARIO, preguntaDe, type PreguntaUsuario } from "@/lib/globos3d/herramientas-escena-extra";
 import { verificarCambios } from "@/lib/globos3d/verificacion-escena";
+import { tomarCupoEscenaIA, TOPE_POR_HORA } from "@/lib/globos3d/cupo-escena-ia";
+import { FotoCuerpoSchema, REGLAS_FOTO, aplicarModeladoDeFoto, prepararFotoAdjunta, type FotoPreparada } from "@/lib/globos3d/escena-ia-foto";
+import { MODELAR_DESDE_FOTO } from "@/lib/globos3d/herramientas-escena-foto";
+import { modelarFotoReal } from "@/lib/taller/modelar-foto-real";
+import { normalizarFotoA } from "@/lib/taller/normalizar-foto";
 
 /**
  * Taller 3D → «Pídele a la IA»: el usuario escribe en lenguaje natural («un arco orgánico rosado y dorado de 3 m,
  * dos columnas blancas a los lados…») y Gemini (solo texto + herramientas: aquí NUNCA genera imágenes) arma o
  * cambia la escena llamando a las herramientas de `herramientas-escena.ts`. CRUD: suma o cambia lo pedido sin
  * rehacer lo demás. Hasta 12 vueltas del modelo con herramientas por mensaje (y 40 llamadas en total), tope de 60
- * mensajes por hora por instancia. Cada herramienta aplicada (o rechazada) y la respuesta final quedan con
+ * mensajes por hora por instancia (compartido con /api/escena-desde-foto). Con una foto adjunta (`foto`) la lee la IA de
+ * visión y la arma la escena antes de que hable el modelo (escena-ia-foto.ts). Cada herramienta aplicada (o rechazada) y la respuesta final quedan con
  * `decidir(...)` en el registro de la conversación; la llamada al modelo la audita `getGeminiClient`.
  *
  * Agente (2026-10-08, escena-ia-agente.ts): con el pedido viaja la pieza elegida en el editor (`seleccion`); el modelo
@@ -27,8 +33,6 @@ import { verificarCambios } from "@/lib/globos3d/verificacion-escena";
 
 const MAX_PASOS = 12;
 const MAX_LLAMADAS = 40;
-const TOPE_POR_HORA = 60;
-let ventana = { desde: Date.now(), usadas: 0 };
 
 const Hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const Numero = z.number().finite();
@@ -63,6 +67,8 @@ const CuerpoSchema = z.object({
   mensaje: z.string().trim().min(1).max(1000),
   historial: z.array(z.object({ rol: z.enum(["usuario", "asistente"]), texto: z.string().max(1500) })).max(8).default([]),
   seleccion: SeleccionSchema,
+  /** Foto de una decoración adjunta en la barra de la IA, ya reducida por el navegador. */
+  foto: FotoCuerpoSchema.optional(),
 }).strict();
 
 const SISTEMA = `Eres el asistente del taller 3D de decoración con globos Sempertex. Armas y cambias la escena SOLO con las herramientas; no generas imágenes.
@@ -105,25 +111,38 @@ async function atenderPOST(request: Request) {
   try { cuerpo = await request.json(); } catch { return Response.json({ error: "El pedido no llegó en un formato válido." }, { status: 400 }); }
   const validado = CuerpoSchema.safeParse(cuerpo);
   if (!validado.success) return Response.json({ error: "El pedido o la escena no cumplen el formato." }, { status: 400 });
-  const { escena: inicial, mensaje, historial, seleccion } = validado.data;
-
-  if (Date.now() - ventana.desde > 3_600_000) ventana = { desde: Date.now(), usadas: 0 };
-  if (ventana.usadas >= TOPE_POR_HORA) {
-    decidir("regla:escena_ia_tope", "tope de mensajes por hora del asistente de escena", { usadas: ventana.usadas, tope: TOPE_POR_HORA });
-    return Response.json({ error: `Se alcanzó el límite de ${TOPE_POR_HORA} pedidos por hora a la IA de la escena. Inténtalo más tarde.` }, { status: 429 });
-  }
+  const { escena: inicial, mensaje, historial, seleccion, foto } = validado.data;
 
   const cliente = getGeminiClient("escena_ia");
   if (!cliente) return Response.json({ error: "La IA no está configurada en este servidor." }, { status: 503 });
-  ventana.usadas += 1;
+  if (!tomarCupoEscenaIA()) {
+    return Response.json({ error: `Se alcanzó el límite de ${TOPE_POR_HORA} pedidos por hora a la IA de la escena. Inténtalo más tarde.` }, { status: 429 });
+  }
 
+  // Foto adjunta: se lee (visión), se compila y, con la sala vacía, se arma antes de que hable el modelo.
+  let adjunta: FotoPreparada | null = null;
+  const acciones: Accion[] = [];
+  if (foto) {
+    const preparada = await prepararFotoAdjunta(foto, inicial, { normalizar: normalizarFotoA, modelar: modelarFotoReal }, MAX_NODOS, request.signal);
+    if (!preparada.ok) {
+      decidir("modelo:escena_ia", "no se pudo leer la foto adjunta", { error: preparada.error, estado: preparada.status }, { entrada: { mensaje } });
+      return Response.json({ error: preparada.error }, { status: preparada.status });
+    }
+    adjunta = preparada;
+    if (preparada.resumenAccion) {
+      acciones.push({ herramienta: MODELAR_DESDE_FOTO, resumen: preparada.resumenAccion, consulta: false });
+      decidir("herramienta:escena_ia", "aplicar modelar_desde_foto a la escena del taller 3D (sala vacía)", { ok: true, resumen: preparada.resumenAccion, piezas: preparada.escena.nodos.length }, { entrada: { herramienta: MODELAR_DESDE_FOTO, argumentos: { modo: "reemplazar" }, paso: 0 } });
+    }
+  }
+  const base = adjunta?.escena ?? inicial;
+  const textoUsuario = [mensaje, "", textoSeleccion(inicial, seleccion), `[Piezas que ya hay: ${idsDeEscena(base)}]`, adjunta?.texto ?? ""].filter((l, i) => i < 2 || l).join("\n");
   const contents: Content[] = [
     ...historial.map((h): Content => ({ role: h.rol === "usuario" ? "user" : "model", parts: [{ text: h.texto }] })),
-    { role: "user", parts: [{ text: [mensaje, "", textoSeleccion(inicial, seleccion), `[Piezas que ya hay: ${idsDeEscena(inicial)}]`].filter((l, i) => i < 2 || l).join("\n") }] },
+    { role: "user", parts: adjunta ? [{ text: textoUsuario }, adjunta.imagen] : [{ text: textoUsuario }] },
   ];
+  const declaraciones = adjunta ? DECLARACIONES_ESCENA : DECLARACIONES_ESCENA.filter((d) => d.name !== MODELAR_DESDE_FOTO);
   if (seleccion) decidir("regla:escena_ia_seleccion", "pieza elegida en el editor que viaja con el pedido", { seleccion, valida: seleccionValida(inicial, seleccion) });
-  let escena = inicial;
-  const acciones: Accion[] = [];
+  let escena = base;
   const tokens = { entrada: 0, salida: 0, pensamiento: 0 };
   let pasos = 0, llamadas = 0, respuesta = "", cortado = false;
   let pregunta: PreguntaUsuario | null = null;
@@ -133,7 +152,7 @@ async function atenderPOST(request: Request) {
       const r = await cliente.models.generateContent({
         model: MODELO_CHAT,
         contents,
-        config: { systemInstruction: `${SISTEMA}\n\n${REGLAS_AGENTE}`, tools: [{ functionDeclarations: [...DECLARACIONES_ESCENA] }], thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, abortSignal: request.signal },
+        config: { systemInstruction: `${SISTEMA}\n\n${REGLAS_AGENTE}${adjunta ? `\n\n${REGLAS_FOTO}` : ""}`, tools: [{ functionDeclarations: [...declaraciones] }], thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, abortSignal: request.signal },
       });
       tokens.entrada += r.usageMetadata?.promptTokenCount ?? 0;
       tokens.salida += r.usageMetadata?.candidatesTokenCount ?? 0;
@@ -154,7 +173,9 @@ async function atenderPOST(request: Request) {
         // `buscar_en_biblioteca` va por la búsqueda de la biblioteca (async, con TALLER_RAG_ENABLED); el resto, síncrono como siempre.
         const { resultado: hecho, busqueda } = llamadas > MAX_LLAMADAS
           ? { resultado: { ok: false as const, escena, error: `Tope de ${MAX_LLAMADAS} herramientas por mensaje: no se aplicó.` }, busqueda: null }
-          : await aplicarHerramientaAsincrona(escena, nombre, llamada.args ?? {});
+          : nombre === MODELAR_DESDE_FOTO
+            ? { resultado: aplicarModeladoDeFoto(escena, adjunta, llamada.args, MAX_NODOS), busqueda: null }
+            : await aplicarHerramientaAsincrona(escena, nombre, llamada.args ?? {});
         decidir("herramienta:escena_ia", `aplicar ${nombre} a la escena del taller 3D`, hecho.ok ? { ok: true, resumen: hecho.resumen, piezas: hecho.escena.nodos.length, ...(busqueda ? { busqueda: { fuente: busqueda.fuente, ids: busqueda.ids, motivo: busqueda.motivo ?? null } } : {}) } : { ok: false, error: hecho.error }, { entrada: { herramienta: nombre, argumentos: llamada.args ?? {}, paso: pasos, ...(busqueda?.entrada ? { busqueda: busqueda.entrada } : {}) } });
         if (hecho.ok) {
           escena = hecho.escena;
@@ -189,11 +210,13 @@ async function atenderPOST(request: Request) {
   const cambios = acciones.filter((a) => !a.consulta);
   if (cortado) respuesta = `${respuesta ? `${respuesta} ` : ""}Llegué al tope de ${MAX_PASOS} pasos: revisa lo hecho y pídeme lo que falte.`;
   if (!respuesta) respuesta = cambios.length ? `Listo: ${cambios.length} cambio${cambios.length > 1 ? "s" : ""} en la escena.` : "No hice cambios.";
-  // Estimación con precios de Gemini Flash (US$0,50 por millón de entrada, US$3 por millón de salida y pensamiento).
-  const costeEstimadoUsd = Math.round(((tokens.entrada * 0.5 + (tokens.salida + tokens.pensamiento) * 3) / 1e6) * 1e5) / 1e5;
+  // Estimación con precios de Gemini Flash (US$0,50 por millón de entrada, US$3 por millón de salida y pensamiento); la lectura de la foto suma la suya.
+  const costeLecturaUsd = adjunta?.modelado.uso.costeEstimadoUsd ?? 0;
+  const costeEstimadoUsd = Math.round((((tokens.entrada * 0.5 + (tokens.salida + tokens.pensamiento) * 3) / 1e6) + costeLecturaUsd) * 1e5) / 1e5;
   decidir("modelo:escena_ia", "respuesta final del asistente de escena", {
     respuesta, acciones, pasos, llamadas, cortado, tokens, costeEstimadoUsd, modelo: MODELO_CHAT, pregunta,
+    foto: adjunta ? { piezasLeidas: adjunta.modelado.lectura.piezas.length, aplicadaSola: adjunta.aplicada, plantillas: adjunta.modelado.plantillas.map((p) => p.id), costeLecturaUsd } : null,
     piezasAntes: inicial.nodos.length, piezasDespues: escena.nodos.length, ids: escena.nodos.map((n) => n.id),
   }, { entrada: { mensaje, historial: historial.length, seleccion: seleccion?.id ?? null } });
-  return Response.json({ escena, respuesta, acciones, ...(pregunta ? { pregunta: { texto: pregunta.pregunta, opciones: pregunta.opciones } } : {}), uso: { pasos, llamadas, costeEstimadoUsd } });
+  return Response.json({ escena, respuesta, acciones, ...(pregunta ? { pregunta: { texto: pregunta.pregunta, opciones: pregunta.opciones } } : {}), ...(adjunta ? { foto: { plantillas: adjunta.modelado.plantillas, notas: adjunta.modelado.notas, omitidas: adjunta.modelado.omitidas } } : {}), uso: { pasos, llamadas, costeEstimadoUsd } });
 }
