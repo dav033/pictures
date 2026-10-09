@@ -23,7 +23,7 @@ import {
   type EntradaBusqueda,
 } from "../../src/lib/taller/buscar-sql";
 import { buscarEnTaller, refuerzosDeConsulta, refuerzosDeInterpretacion, type DependenciasBuscar } from "../../src/lib/taller/buscar";
-import { entenderConsulta } from "../../src/lib/taller/entender-consulta";
+import { PALABRAS_DE_FUENTE, entenderConsulta } from "../../src/lib/taller/entender-consulta";
 import { interpretarTerminos } from "../../src/lib/globos3d/glosario-taller";
 import { BIBLIOTECA_FABRICA } from "../../src/lib/globos3d/biblioteca";
 import { RRF_K } from "../../src/lib/rag/retrieval/rrf";
@@ -239,6 +239,15 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
   assert.match(c.texto, /lower\(unaccent\(t\.nombre\)\) ~ ANY\(\$\d+::text\[\]\) OR t\.tipos_pieza && \$\d+::text\[\]/, "pero solo de la pieza pedida");
   const sinInyeccion = construirConsultaBusqueda({ texto: "columna" }, refuerzos, { candidatosMedida: 0, promocionPadre: 0 });
   assert.ok(!sinInyeccion.texto.includes("candidatos AS"), "sin promoción ni inyección de medida no hay candidatos extra");
+
+  assert.ok(!refuerzos.nombresResto?.some((p) => PALABRAS_DE_FUENTE.has(p)), "«revista» y «Celebra» nombran la fuente, no la pieza");
+  const comunion = refuerzosDeConsulta(interpretarTerminos("primera comunión con cruz"), entenderConsulta("primera comunión con cruz"));
+  assert.ok(comunion.nombresResto?.includes("cruz"), "lo que el glosario no reconoce («cruz») es lo distintivo: se busca en el nombre");
+  const conResto = construirConsultaBusqueda({ texto: "primera comunión con cruz" }, comunion);
+  sqlSano(conResto);
+  assert.match(conResto.texto, /AS refuerzo_nombre_resto/);
+  assert.ok(conResto.valores.some((x) => Array.isArray(x) && x.includes("\\ycruz")));
+  assert.ok(!construirConsultaBusqueda({ texto: "arco" }, SIN_REFUERZOS).texto.includes("refuerzo_nombre"), "sin palabras distintivas, sin refuerzo");
 
   const ancho = construirConsultaBusqueda({ texto: "arco" }, { ...SIN_REFUERZOS, anchoCm: 400 });
   assert.match(ancho.texto, /t\.ancho_cm - /);

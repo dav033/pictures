@@ -15,7 +15,7 @@ import {
   type RamaId,
   type RefuerzosSuaves,
 } from "./buscar-sql";
-import { entenderConsulta, type EntendidoConsulta } from "./entender-consulta";
+import { PALABRAS_DE_FUENTE, entenderConsulta, type EntendidoConsulta } from "./entender-consulta";
 
 /**
  * Búsqueda de la biblioteca del taller 3D (REQ-002): Postgres (híbrida: palabras + nombre + vectores, ver
@@ -108,6 +108,7 @@ export function refuerzosDeConsulta(glosario: Interpretacion, entendido: Entendi
   return {
     ...refuerzosDeInterpretacion(glosario),
     nombresPieza: [...new Set(glosario.terminos.filter((t) => t.clase === "tipo").map((t) => t.texto.split(" ").map(singular).join(" ")))],
+    nombresResto: [...new Set(glosario.resto.filter((r) => r.length >= 4 && !PALABRAS_DE_FUENTE.has(r)).map(singular))],
     celebraciones: entendido.celebraciones,
     tematicas: entendido.tematicas,
     fuentes: entendido.fuentes,

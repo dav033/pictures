@@ -25,12 +25,9 @@ import { MODELO_EMBEDDING_TALLER, vectorComoLiteral, type ConsultaSql } from "./
  */
 
 export type RamaId = "fts" | "trigram" | "vector_texto" | "vector_imagen" | "filtro";
-
 export type FiltrosTaller = {
   tipos?: string[];
   tiposPieza?: string[];
-  /** Cómo se llama la pieza pedida («arco», «columna»): los items que lo llevan en el nombre ganan. */
-  nombresPieza?: string[];
   celebraciones?: string[];
   tematicas?: string[];
   formatos?: string[];
@@ -71,6 +68,10 @@ export type RefuerzosSuaves = {
   anchoCm?: number | null;
   /** Palabras de la taxonomía (celebración, temática) que se suman al OR del texto: la ficha las lleva y la consulta no. */
   palabrasExtra?: string[];
+  /** Cómo se llama la pieza pedida («arco», «columna»): los items que lo llevan en el nombre ganan. */
+  nombresPieza?: string[];
+  /** Palabras que el glosario no reconoce («cruz», «topiario»): lo distintivo de la consulta; también se buscan en el nombre. */
+  nombresResto?: string[];
 };
 
 export type ConsultaBusqueda = ConsultaSql & { ramas: RamaId[]; limite: number };
@@ -87,7 +88,7 @@ export const BONO_REFUERZO = 0.5 / (RRF_K + 1);
  */
 export type Afinado = {
   pesos: Readonly<Record<RamaId, number>>;
-  bonos: { nombrePieza: number; formatos: number; partes: number; tiposPieza: number; colores: number; celebraciones: number; tematicas: number; fuentes: number; medida: number };
+  bonos: { nombreResto: number; nombrePieza: number; formatos: number; partes: number; tiposPieza: number; colores: number; celebraciones: number; tematicas: number; fuentes: number; medida: number };
   /** Lo que conserva de su puntaje un fragmento, elevado a su puesto entre los fragmentos de su escena (0…1; 1 = no se agrupa). */
   factorHermano: number;
   /** Fracción del puntaje de su mejor fragmento que hereda la escena entera (0 = no hereda). */
@@ -102,7 +103,7 @@ export const AFINADO_POR_DEFECTO: Afinado = {
   // El vector de texto pesa más que las palabras (entiende «grado» = graduación, «cumple de sirena»); el trigram solo mira el nombre.
   pesos: { fts: 1, trigram: 0.5, vector_texto: 1.5, vector_imagen: 1, filtro: 1 },
   // Medida, fuente y celebración nombradas a las claras pesan más que el color o el tipo de pieza (que casi todo lleva).
-  bonos: { nombrePieza: 2, formatos: 2, partes: 1, tiposPieza: 1, colores: 1, celebraciones: 2, tematicas: 1.5, fuentes: 3, medida: 6 },
+  bonos: { nombreResto: 2, nombrePieza: 2, formatos: 2, partes: 1, tiposPieza: 1, colores: 1, celebraciones: 2, tematicas: 1.5, fuentes: 3, medida: 6 },
   factorHermano: 0.7,
   promocionPadre: 0.8,
   candidatos: 200,
@@ -329,6 +330,7 @@ export function construirConsultaBusqueda(entrada: EntradaBusqueda, refuerzos: R
   if (refuerzos.fuentes?.length) agregarRefuerzo("fuentes", `t.fuente_tipo = ANY(${p.agregar(refuerzos.fuentes, "text[]")})`, b.fuentes);
   // `\y` = límite de palabra: «arco» no suma «arcoíris».
   if (nombresPieza) agregarRefuerzo("nombre_pieza", `lower(unaccent(t.nombre)) ~ ANY(${nombresPieza})`, b.nombrePieza);
+  if (refuerzos.nombresResto?.length) agregarRefuerzo("nombre_resto", `lower(unaccent(t.nombre)) ~ ANY(${p.agregar(refuerzos.nombresResto.map((n) => `\\y${n.replace(/[^a-z0-9 ]/g, "")}`), "text[]")})`, b.nombreResto);
   if (cercania) agregarRefuerzo("medida", `(${cercania}) > 0`, b.medida, `(${cercania}) * ${BONO_REFUERZO * b.medida}`);
 
   const columnasRamas = ramas.flatMap((r) => [`fu.rango_${r}`, `fu.puntaje_${r}`]);

@@ -41,6 +41,9 @@ const PATRONES_FUENTE: ReadonlyArray<readonly [FuenteConsulta, RegExp]> = [
   ["referencia-web", /\breferencias?\s+(?:de\s+la\s+)?web\b|\b(?:de|en)\s+internet\b/],
 ];
 
+/** Palabras que solo sirven para nombrar la fuente («revista», «dueño», «Pinterest»): no describen la pieza. */
+export const PALABRAS_DE_FUENTE: ReadonlySet<string> = new Set(["pinterest", "dueno", "duena", "revista", "celebra", "sempertex", "idea", "ideas", "internet", "web", "referencia", "referencias", "foto", "fotos"]);
+
 export function fuentesDeTexto(texto: string): FuenteConsulta[] {
   const t = sinTildes(texto);
   return PATRONES_FUENTE.filter(([, patron]) => patron.test(t)).map(([fuente]) => fuente);
