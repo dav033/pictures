@@ -74,6 +74,7 @@
     "ia:test-omoikane-chat-python": "tsx --conditions=react-server --test src/lib/ia/omoikane/chat-python.test.ts",
     "happie:test-generador-python": "npm run build --workspace=@sempertex/happie-package-ia && tsx --conditions=react-server --test src/lib/happie/generador-python.test.ts",
     "ia:test-telemetria-llamadas": "tsx --conditions=react-server --test src/lib/ia/nucleo/telemetria-llamadas.test.ts",
+    "ia:test-claude-local": "npm run build --workspace=@sempertex/agente-core && tsx --conditions=react-server --test src/lib/ia/claude/*.test.ts && tsx --conditions=react-server scripts/test/test-herramientas-anthropic.ts && tsx --conditions=react-server scripts/test/test-modelo-escena.ts && tsx --conditions=react-server scripts/test/test-proveedor-claude-local.ts && tsx --conditions=react-server scripts/test/test-generativo-claude.ts && tsx --conditions=react-server scripts/test/test-peticiones-gemini-directas.ts && tsx --conditions=react-server scripts/test/test-escena-ia-sin-sqlite.ts",
     "ia:test-ambiente-fiesta": "tsx --conditions=react-server --test src/lib/ia/uzume/ambiente-fiesta.test.ts",
     "ia:test-guia-estructura": "tsx --conditions=react-server scripts/test/test-guia-estructura.ts",
     "ia:test-guia-estructura-python": "tsx --conditions=react-server scripts/test/test-guia-estructura-python.ts",

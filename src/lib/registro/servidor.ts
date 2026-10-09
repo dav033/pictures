@@ -48,6 +48,7 @@ export {
   type ResultadoImagenAuditable,
   type ResultadoLlamadaIa,
 } from "./envoltorios";
+export { describirPeticionAnthropic, envolverClienteAnthropic, extraerRespuestaAnthropic } from "./envoltorios-anthropic";
 export { conRegistro, entradaDesdeCuerpo, observadorSse, type OpcionesConRegistro } from "./ruta";
 export { diagnosticoEscritor, esperarRegistros } from "./escritor";
 export { redactar, sanearTexto, serializarError } from "./redaccion";

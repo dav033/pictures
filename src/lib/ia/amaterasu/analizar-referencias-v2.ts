@@ -5,7 +5,7 @@ import type { Producto } from "@/lib/types";
 import { conProporcionDeFotos, enriquecerConDominancia } from "./dominancia-referencia";
 import { featureEnabled, referenceAnalysisCacheEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { bytesDeBase64 } from "@sempertex/agente-core";
-import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
+import { registrarSegunProveedor, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { decidir } from "@/lib/registro/servidor";
 import {
   analysisCacheKey,
@@ -778,7 +778,7 @@ async function ejecutarAnalisis(input: {
     const inicio = Date.now();
     try {
       const turno = await chat.turno(peticion);
-      registrarGemini({
+      registrarSegunProveedor(chat.id, {
         flujo: "analisis_referencia",
         capacidad,
         modelo: turno.modelo || chat.modelo,
@@ -800,7 +800,7 @@ async function ejecutarAnalisis(input: {
       });
       return turno;
     } catch (error) {
-      registrarGemini({ flujo: "analisis_referencia", capacidad, modelo: chat.modelo, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/references/analyze", ...telemetria, intento }, bytesImagenEntrada, promptVersion, thinkingLevel: chat.thinkingLevel, configHash });
+      registrarSegunProveedor(chat.id, { flujo: "analisis_referencia", capacidad, modelo: chat.modelo, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/references/analyze", ...telemetria, intento }, bytesImagenEntrada, promptVersion, thinkingLevel: chat.thinkingLevel, configHash });
       throw error;
     }
   };

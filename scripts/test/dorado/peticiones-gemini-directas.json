@@ -1,0 +1,70 @@
+{
+  "lectura_foto_escena": {
+    "sha256": [
+      "4d21757d4185699893ab95d02700748fad4e65735948cba6d12d1c31285a1a8f",
+      "8fadfbf3f42a546e71f7e73a9554aa64cec5e75f47ae0434d544669e214c6c55"
+    ],
+    "bytes": [
+      47220,
+      46700
+    ]
+  },
+  "deteccion_globos_y_fondos": {
+    "sha256": [
+      "76ba7369b0fd2ed5790974713e315f5d8fbb7c1dea099f17eb83844ee9365178",
+      "fbf876531fa59f546d18181cf2268e6973f24acb1b3337a4aac90966012428c9",
+      "fbf876531fa59f546d18181cf2268e6973f24acb1b3337a4aac90966012428c9",
+      "641cd42bcb9d0bd2456acad41653eb37436475734908db793ac35b1c53f92c1c",
+      "4c9747a187c80d601d7e5e9713d3dfbcf54e401dd87c01822719b473bed66486",
+      "4c9747a187c80d601d7e5e9713d3dfbcf54e401dd87c01822719b473bed66486",
+      "4c9747a187c80d601d7e5e9713d3dfbcf54e401dd87c01822719b473bed66486",
+      "4c9747a187c80d601d7e5e9713d3dfbcf54e401dd87c01822719b473bed66486",
+      "4fbf8a0ad79a7f20a6759f2ef300b4232edf491a013700c03da130a598d3c64a",
+      "4fbf8a0ad79a7f20a6759f2ef300b4232edf491a013700c03da130a598d3c64a"
+    ],
+    "bytes": [
+      9937,
+      6658,
+      6658,
+      7554,
+      7554,
+      7554,
+      7554,
+      7554,
+      8706,
+      8706
+    ]
+  },
+  "deteccion_racimos": {
+    "sha256": [
+      "2cfb5ca0cf0f3038520f69ed284a7c680289454eaaff00e8871b7733f70268ec"
+    ],
+    "bytes": [
+      3718
+    ]
+  },
+  "parser_intencion": {
+    "sha256": [
+      "a36ccc1b0c2b63cfc0c4b632c10eef7529f57b5edacc51ce622bed5911b5610c"
+    ],
+    "bytes": [
+      3080
+    ]
+  },
+  "modulos_interpretar": {
+    "sha256": [
+      "90796d36cb3edb6609066123eed2f4355df69ca740373ea07c3696d14eda27ca"
+    ],
+    "bytes": [
+      1478
+    ]
+  },
+  "feedback_ia_resumen": {
+    "sha256": [
+      "32c5444b8c3479df760cdbfcf9cbc6fc6ab00e240850efbf5dca258a5cd82bdb"
+    ],
+    "bytes": [
+      771
+    ]
+  }
+}

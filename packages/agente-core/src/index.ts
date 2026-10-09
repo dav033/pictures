@@ -37,6 +37,7 @@ export {
   registrarEvento,
   ultimosEventos,
   esperarPersistenciaTelemetria,
+  proveedorTelemetria,
 } from "./telemetria";
 
 export type {

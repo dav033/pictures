@@ -8,6 +8,7 @@ import {
   configurarPersistenciaTelemetria,
   crearPersistenciaPostgres,
   esperarPersistenciaTelemetria,
+  proveedorTelemetria,
   registrarLlamadaIA,
   ultimosEventos,
 } from "../src/telemetria";
@@ -118,4 +119,20 @@ test("A0.1: el INSERT durable escribe finish_reason y config_hash con un paráme
   assert.equal(marcadores.length, parametros.length);
   assert.equal(parametros[columnas.indexOf("finish_reason")], "MAX_TOKENS");
   assert.equal(parametros[columnas.indexOf("config_hash")], configHash);
+});
+
+test("W5: el ChatPort «claude» se guarda como proveedor «anthropic» (lo que admite ai_call_log)", async () => {
+  let parametros: readonly unknown[] = [];
+  let sql = "";
+  configurarPersistenciaTelemetria(crearPersistenciaPostgres(async (consulta, valores) => {
+    sql = consulta;
+    parametros = valores;
+  }));
+  registrarLlamadaIA({ ...eventoBase, proveedor: "claude", modelo: "claude-haiku-5-5" });
+  await esperarPersistenciaTelemetria();
+
+  const columnas = /INSERT INTO ai_call_log \(([^)]*)\)/.exec(sql)?.[1]?.split(",").map((columna) => columna.trim()) ?? [];
+  assert.equal(parametros[columnas.indexOf("proveedor")], "anthropic");
+  assert.equal(ultimosEventos()[0]?.proveedor, "anthropic");
+  assert.equal(proveedorTelemetria("gemini"), "gemini");
 });

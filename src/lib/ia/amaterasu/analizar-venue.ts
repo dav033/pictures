@@ -4,7 +4,7 @@ import { z } from "zod";
 import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada, type TurnoChat } from "../nucleo/tipos";
 import { analysisCacheKey } from "../referencia/reference-blueprint";
 import { bytesDeBase64 } from "@sempertex/agente-core";
-import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "../nucleo/telemetria-llamadas";
+import { registrarSegunProveedor, resultadoTelemetria, type ContextoTelemetriaIA } from "../nucleo/telemetria-llamadas";
 import { toolArgs } from "../referencia/candidatos-referencia";
 
 const PointSchema = z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) }).strict();
@@ -278,7 +278,7 @@ async function executeAnalysis(input: {
     const inicio = Date.now();
     try {
       const turno = await chat.turno(request);
-      registrarGemini({
+      registrarSegunProveedor(chat.id, {
         flujo: "analisis_referencia",
         capacidad,
         modelo: turno.modelo || chat.modelo,
@@ -300,7 +300,7 @@ async function executeAnalysis(input: {
       });
       return turno;
     } catch (error) {
-      registrarGemini({
+      registrarSegunProveedor(chat.id, {
         flujo: "analisis_referencia",
         capacidad,
         modelo: chat.modelo,

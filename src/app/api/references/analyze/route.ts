@@ -6,7 +6,7 @@ import { leerLecturasDeFoto } from "@/lib/ia/amaterasu/lecturas-foto";
 import { medirColoresSempertex } from "@/lib/ia/amaterasu/color-sempertex";
 import { conColoresDesdeElPie } from "@/lib/ia/amaterasu/dominancia-referencia";
 import type { AnalisisColorSempertex } from "@/lib/plan/analisis-color";
-import { chatLecturaFotoDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
+import { chatLecturaFotoDe, resolverProveedor, usaPython } from "@/lib/ia/nucleo/registro";
 import { MODELO_LECTURA_FOTO, RAZONAMIENTO_LECTURA_FOTO } from "@/lib/ia/amaterasu/config-lectura-foto";
 import type { ProveedorId } from "@/lib/ia/nucleo/tipos";
 import {
@@ -50,10 +50,11 @@ async function atenderPOST(request: Request) {
     // independiente de las demás IAs -- ver crearChatTurnoPython.
     // Los dos caminos con la MISMA configuración del lector (`config-lectura-foto.ts`): el mismo modelo, y el
     // razonamiento por defecto en los dos. Antes el directo heredaba el modelo y el razonamiento del chat.
-    const chat = REFERENCE_ANALYSIS_PYTHON_ENABLED
+    const porPython = usaPython(id, REFERENCE_ANALYSIS_PYTHON_ENABLED);
+    const chat = porPython
       ? crearChatTurnoPython({ requestId, correlationId, model: MODELO_LECTURA_FOTO })
       : await chatLecturaFotoDe(id);
-    decidir("regla:config_lectura_foto", "con qué configuración se lee la foto", { via: REFERENCE_ANALYSIS_PYTHON_ENABLED ? "python" : "gemini_directo", modelo: MODELO_LECTURA_FOTO, razonamiento: RAZONAMIENTO_LECTURA_FOTO, variante: LECTURA_UNICA_REFERENCIA_ENABLED ? VARIANTE_RUTA_ANALISIS : "v16" }, { motivo: "REFERENCE_ANALYSIS_PYTHON_ENABLED y config-lectura-foto.ts" });
+    decidir("regla:config_lectura_foto", "con qué configuración se lee la foto", { via: porPython ? "python" : `${id}_directo`, modelo: porPython ? MODELO_LECTURA_FOTO : chat.modelo, razonamiento: RAZONAMIENTO_LECTURA_FOTO, variante: LECTURA_UNICA_REFERENCIA_ENABLED ? VARIANTE_RUTA_ANALISIS : "v16" }, { motivo: "REFERENCE_ANALYSIS_PYTHON_ENABLED y config-lectura-foto.ts" });
     const recibidas = referenciasEtiquetadas(body.images);
     // Una foto de la galería (intacta desde la clásica o recodificada por la guiada) sale con su lectura revisada, sin
     // llamar al modelo, y el resto de la ruta trabaja sobre los píxeles del archivo de la galería: las dos vistas
@@ -100,11 +101,12 @@ async function atenderPOST(request: Request) {
       // Lo que ya leyó el análisis: solo se valida en Python y se reparte por
       // elemento. Las cuatro banderas de arriba no se leen en este camino.
       ? await leerLecturaUnica(analisis.blueprint, analisis.lecturasCrudas, references, lectura)
+      // Estas cuatro lecturas solo existen en Python, que solo habla con Gemini: con Claude local no se hacen.
       : await leerLecturasDeFoto(analisis.blueprint, references, lectura, {
-        patron: PATRON_REFERENCIA_PYTHON_ENABLED,
-        bouquet: BOUQUET_REFERENCIA_PYTHON_ENABLED,
-        conteo: CONTEO_REFERENCIA_PYTHON_ENABLED,
-        guirnalda: GUIRNALDA_REFERENCIA_PYTHON_ENABLED,
+        patron: usaPython(id, PATRON_REFERENCIA_PYTHON_ENABLED),
+        bouquet: usaPython(id, BOUQUET_REFERENCIA_PYTHON_ENABLED),
+        conteo: usaPython(id, CONTEO_REFERENCIA_PYTHON_ENABLED),
+        guirnalda: usaPython(id, GUIRNALDA_REFERENCIA_PYTHON_ENABLED),
       });
     // El orden de los colores de cada columna o semiarco, del pie a la punta, lo deciden los píxeles y no el
     // orden en que el modelo los listó (`orden-color-pie.ts`, 2026-10-06). Después de la lectura: ella trae

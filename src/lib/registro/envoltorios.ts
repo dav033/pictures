@@ -347,6 +347,7 @@ export function resultadoDeTurno(turno: TurnoChat): ResultadoLlamadaIa {
       salida: turno.uso.salida,
       ...(turno.uso.pensamiento !== undefined ? { pensamiento: turno.uso.pensamiento } : {}),
       ...(turno.uso.cacheados !== undefined ? { cacheados: turno.uso.cacheados } : {}),
+      ...(turno.uso.cacheEscritos !== undefined ? { cacheEscritos: turno.uso.cacheEscritos } : {}),
       ...(turno.uso.promptHerramientas !== undefined ? { promptHerramientas: turno.uso.promptHerramientas } : {}),
     },
     modelo: turno.modelo,

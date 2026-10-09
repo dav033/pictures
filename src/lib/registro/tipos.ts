@@ -142,6 +142,8 @@ export interface TokensIa {
   salida?: number;
   pensamiento?: number;
   cacheados?: number;
+  /** Claude: tokens escritos en la caché (se cobran 1,25 veces la entrada); ya incluidos en `entrada`. */
+  cacheEscritos?: number;
   promptHerramientas?: number;
 }
 

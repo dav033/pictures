@@ -1,8 +1,10 @@
 import { ThinkingLevel, type Content } from "@google/genai";
 import { z } from "zod";
-import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
+import { MODELO_CHAT } from "@/lib/gemini";
+import { costeClaudeUsd } from "@/lib/ia/claude/precios";
+import { clienteGenerativoDe, destinoGenerativo, type DestinoGenerativo } from "@/lib/ia/nucleo/cliente-generativo";
 import { paraGoogleSchema } from "@/lib/ia/nucleo/esquema-google";
-import { registrarGemini, resultadoTelemetria } from "@/lib/ia/nucleo/telemetria-llamadas";
+import { registrarSegunProveedor, resultadoTelemetria } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { decidir } from "@/lib/registro/servidor";
 import { corregirFondosLeidos } from "./fondos-sinonimos";
 import { ESQUEMA_LECTURA_FOTO, LecturaFotoSchema, PiezaLeidaSchema, type LecturaFoto } from "./lectura-foto";
@@ -13,7 +15,9 @@ import { PEDIDO_LECTURA, construirPromptLectura } from "./prompt-lectura-foto";
  * `lectura-foto.ts`) → una `LecturaFoto` que `compilar-lectura.ts` convierte en escena. Solo texto/JSON de salida:
  * aquí nunca se generan imágenes. La validación es la de Zod; si la respuesta no cumple, se reintenta UNA vez
  * mostrándole al modelo su error, y si aun así quedan piezas válidas se conservan y se anota cuáles se descartaron.
- * Cada intento queda en el registro (`decidir`) y en la telemetría (`registrarGemini`) con su coste estimado.
+ * Cada intento queda en el registro (`decidir`) y en la telemetría (`registrarSegunProveedor`) con su coste estimado.
+ * W5: el cliente lo da el registro (`clienteGenerativoDe`): Gemini en producción (la misma petición de siempre) y Claude
+ * Haiku en local cuando está activo (la imagen va como bloque de imagen y el esquema como herramienta forzada).
  */
 
 /** El propósito con que se audita el cliente de Gemini. */
@@ -49,6 +53,15 @@ export class ErrorLecturaFoto extends Error {
 export function costeFlashUsd(uso: UsoModelo): number {
   return Math.round(((uso.entrada * 0.5 + (uso.salida + uso.pensamiento) * 3) / 1e6) * 1e5) / 1e5;
 }
+
+/** Con un modelo de Claude, sus precios (sin desglose de caché: el exacto queda en `respuesta_ia`); si no, `costeFlashUsd`. */
+export function costeUsoUsd(uso: UsoModelo, modelo: string): number {
+  const claude = costeClaudeUsd(modelo, { input_tokens: uso.entrada, output_tokens: uso.salida + uso.pensamiento });
+  return claude === undefined ? costeFlashUsd(uso) : Math.round(claude * 1e5) / 1e5;
+}
+
+/** El destino de la telemetría cuando la generación viene inyectada (pruebas): Gemini, como siempre. */
+const GEMINI_INYECTADO: DestinoGenerativo = { proveedor: "gemini", modelo: MODELO_CHAT };
 
 const sumarUso = (a: UsoModelo, b: UsoModelo): UsoModelo => ({ entrada: a.entrada + b.entrada, salida: a.salida + b.salida, pensamiento: a.pensamiento + b.pensamiento });
 const corto = (t: string, n: number) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
@@ -129,12 +142,12 @@ export function validarLectura(texto: string): Validacion {
 // El modelo
 // ----------------------------------------------------------------------------------------------------------
 
-/** El generador real: Gemini Flash con la foto, salida JSON con el esquema de la lectura. */
-export const generarConGemini: GenerarLectura = async ({ sistema, contents, esquema, signal }) => {
-  const cliente = getGeminiClient(PROPOSITO_LECTURA_FOTO);
-  if (!cliente) throw new ErrorLecturaFoto("La IA no está configurada en este servidor.", "sin_ia");
-  const r = await cliente.models.generateContent({
-    model: MODELO_CHAT,
+/** El generador real: el modelo del registro (Gemini Flash; Claude en local) con la foto, salida JSON con el esquema de la lectura. */
+export const generarConModelo: GenerarLectura = async ({ sistema, contents, esquema, signal }) => {
+  const generativo = clienteGenerativoDe(PROPOSITO_LECTURA_FOTO);
+  if (!generativo) throw new ErrorLecturaFoto("La IA no está configurada en este servidor.", "sin_ia");
+  const r = await generativo.cliente.models.generateContent({
+    model: generativo.modelo,
     contents,
     config: { systemInstruction: sistema, responseMimeType: "application/json", responseJsonSchema: esquema, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: MAX_TOKENS_SALIDA, temperature: TEMPERATURA_LECTURA, abortSignal: signal },
   });
@@ -160,7 +173,8 @@ export type OpcionesLectura = {
  * Lanza `ErrorLecturaFoto` si la IA no responde o no deja ni una pieza válida.
  */
 export async function leerFotoConIA(foto: FotoLectura, opciones: OpcionesLectura = {}): Promise<ResultadoLectura> {
-  const generar = opciones.generar ?? generarConGemini;
+  const generar = opciones.generar ?? generarConModelo;
+  const destino = opciones.generar ? GEMINI_INYECTADO : destinoGenerativo();
   const sistema = construirPromptLectura(opciones.excluirEjemplos);
   const esquema = esquemaLecturaParaGemini();
   const imagen = { inlineData: { mimeType: foto.mime, data: Buffer.from(foto.bytes).toString("base64") } };
@@ -174,22 +188,22 @@ export async function leerFotoConIA(foto: FotoLectura, opciones: OpcionesLectura
     try {
       g = await generar({ sistema, contents, esquema, signal: opciones.signal });
     } catch (error) {
-      registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: opciones.superficie ?? SUPERFICIE, intento }, bytesImagenEntrada: foto.bytes.byteLength, thinkingLevel: "low" });
+      registrarSegunProveedor(destino.proveedor, { flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: destino.modelo, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: opciones.superficie ?? SUPERFICIE, intento }, bytesImagenEntrada: foto.bytes.byteLength, thinkingLevel: destino.esfuerzo ?? "low" });
       if (error instanceof ErrorLecturaFoto) throw error;
       decidir("modelo:lectura_foto", "la IA no pudo leer la foto", { error: corto(error instanceof Error ? error.message : String(error), 300), intento });
       throw new ErrorLecturaFoto(error instanceof Error ? error.message : String(error), "modelo");
     }
     uso = sumarUso(uso, g.uso);
-    registrarGemini({
-      flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: opciones.superficie ?? SUPERFICIE, intento },
-      usage: { promptTokenCount: g.uso.entrada, candidatesTokenCount: g.uso.salida, thoughtsTokenCount: g.uso.pensamiento }, bytesImagenEntrada: foto.bytes.byteLength, thinkingLevel: "low", finishReason: g.finishReason,
+    registrarSegunProveedor(destino.proveedor, {
+      flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: destino.modelo, inicio, resultado: "ok", contexto: { superficie: opciones.superficie ?? SUPERFICIE, intento },
+      usage: { promptTokenCount: g.uso.entrada, candidatesTokenCount: g.uso.salida, thoughtsTokenCount: g.uso.pensamiento }, bytesImagenEntrada: foto.bytes.byteLength, thinkingLevel: destino.esfuerzo ?? "low", finishReason: g.finishReason,
     });
     const validada = validarLectura(g.texto);
     decidir("modelo:lectura_foto", validada.ok ? "lectura de la foto válida" : "lectura de la foto con errores de esquema", {
-      intento, ok: validada.ok, error: validada.ok ? null : corto(validada.error, 400), tokens: g.uso, costeEstimadoUsd: costeFlashUsd(g.uso), modelo: MODELO_CHAT, finishReason: g.finishReason ?? null,
+      intento, ok: validada.ok, error: validada.ok ? null : corto(validada.error, 400), tokens: g.uso, costeEstimadoUsd: costeUsoUsd(g.uso, destino.modelo), modelo: destino.modelo, finishReason: g.finishReason ?? null,
       piezas: validada.ok ? validada.lectura.piezas.map((p) => p.tipo) : null, ...(validada.correcciones.length ? { fondosCorregidos: validada.correcciones } : {}),
     }, { entrada: { bytesFoto: foto.bytes.byteLength, mime: foto.mime } });
-    if (validada.ok) return { lectura: validada.lectura, descartadas: [], uso, costeEstimadoUsd: costeFlashUsd(uso), intentos: intento, modelo: MODELO_CHAT };
+    if (validada.ok) return { lectura: validada.lectura, descartadas: [], uso, costeEstimadoUsd: costeUsoUsd(uso, destino.modelo), intentos: intento, modelo: destino.modelo };
     ultimo = validada;
     contents.push(
       { role: "model", parts: [{ text: corto(g.texto, 20_000) }] },
@@ -198,7 +212,7 @@ export async function leerFotoConIA(foto: FotoLectura, opciones: OpcionesLectura
   }
 
   if (ultimo && !ultimo.ok && ultimo.parcial) {
-    return { lectura: ultimo.parcial.lectura, descartadas: ultimo.parcial.descartadas, uso, costeEstimadoUsd: costeFlashUsd(uso), intentos: 2, modelo: MODELO_CHAT };
+    return { lectura: ultimo.parcial.lectura, descartadas: ultimo.parcial.descartadas, uso, costeEstimadoUsd: costeUsoUsd(uso, destino.modelo), intentos: 2, modelo: destino.modelo };
   }
   throw new ErrorLecturaFoto(`La IA no devolvió una lectura válida de la foto${ultimo && !ultimo.ok ? `: ${corto(ultimo.error, 300)}` : ""}.`, "invalida");
 }

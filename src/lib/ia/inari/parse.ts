@@ -1,9 +1,10 @@
 import { ThinkingLevel } from "@google/genai";
 import { z } from "zod";
-import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
+import { MODELO_CHAT } from "@/lib/gemini";
+import { clienteGenerativoDe, destinoGenerativo } from "@/lib/ia/nucleo/cliente-generativo";
 import { interpretarConsultaDeterminista, mergeGeminiIntent, type DeterministicParse } from "@/lib/rag/query-parser/deterministic";
 import { IntentQuerySchema, type IntentQuery } from "@/lib/rag/query-parser/schema";
-import { idsTelemetria, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
+import { idsTelemetria, registrarGemini, registrarSegunProveedor, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { INTENT_PARSER_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { isPythonAdapterError, llamarPythonIntentParse } from "@/lib/ia/nucleo/python-adapter";
 import { esquemaRaizParaGoogle } from "@/lib/ia/nucleo/esquema-google";
@@ -80,19 +81,22 @@ export async function interpretarConsulta(mensaje: string, telemetria?: Contexto
     decidir("regla:parser_intencion_local", "interpretar la consulta sin modelo", { llamaModelo: false, intencion: local.intent }, { entrada: { mensaje, confianza: local.confidence }, motivo: "el parser local es concluyente" });
     return local.intent;
   }
-  decidir("regla:parser_intencion_local", "interpretar la consulta sin modelo", { llamaModelo: true, via: INTENT_PARSER_PYTHON_ENABLED ? "python" : "gemini", intencionLocal: local.intent }, { entrada: { mensaje, confianza: local.confidence }, motivo: "consulta ambigua: se enriquece con el modelo" });
+  // W5: el Python solo habla con Gemini; con Claude activo en local, el modelo del registro va directo.
+  const destino = destinoGenerativo();
+  const porPython = INTENT_PARSER_PYTHON_ENABLED && destino.proveedor === "gemini";
+  decidir("regla:parser_intencion_local", "interpretar la consulta sin modelo", { llamaModelo: true, via: porPython ? "python" : destino.proveedor, intencionLocal: local.intent }, { entrada: { mensaje, confianza: local.confidence }, motivo: "consulta ambigua: se enriquece con el modelo" });
 
   const inicio = Date.now();
-  if (INTENT_PARSER_PYTHON_ENABLED) {
+  if (porPython) {
     return enriquecerConGeminiPython(mensaje, local, telemetria, inicio);
   }
 
-  const client = getGeminiClient("parser_intencion");
-  if (!client) return local.intent;
+  const generativo = clienteGenerativoDe("parser_intencion");
+  if (!generativo) return local.intent;
 
   try {
-    const respuesta = await client.models.generateContent({
-      model: MODELO_CHAT,
+    const respuesta = await generativo.cliente.models.generateContent({
+      model: generativo.modelo,
       contents: [{ role: "user", parts: [{ text: mensaje }] }],
       config: {
         systemInstruction: INSTRUCCION,
@@ -101,13 +105,13 @@ export async function interpretarConsulta(mensaje: string, telemetria?: Contexto
         thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
       },
     });
-    registrarGemini({ flujo: "armador_decoracion", capacidad: "parser_intencion", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: "/api/chat", ...telemetria }, usage: respuesta.usageMetadata, thinkingLevel: "minimal" });
+    registrarSegunProveedor(generativo.proveedor, { flujo: "armador_decoracion", capacidad: "parser_intencion", modelo: generativo.modelo, inicio, resultado: "ok", contexto: { superficie: "/api/chat", ...telemetria }, usage: respuesta.usageMetadata, thinkingLevel: generativo.esfuerzo ?? "minimal" });
     const texto = respuesta.text;
     if (!texto) return local.intent;
     const remote = IntentQuerySchema.parse(JSON.parse(texto));
     return mergeGeminiIntent(local, remote);
   } catch (error) {
-    registrarGemini({ flujo: "armador_decoracion", capacidad: "parser_intencion", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/chat", ...telemetria }, thinkingLevel: "minimal" });
+    registrarSegunProveedor(generativo.proveedor, { flujo: "armador_decoracion", capacidad: "parser_intencion", modelo: generativo.modelo, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/chat", ...telemetria }, thinkingLevel: generativo.esfuerzo ?? "minimal" });
     // A search must remain available during quota, timeout or malformed model
     // output incidents. Local facts are safer than a partial remote result.
     return local.intent;

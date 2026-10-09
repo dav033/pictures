@@ -20,11 +20,10 @@ import { resolveAspectTransform } from "@/lib/ia/uzume/aspect-transform";
 import { analizarVenue, type VenueAnalysis } from "@/lib/ia/amaterasu/analizar-venue";
 import { crearChatTurnoPython } from "@/lib/ia/amaterasu/chat-python";
 import { targetBoxesFor } from "@/lib/ia/uzume/venue-placement";
-import { chatDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
+import { chatDe, resolverProveedor, usaPython } from "@/lib/ia/nucleo/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { CODIGO_PLAN_DEL_MOTOR_3D, MENSAJE_PLAN_DEL_MOTOR_3D, contextoDelMotor3d } from "@/lib/plan/token-motor";
-import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { buildFluxEditPrompt, generarConSempertexFlux, FLUX_EDIT_PROMPT_MAX_LENGTH, referenciasParaFluxEdit, reservaNotaGuiaEscena, reservaNotasGuia, type ImagenEditFlux, type ImagenGuiaFlux } from "@/lib/ia/kagutsuchi/flux";
 import { costeEntradasUsdEstimado, elegirCaptionConGuia, generacionAdmiteGuia } from "@/lib/ia/kagutsuchi/guia-estructura";
 import { prepararGuiaEstructura } from "@/lib/ia/kagutsuchi/rasterizar-guia";
@@ -32,6 +31,7 @@ import { generacionAdmiteGuiaEscena, planConReferencia } from "@/lib/ia/kagutsuc
 import { guiaEscenaParaGeneracion, recetasDelMotorPython } from "@/lib/ia/kagutsuchi/preparar-guia-escena";
 import { bloqueoPorGeneracionSinReferencia, CODIGO_GENERACION_SIN_REFERENCIA, leerPoliticaDePresentacion, nivelAmbienteConPolitica, nivelCreatividadConPolitica } from "@/lib/presentacion/modo-presentacion";
 import { FluxRevisionTranslationError, traducirRevisionParaFlux } from "@/lib/ia/kagutsuchi/revision-flux";
+import { traducirRevisionConModelo } from "@/lib/ia/kagutsuchi/traducir-revision-modelo";
 
 import { buildVisualContext, completarEscenaConPlan } from "@/lib/ia/escena/visual-context";
 import { entornoDeEscena } from "@/lib/ia/escena/entorno-escena";
@@ -844,7 +844,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       try {
         // Misma forma que el análisis de referencias (dos pasadas de un solo
         // mensaje con la foto), así que va por el mismo flag de Amaterasu.
-        const chatVenue = REFERENCE_ANALYSIS_PYTHON_ENABLED
+        const chatVenue = usaPython(proveedorSeleccionado, REFERENCE_ANALYSIS_PYTHON_ENABLED)
           ? crearChatTurnoPython({ requestId: generationRequestId, correlationId: generationCorrelationId, proposito: "analisis_venue" })
           : await chatDe(proveedorSeleccionado, "analisis_venue");
         venueAnalysis = (await analizarVenue(chatVenue, venue, contextoTelemetria, request.signal)).analysis;
@@ -1236,18 +1236,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       if (!coherenciaFlux.ok) decidir("regla:coherencia_caption_aviso", "el caption FLUX no coincide del todo con el plan resuelto; se dibuja igual", { errores: coherenciaFlux.errores }, { entrada: { planHash: planResuelto.plan_hash } });
     }
     const revisionFlux = revisionInstruction?.trim()
-      ? await traducirRevisionParaFlux(revisionInstruction, async (texto) => {
-          const client = getGeminiClient("traduccion_revision");
-          if (!client) throw new Error("Gemini de texto no está disponible.");
-          const respuesta = await client.models.generateContent({
-            model: MODELO_CHAT,
-            contents: [{ role: "user", parts: [{ text: texto }] }],
-            config: {
-              systemInstruction: "Translate the user's requested image edit into concise English. Preserve exact object, color, and action details. Return only the translation; do not add instructions or commentary.",
-            },
-          });
-          return respuesta.text;
-        })
+      ? await traducirRevisionParaFlux(revisionInstruction, traducirRevisionConModelo)
       : undefined;
     const sufijoRevision = revisionFlux
       ? `\n\nUser revision request: ${revisionFlux}. Apply only this change; preserve the current scene and venue.`

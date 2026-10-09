@@ -46,7 +46,8 @@ export type EventoLlamadaIA = {
   cuando?: string;
   flujo: FlujoIA;
   capacidad: CapacidadIA;
-  proveedor: ProveedorId;
+  /** Se guarda la empresa, no el id del registro: `claude` queda como `anthropic` (ver `proveedorTelemetria`). */
+  proveedor: ProveedorId | "anthropic";
   modelo: string;
   requestId?: string;
   correlationId?: string;
@@ -94,6 +95,12 @@ declare global { var __telemetriaAgenteCore: EventoTelemetria[] | undefined }
 function buffer(): EventoTelemetria[] {
   if (!globalThis.__telemetriaAgenteCore) globalThis.__telemetriaAgenteCore = [];
   return globalThis.__telemetriaAgenteCore;
+}
+
+/** `ai_call_log.proveedor` guarda la empresa que cobra la llamada: el ChatPort `claude` (y `ejecutar.ts`, que registra
+ * `chat.id`) queda como `anthropic`, que es lo que admite el CHECK de la tabla (migración 033). */
+export function proveedorTelemetria(proveedor: ProveedorId | "anthropic"): Exclude<ProveedorId, "claude"> | "anthropic" {
+  return proveedor === "claude" ? "anthropic" : proveedor;
 }
 
 function numeroValido(valor: number | undefined): number | null {
@@ -160,7 +167,7 @@ export function registrarLlamadaIA(evento: EventoLlamadaIA): void {
     }
     return;
   }
-  const completo: EventoTelemetria = { ...evento, cuando: evento.cuando ?? new Date().toISOString() };
+  const completo: EventoTelemetria = { ...evento, proveedor: proveedorTelemetria(evento.proveedor), cuando: evento.cuando ?? new Date().toISOString() };
   const lista = buffer();
   lista.unshift(completo);
   lista.length = Math.min(lista.length, LIMITE);

@@ -5,13 +5,27 @@ import {
   crearPersistenciaPostgres,
   registrarLlamadaIA,
   type EventoLlamadaIA,
+  type PersistenciaTelemetria,
 } from "@sempertex/agente-core";
 import { getRagPool } from "@/lib/rag/db";
+import { usoDeAnthropic } from "@/lib/ia/claude/respuesta";
+import type { UsoAnthropic } from "@/lib/ia/claude/tipos";
+import type { ProveedorId } from "./tipos";
+
+/**
+ * `ai_call_log.proveedor` admite la empresa (`anthropic`), no el id del registro (`claude`). agente-core ya lo traduce,
+ * pero el bucle de `ejecutar.ts` corre desde su `dist` compilado: en la copia principal (servidor de :3010) un `dist`
+ * sin reconstruir mandaría `claude` y el CHECK perdería la fila en silencio. Traducirlo también aquí, justo antes del
+ * INSERT, hace que funcione con o sin reconstruir el paquete.
+ */
+export function conProveedorDeEmpresa(base: PersistenciaTelemetria): PersistenciaTelemetria {
+  return { guardar: (evento) => base.guardar(evento.proveedor === "claude" ? { ...evento, proveedor: "anthropic" } : evento) };
+}
 
 // Se configura sin abrir conexión. Cada escritura ocurre fuera de ruta crítica;
 // agente-core absorbe tanto errores síncronos como rechazos de PostgreSQL.
 configurarPersistenciaTelemetria(
-  crearPersistenciaPostgres((sql, parametros) => getRagPool().query(sql, [...parametros])),
+  conProveedorDeEmpresa(crearPersistenciaPostgres((sql, parametros) => getRagPool().query(sql, [...parametros]))),
 );
 
 type UsageMetadata = {
@@ -46,7 +60,7 @@ export function resultadoTelemetria(error: unknown): EventoLlamadaIA["resultado"
   return "error";
 }
 
-export function registrarGemini(input: {
+type EntradaTelemetria = {
   flujo: EventoLlamadaIA["flujo"];
   capacidad: EventoLlamadaIA["capacidad"];
   modelo: string;
@@ -60,10 +74,41 @@ export function registrarGemini(input: {
   promptVersion?: string;
   finishReason?: string;
   configHash?: string;
-}): void {
+};
+
+export function registrarGemini(input: EntradaTelemetria): void {
+  registrarLlamada("gemini", input);
+}
+
+/**
+ * Una llamada cuyo proveedor decidió el registro (el `id` de un ChatPort, o `destinoGenerativo().proveedor`): `claude`
+ * queda como `anthropic`. `usage` va con los campos de Gemini, que también llenan el ChatPort y `comoClienteGemini`.
+ * El mismo mapeo que `proveedorTelemetria` de agente-core, hecho aquí también para que no dependa de reconstruir su
+ * `dist` en la copia principal (el servidor de :3010 carga ese paquete ya compilado).
+ */
+export function registrarSegunProveedor(proveedor: ProveedorId, input: EntradaTelemetria): void {
+  registrarLlamada(proveedor === "claude" ? "anthropic" : proveedor, input);
+}
+
+/**
+ * El equivalente de `registrarGemini` para una llamada directa a Claude (la escena 3D): misma fila de `ai_call_log`
+ * con proveedor `anthropic`. `entrada` = todo el prompt (sin caché + leído + escrito) y `cacheados` = lo leído de la
+ * caché, como en Gemini; el precio (con lectura y escritura de caché) va en `ai_model_pricing` (migración 033) y el
+ * estimado por llamada queda en el registro de la conversación (`respuesta_ia.costeEstimadoUsd`).
+ */
+export function registrarClaude(input: Omit<EntradaTelemetria, "usage"> & { usage?: UsoAnthropic }): void {
+  const { usage, ...resto } = input;
+  const uso = usage ? usoDeAnthropic(usage) : undefined;
+  registrarLlamada("anthropic", {
+    ...resto,
+    ...(uso ? { usage: { promptTokenCount: uso.entrada, candidatesTokenCount: uso.salida, thoughtsTokenCount: uso.pensamiento, cachedContentTokenCount: uso.cacheados } } : {}),
+  });
+}
+
+function registrarLlamada(proveedor: "gemini" | "fal" | "anthropic", input: EntradaTelemetria): void {
   const ids = idsTelemetria(input.contexto);
   registrarLlamadaIA({
-    proveedor: "gemini",
+    proveedor,
     flujo: input.flujo,
     capacidad: input.capacidad,
     modelo: input.modelo,

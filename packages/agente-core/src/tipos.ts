@@ -1,4 +1,5 @@
-export type ProveedorId = "gemini" | "fal";
+/** `claude` solo existe en local (lo decide el registro del consumidor; ver demo-decoracion `ia/claude/config.ts`). */
+export type ProveedorId = "gemini" | "fal" | "claude";
 
 /** Forma mínima de una imagen adjunta a un mensaje — solo lo que el motor
  * necesita para mandarla al modelo (base64 + mime type) y, si el consumidor
@@ -74,6 +75,9 @@ export type TurnoChat = {
     cacheados?: number;
     pensamiento?: number;
     promptHerramientas?: number;
+    /** Tokens escritos en la caché del proveedor en esta llamada (Claude: `cache_creation_input_tokens`); ya van
+     * sumados en `entrada`. Se cobran más caros que la entrada normal. */
+    cacheEscritos?: number;
   };
   modelo: string;
   /** `finishReason` del primer candidato tal como lo reporta el proveedor

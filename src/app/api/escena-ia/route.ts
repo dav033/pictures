@@ -1,6 +1,8 @@
-import { FunctionCallingConfigMode, ThinkingLevel, type Content, type Part } from "@google/genai";
+import type { Part } from "@google/genai";
 import { z } from "zod";
-import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
+import { destinoGenerativo } from "@/lib/ia/nucleo/cliente-generativo";
+import { modeloEscenaIADe } from "@/lib/globos3d/modelo-escena/crear-modelo";
+import type { ModeloEscenaIA, RespuestaHerramientaEscena, UsoPasoEscena } from "@/lib/globos3d/modelo-escena/tipos";
 import { conRegistro, decidir } from "@/lib/registro/servidor";
 import { DECLARACIONES_ESCENA, MAX_NODOS, idsDeEscena } from "@/lib/globos3d/herramientas-escena";
 import { EscenaSchema } from "@/lib/globos3d/esquema-escena";
@@ -24,12 +26,14 @@ import { TIPO_NDJSON, responderEnFlujo, type EventoFlujo } from "@/lib/globos3d/
 
 /**
  * Taller 3D → «Pídele a la IA»: el usuario escribe en lenguaje natural («un arco orgánico rosado y dorado de 3 m,
- * dos columnas blancas a los lados…») y Gemini (solo texto + herramientas: aquí NUNCA genera imágenes) arma o
+ * dos columnas blancas a los lados…») y el modelo (Gemini; Claude Haiku solo en local, W5 — lo elige el registro con
+ * `destinoGenerativo`, ver modelo-escena/; solo texto + herramientas: aquí NUNCA genera imágenes) arma o
  * cambia la escena llamando a las herramientas de `herramientas-escena.ts`. CRUD: suma o cambia lo pedido sin
  * rehacer lo demás. Hasta 12 vueltas del modelo con herramientas por mensaje (y 40 llamadas en total), tope de 60
  * mensajes por hora por instancia (compartido con /api/escena-desde-foto). Con una foto adjunta (`foto`) la lee la IA de
  * visión y la arma la escena antes de que hable el modelo (escena-ia-foto.ts). Cada herramienta aplicada (o rechazada) y la respuesta final quedan con
- * `decidir(...)` en el registro de la conversación; la llamada al modelo la audita `getGeminiClient`.
+ * `decidir(...)` en el registro de la conversación; la llamada al modelo la audita su cliente (`getGeminiClient` o
+ * `getClaudeClient`, ambos con el propósito `escena_ia`).
  *
  * Refinado (REQ-001 paso 9, refinado/ronda-servidor.ts): tras armar la escena desde una foto, el navegador captura la escena 3D con
  * la cámara de la foto y la manda de vuelta con `refinar` (foto + captura + lectura + ronda, a lo más 2): el modelo compara
@@ -88,15 +92,19 @@ REGLAS:
 
 type Accion = { herramienta: string; resumen: string; consulta: boolean };
 
-/** Estimación con precios de Gemini Flash (US$0,50 por millón de entrada, US$3 por millón de salida y pensamiento) más la lectura de la foto, si la hubo. */
-const costeUsd = (tokens: { entrada: number; salida: number; pensamiento: number }, lecturaUsd = 0): number =>
-  Math.round((((tokens.entrada * 0.5 + (tokens.salida + tokens.pensamiento) * 3) / 1e6) + lecturaUsd) * 1e5) / 1e5;
+/** Estimación con los precios del proveedor (vuelta por vuelta) más la lectura de la foto, si la hubo. */
+const costeUsd = (modeloIA: ModeloEscenaIA, usos: readonly UsoPasoEscena[], lecturaUsd = 0): number =>
+  Math.round((modeloIA.costeUsd(usos) + lecturaUsd) * 1e5) / 1e5;
 
 const corto = (t: string, n = 220) => (t.length > n ? `${t.slice(0, n - 1)}…` : t);
 
-/** Texto visible de una respuesta (sin las partes de pensamiento ni el getter `.text`, que avisa si hay funciones). */
-function textoDe(contenido: Content | undefined): string {
-  return (contenido?.parts ?? []).filter((p) => typeof p.text === "string" && p.thought !== true).map((p) => p.text).join("").trim();
+/**
+ * El proveedor sale de la regla del registro solo con variables de entorno (`destinoGenerativo`: Claude únicamente si está
+ * activo en local; si no, Gemini), sin `resolverProveedor`: este no recibe pistas aquí y su ajuste global vive en SQLite,
+ * que esta ruta nunca abrió (un fallo al abrirla en un arranque en frío tumbaría cada pedido). Sin llave, no hay modelo.
+ */
+function modeloDeEscena(): ModeloEscenaIA | null {
+  return modeloEscenaIADe(destinoGenerativo().proveedor);
 }
 
 export const POST = conRegistro("/api/escena-ia", atenderPOST, { vista: "3d" });
@@ -121,8 +129,8 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   if (!validado.success) return Response.json({ error: "El pedido o la escena no cumplen el formato." }, { status: 400 });
   const { escena: inicial, mensaje, historial, seleccion, foto, refinar } = validado.data;
 
-  const cliente = getGeminiClient("escena_ia");
-  if (!cliente) return Response.json({ error: "La IA no está configurada en este servidor." }, { status: 503 });
+  const modeloIA = modeloDeEscena();
+  if (!modeloIA) return Response.json({ error: "La IA no está configurada en este servidor." }, { status: 503 });
   if (!tomarCupoEscenaIA()) {
     return Response.json({ error: `Se alcanzó el límite de ${TOPE_POR_HORA} pedidos por hora a la IA de la escena. Inténtalo más tarde.` }, { status: 429 });
   }
@@ -156,10 +164,6 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   }
   const base = adjunta?.escena ?? inicial;
   const textoUsuario = [mensaje, "", textoSeleccion(inicial, seleccion), `[Piezas que ya hay: ${idsDeEscena(base)}]`, adjunta?.texto ?? ""].filter((l, i) => i < 2 || l).join("\n");
-  const contents: Content[] = partesRefinar ? [{ role: "user", parts: partesRefinar }] : [
-    ...historial.map((h): Content => ({ role: h.rol === "usuario" ? "user" : "model", parts: [{ text: h.texto }] })),
-    { role: "user", parts: adjunta ? [{ text: textoUsuario }, adjunta.imagen] : [{ text: textoUsuario }] },
-  ];
   const declaraciones = refinar ? declaracionesDeRefinado(DECLARACIONES_ESCENA)
     : adjunta ? DECLARACIONES_ESCENA : DECLARACIONES_ESCENA.filter((d) => d.name !== MODELAR_DESDE_FOTO);
   // Con foto y la sala ya con piezas, el primer paso del modelo TIENE que ser aplicar la foto (o preguntar): si no, armaba la decoración por su cuenta con agregar_pieza y quedaba abajo de la pared.
@@ -167,8 +171,17 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   const maxPasos = refinar ? MAX_PASOS_REFINAR : MAX_PASOS;
   const reglasExtra = adjunta ? `\n\n${REGLAS_FOTO}` : refinar ? `\n\n${reglasDeRonda(refinar.ronda)}` : "";
   if (seleccion) decidir("regla:escena_ia_seleccion", "pieza elegida en el editor que viaja con el pedido", { seleccion, valida: seleccionValida(inicial, seleccion) });
+  // Con la ronda de refinado, el modelo solo ve el mensaje de la ronda (sin historial).
+  const sesion = modeloIA.iniciar({
+    sistema: `${SISTEMA}\n\n${REGLAS_AGENTE}${reglasExtra}`,
+    declaraciones,
+    historial: partesRefinar ? [] : historial,
+    partesUsuario: partesRefinar ?? (adjunta ? [{ text: textoUsuario }, adjunta.imagen] : [{ text: textoUsuario }]),
+    signal: request.signal,
+  });
   let escena = base;
   const tokens = { entrada: 0, salida: 0, pensamiento: 0 };
+  const usos: UsoPasoEscena[] = [];
   let pasos = 0, llamadas = 0, respuesta = "", cortado = false;
   let pregunta: PreguntaUsuario | null = null;
   // Cada herramienta que se intentó, con su resultado: la respuesta final no puede callar lo que falló (honestidad-respuesta.ts).
@@ -179,26 +192,20 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   try {
     for (;;) {
       avisar?.({ tipo: "fase", fase: "pensando" });
-      const r = await cliente.models.generateContent({
-        model: MODELO_CHAT,
-        contents,
-        config: { systemInstruction: `${SISTEMA}\n\n${REGLAS_AGENTE}${reglasExtra}`, tools: [{ functionDeclarations: [...declaraciones] }], ...(forzarFoto && pasos === 0 ? { toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.ANY, allowedFunctionNames: [MODELAR_DESDE_FOTO, PREGUNTAR_USUARIO] } } } : {}), thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, abortSignal: request.signal },
-      });
-      tokens.entrada += r.usageMetadata?.promptTokenCount ?? 0;
-      tokens.salida += r.usageMetadata?.candidatesTokenCount ?? 0;
-      tokens.pensamiento += r.usageMetadata?.thoughtsTokenCount ?? 0;
-      const contenido = r.candidates?.[0]?.content;
-      const funciones = (contenido?.parts ?? []).flatMap((p) => (p.functionCall ? [p.functionCall] : []));
-      if (!funciones.length) { respuesta = textoDe(contenido); break; }
-      if (pasos >= maxPasos) { cortado = true; respuesta = textoDe(contenido); break; }
+      const paso = await sesion.pedir(forzarFoto && pasos === 0 ? [MODELAR_DESDE_FOTO, PREGUNTAR_USUARIO] : undefined);
+      usos.push(paso.uso);
+      tokens.entrada += paso.uso.entrada;
+      tokens.salida += paso.uso.salida;
+      tokens.pensamiento += paso.uso.pensamiento;
+      const funciones = paso.llamadas;
+      if (!funciones.length) { respuesta = paso.texto; break; }
+      if (pasos >= maxPasos) { cortado = true; respuesta = paso.texto; break; }
       pasos += 1;
-      // El turno del modelo va tal cual (con sus firmas de pensamiento): Gemini lo exige en la vuelta siguiente.
-      contents.push(contenido ?? { role: "model", parts: funciones.map((functionCall): Part => ({ functionCall })) });
-      const respuestas: Part[] = [];
+      const respuestas: RespuestaHerramientaEscena[] = [];
       const antesDelPaso = escena;
       let ultimoCambio = -1;
       for (const llamada of funciones) {
-        const nombre = llamada.name ?? "";
+        const nombre = llamada.nombre;
         llamadas += 1;
         // `buscar_en_biblioteca` va por la búsqueda de la biblioteca (async, con TALLER_RAG_ENABLED); el resto, síncrono como siempre.
         const { resultado: hecho, busqueda } = llamadas > MAX_LLAMADAS
@@ -219,17 +226,17 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
           // Preguntar termina el turno: lo que venía después en esta vuelta no se aplica.
           if (nombre === PREGUNTAR_USUARIO) { pregunta = preguntaDe(llamada.args); break; }
         }
-        respuestas.push({ functionResponse: { name: nombre, ...(llamada.id ? { id: llamada.id } : {}), response: hecho.ok ? { resultado: hecho.resumen } : { error: hecho.error } } });
+        respuestas.push({ nombre, ...(llamada.id ? { id: llamada.id } : {}), respuesta: hecho.ok ? { resultado: hecho.resumen } : { error: hecho.error } });
       }
       if (pregunta) { respuesta = pregunta.pregunta; break; }
       // Verificación automática: lo que de verdad cambió en esta vuelta, junto a la última herramienta que cambió algo.
       const verificacion = escena !== antesDelPaso ? verificarCambios(antesDelPaso, escena) : "";
-      const destino = respuestas[ultimoCambio]?.functionResponse;
+      const destino = respuestas[ultimoCambio];
       if (verificacion && destino) {
-        destino.response = { ...destino.response, verificacion };
+        destino.respuesta = { ...destino.respuesta, verificacion };
         decidir("regla:escena_ia_verificacion", "verificación automática que recibe el modelo tras sus cambios", { verificacion, paso: pasos });
       }
-      contents.push({ role: "user", parts: respuestas });
+      sesion.responder(respuestas);
     }
   } catch (error) {
     const texto = error instanceof Error ? error.message : String(error);
@@ -237,7 +244,7 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
     decidir("modelo:escena_ia", "el asistente de escena no pudo terminar", { error: corto(texto, 300), pasos, llamadas, acciones }, { entrada: { mensaje } });
     if (acciones.some((a) => !a.consulta)) {
       // Lo ya aplicado se devuelve: el usuario puede deshacerlo con un clic.
-      return Response.json({ escena, respuesta: conHonestidad("La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer.", fallosPendientes(intentos), problemasNuevos(base, escena), avisosUsuario), acciones, uso: { pasos, llamadas, costeEstimadoUsd: costeUsd(tokens, adjunta?.modelado.uso.costeEstimadoUsd ?? 0) } });
+      return Response.json({ escena, respuesta: conHonestidad("La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer.", fallosPendientes(intentos), problemasNuevos(base, escena), avisosUsuario), acciones, uso: { pasos, llamadas, costeEstimadoUsd: costeUsd(modeloIA, usos, adjunta?.modelado.uso.costeEstimadoUsd ?? 0) } });
     }
     return Response.json({ error: cuota ? "La IA no tiene cuota disponible ahora. Inténtalo en un rato." : "No pude hablar con la IA ahora. Vuelve a intentarlo." }, { status: cuota ? 429 : 502 });
   }
@@ -250,11 +257,11 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   const problemas = problemasNuevos(base, escena);
   if (!pregunta) respuesta = conHonestidad(respuesta, fallos, problemas, avisosUsuario);
   const costeLecturaUsd = adjunta?.modelado.uso.costeEstimadoUsd ?? 0;
-  const costeEstimadoUsd = costeUsd(tokens, costeLecturaUsd);
+  const costeEstimadoUsd = costeUsd(modeloIA, usos, costeLecturaUsd);
   const ronda = refinar ? decidirRonda(refinar.ronda, reportes, cambios.length) : null;
   if (ronda) decidir("regla:escena_ia_refinar", "ronda de comparación con la foto", { ...ronda, reportes: reportes.length });
   decidir("modelo:escena_ia", "respuesta final del asistente de escena", {
-    respuesta, acciones, pasos, llamadas, cortado, fallos, problemas: problemas.map((p) => p.texto), tokens, costeEstimadoUsd, modelo: MODELO_CHAT, pregunta,
+    respuesta, acciones, pasos, llamadas, cortado, fallos, problemas: problemas.map((p) => p.texto), tokens, costeEstimadoUsd, proveedor: modeloIA.proveedor, modelo: modeloIA.modelo, pregunta,
     refinar: ronda,
     foto: adjunta ? { piezasLeidas: adjunta.modelado.lectura.piezas.length, aplicadaSola: adjunta.aplicada, plantillas: adjunta.modelado.plantillas.map((p) => p.id), costeLecturaUsd } : null,
     piezasAntes: inicial.nodos.length, piezasDespues: escena.nodos.length, ids: escena.nodos.map((n) => n.id),

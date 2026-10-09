@@ -2,18 +2,24 @@
 
 import { useEffect, useState } from "react";
 
-type ProveedorId = "gemini";
+/** `claude` solo llega cuando está activo en local (IA_PROVEEDOR=claude); en producción la lista es solo Gemini. */
+type ProveedorId = "gemini" | "claude";
 
 type Salud = {
   proveedores: Array<{
     id: ProveedorId;
     disponible: boolean;
-    modelo: { chat: string; imagen: string };
+    soloLocal?: boolean;
+    modelo: { chat: string; imagen?: string; esfuerzo?: string };
+    sigueEnGemini?: string[];
   }>;
   ajusteGlobal: ProveedorId | null;
+  /** El proveedor que de verdad atiende hoy (el registro: Claude gana si está activo en local). */
+  predeterminado: ProveedorId | null;
   telemetria: Array<{
     cuando: string;
-    proveedor: ProveedorId;
+    /** En ai_call_log Claude figura como la empresa (`anthropic`). */
+    proveedor: ProveedorId | "anthropic" | "fal";
     operacion: string;
     ms: number;
     resultado: "ok" | "error";
@@ -24,7 +30,8 @@ type Salud = {
   }>;
 };
 
-const NOMBRE: Record<ProveedorId, string> = { gemini: "Gemini" };
+const NOMBRE: Record<ProveedorId, string> = { gemini: "Gemini", claude: "Claude Haiku (solo local)" };
+const NOMBRE_TELEMETRIA: Record<Salud["telemetria"][number]["proveedor"], string> = { gemini: "Gemini", claude: "Claude", anthropic: "Claude", fal: "fal" };
 
 export function MotorIATab() {
   const [salud, setSalud] = useState<Salud | null>(null);
@@ -70,9 +77,25 @@ export function MotorIATab() {
   }
 
   if (!salud) return <p className="text-sm text-texto-suave">Cargando…</p>;
+  const enUso = salud.proveedores.find((p) => p.id === salud.predeterminado);
 
   return (
     <div className="space-y-6">
+      {enUso && (
+        <p className="rounded-xl border border-borde bg-superficie p-3 text-sm text-texto">
+          IA en uso ahora: <span className="font-medium">{NOMBRE[enUso.id]}</span>
+          <span className="ml-2 text-xs text-texto-suave">
+            {enUso.modelo.chat}
+            {enUso.modelo.esfuerzo ? ` · esfuerzo ${enUso.modelo.esfuerzo}` : ""}
+          </span>
+          {enUso.soloLocal && (
+            <span className="mt-1 block text-xs text-texto-suave">
+              Activada en este equipo con IA_PROVEEDOR=claude (.env.local). Producción sigue con Gemini.
+              {enUso.sigueEnGemini?.length ? ` Siguen en Gemini: ${enUso.sigueEnGemini.join("; ")}.` : ""}
+            </span>
+          )}
+        </p>
+      )}
       <section>
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-texto-suave">
           Proveedor por defecto (global)
@@ -89,13 +112,15 @@ export function MotorIATab() {
                 type="radio"
                 name="proveedor-global"
                 checked={salud.ajusteGlobal === p.id}
-                disabled={!p.disponible || guardando}
+                disabled={!p.disponible || guardando || p.soloLocal}
                 onChange={() => elegirGlobal(p.id)}
               />
               <span className="flex-1">
                 <span className="font-medium text-texto">{NOMBRE[p.id]}</span>
                 <span className="ml-2 text-xs text-texto-suave">
-                  chat: {p.modelo.chat} · imagen: {p.modelo.imagen}
+                  chat: {p.modelo.chat}
+                  {p.modelo.imagen ? ` · imagen: ${p.modelo.imagen}` : ""}
+                  {p.modelo.esfuerzo ? ` · esfuerzo: ${p.modelo.esfuerzo}` : ""}
                 </span>
               </span>
               <span
@@ -103,7 +128,7 @@ export function MotorIATab() {
                   p.disponible ? "bg-exito-suave text-exito" : "bg-superficie text-texto-suave"
                 }`}
               >
-                {p.disponible ? "llave configurada" : "sin llave"}
+                {p.soloLocal ? "activa solo en local" : p.disponible ? "llave configurada" : "sin llave"}
               </span>
             </label>
           ))}
@@ -134,7 +159,7 @@ export function MotorIATab() {
                 {salud.telemetria.map((e, i) => (
                   <tr key={i} className="border-t border-borde">
                     <td className="px-3 py-2">{new Date(e.cuando).toLocaleTimeString()}</td>
-                    <td className="px-3 py-2">{NOMBRE[e.proveedor]}</td>
+                    <td className="px-3 py-2">{NOMBRE_TELEMETRIA[e.proveedor] ?? e.proveedor}</td>
                     <td className="px-3 py-2">{e.operacion}</td>
                     <td className="px-3 py-2">{e.ms}</td>
                     <td className="px-3 py-2">

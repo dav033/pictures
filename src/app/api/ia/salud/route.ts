@@ -1,13 +1,7 @@
 import { connection } from "next/server";
-import { MODELO_CHAT as MODELO_CHAT_GEMINI } from "@/lib/gemini";
 import { obtenerAjusteGlobal, proveedoresDisponibles, resolverProveedor } from "@/lib/ia/nucleo/registro";
+import { proveedoresEnSalud } from "@/lib/ia/nucleo/salud-proveedores";
 import { ultimosEventos } from "@sempertex/agente-core";
-import type { ProveedorId } from "@/lib/ia/nucleo/tipos";
-
-const PROVEEDORES_CHAT = ["gemini"] as const satisfies readonly ProveedorId[];
-const MODELOS: Record<(typeof PROVEEDORES_CHAT)[number], { chat: string }> = {
-  gemini: { chat: MODELO_CHAT_GEMINI },
-};
 
 export async function GET() {
   // Sin esto, `cacheComponents` prerenderiza esta ruta en el build (no ve
@@ -16,19 +10,14 @@ export async function GET() {
   // todas las peticiones en producción.
   await connection();
   const disponibles = proveedoresDisponibles();
-  const proveedores = PROVEEDORES_CHAT;
 
   // El mismo que resolvería una petición real sin override de cookie ni de
   // body: respeta IA_PROVEEDOR y el ajuste global, no solo "el primero que
-  // haya en la lista fija".
+  // haya en la lista fija" (con Claude activo en local, Claude).
   const predeterminado = disponibles.length ? resolverProveedor({}) : null;
 
   return Response.json({
-    proveedores: proveedores.map((id) => ({
-      id,
-      disponible: disponibles.includes(id),
-      modelo: MODELOS[id],
-    })),
+    proveedores: proveedoresEnSalud(disponibles),
     ajusteGlobal: obtenerAjusteGlobal() ?? null,
     predeterminado,
     telemetria: ultimosEventos().slice(0, 20),

@@ -1,10 +1,11 @@
 import { ThinkingLevel } from "@google/genai";
 import sharp from "sharp";
-import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
-import { registrarGemini, resultadoTelemetria } from "@/lib/ia/nucleo/telemetria-llamadas";
+import { MODELO_CHAT } from "@/lib/gemini";
+import { clienteGenerativoDe, type ClienteGenerativo, type DestinoGenerativo } from "@/lib/ia/nucleo/cliente-generativo";
+import { registrarSegunProveedor, resultadoTelemetria } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { decidir } from "@/lib/registro/servidor";
 import { FONDOS_CATALOGO } from "./fondos-escenografia";
-import { costeFlashUsd, type FotoLectura, type UsoModelo } from "./leer-foto-ia";
+import { costeUsoUsd, type FotoLectura, type UsoModelo } from "./leer-foto-ia";
 import { COLORES_DETECCION } from "./medir-colores";
 import type { FondoDetectado, GloboDetectado } from "./medir-con-detecciones";
 import { fundirRepetidas, trozosDelMosaico } from "./mosaico-deteccion";
@@ -23,6 +24,8 @@ export type { FondoDetectado } from "./medir-con-detecciones";
  *
  * La taxonomía de telemetría no tiene una capacidad aparte para esto: va como inventario de análisis de referencias, y
  * la `superficie` lleva el sufijo `:deteccion` para distinguirla de la lectura de la misma foto.
+ * W5: el cliente lo da el registro (`clienteGenerativoDe`): Gemini en producción (las mismas peticiones) y Claude Haiku
+ * en local cuando está activo.
  */
 
 export const PROPOSITO_DETECCION_GLOBOS = "deteccion_globos_foto";
@@ -61,6 +64,8 @@ export type Deteccion = { globos: GloboDetectado[]; fondos: FondoDetectado[]; us
 
 type Caja = [number, number, number, number];
 const SIN_USO: UsoModelo = { entrada: 0, salida: 0, pensamiento: 0 };
+/** `descartarRacimos` con un cliente de Gemini suelto (scripts/exp): la telemetría de siempre. */
+const GEMINI: DestinoGenerativo = { proveedor: "gemini", modelo: MODELO_CHAT };
 const sumarUso = (a: UsoModelo, b: UsoModelo): UsoModelo => ({ entrada: a.entrada + b.entrada, salida: a.salida + b.salida, pensamiento: a.pensamiento + b.pensamiento });
 const usoDe = (m: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number } | undefined): UsoModelo => ({ entrada: m?.promptTokenCount ?? 0, salida: m?.candidatesTokenCount ?? 0, pensamiento: m?.thoughtsTokenCount ?? 0 });
 
@@ -81,8 +86,9 @@ async function decodificar(foto: FotoLectura): Promise<{ data: Buffer; width: nu
 
 /** Detecta los globos y los fondos de la foto. Lanza solo si no responde ningún trozo; un trozo que falla queda en `fallidos`. */
 export async function detectarGlobos(foto: FotoLectura, opciones: { signal?: AbortSignal; superficie?: string } = {}): Promise<Deteccion> {
-  const cliente = getGeminiClient(PROPOSITO_DETECCION_GLOBOS);
-  if (!cliente) throw new Error("La IA no está configurada en este servidor.");
+  const generativo = clienteGenerativoDe(PROPOSITO_DETECCION_GLOBOS);
+  if (!generativo) throw new Error("La IA no está configurada en este servidor.");
+  const { cliente } = generativo;
   const superficie = opciones.superficie ? `${opciones.superficie}:deteccion` : "deteccion_globos";
   const { data, width, height, channels } = await decodificar(foto);
   const trozos = trozosDelMosaico();
@@ -94,12 +100,12 @@ export async function detectarGlobos(foto: FotoLectura, opciones: { signal?: Abo
       try {
         const bytes = await sharp(data, { raw: { width, height, channels } }).extract({ left, top, width: ancho, height: alto }).resize({ width: LADO_TROZO_PX }).jpeg({ quality: CALIDAD_JPEG }).toBuffer();
         const r = await cliente.models.generateContent({
-          model: MODELO_CHAT,
+          model: generativo.modelo,
           contents: [{ role: "user", parts: [{ inlineData: { mimeType: "image/jpeg", data: bytes.toString("base64") } }, { text: PEDIDO }] }],
           config: { responseMimeType: "application/json", responseJsonSchema: ESQUEMA, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: TOKENS_SALIDA_TROZO, temperature: TEMPERATURA_DETECCION, abortSignal: opciones.signal },
         });
         const crudo = jsonDe(r.candidates?.[0]?.content?.parts);
-        registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie }, usage: r.usageMetadata, bytesImagenEntrada: bytes.byteLength, thinkingLevel: "low", finishReason: r.candidates?.[0]?.finishReason });
+        registrarSegunProveedor(generativo.proveedor, { flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: generativo.modelo, inicio, resultado: "ok", contexto: { superficie }, usage: r.usageMetadata, bytesImagenEntrada: bytes.byteLength, thinkingLevel: generativo.esfuerzo ?? "low", finishReason: r.candidates?.[0]?.finishReason });
         const globos: GloboDetectado[] = (Array.isArray(crudo) ? crudo : []).flatMap((g: unknown) => {
           const caja = (g as { box_2d?: unknown }).box_2d, color = (g as { color?: unknown }).color;
           if (!esCaja(caja)) return [];
@@ -110,7 +116,7 @@ export async function detectarGlobos(foto: FotoLectura, opciones: { signal?: Abo
         });
         return { globos, uso: usoDe(r.usageMetadata), ok: true };
       } catch (error) {
-        registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie }, thinkingLevel: "low" });
+        registrarSegunProveedor(generativo.proveedor, { flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: generativo.modelo, inicio, resultado: resultadoTelemetria(error), contexto: { superficie }, thinkingLevel: generativo.esfuerzo ?? "low" });
         return { globos: [] as GloboDetectado[], uso: SIN_USO, ok: false };
       }
     })),
@@ -129,10 +135,10 @@ export async function detectarGlobos(foto: FotoLectura, opciones: { signal?: Abo
     throw new Error("La IA no pudo detectar los globos de la foto.");
   }
   let uso = sumarUso(resultados.reduce<UsoModelo>((s, r) => sumarUso(s, r.uso), SIN_USO), fondos.uso);
-  const racimos = await descartarRacimos(cliente, { data, width, height, channels }, fundirRepetidas(resultados.flatMap((r) => r.globos)), { signal: opciones.signal, superficie });
+  const racimos = await descartarRacimos(cliente, { data, width, height, channels }, fundirRepetidas(resultados.flatMap((r) => r.globos)), { signal: opciones.signal, superficie }, generativo);
   const globos = racimos.globos;
   uso = sumarUso(uso, racimos.uso);
-  const costeEstimadoUsd = costeFlashUsd(uso);
+  const costeEstimadoUsd = costeUsoUsd(uso, generativo.modelo);
   decidir("modelo:deteccion_globos", "globos y fondos detectados en la foto", { globos: globos.length, fondos: fondos.fondos.map((f) => f.id), trozos: trozos.length, fallidos, tokens: uso, costeEstimadoUsd }, { entrada: { bytesFoto: foto.bytes.byteLength } });
   return { globos, fondos: fondos.fondos, uso, costeEstimadoUsd, trozos: trozos.length, fallidos, racimos: racimos.revision };
 }
@@ -148,7 +154,7 @@ type Pixeles = { data: Buffer; width: number; height: number; channels: 1 | 2 | 
  * las que son varios globos (un racimo entero en una caja) se quitan antes de medir, para que no pasen por globos gigantes.
  * Si la llamada falla, se queda todo como estaba (y queda registrado).
  */
-export async function descartarRacimos(cliente: NonNullable<ReturnType<typeof getGeminiClient>>, px: Pixeles, globos: GloboDetectado[], opciones: { signal?: AbortSignal; superficie: string }): Promise<{ globos: GloboDetectado[]; uso: UsoModelo; revision: RevisionRacimos }> {
+export async function descartarRacimos(cliente: ClienteGenerativo, px: Pixeles, globos: GloboDetectado[], opciones: { signal?: AbortSignal; superficie: string }, destino: DestinoGenerativo = GEMINI): Promise<{ globos: GloboDetectado[]; uso: UsoModelo; revision: RevisionRacimos }> {
   const sospechosas = cajasSospechosas(globos);
   if (!sospechosas.length) return { globos, uso: SIN_USO, revision: { revisadas: 0, quitadas: 0 } };
   // Sin revisión se miden todas, como antes, y queda dicho por qué.
@@ -173,7 +179,7 @@ export async function descartarRacimos(cliente: NonNullable<ReturnType<typeof ge
   const partes = recortes.flatMap((bytes, k) => [{ text: `Recorte ${k + 1}:` }, { inlineData: { mimeType: "image/jpeg", data: bytes.toString("base64") } }]);
   const esquema = { type: "array", items: { type: "object", properties: { recorte: { type: "integer" }, globos: { type: "integer" }, mayor: { type: "integer" } }, required: ["recorte", "globos", "mayor"] } };
   const pedir = () => cliente.models.generateContent({
-    model: MODELO_CHAT,
+    model: destino.modelo,
     contents: [{ role: "user", parts: [...partes, { text: pedido }] }],
     config: { responseMimeType: "application/json", responseJsonSchema: esquema, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: TOKENS_SALIDA_RACIMOS, temperature: TEMPERATURA_FONDOS, abortSignal: opciones.signal },
   });
@@ -187,12 +193,12 @@ export async function descartarRacimos(cliente: NonNullable<ReturnType<typeof ge
       return pedir();
     });
   } catch (error) {
-    registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: `${opciones.superficie}:racimos` }, thinkingLevel: "low" });
+    registrarSegunProveedor(destino.proveedor, { flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: destino.modelo, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: `${opciones.superficie}:racimos` }, thinkingLevel: destino.esfuerzo ?? "low" });
     // Lo que canceló el usuario se cancela, no se mide a medias.
     if (opciones.signal?.aborted) throw error;
     return sinRevisar(mensaje(error));
   }
-  registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: `${opciones.superficie}:racimos` }, usage: r.usageMetadata, bytesImagenEntrada: recortes.reduce((s, b) => s + b.byteLength, 0), thinkingLevel: "low", finishReason: r.candidates?.[0]?.finishReason });
+  registrarSegunProveedor(destino.proveedor, { flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: destino.modelo, inicio, resultado: "ok", contexto: { superficie: `${opciones.superficie}:racimos` }, usage: r.usageMetadata, bytesImagenEntrada: recortes.reduce((s, b) => s + b.byteLength, 0), thinkingLevel: destino.esfuerzo ?? "low", finishReason: r.candidates?.[0]?.finishReason });
   let crudo: unknown;
   try { crudo = jsonDe(r.candidates?.[0]?.content?.parts); } catch { crudo = null; }
   if (!Array.isArray(crudo)) return sinRevisar(`la respuesta no trae la lista de recortes (${r.candidates?.[0]?.finishReason ?? "sin motivo"})`, usoDe(r.usageMetadata));
@@ -215,29 +221,29 @@ export async function descartarRacimos(cliente: NonNullable<ReturnType<typeof ge
  * foto entera: el lector los mide a ojo (una pared de 0,42 del ancho la leyó de 0,55) y con la caja quedan donde van.
  */
 export async function detectarFondos(foto: FotoLectura, catalogo: ReadonlyArray<{ id: string; descripcion: string }>, opciones: { signal?: AbortSignal; superficie?: string } = {}): Promise<{ fondos: FondoDetectado[]; uso: UsoModelo; costeEstimadoUsd: number }> {
-  const cliente = getGeminiClient(PROPOSITO_DETECCION_GLOBOS);
-  if (!cliente) throw new Error("La IA no está configurada en este servidor.");
+  const generativo = clienteGenerativoDe(PROPOSITO_DETECCION_GLOBOS);
+  if (!generativo) throw new Error("La IA no está configurada en este servidor.");
   const inicio = Date.now();
   const superficie = opciones.superficie ?? "deteccion_fondos";
   const ids = [...catalogo.map((c) => c.id), "otro"];
   const pedido = `Detecta los fondos de escenografía y muebles de la foto (NO los globos) y devuelve cada uno con su box_2d [ymin, xmin, ymax, xmax] normalizado 0-1000 y su id del catálogo. La caja abarca el objeto entero aunque haya globos delante (estima el borde tapado por la forma del objeto). Catálogo: ${catalogo.map((c) => `${c.id}: ${c.descripcion}`).join(" · ")}. Lo que no esté en el catálogo, id "otro".`;
   const esquema = { type: "array", items: { type: "object", properties: { box_2d: { type: "array", items: { type: "integer" }, minItems: 4, maxItems: 4 }, id: { type: "string", enum: ids } }, required: ["box_2d", "id"] } };
   try {
-    const r = await cliente.models.generateContent({
-      model: MODELO_CHAT,
+    const r = await generativo.cliente.models.generateContent({
+      model: generativo.modelo,
       contents: [{ role: "user", parts: [{ inlineData: { mimeType: foto.mime, data: Buffer.from(foto.bytes).toString("base64") } }, { text: pedido }] }],
       config: { responseMimeType: "application/json", responseJsonSchema: esquema, thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: TOKENS_SALIDA_FONDOS, temperature: TEMPERATURA_FONDOS, abortSignal: opciones.signal },
     });
     const crudo = jsonDe(r.candidates?.[0]?.content?.parts);
     const uso = usoDe(r.usageMetadata);
-    registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie }, usage: r.usageMetadata, bytesImagenEntrada: foto.bytes.byteLength, thinkingLevel: "low", finishReason: r.candidates?.[0]?.finishReason });
+    registrarSegunProveedor(generativo.proveedor, { flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: generativo.modelo, inicio, resultado: "ok", contexto: { superficie }, usage: r.usageMetadata, bytesImagenEntrada: foto.bytes.byteLength, thinkingLevel: generativo.esfuerzo ?? "low", finishReason: r.candidates?.[0]?.finishReason });
     const fondos = (Array.isArray(crudo) ? crudo : []).flatMap((f: unknown): FondoDetectado[] => {
       const caja = (f as { box_2d?: unknown }).box_2d, id = (f as { id?: unknown }).id;
       return esCaja(caja) && typeof id === "string" && id !== "otro" ? [{ box_2d: caja, id }] : [];
     });
-    return { fondos, uso, costeEstimadoUsd: costeFlashUsd(uso) };
+    return { fondos, uso, costeEstimadoUsd: costeUsoUsd(uso, generativo.modelo) };
   } catch (error) {
-    registrarGemini({ flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie }, thinkingLevel: "low" });
+    registrarSegunProveedor(generativo.proveedor, { flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: generativo.modelo, inicio, resultado: resultadoTelemetria(error), contexto: { superficie }, thinkingLevel: generativo.esfuerzo ?? "low" });
     throw error;
   }
 }

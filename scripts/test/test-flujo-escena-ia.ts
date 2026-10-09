@@ -121,12 +121,19 @@ async function main() {
     assert.match(ruta, /responderEnFlujo\(\{/);
     assert.match(ruta, /procesar: \(avisar\) => procesarPedido\(request, avisar\)/);
     assert.match(ruta, /alTerminar: \(estado\) =>/);
-    assert.match(ruta, /uso: \{ pasos, llamadas, costeEstimadoUsd: costeUsd\(tokens/);
+    assert.match(ruta, /uso: \{ pasos, llamadas, costeEstimadoUsd: costeUsd\(modeloIA, usos/);
     assert.match(ruta, /avisar\?\.\(\{ tipo: "paso"/);
     assert.match(ruta, /avisar\?\.\(\{ tipo: "fase", fase: "pensando" \}\)/);
-    assert.match(ruta, /getGeminiClient\("escena_ia"\)/);
+    // W5: el modelo sale del registro (Gemini, o Claude solo en local), con su cliente auditado y el corte del navegador.
+    assert.match(ruta, /modeloEscenaIADe\(destinoGenerativo\(\)\.proveedor\)/);
+    assert.doesNotMatch(ruta, /resolverProveedor\(|from "@\/lib\/ia\/nucleo\/registro"/, "la ruta no abre SQLite para elegir proveedor");
+    const modelo = readFileSync(path.resolve(__dirname, "../../src/lib/globos3d/modelo-escena/crear-modelo.ts"), "utf8");
+    assert.match(modelo, /getGeminiClient\("escena_ia"\)/);
+    assert.match(modelo, /getClaudeClient\("escena_ia"\)/);
     assert.match(ruta, /decidir\("herramienta:escena_ia"/);
-    assert.match(ruta, /abortSignal: request\.signal/);
+    assert.match(ruta, /signal: request\.signal/);
+    assert.match(readFileSync(path.resolve(__dirname, "../../src/lib/globos3d/modelo-escena/sesion-gemini.ts"), "utf8"), /abortSignal: signal/);
+    assert.match(readFileSync(path.resolve(__dirname, "../../src/lib/globos3d/modelo-escena/sesion-claude.ts"), "utf8"), /cliente\.messages\.create\(cuerpo, \{ signal \}\)/);
     assert.match(ruta, /const MAX_PASOS = 12;/);
   });
 

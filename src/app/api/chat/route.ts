@@ -312,7 +312,7 @@ async function atenderPOST(request: Request) {
       requestId,
       correlationId,
       superficie: "/api/chat",
-      thinkingLevel: process.env.GEMINI_CHAT_THINKING_LEVEL ?? "default",
+      thinkingLevel: chat.id === "claude" ? chat.thinkingLevel : process.env.GEMINI_CHAT_THINKING_LEVEL ?? "default",
     },
   });
   const iterador = generador[Symbol.asyncIterator]();
