@@ -179,6 +179,11 @@ prueba("un aro leído enorme del que la caja trae el arriba y el ancho (el pie l
   // Sin la línea del piso, el pie queda donde se leyó.
   const sinPiso = medirFondos([aro], [caja], 0.75).piezas[0] as Fondo;
   assert.ok(cerca(sinPiso.yBase, 0.78) && cerca(sinPiso.yBase - sinPiso.alto, 0.146), JSON.stringify(sinPiso));
+  // Una caja mayor que lo leído (lo leído se quedó corto) o corrida fuera del recuadro leído no es "el arriba de este telón": no se aplica.
+  const corto = fondo("aro_metalico", 0.48, 0.78, 0.12, 0.68);
+  assert.deepEqual(medirFondos([corto], [caja], 0.75, 0.58).piezas[0], corto, "una caja más ancha que lo leído");
+  const fuera = medirFondos([aro], [{ id: "aro_metalico", box_2d: [146, 700, 335, 1000] }], 0.75, 0.58).piezas[0];
+  assert.deepEqual(fuera, aro, "una caja corrida a un lado, fuera de lo leído");
   // Una caja que no es el arriba (es el pie) no cambia lo leído, como antes.
   const pie = medirFondos([aro], [{ id: "aro_metalico", box_2d: [600, 326, 780, 638] }], 0.75, 0.58).piezas[0];
   assert.deepEqual(pie, aro);

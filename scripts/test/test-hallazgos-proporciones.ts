@@ -32,15 +32,17 @@ prueba("con el pie en la línea del piso, los pedestales quedan por delante del 
     { tipo: "fondo", id: "lentejuelas", x: 0.5, yBase: PISO, ancho: 0.6, alto: 0.5, colores: blanco },
     { tipo: "fondo", id: "pedestales", x: 0.4, yBase: PISO, ancho: 0.4, alto: 0.3, colores: blanco, cajas },
   ]);
-  const panel = caja(l, "lentejuelas"), pedestal = caja(l, "pedestal-");
+  const panel = caja(l, "lentejuelas"), pedestal = caja(l, "pedestal");
   assert.ok(pedestal.min.z >= panel.max.z - 1, `el pedestal empieza en z ${pedestal.min.z.toFixed(0)} y el panel acaba en ${panel.max.z.toFixed(0)}`);
 });
 
 console.log("Aros con el pie tapado");
-prueba("un aro cuyo pie se ve sobre el piso no se estira: su alto no depende de dónde se vea su pie", () => {
+prueba("un aro de pie libre (con mástil) cuyo pie se ve sobre el piso conserva su tope y llega al piso: el arma con su ancho de diámetro, sin quedarse corto", () => {
   for (const id of ["aro_metalico", "aro_hexagonal"]) {
-    const alto = (yBase: number) => { const c = caja(lectura([{ tipo: "fondo", id, x: 0.5, yBase, ancho: 0.4, alto: 0.4, colores: blanco }]), id.replace(/_/g, "-")); return c.max.y - c.min.y; };
-    assert.ok(Math.abs(alto(0.6) - alto(PISO)) <= 2, `${id}: ${alto(0.6).toFixed(0)} cm con el pie tapado contra ${alto(PISO).toFixed(0)} cm`);
+    const c = caja(lectura([{ tipo: "fondo", id, x: 0.5, yBase: 0.55, ancho: 0.4, alto: 0.4, colores: blanco }]), id.replace(/_/g, "-"));
+    const tope = (PISO - 0.55) * H + 0.4 * H;
+    assert.ok(Math.abs(c.max.y - tope) <= 4, `${id}: tope ${c.max.y.toFixed(0)} cm, leído ${tope.toFixed(0)} cm`);
+    assert.ok(c.min.y <= 2, `${id}: el pie queda a ${c.min.y.toFixed(0)} cm`);
   }
 });
 
@@ -61,6 +63,21 @@ prueba("sobre una mesa cuyo tope queda a la altura de su pie, se asienta en el t
   assert.ok(!notas.some((n) => /se cuelga en el aire/.test(n)));
   const delante = compilarLectura(lectura([mesa, monton(topeMesa)])).escena.nodos.find((n) => n.id.startsWith("mesa-mantel"))!.colocacion;
   assert.ok(nodo.colocacion.en === "libre" && delante.en === "piso" && Math.abs(nodo.colocacion.zCm - delante.zCm) <= 40, "el montón queda a la profundidad de la mesa");
+});
+prueba("sobre un pedestal en primer plano (su pie más abajo que la línea del piso), se asienta sobre el pedestal tal como se arma: misma profundidad y su altura", () => {
+  const cajas = [{ x: 0.3, yBase: 0.9, ancho: 0.2, alto: 0.3 }];
+  const pedestales: PiezaLeida = { tipo: "fondo", id: "pedestales", x: 0.3, yBase: 0.9, ancho: 0.2, alto: 0.3, colores: blanco, cajas };
+  const l = lectura([pedestales, monton(0.6)]);
+  const { nodo, notas } = nodoMonton([pedestales, monton(0.6)]);
+  const pedestal = compilarLectura(l).escena.nodos.find((n) => n.id.startsWith("pedestal"))!;
+  assert.ok(nodo.colocacion.en === "libre" && pedestal.colocacion.en === "piso", JSON.stringify(nodo.colocacion));
+  if (nodo.colocacion.en === "libre" && pedestal.colocacion.en === "piso") {
+    assert.equal(nodo.colocacion.zCm, pedestal.colocacion.zCm, "a la profundidad del pedestal");
+    const alto = caja(l, "pedestal").max.y;
+    assert.ok(Math.abs(nodo.colocacion.yCm - alto) <= 2, `y ${nodo.colocacion.yCm}, el pedestal mide ${alto.toFixed(0)}`);
+    assert.ok(Math.abs(nodo.colocacion.xCm - pedestal.colocacion.xCm) < 150, "y por encima de él, no a otro lado de la sala");
+  }
+  assert.ok(notas.some((n) => /se asienta encima/.test(n)), notas.join(" | "));
 });
 prueba("una mesa que no está debajo (en x) no lo sostiene", () => {
   const mesa: PiezaLeida = { tipo: "fondo", id: "mesa_mantel", x: 0.8, yBase: 0.68, ancho: 0.2, alto: 0.18, colores: blanco };

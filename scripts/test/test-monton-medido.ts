@@ -33,6 +33,11 @@ prueba("el montón leído más alto y más a la izquierda que sus globos toma el
   assert.ok(m.ancho >= 0.07 && m.ancho <= 0.14, `ancho ${m.ancho}`);
 });
 
+prueba("el centro del montón no se corre de lado más de un cuarto de su ancho leído aunque todos sus globos estén en un borde", () => {
+  const m = medido(rejilla(0.74, 0.78, 0.81, 0.88, 0.03));
+  assert.ok(m.x <= 0.7 + 0.25 * 0.24 + 0.001 && m.x > 0.7, `x ${m.x}`);
+});
+
 prueba("si la detección solo cubre una parte baja del montón (menos de la mitad de su alto), se queda lo leído", () => {
   const m = medido(rejilla(0.66, 0.84, 0.78, 0.88, 0.02));
   assert.equal(m.yArriba, 0.7);

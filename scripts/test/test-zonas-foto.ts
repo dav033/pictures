@@ -60,4 +60,13 @@ prueba("colores por tramos contra colores mezclados por todas partes: las zonas 
   assert.equal(errorDeZonasDeColor(porTramos.map(({ color: _, ...d }) => d), mezclados, caja(porTramos)), null, "sin colores en la foto no hay medida");
 });
 
+prueba("rosa, fucsia, rojo y vino son familias distintas: un montón fucsia armado rosa se ve como error", () => {
+  const fucsia = tramo(0.1, 0.5, () => 0.3, () => 0.04, () => "fucsia");
+  assert.equal(errorDeZonasDeColor(fucsia, fucsia.map((d) => ({ ...d, color: "rosa" })), caja(fucsia)), 1);
+  assert.equal(errorDeZonasDeColor(fucsia, fucsia.map((d) => ({ ...d, color: "vino" })), caja(fucsia)), 1);
+  assert.equal(errorDeZonasDeColor(fucsia, fucsia.map((d) => ({ ...d, color: "nude" })), caja(fucsia)), 1);
+  const arena = tramo(0.1, 0.5, () => 0.3, () => 0.04, () => "beige");
+  assert.equal(errorDeZonasDeColor(arena, arena.map((d) => ({ ...d, color: "nude" })), caja(arena)), 0, "beige y nude sí son la misma familia");
+});
+
 console.log(`test-zonas-foto: ${pruebas} pruebas ok`);

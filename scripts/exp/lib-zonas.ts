@@ -98,10 +98,10 @@ const CELDAS_ZONA = 5;
 /** Una celda cuenta con al menos estos globos de color conocido en la foto. */
 const MINIMO_POR_CELDA = 2;
 
-/** La familia de color con que se comparan las zonas: los matices que el ojo confunde (beige / nude, vino / rojo) van juntos. */
+/** La familia de color con que se comparan las zonas: solo los matices que el ojo confunde (beige / nude, azul / azul marino) van juntos; rosa, fucsia, rojo y vino son familias distintas. */
 export const FAMILIA_DE_COLOR: Readonly<Record<string, string>> = {
-  blanco: "blanco", beige: "arena", nude: "arena", cafe: "arena", rosa: "rojizo", fucsia: "rojizo", rojo: "rojizo", vino: "rojizo", naranja: "rojizo",
-  plateado: "plata", gris: "plata", dorado: "dorado", amarillo: "dorado", verde: "verde", azul: "azul", "azul marino": "azul", morado: "azul", lila: "azul", negro: "negro",
+  blanco: "blanco", beige: "arena", nude: "arena", cafe: "arena", rosa: "rosa", fucsia: "fucsia", rojo: "rojo", vino: "vino", naranja: "naranja",
+  plateado: "plata", gris: "plata", dorado: "dorado", amarillo: "dorado", verde: "verde", azul: "azul", "azul marino": "azul", morado: "morado", lila: "morado", negro: "negro",
 };
 
 function celdasDeColor(discos: readonly Disco[], caja: Caja): Array<Map<string, number>> {

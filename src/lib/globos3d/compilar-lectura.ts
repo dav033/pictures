@@ -13,7 +13,7 @@ import { PROFUNDIDAD_DE_LA_FOTO_CM } from "./proyeccion-foto";
 import { columnaClasica } from "./escenas-presets";
 import { decoracionPredefinida } from "./figuras";
 import { reemplazarColor } from "./recolorear";
-import { arcosChiara, cortina, entradaDeCatalogo, esTelon, letrero, mediaLuna, panelRedondo, pedestales } from "./fondos-escenografia";
+import { TELONES_DE_DIAMETRO, arcosChiara, cortina, entradaDeCatalogo, esTelon, letrero, mediaLuna, panelRedondo, pedestales } from "./fondos-escenografia";
 import { mesaConMantel, paredLentejuelas, tapete } from "./escenografia";
 import { conTextoPieza } from "./mobiliario-pieza";
 import { acabadoRotuloLeido, avisoDeTexto, limpiarTexto } from "./rotulos";
@@ -22,6 +22,7 @@ import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
 import { codigoDeColor, fijosDeAnclas, paletaDeLectura } from "./colores-lectura";
 import { recogerPuntas } from "./puntas-lectura";
 import { apoyoDeRacimo } from "./apoyo-racimo";
+import { colocarCuerpo } from "./fondos-en-el-piso";
 import { montonesAlPie } from "./montones-al-pie";
 import { colgadoDelanteDePaneles, letrerosDelanteDeGlobos } from "./colgado-delante";
 
@@ -64,13 +65,9 @@ function seApoyaEnElPiso(q: Extract<PiezaLeida, { tipo: "fondo" }>): boolean {
 
 /** Un extremo de guirnalda a esta fracción del borde de la foto sigue fuera del encuadre: no se recoge (la foto la corta). */
 const BORDE_DE_LA_FOTO = 0.02;
-/** Cuánto se retira de la pared un pedestal cuyo pie no dice profundidad (está sobre la línea del piso o tapado): el retiro del catálogo, que lo deja delante de cualquier panel. */
-const RETIRO_PEDESTALES_CM = 120;
 
 /** Un montón de piso con el pie a más de esto sobre la línea del piso está en el aire (colgado de un aro), no en el piso. */
 const RACIMO_ALZADO_CM = 20;
-/** Los telones de piso cuyo `alto` es un diámetro (panel redondo, media luna, aros): su pie no se prolonga hasta el piso (un aro de 200 × 200 con el pie tapado saldría ovalado). */
-const TELONES_DE_DIAMETRO = new Set(["panel_redondo", "media_luna", "aro_metalico", "aro_hexagonal"]);
 /** Un pie a más de esto sobre la línea del piso está tapado (por los pedestales, por los globos): el telón no flota. */
 const PIE_TAPADO_CM = 10;
 
@@ -182,8 +179,9 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         // Sobre una mesa o un pedestal, cuyo tope está a la altura de su pie, se asienta encima; si no, cuelga y se dice.
         const apoyo = alzadoCm > RACIMO_ALZADO_CM ? apoyoDeRacimo(l, p, muro, { X, Y, cm }) : null;
         if (alzadoCm > RACIMO_ALZADO_CM && !apoyo) notas.push(`Pieza ${i + 1} (racimo_piso): su pie se ve ${Math.round(alzadoCm)} cm sobre la línea del piso y no hay mesa ni pedestal debajo: se cuelga en el aire, en el plano de la decoración.`);
+        if (apoyo) notas.push(`Pieza ${i + 1} (racimo_piso): su pie queda a la altura del tope de ${apoyo.nombre}: se asienta encima.`);
         poner("racimo-piso", "Racimo de piso", pieza, apoyo
-          ? { en: "libre", xCm: X(p.x), yCm: apoyo.yCm, zCm: apoyo.zCm, giroGrados: 0 }
+          ? { en: "libre", xCm: apoyo.xCm, yCm: apoyo.yCm, zCm: apoyo.zCm, giroGrados: 0 }
           : alzadoCm > RACIMO_ALZADO_CM
             ? { en: "libre", xCm: X(p.x), yCm: alzadoCm, zCm: muro + PROFUNDIDAD_DE_LA_FOTO_CM, giroGrados: 0 }
             : { en: "piso", xCm: r1(X(p.x) * factor), zCm: r0(muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm - g / 2), giroGrados: 0 });
@@ -281,12 +279,10 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         // Un juego de pedestales detectado cuerpo a cuerpo: cada uno en su sitio, con su diámetro y su alto, y la profundidad que dice su pie (el de delante se ve más grande).
         if (p.id === "pedestales" && p.cajas?.length) {
           p.cajas.forEach((c, k) => {
-            const { delanteCm, factor } = profundidadEnElPiso(l, c.yBase);
-            const diametroCm = r0(Math.max(30, cm(c.ancho) * factor));
+            const hecho = colocarCuerpo(l, c, muro, { X, Y, cm });
             const color = p.colores[k % p.colores.length]!;
-            const elementos = pedestales({ cilindros: [{ diametroCm, altoCm: r0(Math.max(30, cm(c.alto) * factor)), hex: color.hex, acabado: color.acabado === "cromado" ? "metal" as const : "satinado" as const }] });
-            poner("pedestal", `Pedestal ${k + 1}`, { tipo: "escenografia", elementos, mueble: { id: p.id } },
-              { en: "piso", xCm: r1(X(c.x) * factor), zCm: delanteCm > 0 ? r0(muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm - diametroCm / 2) : muro + RETIRO_PEDESTALES_CM, giroGrados: 0 });
+            const elementos = pedestales({ cilindros: [{ diametroCm: hecho.anchoCm, altoCm: hecho.altoCm, hex: color.hex, acabado: color.acabado === "cromado" ? "metal" as const : "satinado" as const }] });
+            poner("pedestal", `Pedestal ${k + 1}`, { tipo: "escenografia", elementos, mueble: { id: p.id } }, { en: "piso", xCm: hecho.xCm, zCm: hecho.zCm, giroGrados: 0 });
           });
           return;
         }

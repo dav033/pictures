@@ -1,4 +1,4 @@
-import { esTelon } from "./fondos-escenografia";
+import { TELONES_DE_DIAMETRO, esTelon } from "./fondos-escenografia";
 import { mismaFamiliaDeFondo } from "./fondos-familias";
 import type { PiezaLeida } from "./lectura-foto";
 
@@ -62,10 +62,15 @@ function cajasDe(p: Fondo, leida: Caja, candidatas: readonly Candidata[]): Candi
 /** Los fondos que son un juego de varios cuerpos (los pedestales): se guarda la caja de cada uno, no solo la unión. */
 const JUEGOS = new Set(["pedestales"]);
 
-/** Los telones cuyo `alto` es un diámetro (panel redondo, media luna): el ancho de su caja ya es todo lo que se ve de ellos. */
-const DE_DIAMETRO = new Set(["panel_redondo", "media_luna"]);
 /** La caja trae el arriba del telón leído si su borde de arriba difiere del leído en menos de esta fracción del alto leído. */
 const ARRIBA_COINCIDE = 0.15;
+
+/** Una caja es de lo leído (no de otro objeto ni de un telón mayor) si cabe dentro del recuadro leído con este margen (fracción del ancho leído). */
+const MARGEN_DENTRO = 0.1;
+const dentroDeLoLeido = (caja: Caja, leida: Caja, ancho: number) => {
+  const margen = MARGEN_DENTRO * ancho;
+  return caja.x0 >= leida.x0 - margen && caja.x1 <= leida.x1 + margen && caja.y0 >= leida.y0 - margen && caja.y1 <= leida.y1 + margen;
+};
 
 /** Una caja detectada que no llega a esta parte de lo leído (de ancho o de alto) es solo un pedazo del fondo. */
 const PARTE_MINIMA_DE_LO_LEIDO = 0.4;
@@ -91,7 +96,7 @@ export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly Fond
       const cortoAncho = union.x1 - union.x0 < PARTE_MINIMA_DE_LO_LEIDO * p.ancho, cortoAlto = union.y1 - union.y0 < PARTE_MINIMA_DE_LO_LEIDO * p.alto;
       // Un telón del que la caja trae el ARRIBA (empieza donde él) y su ancho, pero no su pie (los globos o los muebles lo tapan), se mide por
       // lo que la foto sí enseña: su ancho y su borde de arriba; el pie baja a la línea del piso (como el telón con el pie tapado de `compilar-lectura.ts`).
-      if (cortoAlto && !cortoAncho && esTelon(p.id) && !DE_DIAMETRO.has(p.id) && Math.abs(union.y0 - leida.y0) <= ARRIBA_COINCIDE * p.alto) {
+      if (cortoAlto && !cortoAncho && esTelon(p.id) && !TELONES_DE_DIAMETRO.has(p.id) && Math.abs(union.y0 - leida.y0) <= ARRIBA_COINCIDE * p.alto && dentroDeLoLeido(union, leida, p.ancho)) {
         const pie = Math.max(union.y1, pisoY ?? p.yBase);
         salida[i] = { ...p, x: r3(entre((union.x0 + union.x1) / 2 / aspecto, -0.2, 1.2)), yBase: r3(entre(pie, -0.2, 1.2)), ancho: r3(entre(union.x1 - union.x0, 0.005, 2)), alto: r3(entre(pie - union.y0, 0.005, 2)) };
         sinCaja.delete(i);
