@@ -43,7 +43,7 @@ const esPregunta = (v: unknown): v is Pregunta =>
 
 /** Lo que dice la barra mientras trabaja la IA: armando, leyendo la foto o comparando con ella. */
 function textoDeProgreso(cargando: boolean, leyendoFoto: boolean, refinando: ProgresoRefinado | null): string {
-  if (!cargando && refinando) return `Comparando con la foto… ronda ${refinando.ronda}/${refinando.total}`;
+  if (!cargando && refinando) return refinando.fase === "revisando" ? "Revisando si mejoró…" : `Comparando con la foto… ronda ${refinando.ronda}/${refinando.total}`;
   return leyendoFoto ? "La IA está leyendo la foto…" : "La IA está armando…";
 }
 
@@ -103,7 +103,8 @@ export function AsistenteEscena({ escena, onEscena, compacta = false, seleccion 
       setAcciones((a) => [...a, ...r.cambios.map((c) => ({ ...c, resumen: `Ronda ${r.ronda}: ${c.resumen}` }))]);
     },
     alTerminar: (r) => {
-      setRespuesta((anterior) => [anterior, resumenDeRefinado(r)].filter(Boolean).join(" "));
+      // La primera respuesta ya quedó en el historial: la barra dice solo cómo terminó la comparación.
+      setRespuesta((anterior) => resumenDeRefinado(r) || anterior);
       if (r.motivo === "error") setError(r.error ? `No pude comparar con la foto: ${r.error}` : "No pude comparar con la foto.");
       setVueltas((v) => v + 1);
     },

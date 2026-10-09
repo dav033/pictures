@@ -17,7 +17,7 @@ import { MAX_RONDAS_REFINAR, ReporteSchema, reporteDe, type ReporteComparacion }
  * colores, piezas que faltan o sobran, escala) con la herramienta `reportar_comparacion` y las corrige con las herramientas
  * de siempre. Son a lo más `MAX_RONDAS_REFINAR` rondas, automáticas y cada una con su deshacer; se paran cuando el modelo
  * no ve diferencias significativas, cuando no cambió nada o cuando el usuario las detiene. Aquí: el cuerpo, el mensaje al
- * modelo, la herramienta de reporte y la decisión de seguir o parar. Todo puro y sin red (las pruebas no tocan Gemini).
+ * modelo, la herramienta de reporte y la decisión de seguir o parar. Todo puro y sin red (las pruebas no tocan Gemini). Que la ronda se quede o se descarte lo decide el navegador (`aceptacion-ronda.ts`).
  */
 
 /** Vueltas del modelo con herramientas en una ronda (menos que en un pedido normal: la ronda corrige, no arma de cero). */

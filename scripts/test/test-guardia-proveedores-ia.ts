@@ -128,6 +128,7 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
   "src/app/api/admin/ordenes/[numero]/recaption/route.ts": "caption de orden con opencode (IA)",
   "src/app/api/internal/ai/echo/route.ts": "eco Next → Python (diagnóstico)",
   "src/app/api/escena-ia/route.ts": "taller 3D: la IA arma la escena con herramientas (Gemini texto)",
+  "src/app/api/escena-ia/similitud/route.ts": "taller 3D: criterio de aceptación del refinado (embeddings de imagen con Gemini: foto vs capturas)",
   "src/app/api/escena-desde-foto/route.ts": "taller 3D: foto de una decoración → escena (Gemini visión lee la foto; embedding de imagen para las plantillas)",
   "src/app/api/render-3d-imagen/route.ts": "taller 3D: foto con IA (FLUX)",
   "src/app/api/taller/buscar/route.ts": "taller 3D: búsqueda en la biblioteca (RAG; embedding de la consulta con Gemini)",

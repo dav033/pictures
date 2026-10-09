@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { Sala } from "@/lib/globos3d/escena";
 import type { Encuadre } from "@/lib/globos3d/encuadre-foto";
+import { FOV_FOTO_GRADOS, PROFUNDIDAD_DE_LA_FOTO_CM } from "@/lib/globos3d/proyeccion-foto";
 
 /**
  * La cámara que mira la escena armada de una foto desde donde estaba la cámara de la foto (REQ-001 paso 9): de frente a
@@ -10,9 +11,7 @@ import type { Encuadre } from "@/lib/globos3d/encuadre-foto";
  */
 
 const CM = 0.01;
-const FOV_GRADOS = 35;
-/** A qué profundidad de la pared de fondo se mide la escala de la foto: donde suele estar la decoración (cm hacia el frente). */
-export const PROFUNDIDAD_DE_LA_FOTO_CM = 40;
+const FOV_GRADOS = FOV_FOTO_GRADOS;
 
 export function camaraDeFoto(encuadre: Encuadre, sala: Pick<Sala, "fondoCm">): THREE.PerspectiveCamera {
   const distancia = encuadre.altoCm / 2 / Math.tan(THREE.MathUtils.degToRad(FOV_GRADOS / 2));

@@ -3,14 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cabecerasConversacion } from "@/lib/registro/cliente";
 import { pedirRondaHttp, refinarConFoto, type EntradaRefinado, type ResultadoRefinado, type RondaHecha } from "@/lib/globos3d/refinar-foto-cliente";
+import { crearEvaluadorDeRonda, pedirSimilitudHttp } from "@/lib/globos3d/aceptacion-ronda";
 import { MAX_RONDAS_REFINAR } from "@/lib/globos3d/refinado-ronda";
 
 /**
- * Rondas automáticas tras armar desde una foto: APAGADAS (0) hasta tener un criterio de aceptación por ronda. En la
- * evaluación (07, 09, 12, 13) no mejoraron en promedio, y en la prueba real con la 07 la ronda tapó el «LOVE» detrás
- * de la guirnalda, lo pasó a un foil que se ve negro y achicó la silueta. La ruta admite hasta MAX_RONDAS_REFINAR.
+ * Rondas automáticas tras armar desde una foto: una, y solo se queda si mejora (`aceptacion-ronda.ts`: la captura se
+ * parece más a la foto que la de antes y la estructura no empeora). En la evaluación (07, 09, 12, 13) las rondas sin
+ * criterio no mejoraron en promedio, y en una prueba real con la 07 la ronda tapó el «LOVE» detrás de la guirnalda y
+ * achicó la silueta; ahora una ronda así se descarta sola. La ruta admite hasta MAX_RONDAS_REFINAR.
  */
-export const RONDAS_AUTOMATICAS: number = 0;
+export const RONDAS_AUTOMATICAS: number = 1;
 
 /**
  * El refinado contra la foto de la barra «Pídele a la IA» (REQ-001 paso 9): corre `refinarConFoto` con la captura del
@@ -18,7 +20,7 @@ export const RONDAS_AUTOMATICAS: number = 0;
  * foto… ronda 1/2») y `detener` lo para (también al salir de la pantalla). Cada ronda con cambios llega por `alRonda` para que el
  * taller la aplique y guarde su deshacer.
  */
-export type ProgresoRefinado = { ronda: number; total: number };
+export type ProgresoRefinado = { ronda: number; total: number; fase?: "comparando" | "revisando" };
 
 export function useRefinadoFoto(oyentes: { alRonda: (r: RondaHecha) => void; alTerminar: (r: ResultadoRefinado) => void }) {
   const [refinando, setRefinando] = useState<ProgresoRefinado | null>(null);
@@ -35,6 +37,7 @@ export function useRefinadoFoto(oyentes: { alRonda: (r: RondaHecha) => void; alT
       const { capturarEscenaParaRefinar } = await import("./captura-refinar");
       const resultado = await refinarConFoto(entrada, {
         capturar: capturarEscenaParaRefinar,
+        evaluar: crearEvaluadorDeRonda({ capturar: capturarEscenaParaRefinar, similitud: pedirSimilitudHttp(cabecerasConversacion("3d")) }),
         pedir: (cuerpo, signal) => pedirRondaHttp(cuerpo, signal, cabecerasConversacion("3d")),
         alProgreso: setRefinando,
         alRonda: (r) => oyentesRef.current.alRonda(r),
