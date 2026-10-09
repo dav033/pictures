@@ -15,7 +15,7 @@
 import assert from "node:assert/strict";
 import { crearAzar } from "../../src/lib/globos3d/organico";
 import { LecturaFotoSchema, type ColorLeido, type LecturaFoto, type PiezaLeida } from "../../src/lib/globos3d/lectura-foto";
-import { coloresDe, coloresPorEscalonDe, dominanteDe, indiceDeDetectado } from "../../src/lib/globos3d/medir-colores";
+import { coloresDe, coloresPorEscalonDe, dominantesPorTramo, indiceDeDetectado } from "../../src/lib/globos3d/medir-colores";
 import { medirConDetecciones, type GloboDetectado } from "../../src/lib/globos3d/medir-con-detecciones";
 import { ejeMedido, globosDe, type Globo } from "../../src/lib/globos3d/medir-geometria";
 import { medirFondos } from "../../src/lib/globos3d/medir-fondos";
@@ -311,8 +311,8 @@ prueba("los colores de un escalón y el dominante de un tramo salen de la cuenta
   const r = coloresPorEscalonDe(porEscalon, colores);
   assert.deepEqual(r.map((e) => e.escalon), ["chicos"], "los medianos están en 50/50 y la pieza en 60/40: no se aparta");
   assert.deepEqual(r[0]!.pesos, [100, 0]);
-  assert.equal(dominanteDe(doradosChicos, colores), "dorado");
-  assert.equal(dominanteDe(doradosChicos.slice(0, 3), colores), undefined, "con menos de 5 globos no hay dominante");
+  assert.deepEqual(dominantesPorTramo([doradosChicos, doradosChicos], colores, indiceDeDetectado(colores), [0.6, 0.4]), ["dorado", "dorado"]);
+  assert.deepEqual(dominantesPorTramo([doradosChicos.slice(0, 3), doradosChicos.slice(0, 3)], colores, indiceDeDetectado(colores), [0.6, 0.4]), [undefined, undefined], "con menos de 12 globos entre los dos no hay dominante");
 });
 
 console.log("Anclas, esquema y casos de borde");

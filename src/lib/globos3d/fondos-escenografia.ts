@@ -119,3 +119,6 @@ export function esTelon(id: string): boolean {
   if (!e) return false;
   return e.clase === "fondo" ? e.retiroCm === undefined : Boolean(e.telon);
 }
+
+/** Los telones de piso cuyo `alto` es un diámetro (panel redondo, media luna): su ancho es todo lo que se ve de ellos y su pie no se prolonga hasta el piso. Los aros llevan pie y mástil: son telones de alto propio. */
+export const TELONES_DE_DIAMETRO: ReadonlySet<string> = new Set(["panel_redondo", "media_luna"]);

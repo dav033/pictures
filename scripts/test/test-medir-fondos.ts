@@ -26,6 +26,27 @@ const BLANCO: ColorLeido = { nombre: "blanco", hex: "#F5F5F5", peso: 100, acabad
 const fondo = (id: string, x: number, yBase: number, ancho: number, alto: number, extra: Partial<Fondo> = {}): Fondo => ({ tipo: "fondo", id, x, yBase, ancho, alto, colores: [BLANCO], ...extra });
 const cerca = (a: number, b: number, tol = 0.002) => Math.abs(a - b) <= tol;
 
+console.log("Juegos de pedestales");
+const TRES = [{ id: "pedestales", box_2d: [560, 50, 900, 280] }, { id: "pedestales", box_2d: [630, 190, 970, 400] }, { id: "pedestales", box_2d: [630, 400, 890, 520] }];
+prueba("los pedestales detectados uno a uno conservan la caja de cada uno, de izquierda a derecha, además de la unión", () => {
+  const juego = fondo("pedestales", 0.3, 0.9, 0.3, 0.3);
+  const f = medirFondos([juego], [TRES[2]!, TRES[0]!, TRES[1]!], ASPECTO).piezas[0] as Fondo;
+  assert.equal(f.cajas?.length, 3);
+  assert.ok(f.cajas!.every((c, i, v) => i === 0 || v[i - 1]!.x < c.x), JSON.stringify(f.cajas));
+  assert.ok(cerca(f.cajas![0]!.alto, 0.34) && cerca(f.cajas![0]!.yBase, 0.9) && cerca(f.cajas![0]!.ancho, 0.23), JSON.stringify(f.cajas![0]));
+  assert.ok(cerca(f.ancho, 0.47) && cerca(f.yBase, 0.97), `la unión sigue siendo la caja del fondo: ${f.ancho} × ${f.yBase}`);
+});
+
+prueba("un juego con una sola caja detectada la guarda también (no se pierde su sitio y su pie)", () => {
+  const f = medirFondos([fondo("pedestales", 0.3, 0.9, 0.2, 0.3)], [TRES[1]!], ASPECTO).piezas[0] as Fondo;
+  assert.equal(f.cajas?.length, 1);
+});
+
+prueba("los fondos que no son un juego no llevan cajas", () => {
+  const f = medirFondos([fondo("lentejuelas", 0.5, 0.8, 0.5, 0.5)], [{ id: "lentejuelas", box_2d: [200, 250, 800, 750] }], ASPECTO).piezas[0] as Fondo;
+  assert.equal(f.cajas, undefined);
+});
+
 console.log("Filas de piezas");
 prueba("seis sillas detectadas una a una dejan la fila con el ancho de las seis", () => {
   const fila = fondo("silla_tiffany", 0.5, 0.9, 0.4, 0.16, { cantidad: 6 });
@@ -142,6 +163,30 @@ prueba("los mismos globos sobre un panel (sin superficie) siguen siendo de la gu
   const con = medirConDetecciones(lectura([guirnalda, panel]), [...DEL_ARCO, ...encima]);
   assert.ok(!/cajas detectadas son de un fondo/.test(con.notas.join(" ")), con.notas.join(" | "));
   assert.notEqual(JSON.stringify(con.lectura.piezas[0]), JSON.stringify(sin.lectura.piezas[0]));
+});
+
+console.log("Telón con el arriba visible");
+prueba("un aro leído enorme del que la caja trae el arriba y el ancho (el pie lo tapan los globos) toma ese ancho y ese arriba, y su pie baja al piso", () => {
+  // Leído 0,46 × 0,68 con el pie en 0,78 (arriba en 0,10); la caja es el arco de arriba: de 0,146 a 0,335 y 0,234 de ancho (con la foto de aspecto 0,75).
+  const aro = fondo("aro_metalico", 0.48, 0.78, 0.46, 0.68);
+  const caja = { id: "aro_metalico", box_2d: [146, 326, 335, 638] };
+  const r = medirFondos([aro], [caja], 0.75, 0.58);
+  const f = r.piezas[0] as Fondo;
+  assert.ok(cerca(f.ancho, 0.234), `ancho ${f.ancho}`);
+  assert.ok(cerca(f.yBase - f.alto, 0.146), `arriba ${f.yBase - f.alto}`);
+  assert.ok(cerca(f.yBase, 0.58), `pie ${f.yBase}`);
+  assert.match(r.notas.join(" "), /trae su borde de arriba y su ancho/);
+  // Sin la línea del piso, el pie queda donde se leyó.
+  const sinPiso = medirFondos([aro], [caja], 0.75).piezas[0] as Fondo;
+  assert.ok(cerca(sinPiso.yBase, 0.78) && cerca(sinPiso.yBase - sinPiso.alto, 0.146), JSON.stringify(sinPiso));
+  // Una caja mayor que lo leído (lo leído se quedó corto) o corrida fuera del recuadro leído no es "el arriba de este telón": no se aplica.
+  const corto = fondo("aro_metalico", 0.48, 0.78, 0.12, 0.68);
+  assert.deepEqual(medirFondos([corto], [caja], 0.75, 0.58).piezas[0], corto, "una caja más ancha que lo leído");
+  const fuera = medirFondos([aro], [{ id: "aro_metalico", box_2d: [146, 700, 335, 1000] }], 0.75, 0.58).piezas[0];
+  assert.deepEqual(fuera, aro, "una caja corrida a un lado, fuera de lo leído");
+  // Una caja que no es el arriba (es el pie) no cambia lo leído, como antes.
+  const pie = medirFondos([aro], [{ id: "aro_metalico", box_2d: [600, 326, 780, 638] }], 0.75, 0.58).piezas[0];
+  assert.deepEqual(pie, aro);
 });
 
 console.log(`test-medir-fondos: ${pruebas} pruebas ok`);

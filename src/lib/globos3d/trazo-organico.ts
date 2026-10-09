@@ -1,6 +1,7 @@
 import type { Vec3 } from "./modulos";
 import { RELLENO_TUPIDO, crearAzar, type ColorOrganico, type GloboFijo, type OpcionesOrganico, type PuntoGrosor, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "./organico";
 import { INFLADOS_ORGANICOS, type PesosFormato } from "./estructuras-organicas";
+import { TOCA_PISO_CM } from "./puntas-lectura";
 import { ZONAS_ORGANICAS, fraccionesDe, normalizarPesos, pesosConZonas, rangoAltura, type RangoAltura, type ZonaMezcla } from "./zonas-organicas";
 
 /**
@@ -117,8 +118,6 @@ export function puntosDeSilueta(silueta: SiluetaTrazo, medidas: { anchoCm: numbe
 // ----------------------------------------------------------------------------------------------------------
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
-/** Un extremo con el borde de los globos a menos de esto del piso nace del piso. */
-const TOCA_PISO_CM = 6;
 
 /** Catmull-Rom en x, y y grosor a la vez (el grosor también se suaviza entre puntos). */
 function suavizar(puntos: readonly PuntoTrazo[], pasosPorTramo: number): PuntoTrazo[] {
