@@ -41,6 +41,7 @@ import { Compositor } from "./Compositor";
 import { FotosEjemploGuiada } from "./FotosEjemploGuiada";
 import { fotoSubidaValida } from "./foto-subida";
 import { BurbujaAsistente, BurbujaUsuario } from "./Burbujas";
+import { CalificacionGuiada } from "./CalificacionGuiada";
 import { IndicadorEscribiendo } from "./IndicadorEscribiendo";
 import type { EtapaPlan } from "./Esqueletos";
 import { EsqueletoPlan } from "./Esqueletos";
@@ -1833,6 +1834,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
                   : <BurbujaAsistente id={mensaje.id} mostrarAvatar={anterior?.role !== "assistant"} transmitiendo={transmitiendoId === mensaje.id}>
                       {contenidoAsistente(mensaje, indice)}
                     </BurbujaAsistente>}
+                <CalificacionGuiada mensajes={mensajes} indice={indice} listo={transmitiendoId !== mensaje.id} />
               </motion.div>;
             })}
           </AnimatePresence>}

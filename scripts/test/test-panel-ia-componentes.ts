@@ -53,7 +53,7 @@ const desactivado = (etiqueta: string) => / disabled=""/.test(etiqueta);
 const iaFalsa = (turnos: TurnoPanel[], extra: Partial<AsistenteIA> = {}): AsistenteIA => ({
   turnos, enCurso: null, refinando: null, ocupado: false, enviar: async () => true, detener: sinAccion, deshacer: sinAccion, rehacer: sinAccion, verAntes: sinAccion, antesId: null, escenaAntes: null,
   borrar: sinAccion, preguntaPendiente: null, estados: Object.fromEntries(turnos.filter((t) => t.diff).map((t) => [t.id, estadoDeTurno(alta, t.diff!)])), avisos: {},
-  marcas: [], apuntar: sinAccion, tiempo: "unos 12 s", costeTotalUsd: 0.0031, ...extra,
+  datosFeedback: () => undefined, marcas: [], apuntar: sinAccion, tiempo: "unos 12 s", costeTotalUsd: 0.0031, ...extra,
 });
 
 console.log("Pestañas");
