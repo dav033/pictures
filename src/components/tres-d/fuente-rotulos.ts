@@ -81,6 +81,23 @@ export async function exigirLetraDeRotulos(solidos: readonly { rotulo?: unknown;
   if (!(await prepararRotulos(solidos))) throw new Error(`No se pudo cargar la letra de los rótulos (${FUENTE_ROTULOS.url}): la captura saldría con una marca roja en lugar del texto. Revisa la conexión e inténtalo de nuevo.`);
 }
 
+/** Espera a que el navegador pinte un cuadro (o un rato corto si la pestaña no pinta). */
+const esperarCuadro = () => new Promise<void>((resolver) => { const reloj = setTimeout(resolver, 200); requestAnimationFrame(() => { clearTimeout(reloj); resolver(); }); });
+
+/**
+ * Antes de capturar el visor VIVO para mandarlo a la IA (FLUX): si hay rótulos o neones, la letra tiene que estar cargada y dibujada. Si
+ * ya lo estaba, nada; si no, se espera (se reintenta aunque haya fallado), se hace rehacer lo dibujado como marca (`rehacer`) y se
+ * espera un cuadro para que se pinte. Si no carga, lanza un error que se le muestra a la persona: la marca gris o roja nunca llega a FLUX.
+ * `cuadro` es de las pruebas.
+ */
+export async function letraParaCapturar(hayRotulos: boolean, rehacer: () => void, cuadro: () => Promise<void> = esperarCuadro): Promise<void> {
+  if (!hayRotulos) return;
+  const estabaLista = estadoFuenteRotulos() === "lista";
+  if (!(await cargarFuenteRotulos())) throw new Error(`No se pudo cargar la letra de los nombres (${FUENTE_ROTULOS.url}): la imagen saldría con una marca roja en lugar del texto. Revisa la conexión e inténtalo de nuevo.`);
+  if (!estabaLista) rehacer();
+  await cuadro();
+}
+
 const suscribir = (oyente: () => void) => { oyentes.add(oyente); return () => { oyentes.delete(oyente); }; };
 
 /** El estado de la letra para un componente (la miniatura, el editor); pide la carga al montarse. */

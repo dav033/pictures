@@ -80,7 +80,10 @@ function recortada(m: Mascara): Mascara | null {
  */
 type TextoGuardado = { mascara: Mascara; aspecto: number; usos: number; letras?: THREE.BufferGeometry | null; forma?: THREE.DataTexture; vinilos: Map<string, THREE.Material> };
 
-/** El lado mayor (px) de la textura de un vinilo: lo justo para que el borde no se vea escalonado a su tamaño real. */
+/**
+ * El lado mayor (px) de la textura de un vinilo: lo justo para que el borde no se vea escalonado a su tamaño real. Dos canales de un byte:
+ * 2048 × 384 son 1,5 MB y con los mipmaps (un tercio más) 2 MiB en el peor caso; un nombre normal pesa mucho menos.
+ */
 const ALTO_TEXTURA_PX = 384, ANCHO_TEXTURA_PX = 2048;
 
 /** La forma de las letras como textura de dos canales (rojo y verde): la cobertura de cada píxel (promediada al achicar la máscara) va en el verde, que es el que lee `alphaMap`. */
@@ -243,8 +246,10 @@ export function crearRotulosVisor(entorno: () => THREE.Texture, opciones: Opcion
     letraLista() {
       const estado = estadoFuenteRotulos();
       if (estado === "lista") return true;
+      // Si falló, solo se reintenta con la espera de siempre (reintentarFuenteRotulos); la carga a propósito es de las capturas.
       if (estado === "fallo") reintentarFuenteRotulos();
-      if (estadoFuenteRotulos() !== "lista") { void cargarFuenteRotulos(); avisarCuandoEsteLista(); }
+      else if (estado === "pendiente") void cargarFuenteRotulos();
+      if (estadoFuenteRotulos() === "cargando") avisarCuandoEsteLista();
       return false;
     },
     malla(s) {

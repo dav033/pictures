@@ -17,6 +17,7 @@ import { CONFETI_PLATA, TOPE_CONFETI, discosConfeti, geometriaConfeti, materialC
 import { achatadoDe } from "./deformacion-globo";
 import type { AmbienteSala } from "@/lib/globos3d/escena";
 import { crearEscenografiaVisor } from "./escenografia-visor";
+import { letraParaCapturar } from "./fuente-rotulos";
 
 /**
  * La escena de /3d con three.js, sin React: un globo (o la fila de todos los formatos) sobre un piso con
@@ -91,6 +92,11 @@ export type EscenaGlobos = {
    * apaisada) y es la misma que se le pide a FLUX, para que no estire ni recorte.
    */
   capturar: () => { datos: string; aspecto: AspectoCaptura };
+  /**
+   * Prepara la captura para la IA: con rótulos o neones en la escena, espera la letra y a que se dibujen con ella; lanza un error claro
+   * si no carga (lo que se captura sin ella saldría con marcas). Llamarla antes de `capturar`.
+   */
+  esperarRotulos: () => Promise<void>;
   /**
    * Render estándar para las incrustaciones de imagen de la biblioteca (PNG cuadrado de `lado` px): cámara fija por
    * `vista` con lo que se ve encuadrado al 70 %, calidad alta, sin cuadrícula ni ayudas y sobre un fondo gris claro
@@ -1568,6 +1574,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       const r = lienzo.getBoundingClientRect();
       return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
     },
+    esperarRotulos: () => letraParaCapturar([...nodos.values(), ...aparcados.values()].some((d) => d.conRotulo), rehacerRotulos),
     capturar() {
       // 1. Render cuadrado grande desde el mismo ángulo, con la decoración entera en cuadro y fondo transparente.
       const L = 2304;

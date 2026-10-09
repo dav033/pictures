@@ -973,7 +973,7 @@ export function Taller3D() {
       <DialogoTaller abierto={dialogo === "imagen"} onCerrar={() => setDialogo(null)} titulo="Imagen con IA">
         <div className="p-4">
           <p className="mb-3 text-sm text-taller-suave">Convierte lo que se ve en el visor en una foto realista (gíralo antes para elegir el ángulo). {solitario.activo ? "Solo la pieza que estás editando." : "La escena entera, como la ves."}</p>
-          {listo && <GeneradorIA capturar={() => escenaRef.current?.capturar() ?? null} descripcion={descripcionIA} escena={nombreEscena} />}
+          {listo && <GeneradorIA capturar={async () => { const visor = escenaRef.current; if (!visor) return null; await visor.esperarRotulos(); return visor.capturar(); }} descripcion={descripcionIA} escena={nombreEscena} />}
         </div>
       </DialogoTaller>
       <DialogoTaller abierto={dialogo === "ayuda"} onCerrar={() => setDialogo(null)} titulo="Ayuda y atajos">

@@ -257,6 +257,12 @@ prueba("el español no se rompe: ¡¿, espacios Unicode, separadores, ligaduras,
   assert.equal(limpiarTexto("Isa\u2026"), "Isa...", "los puntos suspensivos");
   assert.equal(limpiarTexto("\u0150rs \u017d"), "Ors Z", "ő y ž pasan a su base");
   assert.equal(limpiarTexto("\u0152uvre"), "OEuvre");
+  assert.equal(limpiarTexto("\u00bd taza"), "1 2 taza", "una fracción no se vuelve «12»: el trazo separa");
+  assert.match(avisoDeTexto("\u00bd taza")!, /cambié \u00bd\u21921 2/, "y se avisa");
+  assert.equal(limpiarTexto("a\nb\nc\nd"), "a\nb\nc", "la cuarta línea no cabe");
+  assert.match(avisoDeTexto("a\nb\nc\nd")!, /pasa de 3 líneas/, "y se avisa que se quitó");
+  assert.equal(avisoDeTexto("a\nb\nc"), null);
+  assert.equal(avisoDeTexto("Mia\nde\nla\nsalle", 1), null, "con una sola línea los saltos son espacios: no se pierde nada");
   // Lo que se quita o se cambia se dice (a la IA, a la lectura de foto y en el campo del inspector).
   assert.equal(avisoDeTexto("¡Feliz!"), null, "lo que se dibuja tal cual no avisa");
   assert.equal(avisoDeTexto("Isa/Leo"), null, "separar con espacio no es perder algo");

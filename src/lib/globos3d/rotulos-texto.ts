@@ -43,6 +43,8 @@ export type AnalisisTexto = {
   invisibles: boolean;
   /** Pasaba de 24 letras y se cortó. */
   cortado: boolean;
+  /** Traía más líneas de las que caben (`maxLineas`) y se quitaron las últimas. */
+  sobranLineas: boolean;
 };
 
 /**
@@ -50,8 +52,10 @@ export type AnalisisTexto = {
  * saltos son espacios) y 24 letras en total (contando cada salto); vacío si no queda nada.
  */
 export function analizarTexto(texto: string, maxLineas = MAX_LINEAS_ROTULO): AnalisisTexto {
-  const preparado = texto.normalize("NFKC").replace(/\r\n?/g, "\n").replace(/[\p{Zs}\t]/gu, " ").replace(/[\u2018\u2019\u00b4`]/g, "'").replace(/[\u2010-\u2015\u2212]/g, "-").replace(SEPARADORES, " ");
-  const descartados = new Set<string>(), sustituidos = new Set<string>();
+  // Una fracción («½») se vuelve «1⁄2» al normalizar y el trazo cambia por un espacio: «1 2». Se avisa como cambio.
+  const sustituidos = new Set<string>([...texto.matchAll(/[\u00bc-\u00be\u2150-\u215f\u2189]/gu)].map(([f]) => `${f}\u2192${f.normalize("NFKC").replace("\u2044", " ")}`));
+  const preparado = texto.normalize("NFKC").replace(/\u2044/g, " ").replace(/\r\n?/g, "\n").replace(/[\p{Zs}\t]/gu, " ").replace(/[\u2018\u2019\u00b4`]/g, "'").replace(/[\u2010-\u2015\u2212]/g, "-").replace(SEPARADORES, " ");
+  const descartados = new Set<string>();
   let invisibles = false;
   const conservado = grafemas(preparado).map((g) => {
     if (g === "\n" || esDibujable(g)) return g;
@@ -61,9 +65,10 @@ export function analizarTexto(texto: string, maxLineas = MAX_LINEAS_ROTULO): Ana
     descartados.add(g);
     return "";
   }).join("");
-  const lineas = maxLineas <= 1 ? [conservado.replace(/\s+/g, " ").trim()] : conservado.split("\n").map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean).slice(0, maxLineas);
+  const todas = maxLineas <= 1 ? [conservado.replace(/\s+/g, " ").trim()] : conservado.split("\n").map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const lineas = todas.slice(0, Math.max(1, maxLineas));
   const todo = grafemas(lineas.join("\n"));
-  return { texto: todo.slice(0, MAX_TEXTO_ROTULO).join("").trim(), descartados: [...descartados], sustituidos: [...sustituidos], invisibles, cortado: todo.length > MAX_TEXTO_ROTULO };
+  return { texto: todo.slice(0, MAX_TEXTO_ROTULO).join("").trim(), descartados: [...descartados], sustituidos: [...sustituidos], invisibles, cortado: todo.length > MAX_TEXTO_ROTULO, sobranLineas: todas.length > lineas.length };
 }
 
 /** El texto como se dibuja (ver `analizarTexto`). */
@@ -81,6 +86,7 @@ export function avisoDeTexto(original: string, maxLineas = MAX_LINEAS_ROTULO): s
     ...(a.descartados.length ? [`quité lo que la letra no dibuja (${a.descartados.map(citar).join(", ")})`] : []),
     ...(a.invisibles ? ["quité caracteres invisibles"] : []),
     ...(a.sustituidos.length ? [`cambié ${a.sustituidos.join(", ")} (la letra no trae esa)`] : []),
+    ...(a.sobranLineas ? [`pasa de ${maxLineas} líneas`] : []),
     ...(a.cortado ? [`pasa de ${MAX_TEXTO_ROTULO} letras`] : []),
   ];
   return partes.length ? `El texto ${citar(original.slice(0, 60))}: ${partes.join("; ")}; quedó ${citar(a.texto)}.` : null;

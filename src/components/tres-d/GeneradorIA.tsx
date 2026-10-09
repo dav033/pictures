@@ -17,7 +17,7 @@ const tituloDe = (g: ImagenGuardada) => `${g.escena ? `${g.escena} · ` : ""}${A
  * decoración se conserva: forma, cantidades y colores; FLUX pone el látex real y el salón). Cada foto queda guardada
  * en este navegador (`imagenes-guardadas.ts`, las últimas 40) y sigue ahí al volver; nada se guarda en el servidor.
  */
-export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: () => { datos: string; aspecto: AspectoCaptura } | null; descripcion: string; escena?: string }) {
+export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: () => Promise<{ datos: string; aspecto: AspectoCaptura } | null>; descripcion: string; escena?: string }) {
   const [ambiente, setAmbiente] = useState<AmbienteRender>(AMBIENTE_POR_DEFECTO);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +33,13 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
   }, []);
 
   async function generar() {
-    const captura = capturar();
-    if (!captura) { setError("El visor 3D todavía no está listo."); return; }
     setCargando(true);
     setError(null);
     setAviso(null);
     try {
+      // Capturar puede esperar la letra de los nombres y lanza si no carga: ese error se le muestra a la persona, sin llamar a la IA.
+      const captura = await capturar();
+      if (!captura) throw new Error("El visor 3D todavía no está listo.");
       const respuesta = await fetch("/api/render-3d-imagen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ render: captura.datos, descripcion, ambiente, aspecto: captura.aspecto }) });
       const datos = (await respuesta.json().catch(() => ({}))) as { imagen?: string; error?: string };
       if (!respuesta.ok || !datos.imagen) throw new Error(datos.error ?? "No pude generar la foto.");

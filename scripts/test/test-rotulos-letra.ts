@@ -36,7 +36,8 @@ async function empaquetar(): Promise<string> {
 }
 
 /** Una página con el código del taller y la letra servida del disco (o con 404 si `sinLetra`). */
-async function abrir(navegador: Awaited<ReturnType<typeof chromium.launch>>, codigo: string, sinLetra: boolean | "una-vez"): Promise<{ pagina: Page; consola: string[] }> {
+async function abrir(navegador: Awaited<ReturnType<typeof chromium.launch>>, codigo: string, sinLetra: boolean | "una-vez"): Promise<{ pagina: Page; consola: string[]; pedidos: { letra: number } }> {
+  const pedidos = { letra: 0 };
   const pagina = await navegador.newPage();
   const consola: string[] = [];
   pagina.on("console", (m) => { if (m.type() === "warning" || m.type() === "error") consola.push(m.text()); });
@@ -44,13 +45,14 @@ async function abrir(navegador: Awaited<ReturnType<typeof chromium.launch>>, cod
   await pagina.route("http://rotulos.test/**", (ruta) => {
     const url = new URL(ruta.request().url());
     if (url.pathname === "/") return ruta.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><body></body>" });
+    if (url.pathname === "/fonts/great-vibes-5.3.0-latin-400.woff2") pedidos.letra++;
     if (url.pathname === "/fonts/great-vibes-5.3.0-latin-400.woff2" && sinLetra !== true && fallosPendientes-- <= 0) return ruta.fulfill({ status: 200, contentType: "font/woff2", body: readFileSync(FUENTE) });
     return ruta.fulfill({ status: 404, body: "no" });
   });
   await pagina.goto("http://rotulos.test/");
   await pagina.evaluate("window.__name = (f) => f;");
   await pagina.addScriptTag({ content: codigo });
-  return { pagina, consola };
+  return { pagina, consola, pedidos };
 }
 
 async function main() {
@@ -160,6 +162,50 @@ async function main() {
     assert.equal(reintento.estadoTrasFallo, "fallo");
     assert.equal(reintento.estadoFinal, "lista", "el fallo no se recuerda: el siguiente intento carga (y un letrero de neón también la pide)");
     console.log("  ✓ un fallo no dura hasta recargar: la captura para con error y el siguiente intento carga la letra");
+
+    // ---- la captura del visor vivo (la de «Imagen con IA»): espera la letra, rehace lo dibujado como marca y, si no carga, para con error
+    const viva = await abrir(navegador, codigo, false);
+    const captura = await viva.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { letraParaCapturar: (h: boolean, r: () => void, c: () => Promise<void>) => Promise<void> } }).Rot;
+      let rehechos = 0, cuadros = 0;
+      const rehacer = () => { rehechos++; }, cuadro = async () => { cuadros++; };
+      await R.letraParaCapturar(false, rehacer, cuadro);
+      const sinRotulos = { rehechos, cuadros };
+      await R.letraParaCapturar(true, rehacer, cuadro);
+      const primera = { rehechos, cuadros };
+      await R.letraParaCapturar(true, rehacer, cuadro);
+      return { sinRotulos, primera, segunda: { rehechos, cuadros } };
+    });
+    assert.deepEqual(captura.sinRotulos, { rehechos: 0, cuadros: 0 }, "sin rótulos ni neones no espera nada");
+    assert.deepEqual(captura.primera, { rehechos: 1, cuadros: 1 }, "con rótulos y la letra sin cargar: la carga, rehace lo que era marca y espera un cuadro");
+    assert.deepEqual(captura.segunda, { rehechos: 1, cuadros: 2 }, "con la letra ya lista no rehace nada (solo el cuadro)");
+    const malaViva = await abrir(navegador, codigo, true);
+    const mala = await malaViva.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { letraParaCapturar: (h: boolean, r: () => void, c: () => Promise<void>) => Promise<void> } }).Rot;
+      let rehechos = 0, error = "";
+      try { await R.letraParaCapturar(true, () => { rehechos++; }, async () => undefined); } catch (e) { error = e instanceof Error ? e.message : String(e); }
+      return { rehechos, error };
+    });
+    assert.match(mala.error, /No se pudo cargar la letra de los nombres/, "sin letra la captura para con un error que se le muestra a la persona");
+    assert.equal(mala.rehechos, 0, "y no rehace nada (no hay con qué)");
+    console.log("  ✓ la captura del visor vivo espera la letra y, si no carga, para con error");
+
+    // ---- el visor no martilla la carga cuando falló: dentro de la espera no vuelve a pedir la letra
+    const martillo = await abrir(navegador, codigo, true);
+    const pedidosAntes = await martillo.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { cargarFuenteRotulos: () => Promise<boolean>; crearRotulosVisor: (e: () => unknown, o: object) => { letraLista: () => boolean } } }).Rot;
+      await R.cargarFuenteRotulos();
+      return R.crearRotulosVisor(() => null, {}).letraLista();
+    });
+    assert.equal(pedidosAntes, false);
+    await martillo.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { crearRotulosVisor: (e: () => unknown, o: object) => { letraLista: () => boolean } } }).Rot;
+      const visor = R.crearRotulosVisor(() => null, {});
+      for (let i = 0; i < 20; i++) visor.letraLista();
+      await new Promise((r) => setTimeout(r, 100));
+    });
+    assert.equal(martillo.pedidos.letra, 1, "20 consultas seguidas tras el fallo no piden la letra de nuevo (espera de 5 s)");
+    console.log("  ✓ tras un fallo el visor espera antes de reintentar");
     console.log("test-rotulos-letra: ok");
   } finally {
     await navegador.close();
