@@ -47,7 +47,7 @@ const sinSuscripcion = () => () => {};
 export function SelectorGlobos(props: Props) {
   const enNavegador = useSyncExternalStore(sinSuscripcion, () => true, () => false);
   if (!enNavegador) return null;
-  return createPortal(<AnimatePresence>{props.abierto && <Hoja key={`selector-${props.sesion}`} {...props} />}</AnimatePresence>, document.body);
+  return createPortal(<AnimatePresence>{props.abierto && <Hoja key={`selector-${props.sesion}`} {...props} />}</AnimatePresence>, document.body);  // prerender-seguro: tras `if (!enNavegador) return null`; en el servidor no se llega al portal
 }
 
 function Hoja({ titulo, detalle, accion, approvalToken, ventas, conImpresos, fuera, extra, locales, onElegir, onCerrar }: Props) {

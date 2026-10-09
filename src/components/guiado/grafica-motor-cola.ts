@@ -91,10 +91,10 @@ export function claveGrafica(partes: { ruta: string; version: string; estructura
 }
 
 /** El dibujo ya resuelto (o el fallo reciente, `null`); `undefined` si hay que pedirlo o sigue en camino. */
-export function graficaGuardada(clave: string, ahora = Date.now()): GraficaMotor | null | undefined {
+export function graficaGuardada(clave: string, ahora?: number): GraficaMotor | null | undefined {
   const entrada = cache.get(clave);
   if (!entrada || !("valor" in entrada)) return undefined;
-  if (entrada.valor === null && entrada.hasta !== undefined && entrada.hasta <= ahora) return undefined;
+  if (entrada.valor === null && entrada.hasta !== undefined && entrada.hasta <= (ahora ?? Date.now())) return undefined;
   return entrada.valor;
 }
 

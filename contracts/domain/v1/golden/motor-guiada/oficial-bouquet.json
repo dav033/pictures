@@ -2,9 +2,9 @@
  "caso": "oficial-bouquet",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.1"
+  "version": "1.2.2"
  },
- "especHash": "2d772a8621554195363640be1d35f5d022da589adf2924b26d4ba8011a093e59",
+ "especHash": "03f6ee3101a7b307fb224e099e9bdb587a0ea2ca450886babc6ff6181bb70478",
  "noRepresentable": [],
  "piezas": {
   "EST_01_BOUQUET": {

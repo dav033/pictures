@@ -77,6 +77,6 @@ export function GlobosCelebracion({ disparo, colores, cantidad = 16 }: Props) {
         </motion.div>
       ))}
     </div>,
-    document.body,
+    document.body,  // prerender-seguro: tras la guarda `typeof document === "undefined"` de GlobosCelebracion (antes del portal)
   );
 }

@@ -11,7 +11,7 @@ const FASE: Readonly<Record<EnCurso["fase"], string>> = { leyendo_foto: "Leyendo
 
 /** Los segundos que lleva trabajando la IA (se actualiza cada segundo). */
 function useSegundos(desde: number): number {
-  const [ahora, setAhora] = useState(() => Date.now());
+  const [ahora, setAhora] = useState(() => Date.now());  // prerender-seguro: solo se pinta con un pedido en curso (PanelIA: `ia.enCurso &&`), nunca en el prerender
   useEffect(() => {
     const t = setInterval(() => setAhora(Date.now()), 1000);
     return () => clearInterval(t);

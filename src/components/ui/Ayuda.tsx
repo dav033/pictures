@@ -244,7 +244,7 @@ export function Ayuda({ id, tema, texto, className }: Props) {
             </motion.div>
           )}
         </AnimatePresence>,
-        document.body,
+        document.body,  // prerender-seguro: tras `enNavegador &&`; en el servidor no se evalúa el portal
       )}
     </span>
   );

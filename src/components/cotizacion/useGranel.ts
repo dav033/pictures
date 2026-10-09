@@ -73,7 +73,7 @@ export function useGranel({ clave, cotizacion, materiales, borrador, leido, enCu
   /** El último resultado de Python que se ve (o `null`). */
   datos: Pick<CotizacionProfesionalResultado, "modos_materiales"> | null;
 }): Granel {
-  const [granel, setGranel] = useState<BorradorGranel>(() => leerGuardado(clave) ?? granelVacio());
+  const [granel, setGranel] = useState<BorradorGranel>(() => leerGuardado(clave) ?? granelVacio());  // prerender-seguro: solo lo usa CotizacionProfesional, que se monta desde el chat del navegador; `leerGuardado` captura la ausencia de `window`
   const unidades = useMemo(() => unidadesDesdeCotizacion(cotizacion, materiales), [cotizacion, materiales]);
   const leidoGranel = useMemo(() => (unidades ? leerGranel(granel, unidades, materiales) : null), [granel, unidades, materiales]);
   const disponible = unidades !== null && anunciaGranel(datos);

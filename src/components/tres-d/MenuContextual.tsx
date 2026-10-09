@@ -49,7 +49,7 @@ export function MenuContextual({ x, y, nombre, globos = null, decoraciones, sost
     const t = setTimeout(() => setAceptaToques(true), BLOQUEO_TACTIL_MS);
     return () => clearTimeout(t);
   }, [tactil]);
-  const [focoPrevio] = useState(() => (typeof document !== "undefined" && document.activeElement instanceof HTMLElement ? document.activeElement : null));
+  const [focoPrevio] = useState(() => (typeof document !== "undefined" && document.activeElement instanceof HTMLElement ? document.activeElement : null));  // prerender-seguro: con la guarda `typeof document`; en el servidor vale null y solo devuelve el foco al cerrar
 
   const opciones: Opcion[] = paso === "confirmar"
     ? [
@@ -140,6 +140,6 @@ export function MenuContextual({ x, y, nombre, globos = null, decoraciones, sost
         </div>
       ))}
     </div>,
-    document.body,
+    document.body,  // prerender-seguro: tras la guarda `typeof document === "undefined"` de MenuContextual (antes del portal)
   );
 }

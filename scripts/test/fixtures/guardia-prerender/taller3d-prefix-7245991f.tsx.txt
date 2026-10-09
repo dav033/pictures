@@ -16,11 +16,8 @@ import { descripcionRender3d, formatoEnIngles } from "@/lib/globos3d/render-ia";
 import { GeneradorIA } from "./GeneradorIA";
 import { PaletaEscena } from "./PaletaEscena";
 import { reemplazarColor } from "@/lib/globos3d/recolorear";
-import { armarEscena, escenaEnIngles, idNuevo, SALA_INICIAL, type Escena, type EscenaArmada, type NodoEscena } from "@/lib/globos3d/escena";
+import { armarEscena, escenaEnIngles, idNuevo, type Escena, type EscenaArmada, type NodoEscena } from "@/lib/globos3d/escena";
 import { ESCENAS_PREDEFINIDAS, escenaPredefinida } from "@/lib/globos3d/escenas-presets";
-import { nombreParaFoto, nombreQueSigue } from "@/lib/globos3d/nombre-escena";
-import type { Encuadre } from "@/lib/globos3d/encuadre-foto";
-import { vistaDeFoto } from "./camara-foto";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
 import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdicionEscena";
 import { useLienzoDecoraciones, type CopiaElegida } from "./useLienzoDecoraciones";
@@ -50,7 +47,6 @@ import { ListaCompra } from "./ListaCompra";
 import { BarraHerramientas, EtiquetaElegida, ReglaAlturas, type Herramienta } from "./SobreVisor";
 import { medidaPrincipal, NOMBRE_TIPO } from "./tipos-pieza";
 import { leerGuardada, guardarEscena } from "./guardado-escena";
-import { conSalaNueva } from "@/lib/globos3d/salon-techos";
 import { claveNueva } from "./guardado-conversacion";
 import { useInsetTeclado } from "./useInsetTeclado";
 import type { PestanaAnadir } from "./PanelAnadir";
@@ -132,13 +128,12 @@ export function Taller3D() {
   // Escena (con deshacer y rehacer: Ctrl+Z / Ctrl+Y) y su nombre; se guarda sola en el navegador.
   // La última escena guardada en este navegador (si hay) en vez de la de partida. En el servidor no hay navegador: hasta
   // hidratar (`cargada`) no se pinta nada que dependa de la escena, así lo del servidor y lo del navegador coinciden.
-  const [guardadaAlAbrir] = useState(() => (typeof window === "undefined" ? null : leerGuardada()));  // prerender-seguro: tras `typeof window`: en el servidor no se llama
-  // La clave nueva lleva la hora: en el servidor (prerender) Next no admite `Date.now()`, y allí no se usa (no hay conversación que cargar).
-  const [claveInicial] = useState(() => guardadaAlAbrir?.clave ?? (typeof window === "undefined" ? "servidor" : claveNueva()));  // prerender-seguro: tras `typeof window`: `claveNueva` solo corre en el navegador
-  const historialEscena = useHistorialEscena(() => guardadaAlAbrir?.escena ?? { sala: structuredClone(SALA_INICIAL), nodos: [] }, claveInicial);
+  const [guardadaAlAbrir] = useState(() => (typeof window === "undefined" ? null : leerGuardada()));
+  const [claveInicial] = useState(() => guardadaAlAbrir?.clave ?? claveNueva());
+  const historialEscena = useHistorialEscena(() => guardadaAlAbrir?.escena ?? escenaPredefinida("arco_organico_columnas_guirnalda"), claveInicial);
   const escenaEdit = historialEscena.escena;
   const setEscenaEdit = historialEscena.cambiar;
-  const [nombreEscena, setNombreEscena] = useState(() => guardadaAlAbrir?.nombre ?? "Escena nueva");
+  const [nombreEscena, setNombreEscena] = useState(() => guardadaAlAbrir?.nombre ?? ESCENAS_PREDEFINIDAS.find((p) => p.id === "arco_organico_columnas_guirnalda")?.nombre ?? "Mi escena");
   const cargada = useSyncExternalStore(sinSuscripcion, () => true, () => false);
   const [ultimoGuardado, setUltimoGuardado] = useState<{ escena: Escena; nombre: string; ok: boolean } | null>(null);
   const guardado = !ultimoGuardado ? (guardadaAlAbrir ? "guardado" : "guardando") : ultimoGuardado.escena !== escenaEdit || ultimoGuardado.nombre !== nombreEscena ? "guardando" : ultimoGuardado.ok ? "guardado" : "sin-guardar";
@@ -154,10 +149,7 @@ export function Taller3D() {
   const puedeRehacerVista = solitario.activo ? solitario.puedeRehacer : historialEscena.puedeRehacer;
   // La IA (pestaña «IA» del panel derecho): cada turno es UN paso nombrado del historial global; Ctrl+Z y «Deshacer turno» van juntos.
   const claveEscena = historialEscena.clave ?? claveInicial;
-  // El nombre de la escena sigue a lo que la IA arma, si era el de una plantilla (nombre-escena.ts); el que escribió la persona no se toca.
-  const alAplicarIA = useCallback((nueva: Escena) => { if (!solitario.activo) setNombreEscena((actual) => nombreQueSigue(actual, nueva)); }, [solitario.activo]);
-  const nombreFoto = useMemo(() => nombreParaFoto(nombreEscena, escenaVista), [nombreEscena, escenaVista]);
-  const { ia, rotuloDeshacer } = useIATaller({ escena: escenaVista, cambiar: cambiarVista, ambito: solitario.activo ? `pieza:${solitario.solitario?.raizId ?? ""}` : "escena", clave: claveEscena, cache: cacheEscena, cargada, alAplicar: alAplicarIA, verDesdeLaFoto: (encuadre) => { vistaFotoPendiente.current = encuadre; } });
+  const { ia, rotuloDeshacer } = useIATaller({ escena: escenaVista, cambiar: cambiarVista, ambito: solitario.activo ? `pieza:${solitario.solitario?.raizId ?? ""}` : "escena", clave: claveEscena, cache: cacheEscena, cargada });
   /** Una pieza recién creada desde «Añadir → Nuevas» y abierta en el editor: «Cancelar» la quita. */
   const nuevaRef = useRef<string | null>(null);
   const [pestanaLado, setPestanaLado] = useState<PestanaLateral>("pieza");
@@ -171,8 +163,6 @@ export function Taller3D() {
   const [avisoLienzo, setAvisoLienzo] = useState<string | null>(null);
   const [vueltaEncuadre, setVueltaEncuadre] = useState(0);
   const encuadradoRef = useRef<number | null>(null);
-  /** El encuadre de la foto que se acaba de modelar: cuando la escena nueva se dibuja, la cámara pasa a ver desde donde estaba la de la foto. */
-  const vistaFotoPendiente = useRef<Encuadre | null>(null);
   const [armadas] = useState(() => new WeakMap<Escena, EscenaArmada>());
   const [dibujos] = useState(() => new WeakMap<EscenaArmada, DibujoEscena>());
   const [menu, setMenu] = useState<{ id: string; x: number; y: number; tactil: boolean } | null>(null);
@@ -261,7 +251,7 @@ export function Taller3D() {
     const dibujo: DibujoEscena = {
       globos: armadaMostrada.porNodo.flatMap((n) => {
         const papel = n.globos.some((g) => g.confeti) ? papelDeConfeti(n.globos) : null;
-        return n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true, ...(papel ? { confetiHex: papel } : {}) } : {}), ...(n.enTecho ? { sinSombra: true } : {}), nodo: n.id }));
+        return n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true, ...(papel ? { confetiHex: papel } : {}) } : {}), nodo: n.id }));
       }),
       tubos: armadaMostrada.porNodo.flatMap((n) => n.tubos.map((t): TuboEnEscena => ({ ...tuboAEscena(t), nodo: n.id }))),
       flores: armadaMostrada.porNodo.flatMap((n) => n.flores.map((f) => ({ ...f, nodo: n.id }))),
@@ -294,8 +284,6 @@ export function Taller3D() {
         .map((f) => ({ formato: f, infladoCm: f.infladoDecoracionCm, hex: ref?.hexGlobo ?? "#ffffff", familia: ref?.familia ?? "fashion" }));
       visor.mostrar(fila);
       encuadradoRef.current = null;
-      // Una vista «desde la foto» pendiente no espera: si no se aplica aquí, saltaría después, en otro dibujo.
-      vistaFotoPendiente.current = null;
       return;
     }
     // Si la pieza elegida cuelga de otra, se ven las anclas de esa otra; en el editor solitario, las de la raíz si se piden.
@@ -317,12 +305,7 @@ export function Taller3D() {
       resaltado: solitario.activo && seleccion === solitario.solitario?.raizId ? null : (copiaElegida ? hecho?.puestas[copiaElegida.copia]?.caja : undefined) ?? hecho?.caja ?? null, encuadrar,
     });
     if (encuadrar) setVistaFija("3d");
-    if (vistaVuelta) { visor.ponerVistaCamara(vistaVuelta); vistaFotoPendiente.current = null; }
-    else if (vistaFotoPendiente.current) {
-      visor.ponerVistaCamara(vistaDeFoto(vistaFotoPendiente.current, armadaMostrada.sala));
-      vistaFotoPendiente.current = null;
-      setVistaFija(null);
-    }
+    if (vistaVuelta) visor.ponerVistaCamara(vistaVuelta);
   }, [visor, armadaMostrada, dibujoVisible, escenaVista, seleccion, vueltaEncuadre, copiaElegida, solitario, vistaSolitario.verAnclas, todosLosGlobos]);
   useResaltadoIA(visor, armadaMostrada, ia.marcas);
 
@@ -615,7 +598,7 @@ export function Taller3D() {
 
   const inspector = armadaEscena ? (
     <Inspector escena={escenaVista} armada={armadaEscena} nodo={nodoEnVivo} copia={copiaElegida?.copia ?? null}
-      onNodo={ponNodo} onEscena={(e, agrupar) => cambiarVista(e, agrupar ? { agrupar } : undefined)} onSeleccion={elegir} onEditarSola={(id) => { if (solitario.activo) setSeleccion(id); else void entrarSolitario(id); }}
+      onNodo={ponNodo} onSeleccion={elegir} onEditarSola={(id) => { if (solitario.activo) setSeleccion(id); else void entrarSolitario(id); }}
       onDuplicar={(id) => void duplicar(id)} onEliminar={(id) => void pedirEliminar(id)} confirmarEliminar={confirmarEliminar}
       onConfirmarEliminar={(con) => { const c = confirmarEliminar; if (!c || con === null) { setConfirmarEliminar(null); return; } void eliminar(c.id, con); }}
       onColgarOtra={colgarEn} onEditarSostiene={(id) => void editarSostiene(id)} paletaEscena={paleta} biblioteca={biblioteca} nombreEscena={nombreEscena}
@@ -652,7 +635,7 @@ export function Taller3D() {
   const panelSala = (
     <div className="flex min-h-0 flex-1 flex-col">
       {esAncho && <h2 className="px-4 pb-3 pt-4 text-[15px] font-semibold">Sala</h2>}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4"><EditorSala sala={escenaVista.sala} onSala={(sala) => { const nueva = conSalaNueva(escenaVista, sala); cambiarVista(nueva.escena, { agrupar: "sala" }); if (nueva.avisos.length) setAvisoLienzo(nueva.avisos.join(" ")); }} plegable={false} /></div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4"><EditorSala sala={escenaVista.sala} onSala={(sala) => cambiarVista({ ...escenaVista, sala }, { agrupar: "sala" })} plegable={false} /></div>
     </div>
   );
 
@@ -965,7 +948,7 @@ export function Taller3D() {
       <DialogoTaller abierto={dialogo === "imagen"} onCerrar={() => setDialogo(null)} titulo="Foto realista">
         <div className="p-4">
           <p className="mb-3 text-sm text-taller-suave">Convierte lo que se ve en el visor en una foto realista con IA (gíralo antes para elegir el ángulo). {solitario.activo ? "Solo la pieza que estás editando." : "La escena entera, como la ves."}</p>
-          {listo && <GeneradorIA capturar={async () => { const visor = escenaRef.current; if (!visor) return null; await visor.esperarRotulos(); return visor.capturar({ escenaEntera: true }); }} descripcion={descripcionIA} escena={nombreFoto} />}
+          {listo && <GeneradorIA capturar={async () => { const visor = escenaRef.current; if (!visor) return null; await visor.esperarRotulos(); return visor.capturar(); }} descripcion={descripcionIA} escena={nombreEscena} />}
         </div>
       </DialogoTaller>
       <DialogoTaller abierto={dialogo === "ayuda"} onCerrar={() => setDialogo(null)} titulo="Ayuda y atajos">

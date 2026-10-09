@@ -2,9 +2,9 @@
  "caso": "oficial-centro_mesa",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.1"
+  "version": "1.2.2"
  },
- "especHash": "7e450eaa3c013e26bab68c13b17565745b9f6f2c2fd64a3217be6468394c69ad",
+ "especHash": "c0972929c4d1e48027d74d5641523b73903b8cf06b584eefe287cb16560f20f1",
  "noRepresentable": [
   {
    "piezaId": "EST_01_CENTRO_MESA",

@@ -103,7 +103,7 @@ const MARCO_SUELTO = "mt-3 w-full rounded-[20px] border border-borde-suave bg-su
 export function CotizacionProfesional({ cotizacion, clave, incrustada = false }: Props) {
   // El borrador guardado de esta cotización: la tarjeta solo existe en el navegador
   // (los mensajes salen de sessionStorage), así que se lee al crear el estado.
-  const [guardado] = useState(() => leerGuardado(clave));
+  const [guardado] = useState(() => leerGuardado(clave));  // prerender-seguro: la tarjeta se monta desde el chat, que vive en el navegador (no en el prerender); `leerGuardado` además captura la ausencia de `window`
   // Solo se abre sola si había algo escrito: un borrador vacío no cuenta.
   const [abierta, setAbierta] = useState(guardado !== null && borradorConContenido(guardado));
   const [borrador, setBorrador] = useState<BorradorProfesional>(() => guardado ?? borradorVacio());

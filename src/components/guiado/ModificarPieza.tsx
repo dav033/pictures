@@ -397,7 +397,7 @@ export function ModificarPieza({ plan, estructuraId, onCerrar, onPlanAjustado, o
     <AnimatePresence>
       {estructuraId && <Hoja key={`${estructuraId}-${plan.plan_hash}`} plan={plan} estructuraId={estructuraId} onCerrar={onCerrar} onPlanAjustado={onPlanAjustado} onIrAAjustar={onIrAAjustar} ocupado={ocupado} />}
     </AnimatePresence>,
-    document.body,
+    document.body,  // prerender-seguro: tras `if (!enNavegador) return null`; en el servidor no se llega al portal
   );
 }
 

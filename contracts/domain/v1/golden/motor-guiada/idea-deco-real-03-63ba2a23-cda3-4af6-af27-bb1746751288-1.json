@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.1"
+  "version": "1.2.2"
  },
- "especHash": "adf205b7237b47a42ead26666d47232116865cc7f5a6f5c29b786b320d6ea8f4",
+ "especHash": "9916612f47424a2ccb3049e65e0fba72a37f96635edbb6e61f647e9533b9560b",
  "noRepresentable": [
   {
    "piezaId": "EST_03_CENTRO_MESA",

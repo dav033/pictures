@@ -2,9 +2,9 @@
  "caso": "oficial-pared_densa",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.1"
+  "version": "1.2.2"
  },
- "especHash": "5d2e10b4419ef94b39cc6a10537c6b09aefb5b82fafc533b0bd101bf41a64884",
+ "especHash": "b0e0b2db25cd9c72aab35a214850d4591de6ed44b8c7b66266dc290471209246",
  "noRepresentable": [],
  "piezas": {
   "EST_01_PARED_DENSA": {

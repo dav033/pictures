@@ -2,9 +2,9 @@
  "caso": "oficial-aro_circular",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.1"
+  "version": "1.2.2"
  },
- "especHash": "d7146b424088b4fff53dc1ee0500a48f4445ae47ce7469b918259e925e76a69d",
+ "especHash": "08757f116122d593bc5888393b4f6416b63dfb5e5aa1c97414e5d958941bc844",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

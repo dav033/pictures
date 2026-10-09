@@ -70,7 +70,7 @@ export function GraficaMotorGuiada({ plan, version, pieza, mezclaReal, id, nombr
   );
   // El resultado recuerda para qué clave llegó: si la pieza cambia, vuelve a «cargando» sin un setState síncrono.
   const [resultado, setResultado] = useState<{ clave: string; grafica: Grafica | null } | null>(null);
-  const guardada = clave ? graficaGuardada(clave) : undefined;
+  const guardada = clave ? graficaGuardada(clave) : undefined;  // prerender-seguro: en el servidor la caché de gráficas está vacía, así que `graficaGuardada` no lee el reloj (ver grafica-motor-cola.ts)
 
   useEffect(() => {
     if (!clave || !ruta || guardada !== undefined) return;

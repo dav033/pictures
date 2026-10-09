@@ -60,11 +60,13 @@ export const GROSOR_ORGANICO_POR_DEFECTO_M = { guirnalda: 0.55, semiarco: 0.7, s
 /** Cuántos globos lleva por defecto lo que se cuenta por unidades. */
 export const UNIDADES_POR_DEFECTO: Partial<Record<EstructuraOficialId, number>> = { bouquet: 7, racimo_pared: 9, centro_mesa: 5 };
 
+/** Densidad cuando el cliente no la dice. La columna orgánica va densa (lujosa): 42 globos en 1,8 m, unos 23 por metro, la banda de la paridad con Python (20 a 26 por metro; `test-columna-asimetrica-densa`). */
 export const DENSIDAD_POR_DEFECTO: Partial<Record<EstructuraOficialId, PiezaEspec["densidad"]>> = {
   arco_no_denso: "sencilla",
   columna_no_densa: "sencilla",
   pared_no_densa: "sencilla",
   pared_densa: "lujosa",
+  columna_asimetrica: "lujosa",
 };
 
 /** La medida con que se arma, en cm, y si hubo que acotarla a lo que el constructor admite. */

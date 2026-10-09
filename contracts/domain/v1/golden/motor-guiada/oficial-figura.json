@@ -2,9 +2,9 @@
  "caso": "oficial-figura",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.1"
+  "version": "1.2.2"
  },
- "especHash": "feecc8dd4f008557a49082ca96bfafee82e7f3a19976040e962f1b0634f04bbf",
+ "especHash": "01d78eaf93d279e7a3c40f8d97dbd885cd11f23e3aca83441d0e9aea295056bc",
  "noRepresentable": [
   {
    "piezaId": "EST_01_FIGURA",

@@ -31,7 +31,7 @@ type Entrada = {
  * cambia de identidad y los turnos de antes dejan de actuar sobre ella, hasta que Ctrl+Z la devuelve), los pasos nombrados del historial y Esc para volver de «Ver antes».
  */
 export function useIATaller({ escena, cambiar, ambito, clave, cache, cargada, alAplicar, verDesdeLaFoto }: Entrada) {
-  const [guardada] = useState(() => (typeof window === "undefined" ? [] : leerConversacion()));
+  const [guardada] = useState(() => (typeof window === "undefined" ? [] : leerConversacion()));  // prerender-seguro: tras `typeof window`: en el servidor no se llama
   const nombres = useNombresDePasos();
   const aplicar = useCallback((nueva: Escena, etiqueta: string) => { nombres.nombrar(nueva, etiqueta); cambiar(nueva); alAplicar?.(nueva); }, [nombres, cambiar, alAplicar]);
   const ia = useAsistenteIA({ escena, ambito, clave, cache, aplicar, inicial: guardada, verDesdeLaFoto });
