@@ -18,6 +18,7 @@ import { PaletaEscena } from "./PaletaEscena";
 import { reemplazarColor } from "@/lib/globos3d/recolorear";
 import { armarEscena, escenaEnIngles, idNuevo, SALA_INICIAL, type Escena, type EscenaArmada, type NodoEscena } from "@/lib/globos3d/escena";
 import { ESCENAS_PREDEFINIDAS, escenaPredefinida } from "@/lib/globos3d/escenas-presets";
+import { nombreParaFoto, nombreQueSigue } from "@/lib/globos3d/nombre-escena";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
 import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdicionEscena";
 import { useLienzoDecoraciones, type CopiaElegida } from "./useLienzoDecoraciones";
@@ -151,7 +152,10 @@ export function Taller3D() {
   const puedeRehacerVista = solitario.activo ? solitario.puedeRehacer : historialEscena.puedeRehacer;
   // La IA (pestaña «IA» del panel derecho): cada turno es UN paso nombrado del historial global; Ctrl+Z y «Deshacer turno» van juntos.
   const claveEscena = historialEscena.clave ?? claveInicial;
-  const { ia, rotuloDeshacer } = useIATaller({ escena: escenaVista, cambiar: cambiarVista, ambito: solitario.activo ? `pieza:${solitario.solitario?.raizId ?? ""}` : "escena", clave: claveEscena, cache: cacheEscena, cargada });
+  // El nombre de la escena sigue a lo que la IA arma, si era el de una plantilla (nombre-escena.ts); el que escribió la persona no se toca.
+  const alAplicarIA = useCallback((nueva: Escena) => { if (!solitario.activo) setNombreEscena((actual) => nombreQueSigue(actual, nueva)); }, [solitario.activo]);
+  const nombreFoto = useMemo(() => nombreParaFoto(nombreEscena, escenaVista), [nombreEscena, escenaVista]);
+  const { ia, rotuloDeshacer } = useIATaller({ escena: escenaVista, cambiar: cambiarVista, ambito: solitario.activo ? `pieza:${solitario.solitario?.raizId ?? ""}` : "escena", clave: claveEscena, cache: cacheEscena, cargada, alAplicar: alAplicarIA });
   /** Una pieza recién creada desde «Añadir → Nuevas» y abierta en el editor: «Cancelar» la quita. */
   const nuevaRef = useRef<string | null>(null);
   const [pestanaLado, setPestanaLado] = useState<PestanaLateral>("pieza");
@@ -253,7 +257,7 @@ export function Taller3D() {
     const dibujo: DibujoEscena = {
       globos: armadaMostrada.porNodo.flatMap((n) => {
         const papel = n.globos.some((g) => g.confeti) ? papelDeConfeti(n.globos) : null;
-        return n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true, ...(papel ? { confetiHex: papel } : {}) } : {}), nodo: n.id }));
+        return n.globos.map((g): GloboColocadoEnEscena => ({ ...globoAEscena(g, R12), ...(g.confeti ? { confeti: true, ...(papel ? { confetiHex: papel } : {}) } : {}), ...(n.enTecho ? { sinSombra: true } : {}), nodo: n.id }));
       }),
       tubos: armadaMostrada.porNodo.flatMap((n) => n.tubos.map((t): TuboEnEscena => ({ ...tuboAEscena(t), nodo: n.id }))),
       flores: armadaMostrada.porNodo.flatMap((n) => n.flores.map((f) => ({ ...f, nodo: n.id }))),
@@ -950,7 +954,7 @@ export function Taller3D() {
       <DialogoTaller abierto={dialogo === "imagen"} onCerrar={() => setDialogo(null)} titulo="Foto realista">
         <div className="p-4">
           <p className="mb-3 text-sm text-taller-suave">Convierte lo que se ve en el visor en una foto realista con IA (gíralo antes para elegir el ángulo). {solitario.activo ? "Solo la pieza que estás editando." : "La escena entera, como la ves."}</p>
-          {listo && <GeneradorIA capturar={async () => { const visor = escenaRef.current; if (!visor) return null; await visor.esperarRotulos(); return visor.capturar(); }} descripcion={descripcionIA} escena={nombreEscena} />}
+          {listo && <GeneradorIA capturar={async () => { const visor = escenaRef.current; if (!visor) return null; await visor.esperarRotulos(); return visor.capturar({ escenaEntera: true }); }} descripcion={descripcionIA} escena={nombreFoto} />}
         </div>
       </DialogoTaller>
       <DialogoTaller abierto={dialogo === "ayuda"} onCerrar={() => setDialogo(null)} titulo="Ayuda y atajos">

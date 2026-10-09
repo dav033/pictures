@@ -53,7 +53,7 @@ export type MuebleCatalogo = EntradaComun & {
   seguirPrimero?: boolean;
   /** Es un asiento suelto: se puede repartir en fila o alrededor de una mesa. */
   asiento?: boolean;
-  /** Cuántos asientos trae la pieza armada si no son configurables (un conjunto fijo con sus sillas). Lo lee `asientosDeEntrada`. */
+  /** Cuántos asientos trae el conjunto armado si no son configurables (la mesa con sus sillas): es lo que cuenta `asientosDeEntrada`, nunca el nombre que ponga el modelo. */
   asientos?: number;
   /** Lleva un texto (el neón, el nombre de acrílico). */
   conTexto?: boolean;
@@ -85,5 +85,5 @@ export function descripcionConColores(f: FondoCatalogo): string {
  * Es la única fuente de ese número (`mobiliario-asientos-mesa.ts` la usa para toda la escena).
  */
 export function asientosDeEntrada(m: MuebleCatalogo, opciones?: { sillas?: number }): number {
-  return opciones?.sillas ?? m.sillas?.porDefecto ?? m.asientos ?? (m.asiento ? 1 : 0);
+  return opciones?.sillas ?? m.asientos ?? m.sillas?.porDefecto ?? (m.asiento ? 1 : 0);
 }

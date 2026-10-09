@@ -32,6 +32,11 @@ import { COLORES_METALIZADO, PULGADAS_METALIZADO, nombreMetalizado } from "./met
 import { type Pieza, type PiezaArmada, type TipoPieza } from "./piezas";
 import { CACHE_ARMADO, alturaDePieza, armadaDe } from "./altura-pieza";
 import { armarEscena, descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo, NOMBRE_PARED, type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoEscena, type ParedSala, type Sala } from "./escena";
+import { claveDesconocida } from "./argumentos-desconocidos";
+import { superficieSuperior } from "./mobiliario-superficie";
+import { sitioSobreMesa } from "./herramientas-escena-sobre-mesa";
+import { comprobarNombreMueble, errorDeNombreConSillas, muebleDeNodo } from "./descripcion-mobiliario";
+import { sillasDeMesaNodo } from "./mobiliario-asientos-mesa";
 import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
 import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, guirnaldaFeston, piezaNueva } from "./escenas-presets";
 import { avisosDeColor } from "./avisos-color-escena";
@@ -1015,7 +1020,15 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
         if (hecho.omitidos.length) notas.push(`${nombreColor(nuevo.codigo)} no viene en ${hecho.omitidos.join(", ")}: ahí se dejó ${nombreColor(actual.codigo)}`);
       }
       comprobarAltura(pieza, nodo.colocacion, escena.sala);
-      const nodoNuevo: NodoEscena = { ...nodo, pieza, nombre: a.nombre ?? nodo.nombre };
+      const mueblePedido = a.nombre ? muebleDeNodo(nodo) : null;
+      const veredicto = mueblePedido?.entrada ? comprobarNombreMueble(mueblePedido.entrada, a.nombre, nodo.pieza.tipo === "escenografia" ? nodo.pieza.mueble?.opciones : undefined) : null;
+      if (veredicto?.tipo === "error") fallar(veredicto.error);
+      if (veredicto?.tipo === "corregido") notas.push(veredicto.aviso);
+      if (mueblePedido && !mueblePedido.entrada) {
+        const falso = errorDeNombreConSillas(a.nombre, mueblePedido.esMesa ? sillasDeMesaNodo(escena, nodo).total : mueblePedido.asientos);
+        if (falso) fallar(falso);
+      }
+      const nodoNuevo: NodoEscena = { ...nodo, pieza, nombre: veredicto?.tipo === "corregido" ? veredicto.nombre : a.nombre ?? nodo.nombre };
       if (JSON.stringify(nodoNuevo) === JSON.stringify(nodo)) return { escena, resumen: conNotas(`«${nodo.nombre}» ya estaba así: no cambió nada.`, notas) };
       return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza), resumen: conNotas(`Cambié «${nodoNuevo.nombre}» (${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}.`, notas) };
     }
@@ -1169,7 +1182,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       const armada = armarEscena(escena, CACHE_ARMADO);
       let pieza: Pieza = { tipo: "decoracion", decoracion: structuredClone(decoracionPredefinida(a.decoracion_id)) };
       if (a.colores) pieza = recolorearEnOrden(pieza, a.colores, notas);
-      const colocacion = sitioSobreDescrito(escena, armada, a, pieza, null, giroNormal(a.giro_grados ?? 0));
+      const colocacion = sitioSobreDescrito(escena, armada, a, pieza, null, giroNormal(a.giro_grados ?? 0), notas);
       const id = idNuevo(escena, a.decoracion_id.replace(/_/g, "-"));
       const nombre = a.nombre ?? DECORACIONES_PREDEFINIDAS.find((d) => d.id === a.decoracion_id)?.nombre ?? "Decoración";
       const nueva = insertar(escena, { id, nombre, pieza, colocacion });
@@ -1185,11 +1198,11 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       if (repetida && a.copia === undefined) fallar(`«${nodo.nombre}» está repetida en ${copias} anclas (${copiasTexto(armada, nodo.id)}). Indica copia (0 a ${copias - 1}) para mover solo esa, o usa mover_pieza para mover todo el reparto.`);
       if (a.copia !== undefined && a.copia >= Math.max(1, copias)) fallar(`«${nodo.nombre}» tiene ${copias} copia${copias === 1 ? "" : "s"}: copia va de 0 a ${Math.max(0, copias - 1)}.`);
       const giroActual = "giroGrados" in nodo.colocacion ? nodo.colocacion.giroGrados : 0;
-      const colocacion = sitioSobreDescrito(escena, armada, a, nodo.pieza, nodo.id, giroNormal(a.giro_grados ?? giroActual));
+      const colocacion = sitioSobreDescrito(escena, armada, a, nodo.pieza, nodo.id, giroNormal(a.giro_grados ?? giroActual), notas);
       const hecho = moverCopia(escena, armada, nodo.id, a.copia ?? 0, colocacion) ?? fallar(`No pude mover «${nodo.nombre}» ahí.`);
       const movida = nodoPorId(hecho.escena, hecho.id);
       const separada = hecho.id !== nodo.id ? ` (separada del reparto de «${nodo.id}», que sigue con ${copias - 1} copias)` : "";
-      return { escena: hecho.escena, resumen: `Moví «${movida.nombre}» (id ${movida.id})${separada} ${describirSobre(armarEscena(hecho.escena, CACHE_ARMADO), colocacion)}.` };
+      return { escena: hecho.escena, resumen: conNotas(`Moví «${movida.nombre}» (id ${movida.id})${separada} ${describirSobre(armarEscena(hecho.escena, CACHE_ARMADO), colocacion)}.`, notas) };
     }
 
     case "separar_copia": {
@@ -1238,10 +1251,13 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
  * El sitio que describe la IA (estructura + altura + lado/ángulo + corrimiento) → colocación `sobre`. `id` es el de
  * la pieza que se pone ahí (para no ponerla sobre sí misma ni sobre lo que va encima de ella).
  */
-function sitioSobreDescrito(escena: Escena, armada: EscenaArmada, a: { padre_id: string; altura_cm?: number; lado?: SitioDescrito["lado"]; angulo_grados?: number; x_cm?: number }, pieza: Pieza, id: string | null, giroGrados: number): ColocacionSobre {
+function sitioSobreDescrito(escena: Escena, armada: EscenaArmada, a: { padre_id: string; altura_cm?: number; lado?: SitioDescrito["lado"]; angulo_grados?: number; x_cm?: number }, pieza: Pieza, id: string | null, giroGrados: number, notas: string[]): ColocacionSobre {
   const padreNodo = nodoPorId(escena, a.padre_id);
   if (id && descendientes(escena, id).has(padreNodo.id)) fallar(`«${padreNodo.id}» es la misma pieza (o va sobre ella): elige otra estructura.`);
   const padre = armada.porNodo.find((n) => n.id === padreNodo.id);
+  const cubierta = superficieSuperior(padreNodo, armada);
+  if (cubierta && !cubierta.deFabricaConCosas) return sitioSobreMesa(escena, armada, padreNodo, a, pieza, id, giroGrados, notas);
+  if (padreNodo.pieza.tipo === "escenografia" && padre && !padre.globos.length) fallar(`«${padreNodo.nombre}» es mobiliario sin cubierta donde apoyar algo: solo las mesas (redonda, imperial, cóctel, de postres…) llevan cosas encima, con poner_sobre y padre_id = el id de la mesa.`);
   if (!padre || !aceptaDecoraciones(padreNodo, padre)) fallar(`«${padreNodo.nombre}» (${NOMBRE_TIPO[padreNodo.pieza.tipo]}) no sirve de lienzo: usa una columna, un arco, un aro u orgánico, una guirnalda o una pared de globos.`);
   const sitio = sitioDescrito(padre!, { alturaCm: a.altura_cm, lado: a.lado, anguloGrados: a.angulo_grados, xCm: a.x_cm }, radioLateral(pieza));
   if ("error" in sitio) return fallar(sitio.error);
@@ -1256,6 +1272,9 @@ export function aplicarHerramienta(escena: Escena, nombre: string, argumentos: u
   if (!NOMBRES_HERRAMIENTAS.includes(nombre)) return { ok: false, escena, error: `No existe la herramienta «${nombre}». Hay: ${NOMBRES_HERRAMIENTAS.join(", ")}.` };
   try {
     const extra = HERRAMIENTAS_EXTRA[nombre];
+    // Una clave que la herramienta no conoce (`cuelga` por `cuelga_cm`) es un error con la clave buena, no algo que se descarta en silencio.
+    const desconocida = claveDesconocida(extra ? extra.esquema : (ESQUEMAS as Record<string, z.ZodType>)[nombre], argumentos ?? {}, nombre);
+    if (desconocida) return { ok: false, escena, error: desconocida };
     const hecho = extra ? extra.aplicar(escena, argumentos ?? {}) : ejecutar(escena, nombre as NombreHerramienta, argumentos ?? {});
     const avisoColor = hecho.consulta ? "" : avisosDeColor(escena, hecho.escena);
     return { ok: true, escena: hecho.escena, resumen: avisoColor && !hecho.resumen.includes(avisoColor) ? `${hecho.resumen} ${avisoColor}` : hecho.resumen, consulta: hecho.consulta ?? false };

@@ -36,7 +36,7 @@ export type GloboEnEscena = { formato: FormatoGlobo; infladoCm: number; hex: str
  * mueve todo lo suyo junto.
  */
 export type DeNodo = { nodo?: string };
-export type GloboColocadoEnEscena = GloboEnEscena & DeNodo & { nudo: Punto3; direccion: Punto3; frente?: Punto3; confeti?: boolean; /** El papel del confeti (hex); sin él, plateado. */ confetiHex?: string; estampado?: EstampadoEnEscena };
+export type GloboColocadoEnEscena = GloboEnEscena & DeNodo & { nudo: Punto3; direccion: Punto3; frente?: Punto3; confeti?: boolean; /** El papel del confeti (hex); sin él, plateado. */ confetiHex?: string; estampado?: EstampadoEnEscena; /** Cuelga del techo (globos de techo, helio): no echa sombra, que caería a 2 o 3 m como discos sueltos en el piso y las paredes. */ sinSombra?: boolean };
 export type Punto3 = { x: number; y: number; z: number };
 
 /**
@@ -91,8 +91,10 @@ export type EscenaGlobos = {
    * Captura para la foto con IA: JPEG grande (lado mayor 1536 px) desde el ángulo que se ve, con la decoración
    * encuadrada justa, sin cuadrícula y con fondo claro. La proporción sale de la forma (vertical, cuadrada o
    * apaisada) y es la misma que se le pide a FLUX, para que no estire ni recorte.
+   * Con `escenaEntera` (la foto realista, siempre) no se recorta a la decoración ni se apunta la cámara a su esfera: se encuadra la sala entera con
+   * su mobiliario desde el ángulo que se ve (lo que se ve es lo que FLUX debe conservar).
    */
-  capturar: () => { datos: string; aspecto: AspectoCaptura };
+  capturar: (opciones?: { escenaEntera?: boolean }) => { datos: string; aspecto: AspectoCaptura };
   /**
    * Prepara la captura para la IA: con rótulos o neones en la escena, espera la letra y a que se dibujen con ella; lanza un error claro
    * si no carga (lo que se captura sin ella saldría con marcas). Llamarla antes de `capturar`.
@@ -179,6 +181,8 @@ export type AspectoCaptura = "2:3" | "1:1" | "3:2";
 const TAMANO_CAPTURA: Record<AspectoCaptura, { ancho: number; alto: number }> = { "2:3": { ancho: 1024, alto: 1536 }, "1:1": { ancho: 1024, alto: 1024 }, "3:2": { ancho: 1536, alto: 1024 } };
 
 const CM = 0.01;
+/** Sufijo de la clave de un lote de globos que no echan sombra (los que cuelgan del techo). */
+const SIN_SOMBRA = "|sin-sombra";
 /** Sin pieza a la que referirse (la vista previa, un globo suelto): la referencia es el origen. */
 const SIN_REFERENCIA = { x: 0, y: 0, z: 0 };
 /** Fondo del render estándar (gris claro neutro, como las fotos de decoración sobre pared lisa). */
@@ -776,7 +780,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     const color = base && globo.confeti ? base.lerp(tinteDeConfeti(confetiHex), 0.5) : base;
     const escalado = plantilla.escala !== 1 ? marco.clone().scale(new THREE.Vector3(plantilla.escala, plantilla.escala, plantilla.escala)) : marco;
     juego(plantilla.clave, "editor").forEach((parte, k) => {
-      const lote = `${plantilla.clave}#${k}|${globo.familia}|${propio ? globo.hex : ""}`;
+      const lote = `${plantilla.clave}#${k}|${globo.familia}|${propio ? globo.hex : ""}${globo.sinSombra ? SIN_SOMBRA : ""}`;
       asegurarDef(lote, () => ({
         geometria: (c) => juego(plantilla.clave, c)[k]?.geometria ?? juego(plantilla.clave, "editor")[k]!.geometria,
         material: (c) => materialGlobo(globo.familia, globo.hex, c),
@@ -979,7 +983,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
         const capacidad = Math.ceil(lista.length * 1.25) + 4;
         const malla = new THREE.InstancedMesh(def.geometria("editor"), def.material("editor"), capacidad);
         // Ni el confeti (miles de discos) ni las hebras de la pampa (translúcidas) echan sombra: no se nota y cuesta una pasada más.
-        malla.castShadow = !clave.startsWith("confeti|") && clave !== "flor|pluma";
+        malla.castShadow = !clave.startsWith("confeti|") && clave !== "flor|pluma" && !clave.endsWith(SIN_SOMBRA);
         malla.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
         lote = { def, malla, capacidad, nodos: [], bases: new Float32Array(capacidad * 16), ocultos: new Set() };
         // Con qué pieza va cada copia (para elegirla con un clic).
@@ -1589,11 +1593,13 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
     },
     esperarRotulos: () => letraParaCapturar([...nodos.values(), ...aparcados.values()].some((d) => d.conRotulo), rehacerRotulos),
-    capturar() {
+    capturar(opciones) {
       // 1. Render cuadrado grande desde el mismo ángulo, con la decoración entera en cuadro y fondo transparente.
       const L = 2304;
       usarCalidad("alta");
+      const entera = opciones?.escenaEntera === true && sala.children.length > 0;
       const caja = new THREE.Box3().setFromObject(contenido);
+      if (entera) caja.union(new THREE.Box3().setFromObject(sala));
       const esfera = caja.getBoundingSphere(new THREE.Sphere());
       const direccion = camara.position.clone().sub(controles.target).normalize();
       const antes = { posicion: camara.position.clone(), aspecto: camara.aspect, ratio: renderer.getPixelRatio(), tamano: renderer.getSize(new THREE.Vector2()), near: camara.near, far: camara.far };
@@ -1611,8 +1617,9 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       cuadricula.visible = false;
       ayudas.visible = false;
       lienzoAyudas.visible = false;
-      // Con sala, primero sin ella (para medir dónde queda la decoración) y luego con ella (es el fondo de la foto).
-      sala.visible = false;
+      // Con sala, primero sin ella (para medir dónde queda la decoración) y luego con ella (es el fondo de la foto). Con la escena
+      // entera se mide con la sala puesta: el encuadre es la sala y su mobiliario, no la decoración sola.
+      sala.visible = entera;
       renderer.setClearColor(0x000000, 0);
       renderer.render(escena, camara);
       const cuadro = document.createElement("canvas");
@@ -1622,7 +1629,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       pincel?.drawImage(lienzo, 0, 0);
       const medida = pincel?.getImageData(0, 0, L, L) ?? null;
       sala.visible = true;
-      if (conSala && pincel) {
+      if (conSala && pincel && !entera) {
         renderer.render(escena, camara);
         pincel.clearRect(0, 0, L, L);
         pincel.drawImage(lienzo, 0, 0);
@@ -1760,7 +1767,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       renderer.dispose();
     },
   };
-  if (medible) medible.capturar = () => api.capturar().datos;
+  if (medible) medible.capturar = (opciones) => api.capturar(opciones).datos;
   if (medible) medible.desglose = () => {
     const cuenta: Record<string, number> = {};
     escena.traverseVisible((o) => {

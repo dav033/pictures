@@ -1,5 +1,5 @@
 import { elementosDeEscenografia } from "./mobiliario-pieza";
-import { unidadesDeEscenografia } from "./mobiliario-conjunto";
+import { unidadesDeEscenografia } from "./mobiliario-asientos-mesa";
 import { IDEAS_SEMPERTEX } from "./ideas-sempertex";
 import { urlDeIdea } from "./ideas-sempertex/tipos";
 import { perezoso } from "./perezoso";

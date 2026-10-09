@@ -571,13 +571,17 @@ export function envolverClienteGemini<T extends object>(cliente: T, opciones: { 
       return valor;
     },
   });
-  return marcar(new Proxy(cliente, {
+  return new Proxy(cliente, {
     get(objetivo, propiedad, receptor) {
+      // La marca de «ya envuelto» la responde el proxy y NO se define en el cliente real: `Object.defineProperty` sobre un proxy sin
+      // trampa la reenvía al objetivo, y `getGeminiClient` (que cachea el cliente) devolvía desde la 2.ª llamada el cliente SIN
+      // envolver: solo la primera petición de cada proceso dejaba `llamada_ia`/`respuesta_ia` (conversación 3d-20261009-103125-92b58a).
+      if (propiedad === MARCA_ENVUELTO) return true;
       const valor: unknown = Reflect.get(objetivo, propiedad, receptor);
       if (propiedad === "models" && typeof valor === "object" && valor !== null) return modelosAuditados(valor);
       return valor;
     },
-  }));
+  });
 }
 
 /* ---------- fetch auditado: Python ai-api (python) y proveedores HTTP como fal (http) ---------- */

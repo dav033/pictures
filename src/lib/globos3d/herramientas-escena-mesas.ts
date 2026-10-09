@@ -3,6 +3,7 @@ import { idNuevo, type Escena, type NodoEscena } from "./escena";
 import { fallar } from "./herramientas-escena-colores";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
 import { MAX_NODOS } from "./limites-escena";
+import { errorDeNombreConSillas } from "./descripcion-mobiliario";
 import { grupoDeSillasDe, sillasDeMesaNodo, textoSillasDeMesa } from "./mobiliario-asientos-mesa";
 import { hexDeColor } from "./mobiliario-colores";
 import { esquivarEnElPiso } from "./mobiliario-colocar";
@@ -209,6 +210,8 @@ function agregarMesas(escena: Escena, argumentos: unknown): { escena: Escena; re
   const cantidad = a.cantidad ?? 1;
   const sillasPorMesa = a.sillas_por_mesa ?? preset?.sillas ?? 0;
   const giro = Math.round(a.giro_grados ?? 0);
+  const nombreFalso = errorDeNombreConSillas(a.nombre, sillasPorMesa);
+  if (nombreFalso) fallar(nombreFalso);
   if (sillasPorMesa === 0 && (a.tipo_silla || a.color_silla || a.disposicion)) notas.push("Sin sillas_por_mesa no puse sillas: dime cuántas por mesa.");
   const sillas: PedidoSillas | null = sillasPorMesa > 0 ? {
     cantidad: sillasPorMesa, ...(a.tipo_silla ? { tipo: a.tipo_silla } : {}), ...(a.color_silla ? { colorEstructura: hexDeColor(a.color_silla, notas) } : {}),

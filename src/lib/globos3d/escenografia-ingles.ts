@@ -1,6 +1,6 @@
 import type { AcabadoRotulo, ElementoEscenografia } from "./escenografia";
 import { mesaDePieza, sillasDePieza } from "./mobiliario-conjunto";
-import { fraseDeMesaParametrica, fraseDeSillaParametrica } from "./mobiliario-ingles";
+import { fraseDeMesaParametrica, fraseDeSillaParametrica } from "./mobiliario-conjunto-ingles";
 import { elementosDeEscenografia, rotuloArmado, type PiezaEscenografia } from "./mobiliario-pieza";
 import { tonoEnIngles } from "./render-ia";
 import { ACABADO_ROTULO_EN, lineasDeRotulo, textoEnUnaLinea } from "./rotulos";

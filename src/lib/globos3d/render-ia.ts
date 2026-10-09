@@ -34,6 +34,14 @@ export const NADA_MAS = "Nothing else is in the room: no furniture, tables, food
 export const NADA_MAS_CON_UTILERIA = "Nothing else is in the room: no other furniture, tables, food, extra balloons or props";
 /** Cómo empieza la frase de la escenografía de la escena en la descripción (`escenaEnIngles`). */
 export const PREFIJO_UTILERIA = "Set pieces (not balloons):";
+/**
+ * Cómo empieza la frase del mobiliario (mesas y sillas) cuando la escena lo trae (`mobiliarioEnIngles`). Es la marca con que
+ * `promptRender3d` sabe que las mesas y sillas SON la escena: sin ella (o con ella en un texto ajeno) el prompt conserva sus reglas de siempre
+ * («sin muebles, sala vacía»); con ella las quita, porque FLUX borró las mesas de una boda que decían «no other furniture, tables».
+ */
+export const PREFIJO_MOBILIARIO = "Furniture (main items of the scene):";
+/** El cierre del inventario cuando hay mobiliario: nombra lo que no se debe añadir sin negar las mesas y sillas de la escena. */
+export const NADA_MAS_CON_MOBILIARIO = "Nothing else is in the room beyond the furniture and decorations listed: no extra tables or chairs, food, extra balloons or props";
 
 /** Cómo empieza la frase de la sala en la descripción (la quita `promptRender3d` cuando el lugar es otro). */
 export const PREFIJO_SALA = "The room as shown:";
@@ -50,6 +58,23 @@ const LUZ_NEUTRA = "Neutral daylight white balance and the same exposure and bri
 const LUZ_CALIDA = "Keep the warm studio lighting of the input and its exposure and brightness: do not darken the image or change its white balance.";
 
 const NO_ANADIR = "Add nothing that is not in the input: no furniture, tables, desserts, cupcakes, gifts, plants, people, extra balloons, extra trees or extra figures.";
+/** Con mobiliario en la escena: no se prohíben mesas ni sillas, solo las de más. */
+const NO_ANADIR_CON_MOBILIARIO = "Add nothing that is not in the input: no extra tables or chairs, desserts, cupcakes, gifts, plants, people, extra balloons, extra trees or extra figures.";
+const CONSERVAR_MOBILIARIO = "Keep every table, chair and centrepiece exactly as shown in the input: same number, same layout, same positions and sizes; the tables and chairs are main subjects of the photograph and must be clearly visible, not removed, merged or hidden.";
+
+/**
+ * ¿Esta foto va por FLUX.1 Kontext max («camino fiel»)? Toda foto con el lugar de la captura («Igual al visor»): con otro lugar hay que rehacer paredes y luz.
+ * Medido el 2026-10-09 con la boda de prueba (scripts/exp/render-boda.ts y render-boda2.ts, 12 imágenes): FLUX.1 imagen-a-imagen conserva todo pero sigue
+ * siendo el render 3D; FLUX.2 `/edit` es foto real pero reencuadra (3 o 4 mesas de 6) y a veces escribe mal el rótulo; Kontext pro cambia la cámara y
+ * las formas; Kontext max da foto real con la cámara, las 6 mesas, los centros, el marco y el rótulo en su sitio.
+ */
+export const usaCaminoFiel = (ambiente: AmbienteRender): boolean => ambiente === "igual_visor";
+
+/** ¿La descripción trae globos colgados del techo o flotando contra él? (La sala «lisa y vacía» los contradiría.) */
+export const colgadoDelTecho = (descripcion: string): boolean => /(?:from|against) the ceiling/.test(descripcion);
+
+/** ¿La descripción trae mesas o sillas como parte de la escena? (`mobiliarioEnIngles` deja su marca.) */
+export const traeMobiliario = (descripcion: string): boolean => descripcion.includes(PREFIJO_MOBILIARIO);
 
 function lugarDe(ambiente: AmbienteRender) {
   return AMBIENTES_RENDER.find((a) => a.id === ambiente) ?? AMBIENTES_RENDER[0]!;
@@ -65,20 +90,48 @@ function decoracionPara(descripcion: string, ambiente: AmbienteRender): string {
 /** Texto para FLUX.2 `/edit` con la captura 3D como base. `descripcion` la arma el taller (inglés, sin marcas). */
 export function promptRender3d(descripcion: string, ambiente: AmbienteRender): string {
   const decoracion = decoracionPara(descripcion, ambiente);
+  const mobiliario = traeMobiliario(descripcion);
+  // Con mesas y sillas, o con globos colgados del techo, «vacía» y «sin muebles» contradicen la escena: la sala es lisa, pero no está vacía.
+  const conCosas = mobiliario || colgadoDelTecho(descripcion);
   const sala = ambiente === "igual_visor"
-    ? "Keep the room exactly as shown: same walls, floor, ceiling, colors and perspective, all plain and empty; only make it a real photographed room (real paint, a real floor, natural light and soft shadows)."
-    : `Restyle only the walls, floor and light as ${lugarDe(ambiente).frase}; same room geometry and perspective, the walls stay plain and empty.`;
+    ? `Keep the room exactly as shown: same walls, floor, ceiling, colors and perspective, ${conCosas ? "plain walls with the furniture and decorations described below in place (including whatever hangs from or floats against the ceiling)" : "all plain and empty"}; only make it a real photographed room (real paint, a real floor, natural light and soft shadows).`
+    : `Restyle only the walls, floor and light as ${lugarDe(ambiente).frase}; same room geometry and perspective, the walls stay plain${conCosas ? ", with the furniture and decorations described below in place (including whatever hangs from or floats against the ceiling)" : " and empty"}.`;
   return [
     "Turn this 3D preview into a real professional event photograph.",
     "Keep the balloon decoration exactly as shown: same overall shape, height and width, same number, size, position and color of every balloon and of every decoration; do not add, remove, merge or recolor balloons.",
     "Keep partial and asymmetric shapes as they are: never complete, mirror or close them (a half arch stays a half arch, an open end stays open, empty wall stays empty).",
     "Make it a real photograph, not a 3D render: real latex balloons with natural soft highlights and subtle texture, tightly packed and slightly squashed where they touch (where the preview shows small gaps or see-through spots, the real decoration is full), knots hidden; chrome balloons with mirror reflections, clear balloons see-through.",
     sala,
+    mobiliario ? CONSERVAR_MOBILIARIO : "",
     decoracion ? `The decoration: ${decoracion}.` : "",
     COLOR_FIEL,
     ambiente === "igual_visor" ? (descripcion.includes(MARCA_LUZ_CALIDA) ? LUZ_CALIDA : LUZ_NEUTRA) : "",
-    NO_ANADIR,
+    mobiliario ? NO_ANADIR_CON_MOBILIARIO : NO_ANADIR,
     "Same camera angle and framing as the input; sharp detail, natural depth.",
+  ].filter(Boolean).join(" ");
+}
+
+/** Los textos escritos que lleva la escena (rótulos, neones, letreros), tal cual están en la descripción: `lettering "Boda Real"`, `reading "Mia 15"`. */
+export function textosDeRotulos(descripcion: string): string[] {
+  return [...new Set([...descripcion.matchAll(/(?:lettering|reading) "([^"]{1,60})"/g)].map((m) => m[1]!))];
+}
+
+/**
+ * La instrucción para convertir la captura en foto sin moverla (FLUX.2 `/edit` con la captura como `render_3d_base`, o FLUX.1 Kontext): es un plano en
+ * 3D, no un resultado previo. Dice qué se conserva (cámara, cuenta y sitio de cada objeto, lo que trae la descripción), qué se vuelve real (los
+ * materiales planos) y cómo se escribe cada texto, letra por letra: FLUX.2 escribió «Boda Kat» donde decía «Boda Real».
+ */
+export function promptFotoDeLayout(descripcion: string, ambiente: AmbienteRender = "igual_visor"): string {
+  const decoracion = decoracionPara(descripcion, ambiente);
+  const textos = textosDeRotulos(descripcion);
+  return [
+    "Turn this 3D layout render into a real professional event photograph.",
+    "Keep the exact camera position, lens, framing and perspective of the input, and the position, size and count of every object in it; do not add, remove, move, merge or recolor anything.",
+    "Replace the flat CG materials with real ones: real linen tablecloths, real latex balloons with natural highlights and subtle texture, real wooden chairs, a real floor and real painted walls, soft natural lighting with soft shadows.",
+    decoracion ? `The scene: ${decoracion}.` : "",
+    textos.length ? `Every written text reads exactly as follows, spelled letter by letter, in the same script and color as in the input: ${textos.map((t) => `"${t}"`).join(", ")}.` : "",
+    COLOR_FIEL,
+    "No collage, no close-up, no different viewpoint.",
   ].filter(Boolean).join(" ");
 }
 
@@ -88,7 +141,8 @@ export function promptRender3d(descripcion: string, ambiente: AmbienteRender): s
  */
 export function promptRender3dFiel(descripcion: string, ambiente: AmbienteRender): string {
   const decoracion = decoracionPara(descripcion, ambiente);
-  const sala = ambiente === "igual_visor" ? "A plain empty room with real painted walls and a real floor, natural light and soft shadows." : `The room: ${lugarDe(ambiente).frase}.`;
+  const mobiliario = traeMobiliario(descripcion) || colgadoDelTecho(descripcion);
+  const sala = ambiente === "igual_visor" ? `${mobiliario ? "A room with plain real painted walls and a real floor" : "A plain empty room with real painted walls and a real floor"}, natural light and soft shadows.` : `The room: ${lugarDe(ambiente).frase}.`;
   return [
     "A real professional event photograph of a latex balloon decoration, photorealistic, not a 3D render.",
     decoracion ? `${decoracion}.` : "",
@@ -182,7 +236,7 @@ export function descripcionRender3d(estructura: string, materiales: ReadonlyArra
     redondos.length > 1 ? `round balloons from ${redondos[0]} to ${redondos[redondos.length - 1]} inches` : redondos.length === 1 ? `${redondos[0]}-inch round balloons` : "",
     ...otros.map((o) => (o.endsWith("tube") ? "twisting balloons" : `${o} balloons`)),
   ].filter(Boolean);
-  const nadaMas = estructura.includes(PREFIJO_UTILERIA) ? NADA_MAS_CON_UTILERIA : NADA_MAS;
+  const nadaMas = traeMobiliario(estructura) ? NADA_MAS_CON_MOBILIARIO : estructura.includes(PREFIJO_UTILERIA) ? NADA_MAS_CON_UTILERIA : NADA_MAS;
   const cierre = `. ${nadaMas}`;
   const base = estructura.replace(nadaMas, "").replace(/\s+/g, " ").trim().replace(/[.\s]+$/, "");
   const cupo = MAX_DESCRIPCION - cierre.length;

@@ -1,13 +1,18 @@
-import type { Escena, NodoEscena } from "./escena";
+import type { Colocacion, Escena, NodoEscena } from "./escena";
 import { armarPieza, type PiezaArmada } from "./piezas";
 import { inventarioDe } from "./partes-globos";
+import { describirMueble, muebleDeNodo, resumenDeMobiliario } from "./descripcion-mobiliario";
 import { contarMobiliario } from "./mobiliario-asientos-mesa";
+import { problemasNuevos } from "./problemas-escena";
 
 /**
  * **Verificación automática** de lo que hizo la IA de escena (2026-10-08): tras cada vuelta con herramientas que
  * cambian la escena, la ruta le pasa al modelo lo que DE VERDAD cambió —cuántas piezas hay, y para las piezas
  * tocadas el inventario (formato × color, de `inventarioDe`) antes → después—, para que la respuesta final diga
  * números reales y no lo que el modelo cree que hizo. Puro y sin red; arma solo las piezas que cambiaron.
+ *
+ * El mobiliario se cuenta por su entrada del catálogo y sus asientos reales, NUNCA por el `nombre` que eligió el modelo (la mesa de
+ * 8 sillas llamada «con 4 sillas» alimentó cuatro respuestas falsas), y se avisa de lo que quedó mal puesto (una decoración dentro de una mesa).
  */
 
 const CACHE = new Map<string, Map<string, number>>();
@@ -27,6 +32,18 @@ function inventario(n: NodoEscena): Map<string, number> {
   CACHE.set(clave, mapa);
   while (CACHE.size > 300) { const k = CACHE.keys().next().value; if (k === undefined) break; CACHE.delete(k); }
   return mapa;
+}
+
+/** Dónde quedó una pieza, en pocas palabras («en el piso x 120, z −80», «sobre mesa-1»). */
+function lugarBreve(c: Colocacion): string {
+  switch (c.en) {
+    case "piso": return `en el piso x ${Math.round(c.xCm)}, z ${Math.round(c.zCm)}`;
+    case "sobre": return c.encima ? `encima de ${c.padreId}` : `sobre ${c.padreId}`;
+    case "ancla": return `colgada de ${c.padreId}`;
+    case "pared": return `en la pared ${c.pared}`;
+    case "techo": return "colgada del techo";
+    case "libre": return "suelta en el aire";
+  }
 }
 
 const total = (m: ReadonlyMap<string, number>) => [...m.values()].reduce((s, x) => s + x, 0);
@@ -79,14 +96,17 @@ export function verificarCambios(antes: Escena, despues: Escena, max = 8): strin
   for (const id of t.nuevos) {
     if (mostradas >= max) break;
     mostradas += 1;
-    const n = de(despues, id), inv = inventario(n);
+    const n = de(despues, id);
+    if (muebleDeNodo(n)) { lineas.push(`- nuevo mueble ${id}: ${describirMueble(n)}.`); continue; }
+    const inv = inventario(n);
     const formatos = [...porFormato(inv)].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([f, c]) => `${f} ${c}`).join(", ");
-    lineas.push(`- nueva ${id} «${n.nombre}» (${n.pieza.tipo}): ${total(inv)} globos${formatos ? ` (${formatos})` : ""}.`);
+    lineas.push(`- nueva ${id} «${n.nombre}» (${n.pieza.tipo}): ${total(inv)} globos${formatos ? ` (${formatos})` : ""} · ${lugarBreve(n.colocacion)}.`);
   }
   for (const id of t.cambiados) {
     if (mostradas >= max) break;
     mostradas += 1;
     const a = de(antes, id), d = de(despues, id);
+    if (muebleDeNodo(d)) { lineas.push(`- cambió el mueble ${id}: ${describirMueble(d)}${JSON.stringify(a.colocacion) !== JSON.stringify(d.colocacion) ? " · cambió de sitio" : ""}.`); continue; }
     const ia = inventario(a), id2 = inventario(d);
     const sitio = JSON.stringify(a.colocacion) !== JSON.stringify(d.colocacion) ? " · cambió de sitio" : "";
     lineas.push(`- cambió ${id} «${d.nombre}»: ${total(ia)} → ${total(id2)} globos; ${diferencia(ia, id2)}${sitio}.`);
@@ -98,6 +118,12 @@ export function verificarCambios(antes: Escena, despues: Escena, max = 8): strin
   // Las mesas y sillas que de verdad hay, leídas de las piezas (un grupo de sillas es una pieza con muchas sillas): nunca del nombre.
   const ma = contarMobiliario(antes), md = contarMobiliario(despues);
   if (ma.mesas !== md.mesas || ma.sillas !== md.sillas) lineas.push(`- mobiliario (leído de las piezas): mesas ${ma.mesas} → ${md.mesas}, sillas ${ma.sillas} → ${md.sillas}.`);
+  const tocaMobiliario = [...t.nuevos, ...t.cambiados].some((id) => muebleDeNodo(de(despues, id))) || t.quitados.some((id) => muebleDeNodo(de(antes, id)));
+  const mobiliario = tocaMobiliario ? resumenDeMobiliario(despues) : "";
+  if (mobiliario) lineas.push(`- ${mobiliario}`);
+  const problemas = problemasNuevos(antes, despues).slice(0, 5);
+  for (const p of problemas) lineas.push(`- PROBLEMA: ${p.texto}`);
+  if (problemas.length) lineas.push("Corrige los PROBLEMA antes de responder; si no puedes, dilo en la respuesta.");
   lineas.push("En la respuesta final di estos números (antes → después), no estimaciones.");
   return lineas.join("\n");
 }

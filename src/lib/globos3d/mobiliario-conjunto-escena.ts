@@ -10,7 +10,6 @@ import {
 import { NOMBRE_MESA, normalizarMesa, PARTIDA_MESA, type MesaGuardada } from "./mobiliario-conjunto-tipos";
 import { superficieDeMesa } from "./mobiliario-mesas-param";
 import { normalizarOpciones } from "./mobiliario-pieza";
-import { SILLAS } from "./mobiliario-sillas-param";
 import { asientosDeEntrada } from "./mobiliario-tipos";
 import type { PiezaArmada } from "./piezas";
 
@@ -196,13 +195,6 @@ export function cuadricula(o: { cantidad: number; anchoCm: number; fondoCm: numb
   });
   return { puntos, columnas, filas };
 }
-
-// ----------------------------------------------------------------------------------------------------------
-// Nombres
-// ----------------------------------------------------------------------------------------------------------
-
-/** Cómo se llama un tipo de silla en plural, para los resúmenes. */
-export const pluralDeSilla = (tipo: keyof typeof SILLAS): string => SILLAS[tipo].plural;
 
 // ----------------------------------------------------------------------------------------------------------
 // El conjunto de siempre (el botón «Mesa con sillas» del panel)

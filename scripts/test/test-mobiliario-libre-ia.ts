@@ -208,7 +208,10 @@ prueba("la verificación automática dice las mesas y sillas de verdad; la lista
 prueba("la descripción para FLUX cuenta cada mesa y silla con su tipo y medida, no un 8 ni un nombre", () => {
   const r = llamar(salaGrande(), "agregar_mesas", { cantidad: 6, sillas_por_mesa: 4, tipo_silla: "crossback", color_silla: "madera", ancho_cm: 180 });
   const texto = escenaEnIngles(r.escena, armarEscena(r.escena));
-  assert.match(texto, /30 party props/);
+  // Las mesas y sillas son lo principal de la escena (con su cuenta y su disposición), no «party props».
+  assert.match(texto, /Furniture \(main items of the scene\)/);
+  assert.match(texto, /The 6 tables are numbered 1 to 6 from left to right\. Each table has 4 chairs evenly spaced around it/);
+  assert.doesNotMatch(texto, /party props/);
   assert.match(texto, /6 × round banquet table 180 cm in diameter with a floor-length tablecloth/);
   assert.match(texto, /24 × wooden crossback chair/);
   assert.doesNotMatch(texto, /eight|ten Tiffany/);
@@ -250,8 +253,10 @@ prueba("superficieSuperior: alto de la tapa, centro útil y radio de cada mesa (
 const huella = (id: string) => { const a = armarPieza(piezaDeMueble(muebleDe(id)!)); return `${(a.solidos ?? []).length}:${createHash("sha1").update(JSON.stringify(a.solidos)).digest("hex").slice(0, 16)}`; };
 
 prueba("mesa_redonda_sillas y mesa_imperial_sillas arman idénticas a como armaban (huella fija) y las escenas viejas cargan sin avisos", () => {
-  assert.equal(huella("mesa_redonda_sillas"), "138:976efe8723286291");
-  assert.equal(huella("mesa_imperial_sillas"), "175:8c396b6d98278fb5");
+  // Las huellas son las de fix/honestidad-render (mantel con la falda más oscura que la tapa, 2026-10-09): lo único que cambió de estas dos piezas es ese
+  // mantel (la redonda gana el reborde y el dobladillo: 138 → 140 sólidos; la imperial solo oscurece la falda); las sillas son las de siempre (huella de silla_tiffany).
+  assert.equal(huella("mesa_redonda_sillas"), "140:694fb02485982894");
+  assert.equal(huella("mesa_imperial_sillas"), "175:79acf41ded7e6769");
   assert.equal(huella("silla_tiffany"), "17:94d7e238e12c3947");
   const vieja: Escena = {
     ...salaGrande(),

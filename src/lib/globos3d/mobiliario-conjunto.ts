@@ -104,9 +104,3 @@ export function armarConjuntoMesa(p: { ids: { mesa: string; sillas: string }; me
 
 /** Las sillas van `sobre` su mesa en su origen: `escena.ts` las arma en el marco de la mesa, sin tocar el punto ni la normal. */
 export const colocacionDeSillas = (mesaId: string): Colocacion => ({ en: "sobre", padreId: mesaId, puntoCm: { x: 0, y: 0, z: 0 }, normal: { x: 0, y: 1, z: 0 }, giroGrados: 0 });
-
-/** Cuántas unidades cuenta una pieza de escenografía en una lista o en la descripción: las sillas de un grupo, 1 de lo demás. */
-export function unidadesDeEscenografia(p: Pieza): number {
-  const s = p.tipo === "escenografia" ? p.mueble?.sillas : undefined;
-  return s ? Math.min(s.puestos?.length ?? 0, 400) : 1;
-}

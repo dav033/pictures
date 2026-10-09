@@ -6,11 +6,12 @@ import { fallar } from "./herramientas-escena-colores";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
 import { hexDeColor } from "./mobiliario-colores";
 import { colocacionPorDefecto } from "./mobiliario-colocar";
+import { comprobarNombreMueble } from "./descripcion-mobiliario";
 import { muebleDe } from "./mobiliario-catalogo";
 import { puestosAlrededor, puestosEnFila, type Puesto } from "./mobiliario-disposicion";
 import { ACABADOS_MUEBLE, admiteRotulo, conTextoPieza, nombreDeMueble, opcionesDeMueble, piezaDeEntrada, piezaDeMueble, portadorDeRotulo, type OpcionesGuardadas, type PiezaEscenografia } from "./mobiliario-pieza";
 import { ACABADOS_ROTULO, avisoDeTexto, caraDe, esAcabadoRotulo, NOMBRE_ACABADO_ROTULO, textoEnUnaLinea, type PedidoRotulo } from "./rotulos";
-import { descripcionConColores, retiroDe, type FondoCatalogo, type MuebleCatalogo } from "./mobiliario-tipos";
+import { asientosDeEntrada, descripcionConColores, retiroDe, type FondoCatalogo, type MuebleCatalogo } from "./mobiliario-tipos";
 import { esGrupoDeSillas, esMesaParametrica, MANTEL_TEXTO, medidaDeMesa, mesaDePieza, sillasDePieza } from "./mobiliario-conjunto";
 import { NOMBRE_MESA } from "./mobiliario-conjunto-tipos";
 import { SILLAS } from "./mobiliario-sillas-param";
@@ -81,8 +82,12 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
   const a = MobiliarioSchema.parse(argumentos ?? {});
   const entrada = FONDOS_CATALOGO.find((f) => f.id === a.id) ?? fallar(`No hay «${a.id}» en el catálogo de mobiliario.`);
   const notas: string[] = [];
+  const veredicto = comprobarNombreMueble(entrada, a.nombre);
+  if (veredicto.tipo === "error") fallar(veredicto.error);
+  if (veredicto.tipo === "corregido") notas.push(veredicto.aviso);
+  const nombreBase = veredicto.tipo === "corregido" ? veredicto.nombre : a.nombre ?? entrada.nombre;
   const mueble = entrada.clase === "mueble" ? entrada : undefined;
-  if (a.id === "mesa_redonda_sillas" || a.id === "mesa_imperial_sillas") notas.push(`«${entrada.nombre}» es un conjunto fijo de ${a.id === "mesa_redonda_sillas" ? 8 : 10} sillas Tiffany en una sola pieza: para otro número de sillas, otro tipo de silla o de mesa usa cambiar_sillas / cambiar_mesas con su id (la pasa a mesa con sillas editables) o agregar_mesas con sillas_por_mesa.`);
+  if (mueble?.sillas) notas.push(`«${entrada.nombre}» es un conjunto fijo de ${asientosDeEntrada(mueble)} sillas Tiffany en una sola pieza: para otro número de sillas, otro tipo de silla o de mesa usa cambiar_sillas / cambiar_mesas con su id (la pasa a mesa con sillas editables) o agregar_mesas con sillas_por_mesa.`);
   if (mueble) comprobarAcabadoPropio(mueble, a.acabado);
   if (!mueble && (a.ancho_cm || a.fondo_cm || a.alto_cm || a.colores || a.acabado)) notas.push(`«${entrada.nombre}» es un fondo de foto: va con sus medidas y colores de catálogo (el mobiliario sí cambia de medida y color).`);
   if (a.texto && !mueble?.conTexto && !entrada.rotulable) notas.push(`«${entrada.nombre}» no lleva texto: lo ignoré.`);
@@ -106,11 +111,13 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
   sitios.forEach((sitio, i) => {
     const id = idNuevo(actual, a.id.replace(/_/g, "-"));
     const colocacion: Colocacion = sitio.colocacion ?? (sitio.puesto ? { en: "piso", xCm: sitio.puesto.x, zCm: sitio.puesto.z, giroGrados: sitio.puesto.giroGrados } : sola());
-    const nodo: NodoEscena = { id, nombre: `${a.nombre ?? entrada.nombre}${sitios.length > 1 ? ` ${i + 1}` : ""}`, pieza, colocacion };
+    const nodo: NodoEscena = { id, nombre: `${nombreBase}${sitios.length > 1 ? ` ${i + 1}` : ""}`, pieza, colocacion };
     actual = { ...actual, nodos: [...actual.nodos, nodo] };
     nuevos.push(nodo);
   });
-  const resumen = `Agregué ${nuevos.length} «${entrada.nombre}» de ${textoMedidas(real)}${mueble ? "" : " (medidas del catálogo)"}: ${nuevos.map((x) => x.id).join(", ")}. Es escenografía (no cotiza).`;
+  const trae = mueble ? asientosDeEntrada(mueble, opciones) : 0;
+  const asientos = trae ? ` Trae ${trae} ${trae === 1 ? "asiento" : "asientos"} cada una${mueble?.asiento ? "" : " (con el conjunto fijo: otro número de sillas va con agregar_mesas)"}.` : "";
+  const resumen = `Agregué ${nuevos.length} «${entrada.nombre}» de ${textoMedidas(real)}${mueble ? "" : " (medidas del catálogo)"}: ${nuevos.map((x) => x.id).join(", ")}. Es escenografía (no cotiza).${asientos}`;
   return { escena: actual, resumen: [resumen, ...new Set(notas)].join(" ") };
 }
 

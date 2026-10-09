@@ -13,6 +13,7 @@ import { armarEscena, duplicarNodo, girarNodo, moverNodo, quitarNodo, type Escen
 import { MAX_NODOS } from "../../src/lib/globos3d/limites-escena";
 import { armarConjuntoMesa, mesaDePedido, sillasDePieza, sillasParaMesa } from "../../src/lib/globos3d/mobiliario-conjunto";
 import { contarMobiliario } from "../../src/lib/globos3d/mobiliario-asientos-mesa";
+import { SOMBRA_FALDA, sombrear } from "../../src/lib/globos3d/escenografia";
 import { DISPOSICIONES, TIPOS_MESA, TIPOS_SILLA, type TipoMesa } from "../../src/lib/globos3d/mobiliario-conjunto-tipos";
 import { armarMesa } from "../../src/lib/globos3d/mobiliario-mesas-param";
 import { repartirSillas } from "../../src/lib/globos3d/mobiliario-perimetro";
@@ -51,7 +52,9 @@ prueba("el mantel (piso, corto, ninguno), su color y el camino cambian lo que se
     const piso = armarMesa(mesaDePedido({ tipo, mantel: "piso", colorMantel: "#112233" }));
     const corto = armarMesa(mesaDePedido({ tipo, mantel: "corto", colorMantel: "#112233" }));
     const ninguno = armarMesa(mesaDePedido({ tipo, mantel: "ninguno", colorMantel: "#112233", colorPatas: "#445566" }));
-    assert.ok(piso.every((e) => e.hex === "#112233"), `${tipo}: el mantel hasta el piso es todo del color pedido`);
+    // La falda cae a la sombra de la tapa y el reborde y el dobladillo son un poco más oscuros (para que se lea la forma); la tapa lleva el color pedido.
+    const tonos = ["#112233", sombrear("#112233", SOMBRA_FALDA), sombrear("#112233", 0.85)];
+    assert.ok(piso.some((e) => e.hex === "#112233") && piso.every((e) => tonos.includes(e.hex)), `${tipo}: el mantel hasta el piso es del color pedido (la falda, apenas más oscura)`);
     assert.ok(corto.some((e) => e.hex !== "#112233"), `${tipo}: el mantel corto deja ver las patas`);
     assert.ok(ninguno.some((e) => e.hex === "#445566") && ninguno.some((e) => e.hex === "#112233"), `${tipo}: sin mantel hay tapa y patas de sus colores`);
     // El mantel corto deja las patas a la vista; el de piso las tapa.

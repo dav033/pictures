@@ -343,6 +343,7 @@ const FRASE_POR_ROL: Readonly<Record<ImageInput["role"], string>> = {
   palette_reference: "palette only: use ambient palette; never copy venue, objects or products.",
   catalog_product_reference: "product identity only: use color, finish, material and size; never arrangement, packaging or background.",
   previous_generated_result: "previous result: preserve current scene and venue; apply only requested change.",
+  render_3d_base: "3D layout render to convert into a photograph: keep its camera, framing and the position and count of every object.",
 };
 
 /**
@@ -370,10 +371,12 @@ export function buildFluxEditPrompt(prompt: string, references: readonly ImagenE
       : FRASE_POR_ROL[image.role];
     return `Input image ${index + 1} (@image${index + 1}): ${frase}`;
   });
-  const baseIndex = references.findIndex((image) => image.role === "previous_generated_result" || image.role === "venue_base");
+  const baseIndex = references.findIndex((image) => image.role === "previous_generated_result" || image.role === "venue_base" || image.role === "render_3d_base");
   const baseInstruction = baseIndex < 0
     ? "No venue base; create venue from prompt."
-    : references[baseIndex]!.role === "previous_generated_result"
+    : references[baseIndex]!.role === "render_3d_base"
+      ? `PRIMARY BASE @image${baseIndex + 1}: a 3D layout render, not a photo. Make it a real photograph with the exact same camera position, lens and framing and the same position and count of every object; only the materials and light become real.`
+      : references[baseIndex]!.role === "previous_generated_result"
       ? `PRIMARY BASE @image${baseIndex + 1}: preserve current scene and venue; apply only requested change.${references.some((image) => image.role === "venue_base") ? " The venue image is context only and never replaces this base." : ""}`
       : `PRIMARY VENUE @image${baseIndex + 1}: preserve this venue; never use another input background.`;
   return `${prompt}\n\nINPUT IMAGES\n${baseInstruction}\n${frases.join("\n")}\nOne cohesive photorealistic scene; no collage, board, cutouts or samples.`;
@@ -829,7 +832,7 @@ export async function generarConFluxFiel(prompt: string, opciones: OpcionesFluxF
   return auditarGeneracionImagen(descripcion, () => generarConFluxFielSinAuditar(prompt, opciones, endpoint, modelo, coste), (imagen) => ({ base64: imagen.base64, mime: imagen.mime }));
 }
 
-async function generarConFluxFielSinAuditar(prompt: string, opciones: OpcionesFluxFiel, endpoint: string, modelo: string, coste: number): Promise<Imagen> {
+async function generarConFluxFielSinAuditar(prompt: string, opciones: OpcionesFluxFiel, endpoint: string, modelo: string, coste: number, cuerpo: Record<string, unknown> = cuerpoFluxFiel(prompt, opciones)): Promise<Imagen> {
   const key = process.env.FAL_KEY;
   if (!key) throw new Error("FLUX no está conectado todavía: falta FAL_KEY en .env.local.");
   const inicio = Date.now();
@@ -860,7 +863,7 @@ async function generarConFluxFielSinAuditar(prompt: string, opciones: OpcionesFl
     const response = await fetchFalAllowed(endpoint, {
       method: "POST",
       headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify(cuerpoFluxFiel(prompt, opciones)),
+      body: JSON.stringify(cuerpo),
       signal: signalFor(30_000),
     }, isAllowedFalQueueUrl);
     if (!response.ok) throw await falResponseError(response, "fal.ai rechazó la solicitud FLUX.1");
@@ -894,4 +897,51 @@ async function generarConFluxFielSinAuditar(prompt: string, opciones: OpcionesFl
     registrar(resultadoTelemetria(error));
     throw error;
   }
+}
+
+
+// ----------------------------------------------------------------------------------------------------------
+// FLUX.1 Kontext (pro / max): edita una imagen con una instrucción y conserva su composición; es un modelo base de FLUX (sin LoRA).
+// ----------------------------------------------------------------------------------------------------------
+
+const KONTEXT = {
+  pro: { endpoint: "https://queue.fal.run/fal-ai/flux-pro/kontext", modelo: "flux-1/kontext-pro", usd: 0.04 },
+  max: { endpoint: "https://queue.fal.run/fal-ai/flux-pro/kontext/max", modelo: "flux-1/kontext-max", usd: 0.08 },
+} as const;
+export type VarianteKontext = keyof typeof KONTEXT;
+export const costeKontext = (variante: VarianteKontext): number => KONTEXT[variante].usd;
+
+export type OpcionesKontext = {
+  /** La captura del visor (tal cual: la salida sale de su proporción). */
+  imagen: { base64: string; mime: string; ancho: number; alto: number };
+  variante: VarianteKontext;
+  seed?: number;
+  guidanceScale?: number;
+  /** Proporción pedida (`3:2`, `16:9`…); sin ella, la de la imagen. */
+  aspecto?: string;
+  signal?: AbortSignal;
+  telemetria?: ContextoTelemetriaIA;
+};
+
+/** FLUX.1 Kontext en fal con el mismo registro que los demás caminos de imagen (evento `imagen`, coste, telemetría). */
+export async function generarConFluxKontext(prompt: string, opciones: OpcionesKontext): Promise<Imagen> {
+  const k = KONTEXT[opciones.variante];
+  const cuerpo = {
+    prompt,
+    image_url: `data:${opciones.imagen.mime};base64,${opciones.imagen.base64}`,
+    guidance_scale: opciones.guidanceScale ?? 3.5,
+    num_images: 1,
+    output_format: "png",
+    safety_tolerance: "2",
+    ...(Number.isInteger(opciones.seed) ? { seed: opciones.seed } : {}),
+    ...(opciones.aspecto ? { aspect_ratio: opciones.aspecto } : {}),
+  };
+  const descripcion: DescripcionImagen = {
+    proveedor: "fal", endpoint: k.endpoint, modelo: k.modelo, prompt,
+    referencias: [{ base64: opciones.imagen.base64, mime: opciones.imagen.mime, rol: "captura_3d" }],
+    parametros: { guidanceScale: cuerpo.guidance_scale, ancho: opciones.imagen.ancho, alto: opciones.imagen.alto, ...(Number.isInteger(opciones.seed) ? { seed: opciones.seed } : {}), ...(opciones.aspecto ? { aspecto: opciones.aspecto } : {}) },
+    costeEstimadoUsd: k.usd,
+  };
+  const comoFiel: OpcionesFluxFiel = { imagen: opciones.imagen, strength: 1, signal: opciones.signal, telemetria: opciones.telemetria };
+  return auditarGeneracionImagen(descripcion, () => generarConFluxFielSinAuditar(prompt, comoFiel, k.endpoint, k.modelo, k.usd, cuerpo), (imagen) => ({ base64: imagen.base64, mime: imagen.mime }));
 }
