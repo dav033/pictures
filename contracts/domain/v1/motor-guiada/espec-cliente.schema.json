@@ -210,8 +210,14 @@
                 "properties": {
                   "formatoId": {
                     "type": "string",
-                    "minLength": 1,
-                    "maxLength": 16
+                    "enum": [
+                      "R-5",
+                      "R-9",
+                      "R-12",
+                      "R-18",
+                      "R-24",
+                      "R-36"
+                    ]
                   },
                   "codigo": {
                     "type": "string",
