@@ -7,10 +7,19 @@ import { fuenteDeRotulos } from "./fuente-rotulos";
  * texto, lunares, rayas, estrellas): se dibuja en un lienzo 2D y se pega como calcomanía sobre la cara del sólido
  * (delante o arriba), un pelo por fuera. Las texturas se guardan por dibujo, tinta y fondo: un banderín de 12
  * banderines usa 3 o 4, no 12.
+ *
+ * Las texturas son de UN visor (regla D-017, como `rotulo-visor.ts`): viven en `crearMotivosVisor()` y `liberar()` las suelta con el visor.
+ * Al escribir un letrero de neón letra por letra pasa una textura por cada intermedio: las que ninguna malla viva usa se sueltan del caché
+ * (y de la GPU) al pasar de `MAXIMO_SIN_USO`, la que lleva más tiempo sin usarse primero.
  */
 const CM = 0.01;
 const LADO = 256;
-const TEXTURAS = new Map<string, THREE.CanvasTexture>();
+/** Cuántas texturas SIN USAR guarda un visor (las que ninguna calcomanía viva usa). */
+export const MAXIMO_SIN_USO = 12;
+
+/** Una textura guardada y cuántas calcomanías vivas la usan (cada una avisa al liberarse con `userData.alLiberar`). */
+type Guardada = { textura: THREE.CanvasTexture; usos: number };
+type Texturas = Map<string, Guardada>;
 
 const PATRONES = new Set(["lunares", "rayas", "estrellas"]);
 
@@ -212,13 +221,13 @@ function patron(p: Pincel, ancho: number, alto: number, dibujo: string, tinta: s
 }
 
 /** La textura de un motivo sobre un fondo de `fondo` (para elegir la tinta), en un lienzo de proporción `proporcion` (ancho/alto). */
-function texturaMotivo(m: MotivoEscenografia, fondo: string, proporcion: number): THREE.CanvasTexture | null {
+function texturaMotivo(m: MotivoEscenografia, fondo: string, proporcion: number, texturas: Texturas): Guardada | null {
   if (typeof document === "undefined") return null;
   const tinta = m.hex ?? tintaPara(fondo);
   const ancho = proporcion >= 1 ? LADO : Math.round(LADO * proporcion), alto = proporcion >= 1 ? Math.round(LADO / proporcion) : LADO;
   const clave = `${m.dibujo}|${m.estilo ?? ""}|${m.texto ?? ""}|${tinta}|${m.hex ? "propia" : ""}|${ancho}x${alto}`;
-  const guardada = TEXTURAS.get(clave);
-  if (guardada) return guardada;
+  const guardada = texturas.get(clave);
+  if (guardada) { texturas.delete(clave); texturas.set(clave, guardada); return guardada; }
   const lienzo = document.createElement("canvas");
   lienzo.width = ancho;
   lienzo.height = alto;
@@ -240,15 +249,30 @@ function texturaMotivo(m: MotivoEscenografia, fondo: string, proporcion: number)
   const textura = new THREE.CanvasTexture(lienzo);
   textura.colorSpace = THREE.SRGBColorSpace;
   textura.anisotropy = 4;
-  TEXTURAS.set(clave, textura);
-  return textura;
+  // El visor no la suelta al vaciar una pieza (`userData.compartido`): la suelta este caché.
+  textura.userData.compartido = true;
+  const nueva: Guardada = { textura, usos: 0 };
+  texturas.set(clave, nueva);
+  podar(texturas, clave);
+  return nueva;
+}
+
+/** Suelta las texturas sin uso que pasan del tope, la que lleva más tiempo sin usarse primero (el Map guarda el orden de uso); la recién llegada no sale. */
+function podar(texturas: Texturas, recien: string) {
+  let sinUso = [...texturas].filter(([clave, g]) => g.usos === 0 && clave !== recien);
+  for (const [clave, g] of sinUso) {
+    if (sinUso.length < MAXIMO_SIN_USO) break;
+    g.textura.dispose();
+    texturas.delete(clave);
+    sinUso = sinUso.filter(([k]) => k !== clave);
+  }
 }
 
 /**
  * La calcomanía del motivo de un sólido, en el espacio de su malla (m): un plano (o un disco en la tapa de un
  * cilindro) un pelo por fuera de la cara, del tamaño que cabe en ella por `escala`. null si no lleva motivo.
  */
-export function calcoMotivo(s: SolidoEscenografia): THREE.Object3D | null {
+function calcoMotivo(s: SolidoEscenografia, texturas: Texturas): THREE.Object3D | null {
   const m = s.motivo;
   if (!m) return null;
   const escala = m.escala ?? 1;
@@ -278,13 +302,34 @@ export function calcoMotivo(s: SolidoEscenografia): THREE.Object3D | null {
   }
   if (!patronOTexto && !disco) { const lado = Math.min(ancho, alto); ancho = lado; alto = lado; }
   ancho *= escala; alto *= escala;
-  const mapa = texturaMotivo(m, s.hex, disco ? 1 : ancho / alto);
-  if (!mapa) return null;
+  const guardada = texturaMotivo(m, s.hex, disco ? 1 : ancho / alto, texturas);
+  if (!guardada) return null;
+  const mapa = guardada.textura;
   const geometria = disco ? new THREE.CircleGeometry((ancho / 2) * CM, 40) : new THREE.PlaneGeometry(ancho * CM, alto * CM);
   const material = new THREE.MeshStandardMaterial({ map: mapa, transparent: true, alphaTest: 0.04, roughness: 0.75, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-  // El visor libera el mapa de los materiales estándar al vaciar: las texturas guardadas se vuelven a subir solas.
   const malla = new THREE.Mesh(geometria, material);
+  guardada.usos++;
+  malla.userData.alLiberar = () => { guardada.usos = Math.max(0, guardada.usos - 1); };
   if (arriba) malla.rotation.x = -Math.PI / 2;
   malla.position.copy(centro.multiplyScalar(CM));
   return malla;
+}
+
+export type MotivosVisor = {
+  /** La calcomanía del motivo de un sólido; null si no lleva motivo o no hay lienzo. */
+  calco: (s: SolidoEscenografia) => THREE.Object3D | null;
+  /** Cuántas texturas guarda (las pruebas). */
+  guardadas: () => number;
+  /** Suelta todas las texturas de este visor. */
+  liberar: () => void;
+};
+
+/** Las calcomanías de UN visor, con sus texturas (nunca un caché de módulo: ver arriba). */
+export function crearMotivosVisor(): MotivosVisor {
+  const texturas: Texturas = new Map();
+  return {
+    calco: (s) => calcoMotivo(s, texturas),
+    guardadas: () => texturas.size,
+    liberar() { for (const g of texturas.values()) g.textura.dispose(); texturas.clear(); },
+  };
 }
