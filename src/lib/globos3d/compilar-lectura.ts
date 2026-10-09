@@ -61,6 +61,10 @@ function seApoyaEnElPiso(q: Extract<PiezaLeida, { tipo: "fondo" }>): boolean {
 
 const SILUETA_COLUMNA: Readonly<Record<string, SiluetaTrazo>> = { recta: "columna_recta", racimos: "columna_racimos", s: "columna_s", inclinada: "columna_inclinada" };
 
+/** El diámetro de un pedestal (cilindro) de fiesta típico: con él se cuentan los que caben en lo leído si no dice cuántos. */
+const DIAMETRO_PEDESTAL_TIPICO_CM = 45;
+const MAXIMO_PEDESTALES = 5;
+
 /** Cuánto más grueso que el mínimo se deja el cuerpo: las siluetas con nombre afinan las puntas y el motor solo pone un formato donde cabe. */
 const HOLGURA_DEL_CUERPO = 1.2;
 
@@ -253,7 +257,13 @@ export function compilarLectura(l: LecturaFoto): EscenaCompilada {
           case "media_luna": elementos = mediaLuna({ diametroCm: a, hex: hex(0) }); break;
           case "arcos_chiara": elementos = arcosChiara({ arcos: p.colores.slice(0, 3).map((c, k) => ({ anchoCm: r0(w * (1 - k * 0.15) / 1.6), altoCm: r0(a * (1 - k * 0.12)), hex: c.hex, xCm: r0((k - 1) * w * 0.12) })) }); break;
           case "lentejuelas": elementos = [paredLentejuelas({ anchoCm: w, altoCm: a, hex: hex(0) })]; break;
-          case "pedestales": { const diametroCm = r0(Math.max(30, w / Math.max(1, p.colores.length) - 4)); z = zEnElPiso(120, diametroCm); elementos = pedestales({ cilindros: p.colores.map((c, k) => ({ diametroCm, altoCm: r0(a * (0.7 + 0.15 * k)), hex: c.hex, acabado: c.acabado === "cromado" ? "metal" as const : "satinado" as const })) }); break; }
+          case "pedestales": {
+            // Cuántos: los que dice `cantidad`; si no, uno por color leído o, si son más anchos de lo que da un pedestal típico, los que caben (tres pedestales blancos leídos con un solo color no son un tambor de 2 m).
+            const cuantos = Math.min(MAXIMO_PEDESTALES, Math.max(1, p.cantidad ?? Math.max(p.colores.length, Math.round(w / DIAMETRO_PEDESTAL_TIPICO_CM))));
+            const diametroCm = r0(Math.max(30, w / cuantos - 4)); z = zEnElPiso(120, diametroCm);
+            elementos = pedestales({ cilindros: Array.from({ length: cuantos }, (_, k) => { const c = p.colores[k % p.colores.length]!; return { diametroCm, altoCm: r0(a * (0.7 + 0.15 * (k % 3))), hex: c.hex, acabado: c.acabado === "cromado" ? "metal" as const : "satinado" as const }; }) });
+            break;
+          }
           case "mesa_mantel": z = zEnElPiso(120, 75); elementos = mesaConMantel({ anchoCm: w, fondoCm: 75, altoCm: Math.min(110, Math.max(60, a)), mantel: hex(0) }); break;
           case "tapete_redondo": z = zEnElPiso(160, r0(w * 0.7)); elementos = tapete({ anchoCm: w, fondoCm: r0(w * 0.7), hex: hex(0) }); break;
           case "cortina_luces": lugar = "pared"; elementos = cortina({ anchoCm: w, altoCm: a, hex: hex(0), luces: true }); break;

@@ -104,4 +104,13 @@ prueba("la cámara de la foto está a la altura de la mano y mira hacia abajo: u
   assert.deepEqual(profundidadEnElPiso(l, 0.6), { delanteCm: 0, factor: 1 });
 });
 
+prueba("pedestales leídos con un solo color: tantos como caben a lo ancho (o los de `cantidad`), no un tambor", () => {
+  const cilindros = (q: PiezaLeida) => compilarLectura(lectura([q])).escena.nodos[0]!.pieza;
+  const cuantos = (q: PiezaLeida) => { const pz = cilindros(q); return pz.tipo === "escenografia" ? pz.elementos.length : 0; };
+  assert.equal(cuantos(fondo("pedestales", PISO, 0.45, 0.35)), 3, "1,35 m de ancho: tres pedestales");
+  assert.equal(cuantos(fondo("pedestales", PISO, 0.18, 0.3)), 1, "uno angosto: uno");
+  assert.equal(cuantos(fondo("pedestales", PISO, 0.45, 0.35, { cantidad: 2 })), 2, "cantidad manda");
+  assert.equal(cuantos(fondo("pedestales", PISO, 0.18, 0.3, { colores: [BLANCO, BLANCO] })), 2, "uno por color leído, como siempre");
+});
+
 console.log(`test-compilar-fondos-profundidad: ${pruebas} pruebas ok`);
