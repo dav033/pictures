@@ -1,3 +1,4 @@
+import { avisar } from "./avisos-usuario";
 import type { Escena } from "./escena";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
 import { centrosDe, padreDeCentro } from "./centros-mesa";
@@ -26,7 +27,7 @@ function llamar(escena: Escena, familia: Readonly<Record<string, HerramientaExtr
     notas.push(r.resumen);
     return r.escena;
   } catch (error) {
-    notas.push(`No pude aplicar ${nombre}: ${error instanceof Error ? error.message : String(error)}`);
+    avisar(notas, `No pude aplicar ${nombre}: ${error instanceof Error ? error.message : String(error)}`, "no pude", nombre);
     return escena;
   }
 }
@@ -53,7 +54,7 @@ function centros(escena: Escena, p: PedidoZonas, notas: string[]): Escena {
   }
   // Si todas quedaron con centro, el aviso de «no cupo» de la primera pasada ya no vale: solo se dice lo que se puso.
   notas.push(...(faltan.length ? primeras : primeras.filter((n) => !n.startsWith("No pude aplicar")).map((n) => n.split(" No quedaron")[0]!)), ...chicas.map((n) => n.split(" No quedaron")[0]!));
-  if (faltan.length) notas.push(`${faltan.length} mesa(s) no llevan centro: ni el más chico cabe en su tapa.`);
+  if (faltan.length) avisar(notas, `${faltan.length} mesa(s) no llevan centro: ni el más chico cabe en su tapa.`, "no llevan centro", "sin centro", "no cabe");
   return actual;
 }
 

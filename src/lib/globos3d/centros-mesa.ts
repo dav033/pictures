@@ -1,7 +1,8 @@
-import { armarNodoSuelto, HUNDIMIENTO_SOBRE_CM, idNuevo, puntoAlMundo, puntoALocal, vectorALocal, type Escena, type EscenaArmada, type MarcoPieza, type NodoArmado, type NodoEscena } from "./escena";
-import { puntosSolido } from "./escenografia";
-import { entradaDeCatalogo } from "./fondos-escenografia";
-import type { Vec3 } from "./modulos";
+import { colocacionSobreMesa } from "./centro-sobre-mesa";
+import { idNuevo, type Escena, type EscenaArmada, type MarcoPieza, type NodoEscena } from "./escena";
+import { esGrupoDeSillas, mesaDePieza } from "./mobiliario-conjunto";
+import { tapaDeMesa } from "./mobiliario-asientos-mesa";
+import { puntoEnSuperficie, superficieSuperior, type SuperficieSuperior } from "./mobiliario-superficie";
 import type { Pieza } from "./piezas";
 import { registroVivo } from "./salon-registro";
 import { zonasDeEscena } from "./salon-zonas";
@@ -28,17 +29,12 @@ export const GRUPOS_MESA = ["todas", "redondas", "imperiales", "coctel", "postre
 export type GrupoMesa = (typeof GRUPOS_MESA)[number];
 export type Ranura = 0 | 1;
 
-/** La cara de arriba de una mesa: su centro y sus medidas en el espacio de la mesa, y el centro en el mundo. */
-export type Cubierta = { local: Vec3; centro: Vec3; anchoCm: number; fondoCm: number; topeMundo: { minX: number; maxX: number; minZ: number; maxZ: number } };
+/** La cara de arriba de una mesa: `superficieSuperior` (la única implementación: mesas del catálogo y paramétricas). */
+export type Cubierta = SuperficieSuperior;
 export type MesaDeEscena = { nodo: NodoEscena; marco: MarcoPieza; tipo: TipoMesa; cubierta: Cubierta; conCosas: boolean };
 
-/** Un centro no se pone si ocupa más de esta parte de lo angosto de la cubierta. */
-export const OCUPACION_MAXIMA = 0.9;
 const RENGLON_CM = 70;
 const NOMBRE_PRINCIPAL = /principal|honor|novios|presidi|head/i;
-/** Mesas que ya llevan cosas encima de fábrica (regalos, dulces) y juegos de varias mesas, que no admiten un centro. */
-const DE_FABRICA_CON_COSAS = /^(mesa_regalos|carrito_dulces)$/;
-const JUEGO_DE_MESAS = /^mesas_nido/;
 
 const esCentroId = (id: string) => /^centro2?-/.test(id);
 export const esCentro = (n: NodoEscena): boolean => n.colocacion.en === "sobre" && esCentroId(n.id);
@@ -46,7 +42,10 @@ export const ranuraDe = (n: NodoEscena): Ranura => (n.id.startsWith("centro2-") 
 export const centrosDe = (escena: Escena): NodoEscena[] => escena.nodos.filter(esCentro);
 export const padreDeCentro = (n: NodoEscena): string | null => (n.colocacion.en === "sobre" ? n.colocacion.padreId : null);
 
-function tipoDeMesa(id: string): TipoMesa {
+function tipoDeMesa(n: NodoEscena, id: string): TipoMesa {
+  // Una mesa paramétrica: la redonda y la cóctel son lo que dicen; la larga (rectangular, ovalada…) cuenta como imperial.
+  const param = n.pieza.tipo === "escenografia" ? mesaDePieza(n.pieza) : null;
+  if (param) return param.tipo === "redonda" ? "redonda" : param.tipo === "coctel" ? "coctel" : param.tipo === "rectangular" || param.tipo === "ovalada" ? "imperial" : "otra";
   if (/^mesa_redonda/.test(id)) return "redonda";
   if (/^mesa_imperial|^mesa_mantel$/.test(id)) return "imperial";
   if (/^mesa_coctel/.test(id)) return "coctel";
@@ -54,44 +53,12 @@ function tipoDeMesa(id: string): TipoMesa {
   return "otra";
 }
 
-/** El mueble del catálogo que es la mesa de este nodo, o null si no es una mesa que admita un centro. */
-function muebleDeMesa(n: NodoEscena): string | null {
-  if (n.pieza.tipo !== "escenografia") return null;
-  const id = n.pieza.mueble?.id;
-  if (!id || JUEGO_DE_MESAS.test(id)) return null;
-  return entradaDeCatalogo(id)?.grupo === "mesa" ? id : null;
-}
-
-/**
- * La cubierta de una mesa armada: entre los sólidos, los que tienen al menos la mitad del área del mayor (la tapa, el sobremantel;
- * no las sillas) y, de ellos, el más alto. Se mide en el espacio de la mesa para que girarla no cambie sus medidas.
- */
-export function cubiertaDe(hecho: NodoArmado, marco: MarcoPieza): Cubierta | null {
-  const piezas = hecho.solidos.filter((s) => !s.oculto).map((s) => {
-    const mundo = puntosSolido(s);
-    const local = mundo.map((p) => puntoALocal(marco, p));
-    const caja = (puntos: Vec3[]) => ({ minX: Math.min(...puntos.map((p) => p.x)), maxX: Math.max(...puntos.map((p) => p.x)), minZ: Math.min(...puntos.map((p) => p.z)), maxZ: Math.max(...puntos.map((p) => p.z)), maxY: Math.max(...puntos.map((p) => p.y)) });
-    const l = caja(local), m = caja(mundo);
-    return { l, m, area: (l.maxX - l.minX) * (l.maxZ - l.minZ) };
-  });
-  if (!piezas.length) return null;
-  const mayor = Math.max(...piezas.map((p) => p.area));
-  const grandes = piezas.filter((p) => p.area >= mayor * 0.5);
-  const tope = Math.max(...grandes.map((p) => p.l.maxY));
-  const tapa = grandes.filter((p) => p.l.maxY >= tope - 0.01).sort((a, b) => b.area - a.area)[0]!;
-  const local: Vec3 = { x: (tapa.l.minX + tapa.l.maxX) / 2, y: tope, z: (tapa.l.minZ + tapa.l.maxZ) / 2 };
-  return { local, centro: puntoAlMundo(marco, local), anchoCm: tapa.l.maxX - tapa.l.minX, fondoCm: tapa.l.maxZ - tapa.l.minZ, topeMundo: { minX: tapa.m.minX, maxX: tapa.m.maxX, minZ: tapa.m.minZ, maxZ: tapa.m.maxZ } };
-}
-
-/** Las mesas de la escena que admiten un centro, con su cubierta. */
+/** Las mesas de la escena que admiten un centro (catálogo o paramétricas), con su cubierta. */
 export function mesasDeEscena(escena: Escena, armada: EscenaArmada): MesaDeEscena[] {
   return escena.nodos.flatMap((nodo): MesaDeEscena[] => {
-    const id = muebleDeMesa(nodo);
-    const hecho = armada.porNodo.find((n) => n.id === nodo.id);
-    const marco = hecho?.puestas[0]?.marco;
-    if (!id || !hecho || !marco || hecho.copias === 0) return [];
-    const cubierta = cubiertaDe(hecho, marco);
-    return cubierta ? [{ nodo, marco, tipo: tipoDeMesa(id), cubierta, conCosas: DE_FABRICA_CON_COSAS.test(id) }] : [];
+    const tapa = tapaDeMesa(nodo);
+    const cubierta = tapa ? superficieSuperior(nodo, armada) : null;
+    return tapa && cubierta ? [{ nodo, marco: cubierta.marco, tipo: tipoDeMesa(nodo, tapa.id), cubierta, conCosas: tapa.deFabricaConCosas }] : [];
   });
 }
 
@@ -165,49 +132,29 @@ export function ranurasAlternas(mesas: readonly MesaDeEscena[]): Map<string, Ran
 /** Por qué una mesa ya no admite un centro sin forzar: lleva algo encima (regalos, un pastel, otra pieza apoyada), o null. */
 export function cosaEncima(escena: Escena, armada: EscenaArmada, mesa: MesaDeEscena): string | null {
   if (mesa.conCosas) return "ya trae cosas encima de fábrica";
-  const t = mesa.cubierta.topeMundo, cara = mesa.cubierta.centro.y;
+  const cara = mesa.cubierta.centro.y;
   for (const n of escena.nodos) {
-    if (n.id === mesa.nodo.id || esCentro(n)) continue;
+    // Las sillas de la mesa (su grupo) y otras mesas no son «algo encima».
+    if (n.id === mesa.nodo.id || esCentro(n) || esGrupoDeSillas(n.pieza)) continue;
     if (n.colocacion.en === "sobre" && n.colocacion.padreId === mesa.nodo.id) return `lleva «${n.nombre}» encima`;
     const hecho = armada.porNodo.find((x) => x.id === n.id);
-    if (!hecho || hecho.copias === 0 || muebleDeMesa(n)) continue;
+    if (!hecho || hecho.copias === 0 || tapaDeMesa(n)) continue;
     const c = hecho.caja;
     const cx = (c.min.x + c.max.x) / 2, cz = (c.min.z + c.max.z) / 2;
-    if (c.min.y >= cara - 3 && c.min.y <= cara + 4 && cx >= t.minX - 5 && cx <= t.maxX + 5 && cz >= t.minZ - 5 && cz <= t.maxZ + 5) return `lleva «${n.nombre}» encima`;
+    if (c.min.y >= cara - 3 && c.min.y <= cara + 4 && puntoEnSuperficie(mesa.cubierta, cx, cz, 5)) return `lleva «${n.nombre}» encima`;
   }
   return null;
 }
 
-const r1 = (n: number) => Math.round(n * 10) / 10;
-
 /**
  * El nodo del centro de esta mesa: `sobre` la mesa, en el centro de su cubierta con la base justo en ella (el hundimiento del látex
- * se compensa para que no quede enterrado), o el motivo por el que no se pudo (no cabe, no sube al techo, no se arma).
- * `escena` es la escena de trabajo (con los centros ya puestos en esta misma llamada); `armada`, la de la mesa antes de empezar;
- * `como.nombre` es el nombre completo que se ve en la lista.
+ * se compensa para que no quede enterrado), o el motivo por el que no se pudo (no cabe, no sube al techo, no se arma). La colocación la
+ * calcula `colocacionSobreMesa` (la misma de `poner_sobre`). `escena` es la escena de trabajo (con los centros ya puestos en esta misma
+ * llamada); `armada`, la de la mesa antes de empezar; `como.nombre` es el nombre completo que se ve en la lista.
  */
 export function centroDeMesa(escena: Escena, armada: EscenaArmada, mesa: MesaDeEscena, pieza: Pieza, como: { ranura: Ranura; nombre: string; /** Conserva el id de un centro que se rehace. */ id?: string }): { nodo: NodoEscena } | { motivo: string } {
-  const normal = vectorALocal(mesa.marco, { x: 0, y: 1, z: 0 });
-  let punto: Vec3 = { x: mesa.cubierta.local.x, y: mesa.cubierta.local.y + HUNDIMIENTO_SOBRE_CM, z: mesa.cubierta.local.z };
-  const nodoCon = (p: Vec3): NodoEscena => ({
-    id: como.id ?? idNuevo(escena, `centro${como.ranura ? "2" : ""}-${mesa.nodo.id}`), nombre: como.nombre, pieza,
-    colocacion: { en: "sobre", padreId: mesa.nodo.id, puntoCm: { x: r1(p.x), y: r1(p.y), z: r1(p.z) }, normal: { x: r1(normal.x), y: r1(normal.y), z: r1(normal.z) }, giroGrados: 0, encima: true },
-  });
-  let nodo = nodoCon(punto);
-  let armado = armarNodoSuelto(escena, armada, nodo);
-  // Centrado: lo armado cae donde su caja, no donde su origen; se corre lo que falte (dos pasadas bastan).
-  for (let pasada = 0; pasada < 2 && armado.copias > 0; pasada++) {
-    const dx = mesa.cubierta.centro.x - (armado.caja.min.x + armado.caja.max.x) / 2, dz = mesa.cubierta.centro.z - (armado.caja.min.z + armado.caja.max.z) / 2;
-    if (Math.hypot(dx, dz) < 0.3) break;
-    const d = vectorALocal(mesa.marco, { x: dx, y: 0, z: dz });
-    punto = { x: punto.x + d.x, y: punto.y, z: punto.z + d.z };
-    nodo = nodoCon(punto);
-    armado = armarNodoSuelto(escena, armada, nodo);
-  }
-  if (armado.copias === 0) return { motivo: `no se pudo armar sobre la mesa (${armado.avisos[0] ?? "sin motivo"})` };
-  const ancho = armado.caja.max.x - armado.caja.min.x, fondo = armado.caja.max.z - armado.caja.min.z;
-  const largo = Math.max(ancho, fondo), angosto = Math.min(mesa.cubierta.anchoCm, mesa.cubierta.fondoCm);
-  if (largo > angosto * OCUPACION_MAXIMA) return { motivo: `no cabe: mide ${Math.round(largo)} cm y la cubierta tiene ${Math.round(angosto)} cm de lo angosto (máximo ${Math.round(angosto * OCUPACION_MAXIMA)} cm)` };
-  if (armado.caja.max.y > escena.sala.altoCm) return { motivo: `llegaría a ${Math.round(armado.caja.max.y)} cm y el techo está a ${Math.round(escena.sala.altoCm)} cm` };
-  return { nodo };
+  const id = como.id ?? idNuevo(escena, `centro${como.ranura ? "2" : ""}-${mesa.nodo.id}`);
+  const colocacion = colocacionSobreMesa(escena, armada, mesa.nodo, pieza, { giroGrados: 0 }, id);
+  if ("motivo" in colocacion) return colocacion;
+  return { nodo: { id, nombre: como.nombre, pieza, colocacion } };
 }

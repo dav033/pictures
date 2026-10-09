@@ -99,7 +99,7 @@ function colorDe(patron: PatronTrenzas, colores: readonly string[], columna: num
 function cuartetoApretado(formatoId: string, infladoCm: number) {
   const formato = formatoPorId(formatoId) ?? formatoPorId("R-12")!;
   const cuarteto = { ...moduloPorId("cuarteto")!, inclinacion: 0.12 };
-  const base = armarModulo(cuarteto, formato, infladoCm);
+  const base = armarModulo(cuarteto, formato, infladoCm, { cerrarHuecos: false });
   const natural = centroCuerpo(formato.tipo === "link" ? "link" : "redondo", infladoCm);
   const radio = infladoCm * RADIO_CUARTETO_MURAL_POR_DIAMETRO;
   return base.globos.map((g) => {

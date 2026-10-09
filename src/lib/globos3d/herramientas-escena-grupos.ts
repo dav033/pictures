@@ -1,3 +1,4 @@
+import type { AvisoUsuario } from "./avisos-usuario";
 import { z } from "zod";
 import { armarEscena, type Escena, type NodoEscena } from "./escena";
 import type { PiezaArmada } from "./piezas";
@@ -21,7 +22,7 @@ export type HerramientaExtra = {
   esquema: z.ZodType;
   descripcion: string;
   /** Aplica la llamada; lanza `ErrorHerramienta` (con `fallar`) o ZodError si no vale. */
-  aplicar: (escena: Escena, argumentos: unknown) => { escena: Escena; resumen: string; consulta?: boolean };
+  aplicar: (escena: Escena, argumentos: unknown) => { escena: Escena; resumen: string; consulta?: boolean; /** Lo que el usuario debe saber aunque la herramienta haya funcionado (`avisar`): el servidor lo agrega a la respuesta si el texto no lo dice. */ avisos?: readonly AvisoUsuario[] };
 };
 
 // ----------------------------------------------------------------------------------------------------------

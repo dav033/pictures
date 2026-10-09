@@ -2,7 +2,7 @@ import type { ProveedorId } from "./tipos";
 
 export const FLUJOS_IA = [
   "armador_decoracion", "generador_imagen", "analisis_referencia", "happie_paquetes",
-  "happie_conversacion", "entrenamiento_lora", "indexacion_catalogo", "evaluacion",
+  "happie_conversacion", "entrenamiento_lora", "indexacion_catalogo", "evaluacion", "modulos_estudio",
 ] as const;
 export type FlujoIA = (typeof FLUJOS_IA)[number];
 
@@ -15,6 +15,7 @@ export const ETIQUETAS_FLUJO_IA: Readonly<Record<FlujoIA, string>> = {
   entrenamiento_lora: "Entrenamiento LoRA",
   indexacion_catalogo: "Indexación de catálogo",
   evaluacion: "Evaluaciones",
+  modulos_estudio: "Estudio de módulos",
 };
 
 export const CAPACIDADES_IA = [

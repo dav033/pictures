@@ -5,6 +5,7 @@ import {
 } from "./escena";
 import { clasePieza, decoracionesPegadas, escenaDeConjunto, extraerConjunto, insertarEnEscena, miembrosDeConjunto, type ItemBiblioteca } from "./biblioteca";
 import type { PiezaArmada } from "./piezas";
+import { esGrupoDeSillas } from "./mobiliario-conjunto";
 
 /**
  * **Editor solitario** de una estructura de la escena (menú contextual → «Editar»): la escena se cambia por una vista
@@ -42,7 +43,9 @@ const normalizarGiro = (g: number) => {
 /** Las decoraciones de una pieza (lo que cuelga de ella, lo que va sobre ella y lo pegado a sus globos), sin ella. */
 export function decoracionesDe(escena: Escena, id: string, armada: EscenaArmada, pegadas = decoracionesPegadas(escena, armada)): string[] {
   if (!escena.nodos.some((n) => n.id === id)) return [];
-  return miembrosDeConjunto(escena, id, armada, pegadas).slice(1);
+  // Las sillas de una mesa paramétrica son parte de la mesa, no una decoración: no se preguntan ni se cuentan.
+  const sillas = new Set(escena.nodos.filter((n) => esGrupoDeSillas(n.pieza)).map((n) => n.id));
+  return miembrosDeConjunto(escena, id, armada, pegadas).slice(1).filter((x) => !sillas.has(x));
 }
 
 /**
@@ -80,7 +83,7 @@ export function eliminarPieza(escena: Escena, id: string, opciones: { conDecorac
   if (!escena.nodos.some((n) => n.id === id)) return escena;
   if (!opciones.conDecoraciones) return quitarNodo(escena, id, opciones.armada);
   const fuera = new Set([id, ...decoracionesDe(escena, id, opciones.armada)]);
-  return { ...escena, nodos: escena.nodos.filter((n) => !fuera.has(n.id)) };
+  return { ...escena, nodos: escena.nodos.filter((n) => !fuera.has(n.id) && !(esGrupoDeSillas(n.pieza) && n.colocacion.en === "sobre" && fuera.has(n.colocacion.padreId))) };
 }
 
 /** La colocación corrida de una copia (como `duplicarNodo`): 60 cm a un lado para que se vea que hay dos. */

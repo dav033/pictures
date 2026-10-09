@@ -5,8 +5,9 @@ import {
 } from "./escena";
 import { armarPieza, type Pieza } from "./piezas";
 import { esDePie } from "./halloween";
+import { esGrupoDeSillas } from "./mobiliario-conjunto";
 import { CUELGA_DEL_TECHO_CM } from "./decoraciones-escena";
-import { cubiertaDe } from "./centros-mesa";
+import { superficieSuperior } from "./mobiliario-superficie";
 import { cruz, cuerposDeGlobos, normalDeSuperficie, normalSuavizada, rayoContraCuerpos, superficieMasCercana, unitario } from "./superficie-globos";
 
 /**
@@ -44,7 +45,7 @@ export function radioLateral(pieza: Pieza): number {
 
 /** Si una pieza armada sirve de lienzo: tiene globos (o escenografía), está puesta y no es una decoración. */
 export function aceptaDecoraciones(nodo: NodoEscena, armado: NodoArmado | undefined): boolean {
-  if (!armado || !armado.puestas.length || nodo.pieza.tipo === "decoracion") return false;
+  if (!armado || !armado.puestas.length || nodo.pieza.tipo === "decoracion" || esGrupoDeSillas(nodo.pieza)) return false;
   return armado.globos.length > 0 || armado.solidos.length > 0;
 }
 
@@ -167,10 +168,11 @@ export function quitarCopia(escena: Escena, armada: EscenaArmada, id: string, co
  * Un `sobre` con `encima` (el centro de una mesa) no tiene globos donde caer: se corre por la cara de arriba de su pieza y se queda
  * en ella (a un radio del borde), a la misma altura. `d` es el corrimiento horizontal en el mundo.
  */
-function deslizarEnCubierta(escena: Escena, armada: EscenaArmada, nodo: NodoEscena, c: ColocacionSobre, padre: NodoArmado, d: Vec3): Escena {
-  const marco = padre.puestas[0]?.marco;
-  const cubierta = marco ? cubiertaDe(padre, marco) : null;
-  if (!marco || !cubierta) return escena;
+function deslizarEnCubierta(escena: Escena, armada: EscenaArmada, nodo: NodoEscena, c: ColocacionSobre, d: Vec3): Escena {
+  const padre = escena.nodos.find((n) => n.id === c.padreId);
+  const cubierta = padre ? superficieSuperior(padre, armada) : null;
+  if (!cubierta) return escena;
+  const marco = cubierta.marco;
   const dl = vectorALocal(marco, d);
   const propia = armada.porNodo.find((n) => n.id === nodo.id)?.caja;
   const radio = propia ? Math.max(propia.max.x - propia.min.x, propia.max.z - propia.min.z) / 2 : 0;
@@ -188,14 +190,15 @@ function deslizarEnCubierta(escena: Escena, armada: EscenaArmada, nodo: NodoEsce
  */
 export function deslizarSobre(escena: Escena, armada: EscenaArmada, id: string, delta: Vec3, opciones: { iman?: boolean } = {}): Escena {
   const nodo = escena.nodos.find((n) => n.id === id);
-  if (!nodo || nodo.colocacion.en !== "sobre") return escena;
+  // Las sillas de una mesa paramétrica no se deslizan: van con su mesa.
+  if (!nodo || nodo.colocacion.en !== "sobre" || esGrupoDeSillas(nodo.pieza)) return escena;
   const c = nodo.colocacion;
   const actual = sitioDeSobre(armada, c);
   if (!actual) return escena;
   const { punto: p, normal: n, padre } = actual;
   const d = mas(delta, n, -escalar(delta, n));
   if (largo(d) < 1e-6) return escena;
-  if (c.encima) return deslizarEnCubierta(escena, armada, nodo, c, padre, d);
+  if (c.encima) return deslizarEnCubierta(escena, armada, nodo, c, d);
   const q = mas(p, d);
   const cuerpos = cuerposDeGlobos(padre.globos);
   let punto: Vec3 | null = q;
@@ -272,6 +275,7 @@ export function sitioDescrito(padre: NodoArmado, d: SitioDescrito, radioCm = 10)
 export function describirSobre(armada: EscenaArmada, c: ColocacionSobre): string {
   const sitio = sitioDeSobre(armada, c);
   if (!sitio) return `sobre «${c.padreId}» (que no está)`;
+  if (c.encima) return `encima de «${c.padreId}», sobre su cubierta a ${Math.round(sitio.punto.y)} cm del piso`;
   const { frente, derecha } = ejesDePieza(sitio.padre);
   const angulo = Math.round((Math.atan2(escalar(sitio.normal, derecha), escalar(sitio.normal, frente)) * 180) / Math.PI);
   const lado = Math.abs(angulo) <= 30 ? "frente" : Math.abs(angulo) >= 150 ? "atrás" : angulo > 0 ? "derecha" : "izquierda";

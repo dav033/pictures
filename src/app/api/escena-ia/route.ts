@@ -9,6 +9,9 @@ import { seccionVocabularioEscena } from "@/lib/globos3d/prompt-escena";
 import { REGLAS_AGENTE, SeleccionSchema, seleccionValida, textoSeleccion } from "@/lib/globos3d/escena-ia-agente";
 import { PREGUNTAR_USUARIO, preguntaDe, type PreguntaUsuario } from "@/lib/globos3d/herramientas-escena-extra";
 import { verificarCambios } from "@/lib/globos3d/verificacion-escena";
+import type { AvisoUsuario } from "@/lib/globos3d/avisos-usuario";
+import { conHonestidad, fallosPendientes, objetivoDe, type Intento } from "@/lib/globos3d/honestidad-respuesta";
+import { problemasNuevos } from "@/lib/globos3d/problemas-escena";
 import { tomarCupoEscenaIA, TOPE_POR_HORA } from "@/lib/globos3d/cupo-escena-ia";
 import { FotoCuerpoSchema, REGLAS_FOTO, aplicarModeladoDeFoto, prepararFotoAdjunta, type FotoPreparada } from "@/lib/globos3d/escena-ia-foto";
 import { MODELAR_DESDE_FOTO } from "@/lib/globos3d/herramientas-escena-foto";
@@ -66,7 +69,7 @@ QUÉ ES CADA COSA (no las confundas):
 - También creas de cero: pared_trenzas, forma (figura corazon/estrella/nube/castillo… rellena, esfera o cono), letras (texto), metalizado (foil: número, letras, corazón, estrella…), mural, techo, arbol (palmera), globo suelto, decoracion (flor, moño, estrella). Cada una con sus parámetros: alto_cm, ancho_cm, grosor_cm, inclinacion_cm, colores (con acabado: «rojo metal», «verde reflex»), pesos (proporción de cada color en lo orgánico), tamanos (al CREAR: los R-24, R-18, R-12, R-9, R-5 que se mezclan), flores.
 - Biblioteca: «toma/usa X de la biblioteca», «como la idea Y», «la columna con flores de la biblioteca» → buscar_en_biblioteca y luego insertar_de_biblioteca con el id elegido (queda como piezas normales). buscar_en_biblioteca filtra también por celebracion, tematica, formato (R-24…), parte, alto_cm/ancho_cm aproximados y fuente (referencias_dueno, ideas_sempertex, revista_celebra, bases_organicas): úsalos cuando el pedido los diga, y si no sale nada, quita los de formato, parte o medidas; si además pide cambios («más alto», «en dorado», «con flores»), cámbiala después con cambiar_pieza sobre el id principal que devuelve. Si hay varias que encajan, usa la primera que coincida con lo pedido y dilo.
 EDICIÓN PRECISA DE LO ORGÁNICO (arco, columna, guirnalda, semiarco, aro, marco y trazo orgánicos, y los orgánicos de la biblioteca): «más R-24», «más globos grandes», «menos globos chicos», «quita los R-5», «un 40 % de R-18», «que tenga 6 R-24», «los R-24 solo abajo», «que los grandes sean azules», «más tupida», «más abultada» → ajustar_tamanos con el id. Grandes = R-24 (y R-36), medianos = R-18 y R-12, chicos = R-9 y R-5. NO uses cambiar_pieza con tamanos para eso (reemplaza toda la mezcla) y NUNCA contestes un pedido de tamaños cambiando solo colores. ver_escena dice cuántos globos hay de cada tamaño y color: míralo antes; ajustar_tamanos devuelve cuántos había y cuántos hay (antes → ahora): dile al usuario esos números, y si engrosó el cuerpo para que quepan, dilo. Si vuelve a pedir «más», vuelve a llamarla con mas.
-Decoraciones EN un punto de una estructura (la estructura es un lienzo): poner_sobre con padre_id + altura_cm desde el piso + lado (frente, izquierda, derecha, atras) o angulo_grados alrededor + x_cm a lo ancho (en un arco las patas están en ±ancho/2). Para llevar una que ya existe a otro punto: mover_sobre (si está repetida en varias anclas, indica copia). separar_copia saca UNA copia de un reparto. agregar_pieza con donde.en = "ancla" solo para repartir muchas iguales a lo largo de una pieza.
+Decoraciones EN un punto de una estructura (la estructura es un lienzo): poner_sobre con padre_id + altura_cm desde el piso + lado (frente, izquierda, derecha, atras) o angulo_grados alrededor + x_cm a lo ancho (en un arco las patas están en ±ancho/2). Para llevar una que ya existe a otro punto: mover_sobre (si está repetida en varias anclas, indica copia). separar_copia saca UNA copia de un reparto. Algo ENCIMA de una MESA (un centro de mesa, un ramo, una torta): poner_sobre con padre_id = el id de la mesa (queda en su cubierta, a la altura de la mesa, y se mueve con ella; x_cm la corre a un lado); NUNCA en el piso a la x/z de la mesa, que queda tapado por el mantel. agregar_pieza con donde.en = "ancla" solo para repartir muchas iguales a lo largo de una pieza.
 Colores: código Sempertex o nombre («rosado pastel», «dorado»). Si una herramienta responde error, corrige con su sugerencia y reintenta una vez.
 
 ${seccionVocabularioEscena()}
@@ -168,6 +171,10 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   const tokens = { entrada: 0, salida: 0, pensamiento: 0 };
   let pasos = 0, llamadas = 0, respuesta = "", cortado = false;
   let pregunta: PreguntaUsuario | null = null;
+  // Cada herramienta que se intentó, con su resultado: la respuesta final no puede callar lo que falló (honestidad-respuesta.ts).
+  const intentos: Intento[] = [];
+  // Lo que una herramienta que SÍ funcionó manda decirle al usuario (un color sustituido): también llega a la respuesta final.
+  const avisosUsuario: AvisoUsuario[] = [];
 
   try {
     for (;;) {
@@ -202,9 +209,11 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
               ? { resultado: aplicarReporte(escena, llamada.args, reportes), busqueda: null }
               : await aplicarHerramientaAsincrona(escena, nombre, llamada.args ?? {});
         decidir("herramienta:escena_ia", `aplicar ${nombre} a la escena del taller 3D`, hecho.ok ? { ok: true, resumen: hecho.resumen, piezas: hecho.escena.nodos.length, ...(busqueda ? { busqueda: { fuente: busqueda.fuente, ids: busqueda.ids, motivo: busqueda.motivo ?? null } } : {}) } : { ok: false, error: hecho.error }, { entrada: { herramienta: nombre, argumentos: llamada.args ?? {}, paso: pasos, ...(busqueda?.entrada ? { busqueda: busqueda.entrada } : {}) } });
+        intentos.push({ herramienta: nombre, ok: hecho.ok, objetivo: objetivoDe(llamada.args, nombre), ...(hecho.ok ? {} : { error: hecho.error }) });
         avisar?.({ tipo: "paso", n: llamadas, herramienta: nombre, resumen: corto((hecho.ok ? hecho.resumen : hecho.error).split("\n")[0] ?? "", 140), consulta: hecho.ok && hecho.consulta, ok: hecho.ok });
         if (hecho.ok) {
           escena = hecho.escena;
+          avisosUsuario.push(...("avisos" in hecho ? hecho.avisos ?? [] : []));
           acciones.push({ herramienta: nombre, resumen: hecho.consulta ? corto(hecho.resumen.split("\n")[0] ?? hecho.resumen, 140) : corto(hecho.resumen, 400), consulta: hecho.consulta });
           if (!hecho.consulta) ultimoCambio = respuestas.length;
           // Preguntar termina el turno: lo que venía después en esta vuelta no se aplica.
@@ -228,7 +237,7 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
     decidir("modelo:escena_ia", "el asistente de escena no pudo terminar", { error: corto(texto, 300), pasos, llamadas, acciones }, { entrada: { mensaje } });
     if (acciones.some((a) => !a.consulta)) {
       // Lo ya aplicado se devuelve: el usuario puede deshacerlo con un clic.
-      return Response.json({ escena, respuesta: "La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer.", acciones, uso: { pasos, llamadas, costeEstimadoUsd: costeUsd(tokens, adjunta?.modelado.uso.costeEstimadoUsd ?? 0) } });
+      return Response.json({ escena, respuesta: conHonestidad("La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer.", fallosPendientes(intentos), problemasNuevos(base, escena), avisosUsuario), acciones, uso: { pasos, llamadas, costeEstimadoUsd: costeUsd(tokens, adjunta?.modelado.uso.costeEstimadoUsd ?? 0) } });
     }
     return Response.json({ error: cuota ? "La IA no tiene cuota disponible ahora. Inténtalo en un rato." : "No pude hablar con la IA ahora. Vuelve a intentarlo." }, { status: cuota ? 429 : 502 });
   }
@@ -236,12 +245,16 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   const cambios = acciones.filter((a) => !a.consulta);
   if (cortado) respuesta = `${respuesta ? `${respuesta} ` : ""}Llegué al tope de ${maxPasos} pasos: revisa lo hecho y pídeme lo que falte.`;
   if (!respuesta) respuesta = cambios.length ? `Listo: ${cambios.length} cambio${cambios.length > 1 ? "s" : ""} en la escena.` : "No hice cambios.";
+  // Lo que falló o quedó mal se dice aunque el modelo lo calle (una pregunta corta el turno: no hay nada que afirmar todavía).
+  const fallos = fallosPendientes(intentos);
+  const problemas = problemasNuevos(base, escena);
+  if (!pregunta) respuesta = conHonestidad(respuesta, fallos, problemas, avisosUsuario);
   const costeLecturaUsd = adjunta?.modelado.uso.costeEstimadoUsd ?? 0;
   const costeEstimadoUsd = costeUsd(tokens, costeLecturaUsd);
   const ronda = refinar ? decidirRonda(refinar.ronda, reportes, cambios.length) : null;
   if (ronda) decidir("regla:escena_ia_refinar", "ronda de comparación con la foto", { ...ronda, reportes: reportes.length });
   decidir("modelo:escena_ia", "respuesta final del asistente de escena", {
-    respuesta, acciones, pasos, llamadas, cortado, tokens, costeEstimadoUsd, modelo: MODELO_CHAT, pregunta,
+    respuesta, acciones, pasos, llamadas, cortado, fallos, problemas: problemas.map((p) => p.texto), tokens, costeEstimadoUsd, modelo: MODELO_CHAT, pregunta,
     refinar: ronda,
     foto: adjunta ? { piezasLeidas: adjunta.modelado.lectura.piezas.length, aplicadaSola: adjunta.aplicada, plantillas: adjunta.modelado.plantillas.map((p) => p.id), costeLecturaUsd } : null,
     piezasAntes: inicial.nodos.length, piezasDespues: escena.nodos.length, ids: escena.nodos.map((n) => n.id),

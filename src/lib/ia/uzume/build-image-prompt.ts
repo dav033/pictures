@@ -1,3 +1,4 @@
+import type { ImageInputRole } from "../nucleo/tipos";
 import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "../escena/creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { referenciaDelCatalogo, referenciaDelTitulo } from "@/lib/plan/referencia-sempertex";
@@ -15,7 +16,7 @@ import {
 
 export type PromptImageInput = {
   image_id: string;
-  role: "composition_reference" | "element_reference" | "palette_reference" | "style_reference" | "catalog_product_reference" | "venue_base" | "previous_generated_result";
+  role: ImageInputRole;
   allowed_use: string;
 };
 

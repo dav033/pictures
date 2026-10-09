@@ -1,6 +1,7 @@
 import { configuracion, NIVELES } from "./configuracion";
 import { contextoActual, idConversacionEfectivo, sanearIdConversacion } from "./contexto";
 import { escribirLinea, fechaUtc, rutaConversacion, rutaGeneral } from "./escritor";
+import { partirLinea } from "./fragmentos";
 import { recortarTexto, redactar, resumirDatos, serializarError } from "./redaccion";
 import type { ContextoRegistro, LineaAuditoria, LineaGeneral, MapaAuditoria, NivelRegistro, TipoAuditoria } from "./tipos";
 import { versionCodigo } from "./version";
@@ -12,7 +13,6 @@ import { versionCodigo } from "./version";
 
 const MAX_LINEA_GENERAL = 64 * 1024;
 const MAX_LINEA_AUDITORIA = 8 * 1024 * 1024;
-const MAX_LINEA_STDOUT_AUDITORIA = 16 * 1024;
 
 export interface OpcionesRegistro {
   error?: unknown;
@@ -32,11 +32,14 @@ function serializarAcotado(construir: (limite: number) => unknown, limites: read
   return ultimo.length <= maximo ? ultimo : JSON.stringify(construir(0));
 }
 
+/** Una línea a stdout; si pasa de ~15 KB (Vercel la corta y deja un JSON roto) sale en fragmentos válidos (ver fragmentos.ts). */
 function escribirStdout(nivel: NivelRegistro, linea: string): void {
   try {
-    if (nivel === "error") console.error(linea);
-    else if (nivel === "warn") console.warn(linea);
-    else console.log(linea);
+    for (const parte of partirLinea(linea)) {
+      if (nivel === "error") console.error(parte);
+      else if (nivel === "warn") console.warn(parte);
+      else console.log(parte);
+    }
   } catch {
     // stdout cerrado.
   }
@@ -165,7 +168,7 @@ export function auditar<T extends TipoAuditoria>(tipo: T, datos: MapaAuditoria[T
     };
     const linea = serializarAcotado(construir, [limiteInicial, ...(limiteInicial > cfg.limiteCadenaAuditoria ? [cfg.limiteCadenaAuditoria] : []), 4_000, 500], MAX_LINEA_AUDITORIA);
     if (cfg.archivosActivos) escribirLinea("conversacion", rutaConversacion(conversacion, ahora), linea);
-    if (cfg.auditoriaEnStdout) escribirStdout("info", linea.length > MAX_LINEA_STDOUT_AUDITORIA ? `${linea.slice(0, MAX_LINEA_STDOUT_AUDITORIA)}…[recortado]` : linea);
+    if (cfg.auditoriaEnStdout) escribirStdout("info", linea);
     registrar(nivelDeAuditoria(tipo, redactados), `auditoria.${tipo}`, resumirDatos(redactados), {
       contexto,
       conversacion,

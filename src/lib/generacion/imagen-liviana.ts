@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { BYTES_JPEG_YA_LIVIANO, CALIDAD_JPEG_IMAGEN_GENERADA } from "./imagen-liviana-constantes";
 
 /**
  * La imagen que devuelve /api/generate, liviana para el viaje al navegador (las dos vistas).
@@ -12,9 +13,7 @@ import sharp from "sharp";
  * Solo cambia el formato del viaje: misma resolución, mismos píxeles a la vista. Si sharp falla o el JPEG no sale
  * más chico, la imagen sigue tal cual llegó: aligerar nunca rompe una generación ya pagada.
  */
-export const CALIDAD_JPEG_IMAGEN_GENERADA = 90;
-/** Un JPEG que ya llega por debajo de esto no se vuelve a comprimir (se perdería calidad sin ganar nada). */
-export const BYTES_JPEG_YA_LIVIANO = 700_000;
+export { BYTES_JPEG_YA_LIVIANO, CALIDAD_JPEG_IMAGEN_GENERADA };
 
 export type ImagenBase64 = { mime: string; base64: string };
 

@@ -1,3 +1,4 @@
+import { avisar } from "./avisos-usuario";
 import type { Escena, Sala } from "./escena";
 import { fallar } from "./herramientas-escena-colores";
 import { MAX_NODOS, SALA_MAXIMA_CM } from "./limites-escena";
@@ -112,6 +113,6 @@ export function armarSalon(escena: Escena, p: PedidoSalon, notas: string[]): Res
     resultado = { ...resultado, salon: { ...resultado.salon, piezas: { ...resultado.salon.piezas, ...adoptadas } } };
     notas.push(`Tu decoración (${propias.length} pieza${propias.length > 1 ? "s" : ""}) se conservó y quedó en el fondo de fotos, delante del panel.`);
   }
-  for (const z of d.sinLugar) notas.push(`La zona ${z} no cabe en una sala de ${metros(sala.anchoCm)} × ${metros(sala.fondoCm)}: no se armó.`);
+  for (const z of d.sinLugar) avisar(notas, `La zona ${z} no cabe en una sala de ${metros(sala.anchoCm)} × ${metros(sala.fondoCm)}: no se armó.`, "no cabe", "no se armó", z);
   return { escena: resultado, resumen: `${resumenDeSalon(resultado)} (${invitados} invitados, caben ${d.capacidad * medidasDeMesa(mesa, sillas).puestos}).` };
 }

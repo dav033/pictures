@@ -15,6 +15,10 @@ import type { SolidoEscenografia } from "./escenografia";
 import { alturaBajoDisco, contactoDeEspalda, cuerposDeGlobos, espaldaDe, type CuerpoGlobo } from "./superficie-globos";
 import { fraseDeEscenografia, propsEnIngles } from "./escenografia-ingles";
 import { avisoDeEscenografia } from "./mobiliario-pieza";
+import { esGrupoDeSillas } from "./mobiliario-conjunto";
+import { MAX_NODOS } from "./limites-escena";
+import { muebleDeMesa, muebleDeNodo } from "./descripcion-mobiliario";
+import { mobiliarioEnIngles, type CentroDeMesa } from "./mobiliario-ingles";
 import { PREFIJO_SALA, PREFIJO_UTILERIA, colorDeGloboEnIngles, coloresEnIngles, enLista, tonoEnIngles } from "./render-ia";
 import { contornoEnIngles, huecosEnIngles } from "./silueta-ia";
 import { referenciaPorCodigo } from "../plan/referencia-sempertex";
@@ -119,6 +123,8 @@ export type NodoArmado = {
   flores: FlorDePieza[];
   /** Escenografía (paneles, mesas, tapete) en el mundo. */
   solidos: SolidoEscenografia[];
+  /** Cuelga del techo (decoración de techo): el visor no le da sombra. */
+  enTecho?: boolean;
   /** Anclas en el mundo (las de todas sus copias): ahí se cuelgan otras piezas. */
   anclas: AnclaDePieza[];
   materiales: MaterialDecoracion[];
@@ -413,7 +419,8 @@ function crearArmador(escena: Escena, cache?: Map<string, PiezaArmada>, sembrado
           const marcoPadre = delPadre.puestas[0]?.marco;
           if (!marcoPadre) resultado = vacio(nodo, `«${padre.nombre}» no quedó puesta: «${nodo.nombre}» no tiene dónde apoyarse.`);
           else {
-            const marco = marcoSobre(armada, c, marcoPadre, cuerposDe(delPadre));
+            // Las sillas de una mesa paramétrica van en el marco de la mesa (sus puestos ya están en él): no se apoyan en globos.
+            const marco = esGrupoDeSillas(nodo.pieza) ? marcoPadre : marcoSobre(armada, c, marcoPadre, cuerposDe(delPadre));
             const puesta = aplicar(armada, marco);
             resultado = { id: nodo.id, nombre: nodo.nombre, copias: 1, ...puesta, materiales: sumarMateriales(armada.materiales), avisos: [], puestas: [{ caja: puesta.caja, marco, ancla: null }] };
           }
@@ -432,6 +439,7 @@ function crearArmador(escena: Escena, cache?: Map<string, PiezaArmada>, sembrado
     }
     const avisoMueble = nodo.pieza.tipo === "escenografia" ? avisoDeEscenografia(nodo.pieza) : null;
     if (avisoMueble) resultado = { ...resultado, avisos: [...resultado.avisos, `«${nodo.nombre}»: ${avisoMueble}`] };
+    if (nodo.colocacion.en === "techo") resultado = { ...resultado, enTecho: true };
     enCurso.delete(nodo.id);
     hechos.set(nodo.id, resultado);
     return resultado;
@@ -491,6 +499,11 @@ export function idNuevo(escena: Escena, base: string): string {
 export function duplicarNodo(escena: Escena, id: string): Escena {
   const original = escena.nodos.find((n) => n.id === id);
   if (!original) return escena;
+  // Unas sillas de mesa no se duplican solas (quedarían dos grupos en la misma mesa): se duplica su mesa, que se lleva las sillas.
+  if (esGrupoDeSillas(original.pieza) && original.colocacion.en === "sobre") {
+    const padre = escena.nodos.find((n) => n.id === (original.colocacion as { padreId: string }).padreId);
+    return padre && padre.id !== original.id && !esGrupoDeSillas(padre.pieza) ? duplicarNodo(escena, padre.id) : escena;
+  }
   const c = original.colocacion;
   const corrida: Colocacion = c.en === "piso" ? { ...c, xCm: c.xCm + 60 }
     : c.en === "pared" ? { ...c, aLoLargoCm: c.aLoLargoCm + 60 }
@@ -501,12 +514,23 @@ export function duplicarNodo(escena: Escena, id: string): Escena {
             : { ...c, ancla: c.ancla + 1 };
   const copia: NodoEscena = { id: idNuevo(escena, original.id.replace(/-\d+$/, "")), nombre: `${original.nombre} (copia)`, pieza: structuredClone(original.pieza), colocacion: corrida };
   const indice = escena.nodos.indexOf(original);
-  return { ...escena, nodos: [...escena.nodos.slice(0, indice + 1), copia, ...escena.nodos.slice(indice + 1)] };
+  // Las sillas de una mesa paramétrica se mueven con ella: la copia de la mesa se lleva una copia de sus sillas.
+  const sillas = escena.nodos.find((n) => n.colocacion.en === "sobre" && n.colocacion.padreId === original.id && esGrupoDeSillas(n.pieza));
+  const juntas: NodoEscena[] = [copia];
+  if (sillas) {
+    const nueva = { ...escena, nodos: [...escena.nodos, copia] };
+    juntas.push({ id: idNuevo(nueva, `sillas-${copia.id}`), nombre: sillas.nombre.replace(`(${original.id})`, `(${copia.id})`), pieza: structuredClone(sillas.pieza), colocacion: { ...sillas.colocacion, padreId: copia.id } as Colocacion });
+  }
+  // Una mesa con sillas son dos piezas: si no caben las dos en el tope, no se duplica (la escena no valdría al volver del servidor).
+  if (juntas.length > 1 && escena.nodos.length + juntas.length > MAX_NODOS) return escena;
+  return { ...escena, nodos: [...escena.nodos.slice(0, indice + 1), ...juntas, ...escena.nodos.slice(indice + 1)] };
 }
 
 /** Quita un nodo; lo que colgaba de él (o iba sobre él) pasa al piso donde estaba, para no perderlo. */
 export function quitarNodo(escena: Escena, id: string, armada?: EscenaArmada): Escena {
-  const nodos = escena.nodos.filter((n) => n.id !== id).map((n): NodoEscena => {
+  // Las sillas de una mesa paramétrica son parte de ella: se van con la mesa (no pasan al piso como una decoración).
+  const suyas = (n: NodoEscena) => n.colocacion.en === "sobre" && n.colocacion.padreId === id && esGrupoDeSillas(n.pieza);
+  const nodos = escena.nodos.filter((n) => n.id !== id && !suyas(n)).map((n): NodoEscena => {
     if ((n.colocacion.en !== "ancla" && n.colocacion.en !== "sobre") || n.colocacion.padreId !== id) return n;
     const caja = armada?.porNodo.find((x) => x.id === n.id)?.caja;
     return { ...n, colocacion: { en: "piso", xCm: caja ? Math.round((caja.min.x + caja.max.x) / 2) : 0, zCm: caja ? Math.round((caja.min.z + caja.max.z) / 2) : 0, giroGrados: 0 } };
@@ -579,6 +603,9 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
 
   type Entrada = { id: string; x: number; frase: string; clase: string; copias: number; padreId: string | null };
   const sueltas: Entrada[] = [], pegadas: Entrada[] = [];
+  // Las mesas y sillas son lo principal de la escena (`mobiliarioEnIngles`), no «party props»; lo que va encima de una mesa se dice «encima de la mesa N».
+  const mesas = new Set(escena.nodos.filter((n) => muebleDeMesa(n) !== null).map((n) => n.id));
+  const centros: CentroDeMesa[] = [];
   // La escenografía (paneles, mesas, tapete) no es decoración de globos: va junta en una frase, sin numerar.
   let escenografia = 0;
   const escenografiaPorNombre = new Map<string, number>();
@@ -587,6 +614,9 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     if (!hecho || hecho.copias === 0) continue;
     const c = nodo.colocacion;
     if (nodo.pieza.tipo === "escenografia") {
+      // Las mesas y las sillas (del catálogo o paramétricas) las cuenta `mobiliarioEnIngles`; aquí queda el resto de la utilería.
+      const grupo = muebleDeNodo(nodo)?.grupo;
+      if (grupo === "mesa" || grupo === "asiento") continue;
       escenografia += hecho.copias;
       const en = fraseDeEscenografia(nodo.pieza);
       if (en) escenografiaPorNombre.set(en, (escenografiaPorNombre.get(en) ?? 0) + hecho.copias);
@@ -599,6 +629,7 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     const silueta = deFrente && (nodo.pieza.tipo === "organico" || nodo.pieza.tipo === "arco_organico") && hecho.copias === 1 ? contornoEnIngles(hecho.globos) : "";
     const pieza = piezaEnIngles(nodo.pieza, hecho.caja);
     const frase = [`${pieza}${silueta ? ` (${silueta})` : ""}`, lugar, coloresDe(nodo.pieza, hecho)].filter(Boolean).join(", ");
+    if (c.en === "sobre" && mesas.has(c.padreId)) { centros.push({ mesaId: c.padreId, frase: frase.replace(/^(an?|the) /, "") }); continue; }
     const entrada = { id: nodo.id, x, frase, clase: claseDe(pieza), copias: hecho.copias, padreId: c.en === "ancla" || c.en === "sobre" ? c.padreId : null };
     (entrada.padreId ? pegadas : sueltas).push(entrada);
   }
@@ -615,15 +646,19 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
     const texto = igual === undefined ? s.frase : `the same as (${igual})`;
     return `(${i + 1}) ${s.copias > 1 ? `${s.copias} × ` : ""}${texto}`;
   });
+  const mobiliario = mobiliarioEnIngles(escena, armada, centros);
+  const conMobiliario = mobiliario !== "";
   const partes = [
     total ? `A balloon decoration in a room. Exactly ${total} separate ${total === 1 ? "piece" : "pieces"}: ${[...conteo].map(([clase, n]) => `${n} × ${clase}`).join(", ")}` : "A balloon decoration in a room",
+    mobiliario,
     items.length ? `From left to right: ${items.join("; ")}` : "",
     ...pegadas.map((p) => {
       const padre = numero.get(p.padreId ?? "");
       return `Attached to ${padre ? `piece (${padre})` : "the structure"}: ${p.copias > 1 ? `${p.copias} × ` : ""}${p.frase.replace(/^an? /, "")}`;
     }),
     // Lo que NO hay (pared vacía bajo un extremo): sin esto FLUX cerraba una guirnalda y una pata en un marco.
-    huecosEnIngles(armada.globos),
+    // El hueco es el de la pared bajo las estructuras: los globos del techo y los centros de las mesas no cuentan (decían «no leg» de un arco con patas).
+    huecosEnIngles(armada.porNodo.filter((n) => { const c = escena.nodos.find((x) => x.id === n.id)?.colocacion; return c !== undefined && c.en !== "techo" && !(c.en === "sobre" && mesas.has(c.padreId)); }).flatMap((n) => n.globos)),
     escenografia ? `${PREFIJO_UTILERIA} ${escenografia} party ${escenografia === 1 ? "prop" : "props"} (${propsEnIngles(escenografiaPorNombre, escenografia)}), exactly as in the input` : "",
   ];
   const { tonos, mostrar } = escena.sala;
@@ -637,7 +672,11 @@ export function escenaEnIngles(escena: Escena, armada: EscenaArmada): string {
   ].filter(Boolean);
   const ambiente = escena.sala.ambiente;
   const conAmbiente = ambiente?.piso === "madera" || ambiente?.luces || ambiente?.ventana;
-  if (sala.length) partes.push(`${PREFIJO_SALA} ${enLista(sala)}, all ${conAmbiente ? "" : "plain and "}empty${conAmbiente ? `, ${MARCA_LUZ_CALIDA}` : ""}`);
+  // Con mesas y sillas la sala es lisa pero no «vacía»: decirlo así es lo que hacía a FLUX borrar el mobiliario.
+  // «Vacía» solo si de verdad lo está: con mesas y sillas, o con globos colgados del techo, la sala es lisa pero tiene cosas.
+  const conTecho = escena.nodos.some((n) => n.colocacion.en === "techo");
+  const estado = conMobiliario || conTecho ? (conAmbiente ? "" : ", all plain") : `, all ${conAmbiente ? "" : "plain and "}empty`;
+  if (sala.length) partes.push(`${PREFIJO_SALA} ${enLista(sala)}${estado}${conAmbiente ? `, ${MARCA_LUZ_CALIDA}` : ""}`);
   return partes.filter(Boolean).join(". ");
 }
 

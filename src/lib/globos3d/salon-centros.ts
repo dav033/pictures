@@ -1,3 +1,4 @@
+import { avisar } from "./avisos-usuario";
 import { armarEscena, type Escena, type NodoEscena } from "./escena";
 import { centrosDe, centroDeMesa, mesasDeEscena, padreDeCentro, ranuraDe } from "./centros-mesa";
 import { HERRAMIENTAS_CENTROS } from "./herramientas-escena-centros";
@@ -30,7 +31,7 @@ function volverAApoyar(antes: Escena, despues: Escena, notas: string[]): Escena 
     const hecho = mesa && centroDeMesa(actual, armada, mesa, structuredClone(centro.pieza), { ranura: ranuraDe(centro), nombre: centro.nombre, id: centro.id });
     if (hecho && "nodo" in hecho) { actual = { ...actual, nodos: actual.nodos.map((n) => (n.id === centro.id ? hecho.nodo : n)) }; continue; }
     quitados.add(centro.id);
-    notas.push(`${mesa?.nodo.nombre ?? padreDeCentro(centro)}: su centro de mesa ya no cabe en la mesa nueva (${hecho && "motivo" in hecho ? hecho.motivo : "no es una mesa que admita centro"}) y lo quité.`);
+    avisar(notas, `${mesa?.nodo.nombre ?? padreDeCentro(centro)}: su centro de mesa ya no cabe en la mesa nueva (${hecho && "motivo" in hecho ? hecho.motivo : "no es una mesa que admita centro"}) y lo quité.`, "ya no cabe", "lo quité", "centro de mesa");
   }
   if (afectados.length > quitados.size) notas.push(`Volví a apoyar ${afectados.length - quitados.size} centro(s) de mesa en las mesas de otro tipo.`);
   return sinCentros(actual, quitados);
@@ -53,7 +54,7 @@ export function sincronizarCentros(antes: Escena, despues: Escena, notas: string
       actual = { ...completada, nodos: [...completada.nodos, ...ajenos] };
       notas.push(`Las ${nuevas.length} mesa(s) nueva(s) recibieron el mismo centro de mesa que las demás.`);
     } catch (error) {
-      notas.push(`Las ${nuevas.length} mesa(s) nueva(s) quedaron sin centro de mesa (${error instanceof Error ? error.message : String(error)}): usa completar_centros.`);
+      avisar(notas, `Las ${nuevas.length} mesa(s) nueva(s) quedaron sin centro de mesa (${error instanceof Error ? error.message : String(error)}): usa completar_centros.`, "sin centro", "completar_centros");
     }
   }
   return volverAApoyar(antes, actual, notas);

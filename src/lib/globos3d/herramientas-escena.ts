@@ -32,14 +32,22 @@ import { COLORES_METALIZADO, PULGADAS_METALIZADO, nombreMetalizado } from "./met
 import { type Pieza, type PiezaArmada, type TipoPieza } from "./piezas";
 import { CACHE_ARMADO, alturaDePieza, armadaDe } from "./altura-pieza";
 import { armarEscena, descendientes, duplicarNodo, idNuevo, marcoDePared, quitarNodo, NOMBRE_PARED, type Colocacion, type ColocacionSobre, type Escena, type EscenaArmada, type NodoEscena, type ParedSala, type Sala } from "./escena";
+import { claveDesconocida } from "./argumentos-desconocidos";
+import { superficieSuperior } from "./mobiliario-superficie";
+import { sitioSobreMesa } from "./herramientas-escena-sobre-mesa";
+import { comprobarNombreMueble, errorDeNombreConSillas, muebleDeNodo } from "./descripcion-mobiliario";
+import { sillasDeMesaNodo } from "./mobiliario-asientos-mesa";
 import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
 import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, guirnaldaFeston, piezaNueva } from "./escenas-presets";
-import { avisosDeColor } from "./avisos-color-escena";
+import { avisosDeColor, avisosDeColorParaElUsuario } from "./avisos-color-escena";
+import type { AvisoUsuario } from "./avisos-usuario";
 import { cambiarMobiliario, resumenDeEscenografia } from "./herramientas-escena-mobiliario";
 import { elementosDeEscenografia } from "./mobiliario-pieza";
 import { ACABADOS_ROTULO } from "./rotulos";
 import { HERRAMIENTAS_EXTRA, NOMBRES_EXTRA, declaracionesExtra } from "./herramientas-escena-extra";
 import { MAX_NODOS, SALA_MAXIMA_CM } from "./limites-escena";
+import { esGrupoDeSillas } from "./mobiliario-conjunto";
+import { lineaDeMobiliarioParametrico } from "./herramientas-escena-mesas";
 
 /**
  * **Herramientas para que una IA construya la escena** del taller 3D (pestaña «Escena») por function calling.
@@ -437,7 +445,7 @@ function copiasTexto(armada: EscenaArmada, id: string): string {
 export function resumenEscena(escena: Escena): string {
   const s = escena.sala;
   // La geometría solo hace falta para contar dónde va lo que está sobre otra pieza y las copias de un reparto.
-  const hace = escena.nodos.some((n) => n.colocacion.en === "sobre" || (n.colocacion.en === "ancla" && n.colocacion.cada > 0));
+  const hace = escena.nodos.some((n) => (n.colocacion.en === "sobre" && !esGrupoDeSillas(n.pieza)) || (n.colocacion.en === "ancla" && n.colocacion.cada > 0));
   const armada = hace ? armarEscena(escena, CACHE_ARMADO) : undefined;
   const copias = (n: NodoEscena) => {
     if (!armada || n.colocacion.en !== "ancla") return "";
@@ -448,7 +456,12 @@ export function resumenEscena(escena: Escena): string {
   const lineas = [
     `Sala ${r0(s.anchoCm)}×${r0(s.fondoCm)}×${r0(s.altoCm)} cm (ancho×fondo×alto): x de −${r0(s.anchoCm / 2)} a ${r0(s.anchoCm / 2)}, z de −${r0(s.fondoCm / 2)} (pared del fondo) a ${r0(s.fondoCm / 2)} (frente). Se ve: ${vistas}.`,
     escena.nodos.length ? `${escena.nodos.length} piezas:` : "La sala está vacía.",
-    ...escena.nodos.map((n) => `- ${n.id} · «${n.nombre}» · ${n.pieza.tipo} (${NOMBRE_TIPO[n.pieza.tipo]}) · ${medidasDe(n.pieza)} · colores: ${coloresTexto(n.pieza) || "—"} · ${dondeTexto(n.colocacion, escena, armada)}${copias(n)}${contenidoCompacto(n.pieza, armadaDe)}`),
+    ...escena.nodos.map((n) => {
+      // Una mesa paramétrica y su grupo de sillas se cuentan por lo que son (tipo, medida, cuántas sillas de verdad), no por su nombre.
+      const param = lineaDeMobiliarioParametrico(escena, n);
+      const donde = esGrupoDeSillas(n.pieza) ? `con su mesa «${n.colocacion.en === "sobre" ? n.colocacion.padreId : "?"}» (se mueve y gira con ella)` : dondeTexto(n.colocacion, escena, armada);
+      return `- ${n.id} · «${n.nombre}» · ${n.pieza.tipo} (${NOMBRE_TIPO[n.pieza.tipo]}) · ${param ? `${param.medidas} (escenografía, sin globos)` : medidasDe(n.pieza)} · colores: ${param?.colores ?? (coloresTexto(n.pieza) || "—")} · ${donde}${copias(n)}${contenidoCompacto(n.pieza, armadaDe)}`;
+    }),
   ];
   return lineas.join("\n");
 }
@@ -464,6 +477,13 @@ function enRango(valor: number, rango: Rango, que: string): number {
 
 function nodoPorId(escena: Escena, id: string): NodoEscena {
   return escena.nodos.find((n) => n.id === id) ?? fallar(`No hay ninguna pieza con id «${id}». Ids: ${escena.nodos.map((n) => n.id).join(", ") || "(la sala está vacía)"}.`);
+}
+
+/** Las sillas de una mesa no se mueven ni giran solas: lo pedido sobre ellas va a su mesa (y ellas la siguen). */
+function mesaDeSusSillas(escena: Escena, n: NodoEscena): NodoEscena {
+  if (!esGrupoDeSillas(n.pieza) || n.colocacion.en !== "sobre") return n;
+  const padreId = n.colocacion.padreId;
+  return escena.nodos.find((x) => x.id === padreId && x.id !== n.id) ?? n;
 }
 
 const giroNormal = (g: number) => { const x = ((((g + 180) % 360) + 360) % 360) - 180; return x === -180 ? 180 : r0(x); };
@@ -864,7 +884,7 @@ function colocacionDeLugar(lugar: LugarPieza, pieza: Pieza): Colocacion {
 export const ESQUEMA_BUSCAR_EN_BIBLIOTECA = ESQUEMAS.buscar_en_biblioteca;
 
 export type ResultadoHerramienta =
-  | { ok: true; escena: Escena; resumen: string; consulta: boolean }
+  | { ok: true; escena: Escena; resumen: string; consulta: boolean; /** Avisos para el usuario aunque la herramienta funcionó (ver `avisos-usuario.ts`). */ avisos?: readonly AvisoUsuario[] }
   | { ok: false; escena: Escena; error: string };
 
 /**
@@ -889,7 +909,7 @@ function reubicarSobre(escena: Escena, id: string, vieja: Pieza, nueva: Pieza): 
   };
 }
 
-export { MAX_NODOS } from "./limites-escena";
+export { MAX_NODOS };
 
 /** ¿El código es el color que se nombra («rosado» → Pastel Mate Rosado)? */
 function usaColor(codigo: string, de: string): boolean {
@@ -968,7 +988,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
 
     case "mover_pieza": {
       const a = ESQUEMAS.mover_pieza.parse(argumentos);
-      const nodo = nodoPorId(escena, a.id);
+      const nodo = mesaDeSusSillas(escena, nodoPorId(escena, a.id));
       const colocacion = colocacionDe(a.donde, escena, nodo.colocacion, nodo.pieza, nodo.id);
       comprobarAltura(nodo.pieza, colocacion, escena.sala);
       const nueva = reemplazar(escena, { ...nodo, colocacion });
@@ -977,7 +997,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
 
     case "girar_pieza": {
       const a = ESQUEMAS.girar_pieza.parse(argumentos);
-      const nodo = nodoPorId(escena, a.id);
+      const nodo = mesaDeSusSillas(escena, nodoPorId(escena, a.id));
       const c = nodo.colocacion;
       if (c.en === "pared") return fallar(`«${nodo.nombre}» está en una pared y mira al salón: no se gira. Muévela a otra pared con mover_pieza.`);
       const giroGrados = giroNormal(a.relativo ? c.giroGrados + a.grados : a.grados);
@@ -1001,7 +1021,15 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
         if (hecho.omitidos.length) notas.push(`${nombreColor(nuevo.codigo)} no viene en ${hecho.omitidos.join(", ")}: ahí se dejó ${nombreColor(actual.codigo)}`);
       }
       comprobarAltura(pieza, nodo.colocacion, escena.sala);
-      const nodoNuevo: NodoEscena = { ...nodo, pieza, nombre: a.nombre ?? nodo.nombre };
+      const mueblePedido = a.nombre ? muebleDeNodo(nodo) : null;
+      const veredicto = mueblePedido?.entrada ? comprobarNombreMueble(mueblePedido.entrada, a.nombre, nodo.pieza.tipo === "escenografia" ? nodo.pieza.mueble?.opciones : undefined) : null;
+      if (veredicto?.tipo === "error") fallar(veredicto.error);
+      if (veredicto?.tipo === "corregido") notas.push(veredicto.aviso);
+      if (mueblePedido && !mueblePedido.entrada) {
+        const falso = errorDeNombreConSillas(a.nombre, mueblePedido.esMesa ? sillasDeMesaNodo(escena, nodo).total : mueblePedido.asientos);
+        if (falso) fallar(falso);
+      }
+      const nodoNuevo: NodoEscena = { ...nodo, pieza, nombre: veredicto?.tipo === "corregido" ? veredicto.nombre : a.nombre ?? nodo.nombre };
       if (JSON.stringify(nodoNuevo) === JSON.stringify(nodo)) return { escena, resumen: conNotas(`«${nodo.nombre}» ya estaba así: no cambió nada.`, notas) };
       return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza), resumen: conNotas(`Cambié «${nodoNuevo.nombre}» (${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}.`, notas) };
     }
@@ -1122,13 +1150,16 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
     case "quitar_pieza": {
       const a = ESQUEMAS.quitar_pieza.parse(argumentos);
       const nodo = nodoPorId(escena, a.id);
-      const colgadas = [...descendientes(escena, nodo.id)].filter((x) => x !== nodo.id);
+      // Las sillas de una mesa paramétrica son parte de ella: se van con la mesa y no cuentan como lo que colgaba.
+      const sillas = escena.nodos.filter((n) => n.colocacion.en === "sobre" && n.colocacion.padreId === nodo.id && esGrupoDeSillas(n.pieza)).map((n) => n.id);
+      const conSillas = sillas.length ? ` y su grupo de sillas (${sillas.join(", ")})` : "";
+      const colgadas = [...descendientes(escena, nodo.id)].filter((x) => x !== nodo.id && !sillas.includes(x));
       if (a.quitar_colgadas === false || !colgadas.length) {
         const nueva = quitarNodo(escena, nodo.id);
-        return { escena: nueva, resumen: `Quité «${nodo.nombre}» (${nodo.id})${colgadas.length ? `; lo que colgaba de ella (${colgadas.join(", ")}) quedó en el piso` : ""}.` };
+        return { escena: nueva, resumen: `Quité «${nodo.nombre}» (${nodo.id})${conSillas}${colgadas.length ? `; lo que colgaba de ella (${colgadas.join(", ")}) quedó en el piso` : ""}.` };
       }
-      const fuera = new Set([nodo.id, ...colgadas]);
-      return { escena: { ...escena, nodos: escena.nodos.filter((n) => !fuera.has(n.id)) }, resumen: `Quité «${nodo.nombre}» (${nodo.id}) y lo que colgaba de ella (${colgadas.join(", ")}).` };
+      const fuera = new Set([nodo.id, ...colgadas, ...sillas]);
+      return { escena: { ...escena, nodos: escena.nodos.filter((n) => !fuera.has(n.id)) }, resumen: `Quité «${nodo.nombre}» (${nodo.id})${conSillas} y lo que colgaba de ella (${colgadas.join(", ")}).` };
     }
 
     case "duplicar_pieza": {
@@ -1136,7 +1167,8 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       const nodo = nodoPorId(escena, a.id);
       const antes = new Set(escena.nodos.map((n) => n.id));
       let nueva = duplicarNodo(escena, nodo.id);
-      let copia = nueva.nodos.find((n) => !antes.has(n.id))!;
+      let copia = nueva.nodos.find((n) => !antes.has(n.id));
+      if (!copia) return fallar(`No se pudo duplicar «${nodo.nombre}»: la escena tiene ${escena.nodos.length} piezas y el máximo es ${MAX_NODOS}. Quita algo antes.`);
       if (a.donde || a.nombre) {
         const colocacion = a.donde ? colocacionDe(a.donde, nueva, copia.colocacion, copia.pieza, copia.id) : copia.colocacion;
         comprobarAltura(copia.pieza, colocacion, escena.sala);
@@ -1151,7 +1183,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       const armada = armarEscena(escena, CACHE_ARMADO);
       let pieza: Pieza = { tipo: "decoracion", decoracion: structuredClone(decoracionPredefinida(a.decoracion_id)) };
       if (a.colores) pieza = recolorearEnOrden(pieza, a.colores, notas);
-      const colocacion = sitioSobreDescrito(escena, armada, a, pieza, null, giroNormal(a.giro_grados ?? 0));
+      const colocacion = sitioSobreDescrito(escena, armada, a, pieza, null, giroNormal(a.giro_grados ?? 0), notas);
       const id = idNuevo(escena, a.decoracion_id.replace(/_/g, "-"));
       const nombre = a.nombre ?? DECORACIONES_PREDEFINIDAS.find((d) => d.id === a.decoracion_id)?.nombre ?? "Decoración";
       const nueva = insertar(escena, { id, nombre, pieza, colocacion });
@@ -1167,11 +1199,11 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       if (repetida && a.copia === undefined) fallar(`«${nodo.nombre}» está repetida en ${copias} anclas (${copiasTexto(armada, nodo.id)}). Indica copia (0 a ${copias - 1}) para mover solo esa, o usa mover_pieza para mover todo el reparto.`);
       if (a.copia !== undefined && a.copia >= Math.max(1, copias)) fallar(`«${nodo.nombre}» tiene ${copias} copia${copias === 1 ? "" : "s"}: copia va de 0 a ${Math.max(0, copias - 1)}.`);
       const giroActual = "giroGrados" in nodo.colocacion ? nodo.colocacion.giroGrados : 0;
-      const colocacion = sitioSobreDescrito(escena, armada, a, nodo.pieza, nodo.id, giroNormal(a.giro_grados ?? giroActual));
+      const colocacion = sitioSobreDescrito(escena, armada, a, nodo.pieza, nodo.id, giroNormal(a.giro_grados ?? giroActual), notas);
       const hecho = moverCopia(escena, armada, nodo.id, a.copia ?? 0, colocacion) ?? fallar(`No pude mover «${nodo.nombre}» ahí.`);
       const movida = nodoPorId(hecho.escena, hecho.id);
       const separada = hecho.id !== nodo.id ? ` (separada del reparto de «${nodo.id}», que sigue con ${copias - 1} copias)` : "";
-      return { escena: hecho.escena, resumen: `Moví «${movida.nombre}» (id ${movida.id})${separada} ${describirSobre(armarEscena(hecho.escena, CACHE_ARMADO), colocacion)}.` };
+      return { escena: hecho.escena, resumen: conNotas(`Moví «${movida.nombre}» (id ${movida.id})${separada} ${describirSobre(armarEscena(hecho.escena, CACHE_ARMADO), colocacion)}.`, notas) };
     }
 
     case "separar_copia": {
@@ -1220,10 +1252,13 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
  * El sitio que describe la IA (estructura + altura + lado/ángulo + corrimiento) → colocación `sobre`. `id` es el de
  * la pieza que se pone ahí (para no ponerla sobre sí misma ni sobre lo que va encima de ella).
  */
-function sitioSobreDescrito(escena: Escena, armada: EscenaArmada, a: { padre_id: string; altura_cm?: number; lado?: SitioDescrito["lado"]; angulo_grados?: number; x_cm?: number }, pieza: Pieza, id: string | null, giroGrados: number): ColocacionSobre {
+function sitioSobreDescrito(escena: Escena, armada: EscenaArmada, a: { padre_id: string; altura_cm?: number; lado?: SitioDescrito["lado"]; angulo_grados?: number; x_cm?: number }, pieza: Pieza, id: string | null, giroGrados: number, notas: string[]): ColocacionSobre {
   const padreNodo = nodoPorId(escena, a.padre_id);
   if (id && descendientes(escena, id).has(padreNodo.id)) fallar(`«${padreNodo.id}» es la misma pieza (o va sobre ella): elige otra estructura.`);
   const padre = armada.porNodo.find((n) => n.id === padreNodo.id);
+  const cubierta = superficieSuperior(padreNodo, armada);
+  if (cubierta && !cubierta.deFabricaConCosas) return sitioSobreMesa(escena, armada, padreNodo, a, pieza, id, giroGrados, notas);
+  if (padreNodo.pieza.tipo === "escenografia" && padre && !padre.globos.length) fallar(`«${padreNodo.nombre}» es mobiliario sin cubierta donde apoyar algo: solo las mesas (redonda, imperial, cóctel, de postres…) llevan cosas encima, con poner_sobre y padre_id = el id de la mesa.`);
   if (!padre || !aceptaDecoraciones(padreNodo, padre)) fallar(`«${padreNodo.nombre}» (${NOMBRE_TIPO[padreNodo.pieza.tipo]}) no sirve de lienzo: usa una columna, un arco, un aro u orgánico, una guirnalda o una pared de globos.`);
   const sitio = sitioDescrito(padre!, { alturaCm: a.altura_cm, lado: a.lado, anguloGrados: a.angulo_grados, xCm: a.x_cm }, radioLateral(pieza));
   if ("error" in sitio) return fallar(sitio.error);
@@ -1238,9 +1273,14 @@ export function aplicarHerramienta(escena: Escena, nombre: string, argumentos: u
   if (!NOMBRES_HERRAMIENTAS.includes(nombre)) return { ok: false, escena, error: `No existe la herramienta «${nombre}». Hay: ${NOMBRES_HERRAMIENTAS.join(", ")}.` };
   try {
     const extra = HERRAMIENTAS_EXTRA[nombre];
+    // Una clave que la herramienta no conoce (`cuelga` por `cuelga_cm`) es un error con la clave buena, no algo que se descarta en silencio.
+    const desconocida = claveDesconocida(extra ? extra.esquema : (ESQUEMAS as Record<string, z.ZodType>)[nombre], argumentos ?? {}, nombre);
+    if (desconocida) return { ok: false, escena, error: desconocida };
     const hecho = extra ? extra.aplicar(escena, argumentos ?? {}) : ejecutar(escena, nombre as NombreHerramienta, argumentos ?? {});
     const avisoColor = hecho.consulta ? "" : avisosDeColor(escena, hecho.escena);
-    return { ok: true, escena: hecho.escena, resumen: avisoColor && !hecho.resumen.includes(avisoColor) ? `${hecho.resumen} ${avisoColor}` : hecho.resumen, consulta: hecho.consulta ?? false };
+    const propios: readonly AvisoUsuario[] = (hecho as { avisos?: readonly AvisoUsuario[] }).avisos ?? [];
+    const avisos = [...propios, ...(hecho.consulta ? [] : avisosDeColorParaElUsuario(escena, hecho.escena))];
+    return { ok: true, escena: hecho.escena, resumen: avisoColor && !hecho.resumen.includes(avisoColor) ? `${hecho.resumen} ${avisoColor}` : hecho.resumen, consulta: hecho.consulta ?? false, ...(avisos.length ? { avisos } : {}) };
   } catch (error) {
     if (error instanceof z.ZodError) return { ok: false, escena, error: errorDeZod(error) };
     if (error instanceof ErrorHerramienta) return { ok: false, escena, error: error.message };

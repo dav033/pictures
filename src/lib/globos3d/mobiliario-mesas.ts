@@ -1,4 +1,4 @@
-import { mesaConMantel, type ElementoEscenografia } from "./escenografia";
+import { mesaConMantel, SOMBRA_FALDA, sombrear, type ElementoEscenografia } from "./escenografia";
 import { barra, caja, cilindro, cilindroTumbado, losa, mat, poligono, r1, trasladarGirar, v, type Material } from "./mobiliario-base";
 
 /**
@@ -34,10 +34,15 @@ export function mesaRedonda(o: OpcionesMesa): ElementoEscenografia[] {
 export function mesaRedondaMantel(o: OpcionesMesa): ElementoEscenografia[] {
   const { anchoCm: dia, altoCm: h, tapa } = o;
   const r = dia / 2;
+  // La falda cae a la sombra de la tapa (un poco más oscura), con un reborde bajo el borde de arriba y un dobladillo en el piso: sin esto el mantel
+  // blanco contra la pared blanca se veía como una losa plana.
+  const falda = mat(sombrear(tapa.hex, SOMBRA_FALDA), tapa.acabado), borde = mat(sombrear(tapa.hex, 0.85), tapa.acabado);
   const salida: ElementoEscenografia[] = [
     // La tapa 2 mm más ancha que el arranque de la falda: sin caras coincidentes no hay línea de puntos.
     cilindro(v(0, h - 3, 0), r + 1.2, 3, tapa),
-    cilindro(v(0, 0, 0), r + 7, h - 1.5, tapa, r + 1),
+    cilindro(v(0, 0, 0), r + 7, h - 1.5, falda, r + 1),
+    cilindro(v(0, h - 4.8, 0), r + 2.6, 1.6, borde, r + 2.6),
+    cilindro(v(0, 0, 0), r + 7.5, 2.6, borde, r + 7.4),
   ];
   if (o.extra) salida.push(caja(v(0, h + 0.25, 0), v(r * 1.45, 0.5, r * 1.45), o.extra, 45));
   return salida;

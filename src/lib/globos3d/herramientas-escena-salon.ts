@@ -1,3 +1,4 @@
+import { avisar, avisosDe } from "./avisos-usuario";
 import { z } from "zod";
 import { fallar } from "./herramientas-escena-colores";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
@@ -71,8 +72,8 @@ export const HERRAMIENTAS_SALON: Readonly<Record<string, HerramientaExtra>> = {
       const notas: string[] = [];
       const r = armarSalon(escena, { invitados: a.invitados, mesas: a.mesas, mesa: a.mesa, sillas: a.sillas_por_mesa, anchoCm: a.ancho_cm, fondoCm: a.fondo_cm, zonas: a.zonas, colores: coloresDeMuebles(a.colores, notas), reemplazar: a.reemplazar }, notas);
       const perdidos = centrosPerdidos(escena, r.escena);
-      if (perdidos) notas.push(`${perdidos} centro(s) de mesa del salón anterior se fueron con sus mesas: vuelve a ponerlos con decorar_mesas.`);
-      return { escena: r.escena, resumen: unir(r.resumen, notas) };
+      if (perdidos) avisar(notas, `${perdidos} centro(s) de mesa del salón anterior se fueron con sus mesas: vuelve a ponerlos con decorar_mesas.`, "centro", "decorar_mesas");
+      return { escena: r.escena, resumen: unir(r.resumen, notas), avisos: avisosDe(notas) };
     },
   },
   ajustar_salon: {
@@ -83,7 +84,8 @@ export const HERRAMIENTAS_SALON: Readonly<Record<string, HerramientaExtra>> = {
       if (a.invitados === undefined && a.mesas === undefined && !a.mesa && a.sillas_por_mesa === undefined && a.ancho_cm === undefined && a.fondo_cm === undefined && !a.agregar_zonas?.length) fallar("Dime qué cambiar: invitados, mesas, mesa, sillas_por_mesa, ancho_cm, fondo_cm o agregar_zonas.");
       const notas: string[] = [];
       const r = ajustarSalon(escena, { invitados: a.invitados, mesas: a.mesas, mesa: a.mesa, sillas: a.sillas_por_mesa, anchoCm: a.ancho_cm, fondoCm: a.fondo_cm, agregarZonas: a.agregar_zonas }, notas);
-      return { escena: sincronizarCentros(escena, r.escena, notas), resumen: unir(r.resumen, notas) };
+      const sincronizada = sincronizarCentros(escena, r.escena, notas);
+      return { escena: sincronizada, resumen: unir(r.resumen, notas), avisos: avisosDe(notas) };
     },
   },
   mover_zona: {

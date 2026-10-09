@@ -2,6 +2,7 @@ import { descendientes, type Colocacion, type Escena, type NodoEscena } from "./
 import { fallar } from "./herramientas-escena-colores";
 import { muebleDe } from "./mobiliario-catalogo";
 import { opcionesDeMueble, piezaDeMueble } from "./mobiliario-pieza";
+import { grupoDeSillasDe } from "./mobiliario-asientos-mesa";
 import { MESAS_SALON, type ElementoSalon, type TipoMesaSalon } from "./salon-evento";
 import { conPieza, idLibre, mesasVivas, sinAnotar, type PiezaSalon, type RegistroSalon } from "./salon-registro";
 
@@ -91,4 +92,14 @@ export function desplazarNodo(n: NodoEscena, dx: number, dz: number): NodoEscena
   const colocacion: Colocacion = c.en === "piso" || c.en === "libre" || c.en === "techo" ? { ...c, xCm: Math.round(c.xCm + dx), zCm: Math.round(c.zCm + dz) }
     : c.en === "pared" ? { ...c, aLoLargoCm: Math.round(c.aLoLargoCm + dx) } : c;
   return { ...n, colocacion };
+}
+
+/**
+ * Quita el grupo de sillas paramétrico que haya sobre una mesa del salón: esas mesas ya traen sus sillas dentro (`opciones.sillas`), y con un grupo
+ * encima se dibujarían las dos veces. Devuelve la escena y cuántos grupos salieron (una escena guardada antes de la guarda de `cambiar_sillas`).
+ */
+export function sinGruposSobreMesasDelSalon(escena: Escena): { escena: Escena; quitados: number } {
+  const ids = mesasVivas(escena).flatMap((v) => { const g = grupoDeSillasDe(escena, v.nodo.id); return g ? [g.id] : []; });
+  if (!ids.length) return { escena, quitados: 0 };
+  return { escena: { ...escena, nodos: escena.nodos.filter((n) => !ids.includes(n.id)) }, quitados: ids.length };
 }

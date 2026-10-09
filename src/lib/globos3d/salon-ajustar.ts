@@ -1,3 +1,4 @@
+import { avisar } from "./avisos-usuario";
 import type { Escena, NodoEscena } from "./escena";
 import { fallar } from "./herramientas-escena-colores";
 import { MAX_NODOS, SALA_MAXIMA_CM } from "./limites-escena";
@@ -5,7 +6,7 @@ import { ALTO_SALON_CM, falloDeCapacidad, metros, rangoSala, type ResultadoSalon
 import {
   distribuirSalon, MAX_INVITADOS_SALON, aforoDeMesas, falloDeMesas, falloDeSillas, mesasNecesarias, medidasDeMesa, MESAS_SALON, rectDeElemento, type Celda, type DistribucionSalon, type ElementoSalon, type ParamsSalon, type TipoMesaSalon,
 } from "./salon-evento";
-import { desplazarNodo, nodoDeElemento, paletaDeMesas, ponerElemento, quitarConLoSuyo } from "./salon-nodos";
+import { desplazarNodo, nodoDeElemento, paletaDeMesas, ponerElemento, quitarConLoSuyo, sinGruposSobreMesasDelSalon } from "./salon-nodos";
 import { anclaDeZona, conAnotacion, estaMovida, mesasVivas, miembrosDeZona, registroVivo, type PiezaViva } from "./salon-registro";
 import { resumenDeSalon } from "./salon-resumen";
 import { conSalaNueva } from "./salon-techos";
@@ -30,13 +31,17 @@ const elementoDeMesa = (mesa: TipoMesaSalon, sillas: number | undefined, c: Celd
 
 const cajaDe = (v: PiezaViva): RectCm => cajaDeMueble(v.nodo) ?? { x0: 0, x1: 0, z0: 0, z1: 0 };
 
-export function ajustarSalon(escena: Escena, p: PedidoAjuste, notas: string[]): ResultadoSalon {
+export function ajustarSalon(entrada: Escena, p: PedidoAjuste, notas: string[]): ResultadoSalon {
+  // Las mesas del salón traen sus sillas dentro: un grupo de sillas encima las dibujaría dos veces.
+  const limpia = sinGruposSobreMesasDelSalon(entrada);
+  const escena = limpia.escena;
+  if (limpia.quitados) avisar(notas, `Quité ${limpia.quitados} grupo(s) de sillas que estaban encima de mesas del salón: el salón ya dibuja sus sillas (sillas_por_mesa).`, "grupo", "sillas que estaban");
   const registro = registroVivo(escena) ?? fallar("No hay un salón armado en la escena: usa armar_salon (o planificar_evento) primero.");
   const mesa = p.mesa ?? registro.mesa;
   if (p.sillas !== undefined) { const fallo = falloDeSillas(mesa, p.sillas); if (fallo) fallar(fallo); }
   // Sin pedir sillas se siguen las de ahora, si valen para ese tipo de mesa; las de siempre del tipo no se guardan.
   const sillas = p.sillas !== undefined ? (p.sillas === MESAS_SALON[mesa].puestos ? undefined : p.sillas) : registro.sillas !== undefined && falloDeSillas(mesa, registro.sillas) === null ? registro.sillas : undefined;
-  if (p.sillas === undefined && registro.sillas !== undefined && sillas === undefined) notas.push(`Las ${registro.sillas} sillas por mesa no valen para mesas ${mesa}: puse las de siempre (${MESAS_SALON[mesa].puestos}).`);
+  if (p.sillas === undefined && registro.sillas !== undefined && sillas === undefined) avisar(notas, `Las ${registro.sillas} sillas por mesa no valen para mesas ${mesa}: puse las de siempre (${MESAS_SALON[mesa].puestos}).`, "no valen", "de siempre");
   const mismaMesa = mesa === registro.mesa && sillas === registro.sillas;
   const falloMesas = p.mesas === undefined ? null : falloDeMesas(p.mesas);
   if (falloMesas) fallar(falloMesas);
@@ -86,8 +91,8 @@ export function ajustarSalon(escena: Escena, p: PedidoAjuste, notas: string[]): 
     for (const z of presentes) {
       const ancla = anclaDeZona(e, z)!;
       const destino = d.elementos.find((x) => x.zona === z && x.rol === "ancla");
-      if (estaMovida(ancla)) { const c = cajaDeZona(e, z); if (c && !dentroDe(c, d.sala.anchoCm, d.sala.fondoCm)) notas.push(`${z} (que moviste) quedó fuera de la sala nueva: muévela con mover_zona.`); continue; }
-      if (!destino || ancla.nodo.colocacion.en !== "piso") { notas.push(`La zona ${z} no cabe en la sala nueva: se queda donde estaba.`); continue; }
+      if (estaMovida(ancla)) { const c = cajaDeZona(e, z); if (c && !dentroDe(c, d.sala.anchoCm, d.sala.fondoCm)) avisar(notas, `${z} (que moviste) quedó fuera de la sala nueva: muévela con mover_zona.`, "fuera de la sala", "mover_zona"); continue; }
+      if (!destino || ancla.nodo.colocacion.en !== "piso") { avisar(notas, `La zona ${z} no cabe en la sala nueva: se queda donde estaba.`, "no cabe", "donde estaba", z); continue; }
       const dx = destino.xCm - ancla.nodo.colocacion.xCm, dz = destino.zCm - ancla.nodo.colocacion.zCm;
       const ids = new Set(miembrosDeZona(e, z).map((v) => v.nodo.id));
       e = { ...e, nodos: e.nodos.map((n) => (ids.has(n.id) ? desplazarNodo(n, dx, dz) : n)) };
@@ -99,7 +104,7 @@ export function ajustarSalon(escena: Escena, p: PedidoAjuste, notas: string[]): 
     const sueltas = miembrosDeZona(e, z).filter((v) => v.info.rol !== "adoptada").map((v) => v.nodo.id);
     if (sueltas.length) e = quitarConLoSuyo(e, sueltas).escena;
     const elementos = d.elementos.filter((x) => x.zona === z);
-    if (!elementos.length) { notas.push(`La zona ${z} no cabe en la sala: no se armó.`); continue; }
+    if (!elementos.length) { avisar(notas, `La zona ${z} no cabe en la sala: no se armó.`, "no cabe", "no se armó", z); continue; }
     for (const el of elementos) e = ponerElemento(e, el, paleta, inicial);
   }
 
@@ -132,10 +137,10 @@ export function ajustarSalon(escena: Escena, p: PedidoAjuste, notas: string[]): 
 
   if (salaCambia) {
     const fuera = piezasDeUsuarioEnElPiso(e, false).filter((x) => !dentroDe(x.caja, e.sala.anchoCm, e.sala.fondoCm)).length;
-    if (fuera) notas.push(`${fuera} pieza(s) tuyas quedaron fuera de la sala nueva: muévelas (no las toqué).`);
+    if (fuera) avisar(notas, `${fuera} pieza(s) tuyas quedaron fuera de la sala nueva: muévelas (no las toqué).`, "fuera de la sala", "muévelas");
   }
-  if (quitar.length) notas.push(`Quité ${quitar.length} mesa(s) del final${quitadas ? ` y ${quitadas} pieza(s) que estaban sobre ellas` : ""}.`);
+  if (quitar.length) avisar(notas, `Quité ${quitar.length} mesa(s) del final${quitadas ? ` y ${quitadas} pieza(s) que estaban sobre ellas` : ""}.`, "quité", "quitó", "quitaron");
   if (movidas.length) notas.push(`${movidas.length} mesa(s) que moviste a mano se quedaron donde las pusiste.`);
-  for (const z of d.sinLugar) if (!presentes.includes(z)) notas.push(`La zona ${z} no cabe en la sala: no se armó.`);
+  for (const z of d.sinLugar) if (!presentes.includes(z)) avisar(notas, `La zona ${z} no cabe en la sala: no se armó.`, "no cabe", "no se armó", z);
   return { escena: e, resumen: `${resumenDeSalon(e)} (${invitados} invitados, caben ${(d.celdas.length + movidas.length) * medidasDeMesa(mesa, sillas).puestos}; sala ${metros(e.sala.anchoCm)} × ${metros(e.sala.fondoCm)}).` };
 }

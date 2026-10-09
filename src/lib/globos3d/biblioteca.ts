@@ -1,4 +1,6 @@
 import { elementosDeEscenografia } from "./mobiliario-pieza";
+import { unidadesDeEscenografia } from "./mobiliario-asientos-mesa";
+import { muebleDeNodo } from "./descripcion-mobiliario";
 import { IDEAS_SEMPERTEX } from "./ideas-sempertex";
 import { urlDeIdea } from "./ideas-sempertex/tipos";
 import { perezoso } from "./perezoso";
@@ -577,6 +579,16 @@ export function lineasDeGlobos(materiales: readonly MaterialDecoracion[]): Linea
 }
 
 /**
+ * Cómo se llama una pieza de escenografía en la lista de compra: su nombre sin el número de copia («Mesa redonda Ø150 2» → «Mesa redonda Ø150») o, si es un
+ * conjunto fijo de mesa con sillas, por lo que es y las sillas que de verdad lleva («Mesa redonda con 4 sillas»): el salón las nombra «Mesa 3» y sin esto las sillas no se contaban.
+ */
+function nombreEnLista(nodo: NodoEscena): string {
+  const conjunto = muebleDeNodo(nodo);
+  if (conjunto?.entrada && conjunto.asientos > 0 && conjunto.esMesa) return conjunto.nombre;
+  return nodo.nombre.replace(/\s*\(.*\)$/, "").replace(nodo.pieza.tipo === "escenografia" && nodo.pieza.mueble ? /\s+\d+$/ : /$^/, "");
+}
+
+/**
  * La lista exacta de productos de un item: los globos (formato + código + nombre oficial + cantidad y el producto de la
  * tienda), la utilería (producto de la tienda, o genérico) y aparte lo que no es producto (escenografía, papel, flores
  * artificiales). `armada`: la de `escenaDeItem(item)` si ya se tiene.
@@ -623,7 +635,7 @@ export function productosDe(item: ItemBiblioteca, armada?: EscenaArmada, cache?:
     const hecho = hecha.porNodo.find((n) => n.id === nodo.id);
     if (!hecho || hecho.copias === 0) continue;
     // Lo oculto (amarres internos) no se ve ni se compra: no va en la lista.
-    if (nodo.pieza.tipo === "escenografia" && !nodo.pieza.productos?.length && !elementosDeEscenografia(nodo.pieza).every((e) => e.oculto && !e.rotulo)) sumar(nodo.nombre.replace(/\s*\(.*\)$/, "").replace(nodo.pieza.mueble ? /\s+\d+$/ : /$^/, ""), "escenografia", hecho.copias, nodo.nombre);
+    if (nodo.pieza.tipo === "escenografia" && !nodo.pieza.productos?.length && !elementosDeEscenografia(nodo.pieza).every((e) => e.oculto && !e.rotulo)) sumar(nombreEnLista(nodo), "escenografia", hecho.copias * unidadesDeEscenografia(nodo.pieza), nodo.nombre);
     if (nodo.pieza.tipo === "decoracion" && hecho.materiales.length === 0 && hecho.tubos.some((t) => t.papel)) sumar(nombreGenerico(nodo.nombre), "papel", hecho.copias, nodo.nombre);
     if (hecho.flores.length) sumar("Flores artificiales (follaje)", "follaje", hecho.flores.length, nodo.nombre);
     // El relleno de un globo burbuja (confeti, plumas) es papel: no es producto de la tienda.

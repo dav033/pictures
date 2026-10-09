@@ -3,7 +3,12 @@
 import { memo, useMemo, useState } from "react";
 import { idNuevo, type Escena } from "@/lib/globos3d/escena";
 import { FONDOS_CATALOGO } from "@/lib/globos3d/fondos-escenografia";
+import { MAX_NODOS } from "@/lib/globos3d/limites-escena";
 import { colocacionPorDefecto } from "@/lib/globos3d/mobiliario-colocar";
+import { mesaDePedido, sillasParaMesa } from "@/lib/globos3d/mobiliario-conjunto";
+import { agregarConjuntoPorDefecto } from "@/lib/globos3d/mobiliario-conjunto-escena";
+import { armarMesa } from "@/lib/globos3d/mobiliario-mesas-param";
+import { armarSillas } from "@/lib/globos3d/mobiliario-sillas-param";
 import { piezaDeEntrada } from "@/lib/globos3d/mobiliario-pieza";
 import type { FondoCatalogo } from "@/lib/globos3d/mobiliario-tipos";
 import { useArrastreDesdePanel } from "./arrastre-decoracion";
@@ -13,6 +18,13 @@ import { MINI, TARJETA, coincide } from "./ui-taller";
 const GRUPOS = [
   { id: "fondo", titulo: "Fondos y tapetes" }, { id: "asiento", titulo: "Sillas y asientos" }, { id: "mesa", titulo: "Mesas" }, { id: "decorado", titulo: "Decorado de pie" },
 ] as const;
+
+/** El dibujo de la tarjeta «Mesa con sillas»: una mesa redonda de 1,5 m con ocho sillas Tiffany, como queda al añadirla. */
+const elementosDelConjunto = () => {
+  const mesa = mesaDePedido({ tipo: "redonda" });
+  const sillas = sillasParaMesa(mesa, { cantidad: 8 }).sillas;
+  return [...armarMesa(mesa), ...(sillas ? armarSillas(sillas) : [])];
+};
 
 const medidasDe = (f: FondoCatalogo) => (f.clase === "mueble" ? f.medidas : { anchoCm: 100, fondoCm: 100, altoCm: 100 });
 
@@ -26,7 +38,13 @@ export const FondosYMuebles = memo(function FondosYMuebles({ escena, onEscena, o
   const arrastre = useArrastreDesdePanel();
   const [aviso, setAviso] = useState<string | null>(null);
   const visibles = useMemo(() => FONDOS_CATALOGO.filter((f) => coincide(filtro, f.nombre, f.descripcion, "fondo mueble mobiliario escenografia silla mesa")), [filtro]);
-  if (!visibles.length) return null;
+  const conConjunto = coincide(filtro, "Mesa con sillas a medida", "mesa silla conjunto banquete redonda cuadrada ovalada media luna serpentina en U");
+  if (!visibles.length && !conConjunto) return null;
+  const ponerConjunto = () => {
+    const r = agregarConjuntoPorDefecto(escena, MAX_NODOS);
+    if (r.mesaId) { onEscena(r.escena); onSeleccion?.(r.mesaId); }
+    setAviso(r.aviso ?? "Listo: la mesa con sus sillas quedó en la escena. Elígela para cambiar su tipo, su medida y las sillas.");
+  };
   const poner = (f: FondoCatalogo) => {
     const id = idNuevo(escena, f.id.replace(/_/g, "-"));
     const { colocacion, aviso: sinLugar } = colocacionPorDefecto(escena, f, medidasDe(f));
@@ -39,7 +57,8 @@ export const FondosYMuebles = memo(function FondosYMuebles({ escena, onEscena, o
       <h3 className="taller-rotulo">Fondos y muebles <span className="font-normal normal-case tracking-normal">· no son globos: no cotizan</span></h3>
       {GRUPOS.map((g) => {
         const delGrupo = visibles.filter((f) => (f.grupo ?? "fondo") === g.id);
-        if (!delGrupo.length) return null;
+        const conjunto = g.id === "mesa" && conConjunto;
+        if (!delGrupo.length && !conjunto) return null;
         return (
           <div key={g.id} className="flex flex-col gap-1.5">
             <h4 className="text-xs font-medium text-taller-suave">{g.titulo}</h4>
@@ -53,6 +72,12 @@ export const FondosYMuebles = memo(function FondosYMuebles({ escena, onEscena, o
                   <span>{f.nombre}</span>
                 </button>
               ))}
+              {conjunto && (
+                <button type="button" title="Mesa y sillas a medida: redonda, cuadrada, rectangular, ovalada, cóctel, media luna, serpentina o en U, con las sillas que quieras. Se cambia en su inspector." onClick={ponerConjunto} className={`${TARJETA} select-none`}>
+                  <span className={MINI} aria-hidden><DibujoFondo id="mesa_con_sillas" elementos={elementosDelConjunto} /></span>
+                  <span>Mesa con sillas a medida</span>
+                </button>
+              )}
             </div>
           </div>
         );

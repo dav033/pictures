@@ -1,3 +1,4 @@
+import { avisar, avisosDe, type AvisoUsuario } from "./avisos-usuario";
 import { z } from "zod";
 import { armarEscena, idNuevo, type Colocacion, type Escena, type NodoEscena } from "./escena";
 import type { AcabadoEscenografia } from "./escenografia";
@@ -6,11 +7,15 @@ import { fallar } from "./herramientas-escena-colores";
 import type { HerramientaExtra } from "./herramientas-escena-grupos";
 import { hexDeColor } from "./mobiliario-colores";
 import { colocacionPorDefecto } from "./mobiliario-colocar";
+import { comprobarNombreMueble } from "./descripcion-mobiliario";
 import { muebleDe } from "./mobiliario-catalogo";
 import { puestosAlrededor, puestosEnFila, type Puesto } from "./mobiliario-disposicion";
 import { ACABADOS_MUEBLE, admiteRotulo, conTextoPieza, nombreDeMueble, opcionesDeMueble, piezaDeEntrada, piezaDeMueble, portadorDeRotulo, type OpcionesGuardadas, type PiezaEscenografia } from "./mobiliario-pieza";
 import { ACABADOS_ROTULO, avisoDeTexto, caraDe, esAcabadoRotulo, NOMBRE_ACABADO_ROTULO, textoEnUnaLinea, type PedidoRotulo } from "./rotulos";
-import { descripcionConColores, retiroDe, type FondoCatalogo, type MuebleCatalogo } from "./mobiliario-tipos";
+import { asientosDeEntrada, descripcionConColores, retiroDe, type FondoCatalogo, type MuebleCatalogo } from "./mobiliario-tipos";
+import { esGrupoDeSillas, esMesaParametrica, MANTEL_TEXTO, medidaDeMesa, mesaDePieza, sillasDePieza } from "./mobiliario-conjunto";
+import { NOMBRE_MESA } from "./mobiliario-conjunto-tipos";
+import { SILLAS } from "./mobiliario-sillas-param";
 import { esAcabadoMueble, limitesDeMueble, MAX_TEXTO_MUEBLE } from "./mobiliario-pieza";
 import { armarPieza, type Pieza } from "./piezas";
 
@@ -74,11 +79,16 @@ function medidaAcotada(valor: number, rango: { min: number; max: number }, etiqu
   return v;
 }
 
-function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string } {
+function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string; avisos: AvisoUsuario[] } {
   const a = MobiliarioSchema.parse(argumentos ?? {});
   const entrada = FONDOS_CATALOGO.find((f) => f.id === a.id) ?? fallar(`No hay «${a.id}» en el catálogo de mobiliario.`);
   const notas: string[] = [];
+  const veredicto = comprobarNombreMueble(entrada, a.nombre);
+  if (veredicto.tipo === "error") fallar(veredicto.error);
+  if (veredicto.tipo === "corregido") notas.push(veredicto.aviso);
+  const nombreBase = veredicto.tipo === "corregido" ? veredicto.nombre : a.nombre ?? entrada.nombre;
   const mueble = entrada.clase === "mueble" ? entrada : undefined;
+  if (mueble?.sillas) notas.push(`«${entrada.nombre}» es un conjunto fijo de ${asientosDeEntrada(mueble)} sillas Tiffany en una sola pieza: para otro número de sillas, otro tipo de silla o de mesa usa cambiar_sillas / cambiar_mesas con su id (la pasa a mesa con sillas editables) o agregar_mesas con sillas_por_mesa.`);
   if (mueble) comprobarAcabadoPropio(mueble, a.acabado);
   if (!mueble && (a.ancho_cm || a.fondo_cm || a.alto_cm || a.colores || a.acabado)) notas.push(`«${entrada.nombre}» es un fondo de foto: va con sus medidas y colores de catálogo (el mobiliario sí cambia de medida y color).`);
   if (a.texto && !mueble?.conTexto && !entrada.rotulable) notas.push(`«${entrada.nombre}» no lleva texto: lo ignoré.`);
@@ -102,12 +112,14 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
   sitios.forEach((sitio, i) => {
     const id = idNuevo(actual, a.id.replace(/_/g, "-"));
     const colocacion: Colocacion = sitio.colocacion ?? (sitio.puesto ? { en: "piso", xCm: sitio.puesto.x, zCm: sitio.puesto.z, giroGrados: sitio.puesto.giroGrados } : sola());
-    const nodo: NodoEscena = { id, nombre: `${a.nombre ?? entrada.nombre}${sitios.length > 1 ? ` ${i + 1}` : ""}`, pieza, colocacion };
+    const nodo: NodoEscena = { id, nombre: `${nombreBase}${sitios.length > 1 ? ` ${i + 1}` : ""}`, pieza, colocacion };
     actual = { ...actual, nodos: [...actual.nodos, nodo] };
     nuevos.push(nodo);
   });
-  const resumen = `Agregué ${nuevos.length} «${entrada.nombre}» de ${textoMedidas(real)}${mueble ? "" : " (medidas del catálogo)"}: ${nuevos.map((x) => x.id).join(", ")}. Es escenografía (no cotiza).`;
-  return { escena: actual, resumen: [resumen, ...new Set(notas)].join(" ") };
+  const trae = mueble ? asientosDeEntrada(mueble, opciones) : 0;
+  const asientos = trae ? ` Trae ${trae} ${trae === 1 ? "asiento" : "asientos"} cada una${mueble?.asiento ? "" : " (con el conjunto fijo: otro número de sillas va con agregar_mesas)"}.` : "";
+  const resumen = `Agregué ${nuevos.length} «${entrada.nombre}» de ${textoMedidas(real)}${mueble ? "" : " (medidas del catálogo)"}: ${nuevos.map((x) => x.id).join(", ")}. Es escenografía (no cotiza).${asientos}`;
+  return { escena: actual, resumen: [resumen, ...new Set(notas)].join(" "), avisos: avisosDe(notas) };
 }
 
 /** Un sitio del reparto: un puesto del piso, una colocación ya hecha (pared) o «el de siempre» (`porDefecto`). */
@@ -128,7 +140,7 @@ function repartir(escena: Escena, a: Pedido, entrada: FondoCatalogo, real: { anc
       cx: (caja.min.x + caja.max.x) / 2, cz: (caja.min.z + caja.max.z) / 2, anchoCm: caja.max.x - caja.min.x, fondoCm: caja.max.z - caja.min.z,
       cantidad: n, holguraCm: real.fondoCm / 2 + (a.holgura_cm ?? 8), frenteCm: real.anchoCm,
     });
-    if (puestos.length < n) notas.push(`Alrededor de «${mesa.nombre}» solo caben ${puestos.length} de ${n}: puse ${puestos.length}.`);
+    if (puestos.length < n) avisar(notas, `Alrededor de «${mesa.nombre}» solo caben ${puestos.length} de ${n}: puse ${puestos.length}.`, "solo caben", "no caben", "no cupieron");
     return puestos.map((puesto) => ({ puesto }));
   }
   if (disposicion === "fila") {
@@ -141,7 +153,7 @@ function repartir(escena: Escena, a: Pedido, entrada: FondoCatalogo, real: { anc
 /** El sitio de un solo mueble sin reparto: x y z pedidos mandan; lo que falta, lo de siempre (esquivando lo que ya está, o encima de la mesa). */
 function colocacionSola(escena: Escena, a: Pedido, entrada: FondoCatalogo, real: { anchoCm: number; fondoCm: number }, notas: string[]): Colocacion {
   const { colocacion: base, aviso } = colocacionPorDefecto(escena, entrada, real);
-  if (aviso && a.x_cm === undefined) notas.push(aviso);
+  if (aviso && a.x_cm === undefined) avisar(notas, aviso, "no hay lugar", "encima de otra pieza", "muévela");
   if (base.en !== "piso") return base;
   return { ...base, xCm: a.x_cm ?? base.xCm, zCm: a.z_cm ?? base.zCm, giroGrados: a.giro_grados ?? 0 };
 }
@@ -199,6 +211,8 @@ const dichoRotulo = (r: NonNullable<NonNullable<PiezaEscenografia["mueble"]>["ro
 /** Por qué una escenografía que no es un mueble no cambia de medida ni de color, y qué hacer. */
 function motivoFija(p: PiezaEscenografia, nombre: string, pedidos: readonly string[]): string {
   const que = `(${pedidos.join(", ")})`;
+  if (esMesaParametrica(p)) return `«${nombre}» es una mesa de agregar_mesas: su tipo, medida y mantel se cambian con cambiar_mesas ${que}.`;
+  if (esGrupoDeSillas(p)) return `«${nombre}» es el grupo de sillas de una mesa: su cantidad, tipo, color y disposición se cambian con cambiar_sillas ${que}.`;
   if (p.utileria || p.productos?.length) return `«${nombre}» es utilería de fiesta (un producto de la tienda): no cambia de medida ni de color desde aquí ${que}.`;
   if (p.mueble) return `«${nombre}» es un fondo fijo del catálogo: no cambia de medida ni de color ${que}. Quítalo con quitar_pieza y agrega otro con agregar_mobiliario (los muebles sí se cambian).`;
   return `«${nombre}» es escenografía armada (de una idea o de la biblioteca): no cambia de medida ni de color ${que}. Si hace falta otra, quítala con quitar_pieza.`;
@@ -269,6 +283,7 @@ export function cambiarMobiliario(base: PiezaEscenografia, props: Props, notas: 
 
 /** Cómo se cuenta un mueble en `ver_escena`: nombre del catálogo, medidas totales y colores con para qué sirve cada uno. */
 export function resumenDeEscenografia(p: PiezaEscenografia): { medidas: string; colores: string } | null {
+  if (p.mueble?.mesa || p.mueble?.sillas) return resumenDeConjuntoParametrico(p);
   const m = p.mueble ? muebleDe(p.mueble.id) : undefined;
   const o = p.mueble?.opciones;
   const rotulo = p.mueble?.rotulo;
@@ -284,10 +299,18 @@ export function resumenDeEscenografia(p: PiezaEscenografia): { medidas: string; 
   };
 }
 
+/** Una mesa paramétrica o su grupo de sillas en `ver_escena` cuando se lee la pieza sola (sin la escena: las sillas de la mesa las cuenta `resumenEscena`). */
+function resumenDeConjuntoParametrico(p: PiezaEscenografia): { medidas: string; colores: string } {
+  const mesa = mesaDePieza(p), sillas = sillasDePieza(p);
+  if (mesa) return { medidas: `${NOMBRE_MESA[mesa.tipo]} ${medidaDeMesa(mesa)} cm · tapa a ${r0(mesa.altoCm)} cm · ${MANTEL_TEXTO[mesa.mantel]}`, colores: `${mesa.mantel === "ninguno" ? "tapa" : "mantel"} ${mesa.colorMantel}, patas ${mesa.colorPatas}${mesa.camino ? `, camino ${mesa.camino}` : ""}` };
+  const s = sillas!;
+  return { medidas: `${s.puestos.length} ${s.puestos.length === 1 ? SILLAS[s.tipo].nombre.toLowerCase() : SILLAS[s.tipo].plural} · ${s.disposicion.replace(/_/g, " ")}${s.pedida > s.puestos.length ? ` (se pidieron ${s.pedida}, no caben más)` : ""}`, colores: `estructura ${s.colorEstructura}${s.colorCojin ? `, cojín ${s.colorCojin}` : ""}` };
+}
+
 export const HERRAMIENTAS_MOBILIARIO: Readonly<Record<string, HerramientaExtra>> = {
   agregar_mobiliario: {
     esquema: MobiliarioSchema,
-    descripcion: "Pone mobiliario o un fondo que NO es de globos (sillas Tiffany o modernas, bancas, taburetes, sofás, mesas imperiales, redondas, cóctel, de postres, de regalos, mesas nido, carrito de dulces, aros y arcos metálicos, peldaños, biombo, pampas, lámpara, neón…) con medidas totales y colores; no cotiza. Con cantidad y disposicion reparte varios: «fila», o «alrededor» de una mesa que ya está (alrededor_de = su id; cada asiento queda mirando a la mesa): «6 sillas alrededor de una mesa redonda» = primero agregar_mobiliario mesa_redonda_mantel, luego agregar_mobiliario silla_tiffany con cantidad 6, disposicion alrededor y alrededor_de = el id que devolvió la mesa. Después se cambia con cambiar_pieza (ancho_cm, fondo_cm, alto_cm, colores, acabado, texto); quitar_pieza y mover_pieza para lo demás.",
+    descripcion: "Pone mobiliario o un fondo que NO es de globos (sillas Tiffany o modernas, bancas, taburetes, sofás, mesas imperiales, redondas, cóctel, de postres, de regalos, mesas nido, carrito de dulces, aros y arcos metálicos, peldaños, biombo, pampas, lámpara, neón…) con medidas totales y colores; no cotiza. Con cantidad y disposicion reparte varios: «fila», o «alrededor» de una mesa que ya está (alrededor_de = su id; cada asiento queda mirando a la mesa): «6 sillas alrededor de una mesa redonda» = primero agregar_mobiliario mesa_redonda_mantel, luego agregar_mobiliario silla_tiffany con cantidad 6, disposicion alrededor y alrededor_de = el id que devolvió la mesa. Después se cambia con cambiar_pieza (ancho_cm, fondo_cm, alto_cm, colores, acabado, texto); quitar_pieza y mover_pieza para lo demás. Mesas CON sillas: agregar_mesas (cualquier número de sillas y tipo de mesa); mesa_redonda_sillas y mesa_imperial_sillas son fijas (8 y 10 sillas).",
     aplicar,
   },
 };
