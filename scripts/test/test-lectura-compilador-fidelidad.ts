@@ -219,8 +219,8 @@ prueba("cada tipo de pieza leída tiene su línea para el agente", () => {
   assert.match(lineaDePiezaLeida(UNA_DE_CADA[2]!, 2, 260), /montón de piso de 52 cm de ancho y 39 cm de alto · dorado cromado 60%, blanco 40%/);
   const fila: PiezaLeida = { tipo: "fondo", id: "silla_tiffany", x: 0.5, yBase: 0.9, ancho: 0.4, alto: 0.2, cantidad: 6, colores: [DORADO] };
   assert.match(lineaDePiezaLeida(fila, 0, 260), /silla_tiffany ×6/);
-  const nombre: PiezaLeida = { tipo: "fondo", id: "panel_redondo", x: 0.5, yBase: 0.9, ancho: 0.4, alto: 0.4, texto: "Asher", colorTexto: "negro", acabadoTexto: "vinilo", colores: [DORADO] };
-  assert.match(lineaDePiezaLeida(nombre, 0, 260), /panel_redondo «Asher» en negro \(vinilo\)/);
+  const nombre: PiezaLeida = { tipo: "fondo", id: "panel_redondo", x: 0.5, yBase: 0.9, ancho: 0.4, alto: 0.4, texto: "Asher", colorTexto: "negro", acabadoTexto: "cromado", colores: [DORADO] };
+  assert.match(lineaDePiezaLeida(nombre, 0, 260), /panel_redondo «Asher» en negro \((cromado)\)/);
   assert.throws(() => lineaDePiezaLeida({ tipo: "pieza_nueva" } as unknown as PiezaLeida, 0, 260), /sin línea para el agente/);
 });
 
