@@ -72,6 +72,7 @@ import { ErrorImagen, pedirImagenConRecuperacion } from "@/lib/generacion/pedir-
 import { abrirConversacionGuiada, registrarAccionGuiada, registrarFalloGuiado, vaciarConversacionGuiada, type EstadoParaInstantanea } from "./registro-guiado";
 import { AVISO_VERSION_NUEVA, CABECERA_VERSION_APP, RespuestaIncompatibleError, camposInvalidos, clasificarIncompatible, hayVersionNueva, idParaReintento, turnoSinRespuesta } from "./version-pagina";
 import { borrarEstadoGuiado } from "./empezar-de-nuevo";
+import { useMotorGuiada } from "./usarMotorGuiada";
 import { ConfirmarEmpezarDeNuevo } from "./ConfirmarEmpezarDeNuevo";
 import { borrarImagenesNavegador, guardarImagenNavegador, leerImagenesNavegador } from "./imagenes-navegador";
 
@@ -215,6 +216,7 @@ function nuevoId(): string { return crypto.randomUUID(); }
 export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) {
   const { modo, cambiar } = useModoVista();
   const reducido = useReducedMotion();
+  const { alCrearPlan: leerMotorDelPlan } = useMotorGuiada();
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [brief, setBrief] = useState<BriefGuiado>({});
   const [entrada, setEntrada] = useState("");
@@ -888,13 +890,15 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const armado = generarPasosPlan(plan);
     const resumen = resumenPlanGuiado(plan);
     const total = totalDePlan(plan);
+    // Fase 0: el plan sigue saliendo de Python; la lectura de la bandera solo queda en la auditoría. Las fases 1 y 2 la usarán antes de crear el plan.
+    void leerMotorDelPlan();
     setMensajes((actuales) => {
       const previo = buscarPlanVigente(actuales.filter((mensaje) => mensaje.id !== mensajeId));
       const totalAnterior = previo ? totalDePlan(previo.widget.plan) : undefined;
       // Las ideas solo se heredan al agregar otra: un plan rehecho por «Cambiar algo» ya no sabe qué ideas lleva.
       const ideas = idea ? [...new Set([...(previo?.widget.ideas ?? []), idea.id])].slice(-12) : [];
       const nuevo: WidgetPlan = {
-        tipo: "plan", plan, pasos: armado.pasos,
+        tipo: "plan", plan, pasos: armado.pasos, motor: "python",
         ...(cotizacion ? { cotizacion } : {}),
         ...(totalAnterior !== undefined ? { totalAnterior } : {}),
         ...(fotoInspiracion ? { fotoInspiracion: true, ...(referenciaId ? { referenciaId } : {}) } : {}),
@@ -933,7 +937,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       // idea, el carrusel volvía a ofrecer «Agregar a mi plan» y la duplicaba (probador 124, hallazgo 11).
       const ideas = ideasQueSiguenEnPlan(actual.ideas ?? [], actual.plan, plan, (id) => decoracionDeLaConversacion(actuales, id));
       const nuevo: WidgetPlan = {
-        tipo: "plan", plan, pasos: armado.pasos, ajustes, totalAnterior: totalDePlan(actual.plan),
+        tipo: "plan", plan, pasos: armado.pasos, motor: actual.motor, ajustes, totalAnterior: totalDePlan(actual.plan),
         ...(cotizacion ? { cotizacion } : {}),
         ...(actual.fotoInspiracion ? { fotoInspiracion: true, ...(actual.referenciaId ? { referenciaId: actual.referenciaId } : {}) } : {}),
         ...(actual.usoCosteo ? { usoCosteo: actual.usoCosteo } : {}),
