@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { MotivoEscenografia, SolidoEscenografia } from "@/lib/globos3d/escenografia";
+import { fuenteDeRotulos } from "./fuente-rotulos";
 
 /**
  * Lo impreso en la utilería de fiesta (calavera, murciélago, calabaza, fantasma, araña, telaraña, sombrero de bruja,
@@ -160,11 +161,14 @@ function texto(p: Pincel, ancho: number, alto: number, contenido: string, tinta:
   });
 }
 
-/** Letrero de neón: el texto tal cual, en cursiva, con un tubo claro al centro y un resplandor del color alrededor. */
+/**
+ * Letrero de neón: el texto tal cual, en la letra de los rótulos (Great Vibes: la misma en todo equipo; el visor no pide esta calcomanía
+ * hasta que la letra esté cargada, ver `escenografia-visor.ts`), con un tubo claro al centro y un resplandor del color alrededor.
+ */
 function textoNeon(p: Pincel, ancho: number, alto: number, contenido: string, tinta: string) {
   const palabras = contenido.trim().split(/\s+/).filter(Boolean);
   const lineas = palabras.length > 1 && contenido.length > 10 ? [palabras.slice(0, Math.ceil(palabras.length / 2)).join(" "), palabras.slice(Math.ceil(palabras.length / 2)).join(" ")] : [palabras.join(" ")];
-  const fuente = (t: number) => `italic 400 ${t}px "Segoe Script", "Brush Script MT", "Snell Roundhand", cursive`;
+  const fuente = fuenteDeRotulos;
   let tam = alto / (lineas.length * 1.35);
   p.font = fuente(tam);
   const mas = Math.max(...lineas.map((l) => p.measureText(l).width));

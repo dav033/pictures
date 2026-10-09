@@ -556,7 +556,7 @@ type NodoDibujado = {
   grupo: THREE.Group;
   instancias: Instancia[];
   caja: THREE.Box3 | null;
-  /** Lleva un rótulo: si su letra aún no había cargado, se rehace cuando cargue. */
+  /** Lleva un rótulo o un letrero de neón: si su letra aún no había cargado, se rehace cuando cargue. */
   conRotulo: boolean;
 };
 /** Una copia de una geometría compartida: en qué lote va, su marco (en el módulo) y su color (`null`: el del material). */
@@ -851,7 +851,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     // Lo oculto (amarres internos) sostiene y da su caja, pero no se dibuja.
     for (const malla of escenografia.piezas(c.solidos)) grupo.add(malla);
     modulo.add(grupo);
-    return { huella, ref: ref.clone(), base: new THREE.Vector3(), grupo, instancias, caja: null, conRotulo: c.solidos.some((x) => x.rotulo !== undefined) };
+    return { huella, ref: ref.clone(), base: new THREE.Vector3(), grupo, instancias, caja: null, conRotulo: c.solidos.some((x) => x.rotulo !== undefined || x.motivo?.estilo === "neon") };
   }
 
   function quitarNodo(dibujado: NodoDibujado) {

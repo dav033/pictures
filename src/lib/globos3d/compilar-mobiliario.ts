@@ -77,9 +77,12 @@ export function mobiliarioLeido(p: FondoLeido, medida: MedidaLeida, notas: strin
   const n = pared || flota ? 1 : cuantos;
   const t = medidasDe(mueble, medida, n > 1, notas);
   const tinta = tintaLeida(p, notas);
-  // En el nombre de acrílico las letras son su primer color: si la foto dice el color del texto aparte, manda.
-  const colores = p.colores.slice(0, mueble.coloresDe.length).map((c, i) => (i === 0 && mueble.conTexto && tinta ? tinta : c.hex));
-  const acabado = (mueble.conTexto && p.acabadoTexto ? ACABADO[p.acabadoTexto] : p.colores[0] ? ACABADO[p.colores[0].acabado] : undefined);
+  // El color del texto aparte (colorTexto) es el de las letras del nombre de acrílico (su color 1) o la luz de un neón (su color 2); si la foto
+  // no lo dice, los colores leídos. El material del nombre de acrílico sale del acabado de las letras con la misma regla que el de un panel.
+  const iTinta = mueble.acabadosPropios ? 0 : mueble.conTexto ? 1 : -1;
+  const colores = p.colores.slice(0, mueble.coloresDe.length).map((c, i) => (i === iTinta && tinta ? tinta : c.hex));
+  const acabado = mueble.acabadosPropios ? (acabadoRotuloLeido(p.acabadoTexto ?? p.colores[0]?.acabado) === "acrilico_espejo" ? "metal" as const : "mate" as const) : p.colores[0] ? ACABADO[p.colores[0].acabado] : undefined;
+  if (p.acabadoTexto && mueble.conTexto && !mueble.acabadosPropios) notas.push(`${mueble.nombre}: el acabado del texto (${p.acabadoTexto}) no aplica a un letrero de luz: lo ignoré.`);
   const sinRotulo = piezaDeMueble(mueble, opcionesDeMueble(mueble, { ...t, colores, ...(acabado ? { acabado } : {}), ...(mueble.conTexto && p.texto ? { texto: p.texto.slice(0, MAX_TEXTO_MUEBLE) } : {}) }));
   // Un marco con un nombre: el texto leído es su rótulo, con el color y el acabado que se leyeron en las letras (sin color, el que se lee sobre la tela).
   const pieza = mueble.rotulable && p.texto && sinRotulo.tipo === "escenografia" ? conTextoPieza(sinRotulo, { texto: p.texto, acabado: acabadoRotuloLeido(p.acabadoTexto), ...(tinta ? { color: tinta } : {}) }) : sinRotulo;

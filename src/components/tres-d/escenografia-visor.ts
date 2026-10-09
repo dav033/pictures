@@ -126,8 +126,9 @@ export function crearEscenografiaVisor(entorno: () => THREE.Texture, opcionesRot
     marcoDeSolido(s).decompose(malla.position, malla.quaternion, malla.scale);
     const letras = rotulos.malla(s);
     if (letras) malla.add(letras);
-    // Lo impreso (calavera, «Happy Halloween», lunares…) de la utilería de fiesta, como calcomanía en su cara.
-    const calco = calcoMotivo(s);
+    // Lo impreso (calavera, «Happy Halloween», lunares…) de la utilería de fiesta, como calcomanía en su cara. El neón se dibuja con la letra de
+    // los rótulos: hasta que llegue (el visor rehace la pieza entonces) no hay calcomanía, y no se dibuja con otra letra.
+    const calco = s.motivo?.estilo === "neon" && !rotulos.letraLista() ? null : calcoMotivo(s);
     if (calco) malla.add(calco);
     if (s.forma === "caja" && s.acabado === "lentejuelas") {
       const eje = ejePanel(s.tamano);

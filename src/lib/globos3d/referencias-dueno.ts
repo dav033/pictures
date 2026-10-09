@@ -32,7 +32,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
         { tipo: "columna_organica", forma: "recta", x: 0.97, yBase: 0.98, yArriba: 0.45, ancho: 0.16, grosor: 0.16, tamanos: { "R-18": 30, "R-12": 55, "R-9": 15 }, racimos: 0.4,
           colores: [c("verde esmeralda", "#1f4d3a", 40), DORADO(30), c("marfil", "#efe8c8", 30)], nota: "cortada por el borde de la foto" },
         { tipo: "fondo", id: "cortina_luces", x: 0.5, yBase: 0.98, ancho: 0.86, alto: 0.88, colores: [c("blanco", "#f4f2ee", 100)] },
-        { tipo: "fondo", id: "letrero", x: 0.5, yBase: 0.42, ancho: 0.22, alto: 0.1, texto: "Asher", colores: [c("madera clara", "#e8e2d4", 70), c("verde", "#2f4a35", 30)] },
+        { tipo: "fondo", id: "letrero", x: 0.5, yBase: 0.42, ancho: 0.22, alto: 0.1, texto: "Asher", colorTexto: "#2f4a35", colores: [c("madera clara", "#e8e2d4", 100)] },
         { tipo: "fondo", id: "mesa_mantel", x: 0.52, yBase: 0.98, ancho: 0.9, alto: 0.3, colores: [c("blanco", "#f7f6f2", 100)] },
         otro("aros con helechos y dinosaurios dorados"), otro("troncos, musgo, torta y dinosaurios dorados sobre la mesa"),
       ],
@@ -177,7 +177,7 @@ export const REFERENCIAS_DUENO: readonly ReferenciaDueno[] = [
       piezas: [
         { tipo: "guirnalda_organica", puntos: [p(0.03, 0.47, 0.22), p(0.12, 0.32, 0.25), p(0.22, 0.2, 0.22), p(0.36, 0.11, 0.2), p(0.5, 0.05, 0.17), p(0.6, 0.02, 0.14)], tamanos: { "R-36": 8, "R-24": 10, "R-18": 22, "R-12": 35, "R-9": 15, "R-5": 10 }, racimos: 0.7,
           colores: [c("verde menta", "#cfe8dd", 45), c("blanco", "#f4f6f2", 30), c("verde esmeralda", "#1f5a4c", 25)] },
-        { tipo: "fondo", id: "letrero", x: 0.55, yBase: 0.63, ancho: 0.28, alto: 0.3, texto: "Roaring Sweetavores", colores: [c("menta", "#a9d6c9", 80), c("blanco", "#ffffff", 20)] },
+        { tipo: "fondo", id: "letrero", x: 0.55, yBase: 0.63, ancho: 0.28, alto: 0.3, texto: "Roaring Sweetavores", colorTexto: "#ffffff", colores: [c("menta", "#a9d6c9", 100)] },
         { tipo: "fondo", id: "mesa_mantel", x: 0.5, yBase: 1.13, ancho: 1, alto: 0.3, colores: [c("blanco", "#e8e4dc", 100)] },
         otro("cerca de madera"), otro("torta, postres y vasos de dinosaurios"),
       ],

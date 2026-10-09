@@ -197,11 +197,11 @@ export const TEXTO_ROTULO_ACRILICO = "Isabella";
 /**
  * Nombre de acrílico recortado, en letra cursiva con las letras unidas, de 6 mm, para ponerlo suelto delante de un aro o un
  * arco. Es un tablero invisible de `anchoCm` × `altoCm` (lo que ocupa la pieza) con el rótulo dentro: las letras llenan lo
- * que quepa. Con el material metal o brillante es espejo (dorado, plata, oro rosa); con cualquier otro, acrílico liso.
+ * que quepa. Con el material metal es espejo (dorado, plata, oro rosa); con mate, acrílico liso.
  */
 export function rotuloAcrilico(o: OpcionesDecorado): ElementoEscenografia[] {
   const { anchoCm: w, altoCm: h, principal } = o;
-  const espejo = principal.acabado === "metal" || principal.acabado === "brillante";
+  const espejo = principal.acabado === "metal";
   const texto = limpiarTexto(o.texto ?? "") || TEXTO_ROTULO_ACRILICO;
   const rotulo = { texto, color: principal.hex, acabado: espejo ? "acrilico_espejo" as const : "acrilico_mate" as const, altoCm: h, yCm: h / 2 };
   // El tablero invisible lleva el rótulo; con varias palabras y poco alto, se parte en líneas si así salen más grandes las letras.

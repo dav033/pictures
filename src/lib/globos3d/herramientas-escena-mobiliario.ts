@@ -10,7 +10,7 @@ import { muebleDe } from "./mobiliario-catalogo";
 import { puestosAlrededor, puestosEnFila, type Puesto } from "./mobiliario-disposicion";
 import { admiteRotulo, conTextoPieza, opcionesDeMueble, piezaDeEntrada, piezaDeMueble, portadorDeRotulo, type OpcionesGuardadas, type PiezaEscenografia } from "./mobiliario-pieza";
 import { ACABADOS_ROTULO, avisoDeTexto, caraDe, esAcabadoRotulo, NOMBRE_ACABADO_ROTULO, textoEnUnaLinea, type PedidoRotulo } from "./rotulos";
-import { descripcionConColores, retiroDe, type FondoCatalogo } from "./mobiliario-tipos";
+import { descripcionConColores, retiroDe, type FondoCatalogo, type MuebleCatalogo } from "./mobiliario-tipos";
 import { esAcabadoMueble, limitesDeMueble, MAX_TEXTO_MUEBLE } from "./mobiliario-pieza";
 import { armarPieza, type Pieza } from "./piezas";
 
@@ -54,6 +54,11 @@ type Pedido = z.infer<typeof MobiliarioSchema>;
 
 const r0 = (n: number) => Math.round(n);
 
+/** Un mueble con materiales propios (el nombre de acrílico: metal = espejo, mate) no acepta otro: se dice cuáles valen en vez de dibujar otra cosa. */
+function comprobarAcabadoPropio(m: MuebleCatalogo, acabado: string | undefined) {
+  if (acabado && m.acabadosPropios && !m.acabadosPropios.some(([id]) => id === acabado)) fallar(`«${m.nombre}» solo se hace en ${m.acabadosPropios.map(([id, nombre]) => `${id} (${nombre.toLowerCase()})`).join(" o ")}, no en ${acabado}.`);
+}
+
 /** Las medidas reales (cm) de una pieza armada, para decirlas tal cual quedaron. */
 function medidasReales(pieza: Pieza): { anchoCm: number; fondoCm: number; altoCm: number } {
   const { min, max } = armarPieza(pieza).caja;
@@ -74,6 +79,7 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
   const entrada = FONDOS_CATALOGO.find((f) => f.id === a.id) ?? fallar(`No hay «${a.id}» en el catálogo de mobiliario.`);
   const notas: string[] = [];
   const mueble = entrada.clase === "mueble" ? entrada : undefined;
+  if (mueble) comprobarAcabadoPropio(mueble, a.acabado);
   if (!mueble && (a.ancho_cm || a.fondo_cm || a.alto_cm || a.colores || a.acabado)) notas.push(`«${entrada.nombre}» es un fondo de foto: va con sus medidas y colores de catálogo (el mobiliario sí cambia de medida y color).`);
   if (a.texto && !mueble?.conTexto && !entrada.rotulable) notas.push(`«${entrada.nombre}» no lleva texto: lo ignoré.`);
   if (a.texto && mueble?.conTexto) { const aviso = avisoDeTexto(a.texto, mueble.lineasTexto ?? 1); if (aviso) notas.push(aviso); }
@@ -231,6 +237,7 @@ export function cambiarMobiliario(base: PiezaEscenografia, props: Props, notas: 
   const colores = lista(props, "colores");
   const acabado = typeof props.acabado === "string" ? props.acabado : undefined;
   if (acabado && !esAcabadoMueble(acabado)) fallar(`El acabado de un mueble va entre ${ACABADOS.join(", ")}, no «${acabado}».`);
+  comprobarAcabadoPropio(m, acabado);
   if (typeof props.texto === "string" && !m.conTexto && !m.rotulable) notas.push(`«${nombre}» no lleva texto: lo ignoré.`);
   if (typeof props.texto === "string" && m.conTexto) { const aviso = avisoDeTexto(props.texto, m.lineasTexto ?? 1); if (aviso) notas.push(aviso); }
   if (colores && colores.length > m.coloresDe.length) notas.push(`«${nombre}» lleva ${m.coloresDe.length} color(es) (${m.coloresDe.join(", ")}): ignoré los demás.`);

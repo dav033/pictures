@@ -96,6 +96,11 @@ export type RotulosVisor = {
    * tamaño que tendría el texto (gris al cargar, roja si falló).
    */
   malla: (s: SolidoEscenografia) => THREE.Mesh | null;
+  /**
+   * ¿Está lista la letra para dibujar texto con ella? Si aún carga, avisa (`alFuenteLista`) cuando llegue; si falló, la reintenta. Lo usa
+   * lo que dibuja texto por su cuenta con esta letra (el letrero de neón), que no se dibuja hasta que la letra esté.
+   */
+  letraLista: () => boolean;
   /** Suelta las geometrías y los materiales de este visor. */
   liberar: () => void;
 };
@@ -180,6 +185,13 @@ export function crearRotulosVisor(entorno: () => THREE.Texture, opciones: Opcion
   };
 
   return {
+    letraLista() {
+      const estado = estadoFuenteRotulos();
+      if (estado === "lista") return true;
+      if (estado === "fallo") reintentarFuenteRotulos();
+      if (estadoFuenteRotulos() !== "lista") { void cargarFuenteRotulos(); avisarCuandoEsteLista(); }
+      return false;
+    },
     malla(s) {
       const r = s.rotulo, cara = s.forma === "cilindro" ? null : caraDe(s);
       if (!r || !cara) return null;

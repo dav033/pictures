@@ -63,7 +63,7 @@ export function normalizarOpciones(m: MuebleCatalogo, o: Partial<OpcionesGuardad
   const colores = Array.from({ length: cuantos }, (_, i) => (typeof pedidos[i] === "string" && HEX.test(pedidos[i]!) ? pedidos[i]!.toLowerCase() : m.colores[i] ?? m.colores[0]!));
   return {
     anchoCm: ancho, fondoCm: fondoDe(m, ancho, acotar(o?.fondoCm, l.fondo, m.medidas.fondoCm)), altoCm: acotar(o?.altoCm, l.alto, m.medidas.altoCm), colores,
-    ...(typeof o?.acabado === "string" && esAcabadoMueble(o.acabado) ? { acabado: o.acabado } : {}),
+    ...(typeof o?.acabado === "string" && esAcabadoMueble(o.acabado) && (!m.acabadosPropios || m.acabadosPropios.some(([id]) => id === o.acabado)) ? { acabado: o.acabado } : {}),
     ...(m.conTexto && typeof o?.texto === "string" && limpiarTexto(o.texto, m.lineasTexto ?? 1) ? { texto: limpiarTexto(o.texto, m.lineasTexto ?? 1) } : {}),
   };
 }

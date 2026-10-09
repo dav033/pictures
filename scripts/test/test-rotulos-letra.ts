@@ -26,7 +26,7 @@ type Medida = { texto: string; aspecto: number; triangulos: number; ms: number }
 async function empaquetar(): Promise<string> {
   const carpeta = mkdtempSync(join(tmpdir(), "rotulos-letra-"));
   const entrada = join(carpeta, "entrada.ts");
-  writeFileSync(entrada, `export * from ${JSON.stringify(join(RAIZ, "src/components/tres-d/rotulo-visor"))};\nexport * from ${JSON.stringify(join(RAIZ, "src/components/tres-d/fuente-rotulos"))};\n`);
+  writeFileSync(entrada, `export * from ${JSON.stringify(join(RAIZ, "src/components/tres-d/rotulo-visor"))};\nexport * from ${JSON.stringify(join(RAIZ, "src/components/tres-d/fuente-rotulos"))};\nexport { crearEscenografiaVisor } from ${JSON.stringify(join(RAIZ, "src/components/tres-d/escenografia-visor"))};\nexport { armarEscenografia } from ${JSON.stringify(join(RAIZ, "src/lib/globos3d/escenografia"))};\n`);
   try {
     const r = await build({ entryPoints: [entrada], bundle: true, write: false, format: "iife", globalName: "Rot", platform: "browser", alias: { "@": join(RAIZ, "src") }, nodePaths: [join(RAIZ, "node_modules")], logLevel: "silent" });
     return r.outputFiles[0]!.text;
@@ -105,6 +105,23 @@ async function main() {
     assert.equal(aviso.antes, "BoxGeometry", "antes de que llegue la letra: una marca");
     assert.equal(aviso.avisos, 1, "el visor avisa una sola vez que la letra llegó");
     assert.notEqual(aviso.despues, "BoxGeometry", "y con la letra ya dibuja las letras");
+
+    // ---- el letrero de neón usa la misma letra: sin ella no hay texto (no uno con otra letra) y con ella, la calcomanía
+    const pagNeon = await abrir(navegador, codigo, false);
+    const neon = await pagNeon.pagina.evaluate(async () => {
+      const R = (window as unknown as { Rot: { cargarFuenteRotulos: () => Promise<boolean>; crearEscenografiaVisor: (e: () => unknown, o: object) => { piezas: (s: unknown[]) => { children: unknown[] }[] }; armarEscenografia: (e: object[]) => unknown[] } }).Rot;
+      let avisos = 0;
+      const visor = R.crearEscenografiaVisor(() => null, { alFuenteLista: () => { avisos++; } });
+      const solidos = R.armarEscenografia([{ forma: "caja", centro: { x: 0, y: 30, z: 0 }, tamano: { x: 120, y: 60, z: 1.6 }, hex: "#101014", acabado: "satinado", motivo: { dibujo: "texto", texto: "Mia 15", hex: "#ff4fa3", estilo: "neon" } }]);
+      const antes = visor.piezas(solidos)[0]!.children.length;
+      await R.cargarFuenteRotulos();
+      await new Promise((r) => setTimeout(r, 50));
+      return { antes, avisos, despues: visor.piezas(solidos)[0]!.children.length };
+    });
+    assert.equal(neon.antes, 0, "antes de que llegue la letra el neón no dibuja su texto");
+    assert.equal(neon.avisos, 1, "y el visor avisa para rehacerlo");
+    assert.equal(neon.despues, 1, "con la letra, la calcomanía del texto");
+    console.log("  ✓ el letrero de neón espera la letra de los rótulos");
 
     // ---- sin la letra: no hay letra de reemplazo
     const falla = await abrir(navegador, codigo, true);
