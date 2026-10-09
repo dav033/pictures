@@ -1,6 +1,6 @@
 import { configuracionAlmacen, crearClienteAlmacen, type ClienteAlmacen } from "@/lib/almacen/objetos-s3";
 import { getRagPool } from "@/lib/rag/db";
-import { decidir, registrarError, versionCodigo } from "@/lib/registro/servidor";
+import { avisar, decidir, registrarError, versionCodigo } from "@/lib/registro/servidor";
 import { crearLimitador, type Limitador } from "./acceso";
 import type { ResultadoAgregacion } from "./analisis";
 import { leerPasosAuditoria } from "./pasos-auditoria";
@@ -19,15 +19,24 @@ export type DependenciasRutas = {
   resumenAutomaticoActivo: () => boolean;
   limitadorRegistro: Limitador;
   limitadorCaptura: Limitador;
+  /** Tope diario de capturas por IP: el tope por minuto solo no frena el goteo sostenido. */
+  limitadorCapturaDiario: Limitador;
+  /** Los análisis con Gemini son de pago: pocos por hora. */
+  limitadorResumenGemini: Limitador;
+  avisar: (evento: string, datos: unknown) => void;
   auditar: (quien: string, que: string, resultado: unknown) => void;
   registrarFallo: (evento: string, error: unknown) => void;
 };
 
 const POR_MINUTO_REGISTRO = 120;
 const POR_MINUTO_CAPTURA = 30;
+const CAPTURAS_POR_DIA = 300;
+const RESUMENES_POR_HORA = 5;
 
 const limitadorRegistro = crearLimitador(POR_MINUTO_REGISTRO);
 const limitadorCaptura = crearLimitador(POR_MINUTO_CAPTURA);
+const limitadorCapturaDiario = crearLimitador(CAPTURAS_POR_DIA, 24 * 60 * 60 * 1000);
+const limitadorResumenGemini = crearLimitador(RESUMENES_POR_HORA, 60 * 60 * 1000);
 
 export function dependenciasReales(): DependenciasRutas {
   return {
@@ -41,6 +50,9 @@ export function dependenciasReales(): DependenciasRutas {
     resumenAutomaticoActivo: () => process.env.FEEDBACK_IA_RESUMEN_GEMINI === "1",
     limitadorRegistro,
     limitadorCaptura,
+    limitadorCapturaDiario,
+    limitadorResumenGemini,
+    avisar: (evento, datos) => avisar(evento, datos),
     auditar: (quien, que, resultado) => decidir(quien, que, resultado),
     registrarFallo: (evento, error) => registrarError(evento, error),
   };

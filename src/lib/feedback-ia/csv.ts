@@ -26,9 +26,10 @@ function celda(valor: string | number | boolean | null): string {
   return /[",\n\r]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
 }
 
-/** CSV (con BOM para que Excel respete los acentos) de las filas del listado, peor calificación primero. */
-export function aCsv(filas: readonly FilaListado[]): string {
-  const encabezado = COLUMNAS.map(([nombre]) => nombre).join(",");
-  const cuerpo = filas.map((fila) => COLUMNAS.map(([, valor]) => celda(valor(fila))).join(","));
-  return `﻿${[encabezado, ...cuerpo].join("\r\n")}\r\n`;
+/** Encabezado con BOM, para que Excel respete los acentos. */
+export const ENCABEZADO_CSV = `\uFEFF${COLUMNAS.map(([nombre]) => nombre).join(",")}\r\n`;
+
+/** Filas del listado como líneas CSV (cada una termina en CRLF); el encabezado se manda una sola vez al principio. */
+export function filasACsv(filas: readonly FilaListado[]): string {
+  return filas.map((fila) => `${COLUMNAS.map(([, valor]) => celda(valor(fila))).join(",")}\r\n`).join("");
 }

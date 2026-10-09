@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { agregarFeedback, frasesFrecuentes, type FilaParaAnalisis } from "./analisis";
+import { agregarFeedback, anonimizar, frasesFrecuentes, type FilaParaAnalisis } from "./analisis";
 
 function fila(id: number, parcial: Partial<FilaParaAnalisis>): FilaParaAnalisis {
   return { id, turnoId: `t${id}`, producto: "taller", calificacion: null, motivos: [], comentario: null, pedido: null, herramientas: [], deshecho: false, ...parcial };
@@ -78,4 +78,33 @@ test("los comentarios de turnos bien calificados no entran en las frases", () =>
 
 test("cuenta los turnos deshechos", () => {
   assert.equal(agregarFeedback([fila(1, { deshecho: true }), fila(2, {}), fila(3, { deshecho: true })]).metricas.deshechos, 2);
+});
+
+test("anonimizar quita correos y teléfonos pero deja precios y números cortos", () => {
+  assert.equal(anonimizar("escríbanme a ana.perez+boda@correo.co o al +57 300 123 4567, gracias"), "escríbanme a [correo] o al [teléfono], gracias");
+  assert.equal(anonimizar("son 3 arcos de 180.000 pesos"), "son 3 arcos de 180.000 pesos");
+  assert.equal(anonimizar("llámenme al (601) 555-1234"), "llámenme al [teléfono]");
+});
+
+test("los comentarios con correo o teléfono no llegan a las frases ni a los peores ejemplos", () => {
+  const { metricas } = agregarFeedback([
+    fila(1, { calificacion: 1, comentario: "mi correo es ana@correo.co, el arco salió torcido", pedido: "llamar al 3001234567" }),
+    fila(2, { calificacion: 2, comentario: "contacto ana@correo.co y el arco torcido otra vez" }),
+  ]);
+  assert.ok(!JSON.stringify(metricas).includes("ana@"));
+  assert.ok(!JSON.stringify(metricas).includes("3001234567"));
+  assert.ok(metricas.frases.some((f) => f.frase.includes("torcido")));
+});
+
+test("las frases se agrupan sin importar tildes ni mayúsculas", () => {
+  const frases = frasesFrecuentes(["El azúl oscuro salió mal", "AZUL oscuro otra vez"]);
+  assert.deepEqual(frases.map((f) => [f.frase, f.veces]), [["azúl oscuro", 2]]);
+});
+
+test("el análisis de decenas de miles de turnos es lineal (no cuadrático)", () => {
+  const filas = Array.from({ length: 30_000 }, (_, i) => fila(i + 1, { calificacion: (i % 10) + 1, motivos: ["colores"], herramientas: ["pintar"], comentario: `frase común número ${i % 50}` }));
+  const inicio = performance.now();
+  const resultado = agregarFeedback(filas);
+  assert.equal(resultado.totalCalificados, 30_000);
+  assert.ok(performance.now() - inicio < 3_000, "30 000 filas en menos de 3 s");
 });

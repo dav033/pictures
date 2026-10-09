@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ItemListadoFeedback } from "@/lib/feedback-ia/contrato";
 import { etiquetaDeMotivo } from "@/lib/feedback-ia/motivos";
+import { AccesoAdminFeedback } from "./AccesoAdminFeedback";
 import { AnalisisFeedbackPanel } from "./AnalisisFeedbackPanel";
 import { DetalleFeedbackIa } from "./DetalleFeedbackIa";
 import { FiltrosFeedback } from "./FiltrosFeedback";
@@ -52,6 +53,8 @@ function Fila({ item, abierta, onAlternar }: { item: ItemListadoFeedback; abiert
 export function FeedbackIaTab() {
   const panel = useFeedbackAdmin();
   const [abierta, setAbierta] = useState<number | null>(null);
+
+  if (panel.acceso !== "abierto") return <AccesoAdminFeedback acceso={panel.acceso} error={panel.error} onIngresar={panel.ingresar} />;
 
   return (
     <div>

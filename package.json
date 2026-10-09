@@ -25,6 +25,7 @@
     "lint": "eslint",
     "registros": "tsx scripts/ops/ver-registros.ts",
     "feedback:analizar": "tsx --env-file=.env.local --conditions=react-server scripts/ops/analizar-feedback-ia.ts",
+    "feedback:test-sql": "tsx --conditions=react-server scripts/test/test-feedback-ia-sql.ts",
     "feedback:test": "tsx --conditions=react-server --test src/lib/feedback-ia/*.test.ts src/lib/almacen/*.test.ts",
     "rag:stack-check": "tsx scripts/ops/stack-check.ts",
     "rag:migrate": "tsx scripts/migrate.ts",

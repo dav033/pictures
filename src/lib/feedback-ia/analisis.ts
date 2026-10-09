@@ -37,6 +37,17 @@ const PALABRAS_VACIAS = new Set([
   "cada", "otra", "otro", "otras", "otros", "solo", "sólo", "así", "asi", "ahora", "siempre", "nunca", "bien", "mal", "cosa", "cosas",
 ]);
 
+const RE_CORREO = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.\p{L}{2,}/gu;
+const RE_TELEFONO = /(?<![\w])\+?\(?\d[\d\s().-]{5,}\d(?![\w])/g;
+const DIGITOS_MINIMOS_TELEFONO = 7;
+
+/** Quita correos y teléfonos de un texto libre antes de guardarlo en métricas o de mandarlo a un modelo. */
+export function anonimizar(texto: string): string {
+  return texto
+    .replace(RE_CORREO, "[correo]")
+    .replace(RE_TELEFONO, (candidato) => (candidato.replace(/\D/g, "").length >= DIGITOS_MINIMOS_TELEFONO ? "[teléfono]" : candidato));
+}
+
 function promedioDe(notas: readonly number[]): number | null {
   if (notas.length === 0) return null;
   return Math.round((notas.reduce((suma, nota) => suma + nota, 0) / notas.length) * 100) / 100;
@@ -53,7 +64,11 @@ function agrupar(filas: readonly FilaParaAnalisis[], claves: (fila: FilaParaAnal
   const grupos = new Map<string, number[]>();
   for (const fila of filas) {
     if (fila.calificacion === null) continue;
-    for (const clave of new Set(claves(fila))) grupos.set(clave, [...(grupos.get(clave) ?? []), fila.calificacion]);
+    for (const clave of new Set(claves(fila))) {
+      const notas = grupos.get(clave);
+      if (notas) notas.push(fila.calificacion);
+      else grupos.set(clave, [fila.calificacion]);
+    }
   }
   return grupos;
 }
@@ -64,22 +79,42 @@ function palabrasDe(texto: string): string[] {
 
 const esPalabraUtil = (palabra: string) => palabra.length >= 4 && !PALABRAS_VACIAS.has(palabra);
 
-/** Palabras y pares de palabras (sin las vacías en medio) que se repiten en comentarios de turnos mal calificados (cada comentario cuenta una vez). */
+/** Clave de agrupación: minúsculas y sin tildes, para que «azúl» y «azul» cuenten como la misma palabra. */
+const sinTildes = (texto: string): string => texto.normalize("NFD").replace(/\p{M}/gu, "");
+
+/**
+ * Palabras y pares de palabras (sin las vacías en medio) que se repiten en comentarios de turnos mal calificados (cada
+ * comentario cuenta una vez). Una sola pasada con mapas: O(palabras), sin comparar frases entre sí.
+ */
 export function frasesFrecuentes(comentarios: readonly string[]): FraseFrecuente[] {
-  const veces = new Map<string, number>();
+  const veces = new Map<string, { frase: string; veces: number }>();
+  const contar = (frase: string, vistas: Set<string>) => {
+    const clave = sinTildes(frase);
+    if (vistas.has(clave)) return;
+    vistas.add(clave);
+    const previa = veces.get(clave);
+    if (previa) previa.veces += 1;
+    else veces.set(clave, { frase, veces: 1 });
+  };
   for (const comentario of comentarios) {
     const palabras = palabrasDe(comentario).filter(esPalabraUtil);
-    const candidatas = new Set<string>();
+    const vistas = new Set<string>();
     palabras.forEach((palabra, i) => {
-      candidatas.add(palabra);
+      contar(palabra, vistas);
       const siguiente = palabras[i + 1];
-      if (siguiente) candidatas.add(`${palabra} ${siguiente}`);
+      if (siguiente) contar(`${palabra} ${siguiente}`, vistas);
     });
-    for (const frase of candidatas) veces.set(frase, (veces.get(frase) ?? 0) + 1);
   }
-  const repetidas = [...veces].filter(([, n]) => n >= 2).map(([frase, n]) => ({ frase, veces: n }));
-  const sinContenidas = repetidas.filter((a) => a.frase.includes(" ") || !repetidas.some((b) => b.frase.includes(" ") && b.veces >= a.veces && b.frase.split(" ").includes(a.frase)));
-  return sinContenidas
+  const repetidas = [...veces].filter(([, dato]) => dato.veces >= 2);
+  // Una palabra suelta que casi siempre aparece dentro de un par frecuente es ruido: se queda el par.
+  const mejorParDe = new Map<string, number>();
+  for (const [clave, dato] of repetidas) {
+    if (!clave.includes(" ")) continue;
+    for (const palabra of clave.split(" ")) mejorParDe.set(palabra, Math.max(mejorParDe.get(palabra) ?? 0, dato.veces));
+  }
+  return repetidas
+    .filter(([clave, dato]) => clave.includes(" ") || (mejorParDe.get(clave) ?? 0) < dato.veces)
+    .map(([, dato]) => dato)
     .sort((a, b) => b.veces - a.veces || b.frase.split(" ").length - a.frase.split(" ").length || a.frase.localeCompare(b.frase))
     .slice(0, MAX_FRASES);
 }
@@ -95,15 +130,15 @@ function peoresEjemplos(filas: readonly FilaParaAnalisis[]): EjemploPeor[] {
       producto: fila.producto,
       calificacion: fila.calificacion,
       motivos: fila.motivos,
-      comentario: fila.comentario,
-      pedido: fila.pedido,
+      comentario: fila.comentario === null ? null : anonimizar(fila.comentario),
+      pedido: fila.pedido === null ? null : anonimizar(fila.pedido),
     }));
 }
 
 export function agregarFeedback(filas: readonly FilaParaAnalisis[]): ResultadoAgregacion {
   const notas = filas.flatMap((fila) => (fila.calificacion === null ? [] : [fila.calificacion]));
   const comentariosDeQueja = filas.flatMap((fila) =>
-    fila.comentario && (fila.calificacion === null || fila.calificacion <= NOTA_DE_QUEJA) ? [fila.comentario] : []);
+    fila.comentario && (fila.calificacion === null || fila.calificacion <= NOTA_DE_QUEJA) ? [anonimizar(fila.comentario)] : []);
   return {
     totalTurnos: filas.length,
     totalCalificados: notas.length,

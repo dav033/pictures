@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { MOTIVOS } from "@/lib/feedback-ia/motivos";
+import { exportarCompleto } from "./exportarCompleto";
 import { consultaDeFiltros, type FiltrosPanel } from "./filtros";
 
 type Props = {
@@ -15,6 +17,7 @@ const ETIQUETA = "mb-1 block text-[11px] font-medium uppercase tracking-wide tex
 
 export function FiltrosFeedback({ filtros, onCambio, onAplicar, onLimpiar, total }: Props) {
   const cambiar = <K extends keyof FiltrosPanel>(clave: K, valor: FiltrosPanel[K]) => onCambio({ ...filtros, [clave]: valor });
+  const [exportando, setExportando] = useState<number | null>(null);
   const notas = Array.from({ length: 10 }, (_, i) => String(i + 1));
 
   return (
@@ -85,7 +88,14 @@ export function FiltrosFeedback({ filtros, onCambio, onAplicar, onLimpiar, total
         <span>{total} {total === 1 ? "resultado" : "resultados"}, de la peor nota a la mejor</span>
         <span className="flex gap-3">
           <a className="ui-button-ghost underline" href={`/api/feedback-ia/admin?${consultaDeFiltros(filtros, { formato: "csv" })}`}>Exportar CSV</a>
-          <a className="ui-button-ghost underline" href={`/api/feedback-ia/admin?${consultaDeFiltros(filtros, { completo: "1" })}`}>Exportar JSON completo</a>
+          <button
+            type="button"
+            className="ui-button-ghost underline"
+            disabled={exportando !== null}
+            onClick={() => exportarCompleto(filtros, setExportando).catch(() => undefined).finally(() => setExportando(null))}
+          >
+            {exportando === null ? "Exportar NDJSON completo" : `Exportando… ${exportando} filas`}
+          </button>
         </span>
       </div>
     </form>

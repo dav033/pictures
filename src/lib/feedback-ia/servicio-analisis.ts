@@ -1,6 +1,6 @@
 import { agregarFeedback, type ResultadoAgregacion } from "./analisis";
 import type { AnalisisFeedback } from "./contrato";
-import { filasParaAnalisis, guardarAnalisis } from "./repositorio-analisis";
+import { filasParaAnalisis, guardarAnalisis, TOPE_FILAS_ANALISIS } from "./repositorio-analisis";
 import type { BaseDatos } from "./repositorio";
 import type { ResumenGemini } from "./resumen-gemini";
 
@@ -11,6 +11,7 @@ export type DependenciasAnalisis = {
   /** `null` cuando el resumen con Gemini no está disponible o no se pidió. */
   resumir: ((resultado: ResultadoAgregacion, dias: number) => Promise<ResumenGemini | null>) | null;
   ahora?: () => Date;
+  avisar?: (evento: string, datos: unknown) => void;
 };
 
 /** Resume los últimos `dias` días de feedback, lo guarda en `ai_feedback_analisis` y lo devuelve. */
@@ -20,7 +21,9 @@ export async function ejecutarAnalisis(
 ): Promise<AnalisisFeedback> {
   const hasta = (deps.ahora ?? (() => new Date()))();
   const desde = new Date(hasta.getTime() - pedido.dias * DIA_MS);
-  const resultado = agregarFeedback(await filasParaAnalisis(deps.db, desde, hasta));
+  const periodo = await filasParaAnalisis(deps.db, desde, hasta);
+  if (periodo.truncado) deps.avisar?.("feedback_ia.analisis_truncado", { tope: TOPE_FILAS_ANALISIS, dias: pedido.dias });
+  const resultado = { ...agregarFeedback(periodo.filas), totalTurnos: periodo.totalTurnos };
   const resumen = deps.resumir && resultado.totalCalificados > 0 ? await deps.resumir(resultado, pedido.dias) : null;
   return guardarAnalisis(deps.db, {
     origen: pedido.origen,

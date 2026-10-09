@@ -56,9 +56,9 @@ function Pasos({ detalle }: { detalle: DetalleFeedback }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <div>
-        <h4 className={TITULO}>Pasos y herramientas de la auditoría</h4>
+        <h4 className={TITULO}>Pasos y herramientas{detalle.pasosFuente ? ` (según ${detalle.pasosFuente === "cliente" ? "el navegador" : "la auditoría del servidor"})` : ""}</h4>
         {detalle.pasos.length === 0 ? (
-          <p className="text-xs text-texto-suave">No quedó auditoría de este turno.</p>
+          <p className="text-xs text-texto-suave">No se guardaron pasos de este turno.</p>
         ) : (
           <ol className="max-h-64 space-y-1 overflow-auto text-xs">
             {detalle.pasos.map((paso, i) => (

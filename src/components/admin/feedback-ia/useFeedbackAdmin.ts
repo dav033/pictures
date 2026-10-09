@@ -7,9 +7,18 @@ import { consultaDeFiltros, FILTROS_INICIALES, type FiltrosPanel } from "./filtr
 
 const POR_PAGINA = 25;
 
+class ErrorApi extends Error {
+  constructor(mensaje: string, readonly codigo: ErrorFeedback["codigo"] | undefined) {
+    super(mensaje);
+  }
+}
+
 async function leerJson<T>(respuesta: Response): Promise<T> {
   const cuerpo: unknown = await respuesta.json();
-  if (!respuesta.ok) throw new Error((cuerpo as ErrorFeedback).error ?? "No se pudo completar la operación.");
+  if (!respuesta.ok) {
+    const error = cuerpo as Partial<ErrorFeedback>;
+    throw new ErrorApi(error.error ?? "No se pudo completar la operación.", error.codigo);
+  }
   return cuerpo as T;
 }
 
@@ -18,8 +27,16 @@ async function pedirPagina(filtros: FiltrosPanel, desplazamiento: number): Promi
   return leerJson<RespuestaListadoFeedback>(await fetch(`/api/feedback-ia/admin?${consulta}`));
 }
 
-/** Estado del panel: filtros, página de resultados y último análisis. Toda la red del panel pasa por aquí. */
+async function pedirUltimoAnalisis(): Promise<AnalisisFeedback | null> {
+  const datos = await leerJson<{ analisis: AnalisisFeedback[] }>(await fetch("/api/feedback-ia/analisis"));
+  return datos.analisis[0] ?? null;
+}
+
+export type AccesoAdmin = "abierto" | "pedir_clave" | "no_configurado";
+
+/** Estado del panel: acceso de administrador, filtros, página de resultados y último análisis. Toda la red del panel pasa por aquí. */
 export function useFeedbackAdmin() {
+  const [acceso, setAcceso] = useState<AccesoAdmin>("abierto");
   const [filtros, setFiltros] = useState<FiltrosPanel>(FILTROS_INICIALES);
   const [items, setItems] = useState<ItemListadoFeedback[]>([]);
   const [total, setTotal] = useState(0);
@@ -29,8 +46,15 @@ export function useFeedbackAdmin() {
   const [analizando, setAnalizando] = useState(false);
 
   const aplicarPagina = useCallback((pagina: RespuestaListadoFeedback, desplazamiento: number) => {
+    setAcceso("abierto");
     setTotal(pagina.total);
     setItems((previos) => (desplazamiento === 0 ? pagina.items : [...previos, ...pagina.items]));
+  }, []);
+
+  const mostrarFallo = useCallback((causa: unknown, respaldo: string) => {
+    if (causa instanceof ErrorApi && causa.codigo === "SOLO_ADMINISTRADOR") return setAcceso("pedir_clave");
+    if (causa instanceof ErrorApi && causa.codigo === "ADMIN_NO_CONFIGURADO") return setAcceso("no_configurado");
+    setError(mensajeErrorCliente(causa, respaldo));
   }, []);
 
   const cargar = useCallback(async (aplicados: FiltrosPanel, desplazamiento: number) => {
@@ -39,22 +63,34 @@ export function useFeedbackAdmin() {
     try {
       aplicarPagina(await pedirPagina(aplicados, desplazamiento), desplazamiento);
     } catch (causa) {
-      setError(mensajeErrorCliente(causa, "No se pudo cargar el feedback."));
+      mostrarFallo(causa, "No se pudo cargar el feedback.");
     } finally {
       setCargando(false);
     }
-  }, [aplicarPagina]);
+  }, [aplicarPagina, mostrarFallo]);
 
   useEffect(() => {
     pedirPagina(FILTROS_INICIALES, 0)
       .then((pagina) => aplicarPagina(pagina, 0))
-      .catch((causa) => setError(mensajeErrorCliente(causa, "No se pudo cargar el feedback.")))
+      .catch((causa) => mostrarFallo(causa, "No se pudo cargar el feedback."))
       .finally(() => setCargando(false));
-    fetch("/api/feedback-ia/analisis")
-      .then((respuesta) => leerJson<{ analisis: AnalisisFeedback[] }>(respuesta))
-      .then((datos) => setAnalisis(datos.analisis[0] ?? null))
-      .catch(() => setAnalisis(null));
-  }, [aplicarPagina]);
+    pedirUltimoAnalisis().then(setAnalisis).catch(() => setAnalisis(null));
+  }, [aplicarPagina, mostrarFallo]);
+
+  const ingresar = useCallback(async (clave: string) => {
+    setError(null);
+    try {
+      await leerJson<{ ok: true }>(await fetch("/api/feedback-ia/admin/sesion", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ clave }),
+      }));
+      await cargar(FILTROS_INICIALES, 0);
+      setAnalisis(await pedirUltimoAnalisis().catch(() => null));
+    } catch (causa) {
+      setError(mensajeErrorCliente(causa, "No se pudo ingresar."));
+    }
+  }, [cargar]);
 
   const analizarAhora = useCallback(async (dias: number, conResumen: boolean) => {
     setAnalizando(true);
@@ -74,6 +110,8 @@ export function useFeedbackAdmin() {
   }, []);
 
   return {
+    acceso,
+    ingresar,
     filtros,
     setFiltros,
     items,

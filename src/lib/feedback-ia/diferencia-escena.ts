@@ -2,6 +2,9 @@ import type { DiferenciaEscena } from "./contrato";
 
 const MAX_ELEMENTOS = 200;
 const PROFUNDIDAD_RUTAS = 3;
+/** Los ids y rutas vienen de la escena (texto libre): se acotan para que la diferencia nunca pase el tope de la columna. */
+const MAX_TEXTO = 120;
+const corto = (texto: string): string => (texto.length > MAX_TEXTO ? `${texto.slice(0, MAX_TEXTO - 1)}…` : texto);
 
 type Objeto = Record<string, unknown>;
 
@@ -29,7 +32,7 @@ function rutasDistintas(a: unknown, b: unknown, prefijo: string, profundidad: nu
     }
     return;
   }
-  salida.push(prefijo || "(raíz)");
+  salida.push(corto(prefijo || "(raíz)"));
 }
 
 function nodosPorId(escena: Objeto): Map<string, Objeto> | null {
@@ -67,15 +70,15 @@ export function diferenciaEscenas(antes: Objeto, despues: Objeto): DiferenciaEsc
     if (!previo || iguales(previo, nodo) || modificados.length >= MAX_ELEMENTOS) continue;
     const campos: string[] = [];
     rutasDistintas(previo, nodo, "", 0, campos);
-    modificados.push({ id, campos });
+    modificados.push({ id: corto(id), campos });
   }
 
   const otros: string[] = [];
   rutasDistintas(sinNodos(antes), sinNodos(despues), "", 0, otros);
 
   return {
-    agregados: [...nodosDespues.keys()].filter((id) => !nodosAntes.has(id)).slice(0, MAX_ELEMENTOS),
-    quitados: [...nodosAntes.keys()].filter((id) => !nodosDespues.has(id)).slice(0, MAX_ELEMENTOS),
+    agregados: [...nodosDespues.keys()].filter((id) => !nodosAntes.has(id)).slice(0, MAX_ELEMENTOS).map(corto),
+    quitados: [...nodosAntes.keys()].filter((id) => !nodosDespues.has(id)).slice(0, MAX_ELEMENTOS).map(corto),
     modificados,
     otros,
   };

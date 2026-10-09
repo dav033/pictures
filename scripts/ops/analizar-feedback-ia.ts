@@ -5,11 +5,14 @@
  *
  *   npm run feedback:analizar -- [--dias 7] [--resumen]
  *
+ * También aplica la retención: borra lo que nunca se valoró en 30 días y las imágenes huérfanas.
  * `--resumen` añade un resumen de Gemini Flash (entrada y salida acotadas, menos de US$0,02). Necesita DATABASE_URL y,
  * con `--resumen`, GEMINI_API_KEY. Ejemplo de cron semanal (lunes 06:00):
  *   0 6 * * 1  cd /ruta/app && npm run feedback:analizar -- --resumen
  */
 import { getRagPool } from "@/lib/rag/db";
+import { configuracionAlmacen, crearClienteAlmacen } from "@/lib/almacen/objetos-s3";
+import { aplicarRetencion } from "@/lib/feedback-ia/retencion";
 import { ejecutarAnalisis, type DependenciasAnalisis } from "@/lib/feedback-ia/servicio-analisis";
 
 function leerOpciones(argv: string[]): { dias: number; conResumen: boolean } {
@@ -30,9 +33,12 @@ async function main(): Promise<void> {
   const resumir: DependenciasAnalisis["resumir"] = conResumen ? async (resultado, dias) => (await import("@/lib/feedback-ia/resumen-gemini")).resumirConGemini(resultado, dias) : null;
   const pool = getRagPool();
   try {
-    const analisis = await ejecutarAnalisis({ db: pool, resumir }, { dias: diasDelPeriodo, origen: "script" });
+    const analisis = await ejecutarAnalisis({ db: pool, resumir, avisar: (evento, datos) => console.warn(evento, datos) }, { dias: diasDelPeriodo, origen: "script" });
     console.log(`Análisis #${analisis.id}: ${analisis.totalCalificados} calificados de ${analisis.totalTurnos} turnos, promedio ${analisis.promedio ?? "—"}.`);
     for (const motivo of analisis.metricas.porMotivo.slice(0, 5)) console.log(`  motivo ${motivo.clave}: ${motivo.total} (promedio ${motivo.promedio ?? "—"})`);
+    const config = configuracionAlmacen();
+    const retencion = await aplicarRetencion({ db: pool, almacen: config ? crearClienteAlmacen(config) : null });
+    console.log(`Retención: ${retencion.filasBorradas} turnos sin valorar borrados, ${retencion.imagenesBorradas + retencion.huerfanasBorradas} imágenes, ${retencion.filasPendientes} pendientes.`);
     if (analisis.resumen) console.log(`\nResumen (${analisis.resumenModelo}, US$${analisis.resumenCosteUsd}):\n${analisis.resumen}`);
   } finally {
     await pool.end();

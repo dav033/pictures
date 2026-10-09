@@ -25,14 +25,26 @@ export const TOPE_ESCENA_BYTES = 400_000;
 export const TOPE_CAPTURA_BYTES = 600 * 1024;
 export const TOPE_CUERPO_FEEDBACK_BYTES = 1_000_000;
 export const LIMITE_MAXIMO_LISTADO = 100;
-export const TOPE_FILAS_EXPORTACION = 5_000;
+export const TOPE_FILAS_EXPORTACION = 20_000;
+export const LIMITE_EXPORTACION_COMPLETA = 50;
+/** Escenas guardadas por conversación (suma de antes, después): pasado esto las siguientes se descartan. */
+export const TOPE_ESCENAS_CONVERSACION_BYTES = 6_000_000;
+export const TOPE_TURNOS_CONVERSACION = 200;
 
 const IdSeguro = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, "Solo letras, números, guion y guion bajo (máx. 64).");
 
-const Escena = z.record(z.string(), z.unknown()).refine(
-  (valor) => JSON.stringify(valor).length <= TOPE_ESCENA_BYTES,
-  { message: `La escena supera ${TOPE_ESCENA_BYTES} bytes.` },
-);
+/** El tamaño (`TOPE_ESCENA_BYTES`) se mide en el manejador para responder 413 y no un 400 genérico. */
+const Escena = z.record(z.string(), z.unknown());
+
+/** Un paso de la herramienta tal como lo vio el navegador en el stream del turno (nombre, éxito, resumen corto). */
+export const PasoClienteSchema = z.object({
+  nombre: z.string().trim().min(1).max(120),
+  ok: z.boolean(),
+  resumen: z.string().trim().max(300).default(""),
+  ms: z.number().int().min(0).max(3_600_000).optional(),
+}).strict();
+
+export const MAX_PASOS_CLIENTE = 100;
 
 export const EntradaFeedbackSchema = z.object({
   turnoId: IdSeguro,
@@ -50,6 +62,11 @@ export const EntradaFeedbackSchema = z.object({
   latenciaMs: z.number().int().min(0).max(3_600_000).optional(),
   escenaAntes: Escena.optional(),
   escenaDespues: Escena.optional(),
+  /**
+   * Pasos que el navegador ya recibió en el stream del turno; el servidor no depende de su auditoría (en Vercel es /tmp).
+   * Las escenas solo se guardan si la misma petición califica, deshace o comenta: mándalas junto con eso.
+   */
+  pasos: z.array(PasoClienteSchema).max(MAX_PASOS_CLIENTE).optional(),
 }).strict();
 
 export type EntradaFeedback = z.infer<typeof EntradaFeedbackSchema>;
@@ -61,6 +78,8 @@ export type RespuestaFeedback = {
   calificacion: number | null;
   /** `true` solo la primera vez que se registra el turno. */
   creado: boolean;
+  /** `false` si mandaste escenas pero no se guardaron (turno sin calificar, deshacer ni comentario, o conversación con el tope lleno). */
+  escenasGuardadas: boolean;
   actualizadoEn: string;
 };
 
@@ -69,6 +88,8 @@ export const CamposCapturaSchema = z.object({
   turnoId: IdSeguro,
   producto: z.enum(PRODUCTOS_FEEDBACK),
   momento: z.enum(MOMENTOS_CAPTURA),
+  /** Opcional pero recomendado: permite aplicar el tope de turnos por conversación a las capturas. */
+  conversacionId: IdSeguro.optional(),
 }).strict();
 
 export type RespuestaCaptura = {
@@ -90,6 +111,9 @@ export type CodigoErrorFeedback =
   | "IMAGEN_INVALIDA"
   | "ALMACEN_NO_CONFIGURADO"
   | "ALMACEN_NO_DISPONIBLE"
+  | "ADMIN_NO_CONFIGURADO"
+  | "CLAVE_INCORRECTA"
+  | "CONVERSACION_LLENA"
   | "BASE_NO_DISPONIBLE"
   | "NO_ENCONTRADO"
   | "TURNO_AJENO";
@@ -112,7 +136,9 @@ export const FiltrosAdminSchema = z.object({
   limite: Entero(1, LIMITE_MAXIMO_LISTADO).default(50),
   desplazamiento: Entero(0, 1_000_000).default(0),
   formato: z.enum(["json", "csv"]).default("json"),
+  /** NDJSON con la fila completa (escenas y pasos): como mucho `LIMITE_EXPORTACION_COMPLETA` por petición; sigue con `cursor`. */
   completo: z.enum(["1"]).optional(),
+  cursor: Entero(0, Number.MAX_SAFE_INTEGER).optional(),
 }).strict().refine((f) => f.minimo === undefined || f.maximo === undefined || f.minimo <= f.maximo, { message: "minimo no puede superar a maximo." });
 
 export type FiltrosAdmin = z.infer<typeof FiltrosAdminSchema>;
@@ -145,6 +171,7 @@ export type RespuestaListadoFeedback = {
 export type PasoAuditado = {
   ts: string;
   tipo: string;
+  ok?: boolean;
   /** Herramienta, decisión o modelo; lo que mejor identifica el paso. */
   nombre: string;
   resumen: string;
@@ -177,6 +204,7 @@ export type DetalleFeedback = ItemListadoFeedback & {
   conversacionId: string | null;
   versionApp: string | null;
   pasos: PasoAuditado[];
+  pasosFuente: "cliente" | "servidor" | null;
   llamadasIa: LlamadaIaFeedback[];
   diferencia: DiferenciaEscena | null;
   escenaAntes: Record<string, unknown> | null;
@@ -224,6 +252,8 @@ export type AnalisisFeedback = {
   resumenModelo: string | null;
   resumenCosteUsd: number | null;
 };
+
+export const ClaveAdminSchema = z.object({ clave: z.string().min(1).max(200) }).strict();
 
 export const PedidoAnalisisSchema = z.object({
   dias: z.number().int().min(1).max(365).default(7),

@@ -1,18 +1,21 @@
 import { z } from "zod";
-import { errorFeedback, exigirAdministrador } from "./acceso";
-import { aCsv } from "./csv";
+import { adminConfigurado, claveAdminValida, cookieDeAdministrador, errorFeedback, exigirAdministrador, exigirSesionMismoOrigen, ipDe } from "./acceso";
+import { ENCABEZADO_CSV, filasACsv } from "./csv";
 import {
+  ClaveAdminSchema,
   FiltrosAdminSchema,
+  LIMITE_EXPORTACION_COMPLETA,
   MOMENTOS_CAPTURA,
   TOPE_FILAS_EXPORTACION,
   type DetalleFeedback,
+  type FiltrosAdmin,
   type ItemListadoFeedback,
   type PasoAuditado,
   type RespuestaListadoFeedback,
 } from "./contrato";
 import type { DependenciasRutas } from "./dependencias";
-import { validar } from "./entrada-http";
-import { exportarCompleto, listar, llamadasIaDeSolicitud, obtenerPorId, type FilaFeedback, type FilaListado } from "./repositorio";
+import { leerJsonValidado, validar } from "./entrada-http";
+import { idsParaExportar, listar, llamadasIaDeSolicitud, obtenerPorId, paginaParaExportar, type FilaFeedback, type FilaListado } from "./repositorio";
 
 /** Rutas de solo administrador: listado y exportación, detalle de un turno y sus imágenes. */
 
@@ -22,10 +25,61 @@ function aItem(fila: FilaListado): ItemListadoFeedback {
   return { ...fila, pedido: fila.pedido === null || fila.pedido.length <= 200 ? fila.pedido : `${fila.pedido.slice(0, 199)}…` };
 }
 
-function descarga(cuerpo: string, tipo: string, nombre: string): Response {
-  return new Response(cuerpo, {
-    headers: { "content-type": `${tipo}; charset=utf-8`, "content-disposition": `attachment; filename="${nombre}"`, "cache-control": "no-store" },
+const PAGINA_CSV = 200;
+const CODIFICADOR = new TextEncoder();
+
+/** CSV de todo el filtro, por id ascendente y en páginas: la memoria no crece con el número de filas. */
+function respuestaCsv(deps: DependenciasRutas, filtros: FiltrosAdmin, nombre: string): Response {
+  let cursor = 0;
+  let enviadas = 0;
+  let encabezadoEnviado = false;
+  const flujo = new ReadableStream<Uint8Array>({
+    async pull(controlador) {
+      try {
+        if (!encabezadoEnviado) {
+          encabezadoEnviado = true;
+          controlador.enqueue(CODIFICADOR.encode(ENCABEZADO_CSV));
+          return;
+        }
+        const filas = await paginaParaExportar(deps.db(), filtros, cursor, Math.min(PAGINA_CSV, TOPE_FILAS_EXPORTACION - enviadas));
+        if (filas.length === 0) return controlador.close();
+        cursor = filas[filas.length - 1].id;
+        enviadas += filas.length;
+        controlador.enqueue(CODIFICADOR.encode(filasACsv(filas)));
+        if (enviadas >= TOPE_FILAS_EXPORTACION) controlador.close();
+      } catch (error) {
+        deps.registrarFallo("feedback_ia.exportar_csv", error);
+        controlador.error(error);
+      }
+    },
   });
+  return new Response(flujo, { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${nombre}"`, "cache-control": "no-store" } });
+}
+
+/**
+ * NDJSON con la fila completa (escenas y pasos), como mucho 50 por petición. Cada fila se pide sola dentro del flujo, así
+ * nunca hay más de una escena en memoria. El siguiente `cursor` viene en la cabecera `x-siguiente-cursor`.
+ */
+async function respuestaNdjson(deps: DependenciasRutas, filtros: FiltrosAdmin, nombre: string): Promise<Response> {
+  const limite = Math.min(filtros.limite, LIMITE_EXPORTACION_COMPLETA);
+  const ids = await idsParaExportar(deps.db(), filtros, filtros.cursor ?? 0, limite);
+  let indice = 0;
+  const flujo = new ReadableStream<Uint8Array>({
+    async pull(controlador) {
+      try {
+        if (indice >= ids.length) return controlador.close();
+        const fila = await obtenerPorId(deps.db(), ids[indice++]);
+        if (fila) controlador.enqueue(CODIFICADOR.encode(`${JSON.stringify(fila)}
+`));
+      } catch (error) {
+        deps.registrarFallo("feedback_ia.exportar_ndjson", error);
+        controlador.error(error);
+      }
+    },
+  });
+  const cabeceras: Record<string, string> = { "content-type": "application/x-ndjson; charset=utf-8", "content-disposition": `attachment; filename="${nombre}"`, "cache-control": "no-store" };
+  if (ids.length === limite) cabeceras["x-siguiente-cursor"] = String(ids[ids.length - 1]);
+  return new Response(flujo, { headers: cabeceras });
 }
 
 export async function atenderListado(request: Request, deps: DependenciasRutas): Promise<Response> {
@@ -37,14 +91,8 @@ export async function atenderListado(request: Request, deps: DependenciasRutas):
 
   try {
     const hoy = new Date().toISOString().slice(0, 10);
-    if (f.formato === "csv") {
-      const { items } = await listar(deps.db(), f, TOPE_FILAS_EXPORTACION, 0);
-      return descarga(aCsv(items), "text/csv", `feedback-ia-${hoy}.csv`);
-    }
-    if (f.completo) {
-      const filas = await exportarCompleto(deps.db(), f, TOPE_FILAS_EXPORTACION);
-      return descarga(JSON.stringify(filas, null, 2), "application/json", `feedback-ia-${hoy}.json`);
-    }
+    if (f.formato === "csv") return respuestaCsv(deps, f, `feedback-ia-${hoy}.csv`);
+    if (f.completo) return await respuestaNdjson(deps, f, `feedback-ia-${hoy}.ndjson`);
     const { total, items } = await listar(deps.db(), f, f.limite, f.desplazamiento);
     const cuerpo: RespuestaListadoFeedback = { total, limite: f.limite, desplazamiento: f.desplazamiento, items: items.map(aItem) };
     return Response.json(cuerpo, { headers: { "cache-control": "no-store" } });
@@ -52,6 +100,32 @@ export async function atenderListado(request: Request, deps: DependenciasRutas):
     deps.registrarFallo("feedback_ia.listado", error);
     return errorFeedback("BASE_NO_DISPONIBLE", "No se pudo leer el feedback.", 503);
   }
+}
+
+const LIMITE_INTENTOS_CLAVE_POR_MINUTO = 10;
+const intentosPorIp = new Map<string, number[]>();
+
+function demasiadosIntentos(ip: string): boolean {
+  const ahora = Date.now();
+  const recientes = (intentosPorIp.get(ip) ?? []).filter((marca) => ahora - marca < 60_000);
+  recientes.push(ahora);
+  intentosPorIp.set(ip, recientes);
+  if (intentosPorIp.size > 1_000) intentosPorIp.clear();
+  return recientes.length > LIMITE_INTENTOS_CLAVE_POR_MINUTO;
+}
+
+/** Entrega la cookie de administrador a quien manda `ADMIN_PASSWORD` (sin ella configurada, nunca). Sin auditar el cuerpo: lleva la clave. */
+export async function atenderSesionAdmin(request: Request): Promise<Response> {
+  const acceso = exigirSesionMismoOrigen(request);
+  if ("respuesta" in acceso) return acceso.respuesta;
+  if (!adminConfigurado()) return errorFeedback("ADMIN_NO_CONFIGURADO", "El acceso de administrador no está configurado.", 403);
+  if (demasiadosIntentos(ipDe(request))) return errorFeedback("DEMASIADAS_PETICIONES", "Demasiados intentos; espera un minuto.", 429);
+  const leido = await leerJsonValidado(request, ClaveAdminSchema, 1_000);
+  if ("respuesta" in leido) return leido.respuesta;
+  if (!claveAdminValida(leido.valor.clave)) return errorFeedback("CLAVE_INCORRECTA", "Clave incorrecta.", 401);
+  const respuesta = Response.json({ ok: true });
+  respuesta.headers.append("set-cookie", cookieDeAdministrador());
+  return respuesta;
 }
 
 function urlImagen(id: number, momento: (typeof MOMENTOS_CAPTURA)[number], clave: string | null): string | null {
@@ -84,6 +158,7 @@ async function detalleDe(deps: DependenciasRutas, fila: FilaFeedback): Promise<D
     conversacionId: fila.conversacionId,
     versionApp: fila.versionApp,
     pasos,
+    pasosFuente: fila.pasosFuente,
     llamadasIa,
     diferencia: fila.diferencia,
     escenaAntes: fila.escenaAntes,

@@ -2,7 +2,7 @@ import type { AnalisisFeedback, MetricasAnalisis, ProductoFeedback } from "./con
 import type { FilaParaAnalisis } from "./analisis";
 import type { BaseDatos } from "./repositorio";
 
-const TOPE_FILAS_ANALISIS = 20_000;
+export const TOPE_FILAS_ANALISIS = 20_000;
 
 type FilaTurnoSql = {
   id: string;
@@ -16,23 +16,41 @@ type FilaTurnoSql = {
   deshecho: boolean;
 };
 
-export async function filasParaAnalisis(db: BaseDatos, desde: Date, hasta: Date): Promise<FilaParaAnalisis[]> {
-  const { rows } = await db.query<FilaTurnoSql>(
-    `SELECT id, turno_id, producto, calificacion, motivos, comentario, pedido, herramientas, deshecho
-     FROM ai_feedback WHERE creado_en >= $1 AND creado_en < $2 ORDER BY id DESC LIMIT $3`,
-    [desde, hasta, TOPE_FILAS_ANALISIS],
-  );
-  return rows.map((fila) => ({
-    id: Number(fila.id),
-    turnoId: fila.turno_id,
-    producto: fila.producto,
-    calificacion: fila.calificacion,
-    motivos: fila.motivos,
-    comentario: fila.comentario,
-    pedido: fila.pedido,
-    herramientas: fila.herramientas,
-    deshecho: fila.deshecho,
-  }));
+export type DatosDelPeriodo = {
+  /** Turnos valorados (calificados o deshechos) cuya última actualización cae en el periodo. */
+  filas: FilaParaAnalisis[];
+  /** Turnos registrados en el periodo, con o sin valorar. */
+  totalTurnos: number;
+  /** `true` si había más filas que `TOPE_FILAS_ANALISIS`: el análisis usa las más recientes. */
+  truncado: boolean;
+};
+
+/** Se filtra por cuándo se valoró (`actualizado_en`), y lo no valorado se excluye ANTES del límite para que no lo ocupe. */
+export async function filasParaAnalisis(db: BaseDatos, desde: Date, hasta: Date): Promise<DatosDelPeriodo> {
+  const [valoradas, registrados] = await Promise.all([
+    db.query<FilaTurnoSql>(
+      `SELECT id, turno_id, producto, calificacion, motivos, comentario, pedido, herramientas, deshecho
+       FROM ai_feedback WHERE (calificacion IS NOT NULL OR deshecho) AND actualizado_en >= $1 AND actualizado_en < $2
+       ORDER BY id DESC LIMIT $3`,
+      [desde, hasta, TOPE_FILAS_ANALISIS + 1],
+    ),
+    db.query<{ total: string }>("SELECT count(*) AS total FROM ai_feedback WHERE creado_en >= $1 AND creado_en < $2", [desde, hasta]),
+  ]);
+  return {
+    filas: valoradas.rows.slice(0, TOPE_FILAS_ANALISIS).map((fila) => ({
+      id: Number(fila.id),
+      turnoId: fila.turno_id,
+      producto: fila.producto,
+      calificacion: fila.calificacion,
+      motivos: fila.motivos,
+      comentario: fila.comentario,
+      pedido: fila.pedido,
+      herramientas: fila.herramientas,
+      deshecho: fila.deshecho,
+    })),
+    totalTurnos: Number(registrados.rows[0]?.total ?? 0),
+    truncado: valoradas.rows.length > TOPE_FILAS_ANALISIS,
+  };
 }
 
 type FilaAnalisisSql = {
