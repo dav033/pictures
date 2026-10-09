@@ -20,6 +20,7 @@ import {
   type PeticionLector,
   type ResumenConversacion,
 } from "./registros/lector";
+import { entradasDeVercel, lineasPropias } from "./lineas-vercel";
 
 const ORIGENES = ["local", "vps", "vercel", "python-vps", "python-local"] as const;
 type Origen = (typeof ORIGENES)[number];
@@ -583,12 +584,6 @@ function formatoPython(linea: string): string {
   return `${hora(texto(objeto.ts))} ${texto(objeto.nivel).toUpperCase().padEnd(5)} ${texto(objeto.evento)}${correlacion ? ` [${correlacion}]` : ""} ${resumen}`;
 }
 
-function mensajeVercel(objeto: Record<string, unknown>): string {
-  for (const clave of ["message", "text", "msg", "log"]) if (typeof objeto[clave] === "string") return objeto[clave] as string;
-  if (esObjeto(objeto.payload) && typeof objeto.payload.text === "string") return objeto.payload.text;
-  return "";
-}
-
 async function verVercel(opciones: Opciones): Promise<void> {
   const desde = opciones.desde ?? "1h";
   const argumentos = ["logs", "--project", PROYECTO_VERCEL, "--since", desde, "--limit", String(Math.max(opciones.ultimos ?? 200, 100)), "--json", "--non-interactive"];
@@ -602,11 +597,9 @@ async function verVercel(opciones: Opciones): Promise<void> {
   if (resultado.codigo !== 0) fallar(`vercel logs falló (${resultado.codigo}): ${resultado.stderr.trim()}`);
   const filtros = filtrosDe({ ...opciones, buscar: undefined }, desde);
   let impresas = 0;
-  for (const cruda of resultado.stdout.split("\n").filter((linea) => linea.trim())) {
-    const objeto = parsear(cruda);
-    if (!objeto) continue;
-    const mensaje = mensajeVercel(objeto);
-    const nuestras = mensaje.split("\n").filter((linea) => linea.trim().startsWith("{\"ts\""));
+  for (const { cruda, objeto, mensajes } of entradasDeVercel(resultado.stdout)) {
+    // Las líneas del servidor viajan en `message` o en el arreglo `logs[]` de la entrada: se leen las dos.
+    const nuestras = lineasPropias(mensajes);
     if (nuestras.length) {
       for (const linea of nuestras) {
         if (!coincideLinea(linea, filtros)) continue;
@@ -614,7 +607,7 @@ async function verVercel(opciones: Opciones): Promise<void> {
         impresas += 1;
       }
     } else if (!opciones.evento && !opciones.solicitud && !opciones.conversacion) {
-      console.log(opciones.json ? cruda : `${texto(objeto.timestamp) || texto(objeto.date) || ""} ${texto(objeto.level)} ${texto(objeto.requestPath) || texto(objeto.path)} ${corto(mensaje, 300)}`.trim());
+      console.log(opciones.json ? cruda : `${texto(objeto.timestamp) || texto(objeto.date) || ""} ${texto(objeto.level)} ${texto(objeto.requestPath) || texto(objeto.path)} ${corto(mensajes.join(" | "), 300)}`.trim());
       impresas += 1;
     }
   }
