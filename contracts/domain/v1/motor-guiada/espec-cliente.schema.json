@@ -1,0 +1,303 @@
+{
+  "$id": "espec-cliente.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "espec-cliente.v1"
+    },
+    "origen": {
+      "type": "object",
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "enum": [
+            "propuesta",
+            "idea",
+            "idea_sumada",
+            "edicion"
+          ]
+        },
+        "ideaIds": {
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          }
+        }
+      },
+      "required": [
+        "tipo"
+      ],
+      "additionalProperties": false
+    },
+    "piezas": {
+      "minItems": 1,
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^EST_\\d{2}_[A-Z_]+$"
+          },
+          "oficial": {
+            "type": "string",
+            "enum": [
+              "arco",
+              "arco_asimetrico",
+              "arco_no_denso",
+              "semiarco",
+              "semiarco_asimetrico",
+              "columna",
+              "columna_asimetrica",
+              "columna_no_densa",
+              "pared_densa",
+              "pared_no_densa",
+              "pared_organica",
+              "guirnalda",
+              "centro_mesa",
+              "bouquet",
+              "figura",
+              "aro_circular",
+              "techo_globos",
+              "racimo_pared"
+            ]
+          },
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "lugar": {
+            "type": "string",
+            "enum": [
+              "centro",
+              "izquierda",
+              "derecha",
+              "fondo",
+              "techo",
+              "mesa"
+            ]
+          },
+          "medidas": {
+            "type": "object",
+            "properties": {
+              "anchoM": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100
+              },
+              "altoM": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100
+              },
+              "largoM": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100
+              },
+              "grosorM": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100
+              }
+            },
+            "additionalProperties": false
+          },
+          "colores": {
+            "minItems": 1,
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "codigo": {
+                  "type": "string",
+                  "pattern": "^\\d{3}$"
+                },
+                "nombre": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "peso": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "codigo",
+                "nombre",
+                "peso"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "tamanos": {
+            "type": "string",
+            "enum": [
+              "clasica",
+              "organica_fina",
+              "organica_gruesa",
+              "solo_grandes"
+            ]
+          },
+          "densidad": {
+            "type": "string",
+            "enum": [
+              "sencilla",
+              "media",
+              "lujosa"
+            ]
+          },
+          "forma": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "flores": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "cantidad": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 24
+                  },
+                  "petalos": {
+                    "type": "integer",
+                    "minimum": 3,
+                    "maximum": 6
+                  },
+                  "codigo": {
+                    "type": "string",
+                    "pattern": "^\\d{3}$"
+                  },
+                  "centro": {
+                    "type": "string",
+                    "pattern": "^\\d{3}$"
+                  }
+                },
+                "required": [
+                  "cantidad",
+                  "petalos",
+                  "codigo"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unidades": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          },
+          "remate": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "formatoId": {
+                    "type": "string",
+                    "enum": [
+                      "R-5",
+                      "R-9",
+                      "R-12",
+                      "R-18",
+                      "R-24",
+                      "R-36"
+                    ]
+                  },
+                  "codigo": {
+                    "type": "string",
+                    "pattern": "^\\d{3}$"
+                  }
+                },
+                "required": [
+                  "formatoId",
+                  "codigo"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "declarada": {
+            "type": "object",
+            "properties": {
+              "materiales": {
+                "minItems": 1,
+                "maxItems": 64,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "formatoId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 16
+                    },
+                    "codigo": {
+                      "type": "string",
+                      "pattern": "^\\d{3}$"
+                    },
+                    "cantidad": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 100000
+                    }
+                  },
+                  "required": [
+                    "formatoId",
+                    "codigo",
+                    "cantidad"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "motivo": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "required": [
+              "materiales",
+              "motivo"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "oficial",
+          "nombre",
+          "lugar",
+          "medidas",
+          "colores",
+          "tamanos"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "version",
+    "origen",
+    "piezas"
+  ],
+  "additionalProperties": false
+}

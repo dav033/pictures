@@ -1,0 +1,160 @@
+{
+ "caso": "idea-deco-real-31-arco-futbol-balones-gigantes",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "3008a7ea9a2ff4041c760e00641fa9c3c4d4b7d3de1602f261c65ef7468e185c",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_SEMIARCO": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "005",
+     "cantidad": 19
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "031",
+     "cantidad": 50
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "080",
+     "cantidad": 38
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "005",
+     "cantidad": 12
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "031",
+     "cantidad": 11
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "080",
+     "cantidad": 11
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 16
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "031",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "080",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "005",
+     "cantidad": 9
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "080",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "005",
+     "cantidad": 3
+    }
+   ],
+   "unidades": 185,
+   "caja": [
+    -125,
+    0,
+    -197,
+    125,
+    290,
+    -123
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "005",
+    "cantidad": 19
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "031",
+    "cantidad": 50
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "080",
+    "cantidad": 38
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "005",
+    "cantidad": 12
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "031",
+    "cantidad": 11
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "080",
+    "cantidad": 11
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 16
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "031",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "080",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "005",
+    "cantidad": 9
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "080",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "005",
+    "cantidad": 3
+   }
+  ],
+  "unidades": 185
+ },
+ "caja": [
+  -125,
+  0,
+  -197,
+  125,
+  290,
+  -123
+ ],
+ "referenciaPython": {
+  "globos": 75
+ }
+}

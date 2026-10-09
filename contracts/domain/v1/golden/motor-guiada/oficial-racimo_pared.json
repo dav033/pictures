@@ -1,0 +1,67 @@
+{
+ "caso": "oficial-racimo_pared",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "cd19d9fc36eb4f69d80b01aaae57a8b4d61065e23b5ee53d7849ba9b00dc0823",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_RACIMO_PARED": {
+   "lineas": [
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 3
+    }
+   ],
+   "unidades": 9,
+   "caja": [
+    -38,
+    120,
+    -250,
+    38,
+    196,
+    -200
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 3
+   }
+  ],
+  "unidades": 9
+ },
+ "caja": [
+  -38,
+  120,
+  -250,
+  38,
+  196,
+  -200
+ ]
+}

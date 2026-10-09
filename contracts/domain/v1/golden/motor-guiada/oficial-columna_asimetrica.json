@@ -1,0 +1,147 @@
+{
+ "caso": "oficial-columna_asimetrica",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "cece89616972eaf440d11078598e2142b34556059694812ee5ceeaaacde5bb60",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_COLUMNA_ASIMETRICA": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "005",
+     "cantidad": 15
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "040",
+     "cantidad": 22
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "970",
+     "cantidad": 12
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "005",
+     "cantidad": 8
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "040",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 9
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "005",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "040",
+     "cantidad": 1
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "970",
+     "cantidad": 1
+    }
+   ],
+   "unidades": 82,
+   "caja": [
+    -41,
+    0,
+    -188,
+    41,
+    174,
+    -132
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "005",
+    "cantidad": 15
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "040",
+    "cantidad": 22
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "970",
+    "cantidad": 12
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "005",
+    "cantidad": 8
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "040",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 9
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "005",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "040",
+    "cantidad": 1
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "970",
+    "cantidad": 1
+   }
+  ],
+  "unidades": 82
+ },
+ "caja": [
+  -41,
+  0,
+  -188,
+  41,
+  174,
+  -132
+ ]
+}

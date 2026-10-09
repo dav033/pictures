@@ -1,0 +1,77 @@
+{
+ "caso": "oficial-pared_densa",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.0.0"
+ },
+ "especHash": "a48a1fc22ee3febe019187c3aed98df85d47ec1c4b807ff579dc62e055aed958",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_PARED_DENSA": {
+   "lineas": [
+    {
+     "formatoId": "LOL-12",
+     "codigo": "005",
+     "cantidad": 16
+    },
+    {
+     "formatoId": "LOL-12",
+     "codigo": "040",
+     "cantidad": 37
+    },
+    {
+     "formatoId": "LOL-12",
+     "codigo": "970",
+     "cantidad": 28
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "040",
+     "cantidad": 100
+    }
+   ],
+   "unidades": 181,
+   "caja": [
+    -123,
+    0,
+    -250,
+    123,
+    246,
+    -225
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "LOL-12",
+    "codigo": "005",
+    "cantidad": 16
+   },
+   {
+    "formatoId": "LOL-12",
+    "codigo": "040",
+    "cantidad": 37
+   },
+   {
+    "formatoId": "LOL-12",
+    "codigo": "970",
+    "cantidad": 28
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "040",
+    "cantidad": 100
+   }
+  ],
+  "unidades": 181
+ },
+ "caja": [
+  -123,
+  0,
+  -250,
+  123,
+  246,
+  -225
+ ]
+}

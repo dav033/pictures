@@ -13,6 +13,8 @@ import { FLUX_COLOR_NAMES_EN } from "../../src/lib/ia/kagutsuchi/caption-flux";
 import { HEX_COLORES_V2, PALETA_COLORES_V2 } from "../../src/lib/rag/taxonomy/v2";
 import { ACABADO_EN } from "../../src/lib/ia/uzume/mezcla-color-escena";
 import { ListaMaterialesRequestSchema, ListaMaterialesResultadoSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1";
+import { EspecClienteV1Schema } from "../../src/lib/globos3d/motor/espec-cliente-v1";
+import { ResultadoMotorV1Schema } from "../../src/lib/globos3d/motor/resultado-motor-v1";
 
 const outputDirectory = path.join(process.cwd(), "contracts", "domain", "v1");
 const checkOnly = process.argv.includes("--check");
@@ -64,12 +66,17 @@ const filenames: Record<string, string> = {
   "backend-selection.v1": "backend-selection.schema.json",
   "lista-materiales.v1": "lista-materiales-request.schema.json",
   "lista-materiales-result.v1": "lista-materiales-result.schema.json",
+  // En una subcarpeta a propósito: services/ai-api/scripts/generate_models.py toma TODOS los *.schema.json de la raíz y
+  // exige 45; estos dos los lee TypeScript, no Python.
+  "espec-cliente.v1": "motor-guiada/espec-cliente.schema.json",
+  "resultado-motor.v1": "motor-guiada/resultado-motor.schema.json",
 };
 
 const schemas: Record<string, { id: string; schema: z.ZodType }> = Object.fromEntries(
   Object.entries(DomainContractSchemas).map(([id, schema]) => [filenames[id] ?? `${id}.schema.json`, { id, schema }]),
 );
-for (const [id, schema] of [["lista-materiales.v1", ListaMaterialesRequestSchema], ["lista-materiales-result.v1", ListaMaterialesResultadoSchema]] as const) {
+// Los contratos del motor 3D de la vista guiada (src/lib/globos3d/motor): los lee TypeScript, no Python; se guardan aquí para que `contracts:check` los vigile.
+for (const [id, schema] of [["lista-materiales.v1", ListaMaterialesRequestSchema], ["lista-materiales-result.v1", ListaMaterialesResultadoSchema], ["espec-cliente.v1", EspecClienteV1Schema], ["resultado-motor.v1", ResultadoMotorV1Schema]] as const) {
   schemas[filenames[id]!] = { id, schema };
 }
 
@@ -151,6 +158,8 @@ async function main(): Promise<void> {
     } else if (!alDia) {
       // Solo se escribe lo que cambió: reescribir un archivo igual cambia su fin
       // de línea (CRLF del checkout → LF) y git lo da por modificado.
+      await mkdir(path.dirname(target), { recursive: true });
+      await mkdir(path.dirname(target), { recursive: true });
       await writeFile(target, expected, "utf8");
     }
   }
