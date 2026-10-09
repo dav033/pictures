@@ -10,7 +10,7 @@ import { resumenDeRefinado, type RondaHecha } from "@/lib/globos3d/refinar-foto-
 import { BOTON, INACTIVO } from "./PanelFlor";
 import { BotonFotoIA, MiniaturaFotoIA } from "./ControlFotoIA";
 import { useFotoAdjunta, type FotoAdjuntaEstado } from "./useFotoAdjunta";
-import { useRefinadoFoto, type ProgresoRefinado } from "./useRefinadoFoto";
+import { RONDAS_AUTOMATICAS, useRefinadoFoto, type ProgresoRefinado } from "./useRefinadoFoto";
 
 type Accion = { herramienta: string; resumen: string; consulta: boolean };
 type Turno = TurnoIA;
@@ -138,7 +138,7 @@ export function AsistenteEscena({ escena, onEscena, compacta = false, seleccion 
       setVueltas((v) => v + 1);
       // La escena se armó desde la foto: la compara con ella (hasta 2 rondas) mientras el usuario ve la primera versión.
       const comparable = foto ? datosDeRefinado((datos as { foto?: unknown }).foto) : null;
-      if (foto && comparable) void refinado.iniciar({ escena: datos.escena, foto, lectura: comparable.lectura, encuadre: comparable.encuadre });
+      if (foto && comparable && RONDAS_AUTOMATICAS > 0) void refinado.iniciar({ escena: datos.escena, foto, lectura: comparable.lectura, encuadre: comparable.encuadre });
     } catch {
       setError("No pude hablar con la IA ahora. Revisa la conexión y vuelve a intentarlo.");
       setVueltas((v) => v + 1);

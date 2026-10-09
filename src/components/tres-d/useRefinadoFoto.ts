@@ -6,10 +6,11 @@ import { pedirRondaHttp, refinarConFoto, type EntradaRefinado, type ResultadoRef
 import { MAX_RONDAS_REFINAR } from "@/lib/globos3d/refinado-ronda";
 
 /**
- * Rondas automáticas tras armar desde una foto. Una sola: en la evaluación (07, 09, 12, 13) la segunda ronda no
- * mejoró en promedio y en la 09 empeoró la silueta; la ruta admite hasta MAX_RONDAS_REFINAR.
+ * Rondas automáticas tras armar desde una foto: APAGADAS (0) hasta tener un criterio de aceptación por ronda. En la
+ * evaluación (07, 09, 12, 13) no mejoraron en promedio, y en la prueba real con la 07 la ronda tapó el «LOVE» detrás
+ * de la guirnalda, lo pasó a un foil que se ve negro y achicó la silueta. La ruta admite hasta MAX_RONDAS_REFINAR.
  */
-const RONDAS_AUTOMATICAS = 1;
+export const RONDAS_AUTOMATICAS: number = 0;
 
 /**
  * El refinado contra la foto de la barra «Pídele a la IA» (REQ-001 paso 9): corre `refinarConFoto` con la captura del
