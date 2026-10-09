@@ -81,7 +81,7 @@ prueba("un tablero leído «transparente» se queda de acrílico transparente (n
 
 prueba("un nombre de acrílico con una guirnalda que le pasa por detrás va delante de los globos que se le cruzan", () => {
   const ROSA = { nombre: "rosado", hex: "#f4b6c8", peso: 100, acabado: "mate" as const };
-  const rotulo = { tipo: "fondo" as const, id: "rotulo_acrilico", x: 0.5, yBase: 0.32, ancho: 0.22, alto: 0.08, texto: "Isabella", colorTexto: "dorado", acabadoTexto: "cromado", colores: [{ nombre: "dorado", hex: "#d6b45a", peso: 100, acabado: "cromado" as const }] };
+  const rotulo = { tipo: "fondo" as const, id: "rotulo_acrilico", x: 0.5, yBase: 0.32, ancho: 0.22, alto: 0.08, texto: "Isabella", colorTexto: "dorado", acabadoTexto: "cromado" as const, colores: [{ nombre: "dorado", hex: "#d6b45a", peso: 100, acabado: "cromado" as const }] };
   const guirnalda = { tipo: "guirnalda_organica" as const, puntos: [{ x: 0.25, y: 0.28, grosor: 0.14 }, { x: 0.5, y: 0.27, grosor: 0.14 }, { x: 0.75, y: 0.28, grosor: 0.14 }], tamanos: {}, racimos: 0.6, colores: [ROSA] };
   const { escena, notas } = compilarLectura({ ...base, piezas: [rotulo, guirnalda] });
   const armada = armarEscena(escena);

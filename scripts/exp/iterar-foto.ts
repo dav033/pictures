@@ -56,6 +56,7 @@ async function main() {
       writeFileSync(path.join(salida, "detecciones.json"), JSON.stringify(deteccion.globos));
       writeFileSync(path.join(salida, "fondos.json"), JSON.stringify(deteccion.fondos));
       console.log(`detección: ${deteccion.globos.length} globos y ${deteccion.fondos.length} fondos (${deteccion.fallidos} trozos fallidos), ${deteccion.costeEstimadoUsd} USD`);
+      console.log(`racimos: ${deteccion.racimos.revisadas} cajas grandes revisadas, ${deteccion.racimos.quitadas} quitadas${deteccion.racimos.fallo ? ` (FALLÓ: ${deteccion.racimos.fallo})` : ""}`);
     }
     if (coste > tope) console.warn(`OJO: la lectura costó ${coste} USD, más que el tope ${tope}.`);
     lectura = leida.lectura;

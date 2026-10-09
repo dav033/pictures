@@ -56,7 +56,7 @@ export async function modelarDesdeFoto(foto: FotoLectura, deps: DependenciasMode
     : Promise.resolve(null);
   const [leida, plantillas, deteccion] = await Promise.all([(deps.leer ?? leerFotoConIA)(foto, deps.opciones ?? {}), buscar, detectando]);
   const medida = deteccion ? medirConDetecciones(leida.lectura, deteccion.globos, deteccion.fondos) : { lectura: leida.lectura, notas: [] };
-  if (deteccion) decidir("regla:foto_medida_con_detecciones", "la lectura de la foto medida con los globos y fondos detectados", { globos: deteccion.globos.length, fondos: deteccion.fondos.length, notas: medida.notas.length, escalaLeidaCm: leida.lectura.escala.altoImagenCm, escalaMedidaCm: medida.lectura.escala.altoImagenCm });
+  if (deteccion) decidir("regla:foto_medida_con_detecciones", "la lectura de la foto medida con los globos y fondos detectados", { globos: deteccion.globos.length, fondos: deteccion.fondos.length, racimos: deteccion.racimos, notas: medida.notas.length, escalaLeidaCm: leida.lectura.escala.altoImagenCm, escalaMedidaCm: medida.lectura.escala.altoImagenCm });
   const compilada = compilarLectura(medida.lectura);
   return {
     escena: compilada.escena, lectura: medida.lectura, notas: [...medida.notas, ...compilada.notas], omitidas: compilada.omitidas, descartadas: leida.descartadas, plantillas, avisos,
