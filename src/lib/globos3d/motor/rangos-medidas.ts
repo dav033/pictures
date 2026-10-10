@@ -2,11 +2,13 @@ import { RANGOS_ESTRUCTURA } from "../herramientas-escena-estructuras";
 import type { PiezaEspec } from "./espec-cliente-v1";
 import { RANGOS_CLASICOS } from "./constructores-clasicos";
 import { RANGO_ARCO } from "./constructores-organicos";
+import { RANGO_GROSOR_GUIADA_CM } from "./medidas-espec";
 
 /**
  * **Qué medidas se le pueden cambiar a cada pieza y hasta dónde** (metros): los rangos con que el constructor de cada una
- * arma, que son los de `RANGOS_ESTRUCTURA` y los de los constructores de cuartetos. Es lo que acota las ediciones de
- * tamaño: una medida fuera de rango se acota y se dice, no se manda al constructor para que lo haga callado.
+ * arma, que son los de `RANGOS_ESTRUCTURA` y los de los constructores de cuartetos, y el grosor del cliente (`RANGO_GROSOR_GUIADA_CM`,
+ * más estrecho que el del Taller). Es lo que acota las ediciones de tamaño: una medida fuera de rango se acota y se dice, no se manda
+ * al constructor para que lo haga callado.
  */
 export type CampoMedida = "anchoM" | "altoM" | "largoM";
 export type RangoMedida = readonly [number, number];
@@ -16,7 +18,7 @@ const m = (rango: readonly [number, number]): RangoMedida => [rango[0] / 100, ra
 
 const ARCO_ORGANICO: MedidasEditables = { anchoM: m(RANGO_ARCO.ancho), altoM: m(RANGO_ARCO.alto) };
 const ARCO_CLASICO: MedidasEditables = { anchoM: m(RANGOS_CLASICOS.arco.ancho), altoM: m(RANGOS_CLASICOS.arco.alto) };
-const COLUMNA_ORGANICA: MedidasEditables = { altoM: m(RANGOS_ESTRUCTURA.columna_organica.alto_cm), anchoM: m(RANGOS_ESTRUCTURA.columna_organica.grosor_cm) };
+const COLUMNA_ORGANICA: MedidasEditables = { altoM: m(RANGOS_ESTRUCTURA.columna_organica.alto_cm), anchoM: m(RANGO_GROSOR_GUIADA_CM.columna) };
 const SEMIARCO: MedidasEditables = { anchoM: m(RANGOS_ESTRUCTURA.semiarco_organico.ancho_cm), altoM: m(RANGOS_ESTRUCTURA.semiarco_organico.alto_cm) };
 
 /**

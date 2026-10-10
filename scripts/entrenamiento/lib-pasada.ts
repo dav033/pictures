@@ -10,6 +10,7 @@ import { detectarGlobos, type Deteccion } from "@/lib/globos3d/detectar-globos-i
 import type { Escena } from "@/lib/globos3d/escena";
 import { reiniciarCupoEscenaIA } from "@/lib/globos3d/cupo-escena-ia";
 import { resumenParaAgente, type Modelado } from "@/lib/globos3d/modelar-desde-foto";
+import { resolverOtro } from "@/lib/globos3d/lectura-otro";
 import { modelarFotoReal } from "@/lib/taller/modelar-foto-real";
 import { normalizarFotoA } from "@/lib/taller/normalizar-foto";
 import { atenderEscenaDesdeFoto, LADO_MAXIMO_LECTURA } from "@/lib/taller/escena-desde-foto";
@@ -109,9 +110,10 @@ async function ejecutarPasada(o: OpcionesPasada): Promise<ResultadoPasada> {
   if (modelado) {
     escena = modelado.escena;
     hechos.piezasDescartadas = modelado.descartadas.length;
-    const otro = modelado.lectura.piezas.filter((p) => p.tipo === "otro").length;
-    hechos.piezasOtro = otro;
-    hechos.omitidasCompilacion = Math.max(0, modelado.omitidas.length - otro);
+    // Lo que el taller sabe armar con otro nombre (un sinónimo del catálogo) o es fondo sin pieza no cuenta como capacidad que falta.
+    const pendientes = modelado.lectura.piezas.filter((p) => p.tipo === "otro" && resolverOtro(p.descripcion).tipo === "pendiente").length;
+    hechos.piezasOtro = pendientes;
+    hechos.omitidasCompilacion = Math.max(0, modelado.omitidas.length - pendientes);
     hechos.sinDeteccion = deteccion === null;
     hechos.errorLectura = false;
     error = null;

@@ -4,9 +4,10 @@ import { enZona, puntoEnRecorrido, rangoAltura, type ZonaOrganica } from "./zona
 import { alturaDePieza } from "./altura-pieza";
 import { conAcabado, fallar, nombreColor, resolverColorFlexible } from "./herramientas-escena-colores";
 import {
-  DENSIDAD, bultosDe, cabe, comoOrganico, conDensidad, conGrosor, conPaleta, conPeso, conRacimos, conRelleno, densidadDe, engrosar, grosorMinimo, inflado, opcionesDe,
+  DENSIDAD, bultosDe, cabe, comoOrganico, conDensidad, conPaleta, conPeso, conRacimos, conRelleno, densidadDe, engrosar, grosorMinimo, inflado, opcionesDe,
   paletaDe, racimosDe, type Organico, type PiezaOrganica,
 } from "./organico-ajustes";
+import { engrosarEnPresupuesto, porQueNoCabe } from "./presupuesto-ajustes";
 
 export { esPiezaOrganica, type PiezaOrganica } from "./organico-ajustes";
 
@@ -21,7 +22,8 @@ export { esPiezaOrganica, type PiezaOrganica } from "./organico-ajustes";
  * porcentaje pedidos). El resultado dice cuántos había y cuántos hay de cada formato, contados en la pieza armada.
  * Un formato solo cabe donde el cuerpo es lo bastante grueso (inflado ≤ 0,82 × grosor; el trazo no pone el que no
  * cabe y sin generador sobresaldría): si no cabe en la zona, se engruesa ahí el cuerpo lo justo (y se dice), salvo que
- * se pida `engrosar: false`. Las transformaciones de la pieza están en organico-ajustes.ts.
+ * se pida `engrosar: false`. Ningún engrosado pasa del presupuesto de armado (presupuesto-ajustes.ts): se acota y se dice.
+ * Las transformaciones de la pieza están en organico-ajustes.ts.
  */
 
 export const FORMATOS_AJUSTABLES = ["R-36", "R-24", "R-18", "R-12", "R-9", "R-5"] as const;
@@ -48,8 +50,9 @@ const r0 = (n: number) => Math.round(n);
 /** Al bajar el peso de un formato para que la pieza quepa bajo el techo: cuánto del aumento se conserva en cada paso, y el peso a partir del que ya no se baja. */
 const REDUCCION_RECORTE = 0.75;
 const PESO_MINIMO_RECORTE = 1.05;
-/** Cuánto se engruesa el cuerpo, por pasos, cuando un tamaño no llega a la meta con el grosor que hay. */
+/** Cuánto se engruesa el cuerpo, por pasos, cuando un tamaño no llega a la meta con el grosor que hay; y cuando ya no cabe más densidad. */
 const FACTORES_CUERPO = [1.12, 1.25, 1.4, 1.55, 1.75, 2] as const;
+const ENGROSAR_POR_DENSIDAD = 1.15;
 const orden = (f: string) => { const i = (FORMATOS_AJUSTABLES as readonly string[]).indexOf(f); return i < 0 ? 99 : i; };
 
 // ----------------------------------------------------------------------------------------------------------
@@ -192,7 +195,9 @@ function aplicarCambio(entrada: PiezaOrganica, original: PiezaOrganica, c: Cambi
   if (quiereMas && cabe(pieza, f, zona) === "nada") {
     if (!engrosarPermitido) fallar(`Los ${f} (inflado ${r0(inflado(pieza, f))} cm) no caben en el cuerpo de esta pieza${zona === "todo" ? "" : ` (${zona})`}: necesita al menos ${grosorMinimo(pieza, f)} cm de grosor. Vuelve a llamar con engrosar: true o engruésala con cambiar_pieza grosor_cm.`);
     const hecho = engrosar(pieza, f, zona, false) ?? engrosar(pieza, f, zona, true) ?? fallar(`Los ${f} no caben ni engrosando el cuerpo al máximo (160 cm).`);
-    if (cabeBajoElTecho(hecho.pieza)) { pieza = hecho.pieza; extra.push(hecho.nota); }
+    const tope = porQueNoCabe(pieza, hecho.pieza);
+    if (tope) extra.push(`los ${f} no caben en el cuerpo de ahora y no lo engrosé lo que piden (${grosorMinimo(pieza, f)} cm): ${tope}; se queda como está`);
+    else if (cabeBajoElTecho(hecho.pieza)) { pieza = hecho.pieza; extra.push(hecho.nota); }
     else extra.push(`los ${f} no caben en el cuerpo de ahora y engrosarlo lo que piden (${grosorMinimo(pieza, f)} cm) haría la pieza más alta de lo que cabe bajo el techo (${r0(techoCm!)} cm): se queda como está`);
   }
 
@@ -202,7 +207,9 @@ function aplicarCambio(entrada: PiezaOrganica, original: PiezaOrganica, c: Cambi
   // No llegó subiendo: engrosar toda la zona (y sus vecinos) donde aún no cabe y volver a buscar.
   if (quiereMas && modo !== "a_lo_mas" && elegida.valor < meta - (modo === "cerca" ? tolerancia : 0) && engrosarPermitido && cabe(base, f, zona) !== "todo") {
     const hecho = engrosar(base, f, zona, true);
-    if (hecho && !cabeBajoElTecho(hecho.pieza)) extra.push(`no engrosé el cuerpo de ${zona === "todo" ? "la pieza" : zona} para llegar a la meta: pasaría de los ${r0(techoCm!)} cm que caben bajo el techo`);
+    const tope = hecho ? porQueNoCabe(base, hecho.pieza) : null;
+    if (tope) extra.push(`no engrosé el cuerpo de ${zona === "todo" ? "la pieza" : zona} para llegar a la meta: ${tope}`);
+    else if (hecho && !cabeBajoElTecho(hecho.pieza)) extra.push(`no engrosé el cuerpo de ${zona === "todo" ? "la pieza" : zona} para llegar a la meta: pasaría de los ${r0(techoCm!)} cm que caben bajo el techo`);
     else if (hecho) {
       const otra = buscar((k) => conPeso(hecho.pieza, f, zona, k, !!c.solo_ahi), valor, valor(hecho.pieza), meta, modo, tolerancia);
       if (otra.valor > elegida.valor) { elegida = otra; extra.push(hecho.nota); }
@@ -213,17 +220,24 @@ function aplicarCambio(entrada: PiezaOrganica, original: PiezaOrganica, c: Cambi
   const noLlega = (v: number) => v < meta - (modo === "cerca" ? tolerancia : 0);
   if (quiereMas && modo !== "a_lo_mas" && zona === "todo" && engrosarPermitido && noLlega(elegida.valor)) {
     let notaCuerpo = "";
-    for (const factor of FACTORES_CUERPO) {
-      const gruesa = conGrosor(base, factor) as Organico;
+    for (const pedido of FACTORES_CUERPO) {
+      const engrosado = engrosarEnPresupuesto(base, pedido);
+      if (!engrosado.pieza) {
+        extra.push(`no engrosé más el cuerpo: ${engrosado.tope}`);
+        break;
+      }
+      const { factor, tope } = engrosado;
+      const gruesa = engrosado.pieza as Organico;
       if (!cabeBajoElTecho(gruesa)) {
         extra.push(`no engrosé más el cuerpo: con ${r0((factor - 1) * 100)} % más la pieza pasaría de los ${r0(techoCm ?? 0)} cm que caben bajo el techo`);
         break;
       }
       const otra = buscar((k) => conPeso(gruesa, f, zona, k, !!c.solo_ahi), valor, valor(gruesa), meta, modo, tolerancia);
-      if (otra.valor <= elegida.valor) continue;
-      elegida = otra;
-      notaCuerpo = `para llegar a ${meta} ${f} engrosé todo el cuerpo un ${r0((factor - 1) * 100)} % (con el cuerpo de antes ya no cabían más; pasa a llevar más globos de todos los tamaños)`;
-      if (!noLlega(otra.valor)) break;
+      if (otra.valor > elegida.valor) {
+        elegida = otra;
+        notaCuerpo = `para llegar a ${meta} ${f} engrosé todo el cuerpo un ${r0((factor - 1) * 100)} % (con el cuerpo de antes ya no cabían más; pasa a llevar más globos de todos los tamaños)${tope ? `; no más: ${tope}` : ""}`;
+      }
+      if (tope || !noLlega(elegida.valor)) break;
     }
     if (notaCuerpo) extra.push(notaCuerpo);
   }
@@ -291,10 +305,14 @@ function densidadPedida(p: PiezaOrganica, factor: number, engrosarPermitido: boo
   let pieza = conDensidad(p, factor);
   let linea = `densidad ${antes} → ${densidadDe(pieza)}`;
   if (factor > 1 && estructuraDe(pieza) < estAntes * 1.08) {
-    const gruesa = engrosarPermitido ? conGrosor(p, 1.15) : null;
-    if (gruesa && techoCm !== undefined && alturaDePieza(gruesa) > techoCm) linea += ` — no caben más globos de estructura en ese grosor y engrosar el cuerpo pasaría de los ${r0(techoCm)} cm que caben bajo el techo`;
-    else if (gruesa) { pieza = gruesa; linea = `densidad: ya no caben más globos en ese grosor (${antes}), así que engrosé el cuerpo un 15 % para que lleve más`; }
-    else linea += " — no caben más globos de estructura en ese grosor (engrosar: true para engrosarla)";
+    const gruesa = engrosarPermitido ? engrosarEnPresupuesto(p, ENGROSAR_POR_DENSIDAD) : null;
+    if (!engrosarPermitido) linea += " — no caben más globos de estructura en ese grosor (engrosar: true para engrosarla)";
+    else if (!gruesa?.pieza) linea += ` — no caben más globos de estructura en ese grosor y no lo engrosé: ${gruesa?.tope}`;
+    else if (techoCm !== undefined && alturaDePieza(gruesa.pieza) > techoCm) linea += ` — no caben más globos de estructura en ese grosor y engrosar el cuerpo pasaría de los ${r0(techoCm)} cm que caben bajo el techo`;
+    else {
+      pieza = gruesa.pieza;
+      linea = `densidad: ya no caben más globos en ese grosor (${antes}), así que engrosé el cuerpo un ${r0((gruesa.factor - 1) * 100)} % para que lleve más${gruesa.tope ? ` (no más: ${gruesa.tope})` : ""}`;
+    }
   }
   if (factor < 1) {
     const quitados = aligerarRelleno(pieza, totalAntes);
@@ -370,9 +388,14 @@ export function ajustarTamanos(pieza: PiezaOrganica, pedido: PedidoTamanos, nota
     const o = comoOrganico(actual);
     const antes = racimosDe(o), bultos = bultosDe(o);
     const nueva = conRacimos(o, pedido.racimos_valor ?? antes + (pedido.racimos === "menos" ? -0.3 : 0.3));
-    actual = nueva;
+    // Los bultos del trazo engordan el cuerpo: tampoco pasan del presupuesto de armado.
+    const tope = porQueNoCabe(o, nueva);
     const que = o.generador?.tipo === "trazo" ? "los bultos sobresalen hasta" : "irregularidad de la silueta";
-    lineas.push(`abultado (racimos) ${antes} → ${racimosDe(nueva)}: ${que} ${r0(bultos * 100)} % → ${r0(bultosDe(nueva) * 100)} %${racimosDe(nueva) === antes ? " (ya estaba en el tope)" : ""}`);
+    if (tope) lineas.push(`abultado (racimos): se queda en ${antes}, más abultado ${tope}`);
+    else {
+      actual = nueva;
+      lineas.push(`abultado (racimos) ${antes} → ${racimosDe(nueva)}: ${que} ${r0(bultos * 100)} % → ${r0(bultosDe(nueva) * 100)} %${racimosDe(nueva) === antes ? " (ya estaba en el tope)" : ""}`);
+    }
   }
   if (pedido.colores_por_tamano?.length) {
     actual = coloresPorTamano(actual, pedido.colores_por_tamano, pedido.acabado, notas);

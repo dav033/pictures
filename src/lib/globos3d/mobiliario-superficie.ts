@@ -1,14 +1,15 @@
 import { puntoAlMundo, puntoALocal, type EscenaArmada, type MarcoPieza, type NodoArmado, type NodoEscena } from "./escena";
-import { puntosSolido } from "./escenografia";
+import { puntosSolido, type ElementoEscenografia } from "./escenografia";
 import { tapaDeMesa } from "./mobiliario-asientos-mesa";
 import { dentroDelContorno, elipse } from "./mobiliario-contornos";
 import { mesaDePieza } from "./mobiliario-conjunto";
+import { elementosDeEscenografia } from "./mobiliario-pieza";
 import { superficieDeMesa } from "./mobiliario-mesas-param";
 import type { Vec3 } from "./modulos";
 import type { Punto2 } from "./trenza";
 
 /**
- * **La superficie de arriba de una mesa** (REQ-012 y REQ-008): dónde puede apoyarse algo sobre ella, en el mundo. Es LA implementación de
+ * **La superficie de arriba de una mesa** (REQ-012 y REQ-008), o la cima de un pedestal o cilindro de piso: dónde puede apoyarse algo, en el mundo. Es LA implementación de
  * la cubierta: la usan quien pone algo sobre una mesa (`poner_sobre`, los centros de mesa del salón, la base de pastel) y quien comprueba
  * que algo no quedó metido en ella. `superficieSuperior(nodo, armada)` da el alto de la tapa, el contorno, el centro útil y el radio de un
  * círculo que cabe entero encima, tanto de las mesas paramétricas (por su contorno real: media luna, U, serpentina…) como de las del
@@ -63,12 +64,33 @@ function tapaDelCatalogo(hecho: NodoArmado, marco: MarcoPieza): { cx: number; cz
   return { cx: (tapa.minX + tapa.maxX) / 2, cz: (tapa.minZ + tapa.maxZ) / 2, alto: tope, ancho: tapa.maxX - tapa.minX, fondo: tapa.maxZ - tapa.minZ };
 }
 
+/**
+ * La cima de un pedestal o de un cilindro de piso (una pieza hecha solo de cilindros, sin lugar propio): cuenta como superficie de
+ * apoyo, como una mesa. Con varios cilindros en la pieza, la más alta. `null` si la pieza tiene otra cosa.
+ */
+function superficieDeCilindro(nodo: NodoEscena, marco: MarcoPieza): SuperficieSuperior | null {
+  if (nodo.pieza.tipo !== "escenografia") return null;
+  const elementos = elementosDeEscenografia(nodo.pieza);
+  const cilindros = elementos.filter((e): e is Extract<ElementoEscenografia, { forma: "cilindro" }> => e.forma === "cilindro" && !e.en);
+  if (!cilindros.length || cilindros.length !== elementos.length) return null;
+  const alto = Math.max(...cilindros.map((c) => c.base.y + c.altoCm));
+  const c = cilindros.find((k) => k.base.y + k.altoCm >= alto - 0.01)!;
+  const top = c.base.y + c.altoCm, radio = c.radioArribaCm ?? c.radioCm;
+  const contorno = elipse(radio, radio, 24).map((p) => { const q = aMundo(marco, p.x + c.base.x, top, p.y + c.base.z); return { x: q.x, y: q.z }; });
+  const centro = aMundo(marco, c.base.x, top, c.base.z);
+  return {
+    nodoId: nodo.id, forma: "circulo", centro, local: { x: c.base.x, y: top, z: c.base.z }, altoCm: centro.y, radioUtilCm: Math.round(radio * 10) / 10,
+    anchoCm: 2 * radio, fondoCm: 2 * radio, angostoCm: 2 * radio, contorno, marco, deFabricaConCosas: false,
+  };
+}
+
 /** La superficie de arriba de una mesa puesta en la escena, o null si la pieza no es una mesa con tapa o no quedó puesta. */
 export function superficieSuperior(nodo: NodoEscena, armada: EscenaArmada): SuperficieSuperior | null {
   const hecho = armada.porNodo.find((n) => n.id === nodo.id);
   const marco = hecho?.puestas[0]?.marco;
+  if (!hecho || !marco || hecho.copias === 0 || nodo.pieza.tipo !== "escenografia") return null;
   const tapa = tapaDeMesa(nodo);
-  if (!hecho || !marco || hecho.copias === 0 || !tapa || nodo.pieza.tipo !== "escenografia") return null;
+  if (!tapa) return superficieDeCilindro(nodo, marco);
   const parametrica = mesaDePieza(nodo.pieza);
   if (parametrica) {
     const s = superficieDeMesa(parametrica);

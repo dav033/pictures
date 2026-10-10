@@ -1,5 +1,5 @@
 import { SALA_INICIAL, idNuevo, type Colocacion, type Escena, type NodoEscena } from "./escena";
-import type { Pieza } from "./piezas";
+import { armarPieza, type Pieza } from "./piezas";
 import type { ElementoEscenografia } from "./escenografia";
 import { crearEstructura } from "./herramientas-escena-estructuras";
 import { PULGADAS_METALIZADO, PULGADA_CM } from "./metalizados";
@@ -8,7 +8,7 @@ import { conNotaSiFalla } from "./decoracion-segura";
 import { corazonesLeidos, NOTA_GLOBOS_EN_EL_AIRE, type CorazonLeido } from "./corazones-lectura";
 import { montonesDentroDeLaSala } from "./montones-dentro-sala";
 import { ponerSobreMesas, type SobreMesaPendiente } from "./sobre-mesa-lectura";
-import type { MuebleCatalogo } from "./mobiliario-tipos";
+import { tinteDe, type FondoCatalogo, type MuebleCatalogo } from "./mobiliario-tipos";
 import { piezaDeGenerador } from "./generadores-organicos";
 import { cajaTrazo, puntosDeSilueta, type SiluetaTrazo } from "./trazo-organico";
 import { formatoPorDiametro, grosorMinimoDePesos, pesosDeLectura, pesosDeTramo, traeMezcla } from "./mezcla-lectura";
@@ -20,7 +20,9 @@ import { decoracionPredefinida } from "./figuras";
 import { reemplazarColor } from "./recolorear";
 import { TELONES_DE_DIAMETRO, arcosChiara, cortina, entradaDeCatalogo, esTelon, letrero, mediaLuna, panelRedondo, pedestales } from "./fondos-escenografia";
 import { mesaConMantel, paredLentejuelas, tapete } from "./escenografia";
-import { conTextoPieza } from "./mobiliario-pieza";
+import { conTextoPieza, piezaDeEntrada } from "./mobiliario-pieza";
+import { resolverOtro, type PistaOtro } from "./lectura-otro";
+import { colocarOtro } from "./lectura-otro-colocar";
 import { acabadoRotuloLeido, avisoDeTexto, limpiarTexto } from "./rotulos";
 import { mesaLeida, mobiliarioLeido, tintaLeida, type MedidaLeida, type MesaLeida } from "./compilar-mobiliario";
 import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
@@ -54,6 +56,9 @@ export type EscenaCompilada = {
 
 const r0 = (n: number) => Math.round(n);
 const r1 = (n: number) => Math.round(n * 10) / 10;
+/** El ancho, el fondo y el alto que de verdad arma una pieza (cm), para ubicarla sin salirse de la sala ni taparla. */
+const medidasDePieza = (pieza: Pieza) => { const { min, max } = armarPieza(pieza).caja; return { anchoCm: max.x - min.x, fondoCm: max.z - min.z, altoCm: max.y - min.y }; };
+const LADO_DICHO: Readonly<Record<number, string>> = { [-1]: "a la izquierda", 1: "a la derecha" };
 /** Un foil (letras, números) cuelga por delante de la guirnalda y no pegado a la pared: así se ve entero, como en las fotos. */
 const FOIL_DELANTE_DE_LA_PARED_CM = 60;
 /** Los fondos de la lectura que admiten un nombre en cursiva (el letrero conserva su texto impreso). */
@@ -135,6 +140,8 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
   const fondo = FONDO_SALA_FOTO_CM;
   let escena: Escena = { sala: { ...SALA_INICIAL, anchoCm: ancho, fondoCm: fondo, altoCm: Math.max(280, r0(altoMax + 50)), tonos: { ...SALA_INICIAL.tonos, paredes: l.sala.pared, piso: l.sala.piso }, mostrar: { ...SALA_INICIAL.mostrar } }, nodos: [] };
   const muro = -fondo / 2;
+  // Lo que la foto ya trae como pieza (un juego de pedestales leído como fondo): un «otro» con el mismo catálogo no añade otro.
+  const leidosComoFondo = new Set(l.piezas.flatMap((q) => (q.tipo === "fondo" ? [q.id] : [])));
   const poner = (base: string, nombre: string, pieza: Pieza, colocacion: Colocacion) => {
     const id = idNuevo(escena, base);
     const nodo: NodoEscena = { id, nombre, pieza, colocacion };
@@ -143,6 +150,8 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
   };
 
   const sobreMesa: SobreMesaPendiente[] = [];
+  // Las piezas del catálogo que la foto escribió como «otro» esperan a que esté todo lo demás: así caen en un hueco, no delante de la estructura.
+  const otrosPorColocar: Array<{ indice: number; descripcion: string; entrada: FondoCatalogo; pista: PistaOtro }> = [];
   const montones: string[] = [];
   const montonDePieza = new Map<number, string>();
   const corazones: Array<{ pieza: CorazonLeido; indice: number }> = [];
@@ -346,19 +355,53 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
           case "cortina_luces": lugar = "pared"; elementos = cortina({ anchoCm: w, altoCm: a, hex: hex(0), luces: true }); break;
           default: lugar = "pared"; elementos = letrero({ texto: textoLetrero, anchoCm: w, altoCm: a, hex: hex(0), tinta: tinta ?? hex(1) });
         }
-        const sinRotulo: Pieza = { tipo: "escenografia", elementos, mueble: { id: p.id } };
+        // Con el color que dejó la foto de su parte principal: así un cambio de color la encuentra (`tintarFondo`).
+        const entradaFondo = entradaDeCatalogo(p.id);
+        const sinRotulo: Pieza = { tipo: "escenografia", elementos, mueble: { id: p.id, ...(entradaFondo && tinteDe(entradaFondo) !== undefined ? { tinte: hex(0) } : {}) } };
         // Un nombre sobre un panel, un arco o la pared de lentejuelas: el texto leído es su rótulo, con el color y el acabado que se leyeron en las letras (sin color, el que se lee sobre el fondo).
         const pieza = p.texto && ADMITEN_ROTULO.has(p.id) && sinRotulo.tipo === "escenografia" ? conNotaSiFalla(`Pieza ${i + 1} (${p.id}): el rótulo «${p.texto}»`, notas, decoracionesOmitidas, () => conTextoPieza(sinRotulo, { texto: p.texto!, acabado: acabadoRotuloLeido(p.acabadoTexto), ...(tinta ? { color: tinta } : {}) }), sinRotulo) : sinRotulo;
         poner(p.id.replace(/_/g, "-"), textoLetrero ? `Letrero ${JSON.stringify(textoLetrero)}` : p.id.replace(/_/g, " "), pieza,
           lugar === "pared" ? { en: "pared", pared: "fondo", aLoLargoCm: X(p.x), alturaCm: p.id === "letrero" ? r0(y0) : 0 } : { en: "piso", xCm: medida.xCm, zCm: z, giroGrados: 0 });
         return;
       }
-      case "otro":
-        omitidas.push(p.descripcion);
+      case "otro": {
+        // Un nombre del catálogo se arma con su pieza (más abajo, `colocarOtros`); el fondo sin pieza no cuenta; lo demás queda pendiente.
+        const r = resolverOtro(p.descripcion);
+        if (r.tipo === "escenografia") { notas.push(`Pieza ${i + 1} (otro): «${p.descripcion}» es fondo de la foto, sin pieza del taller.`); return; }
+        const entrada = r.tipo === "catalogo" ? entradaDeCatalogo(r.id) : undefined;
+        if (r.tipo !== "catalogo" || !entrada) { omitidas.push(p.descripcion); return; }
+        if (leidosComoFondo.has(entrada.id)) { notas.push(`Pieza ${i + 1} (otro): «${p.descripcion}» ya está leída como ${entrada.nombre}: no se añade otra.`); return; }
+        // Dos «otro» con la misma pieza (una silla a cada lado) son dos: cada una cae del lado que dice.
+        otrosPorColocar.push({ indice: i, descripcion: p.descripcion, entrada, pista: r });
         return;
+      }
     }
   }
 
+  function colocarOtros() {
+    // Si la foto trae un pastel y ninguna mesa, la primera mesa leída como «otro» es la que lo sostiene: va bajo el pastel, donde la foto lo pone.
+    const hayMesaLeida = l.piezas.some((q) => q.tipo === "fondo" && entradaDeCatalogo(q.id)?.grupo === "mesa");
+    let pastelSinMesa = sobreMesa.length > 0 && !hayMesaLeida ? sobreMesa[0]!.medida.xCm : undefined;
+    const puestos = new Set<string>();
+    for (const { indice, descripcion, entrada, pista } of otrosPorColocar) {
+      try {
+        const pieza = piezaDeEntrada(entrada);
+        const esMesa = entrada.grupo === "mesa" && !(entrada.clase === "mueble" && entrada.asientos);
+        const xFotoCm = esMesa ? pastelSinMesa : undefined;
+        const sitio = colocarOtro(escena, entrada, medidasDePieza(pieza), { ...pista, ...(xFotoCm !== undefined ? { xFotoCm } : {}) }, puestos);
+        escena = sitio.escena;
+        puestos.add(poner(entrada.id.replace(/_/g, "-"), entrada.nombre, pieza, sitio.colocacion));
+        if (xFotoCm !== undefined) pastelSinMesa = undefined;
+        const lado = LADO_DICHO[pista.lado];
+        notas.push(`Pieza ${indice + 1} (otro): «${descripcion}» es ${entrada.nombre} del catálogo: su color y su medida son los del catálogo, no los de la foto${xFotoCm !== undefined ? "; va bajo el pastel de la foto" : lado ? `; va ${lado}` : ""}${pista.cantidad > 1 ? `; la foto dice ${pista.cantidad} y se armó una` : ""}. Ajústala.`);
+        if (sitio.aviso) notas.push(sitio.aviso);
+      } catch (error) {
+        omitidas.push(`Pieza ${indice + 1} (otro): ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  }
+
+  colocarOtros();
   escena = ponerSobreMesas(escena, sobreMesa, notas, omitidas);
   escena = montonesDentroDeLaSala(escena, montones, notas);
   // Los corazones: en el montón de piso que los tiene debajo (por su x), delante de su centro, y si no, a la profundidad de siempre.

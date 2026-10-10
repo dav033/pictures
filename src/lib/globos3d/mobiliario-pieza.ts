@@ -24,7 +24,7 @@ export type OpcionesGuardadas = { anchoCm: number; fondoCm: number; altoCm: numb
  * `mesa` / `sillas`: la pieza es una mesa paramétrica o el grupo de sillas de una mesa (REQ-012, `mobiliario-conjunto-tipos.ts`); con
  * ellas el `id` es solo una etiqueta (`mesa_param`, `sillas_param`) y los sólidos salen de esos datos.
  */
-export type MuebleDePieza = { id: string; opciones?: OpcionesGuardadas; rotulo?: RotuloEscenografia; mesa?: MesaGuardada; sillas?: SillasGuardadas };
+export type MuebleDePieza = { id: string; opciones?: OpcionesGuardadas; rotulo?: RotuloEscenografia; mesa?: MesaGuardada; sillas?: SillasGuardadas; /** Fondo fijo con color cambiado: el de su parte principal (`tinte` del catálogo es el de partida). */ tinte?: string };
 export type PiezaEscenografia = Extract<Pieza, { tipo: "escenografia" }>;
 
 /** Cuánto se puede achicar o agrandar un mueble respecto a su medida de catálogo. */
@@ -49,6 +49,7 @@ export const MuebleDePiezaSchema = z.object({
   rotulo: RotuloSchema.optional(),
   mesa: MesaGuardadaSchema.optional(),
   sillas: SillasGuardadasSchema.optional(),
+  tinte: z.string().regex(HEX).optional(),
 });
 
 const rango = (base: number) => ({ min: Math.max(2, Math.round(base * FACTOR_MINIMO)), max: Math.round(base * FACTOR_MAXIMO) });
@@ -134,7 +135,7 @@ export const rotuloArmado = (p: PiezaEscenografia): RotuloEscenografia | undefin
 /** La pieza con ese rótulo (normalizado a su cara) o, con `null`, sin rótulo. Una pieza que no admite rótulo vuelve igual. */
 export function conRotuloPieza(p: PiezaEscenografia, rotulo: Partial<RotuloEscenografia> | null): Pieza {
   if (!p.mueble || !admiteRotulo(p)) return p;
-  const mueble: MuebleDePieza = { id: p.mueble.id, ...(p.mueble.opciones ? { opciones: p.mueble.opciones } : {}) };
+  const mueble: MuebleDePieza = { id: p.mueble.id, ...(p.mueble.opciones ? { opciones: p.mueble.opciones } : {}), ...(p.mueble.tinte ? { tinte: p.mueble.tinte } : {}) };
   const soporte = soporteDeRotuloPieza(p);
   const nuevo = rotulo ? normalizarRotulo(rotulo, soporte?.elemento) : null;
   return { ...p, mueble: nuevo ? { ...mueble, rotulo: nuevo } : mueble };
@@ -168,3 +169,19 @@ export const piezaDeMueble = (m: MuebleCatalogo, opciones: Partial<OpcionesGuard
 
 /** La pieza de una entrada del catálogo con sus medidas y colores de partida. */
 export const piezaDeEntrada = (f: FondoCatalogo): Pieza => (f.clase === "mueble" ? piezaDeMueble(f) : { tipo: "escenografia", elementos: f.elementos(), mueble: { id: f.id } });
+
+/**
+ * El fondo fijo con su parte principal en `hex`: cambian los elementos de su color principal (el de partida del catálogo, o el que
+ * dejó la foto o el último cambio) y el pie de metal, que sigue al fondo. `null` si no admite color o si no hay ninguna parte de ese color.
+ * El aro y los demás elementos quedan como estaban.
+ */
+export function tintarFondo(p: PiezaEscenografia, hex: string): PiezaEscenografia | null {
+  const f = p.mueble ? entradaDeCatalogo(p.mueble.id) : undefined;
+  if (!p.mueble || !f || f.clase !== "fondo" || !f.tinte) return null;
+  const desde = (p.mueble.tinte ?? f.tinte).toLowerCase();
+  const principal = (e: ElementoEscenografia) => e.hex.toLowerCase() === desde;
+  const pie = (e: ElementoEscenografia) => e.forma === "caja" && e.acabado === "metal";
+  if (!p.elementos.some(principal)) return null;
+  const nuevo = hex.toLowerCase();
+  return { ...p, elementos: p.elementos.map((e) => (principal(e) || pie(e) ? { ...e, hex: nuevo } : e)), mueble: { ...p.mueble, tinte: nuevo } };
+}

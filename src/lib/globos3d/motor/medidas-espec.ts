@@ -57,6 +57,13 @@ export const TAMANOS_POR_DEFECTO: Readonly<Record<EstructuraOficialId, TamanosEs
  */
 export const GROSOR_ORGANICO_POR_DEFECTO_M = { guirnalda: 0.55, semiarco: 0.7, semiarcoAsimetrico: 0.72, columna: 0.7, aro: 0.3, arco: 0.7 } as const;
 
+/**
+ * El grosor (cm) que el cliente puede pedir en cada pieza orgánica de la guiada: los rangos de siempre, más estrechos que los del
+ * Taller (12–160 cm, `GROSOR_CUERPO_CM`). El grosor cambia la lista de materiales y la cotización: ampliarlos es política de precios
+ * y la aprueba el dueño.
+ */
+export const RANGO_GROSOR_GUIADA_CM = { columna: [30, 120], guirnalda: [20, 90], semiarco: [30, 110], aro: [20, 70], arco: [20, 120] } as const;
+
 /** Cuántos globos lleva por defecto lo que se cuenta por unidades. */
 export const UNIDADES_POR_DEFECTO: Partial<Record<EstructuraOficialId, number>> = { bouquet: 7, racimo_pared: 9, centro_mesa: 5 };
 

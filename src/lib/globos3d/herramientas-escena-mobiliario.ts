@@ -11,9 +11,9 @@ import { colocacionPorDefecto } from "./mobiliario-colocar";
 import { comprobarNombreMueble } from "./descripcion-mobiliario";
 import { muebleDe } from "./mobiliario-catalogo";
 import { puestosAlrededor, puestosEnFila, type Puesto } from "./mobiliario-disposicion";
-import { ACABADOS_MUEBLE, admiteRotulo, conTextoPieza, nombreDeMueble, opcionesDeMueble, piezaDeEntrada, piezaDeMueble, portadorDeRotulo, type OpcionesGuardadas, type PiezaEscenografia } from "./mobiliario-pieza";
+import { ACABADOS_MUEBLE, admiteRotulo, conTextoPieza, tintarFondo, nombreDeMueble, opcionesDeMueble, piezaDeEntrada, piezaDeMueble, portadorDeRotulo, type OpcionesGuardadas, type PiezaEscenografia } from "./mobiliario-pieza";
 import { ACABADOS_ROTULO, avisoDeTexto, caraDe, esAcabadoRotulo, NOMBRE_ACABADO_ROTULO, textoEnUnaLinea, type PedidoRotulo } from "./rotulos";
-import { asientosDeEntrada, descripcionConColores, retiroDe, type FondoCatalogo, type MuebleCatalogo } from "./mobiliario-tipos";
+import { asientosDeEntrada, descripcionConColores, retiroDe, tinteDe, type FondoCatalogo, type MuebleCatalogo } from "./mobiliario-tipos";
 import { esGrupoDeSillas, esMesaParametrica, MANTEL_TEXTO, medidaDeMesa, mesaDePieza, sillasDePieza } from "./mobiliario-conjunto";
 import { NOMBRE_MESA } from "./mobiliario-conjunto-tipos";
 import { SILLAS } from "./mobiliario-sillas-param";
@@ -65,6 +65,14 @@ function comprobarAcabadoPropio(m: MuebleCatalogo, acabado: string | undefined) 
   if (acabado && m.acabadosPropios && !m.acabadosPropios.some(([id]) => id === acabado)) fallar(`«${m.nombre}» solo se hace en ${m.acabadosPropios.map(([id, nombre]) => `${id} (${nombre.toLowerCase()})`).join(" o ")}, no en ${acabado}.`);
 }
 
+/** Un fondo fijo que admite color (`tinte` del catálogo) va en el primer color pedido; los demás se avisan. Si no encuentra su color principal, lo dice. */
+function conColorPedido(pieza: PiezaEscenografia, colores: readonly string[], notas: string[], nombre: string): PiezaEscenografia {
+  if (!colores.length) return pieza;
+  const tintada = tintarFondo(pieza, hexDeColor(colores[0]!, notas)) ?? fallar(`No pude cambiar el color de «${nombre}»: no encuentro su color principal entre sus partes.`);
+  if (colores.length > 1) notas.push("Un fondo tiene un solo color: usé el primero.");
+  return tintada;
+}
+
 /** Las medidas reales (cm) de una pieza armada, para decirlas tal cual quedaron. */
 function medidasReales(pieza: Pieza): { anchoCm: number; fondoCm: number; altoCm: number } {
   const { min, max } = armarPieza(pieza).caja;
@@ -98,7 +106,7 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
   const mueble = entrada.clase === "mueble" ? entrada : undefined;
   if (mueble?.sillas) notas.push(`«${entrada.nombre}» es un conjunto fijo de ${asientosDeEntrada(mueble)} sillas Tiffany en una sola pieza: para otro número de sillas, otro tipo de silla o de mesa usa cambiar_sillas / cambiar_mesas con su id (la pasa a mesa con sillas editables) o agregar_mesas con sillas_por_mesa.`);
   if (mueble) comprobarAcabadoPropio(mueble, a.acabado);
-  if (!mueble && (a.ancho_cm || a.fondo_cm || a.alto_cm || a.colores || a.acabado)) notas.push(`«${entrada.nombre}» es un fondo de foto: va con sus medidas y colores de catálogo (el mobiliario sí cambia de medida y color).`);
+  if (!mueble && (a.ancho_cm || a.fondo_cm || a.alto_cm || a.acabado || (a.colores && !tinteDe(entrada)))) notas.push(`«${entrada.nombre}» es un fondo de foto: va con sus medidas${tinteDe(entrada) ? "" : " y colores"} de catálogo (el mobiliario sí cambia de medida y color${tinteDe(entrada) ? "; este fondo cambia su color principal con colores" : ""}).`);
   if (a.texto && !mueble?.conTexto && !entrada.rotulable) notas.push(`«${entrada.nombre}» no lleva texto: lo ignoré.`);
   if (a.texto && mueble?.conTexto) { const aviso = avisoDeTexto(a.texto, mueble.lineasTexto ?? 1); if (aviso) notas.push(aviso); }
   if (!entrada.rotulable && (a.color_texto || a.acabado_texto || a.alto_texto_cm || a.altura_texto_cm)) notas.push(`«${entrada.nombre}» no lleva un rótulo aparte: ignoré color_texto, acabado_texto, alto_texto_cm y altura_texto_cm (el nombre de acrílico cambia con colores y acabado).`);
@@ -109,7 +117,8 @@ function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen
     ...(a.colores ? { colores: a.colores.map((c) => hexDeColor(c, notas)) } : {}), ...(a.acabado ? { acabado: a.acabado } : {}), ...(mueble.conTexto && a.texto ? { texto: a.texto } : {}),
   }) : undefined;
   const sinRotulo: Pieza = mueble && opciones ? piezaDeMueble(mueble, opciones) : piezaDeEntrada(entrada);
-  const pieza = entrada.rotulable && sinRotulo.tipo === "escenografia" ? conRotuloPedido(sinRotulo, a, notas, entrada.nombre) : sinRotulo;
+  const conColor = a.colores && tinteDe(entrada) !== undefined && sinRotulo.tipo === "escenografia" ? conColorPedido(sinRotulo, a.colores, notas, nombreBase) : sinRotulo;
+  const pieza = entrada.rotulable && conColor.tipo === "escenografia" ? conRotuloPedido(conColor, a, notas, entrada.nombre) : conColor;
   const real = medidasReales(pieza);
   const n = a.cantidad ?? 1;
 
@@ -222,7 +231,7 @@ function motivoFija(p: PiezaEscenografia, nombre: string, pedidos: readonly stri
   if (esMesaParametrica(p)) return `«${nombre}» es una mesa de agregar_mesas: su tipo, medida y mantel se cambian con cambiar_mesas ${que}.`;
   if (esGrupoDeSillas(p)) return `«${nombre}» es el grupo de sillas de una mesa: su cantidad, tipo, color y disposición se cambian con cambiar_sillas ${que}.`;
   if (p.utileria || p.productos?.length) return `«${nombre}» es utilería de fiesta (un producto de la tienda): no cambia de medida ni de color desde aquí ${que}.`;
-  if (p.mueble) return `«${nombre}» es un fondo fijo del catálogo: no cambia de medida ni de color ${que}. Quítalo con quitar_pieza y agrega otro con agregar_mobiliario (los muebles sí se cambian).`;
+  if (p.mueble) return `«${nombre}» es un fondo fijo del catálogo: no cambia de medida, y su color solo cambia en el panel redondo, la media luna, las lentejuelas, el tapete, la cortina y el letrero ${que}. Quítalo con quitar_pieza y agrega otro con agregar_mobiliario (los muebles sí se cambian).`;
   return `«${nombre}» es escenografía armada (de una idea o de la biblioteca): no cambia de medida ni de color ${que}. Si hace falta otra, quítala con quitar_pieza.`;
 }
 
@@ -239,8 +248,13 @@ export function cambiarMobiliario(base: PiezaEscenografia, props: Props, notas: 
   if (!m || !o) {
     // Un fondo fijo con rótulo (panel, arcos, lentejuelas, letrero) solo cambia su texto; lo demás avisa.
     const delRotulo = admiteRotulo(base) ? pedidos.filter((k) => k === "reemplazar_colores" || (CAMBIOS_ROTULO as readonly string[]).includes(k)) : [];
-    const otros = pedidos.filter((k) => !delRotulo.includes(k));
+    const fijoBase = base.mueble ? entradaDeCatalogo(base.mueble.id) : undefined;
+    const admiteColor = fijoBase !== undefined && tinteDe(fijoBase) !== undefined;
+    const delColor: string[] = admiteColor ? pedidos.filter((k) => k === "colores") : [];
+    const otros = pedidos.filter((k) => !delRotulo.includes(k) && !delColor.includes(k));
     if (otros.length) fallar(motivoFija(base, nombre, otros));
+    const colores = lista(props, "colores") ?? [];
+    const conColor = delColor.length ? conColorPedido(base, colores, notas, nombre) : base;
     // En un fondo fijo el único color que se cambia es el del texto: reemplazar_colores de ese color.
     let propsDeTexto: Props = props;
     for (const r of Array.isArray(props.reemplazar_colores) ? (props.reemplazar_colores as Array<{ de?: unknown; a?: unknown }>) : []) {
@@ -249,7 +263,7 @@ export function cambiarMobiliario(base: PiezaEscenografia, props: Props, notas: 
       if (!actual || hexDeColor(r.de, notas) !== actual) fallar(`«${nombre}» es un fondo fijo: solo cambia el color de su texto${actual ? ` (texto ${actual})` : " (todavía no lleva texto)"}.`);
       propsDeTexto = { ...propsDeTexto, color_texto: hexDeColor(r.a, notas) };
     }
-    return delRotulo.length ? conRotuloPedido(base, propsDeTexto, notas, nombre) : base;
+    return delRotulo.length ? conRotuloPedido(conColor, propsDeTexto, notas, nombre) : conColor;
   }
   const fuera = pedidos.filter((k) => !CAMBIOS_MUEBLE.has(k));
   if (fuera.length) notas.push(`Un mueble solo cambia de medidas, colores, acabado y texto: ignoré ${fuera.join(", ")}.`);
@@ -296,9 +310,11 @@ export function resumenDeEscenografia(p: PiezaEscenografia): { medidas: string; 
   const o = p.mueble?.opciones;
   const rotulo = p.mueble?.rotulo;
   if (!m || !o) {
-    // Un fondo fijo con rótulo (panel redondo, arcos, letrero…): su nombre, sus medidas y lo que dice.
+    // Un fondo fijo: su nombre, sus medidas, su color si lo admite (`tinte`) y lo que dice su rótulo (panel redondo, arcos, letrero…).
     const fijo = p.mueble ? entradaDeCatalogo(p.mueble.id) : undefined;
-    return fijo && rotulo ? { medidas: `${fijo.nombre} · ${textoMedidas(medidasReales(p))} · ${dichoRotulo(rotulo)}`, colores: `texto ${rotulo.color}` } : null;
+    if (!fijo || (!rotulo && !tinteDe(fijo))) return null;
+    const colores = [...(tinteDe(fijo) ? [`fondo ${p.mueble?.tinte ?? tinteDe(fijo)}`] : []), ...(rotulo ? [`texto ${rotulo.color}`] : [])];
+    return { medidas: `${fijo.nombre} · ${textoMedidas(medidasReales(p))}${rotulo ? ` · ${dichoRotulo(rotulo)}` : ""}`, colores: colores.join(", ") };
   }
   const acabadoPropio = m.acabadosPropios?.find(([id]) => id === (o.acabado ?? "metal"))?.[1];
   return {

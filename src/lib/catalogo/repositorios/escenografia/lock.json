@@ -1,10 +1,14 @@
 {
-  "version": "1.0.0",
-  "huella": "ec3c3f2d16673af093738de42f92b602e65b9add4e3f504a7e3afed8836474e5",
+  "version": "1.0.1",
+  "huella": "c9ebf0503fd18fcc581f967edf75deadce00be7db614fcb39d9ffd3256f7b59e",
   "historial": [
     {
       "version": "1.0.0",
       "nota": "REQ-013 fase 1: vista sobre los fondos y el decorado de FONDOS_CATALOGO."
+    },
+    {
+      "version": "1.0.1",
+      "nota": "fondos de foto con color cambiable (tinte: panel redondo, media luna, lentejuelas, tapete, cortina, letrero)"
     }
   ]
 }

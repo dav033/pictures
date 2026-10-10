@@ -2,7 +2,7 @@ import { fijoEnFormato, mezclaEn, type ColorOrganico, type GloboFijo, type Opcio
 import { formatoPorId } from "./formatos";
 import { opcionesArcoOrganico } from "./formas-escena";
 import { piezaDeGenerador } from "./generadores-organicos";
-import { CABE_EN_GROSOR, DENSIDAD_TRAZO, INFLADOS_TRAZO, muestrasTrazo, type ParametrosTrazoOrganico, type PuntoTrazo } from "./trazo-organico";
+import { CABE_EN_GROSOR, DENSIDAD_TRAZO, GROSOR_CUERPO_CM, INFLADOS_TRAZO, muestrasTrazo, type ParametrosTrazoOrganico, type PuntoTrazo } from "./trazo-organico";
 import { enZona, fraccionesDe, normalizarPesos, puntoEnRecorrido, rangoAltura, type ZonaMezcla, type ZonaOrganica } from "./zonas-organicas";
 import { fallar } from "./herramientas-escena-colores";
 import type { Pieza } from "./piezas";
@@ -205,7 +205,7 @@ export function cabe(p: Organico, f: string, zona: ZonaOrganica): "todo" | "part
  */
 export function engrosar(p: Organico, f: string, zona: ZonaOrganica, amplio: boolean): { pieza: Organico; nota: string } | null {
   const minimo = grosorMinimo(p, f);
-  if (minimo > 160) return null;
+  if (minimo > GROSOR_CUERPO_CM.max) return null;
   /** Qué puntos (de una lista con su diámetro y si están en la zona) se engruesan. */
   const elegir = (diametros: readonly number[], dentro: readonly boolean[]): boolean[] => {
     const mayor = Math.max(0, ...diametros.filter((_, i) => dentro[i]));
@@ -277,11 +277,15 @@ export function bultosDe(p: Organico): number {
   return Math.max(0, ...grosor.map((g, i) => (2 * g.radioCm) / (muestras[i]?.grosor ?? 2 * g.radioCm) - 1));
 }
 
-/** El cuerpo más grueso (× factor): el trazo por sus puntos, los tramos por su envoltura, el arco por sus radios. */
+/**
+ * El cuerpo más grueso (× factor): el trazo por sus puntos (diámetros), los tramos por su envoltura y el arco por sus radios, sin pasar
+ * del grosor máximo de un cuerpo. El presupuesto de armado lo acota quien lo pide (`presupuesto-ajustes.ts`).
+ */
 export function conGrosor(p: PiezaOrganica, factor: number): PiezaOrganica {
-  const g = (x: number) => Math.round(Math.min(160, x * factor) * 10) / 10;
-  if (p.tipo === "arco_organico") return { ...p, arco: { ...p.arco, radioBaseCm: g(p.arco.radioBaseCm), radioPuntaCm: g(p.arco.radioPuntaCm) } };
-  return editar(p, (t) => ({ ...t, puntos: t.puntos.map((q) => ({ ...q, grosor: g(q.grosor) })) }), (o) => ({ ...o, tramos: o.tramos.map((t) => ({ ...t, grosor: t.grosor.map((x) => ({ ...x, radioCm: g(x.radioCm) })) })) }));
+  const diametro = (x: number) => Math.round(Math.min(GROSOR_CUERPO_CM.max, x * factor) * 10) / 10;
+  const radio = (x: number) => Math.round(Math.min(GROSOR_CUERPO_CM.max / 2, x * factor) * 10) / 10;
+  if (p.tipo === "arco_organico") return { ...p, arco: { ...p.arco, radioBaseCm: radio(p.arco.radioBaseCm), radioPuntaCm: radio(p.arco.radioPuntaCm) } };
+  return editar(p, (t) => ({ ...t, puntos: t.puntos.map((q) => ({ ...q, grosor: diametro(q.grosor) })) }), (o) => ({ ...o, tramos: o.tramos.map((t) => ({ ...t, grosor: t.grosor.map((x) => ({ ...x, radioCm: radio(x.radioCm) })) })) }));
 }
 
 export function paletaDe(p: PiezaOrganica): readonly ColorOrganico[] {

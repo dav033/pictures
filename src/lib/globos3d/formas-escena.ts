@@ -33,6 +33,9 @@ export type OpcionesArcoOrganico = {
 /** Inflados de la técnica orgánica (los del preset de XV, medidos sobre la foto). */
 const INFLADOS_ORGANICO: Readonly<Record<string, number>> = { "R-24": 48, "R-18": 34, "R-12": 25, "R-9": 17, "R-5": 12 };
 
+/** Los radios de un arco orgánico de ese grosor (el diámetro de su base): la punta, un tercio. */
+export const radiosDeArco = (grosorCm: number) => ({ radioBaseCm: grosorCm / 2, radioPuntaCm: Math.round(grosorCm * 0.34) });
+
 /** Las opciones del motor orgánico para un arco: semiarco izquierdo hacia +x y derecho hacia −x. */
 export function opcionesArcoOrganico(a: OpcionesArcoOrganico): OpcionesOrganico {
   const mitad = Math.max(30, a.anchoCm / 2);

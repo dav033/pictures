@@ -29,8 +29,11 @@ type EntradaComun = {
   elementos: () => ElementoEscenografia[];
 };
 
-/** Un fondo de foto (panel, pedestales, cortina…): trae sus elementos hechos y no cambia de medida ni de color. */
-export type FondoFijo = EntradaComun & { clase: "fondo"; grupo?: GrupoCatalogo };
+/**
+ * Un fondo de foto (panel, pedestales, cortina…): trae sus elementos hechos y no cambia de medida. `tinte` (su color de partida,
+ * `#rrggbb`) dice que su parte principal admite otro color: cambia ese color y solo los elementos de ese color (el aro no).
+ */
+export type FondoFijo = EntradaComun & { clase: "fondo"; grupo?: GrupoCatalogo; tinte?: string };
 
 export type MuebleCatalogo = EntradaComun & {
   clase: "mueble";
@@ -69,6 +72,8 @@ export type MuebleCatalogo = EntradaComun & {
 };
 
 export type FondoCatalogo = FondoFijo | MuebleCatalogo;
+/** El color de partida que admite cambiar un fondo fijo (`tinte`), o undefined si no admite color. */
+export const tinteDe = (f: FondoCatalogo): string | undefined => (f.clase === "fondo" ? f.tinte : undefined);
 
 /** Cuánto se separa de la pared del fondo lo que se pone en el piso si la entrada no dice otra cosa (cm). */
 export const RETIRO_PISO_CM = 15;

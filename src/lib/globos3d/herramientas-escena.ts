@@ -10,6 +10,7 @@ import {
   COLORES_FOIL, FIGURAS, FORMAS_METALIZADO, MODELOS, NOMBRE_TIPO, RANGOS_ESTRUCTURA, TECNICAS, TIPOS_ESTRUCTURA,
   ajustarOrganico, coloresOrganicosPedidos, crearEstructura, type LugarPieza,
 } from "./herramientas-escena-estructuras";
+import { comprobarCambioDeCuerpo, cuerpoDeOrganico } from "./presupuesto-cuerpo";
 import { coloresDePieza, recolorearConPaleta, recolorearConPedidos } from "./herramientas-escena-recolor";
 import { IDS_SILUETA, TIPOS_FOLLAJE } from "./herramientas-escena-trazo";
 import { ACCIONES_TAMANO, FORMATO_AJUSTABLE, ajustarTamanos, esPiezaOrganica, textoConteo } from "./herramientas-escena-tamanos";
@@ -27,7 +28,7 @@ import { COLUMNA_QUINCE_AZUL } from "./organico-presets";
 import { CATALOGO_DECORACIONES } from "./catalogo-fotos";
 import { reemplazarColor } from "./recolorear";
 import { nombreForma, type ColoresForma, type OpcionesForma } from "./formas";
-import { opcionesArcoOrganico } from "./formas-escena";
+import { opcionesArcoOrganico, radiosDeArco } from "./formas-escena";
 import { COLORES_METALIZADO, PULGADAS_METALIZADO, nombreMetalizado } from "./metalizados";
 import { type Pieza, type PiezaArmada, type TipoPieza } from "./piezas";
 import { CACHE_ARMADO, alturaDePieza, armadaDe } from "./altura-pieza";
@@ -177,7 +178,7 @@ const PropiedadesSchema = z.object({
   alto_cm: z.number().optional().describe("columna 60–500; arco 100–350; arco_organico 150–320; columna_organica 80–320; semiarco_organico 100–300; marco_organico 150–320; pared 100–300; forma 40–300; cono 40–250; letras (alto de cada letra) 20–200; arbol 100–400; una pieza orgánica que ya existe 40–400 (se estira)"),
   ancho_cm: z.number().optional().describe("arco 100–500; arco_organico (entre patas) 150–500; guirnalda y guirnalda_organica (de punta a punta) 100–800; semiarco_organico 60–300; aro_organico (diámetro) 80–300; marco_organico 120–500; pared 100–600; forma 40–300; esfera (diámetro) 30–200; una pieza orgánica que ya existe 30–800"),
   caida_cm: z.number().optional().describe("guirnalda y guirnalda_organica: cuánto cuelga en el medio, 0–150 (0 = recta)"),
-  grosor_cm: z.number().optional().describe("orgánicas: diámetro del cuerpo de globos (columna_organica 30–120, 70 por defecto; guirnalda_organica 20–90; semiarco 30–110; aro 20–70; marco 30–100; arco_organico y piezas orgánicas que ya existen 20–120)"),
+  grosor_cm: z.number().optional().describe("orgánicas: diámetro del cuerpo de globos, 12–160 cm (columna_organica 70 por defecto; aro_organico 20–70). Un cuerpo largo y grueso a la vez se rechaza y el error dice el grosor máximo que cabe"),
   inclinacion_cm: z.number().optional().describe("columna_organica: cuánto se corre la punta a la derecha (− a la izquierda), −120 a 120; 0 = recta"),
   tamanos: z.array(z.string()).max(5).optional().describe("orgánicas: SOLO estos tamaños de globo (reemplaza toda la mezcla), de R-24, R-18, R-12, R-9, R-5 (p. ej. [\"R-18\",\"R-12\",\"R-5\"]); si falta, los que caben en el grosor. Para «más/menos R-24», «un 40 % de R-18» o «R-24 solo abajo» en una pieza que ya existe usa ajustar_tamanos"),
   acabado: z.string().max(20).optional().describe("acabado para los colores que no traen uno: pastel, fashion, metal, reflex, satin, silk, neon, cristal"),
@@ -198,7 +199,7 @@ const PropiedadesSchema = z.object({
   pesos: z.array(z.number()).max(6).optional().describe("orgánicas (arco_organico, columna_organica, guirnalda_organica… y piezas orgánicas que ya existen) y formas: proporción de cada color 0–100, en el orden de «colores»"),
   flores: z.boolean().optional().describe("orgánicas: flores artificiales en los huecos"),
   silueta: z.enum(IDS_SILUETA).optional().describe("trazo_organico: la silueta (" + SILUETAS_TRAZO.map((x) => `${x.id} = ${x.descripcion}`).join(" ") + ")"),
-  puntos: z.array(z.object({ x_cm: z.number(), y_cm: z.number().describe("altura del eje desde el piso"), grosor_cm: z.number().describe("diámetro del cuerpo de globos en ese punto, 20–140") })).min(2).max(40).optional()
+  puntos: z.array(z.object({ x_cm: z.number(), y_cm: z.number().describe("altura del eje desde el piso"), grosor_cm: z.number().describe("diámetro del cuerpo de globos en ese punto, 12–160") })).min(2).max(40).optional()
     .describe("trazo_organico: en vez de silueta, el recorrido exacto en el plano de la pared (x a la derecha desde el centro de la pieza, y hacia arriba desde el piso), en orden; un extremo con y ≤ grosor/2 nace del piso"),
   follaje: z.array(z.string().min(3).max(30)).min(1).max(4).optional().describe(`trazo_organico: flores y hojas de tela entre los globos (${TIPOS_FOLLAJE.join(", ")}), con color opcional («monstera», «palma dorada», «rosa marfil», «hoja_seca beige», «pampa crema»: las plumas de pampa, también «pampas» o «pasto de la pampa»); el primero es el que más se ve`),
   racimos: z.number().min(0).max(1).optional().describe("trazo_organico: 0 = cuerpo parejo, 1 = muy abultado en racimos (0,35 por defecto)"),
@@ -734,7 +735,9 @@ function aplicarPropiedades(base: Pieza, entrada: Propiedades, notas: string[], 
       const a = { ...base.arco };
       if (props.ancho_cm !== undefined) a.anchoCm = enRango(props.ancho_cm, RANGOS.arco_organico.ancho_cm, "ancho_cm");
       if (props.alto_cm !== undefined) a.altoCm = enRango(props.alto_cm, RANGOS.arco_organico.alto_cm, "alto_cm");
-      if (props.grosor_cm !== undefined) { const g = enRango(props.grosor_cm, RANGOS_ESTRUCTURA.organico.grosor_cm, "grosor_cm"); a.radioBaseCm = g / 2; a.radioPuntaCm = Math.round(g * 0.34); }
+      if (props.grosor_cm !== undefined) Object.assign(a, radiosDeArco(enRango(props.grosor_cm, RANGOS_ESTRUCTURA.organico.grosor_cm, "grosor_cm")));
+      // Lo que no cabe se rechaza antes de armarlo, medido por las opciones con que se arma: las mismas que tiene al pasar a orgánico.
+      comprobarCambioDeCuerpo(cuerpoDeOrganico(opcionesArcoOrganico(base.arco)), cuerpoDeOrganico(opcionesArcoOrganico(a)), (g) => cuerpoDeOrganico(opcionesArcoOrganico({ ...a, ...radiosDeArco(g) })), 2 * a.radioBaseCm);
       if (props.colores) a.colores = coloresOrganicosPedidos(props.colores, props.pesos, notas);
       else if (props.pesos) {
         if (props.pesos.length !== a.colores.length) fallar(`pesos tiene ${props.pesos.length} valores y el arco ${a.colores.length} colores.`);

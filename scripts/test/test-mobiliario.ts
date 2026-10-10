@@ -113,7 +113,8 @@ prueba("cambiar_pieza cambia medidas, colores y texto de un mueble, y dice por q
   const neon = agregar(vacia(), { id: "neon_cursiva" });
   const n2 = cambiar(neon.escena, { id: neon.escena.nodos[0]!.id, texto: "Valentina", colores: ["negro", "verde"] });
   assert.ok(n2.ok && armarPieza(n2.escena.nodos[0]!.pieza).solidos?.[0]?.motivo?.texto === "Valentina", n2.ok ? "" : n2.error);
-  const fondo: Escena = { ...vacia(), nodos: [{ id: "panel", nombre: "Panel redondo", pieza: piezaDeEntrada(FONDOS_CATALOGO.find((f) => f.id === "panel_redondo")!), colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] };
+  // Un fondo sin color de catálogo (los pedestales): el panel redondo sí admite color (test-fondos-tinte).
+  const fondo: Escena = { ...vacia(), nodos: [{ id: "panel", nombre: "Pedestales", pieza: piezaDeEntrada(FONDOS_CATALOGO.find((f) => f.id === "pedestales")!), colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] };
   const mal = cambiar(fondo, { id: "panel", colores: ["rojo"] });
   assert.ok(!mal.ok && /fondo|fija/.test(mal.error) && /agregar_mobiliario/.test(mal.error), mal.ok ? "debía fallar" : mal.error);
   assert.ok(cambiar(fondo, { id: "panel", nombre: "Otro nombre" }).ok, "solo el nombre sí");
@@ -407,8 +408,8 @@ prueba("MENORES: sitio libre contra las cajas, aviso sin lugar, colores opcional
   const conRibete = agregar(vacia(), { id: "alfombra_redonda", colores: ["rosa", "negro"] });
   const azul = cambiar(conRibete.escena, { id: conRibete.escena.nodos[0]!.id, colores: ["azul"] });
   assert.ok(azul.ok && (azul.escena.nodos[0]!.pieza as Extract<Pieza, { tipo: "escenografia" }>).mueble?.opciones?.colores[1] === "#1c1c1c", "el ribete propio no se toca");
-  // Mensajes: el nombre de la pieza, y sin sugerir agregar_mobiliario para utilería.
-  const fijo: Escena = { ...vacia(), nodos: [{ id: "panel", nombre: "Mi panel dorado", pieza: piezaDeEntrada(FONDOS_CATALOGO.find((f) => f.id === "panel_redondo")!), colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] };
+  // Mensajes: el nombre de la pieza, y sin sugerir agregar_mobiliario para utilería. (Un fondo sin color de catálogo: el panel redondo sí admite color, test-fondos-tinte.)
+  const fijo: Escena = { ...vacia(), nodos: [{ id: "panel", nombre: "Mi panel dorado", pieza: piezaDeEntrada(FONDOS_CATALOGO.find((f) => f.id === "pedestales")!), colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] };
   const mal = cambiar(fijo, { id: "panel", colores: ["rojo"] });
   assert.ok(!mal.ok && /«Mi panel dorado»/.test(mal.error) && /agregar_mobiliario/.test(mal.error));
   const plato: Escena = { ...vacia(), nodos: [{ id: "plato", nombre: "Platos naranja", pieza: { tipo: "escenografia", elementos: [{ forma: "cilindro", base: { x: 0, y: 0, z: 0 }, radioCm: 10, altoCm: 1, hex: "#ff8800", acabado: "mate" }], utileria: "plato", productos: [{ nombre: "Platos", url: "/products/x", cantidad: 1 }] }, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] };

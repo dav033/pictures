@@ -1,5 +1,6 @@
 import { ajustarTrazo, crearTrazo, type PuntoPedido } from "./herramientas-escena-trazo";
-import { esColumnaTrazo } from "./trazo-organico";
+import { esColumnaTrazo, GROSOR_CUERPO_CM } from "./trazo-organico";
+import { comprobarCambioDeCuerpo, comprobarCuerpo, cuerpoDeOrganico, medirTramos } from "./presupuesto-cuerpo";
 import { armarPieza, type Pieza, type TipoPieza } from "./piezas";
 import { formatoPorId } from "./formatos";
 import {
@@ -43,12 +44,12 @@ export type TipoEstructura = (typeof TIPOS_ESTRUCTURA)[number];
 
 /** Rangos (cm) de las estructuras nuevas. `grosor_cm` es el diámetro del cuerpo orgánico. */
 export const RANGOS_ESTRUCTURA = {
-  columna_organica: { alto_cm: [80, 320], grosor_cm: [30, 120], inclinacion_cm: [-120, 120] },
-  guirnalda_organica: { ancho_cm: [100, 800], caida_cm: [0, 150], grosor_cm: [20, 90] },
-  semiarco_organico: { ancho_cm: [60, 300], alto_cm: [100, 300], grosor_cm: [30, 110] },
+  columna_organica: { alto_cm: [80, 320], grosor_cm: [GROSOR_CUERPO_CM.min, GROSOR_CUERPO_CM.max], inclinacion_cm: [-120, 120] },
+  guirnalda_organica: { ancho_cm: [100, 800], caida_cm: [0, 150], grosor_cm: [GROSOR_CUERPO_CM.min, GROSOR_CUERPO_CM.max] },
+  semiarco_organico: { ancho_cm: [60, 300], alto_cm: [100, 300], grosor_cm: [GROSOR_CUERPO_CM.min, GROSOR_CUERPO_CM.max] },
   aro_organico: { diametro_cm: [80, 300], grosor_cm: [20, 70] },
-  marco_organico: { ancho_cm: [120, 500], alto_cm: [150, 320], grosor_cm: [30, 100] },
-  organico: { alto_cm: [40, 400], ancho_cm: [30, 800], grosor_cm: [20, 120] },
+  marco_organico: { ancho_cm: [120, 500], alto_cm: [150, 320], grosor_cm: [GROSOR_CUERPO_CM.min, GROSOR_CUERPO_CM.max] },
+  organico: { alto_cm: [40, 400], ancho_cm: [30, 800], grosor_cm: [GROSOR_CUERPO_CM.min, GROSOR_CUERPO_CM.max] },
   pared_trenzas: { ancho_cm: [100, 600], alto_cm: [100, 300] },
   forma: { ancho_cm: [40, 300], alto_cm: [40, 300] },
   esfera: { diametro_cm: [30, 200] },
@@ -176,29 +177,34 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
       const alto = enRango(p.alto_cm ?? 200, R.alto_cm, "alto_cm");
       const grosor = enRango(p.grosor_cm ?? 70, R.grosor_cm, "grosor_cm");
       const inclinacion = p.inclinacion_cm === undefined ? 0 : enRango(p.inclinacion_cm, R.inclinacion_cm, "inclinacion_cm");
+      const tramoDe = (g: number) => formaColumna({ altoCm: alto, radioBaseCm: g / 2, radioMedioCm: r1(g * 0.43), radioPuntaCm: r1(g * 0.36), inclinacionCm: inclinacion, serpenteoCm: 4, mezcla: MEZCLA_COLUMNA_GRUESA });
+      comprobarCuerpo(medirTramos((g) => [tramoDe(g)]), grosor);
       const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.75);
-      const tramo = formaColumna({ altoCm: alto, radioBaseCm: grosor / 2, radioMedioCm: r1(grosor * 0.43), radioPuntaCm: r1(grosor * 0.36), inclinacionCm: inclinacion, serpenteoCm: 4, mezcla: MEZCLA_COLUMNA_GRUESA });
-      return { pieza: alAlto(piezaOrganica([tramo], colores, permitidos, true, flores, semillaDe(alto, grosor, inclinacion)), alto), nombre: inclinacion ? "Columna orgánica inclinada" : "Columna orgánica", lugar: "piso" };
+      return { pieza: alAlto(piezaOrganica([tramoDe(grosor)], colores, permitidos, true, flores, semillaDe(alto, grosor, inclinacion)), alto), nombre: inclinacion ? "Columna orgánica inclinada" : "Columna orgánica", lugar: "piso" };
     }
     case "guirnalda_organica": {
       const R = RANGOS_ESTRUCTURA.guirnalda_organica;
       const largo = enRango(p.ancho_cm ?? 300, R.ancho_cm, "ancho_cm");
       const caida = enRango(p.caida_cm ?? 30, R.caida_cm, "caida_cm");
       const grosor = enRango(p.grosor_cm ?? 45, R.grosor_cm, "grosor_cm");
-      const a = largo / 2 - grosor / 2;
-      const puntos: Vec3[] = Array.from({ length: 11 }, (_, i) => { const x = -a + (2 * a * i) / 10; return { x: r1(x), y: r1(caida * ((x / a) ** 2 - 1)), z: 0 }; });
-      const tramo = { ...formaGuirnalda({ id: "guirnalda", nombre: "Guirnalda orgánica", puntos, radioInicioCm: grosor / 2, radioFinCm: grosor / 2, mezcla: MEZCLA_GUIRNALDA }), tapas: { inicio: true, fin: true } };
+      const tramoDe = (g: number) => {
+        const a = largo / 2 - g / 2;
+        const puntos: Vec3[] = Array.from({ length: 11 }, (_, i) => { const x = -a + (2 * a * i) / 10; return { x: r1(x), y: r1(caida * ((x / a) ** 2 - 1)), z: 0 }; });
+        return { ...formaGuirnalda({ id: "guirnalda", nombre: "Guirnalda orgánica", puntos, radioInicioCm: g / 2, radioFinCm: g / 2, mezcla: MEZCLA_GUIRNALDA }), tapas: { inicio: true, fin: true } };
+      };
+      comprobarCuerpo(medirTramos((g) => [tramoDe(g)]), grosor);
       const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.8);
-      return { pieza: piezaOrganica([tramo], colores, permitidos, false, flores, semillaDe(largo, caida, grosor)), nombre: "Guirnalda orgánica", lugar: "pared" };
+      return { pieza: piezaOrganica([tramoDe(grosor)], colores, permitidos, false, flores, semillaDe(largo, caida, grosor)), nombre: "Guirnalda orgánica", lugar: "pared" };
     }
     case "semiarco_organico": {
       const R = RANGOS_ESTRUCTURA.semiarco_organico;
       const ancho = enRango(p.ancho_cm ?? 150, R.ancho_cm, "ancho_cm");
       const alto = enRango(p.alto_cm ?? 200, R.alto_cm, "alto_cm");
       const grosor = enRango(p.grosor_cm ?? 60, R.grosor_cm, "grosor_cm");
-      const tramo = formaSemiarco({ anchoCm: ancho, altoCm: alto, radioBaseCm: grosor / 2, radioPuntaCm: r1(grosor * 0.33), origen: { x: -ancho / 2, y: 0, z: 0 } });
+      const tramoDe = (g: number) => formaSemiarco({ anchoCm: ancho, altoCm: alto, radioBaseCm: g / 2, radioPuntaCm: r1(g * 0.33), origen: { x: -ancho / 2, y: 0, z: 0 } });
+      comprobarCuerpo(medirTramos((g) => [tramoDe(g)]), grosor);
       const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.75);
-      return { pieza: alAlto(piezaOrganica([tramo], colores, permitidos, true, flores, semillaDe(ancho, alto, grosor)), alto), nombre: "Semiarco orgánico", lugar: "piso" };
+      return { pieza: alAlto(piezaOrganica([tramoDe(grosor)], colores, permitidos, true, flores, semillaDe(ancho, alto, grosor)), alto), nombre: "Semiarco orgánico", lugar: "piso" };
     }
     case "aro_organico": {
       const R = RANGOS_ESTRUCTURA.aro_organico;
@@ -206,7 +212,9 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
       const grosor = enRango(p.grosor_cm ?? 30, R.grosor_cm, "grosor_cm");
       const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.9);
       const exterior = permitidos.includes("R-12") ? "R-12" : permitidos.find((f) => f !== "R-5") ?? permitidos[0]!;
-      const base = opcionesAroOrganico({ diametroCm: diametro, exterior: { formatoId: exterior, radioCm: 13 }, interior: { pesos: { "R-9": 0.75, "R-5": 0.25 }, radioCm: grosor / 2, adelanteCm: 6 }, colores, semilla: semillaDe(diametro, grosor) });
+      const aroDe = (g: number) => opcionesAroOrganico({ diametroCm: diametro, exterior: { formatoId: exterior, radioCm: 13 }, interior: { pesos: { "R-9": 0.75, "R-5": 0.25 }, radioCm: g / 2, adelanteCm: 6 }, colores, semilla: semillaDe(diametro, g) });
+      comprobarCuerpo(medirTramos((g) => aroDe(g).tramos), grosor);
+      const base = aroDe(grosor);
       const opciones: OpcionesOrganico = { ...base, tramos: base.tramos.map((t) => ({ ...t, mezcla: mezclaCon(t.mezcla, permitidos) })), relleno: rellenoCon(permitidos), huecosFlores: flores ? 14 : 0, vista: { x: 0, y: 0, z: 1 } };
       return { pieza: { tipo: "organico", opciones, flores: flores ? FLORES() : null }, nombre: "Aro orgánico", lugar: "piso" };
     }
@@ -216,10 +224,12 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
       const alto = enRango(p.alto_cm ?? 230, R.alto_cm, "alto_cm");
       const grosor = enRango(p.grosor_cm ?? 60, R.grosor_cm, "grosor_cm");
       const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.75);
-      const base = opcionesArcoRectangular({
-        anchoEjeCm: ancho - grosor, altoEjeCm: alto - grosor / 2, radioEsquinaCm: 40, radioBaseCm: grosor / 2 + 4, radioPataCm: grosor / 2, radioArribaCm: grosor / 2, hueco: null,
-        mezcla: { base: { "R-18": 0.15, "R-12": 0.65, "R-9": 0.2 }, pata: { "R-12": 0.7, "R-9": 0.3 }, arriba: { "R-18": 0.15, "R-12": 0.6, "R-9": 0.25 } }, colores, semilla: semillaDe(ancho, alto, grosor),
+      const marcoDe = (g: number) => opcionesArcoRectangular({
+        anchoEjeCm: ancho - g, altoEjeCm: alto - g / 2, radioEsquinaCm: 40, radioBaseCm: g / 2 + 4, radioPataCm: g / 2, radioArribaCm: g / 2, hueco: null,
+        mezcla: { base: { "R-18": 0.15, "R-12": 0.65, "R-9": 0.2 }, pata: { "R-12": 0.7, "R-9": 0.3 }, arriba: { "R-18": 0.15, "R-12": 0.6, "R-9": 0.25 } }, colores, semilla: semillaDe(ancho, alto, g),
       });
+      comprobarCuerpo(medirTramos((g) => marcoDe(g).tramos), grosor);
+      const base = marcoDe(grosor);
       const opciones: OpcionesOrganico = { ...base, tramos: base.tramos.map((t) => ({ ...t, mezcla: mezclaCon(t.mezcla, permitidos) })), relleno: rellenoCon(permitidos), huecosFlores: flores ? 14 : 0, vista: { x: 0, y: 0, z: 1 } };
       return { pieza: alAlto({ tipo: "organico", opciones, flores: flores ? FLORES() : null }, alto), nombre: "Marco orgánico", lugar: "piso" };
     }
@@ -237,6 +247,12 @@ export function medidasArmadas(pieza: Pieza): { altoCm: number; anchoCm: number;
 }
 
 type Organico = Extract<Pieza, { tipo: "organico" }>;
+
+/** El grosor de un aro orgánico (el diámetro de su anillo de dentro, `opcionesAroOrganico`), o null si no es un aro: conserva su rango al cambiarlo. */
+export function grosorDeAro(o: Pick<OpcionesOrganico, "tramos">): number | null {
+  const dentro = o.tramos.find((t) => t.id === "anillo_interior");
+  return dentro ? 2 * Math.max(0, ...dentro.grosor.map((g) => g.radioCm)) : null;
+}
 
 /** El mayor radio de envoltura de los tramos (medio grosor). */
 const radioMayor = (o: OpcionesOrganico) => Math.max(1, ...o.tramos.flatMap((t) => t.grosor.map((g) => g.radioCm)));
@@ -281,11 +297,20 @@ export function ajustarOrganico(pieza: Organico, p: PedidoEstructura, notas: str
     return ajustarTrazo(pieza, pieza.generador, { ancho_cm: p.ancho_cm, alto_cm: p.alto_cm, grosor_cm: p.grosor_cm, tamanos: p.tamanos, racimos: p.racimos, flores: p.flores, follaje: p.follaje, ...(colores ? { colores } : {}) });
   }
   const R = RANGOS_ESTRUCTURA.organico;
-  let o: Organico = escalarOrganico(pieza, {
+  // El aro conserva su rango de grosor también al cambiarlo (más grueso ya no es un aro).
+  const rangoGrosor = grosorDeAro(pieza.opciones) !== null ? RANGOS_ESTRUCTURA.aro_organico.grosor_cm : R.grosor_cm;
+  const cambio = {
     ...(p.alto_cm !== undefined ? { altoCm: enRango(p.alto_cm, R.alto_cm, "alto_cm") } : {}),
     ...(p.ancho_cm !== undefined ? { anchoCm: enRango(p.ancho_cm, R.ancho_cm, "ancho_cm") } : {}),
-    ...(p.grosor_cm !== undefined ? { grosorCm: enRango(p.grosor_cm, R.grosor_cm, "grosor_cm") } : {}),
-  });
+    ...(p.grosor_cm !== undefined ? { grosorCm: enRango(p.grosor_cm, rangoGrosor, "grosor_cm") } : {}),
+  };
+  const antes = cuerpoDeOrganico(pieza.opciones);
+  const medirConGrosor = (o: Organico) => (g: number) => cuerpoDeOrganico(escalarOrganico(o, { grosorCm: g }).opciones);
+  // El grosor se comprueba antes de estirar (que arma la pieza para medirla): solo cambian los radios, así que es exacto y no arma nada.
+  if (cambio.grosorCm !== undefined) comprobarCambioDeCuerpo(antes, medirConGrosor(pieza)(cambio.grosorCm), medirConGrosor(pieza), cambio.grosorCm);
+  let o: Organico = escalarOrganico(pieza, cambio);
+  // Estirada, se comprueba el cuerpo que de verdad queda; el grosor que cabría se busca sobre ese mismo recorrido.
+  if (cambio.altoCm !== undefined || cambio.anchoCm !== undefined) comprobarCambioDeCuerpo(antes, cuerpoDeOrganico(o.opciones), medirConGrosor(o), cambio.grosorCm ?? 2 * radioMayor(o.opciones));
   const pedidos = pedidosCon(p);
   if (pedidos) o = { ...o, opciones: { ...o.opciones, colores: coloresOrganicosPedidos(pedidos, p.pesos, notas) } };
   else if (p.pesos) {

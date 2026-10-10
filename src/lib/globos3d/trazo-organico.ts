@@ -141,6 +141,8 @@ function suavizar(puntos: readonly PuntoTrazo[], pasosPorTramo: number): PuntoTr
 
 /** Un formato cabe en un cuerpo si su inflado no pasa de esta fracción del grosor (un R-24 no va en una punta de 30 cm). */
 export const CABE_EN_GROSOR = 0.82;
+/** Grosor (cm) de un cuerpo orgánico (el diámetro de un tramo): la única fuente de su rango, la comprueba el trazo y la piden las herramientas. */
+export const GROSOR_CUERPO_CM = { min: 12, max: 160 } as const;
 
 /** El grosor mínimo (cm) en que cabe un formato del trazo. */
 export const grosorParaFormato = (formatoId: string) => Math.ceil((INFLADOS_TRAZO[formatoId] ?? 0) / CABE_EN_GROSOR + 1);
@@ -157,7 +159,7 @@ export function validarTrazo(p: ParametrosTrazoOrganico): string | null {
   if (p.puntos.length > 40) return "El trazo admite hasta 40 puntos.";
   for (const q of p.puntos) {
     if (![q.x, q.y, q.grosor].every(Number.isFinite)) return "Hay un punto del trazo con medidas que no son números.";
-    if (q.grosor < 12 || q.grosor > 160) return `Grosor de ${q.grosor} cm fuera de rango (12 a 160 cm).`;
+    if (q.grosor < GROSOR_CUERPO_CM.min || q.grosor > GROSOR_CUERPO_CM.max) return `Grosor de ${q.grosor} cm fuera de rango (${GROSOR_CUERPO_CM.min} a ${GROSOR_CUERPO_CM.max} cm).`;
     if (q.y < -1) return "Ningún punto del trazo va bajo el piso.";
   }
   if (!Object.values(p.mezcla).some((w) => w > 0)) return "La mezcla de tamaños no tiene ningún formato con peso.";
