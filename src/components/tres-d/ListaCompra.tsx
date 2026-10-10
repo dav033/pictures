@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ClipboardCopy } from "lucide-react";
 import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import type { MaterialDecoracion } from "@/lib/globos3d/figuras";
@@ -8,6 +8,10 @@ import { corazonesSinCobertura } from "@/lib/globos3d/formatos";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { ProductosFiesta } from "./UtileriaFiesta";
 import { BTN } from "./ui-taller";
+import { SeccionHelio } from "./SeccionHelio";
+import { SeccionBomba } from "./SeccionBomba";
+import { almacenDelNavegador, filasBomba, guardarCalibracionBomba, inflablesDeEscena, leerCalibracionBomba, lineasBomba, type CalibracionBomba } from "@/lib/globos3d/bomba-segundos";
+import { avisoMetalizados, contarMetalizados, gruposDeHelio, lineasHelio, resumenHelio } from "@/lib/globos3d/helio-cinta";
 
 const m = (cm: number) => (cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 });
 
@@ -26,12 +30,14 @@ function ListaMateriales({ materiales }: { materiales: ReadonlyArray<MaterialDec
   );
 }
 
-function enTexto(nombre: string, escena: Escena, armada: EscenaArmada): string {
+function enTexto(nombre: string, escena: Escena, armada: EscenaArmada, calibracion: CalibracionBomba): string {
   const lineas = [`${nombre} — lista de compra`, `${escena.nodos.length} piezas · ${armada.globos.length} globos`, "", "GLOBOS"];
   for (const x of [...armada.materiales].sort((a, b) => b.cantidad - a.cantidad)) lineas.push(`${x.cantidad} × ${x.formatoId} ${referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} ${x.codigo}`);
   for (const x of corazonesSinCobertura(armada.materiales)) lineas.push(`SIN COBERTURA: la tienda no vende el Corazón 12 en ${referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} ${x.codigo} (${x.cantidad}).`);
   lineas.push("", "POR PIEZA");
   for (const n of armada.porNodo) lineas.push(`${n.nombre}: ${n.globos.length} globos${n.copias > 1 ? ` en ${n.copias} copias` : ""}`);
+  const metalizados = contarMetalizados(escena.nodos, armada.porNodo);
+  lineas.push(...lineasHelio(resumenHelio(gruposDeHelio(escena.nodos, armada.porNodo))), ...(metalizados ? ["", avisoMetalizados(metalizados)] : []), ...lineasBomba(filasBomba(inflablesDeEscena(armada), calibracion)));
   return lineas.join("\n");
 }
 
@@ -41,8 +47,14 @@ function enTexto(nombre: string, escena: Escena, armada: EscenaArmada): string {
  */
 export function ListaCompra({ nombre, escena, armada, productosExactos }: { nombre: string; escena: Escena; armada: EscenaArmada; productosExactos: ReactNode }) {
   const [copiada, setCopiada] = useState(false);
+  const [calibracion, setCalibracion] = useState<CalibracionBomba>({});
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratación desde localStorage, solo posible tras montar en cliente
+    setCalibracion(leerCalibracionBomba(almacenDelNavegador()));
+  }, []);
+  const cambiarCalibracion = (siguiente: CalibracionBomba) => { setCalibracion(siguiente); guardarCalibracionBomba(almacenDelNavegador(), siguiente); };
   const copiar = async () => {
-    try { await navigator.clipboard.writeText(enTexto(nombre, escena, armada)); setCopiada(true); setTimeout(() => setCopiada(false), 2500); } catch { setCopiada(false); }
+    try { await navigator.clipboard.writeText(enTexto(nombre, escena, armada, calibracion)); setCopiada(true); setTimeout(() => setCopiada(false), 2500); } catch { setCopiada(false); }
   };
   const tubitos = armada.materiales.some((x) => x.formatoId.startsWith("T-"));
   return (
@@ -62,6 +74,8 @@ export function ListaCompra({ nombre, escena, armada, productosExactos }: { nomb
         {corazonesSinCobertura(armada.materiales).map((x) => <p key={x.codigo} className="text-xs text-red-600" role="note">Sin cobertura: la tienda no vende el Corazón 12 en {referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} ({x.codigo}); {x.cantidad} {x.cantidad === 1 ? "corazón no se puede comprar" : "corazones no se pueden comprar"} en ese color.</p>)}
         {armada.flores.length > 0 && <p className="mt-1 text-xs text-taller-suave">Las flores artificiales son follaje: no cuentan como globos.</p>}
       </section>
+      <SeccionHelio grupos={gruposDeHelio(escena.nodos, armada.porNodo)} metalizados={contarMetalizados(escena.nodos, armada.porNodo)} />
+      <SeccionBomba globos={inflablesDeEscena(armada)} calibracion={calibracion} onCambiar={cambiarCalibracion} />
       <section aria-label="Por pieza">
         <h3 className="taller-rotulo mb-2">Por pieza</h3>
         <ul className="text-sm">

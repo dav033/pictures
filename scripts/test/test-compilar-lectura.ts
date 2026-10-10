@@ -6,6 +6,7 @@
  * - la escala manda: una guirnalda leída de 0,06 a 0,83 del ancho en una foto de 250 cm mide ~190 cm;
  * - los colores salen por su nombre de decorador («azul marino» → 044, «dorado» cromado → 970) y el confeti en 390;
  * - lo que nace del piso queda en el piso; lo de pared, a su altura;
+ * - un globo o unos corazones «en el aire» de la foto salen de aire con un aviso (no se sabe si flotan o cuelgan); el ramo de helio, de helio;
  * - determinista: dos compilaciones dan la misma escena.
  *
  * Run: npx tsx scripts/test/test-compilar-lectura.ts
@@ -16,6 +17,8 @@ import { LecturaFotoSchema } from "@/lib/globos3d/lectura-foto";
 import { compilarLectura, codigoDeColor } from "@/lib/globos3d/compilar-lectura";
 import { armarEscena } from "@/lib/globos3d/escena";
 import { FLORES_ARTIFICIALES } from "@/lib/globos3d/flores-artificiales";
+import { esGloboDeHelio } from "@/lib/globos3d/helio-cinta";
+import { NOTA_GLOBOS_EN_EL_AIRE } from "@/lib/globos3d/corazones-lectura";
 
 assert.equal(REFERENCIAS_DUENO.length, 13);
 for (const r of REFERENCIAS_DUENO) {
@@ -60,6 +63,24 @@ for (const [follaje, esperado, notasEsperadas] of [
   assert.deepEqual([...sacadas].sort(), [...esperado], follaje.join("+"));
   assert.equal(r.notas.filter((n) => /Follaje|no viene en/.test(n)).length, notasEsperadas, `${follaje.join("+")}: ${r.notas.join(" | ")}`);
 }
+
+// Helio de la lista de compra: «en el aire» es solo dónde se ve el globo (flotando o colgado): sale de aire y la lectura avisa, una sola vez.
+// El ramo de helio sí es helio. Los corazones se tratan igual que un globo suelto.
+const color = { nombre: "rojo", hex: "#dc1010", peso: 100, acabado: "mate" } as const;
+const sueltos = structuredClone(REFERENCIAS_DUENO[0]!.lectura);
+sueltos.piezas = [
+  { tipo: "globo", x: 0.3, y: 0.3, diametro: 0.1, en: "aire", colores: [color] },
+  { tipo: "globo", x: 0.6, y: 0.8, diametro: 0.1, en: "piso", colores: [color] },
+  { tipo: "corazon", x: 0.5, y: 0.3, en: "aire", cantidad: 2, colores: [color] },
+  { tipo: "corazon", x: 0.2, y: 0.8, en: "piso", cantidad: 2, colores: [color] },
+  { tipo: "ramo_helio", x: 0.8, yBase: 0.7, yArriba: 0.3, cantidad: 3, colores: [color] },
+];
+LecturaFotoSchema.parse(sueltos);
+const conAire = compilarLectura(sueltos);
+const flotan = armarEscena(conAire.escena).porNodo.map((n) => [n.id.replace(/-\d+$/, ""), n.globos.filter(esGloboDeHelio).length] as const);
+assert.deepEqual(flotan.filter(([, k]) => k > 0), [["ramo", 1], ["ramo", 1], ["ramo", 1]], "solo flotan los tres del ramo de helio");
+assert.equal(conAire.notas.filter((n) => n === NOTA_GLOBOS_EN_EL_AIRE).length, 1, "el aviso de los globos en el aire sale una vez");
+assert.ok(!compilarLectura({ ...sueltos, piezas: sueltos.piezas.filter((p) => !("en" in p) || p.en === "piso") }).notas.includes(NOTA_GLOBOS_EN_EL_AIRE), "sin globos en el aire no hay aviso");
 
 // Colores.
 const notas: string[] = [];

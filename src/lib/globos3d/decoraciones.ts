@@ -16,7 +16,8 @@ import type { ImpresoGlobo } from "./estampados";
  * Las flores predefinidas son solo valores iniciales: todo se puede cambiar por propiedades.
  * Unidades: cm.
  */
-export type ParteGlobo = { formatoId: string; infladoCm: number; codigo: string };
+/** Un globo de una decoración por datos; `helio` lo marca como flotante (ver `GloboDecoracion.helio`). */
+export type ParteGlobo = { formatoId: string; infladoCm: number; codigo: string; helio?: true };
 
 export type PropiedadesFlor = {
   petalos: ParteGlobo & {
@@ -43,8 +44,10 @@ export type PropiedadesFlor = {
  * más general al más fino separado por «/» («petalos», «corona», «centro», «copa/frutas», «tronco», «ramas»,
  * «estructura», «relleno», «flecos»…). Con el formato y el color, es lo que deja a la IA apuntar a «los Link-O-Loon de
  * las ramas» o «los R-24» sin tocar lo demás (ver `partes-globos.ts`). Toda pieza nueva debe ponerla.
+ * `helio`: el globo flota con helio (lo marca la fuente: `ParteGlobo.helio` o `Pieza.helio`); la lista de compra lo cuenta
+ * con los de las partes de helio («helio», «ramo»), ver `helio-cinta.ts`. Sin la marca, el globo es de aire.
  */
-export type GloboDecoracion = { formatoId: string; infladoCm: number; codigo: string; nudo: Vec3; direccion: Vec3; cuelloExtraCm: number; frente?: Vec3; estampado?: EstampadoGlobo; parte?: string };
+export type GloboDecoracion = { formatoId: string; infladoCm: number; codigo: string; nudo: Vec3; direccion: Vec3; cuelloExtraCm: number; frente?: Vec3; estampado?: EstampadoGlobo; parte?: string; helio?: true };
 
 /** Una mancha impresa: un polígono de color, en cm medidos sobre la superficie del globo (u a la derecha, v arriba). */
 export type CapaEstampado = { hex: string; puntos: Array<[number, number]> };

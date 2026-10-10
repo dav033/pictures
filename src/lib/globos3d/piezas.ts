@@ -98,6 +98,13 @@ type PiezaBase =
  * sus globos por color o por índice y esos toman el impreso, su color base y su producto.
  */
 export type Pieza = PiezaBase & {
+  /**
+   * Todos sus globos flotan con helio (un globo suelto de ramo, una calabaza de ramo, un cuarteto que flota): los marca
+   * `helio` y la lista de compra cuenta sus litros y su cinta (ver `helio-cinta.ts`). Sin ella, la pieza es de aire; las de
+   * techo y el ramo de helio ya lo dicen por su parte. En una decoración con un solo globo flotante entre otros (el
+   * exterior de un doble globo) se marca el globo: `ParteGlobo.helio`.
+   */
+  helio?: true;
   impresos?: ImpresoEnPieza[];
   /** Reglas de color por formato/parte/color que se aplican al terminar de armarla (las pone `editar_globos`; ver `repintes.ts`). */
   repintes?: Repinte[];
@@ -150,8 +157,14 @@ function conCaja(p: Omit<PiezaArmada, "caja">): PiezaArmada {
 }
 
 
+/**
+ * Marca como de helio todos los globos de una pieza que flota entera (`Pieza.helio`), menos los metidos dentro de otro (parte
+ * «interiores» de la burbuja y el doble globo): su volumen ya está en el globo de fuera, y contarlos sería contar el helio dos veces.
+ */
+const conHelio = (armada: PiezaArmada): PiezaArmada => ({ ...armada, globos: armada.globos.map((g): GloboDePieza => (g.parte === "interiores" ? g : { ...g, helio: true })) });
+
 export function armarPieza(pieza: Pieza): PiezaArmada {
-  const sola = armarPiezaBase(pieza);
+  const sola = pieza.helio ? conHelio(armarPiezaBase(pieza)) : armarPiezaBase(pieza);
   const base = pieza.remate ? aplicarRemate(sola, pieza.remate) : sola;
   const armada = pieza.repintes?.length ? aplicarRepintes(base, pieza.repintes) : base;
   if (!pieza.impresos?.length) return armada;

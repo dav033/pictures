@@ -279,14 +279,14 @@ function montaje(raiz: { id: string; nombre: string; pieza: Pieza; origen: Vec3;
     nodos.push({ id, nombre, pieza: p, colocacion: { en: "sobre", padreId: "amarre", puntoCm: aAmarre(punto), normal: dirAAmarre(n), giroGrados } });
   };
   const globo = (id: string, nombre: string, g: ParteGlobo, centro: Vec3, direccion: Vec3 = ARRIBA, impresoId?: string) => {
-    const p: Pieza = { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
+    const p: Pieza = { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
     pieza(id, nombre, p, centro, direccion, impresoId ? giroAlFrente(direccion) : 0);
   };
   const deco = (id: string, nombre: string, decoracion: Decoracion, origen: Vec3, normal: Vec3, giroGrados = 0) => pieza(id, nombre, { tipo: "decoracion", decoracion }, origen, normal, giroGrados);
   return {
     nodos, pieza, globo, deco,
     helio: (id, nombre, g, centro, impresoId, direccion = ARRIBA) => {
-      globo(id, nombre, g, centro, direccion, impresoId);
+      globo(id, nombre, { ...g, helio: true }, centro, direccion, impresoId);
       nudos.push(menos(centro, por(unitario(direccion), centroCuerpo("redondo", g.infladoCm))));
     },
     conCara: (id, nombre, g, centro, cara, queEs) => {

@@ -241,14 +241,14 @@ function montaje(raiz: { id: string; nombre: string; pieza: Pieza; origen: Vec3;
     nodos.push({ id, nombre, pieza: p, colocacion: { en: "sobre", padreId: "varilla", puntoCm: aVarilla(punto), normal: dirAVarilla(n), giroGrados } });
   };
   const globo = (id: string, nombre: string, g: ParteGlobo, centro: Vec3, direccion: Vec3 = ARRIBA, impresoId?: string) => {
-    const p: Pieza = { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
+    const p: Pieza = { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
     pieza(id, nombre, p, centro, direccion, impresoId ? giroAlFrente(direccion) : 0);
   };
   const deco = (id: string, nombre: string, decoracion: Decoracion, origen: Vec3, normal: Vec3, giroGrados = 0) => pieza(id, nombre, { tipo: "decoracion", decoracion }, origen, normal, giroGrados);
   return {
     nodos, pieza, globo, deco,
     helio: (id, nombre, g, centro, impresoId, direccion = ARRIBA) => {
-      globo(id, nombre, g, centro, direccion, impresoId);
+      globo(id, nombre, { ...g, helio: true }, centro, direccion, impresoId);
       nudos.push(menos(centro, por(unitario(direccion), centroCuerpo("redondo", g.infladoCm))));
     },
     burbujaHelio: (id, nombre, p, exterior, centro) => {
@@ -718,7 +718,7 @@ const escena496 = (): Escena => {
   const ROJO = "015", BLANCO = "005";
   const ALTO = 175;
   const m = montaje(
-    { id: "cuarteto", nombre: "Medusa: cuarteto R-12 rojo con corazones", pieza: cuarteto(R("R-12", 28, ROJO), [ROJO], "un_color", [{ impresoId: "infinity-corazones-por-siempre-fashion-rojo", codigo: ROJO }]), origen: v(0, ALTO, 0) },
+    { id: "cuarteto", nombre: "Medusa: cuarteto R-12 rojo con corazones", pieza: { ...cuarteto(R("R-12", 28, ROJO), [ROJO], "un_color", [{ impresoId: "infinity-corazones-por-siempre-fashion-rojo", codigo: ROJO }]), helio: true }, origen: v(0, ALTO, 0) },
     { nombre: "Amarre de los tentáculos (escondido entre los nudos)", base: v(0, ALTO - 3, 0), altoCm: 3, radioCm: 0.3, hex: "#f2f2f2" },
   );
   m.globo("centro", "R-5 blanco del centro", R("R-5", 8, BLANCO), v(0, ALTO - 7, 0), ABAJO);
@@ -779,7 +779,7 @@ const escena504 = (): Escena => {
     ["dorado-3", "R-12 Reflex Dorado (piso 3, derecha)", DORADO, 26, f(450, 235, -5)],
   ];
   for (const [id, nombre, c, d, centro] of globos) m.helio(id, nombre, R("R-12", d, c), centro, undefined, sube(centro));
-  const exterior = R("R-24", 47, "390");
+  const exterior = { ...R("R-24", 47, "390"), helio: true as const };
   const burbuja: Pieza = {
     tipo: "decoracion",
     decoracion: { tipo: "burbuja", propiedades: { exterior, interiores: [{ formatoId: "R-9", infladoCm: 13.5, codigos: [EUCALIPTO, DORADO], cantidad: 6 }], relleno: null, semilla: 504 } },

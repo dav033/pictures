@@ -171,7 +171,7 @@ function centrada(pieza: Pieza, centro: Vec3, normal: Vec3, giroGrados: number):
 // Piezas
 // ----------------------------------------------------------------------------------------------------------
 
-const globo = (g: ParteGlobo, impresoId?: string): Pieza => ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) });
+const globo = (g: ParteGlobo, impresoId?: string): Pieza => ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) });
 const deco = (decoracion: Decoracion): Pieza => ({ tipo: "decoracion", decoracion });
 const escenografia = (elementos: ElementoEscenografia[]): Pieza => ({ tipo: "escenografia", elementos });
 const flor = (p: PropiedadesFlor): Pieza => deco({ tipo: "flor", propiedades: p });
@@ -294,7 +294,8 @@ function ramo(o: { id: string; nombre: string; amarre: Vec3; cinta: string; glob
   const nodos: NodoEscena[] = [];
   const cintas: ElementoEscenografia[] = [];
   const raiz = { id: o.id, marco: { m: IDENTIDAD, t: o.amarre } };
-  for (const g of o.globos) {
+  // Todo lo de `globos` flota (un globo suelto o una decoración de un globo, como la calabaza); los foil van aparte, en `metalizados`.
+  for (const g of o.globos.map((x) => ({ ...x, pieza: { ...x.pieza, helio: true as const } }))) {
     const d = unitario(g.direccion);
     const giro = g.giroGrados ?? (g.pieza.impresos?.length ? giroAlFrente(d) : 0);
     const { origen, nudo } = centrada(g.pieza, g.centro, d, giro);

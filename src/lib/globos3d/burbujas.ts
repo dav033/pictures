@@ -169,7 +169,8 @@ export function armarBurbuja(p: PropiedadesBurbuja): BurbujaArmada {
   const D = Math.max(10, p.exterior.infladoCm);
   const perfil = perfilRedondo(D);
   const centroExt = centroCuerpo("redondo", D);
-  const globos: GloboDecoracion[] = [{ formatoId: p.exterior.formatoId, infladoCm: D, codigo: p.exterior.codigo, nudo: { x: 0, y: 0, z: 0 }, direccion: { x: 0, y: 0, z: 1 }, cuelloExtraCm: 0 }];
+  // Si flota, solo cuenta el de fuera como de helio: el de adentro va dentro de su volumen (los litros son los del exterior).
+  const globos: GloboDecoracion[] = [{ formatoId: p.exterior.formatoId, infladoCm: D, codigo: p.exterior.codigo, nudo: { x: 0, y: 0, z: 0 }, direccion: { x: 0, y: 0, z: 1 }, cuelloExtraCm: 0, ...(p.exterior.helio ? { helio: true as const } : {}) }];
   const tubos: TuboDecoracion[] = [];
   const r = azar(p.semilla + 1);
 

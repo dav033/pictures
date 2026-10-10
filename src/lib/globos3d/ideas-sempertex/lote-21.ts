@@ -271,14 +271,14 @@ function montaje(raiz: { id: string; nombre: string; pieza: Pieza; origen: Vec3;
     pieza(id, nombre, p, menos(centro, marcoNormal(normal, giroGrados)(medio)), normal, giroGrados);
   };
   const globo = (id: string, nombre: string, gl: ParteGlobo, centro: Vec3, direccion: Vec3 = ARRIBA, impresoId?: string) => {
-    const p: Pieza = { tipo: "globo", formatoId: gl.formatoId, infladoCm: gl.infladoCm, codigo: gl.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
+    const p: Pieza = { tipo: "globo", formatoId: gl.formatoId, infladoCm: gl.infladoCm, codigo: gl.codigo, ...(gl.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
     pieza(id, nombre, p, centro, direccion, impresoId ? giroAlFrente(direccion) : 0);
   };
   const deco = (id: string, nombre: string, decoracion: Decoracion, origen: Vec3, normal: Vec3, giroGrados = 0) => pieza(id, nombre, { tipo: "decoracion", decoracion }, origen, normal, giroGrados);
   return {
     nodos, pieza, centrada, globo, deco,
     helio: (id, nombre, gl, centro, direccion = ARRIBA, impresoId) => {
-      globo(id, nombre, gl, centro, direccion, impresoId);
+      globo(id, nombre, { ...gl, helio: true }, centro, direccion, impresoId);
       nudos.push(menos(centro, por(unitario(direccion), centroCuerpo("redondo", gl.infladoCm))));
     },
     foil: (id, nombre, m, centro, conCinta = true) => {

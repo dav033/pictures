@@ -145,7 +145,7 @@ const giroHacia = (dx: number, dy: number) => r2((Math.atan2(-dx, -dy) * 180) / 
 // Piezas
 // ----------------------------------------------------------------------------------------------------------
 
-const globo = (g: ParteGlobo, impresoId?: string): Pieza => ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) });
+const globo = (g: ParteGlobo, impresoId?: string): Pieza => ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) });
 const deco = (decoracion: Decoracion): Pieza => ({ tipo: "decoracion", decoracion });
 const flor = (p: PropiedadesFlor): Decoracion => ({ tipo: "flor", propiedades: p });
 /** Un anillo de `cantidad` globos iguales (el collar de un caldero, un racimito de bayas). */

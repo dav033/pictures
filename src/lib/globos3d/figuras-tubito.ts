@@ -201,6 +201,7 @@ function globoEn(parte: ParteGlobo, centro: Vec3, direccion: Vec3, estampado?: E
   const c = centroCuerpo(esLink(parte.formatoId) ? "link" : "redondo", parte.infladoCm);
   return {
     formatoId: parte.formatoId, infladoCm: parte.infladoCm, codigo: parte.codigo, nudo: redondo(mas(centro, por(d, -c))), direccion: d, cuelloExtraCm: 0,
+    ...(parte.helio ? { helio: true as const } : {}),
     ...(estampado ? { frente: frente ?? AL_FRENTE, estampado } : frente ? { frente } : {}),
   };
 }

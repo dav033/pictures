@@ -66,7 +66,7 @@ const libre = (xCm: number, yCm: number, zCm: number, giroGrados = 0): Colocacio
 const sala = (): Escena["sala"] => structuredClone(SALA_INICIAL);
 /** Un globo suelto; con `impresoId`, con el impreso de la tienda (mismo látex de fondo: no cambia el material). */
 const globo = (g: ParteGlobo, impresoId?: string): Pieza =>
-  ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, codigo: g.codigo }] } : {}) });
+  ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, codigo: g.codigo }] } : {}) });
 
 /** Nombre de un globo para su nodo: «R-12 Reflex Verde Lima». */
 const nombreGlobo = (g: ParteGlobo) => `${g.formatoId} ${referenciaPorCodigo(g.codigo)?.nombreCompleto ?? g.codigo}`;
@@ -175,7 +175,7 @@ function escenaRamo(pisos: readonly PisoRamo[], o: OpcionesRamo): Escena {
       const direccion = p.cantidad <= 1 ? ARRIBA : unitario(mas(por(fuera, Math.sin(inclinacion)), por(ARRIBA, Math.cos(inclinacion))));
       const centro = v(fuera.x * radio, altura, fuera.z * radio);
       const nombre = `${nombreGlobo(g)}${p.impreso ? `, ${p.impreso}` : ""} (piso ${k + 1})`;
-      globos.push(globoSobrePeso(`globo-${k + 1}-${i + 1}`, nombre, g, centro, direccion, p.impresoId));
+      globos.push(globoSobrePeso(`globo-${k + 1}-${i + 1}`, nombre, { ...g, helio: true }, centro, direccion, p.impresoId));
       const nudo = menos(centro, por(direccion, centroCuerpo("redondo", g.infladoCm)));
       cintas.push(cinta(amarre, nudo, o.cinta));
     });

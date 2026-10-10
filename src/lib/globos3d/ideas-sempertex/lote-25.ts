@@ -301,7 +301,7 @@ function montaje(raiz: { id: string; nombre: string; pieza: Pieza; origen: Vec3;
     nodos.push({ id, nombre, pieza: p, colocacion: { en: "sobre", padreId: idAmarre, puntoCm: aAmarre(punto), normal: dirAAmarre(n), giroGrados } });
   };
   const globo = (id: string, nombre: string, gl: ParteGlobo, centro: Vec3, direccion: Vec3 = ARRIBA, impresoId?: string) => {
-    const p: Pieza = { tipo: "globo", formatoId: gl.formatoId, infladoCm: gl.infladoCm, codigo: gl.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
+    const p: Pieza = { tipo: "globo", formatoId: gl.formatoId, infladoCm: gl.infladoCm, codigo: gl.codigo, ...(gl.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
     pieza(id, nombre, p, centro, direccion, impresoId ? giroAlFrente(direccion) : 0);
   };
   const deco = (id: string, nombre: string, decoracion: Decoracion, origen: Vec3, normal: Vec3, giroGrados = 0) => pieza(id, nombre, { tipo: "decoracion", decoracion }, origen, normal, giroGrados);
@@ -351,7 +351,7 @@ function helio(m: Montaje, id: string, nombre: string, globos: readonly GloboHel
   const cintas: ElementoEscenografia[] = [];
   for (const h of globos) {
     const d = unitario(v((h.centro.x - nudo.x) * 0.12, 1, (h.centro.z - nudo.z) * 0.12));
-    m.globo(h.id, h.nombre, h.globo, h.centro, d, h.impresoId);
+    m.globo(h.id, h.nombre, { ...h.globo, helio: true }, h.centro, d, h.impresoId);
     const cuello = menos(h.centro, por(d, centroCuerpo("redondo", h.globo.infladoCm)));
     cintas.push(barra(v(0, 0, 0), menos(cuello, nudo), 0.2, hexCinta, "papel"));
   }
@@ -545,7 +545,7 @@ const escena272 = (): Escena => {
   m.foil("te-amo", "Metalizado corazón «Te Amo» de 16\" (el de la tienda, rosa oro)", metalizadoDeTienda("corazon-te-amo-rosado"), f(527, 623));
   m.globo("corazon-chico", "Corazoncito C-12 Fashion Rojo pegado al marco", R("C-12", 18, ROJO), f(450, 507, 4), unitario(v(-0.5, 1, 0.3)));
   m.foil("helio-plata", "Corazón plateado de helio (metalizado Corazones Plata de 18\")", metalizadoDeTienda("corazones-plata"), f(472, 150, -8));
-  m.globo("helio-rojo", "R-12 Fashion Rojo de helio", R("R-12", 29, ROJO), f(558, 228, -2), unitario(v(0.15, 1, 0)));
+  m.globo("helio-rojo", "R-12 Fashion Rojo de helio", { ...R("R-12", 29, ROJO), helio: true }, f(558, 228, -2), unitario(v(0.15, 1, 0)));
   m.foil("helio-fucsia", "Corazón fucsia de helio (metalizado Corazón Rosado de 18\")", metalizadoDeTienda("corazon-lavanda"), f(516, 345, 4));
   cintasDe(m, "cintas", "Ramo de helio: cintas rosadas", f(523, 540), [f(472, 243, -8), f(549, 293, -2), f(500, 432, 4)], "#e86aa6");
   const pedestal: NodoEscena[] = [

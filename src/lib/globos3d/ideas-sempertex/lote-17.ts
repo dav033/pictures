@@ -223,20 +223,20 @@ function montaje(raiz: { id: string; nombre: string; pieza: Pieza; origen: Vec3;
     nodos.push({ id, nombre, pieza: p, colocacion: { en: "sobre", padreId: "varilla", puntoCm: aVarilla(punto), normal: dirAVarilla(n), giroGrados } });
   };
   const globo = (id: string, nombre: string, g: ParteGlobo, centro: Vec3, direccion: Vec3 = ARRIBA, impresoId?: string) => {
-    const p: Pieza = { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
+    const p: Pieza = { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
     pieza(id, nombre, p, centro, direccion, impresoId ? giroAlFrente(direccion) : 0);
   };
   const deco = (id: string, nombre: string, decoracion: Decoracion, origen: Vec3, normal: Vec3, giroGrados = 0) => pieza(id, nombre, { tipo: "decoracion", decoracion }, origen, normal, giroGrados);
   return {
     nodos, pieza, globo, deco,
     helio: (id, nombre, g, centro, impresoId, direccion = ARRIBA) => {
-      globo(id, nombre, g, centro, direccion, impresoId);
+      globo(id, nombre, { ...g, helio: true }, centro, direccion, impresoId);
       nudos.push(menos(centro, por(unitario(direccion), centroCuerpo("redondo", g.infladoCm))));
     },
     helioConLunares: (id, nombre, g, centro, dibujo, queEs) => {
       // De pie y de frente (normal al frente): el +z de la figura sube y su +y mira a quien ve. El centro del globo de la
       // figura (en su espacio) se lleva a `centro`.
-      const p: Pieza = { tipo: "decoracion", decoracion: globoConLunares(g, dibujo, queEs) };
+      const p: Pieza = { tipo: "decoracion", decoracion: globoConLunares({ ...g, helio: true }, dibujo, queEs) };
       const gl = armarPieza(p).globos[0]!;
       const c = mas(gl.nudo, por(gl.direccion, centroCuerpo("redondo", g.infladoCm)));
       pieza(id, nombre, p, menos(centro, v(c.x, c.z, c.y)), AL_FRENTE);

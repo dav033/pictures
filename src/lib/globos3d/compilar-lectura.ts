@@ -5,7 +5,7 @@ import { crearEstructura } from "./herramientas-escena-estructuras";
 import { PULGADAS_METALIZADO, PULGADA_CM } from "./metalizados";
 import { floresLeidas } from "./herramientas-escena-trazo";
 import { conNotaSiFalla } from "./decoracion-segura";
-import { corazonesLeidos, type CorazonLeido } from "./corazones-lectura";
+import { corazonesLeidos, NOTA_GLOBOS_EN_EL_AIRE, type CorazonLeido } from "./corazones-lectura";
 import { montonesDentroDeLaSala } from "./montones-dentro-sala";
 import { ponerSobreMesas, type SobreMesaPendiente } from "./sobre-mesa-lectura";
 import type { MuebleCatalogo } from "./mobiliario-tipos";
@@ -240,6 +240,7 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         const f = formatoPorDiametro(cm(p.diametro) * factor);
         const codigo = codigoDeColor(p.colores[0]!, [f.formatoId], notas);
         const pieza: Pieza = { tipo: "globo", formatoId: f.formatoId, infladoCm: f.infladoCm, codigo };
+        if (p.en === "aire") notas.push(NOTA_GLOBOS_EN_EL_AIRE);
         poner(`globo-${f.formatoId.toLowerCase()}`, `Globo ${f.formatoId}`, pieza, p.en === "piso"
           ? { en: "piso", xCm: r1(X(p.x) * factor), zCm: r0(delanteCm > 0 ? muro + PROFUNDIDAD_DE_LA_FOTO_CM + delanteCm - f.infladoCm / 2 : muro + 110), giroGrados: 0 }
           : { en: "libre", xCm: X(p.x), yCm: Y(p.y), zCm: muro + 70, giroGrados: 0 });
@@ -253,7 +254,7 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
           const codigo = codigoDeColor(c, ["R-18"], notas);
           const t = p.cantidad === 1 ? 0.5 : k / (p.cantidad - 1);
           const fila = k % 3;
-          poner("ramo", `Ramo de helio · globo ${k + 1}`, { tipo: "globo", formatoId: "R-18", infladoCm: 42, codigo },
+          poner("ramo", `Ramo de helio · globo ${k + 1}`, { tipo: "globo", formatoId: "R-18", infladoCm: 42, codigo, helio: true },
             { en: "libre", xCm: r1(x + (t - 0.5) * 70 + (fila - 1) * 8), yCm: r1(arriba - 25 - fila * 30 - Math.abs(t - 0.5) * 30), zCm: muro + 90 + fila * 10, giroGrados: 0 });
         }
         if (arriba - base > 60) notas.push("El ramo de helio va sin las cintas ni el peso de la base.");

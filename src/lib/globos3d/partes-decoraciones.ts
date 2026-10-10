@@ -108,7 +108,7 @@ export const PARTES_DECORACIONES: readonly ParteDecoracion[] = [
   { nombre: "radios", descripcion: "Los radios de la telaraña de papel.", ingles: ["spokes", "radial threads"] },
   { nombre: "anillos", descripcion: "Los anillos de la telaraña de papel.", ingles: ["rings", "spiral threads"] },
   // Pieza «globo» (un globo suelto, de clase decoración en la biblioteca).
-  { nombre: "globo", descripcion: "Un globo suelto (el remate encima de un arco, un globo solo de helio).", ingles: ["balloon", "single balloon", "topper balloon"] },
+  { nombre: "globo", descripcion: "Un globo suelto (el remate encima de un arco, un globo de un ramo). Si flota con helio sigue siendo «globo»: lo dice su marca de helio, no su parte.", ingles: ["balloon", "single balloon", "topper balloon"] },
 ];
 
 const NOMBRES = new Set(PARTES_DECORACIONES.map((p) => p.nombre));

@@ -167,7 +167,7 @@ const AL_FRENTE = P(0, 1, 0);
 function globoEn(parte: ParteGlobo, centro: Vec3, direccion: Vec3, extra: Pick<GloboDecoracion, "frente" | "estampado" | "parte"> = {}): GloboDecoracion {
   const d = unitario(direccion);
   const c = centroCuerpo("redondo", parte.infladoCm);
-  return { formatoId: parte.formatoId, infladoCm: parte.infladoCm, codigo: parte.codigo, nudo: redondo(mas(centro, por(d, -c))), direccion: d, cuelloExtraCm: 0, ...extra };
+  return { formatoId: parte.formatoId, infladoCm: parte.infladoCm, codigo: parte.codigo, nudo: redondo(mas(centro, por(d, -c))), direccion: d, cuelloExtraCm: 0, ...(parte.helio ? { helio: true as const } : {}), ...extra };
 }
 
 function tubito(parte: ParteTubito, puntos: Vec3[], cerrado = false): TuboDecoracion {

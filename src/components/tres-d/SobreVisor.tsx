@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode, type RefObject } from "react";
-import { MousePointer2, MoveVertical, RotateCw, Scan } from "lucide-react";
+import { MousePointer2, MoveVertical, RotateCw, Ruler, Scan } from "lucide-react";
 import type { Caja } from "@/lib/globos3d/escena";
 import type { EscenaGlobos, VistaFija } from "./escena-globos";
 import { FLOTANTE, HERRAMIENTA, HERRAMIENTA_ON, HERRAMIENTA_VISTA, HERRAMIENTA_VISTA_ON } from "./ui-taller";
@@ -17,8 +17,8 @@ const VISTAS_SOLITARIO: ReadonlyArray<{ id: VistaFija; nombre: string; etiqueta:
 ];
 
 /** Barra flotante arriba del visor: elegir y mover, girar, subir o bajar; vistas fijas; encuadrar todo. */
-export function BarraHerramientas({ solitario, herramienta, onHerramienta, vista, onVista, onEncuadrar }: {
-  solitario: boolean; herramienta: Herramienta; onHerramienta: (h: Herramienta) => void; vista: VistaFija | null; onVista: (v: VistaFija) => void; onEncuadrar: () => void;
+export function BarraHerramientas({ solitario, herramienta, onHerramienta, vista, onVista, onEncuadrar, medidas, onMedidas, puedeMedir }: {
+  solitario: boolean; herramienta: Herramienta; onHerramienta: (h: Herramienta) => void; vista: VistaFija | null; onVista: (v: VistaFija) => void; onEncuadrar: () => void; medidas: boolean; onMedidas: () => void; puedeMedir: boolean;
 }) {
   const herramientas: ReadonlyArray<{ id: Herramienta; etiqueta: string; icono: ReactNode }> = [
     { id: "mover", etiqueta: "Elegir y mover (arrastra la pieza)", icono: <MousePointer2 className="size-[18px]" aria-hidden /> },
@@ -27,7 +27,7 @@ export function BarraHerramientas({ solitario, herramienta, onHerramienta, vista
   ];
   const vistas = solitario ? VISTAS_SOLITARIO : VISTAS_ESCENA;
   return (
-    <div role="toolbar" aria-label="Herramientas del visor" className={`pointer-events-auto flex items-center gap-0.5 rounded-xl p-1 ${FLOTANTE}`}>
+    <div role="toolbar" aria-label="Herramientas del visor" className={`pointer-events-auto flex max-w-full flex-wrap items-center gap-0.5 rounded-xl p-1 ${FLOTANTE}`}>
       {!solitario && <>
         {herramientas.map((h) => (
           <button key={h.id} type="button" onClick={() => onHerramienta(h.id)} aria-pressed={herramienta === h.id} aria-label={h.etiqueta} title={h.etiqueta}
@@ -40,6 +40,7 @@ export function BarraHerramientas({ solitario, herramienta, onHerramienta, vista
           className={`${HERRAMIENTA_VISTA} ${vista === v.id ? HERRAMIENTA_VISTA_ON : ""}`}>{v.nombre}</button>
       ))}
       <span aria-hidden className="mx-1 h-5 w-px bg-taller-borde" />
+      <button type="button" onClick={onMedidas} disabled={!puedeMedir} aria-pressed={medidas} aria-label="Mostrar medidas de la pieza elegida" title={puedeMedir ? "Mostrar alto y ancho de la pieza elegida" : "Elige una pieza para ver sus medidas"} className={`${HERRAMIENTA} ${medidas ? HERRAMIENTA_ON : ""} disabled:cursor-not-allowed disabled:opacity-45`}><Ruler className="size-[18px]" aria-hidden /></button>
       <button type="button" onClick={onEncuadrar} aria-label="Encuadrar todo" title="Encuadrar todo" className={HERRAMIENTA}><Scan className="size-[18px]" aria-hidden /></button>
     </div>
   );
@@ -138,5 +139,15 @@ export function ReglaAlturas({ visor, caja, contenedor }: { visor: EscenaGlobos 
         </span>
       ))}
     </div>
+  );
+}
+
+/** El interruptor de medidas en el teléfono, junto a «Foto realista» (el mismo que la barra del escritorio). */
+export function BotonMedidas({ activo, onClick }: { activo: boolean; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={activo} aria-label="Mostrar medidas de la pieza elegida" title="Mostrar alto y ancho de la pieza elegida"
+      className={`pointer-events-auto grid size-11 shrink-0 place-items-center rounded-full border border-taller-borde bg-taller-barra/95 text-taller-texto shadow-[0_8px_24px_var(--sombra)] ${activo ? HERRAMIENTA_ON : ""}`}>
+      <Ruler className="size-5" aria-hidden />
+    </button>
   );
 }

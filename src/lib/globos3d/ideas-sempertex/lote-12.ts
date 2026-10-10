@@ -68,7 +68,7 @@ const sala = (anchoCm: number, fondoCm: number, altoCm: number, tonos?: Partial<
   ({ ...structuredClone(SALA_INICIAL), anchoCm, fondoCm, altoCm, tonos: { ...SALA_INICIAL.tonos, ...tonos } });
 
 /** Un globo suelto (el centro de su cuerpo en el origen, el cuerpo hacia +y). */
-const globo = (g: ParteGlobo): Pieza => ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo });
+const globo = (g: ParteGlobo): Pieza => ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}) });
 const deco = (decoracion: Decoracion): Pieza => ({ tipo: "decoracion", decoracion });
 const flor = (p: PropiedadesFlor): Decoracion => ({ tipo: "flor", propiedades: p });
 const lazos = (formatoId: string, grosorCm: number, codigos: string[], cantidad: number, largoCm: number, anchoCm: number, aperturaGrados: number, giroGrados: number): AnilloTubito =>

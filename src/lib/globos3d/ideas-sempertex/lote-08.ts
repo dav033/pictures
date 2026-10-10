@@ -77,7 +77,7 @@ function nombreGlobo(g: ParteGlobo): string {
 
 /** Un globo suelto como pieza (con su impreso de la tienda, si lo lleva). */
 const piezaGlobo = (g: ParteGlobo, impresoId?: string): Pieza =>
-  ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) });
+  ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) });
 
 /**
  * Un globo `sobre` su padre, con el centro de su cuerpo en `centro` (espacio local del padre) y el cuerpo hacia
@@ -488,7 +488,7 @@ const escena596 = (): Escena => ({
     decoSobre("flor-negra", "Flor de 5 R-12 negros", "amarre", flor({ petalos: { ...R("R-12", 24, "080"), cantidad: 5, aperturaGrados: 0, giroGrados: 90 }, centro: null }), enAmarre(rel596(365, 232, -2)), enAmarre(AL_FRENTE)),
     decoSobre("flor-roja", "Flor de 5 Link-O-Loon rojos con racimo dorado", "amarre", flor({ petalos: { ...R("LOL-12", 22, "015"), cantidad: 5, aperturaGrados: 0, giroGrados: 54 }, corona: { ...R("R-5", 7, "570"), cantidad: 6 }, centro: { ...R("R-5", 7, "570"), cantidad: 3 } }), enAmarre(rel596(365, 232, 10)), enAmarre(AL_FRENTE)),
     piezaSobre("cintas", "Cintas de los globos de helio", "amarre", { tipo: "escenografia", elementos: HELIO_PUESTO_596().map((h) => cinta(v(0, 0, 0), menos(h.nudo, NUDO_CINTAS_596()), "#f1efe9")) }, enAmarre(NUDO_CINTAS_596()), ARRIBA, 90),
-    ...HELIO_PUESTO_596().map((h) => globoSobre(h.id, h.nombre, "amarre", h.g, enAmarre(h.centro), enAmarre(h.direccion), h.impreso)),
+    ...HELIO_PUESTO_596().map((h) => globoSobre(h.id, h.nombre, "amarre", { ...h.g, helio: true }, enAmarre(h.centro), enAmarre(h.direccion), h.impreso)),
   ],
 });
 const idea596 = idea({
@@ -829,7 +829,7 @@ function ramo668(r: Ramo668): NodoEscena[] {
     globoDesdeNudo(`${r.id}-huevo`, `Huevo ${nombreGlobo(r.huevo)} (${r.nombre})`, r.id, r.huevo, nudoHuevo, ABAJO),
     ...r.bandas.map((b, k) => decoSobre(`${r.id}-banda-${k + 1}`, `${b.cadena ? "Cadena de burbujas" : "Aro"} de T-260 ${referenciaPorCodigo(b.codigo)?.nombreCompleto ?? b.codigo} (${r.nombre})`, r.id,
       rizo({ forma: "burbujas", formatoId: "T-260", grosorCm: b.cadena ? 4 : 3, codigos: [b.codigo], largosCm: [b.cadena ? 11.5 : 9.6], recorrido: "aro", cantidad: b.cadena ? 10 : 12 }), mas(centroHuevo, v(0, b.dy, 0)), ARRIBA)),
-    ...globos.map((h) => globoSobre(`${r.id}-globo-${h.k + 1}`, `${nombreGlobo(h.g)} de lunares (${r.nombre}, ${h.k + 1})`, r.id, h.g, h.centro, h.direccion, h.impreso)),
+    ...globos.map((h) => globoSobre(`${r.id}-globo-${h.k + 1}`, `${nombreGlobo(h.g)} de lunares (${r.nombre}, ${h.k + 1})`, r.id, { ...h.g, helio: true }, h.centro, h.direccion, h.impreso)),
   ];
 }
 const PISO_668: ReadonlyArray<{ codigo: string; x: number; z: number }> = [

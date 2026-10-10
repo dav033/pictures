@@ -84,7 +84,7 @@ const nudoDe = (g: ParteGlobo, centro: Vec3, direccion: Vec3): Vec3 => menos(cen
 function globoSobre(id: string, nombre: string, padreId: string, g: ParteGlobo, centro: Vec3, direccion: Vec3 = ARRIBA): NodoEscena {
   const n = unitario(direccion);
   const p = menos(centro, por(n, centroCuerpo("redondo", g.infladoCm) - HUNDIMIENTO_SOBRE_CM));
-  return { id, nombre, pieza: { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo }, colocacion: { en: "sobre", padreId, puntoCm: redondo(p), normal: redondo(n), giroGrados: 0 } };
+  return { id, nombre, pieza: { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}) }, colocacion: { en: "sobre", padreId, puntoCm: redondo(p), normal: redondo(n), giroGrados: 0 } };
 }
 
 /** Una decoración `sobre` su padre, con su espalda en `espalda` (espacio local del padre) mirando a `normal`. */
@@ -164,7 +164,7 @@ function escenaRamo(o: { pisos: readonly PisoRamo[]; cinta: string; peso: string
     const inc = rad(piso.inclinacionGrados);
     const direccion = unitario(mas(por(fuera, Math.sin(inc)), por(ARRIBA, Math.cos(inc))));
     const centro = v(fuera.x * piso.radioCm, piso.alturaCm, fuera.z * piso.radioCm);
-    globos.push(globoSobre(`globo-${k + 1}-${i + 1}`, `${nombreGlobo(piso.globo)} (piso ${k + 1}, ${i + 1})`, "peso", piso.globo, centro, direccion));
+    globos.push(globoSobre(`globo-${k + 1}-${i + 1}`, `${nombreGlobo(piso.globo)} (piso ${k + 1}, ${i + 1})`, "peso", { ...piso.globo, helio: true }, centro, direccion));
     cintas.push(cinta(amarre, nudoDe(piso.globo, centro, direccion), o.cinta));
   }));
   const peso: NodoEscena = {
@@ -930,7 +930,7 @@ const escena184 = perezoso((): Escena => ({
       { id: r.id, nombre: r.nombre, pieza: { tipo: "escenografia", elementos: escalera184(r.globos, r.px) }, colocacion: { en: "libre", xCm: r.x, yCm: 0, zCm: -60, giroGrados: 0 } },
       ...r.globos.map((b, i) => {
         const centro = v(r2((b.x - r.px) / 2.05), fotoY184(b.y), b.z);
-        return globoSobre(`${r.id}-globo-${i + 1}`, `${nombreGlobo(b.g)} (${r.nombre.toLowerCase().replace(" sobre escalera", "")}, ${i + 1})`, r.id, b.g, centro, menos(centro, AMARRE_184));
+        return globoSobre(`${r.id}-globo-${i + 1}`, `${nombreGlobo(b.g)} (${r.nombre.toLowerCase().replace(" sobre escalera", "")}, ${i + 1})`, r.id, { ...b.g, helio: true }, centro, menos(centro, AMARRE_184));
       }),
     ]),
     { id: "mesa", nombre: "Mesa de postres con mantel de encaje", pieza: { tipo: "escenografia", elementos: mesaConMantel({ anchoCm: MESA_184.ancho, fondoCm: MESA_184.fondo, altoCm: MESA_184.alto, mantel: "#f4f1ea" }) }, colocacion: { en: "piso", xCm: 0, zCm: MESA_184.z, giroGrados: 0 } },

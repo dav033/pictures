@@ -74,7 +74,7 @@ const sala = (anchoCm: number, fondoCm: number, altoCm: number, tonos?: Partial<
 
 /** Un globo suelto; con `impresoId`, con el impreso de la tienda sobre su látex. */
 const globo = (g: ParteGlobo, impresoId?: string): Pieza =>
-  ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, codigo: g.codigo }] } : {}) });
+  ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, codigo: g.codigo }] } : {}) });
 
 /** Una columna de cuartetos de `niveles` niveles (la trenza de Sempertex: un nivel cada 0,8 diámetros). */
 function columna(formatoId: string, infladoCm: number, niveles: number, colores: string[], patron: PatronColumna = "un_color", impresos?: ImpresoEnPieza[]): Pieza {

@@ -15,6 +15,11 @@ export type CorazonLeido = Extract<PiezaLeida, { tipo: "corazon" }>;
 export type NodoCorazon = { nombre: string; pieza: Pieza; colocacion: Colocacion };
 
 export const FORMATO_CORAZON = "C-12";
+/**
+ * «En el aire» es solo dónde se ven en la foto: flotando con helio o colgados de un hilo, de una pared o de una estructura. La
+ * lectura no lo distingue, así que esos globos salen de aire (con bomba) y el taller avisa para que se marquen los que flotan.
+ */
+export const NOTA_GLOBOS_EN_EL_AIRE = "Los globos «en el aire» de la foto salen inflados con bomba (no se sabe si flotan con helio o cuelgan): marca con «Flota con helio», en los parámetros del globo, los que floten.";
 /** Separación (cm) entre corazones vecinos de una fila y entre filas. */
 const PASO_X_CM = 26;
 const PASO_Y_CM = 23;
@@ -47,6 +52,7 @@ export function pilaDeCorazones(n: number): Array<{ x: number; fila: number }> {
  */
 export function corazonesLeidos(p: CorazonLeido, centro: { xCm: number; yCm: number; zCm: number }, notas: string[]): NodoCorazon[] {
   const formato = formatoPorId(FORMATO_CORAZON)!;
+  if (p.en === "aire") notas.push(NOTA_GLOBOS_EN_EL_AIRE);
   const codigos = p.colores.map((c) => codigoDeColor(c, [FORMATO_CORAZON], notas));
   const coloreados = repartoPorColor(p.colores, p.cantidad).flatMap((n, k) => Array.from({ length: n }, () => codigos[k]!));
   const pila = pilaDeCorazones(p.cantidad);

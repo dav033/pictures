@@ -127,7 +127,7 @@ function elipse(centro: Vec3, a: number, b: number, desde: number, hasta: number
 
 /** Un globo suelto (el centro de su cuerpo en el origen, el cuerpo hacia +y); con `impresoId`, con su impreso. */
 const globo = (g: ParteGlobo, impresoId?: string): Pieza =>
-  ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) });
+  ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) });
 /** Un nivel de cuarteto: una columna de un nivel (su origen es el centro del cuarteto). */
 const cuarteto = (g: ParteGlobo, colores: string[], patron: PatronColumna = "un_color", impresos?: ImpresoEnPieza[]): Pieza =>
   ({ tipo: "columna", formatoId: g.formatoId, infladoCm: g.infladoCm, alturaCm: r2(g.infladoCm * 0.8), patron, colores, ...(impresos?.length ? { impresos } : {}) });

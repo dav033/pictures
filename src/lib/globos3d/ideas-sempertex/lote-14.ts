@@ -164,7 +164,7 @@ function montaje(raiz: { id: string; nombre: string; origen: Vec3 }): Montaje {
   return {
     pieza,
     globo: (id, nombre, g, centro, direccion = ARRIBA, impresoId) => {
-      const p: Pieza = { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
+      const p: Pieza = { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
       pieza(id, nombre, p, centro, direccion, impresoId ? giroAlFrente(direccion) : 0);
     },
     dePie: (id, nombre, decoracion, origen, arriba = ARRIBA, impresos) => {
@@ -215,12 +215,12 @@ const nudoDe = (d: number, centro: Vec3, direccion: Vec3): Vec3 => menos(centro,
 
 /** Un globo del ramo (o de una cadena, o de una figura) con el centro de su cuerpo en `centro`, hacia `direccion`. */
 function ponerGloboRamo(m: Montaje, id: string, nombre: string, x: GloboRamo, centro: Vec3, direccion: Vec3): void {
-  if (x.tipo === "globo") m.globo(id, nombre, x.g, centro, direccion, x.impresoId);
+  if (x.tipo === "globo") m.globo(id, nombre, { ...x.g, helio: true }, centro, direccion, x.impresoId);
   else if (x.tipo === "doble") {
-    const deco: Decoracion = { tipo: "burbuja", propiedades: { exterior: x.g, interiores: [{ formatoId: x.dentro.formatoId, infladoCm: x.dentro.infladoCm, codigos: [x.dentro.codigo], cantidad: 1 }], relleno: null, semilla: 1 } };
+    const deco: Decoracion = { tipo: "burbuja", propiedades: { exterior: { ...x.g, helio: true }, interiores: [{ formatoId: x.dentro.formatoId, infladoCm: x.dentro.infladoCm, codigos: [x.dentro.codigo], cantidad: 1 }], relleno: null, semilla: 1 } };
     m.dePie(id, nombre, deco, nudoDe(x.g.infladoCm, centro, direccion), direccion, x.impresoId ? [{ impresoId: x.impresoId, globos: [0] }] : undefined);
   } else {
-    const deco: Decoracion = { tipo: "calabaza", propiedades: { globo: x.g, cara: { hex: "#141414" }, tallo: { formatoId: "T-260", grosorCm: 4.5, codigo: x.tallo.codigo, lazos: x.tallo.lazos, largoLazoCm: x.tallo.largoLazoCm, zarcillos: false } } };
+    const deco: Decoracion = { tipo: "calabaza", propiedades: { globo: { ...x.g, helio: true }, cara: { hex: "#141414" }, tallo: { formatoId: "T-260", grosorCm: 4.5, codigo: x.tallo.codigo, lazos: x.tallo.lazos, largoLazoCm: x.tallo.largoLazoCm, zarcillos: false } } };
     m.dePie(id, nombre, deco, centro, direccion);
   }
 }
@@ -558,7 +558,7 @@ function escena203(): Escena {
   ];
   for (const [id, nombre, g, centro] of globos) {
     const d = unitario(menos(centro, amarre));
-    m.globo(id, nombre, g, centro, d);
+    m.globo(id, nombre, { ...g, helio: true }, centro, d);
     m.cinta(amarre, nudoDe(g.infladoCm, centro, d), "#d8c6e8");
   }
   return m.escena(SALA_RAMO());
@@ -641,7 +641,7 @@ function escena211(): Escena {
   ];
   for (const [id, nombre, g, centro, impresoId] of ramoGlobos) {
     const d = unitario(mas(por(unitario(menos(centro, amarre)), 0.35), ARRIBA));
-    m.globo(id, nombre, g, centro, d, impresoId);
+    m.globo(id, nombre, { ...g, helio: true }, centro, d, impresoId);
     m.cinta(amarre, nudoDe(g.infladoCm, centro, d), "#d9262f");
   }
   const estrella = metalizadoDeTienda("estrella-verde-vibrante");
@@ -711,7 +711,7 @@ function escena307(): Escena {
   ];
   for (const [id, nombre, g, centro, hex] of globos) {
     const d = unitario(mas(por(unitario(menos(centro, amarre)), 0.3), ARRIBA));
-    m.globo(id, nombre, g, centro, d);
+    m.globo(id, nombre, { ...g, helio: true }, centro, d);
     m.cinta(amarre, nudoDe(g.infladoCm, centro, d), hex);
   }
   const estrella = metalizadoDeTienda("estrella-plata-1", { pulgadas: 9 });
@@ -844,7 +844,7 @@ function escena884(): Escena {
   ];
   for (const [id, nombre, g, centro] of globos) {
     const d = unitario(mas(por(unitario(menos(centro, amarre)), 0.4), ARRIBA));
-    m.globo(id, nombre, g, centro, d);
+    m.globo(id, nombre, { ...g, helio: true }, centro, d);
     m.cinta(amarre, nudoDe(g.infladoCm, centro, d), "#e7569d");
   }
   const corazon = metalizadoDeTienda("corazones-plata", { pulgadas: 7 });
@@ -942,7 +942,7 @@ function escena5(): Escena {
   const amarre = v(0, 24, 0);
   for (const [id, centro] of [["helio-abajo", v(-4, 94, 2)], ["helio-arriba", v(1, 120, -3)]] as const) {
     const g = R("R-12", 28, "931");
-    m.globo(id, `R-12 Reflex Verde Lima de helio (${id === "helio-abajo" ? "abajo" : "arriba"})`, g, centro, ARRIBA);
+    m.globo(id, `R-12 Reflex Verde Lima de helio (${id === "helio-abajo" ? "abajo" : "arriba"})`, { ...g, helio: true }, centro, ARRIBA);
     m.cinta(amarre, nudoDe(g.infladoCm, centro, ARRIBA), "#d9d9de");
   }
   return m.escena(sala(320, 280, 260));

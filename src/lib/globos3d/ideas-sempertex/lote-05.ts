@@ -160,7 +160,7 @@ function montaje(raiz: { id: string; nombre: string; pieza: Pieza; origen: Vec3;
     nodos,
     pieza,
     globo: (id, nombre, g, centro, direccion = ARRIBA, impresoId) => {
-      const p: Pieza = { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
+      const p: Pieza = { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) };
       pieza(id, nombre, p, centro, direccion, impresoId ? giroAlFrente(direccion) : 0);
     },
     nivel: (id, nombre, g, colores, centro, giroGrados, patron = "un_color", impresos) => {
@@ -174,7 +174,7 @@ function montaje(raiz: { id: string; nombre: string; pieza: Pieza; origen: Vec3;
       for (let k = 0; k < n; k++) {
         const a = desdeGrados + (360 * k) / n;
         const d = haciaFuera(a, elevacion);
-        const p: Pieza = { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo };
+        const p: Pieza = { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}) };
         pieza(`${prefijo}-${k + 1}`, `${nombre} ${k + 1}`, p, enAnillo(a, radio, y), d);
       }
     },
@@ -567,8 +567,8 @@ const escena280 = (): Escena => {
   m.nivel("base-2", "Base: cuarteto R-9 azul rey de arriba", R("R-9", 18, AZUL), [AZUL], v(0, 21.5, 0), 0);
   m.anillo("base-r5", "R-5 azul rey de la base", R("R-5", 6.5, AZUL), 8, 7, 18, 0, 22.5);
   m.globo("remate", "R-12 azul rey «Feliz día papá»", R("R-12", 28, AZUL), v(0, 78, 2), ARRIBA, PAPA_OESTE);
-  m.globo("helio-cafe", "R-12 café «Feliz día papá» con helio", R("R-12", 28, CAFE), v(-11, 151, -6), unitario(v(-0.15, 1, 0)), PAPA_OESTE);
-  m.globo("helio-mostaza", "R-12 mostaza «Feliz día papá» con helio", R("R-12", 28, "023"), v(5, 122, -10), unitario(v(0.1, 1, 0)), PAPA_OESTE);
+  m.globo("helio-cafe", "R-12 café «Feliz día papá» con helio", { ...R("R-12", 28, CAFE), helio: true }, v(-11, 151, -6), unitario(v(-0.15, 1, 0)), PAPA_OESTE);
+  m.globo("helio-mostaza", "R-12 mostaza «Feliz día papá» con helio", { ...R("R-12", 28, "023"), helio: true }, v(5, 122, -10), unitario(v(0.1, 1, 0)), PAPA_OESTE);
   const amarre = v(0, 68, -4);
   m.escenografia("cintas", "Cintas doradas", [cinta(amarre, v(-9.5, 135, -6), "#c9a14a"), cinta(amarre, v(4, 106, -10), "#c9a14a")]);
   return m.escena();
@@ -693,9 +693,9 @@ const escena290 = (): Escena => {
   m.anillo("negro-abajo", "R-5 negro de la base (abajo)", R("R-5", 8, "080"), 4, 6, 15, 0, 45);
   m.anillo("negro-arriba", "R-5 negro de la base (arriba)", R("R-5", 8, "080"), 4, 15, 14, 15, 0);
   m.globo("balon", "Balón R-12 blanco", R("R-12", 30, "005"), v(0, 74, 1), ARRIBA, BALON_BLANCO);
-  m.globo("helio-amarillo", "Balón R-12 amarillo con helio", R("R-12", 28, "020"), v(-12, 155, -6), unitario(v(-0.1, 1, 0)), BALON_SURTIDO);
-  m.globo("helio-verde", "Balón R-12 verde lima con helio", R("R-12", 28, "031"), v(-28, 127, -4), unitario(v(-0.35, 1, 0)), BALON_SURTIDO);
-  m.globo("helio-naranja", "Balón R-12 naranja con helio", R("R-12", 28, "061"), v(2, 120, 2), unitario(v(0.15, 1, 0)), BALON_SURTIDO);
+  m.globo("helio-amarillo", "Balón R-12 amarillo con helio", { ...R("R-12", 28, "020"), helio: true }, v(-12, 155, -6), unitario(v(-0.1, 1, 0)), BALON_SURTIDO);
+  m.globo("helio-verde", "Balón R-12 verde lima con helio", { ...R("R-12", 28, "031"), helio: true }, v(-28, 127, -4), unitario(v(-0.35, 1, 0)), BALON_SURTIDO);
+  m.globo("helio-naranja", "Balón R-12 naranja con helio", { ...R("R-12", 28, "061"), helio: true }, v(2, 120, 2), unitario(v(0.15, 1, 0)), BALON_SURTIDO);
   const amarre = v(-1, 86, -4);
   m.escenografia("cintas", "Cintas rosadas", [cinta(amarre, v(-10, 140, -6), "#f2a7c3"), cinta(amarre, v(-23, 112, -4), "#f2a7c3"), cinta(amarre, v(0, 104, 2), "#f2a7c3")]);
   return m.escena();

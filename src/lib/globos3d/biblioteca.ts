@@ -28,6 +28,7 @@ import { productoDeGlobo, type ProductoDeGlobo } from "./productos-tienda";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { REFERENCIAS_DUENO } from "./referencias-dueno";
 import { compilarLectura } from "./compilar-lectura";
+import { nombreConHelio } from "./helio-cinta";
 import { BASES_ORGANICAS, conjuntoDeBase, descripcionBase, piezaDeBase, tituloFuenteBase } from "./bases-organicas";
 
 /**
@@ -176,7 +177,7 @@ function sinOrientacion(v: unknown): unknown {
  * R-9 y el R-5), no 14.
  */
 export function clavePieza(p: Pieza): string {
-  if (p.tipo === "decoracion") return JSON.stringify(redondear(sinOrientacion({ tipo: p.tipo, decoracion: p.decoracion })));
+  if (p.tipo === "decoracion") return JSON.stringify(redondear(sinOrientacion({ tipo: p.tipo, decoracion: p.decoracion, ...(p.helio ? { helio: true } : {}) })));
   return JSON.stringify(redondear(p));
 }
 
@@ -762,7 +763,7 @@ export function indexarEscena(item: ItemBiblioteca, armada?: EscenaArmada, cache
     const sugerida: Colocacion = nodo.colocacion.en === "ancla" || nodo.colocacion.en === "sobre"
       ? { en: "pared", pared: "fondo", aLoLargoCm: 0, alturaCm: marco ? Math.max(0, Math.round(hecho.caja.min.y)) : 100 }
       : structuredClone(nodo.colocacion);
-    const nombre = nombreGenerico(nodo.nombre);
+    const nombre = nombreConHelio(nodo.pieza, nombreGenerico(nodo.nombre));
     anotar(`pieza:${clavePieza(nodo.pieza)}`, () => ({
       id: `${item.id}~${nodo.id}`, tipo: clase === "utileria" ? "utileria" : "decoracion", nombre,
       descripcion: `${nombre}, de la escena «${item.nombre}».`, ocasiones: [],
@@ -805,7 +806,7 @@ function nombrarSinRepetir(items: ItemBiblioteca[], escena: Escena, hecha: Escen
     if ((veces.get(i.nombre) ?? 0) < 2) continue;
     const primero = i.apareceEn?.[0]?.nodoIds[0] ?? "";
     // Estructuras iguales de nombre: por su medida («Tira de 1,1 m de alto»); decoraciones: por su pieza.
-    i.nombre = i.tipo === "estructura" ? `${i.nombre} ${medida(primero)}`.trim() : i.tipo === "conjunto" ? i.nombre : nombreDe(primero);
+    i.nombre = i.tipo === "estructura" ? `${i.nombre} ${medida(primero)}`.trim() : i.tipo === "conjunto" ? i.nombre : nombreConHelio(escena.nodos.find((x) => x.id === primero)?.pieza, nombreDe(primero));
   }
   const usados = new Map<string, number>();
   for (const i of items) {

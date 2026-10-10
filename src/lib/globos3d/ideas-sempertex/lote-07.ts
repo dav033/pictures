@@ -69,7 +69,7 @@ const sala = (anchoCm: number, fondoCm: number, altoCm: number, tonos?: Partial<
 
 /** Un globo suelto; con `impresoId`, con el impreso de la tienda sobre su látex. */
 const globo = (g: ParteGlobo, impresoId?: string): Pieza =>
-  ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, codigo: g.codigo }] } : {}) });
+  ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, codigo: g.codigo }] } : {}) });
 
 /** Una columna de cuartetos de `niveles` niveles (la trenza de Sempertex: un nivel cada 0,8 diámetros). */
 function columna(formatoId: string, infladoCm: number, niveles: number, colores: string[], patron: PatronColumna = "un_color", impresos?: ImpresoEnPieza[]): Pieza {
@@ -460,7 +460,7 @@ const escena399 = (): Escena => {
       { id: "columna", nombre: "Columna orgánica blanca, perla y dorada", pieza: organico(opciones), colocacion: PISO },
       sobre("gigante", "R-24 Reflex Dorado", "columna", globo(R("R-24", 58, "970")), v(32, 160, 0), v(0.55, 0.8, 0.25)),
       sobre("cintas", "Cintas del ramo de helio", "columna", escenografia(helio.map((c) => cinta(v(0, 0, 0), enCintas(nudo(c)), "#e9dcc0"))), v(-8, 175, 0)),
-      ...helio.map((c, i) => sobreEn(`helio-${i + 1}`, `R-12 Cristal (impreso) con helio ${i + 1}`, "cintas", globo(R12), enCintas(c), enCintas(unitario(c)))),
+      ...helio.map((c, i) => sobreEn(`helio-${i + 1}`, `R-12 Cristal (impreso) con helio ${i + 1}`, "cintas", globo({ ...R12, helio: true }), enCintas(c), enCintas(unitario(c)))),
     ],
   };
 };
@@ -902,7 +902,7 @@ const escena495 = (): Escena => {
       sobre("flor-1", "Flor de R-5 Silk Azul Ártico (izquierda)", "m", flor495, v(-17.3, 49, 0), AL_FRENTE),
       sobre("flor-2", "Flor de R-5 Silk Azul Ártico (derecha, arriba)", "m", flor495, v(18.8, 54, 0), AL_FRENTE),
       sobre("flor-3", "Flor de R-5 Silk Azul Ártico (derecha, abajo)", "m", flor495, v(22.5, 40, 0), AL_FRENTE),
-      sobre("helio", "R-12 rosado Corazones Brillantes con helio", "m", globo(R("R-12", 28, "009"), "infinity-corazones-brillantes-fashion-metal-surtido"), v(16.4, 62, 0)),
+      sobre("helio", "R-12 rosado Corazones Brillantes con helio", "m", globo({ ...R("R-12", 28, "009"), helio: true }, "infinity-corazones-brillantes-fashion-metal-surtido"), v(16.4, 62, 0)),
       { id: "huacal", nombre: "Huacal con croissants y frutas", pieza: escenografia(huacal), colocacion: libre(0, 75, 0) },
       { id: "mesa", nombre: "Mesa", pieza: escenografia(mesaConMantel({ anchoCm: 90, fondoCm: 60, altoCm: 75, mantel: "#f7f5f2" })), colocacion: PISO },
     ],

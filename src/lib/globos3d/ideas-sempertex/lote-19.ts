@@ -109,7 +109,7 @@ function marcoNormal(n0: Vec3, giroGrados = 0): (p: Vec3) => Vec3 {
 
 /** Un globo suelto (el centro de su cuerpo en el origen, el cuerpo hacia +y); con `impresoId`, con su impreso. */
 const globo = (g: ParteGlobo, impresoId?: string): Pieza =>
-  ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) });
+  ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) });
 /** Un nivel de cuarteto: una columna de un nivel (su origen es el centro del cuarteto). */
 const cuarteto = (g: ParteGlobo, colores: string[], patron: PatronColumna = "un_color", impresos?: ImpresoEnPieza[]): Pieza =>
   ({ tipo: "columna", formatoId: g.formatoId, infladoCm: g.infladoCm, alturaCm: r2(g.infladoCm * 0.8), patron, colores, ...(impresos?.length ? { impresos } : {}) });
@@ -650,7 +650,7 @@ const escena401 = perezoso((): Escena => {
     ["naranja", "061", 370, 40, -3, "Fashion Naranja"], ["amarillo", "020", 392, 115, 2, "Fashion Amarillo"], ["aguamarina", "037", 345, 110, -14, "Fashion Aguamarina"],
     ["verde", "126", 400, 160, -6, "Pastel Dusk Té Verde"], ["rojo", "015", 355, 205, 6, "Fashion Rojo"],
   ];
-  for (const [id, codigo, x, y, z, nombre] of HELIO) m.globo(`helio-${id}`, `R-12 ${nombre} de helio (ramo)`, R("R-12", 28, codigo), px(x, y, z), ARRIBA);
+  for (const [id, codigo, x, y, z, nombre] of HELIO) m.globo(`helio-${id}`, `R-12 ${nombre} de helio (ramo)`, { ...R("R-12", 28, codigo), helio: true }, px(x, y, z), ARRIBA);
   m.metalizado("estrella-dorada", "Estrella metalizada dorada de 18\" (ramo, izquierda)", metalizadoDeTienda("estrella-dorado-mate"), px(300, 135, 4), 12);
   m.metalizado("estrella-azul", "Estrella metalizada azul de 18\" (ramo, derecha)", metalizadoDeTienda("estrella-azul-vibrante"), px(420, 200, 9), -8);
   return { sala: sala(240, 220, 240), nodos: m.nodos };

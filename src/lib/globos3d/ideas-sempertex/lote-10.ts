@@ -230,7 +230,7 @@ const figura = (p: Partial<PropiedadesFigura> & Pick<PropiedadesFigura, "queEs">
 const uvas = (g: ParteGlobo, cantidad: number): Pieza => ({ tipo: "decoracion", decoracion: figura({ cuerpo: [{ tipo: "racimo", globo: g, cantidad }], queEs: "a small cluster of tiny balloons like grapes" }) });
 /** Tres globitos amarrados juntos (el trío de la técnica orgánica). */
 const trio = (g: ParteGlobo, giroGrados = 0): Pieza => ({ tipo: "decoracion", decoracion: { tipo: "flor", propiedades: { petalos: { ...g, cantidad: 3, aperturaGrados: 35, giroGrados }, centro: null } } });
-const globo = (g: ParteGlobo, impresoId?: string): Pieza => ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) });
+const globo = (g: ParteGlobo, impresoId?: string): Pieza => ({ tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}), ...(impresoId ? { impresos: [{ impresoId, globos: [0] }] } : {}) });
 
 /** El giro sobre la normal que deja la cara (+z local) de la pieza lo más hacia quien mira (+z): lo impreso al frente. */
 function giroAlFrente(normal: Vec3): number {
@@ -434,7 +434,7 @@ const escena796 = (): Escena => {
   const enCintas = (id: string, nombre: string, pieza: Pieza, origen: Vec3, normal: Vec3, giro = 0) => colgar({ id, nombre, pieza, padre: cintas.padre, origen, normal, giroGrados: giro }).nodo;
   nodos.push(
     racimoPiso.nodo, cintas.nodo,
-    ...centros.map((c, k) => enCintas(`helio-${k + 1}`, `R-12 Reflex Champaña con helio ${k + 1}`, globo(CHAMPANA_HELIO), c, unitario(menos(c, amarre)))),
+    ...centros.map((c, k) => enCintas(`helio-${k + 1}`, `R-12 Reflex Champaña con helio ${k + 1}`, globo({ ...CHAMPANA_HELIO, helio: true }), c, unitario(menos(c, amarre)))),
     ...[[850, 600], [935, 600], [888, 748]].map(([x, y], k) => enCintas(`trio-cinta-${k + 1}`, `Triíto chocolate de la cinta ${k + 1}`, trio(R("R-5", 5.5, "076"), k * 40), px796(x!, y!, piso.z + 2), AL_FRENTE)),
     ...[[870, 590, 30, 4, 7, 4], [935, 600, 26, 3.5, 6, 3.5], [900, 640, 22, 4.5, 8, 4]].map(([x, y, largoCm, vueltas, r0, r1], k) => enCintas(`rizo-${k + 1}`, `Rizo de T-260 Reflex Dorado ${k + 1}`, { tipo: "decoracion", decoracion: { tipo: "rizo", propiedades: { forma: "tirabuzon", tubito: { formatoId: "T-260", grosorCm: 3, codigo: "970" }, vueltas: vueltas!, radioInicialCm: r0!, radioFinalCm: r1!, largoCm: largoCm!, eje: "abajo" } } }, px796(x!, y!, piso.z + 3), AL_FRENTE)),
     { id: "tapete", nombre: "Tapete negro", pieza: { tipo: "escenografia", elementos: tapete({ anchoCm: 232, fondoCm: 110, hex: "#141312" }) }, colocacion: { en: "piso", xCm: 8, zCm: PARED_796 + 60, giroGrados: 0 } },
@@ -753,7 +753,7 @@ const escena286 = (): Escena => {
   deVarilla("hojas-derecha", "Hojas en lazo verde trébol (derecha)", hojas(-25), px286(410, 365, z + 6), AL_FRENTE);
   // El corazón de helio y su cinta, que baja a la boca del florero.
   const corazon = px286(330, 140, z - 4);
-  deVarilla("corazon", "Corazón C-12 Fashion Rojo con helio («Feliz Día Mami»)", { tipo: "globo", formatoId: "C-12", infladoCm: 30, codigo: "015" }, corazon, ARRIBA);
+  deVarilla("corazon", "Corazón C-12 Fashion Rojo con helio («Feliz Día Mami»)", { tipo: "globo", formatoId: "C-12", infladoCm: 30, codigo: "015", helio: true }, corazon, ARRIBA);
   const m = giroSobre(ARRIBA, -90);
   const amarre = px286(352, 330, z - 4);
   deVarilla("cinta", "Cinta del corazón", { tipo: "escenografia", elementos: [cinta(v(0, 0, 0), trasladar(m, menos(v(corazon.x, corazon.y - 15, corazon.z), amarre)), "#e8222e", 0.15)] }, amarre, ARRIBA, -90);
@@ -925,7 +925,8 @@ const escena260 = (): Escena => {
     nodos.push(racimo, cintas.nodo);
     helio.forEach((h, n) => {
       const c = centros[n]!, dir = unitario(menos(c, amarre));
-      const pieza = h.pieza;
+      // Los foil (metalizados) del ramo no se cuentan en litros: solo se marcan los de látex.
+      const pieza: Pieza = h.pieza.tipo === "globo" ? { ...h.pieza, helio: true } : h.pieza;
       const giro = pieza.tipo === "globo" && pieza.impresos?.length ? giroAlFrente(dir) : pieza.tipo === "metalizado" ? -90 : 0;
       const normal = pieza.tipo === "metalizado" ? ARRIBA : dir;
       const origen = pieza.tipo === "metalizado" ? menos(c, v(0, 23, 0)) : c;

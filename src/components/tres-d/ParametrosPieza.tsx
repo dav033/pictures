@@ -22,6 +22,7 @@ import { EditorDecoracionCompleto, PanelDecoracion, nombreDecoracion } from "./P
 import { CHIP, CHIP_ON, centimetros, metros } from "./ui-taller";
 import { EditorTrazo } from "./EditorTrazo";
 import { EditorRemate } from "./EditorRemate";
+import { MarcaHelio } from "./MarcaHelio";
 import { piezaDeGenerador } from "@/lib/globos3d/generadores-organicos";
 import { MEZCLA_TRAZO, esColumnaTrazo, puntosDeSilueta } from "@/lib/globos3d/trazo-organico";
 import type { ColorOrganico } from "@/lib/globos3d/organico";
@@ -425,6 +426,7 @@ export function ParametrosPieza({ escena, raizId, nodo, onPieza, onEscena, vista
       {(tipoColumna || tipoArco) && cabecera}
       {cuerpo}
       {tipoColumna && <EditorRemate pieza={p} onPieza={onPieza} />}
+      <MarcaHelio pieza={p} onPieza={onPieza} />
       {p.tipo === "decoracion" && <section><p className="flex items-center gap-1.5 text-xs text-taller-suave"><Sparkles className="size-3.5" aria-hidden />Para colgarla de otra pieza o repetirla cada N anclas, usa «Lugar» en la escena.</p></section>}
     </>
   );

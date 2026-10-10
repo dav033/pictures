@@ -47,7 +47,9 @@ import { PanelPiezas } from "./PanelPiezas";
 import { PartesSolitario } from "./PartesSolitario";
 import { EditorSala } from "./PanelEscena";
 import { ListaCompra } from "./ListaCompra";
-import { BarraHerramientas, EtiquetaElegida, ReglaAlturas, type Herramienta } from "./SobreVisor";
+import { EtiquetasMedidas } from "./EtiquetasMedidas";
+import { useMedidasDePieza } from "./useMedidasDePieza";
+import { BarraHerramientas, BotonMedidas, EtiquetaElegida, ReglaAlturas, type Herramienta } from "./SobreVisor";
 import { medidaPrincipal, NOMBRE_TIPO } from "./tipos-pieza";
 import { leerGuardada, guardarEscena } from "./guardado-escena";
 import { conSalaNueva } from "@/lib/globos3d/salon-techos";
@@ -554,6 +556,8 @@ export function Taller3D() {
   const hechoElegido = nodoElegido ? armadaEscena?.porNodo.find((n) => n.id === nodoElegido.id) : undefined;
   const totalGlobos = armadaEscena?.globos.length ?? 0;
   const medida = nodoElegido ? medidaPrincipal(nodoElegido.pieza, hechoElegido?.caja) : null;
+  const puedeMedir = Boolean(nodoElegido && hechoElegido) && !todosLosGlobos;
+  const { verMedidas, alternarMedidas } = useMedidasDePieza(puedeMedir ? seleccion : null);
   const elegirPanel = (p: Panel) => setPanel((actual) => (actual === p ? null : p));
   const cambiarAltura = (paso: 1 | -1) => setHoja((h) => ALTURAS[Math.max(0, Math.min(ALTURAS.length - 1, ALTURAS.indexOf(h) + paso))] ?? h);
   const elegirPestanaHoja = (p: PestanaHoja) => { setPestanaHoja(p); if (hoja === "cerrada" || p === "ia") setHoja("media"); };
@@ -740,13 +744,14 @@ export function Taller3D() {
       {esAncho && (
         <div className="pointer-events-none absolute inset-x-0 top-3.5 z-10 flex justify-center px-3">
           <BarraHerramientas solitario={solitario.activo} herramienta={herramienta} onHerramienta={setHerramienta} vista={vistaFija}
-            onVista={(v) => { setVistaFija(v); visor?.verDesde(v); }} onEncuadrar={() => { setVistaFija("3d"); visor?.verDesde("3d"); }} />
+            onVista={(v) => { setVistaFija(v); visor?.verDesde(v); }} onEncuadrar={() => { setVistaFija("3d"); visor?.verDesde("3d"); }} medidas={verMedidas} onMedidas={alternarMedidas} puedeMedir={puedeMedir} />
         </div>
       )}
       {nodoElegido && hechoElegido && !todosLosGlobos && !(solitario.activo && nodoElegido.id === solitario.solitario?.raizId) && (
         <EtiquetaElegida visor={visor} caja={(copiaElegida ? hechoElegido.puestas[copiaElegida.copia]?.caja : undefined) ?? hechoElegido.caja} contenedor={visorCajaRef}
           texto={`${nodoElegido.nombre}${medida ? ` · ${medida}` : ""}`} />
       )}
+      {nodoElegido && hechoElegido && !todosLosGlobos && <EtiquetasMedidas visor={visor} activo={verMedidas} caja={(copiaElegida ? hechoElegido.puestas[copiaElegida.copia]?.caja : undefined) ?? hechoElegido.caja} cajaLocal={hechoElegido.cajaLocal} colocacion={nodoElegido.colocacion} contenedor={visorCajaRef} />}
       {solitario.activo && raizSolitario && !todosLosGlobos && (
         <ReglaAlturas visor={visor} caja={armadaEscena?.porNodo.find((n) => n.id === raizSolitario.id)?.caja ?? null} contenedor={visorCajaRef} />
       )}
@@ -857,12 +862,13 @@ export function Taller3D() {
         )}
       </div>
       {/* Acceso directo y con texto al render con IA (en escritorio vive en la barra superior). */}
-      <div className="pointer-events-none absolute inset-x-3 z-20 flex justify-center" style={{ top: "calc(max(12px, env(safe-area-inset-top)) + 52px)" }}>
+      <div className="pointer-events-none absolute inset-x-3 z-20 flex items-center justify-center gap-2" style={{ top: "calc(max(12px, env(safe-area-inset-top)) + 52px)" }}>
         <button type="button" onClick={() => setDialogo("imagen")} disabled={!listo}
           title={solitario.activo ? "Foto realista con IA de esta pieza sola" : "Foto realista con IA de la escena"}
           className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full border border-taller-primario bg-taller-primario px-5 text-sm font-semibold text-taller-sobre-primario shadow-[0_8px_24px_var(--sombra)] disabled:cursor-not-allowed disabled:opacity-45">
           <Camera className="size-5" aria-hidden />Foto realista
         </button>
+        {!esAncho && puedeMedir && <BotonMedidas activo={verMedidas} onClick={alternarMedidas} />}
       </div>
       {renombrando && !esAncho && (
         <div className="absolute inset-x-3 top-16 z-30">

@@ -79,7 +79,7 @@ const nudoDe = (g: ParteGlobo, centro: Vec3, direccion: Vec3): Vec3 => menos(cen
 function globoSobre(id: string, nombre: string, padreId: string, g: ParteGlobo, centro: Vec3, direccion: Vec3 = ARRIBA): NodoEscena {
   const n = unitario(direccion);
   const punto = menos(centro, por(n, centroCuerpo("redondo", g.infladoCm) - HUNDIMIENTO_SOBRE_CM));
-  return { id, nombre, pieza: { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo }, colocacion: { en: "sobre", padreId, puntoCm: redondo(punto), normal: redondo(n), giroGrados: 0 } };
+  return { id, nombre, pieza: { tipo: "globo", formatoId: g.formatoId, infladoCm: g.infladoCm, codigo: g.codigo, ...(g.helio ? { helio: true as const } : {}) }, colocacion: { en: "sobre", padreId, puntoCm: redondo(punto), normal: redondo(n), giroGrados: 0 } };
 }
 
 /** Una decoración `sobre` su padre, con su espalda en `espalda` (si no hay globos del padre debajo) mirando a `normal`. */
@@ -150,7 +150,7 @@ function escenaRamo(o: { pisos: readonly PisoRamo[]; remate?: { globo: GloboRamo
   const globos: NodoEscena[] = [];
   const cintas: ElementoEscenografia[] = [];
   const poner = (g: GloboRamo, centro: Vec3, direccion: Vec3, id: string, donde: string) => {
-    globos.push(globoSobre(id, `${nombreGlobo(g, g.impreso)} (${donde})`, "peso", g, centro, direccion));
+    globos.push(globoSobre(id, `${nombreGlobo(g, g.impreso)} (${donde})`, "peso", { ...g, helio: true }, centro, direccion));
     cintas.push(cinta(amarre, nudoDe(g, centro, direccion), o.cinta));
   };
   o.pisos.forEach((piso, k) => piso.globos.forEach((g, i) => {
@@ -588,7 +588,7 @@ const idea544 = idea({
           colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 },
         },
         decoSobre("hojas", "Hojas de T-260 Verde Trébol", "mesa", florTubito({ petalos: lazos("T-260", 3.5, ["029"], 3, 15, 8, 0, 10) }), menos(POMPON_544, v(0, 0, 2)), AL_FRENTE),
-        ...GLOBOS_544.map(({ g, centro }, i) => globoSobre(`globo-${i + 1}`, `${nombreGlobo(g, g.impreso)} ${i + 1}`, "mesa", g, centro, menos(centro, AMARRE_544))),
+        ...GLOBOS_544.map(({ g, centro }, i) => globoSobre(`globo-${i + 1}`, `${nombreGlobo(g, g.impreso)} ${i + 1}`, "mesa", { ...g, helio: true }, centro, menos(centro, AMARRE_544))),
       ],
     },
   }),
@@ -612,7 +612,7 @@ const idea563 = idea({
     escena: {
       sala: structuredClone(SALA_CHICA),
       nodos: [
-        { id: "remate", nombre: "R-24 Fashion Rojo impreso «estrellas»", pieza: { tipo: "globo", formatoId: "R-24", infladoCm: 55, codigo: "015" }, colocacion: { en: "techo", xCm: 0, zCm: 0, cuelgaCm: 0, giroGrados: 0, volteada: false } },
+        { id: "remate", nombre: "R-24 Fashion Rojo impreso «estrellas»", pieza: { tipo: "globo", formatoId: "R-24", infladoCm: 55, codigo: "015", helio: true }, colocacion: { en: "techo", xCm: 0, zCm: 0, cuelgaCm: 0, giroGrados: 0, volteada: false } },
         // Los cuartetos cuelgan del R-24 mirando al piso: en su espacio, +y es abajo, +z la derecha y −x el frente.
         decoSobre("cuarteto-1", "Cuarteto R-9 Verde Trébol (arriba)", "remate", CUARTETO_563, v(0, -30, 0), v(0, -1, 0)),
         decoSobre("cuarteto-2", "Cuarteto R-9 Verde Trébol (abajo)", "cuarteto-1", CUARTETO_563, v(0, 14, 0), ARRIBA),
@@ -688,7 +688,7 @@ const idea597 = idea({
         decoSobre("corazones", "Flor de corazones rojos", "lazos",
           { tipo: "flor_corazones", propiedades: { corazones: { ...R("C-12", 13, "015"), cantidad: 5, aperturaGrados: 35, giroGrados: 36 }, interior: burbujas("T-260", 3, ["005"], 5, 5, 40, 0), centro: R("R-5", 8, "015") } },
           v(0, 2, 0), ARRIBA),
-        ...GLOBOS_597.map(({ g, centro }, i) => globoSobre(`globo-${i + 1}`, `${nombreGlobo(g, g.impreso)} ${i + 1}`, "mesa", g, centro, menos(centro, AMARRE_597))),
+        ...GLOBOS_597.map(({ g, centro }, i) => globoSobre(`globo-${i + 1}`, `${nombreGlobo(g, g.impreso)} ${i + 1}`, "mesa", { ...g, helio: true }, centro, menos(centro, AMARRE_597))),
       ],
     },
   }),
@@ -725,7 +725,7 @@ const idea598 = idea({
         decoSobre("orejitas", "Burbujitas blancas", "base", florTubito({ petalos: burbujas("T-260", 3, ["005"], 6, 6, 55, 0) }), v(0, 9, 0), ARRIBA),
         palito("tallo", "Tallo de T-260 Verde Trébol", "mesa", { formatoId: "T-260", grosorCm: 3.5, codigo: "029" }, v(0, ALTO_MESA + 10, 0), v(0, ALTO_MESA + 27, 0)),
         decoSobre("flor", "Flor de burbujas roja y blanca", "mesa", florTubito({ petalos: burbujas("T-260", 3.5, ["015", "005"], 5, 13, 0, 90), centro: R("R-5", 6, "029") }), v(0, ALTO_MESA + 30, 1), AL_FRENTE),
-        ...GLOBOS_598.map(({ g, centro }, i) => globoSobre(`globo-${i + 1}`, `${nombreGlobo(g, g.impreso)} ${i + 1}`, "mesa", g, centro, menos(centro, AMARRE_598))),
+        ...GLOBOS_598.map(({ g, centro }, i) => globoSobre(`globo-${i + 1}`, `${nombreGlobo(g, g.impreso)} ${i + 1}`, "mesa", { ...g, helio: true }, centro, menos(centro, AMARRE_598))),
       ],
     },
   }),

@@ -129,6 +129,7 @@ export type NodoArmado = {
   anclas: AnclaDePieza[];
   materiales: MaterialDecoracion[];
   caja: Caja;
+  /** La caja de la pieza en su propio marco, antes de colocarla (con ella se mide su ancho sin importar cómo esté girada). */ cajaLocal?: Caja;
   /** Por qué no se pudo poner (padre que no existe, ciclo…); vacío si quedó bien. */
   avisos: string[];
   /**
@@ -405,7 +406,7 @@ function crearArmador(escena: Escena, cache?: Map<string, PiezaArmada>, sembrado
               id: nodo.id, nombre: nodo.nombre, copias: copias.length,
               globos: copias.flatMap((x) => x.globos), tubos: copias.flatMap((x) => x.tubos), flores: copias.flatMap((x) => x.flores), solidos: copias.flatMap((x) => x.solidos), anclas: copias.flatMap((x) => x.anclas),
               materiales: sumarMateriales(...copias.map(() => armada.materiales)),
-              caja: cajaDePuntos(copias.flatMap((x) => [x.caja.min, x.caja.max])),
+              caja: cajaDePuntos(copias.flatMap((x) => [x.caja.min, x.caja.max])), cajaLocal: armada.caja,
               avisos: [],
               puestas: copias.map((x, k) => ({ caja: x.caja, marco: marcos[k]!, ancla: indices[k]! })),
             };
@@ -422,13 +423,13 @@ function crearArmador(escena: Escena, cache?: Map<string, PiezaArmada>, sembrado
             // Las sillas de una mesa paramétrica van en el marco de la mesa (sus puestos ya están en él): no se apoyan en globos.
             const marco = esGrupoDeSillas(nodo.pieza) ? marcoPadre : marcoSobre(armada, c, marcoPadre, cuerposDe(delPadre));
             const puesta = aplicar(armada, marco);
-            resultado = { id: nodo.id, nombre: nodo.nombre, copias: 1, ...puesta, materiales: sumarMateriales(armada.materiales), avisos: [], puestas: [{ caja: puesta.caja, marco, ancla: null }] };
+            resultado = { id: nodo.id, nombre: nodo.nombre, copias: 1, ...puesta, cajaLocal: armada.caja, materiales: sumarMateriales(armada.materiales), avisos: [], puestas: [{ caja: puesta.caja, marco, ancla: null }] };
           }
         }
       } else {
         const marco = transformacionDe(c, armada.caja, escena.sala);
         const puesta = aplicar(armada, marco);
-        resultado = { id: nodo.id, nombre: nodo.nombre, copias: 1, ...puesta, materiales: sumarMateriales(armada.materiales), avisos: [], puestas: [{ caja: puesta.caja, marco, ancla: null }] };
+        resultado = { id: nodo.id, nombre: nodo.nombre, copias: 1, ...puesta, cajaLocal: armada.caja, materiales: sumarMateriales(armada.materiales), avisos: [], puestas: [{ caja: puesta.caja, marco, ancla: null }] };
         if (c.en === "techo" && c.cuelgaCm > 0) {
           const arriba = puesta.caja.max.y;
           cilindrosPorNodo.set(nodo.id, [{ base: { x: c.xCm, y: arriba, z: c.zCm }, radioCm: HILO.radioCm, altoCm: Math.max(0, escena.sala.altoCm - arriba), hex: HILO.hex, nodo: nodo.id }]);
