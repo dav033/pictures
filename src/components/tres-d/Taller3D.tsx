@@ -46,7 +46,7 @@ import { Inspector } from "./Inspector";
 import { PanelPiezas } from "./PanelPiezas";
 import { PartesSolitario } from "./PartesSolitario";
 import { EditorSala } from "./PanelEscena";
-import { ListaCompra } from "./ListaCompra";
+import { DialogoCompra } from "./DialogoCompra";
 import { EtiquetasMedidas } from "./EtiquetasMedidas";
 import { useMedidasDePieza } from "./useMedidasDePieza";
 import { BarraHerramientas, BotonMedidas, EtiquetaElegida, ReglaAlturas, type Herramienta } from "./SobreVisor";
@@ -967,9 +967,8 @@ export function Taller3D() {
         </div>
       </ArrastreDecoracionContexto.Provider>
 
-      <DialogoTaller abierto={dialogo === "lista"} onCerrar={() => setDialogo(null)} titulo={`Lista de compra · ${totalGlobos} globos`} forma="cajon">
-        {armadaEscena && dialogo === "lista" && <ListaCompra nombre={nombreEscena} escena={escenaVista} armada={armadaEscena} productosExactos={<ProductosEscena escena={escenaVista} nombre={nombreEscena} />} />}
-      </DialogoTaller>
+      <DialogoCompra abierto={dialogo === "lista"} onCerrar={() => setDialogo(null)} titulo={`Lista de compra · ${totalGlobos} globos`} nombre={nombreEscena} escena={escenaVista} armada={armadaEscena}
+        productosExactos={<ProductosEscena escena={escenaVista} nombre={nombreEscena} />} />
       <DialogoTaller abierto={dialogo === "imagen"} onCerrar={() => setDialogo(null)} titulo="Foto realista">
         <div className="p-4">
           <p className="mb-3 text-sm text-taller-suave">Convierte lo que se ve en el visor en una foto realista con IA (gíralo antes para elegir el ángulo). {solitario.activo ? "Solo la pieza que estás editando." : "La escena entera, como la ves."}</p>

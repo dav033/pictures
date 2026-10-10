@@ -47,7 +47,7 @@ export type PropiedadesFlor = {
  * `helio`: el globo flota con helio (lo marca la fuente: `ParteGlobo.helio` o `Pieza.helio`); la lista de compra lo cuenta
  * con los de las partes de helio («helio», «ramo»), ver `helio-cinta.ts`. Sin la marca, el globo es de aire.
  */
-export type GloboDecoracion = { formatoId: string; infladoCm: number; codigo: string; nudo: Vec3; direccion: Vec3; cuelloExtraCm: number; frente?: Vec3; estampado?: EstampadoGlobo; parte?: string; helio?: true };
+export type GloboDecoracion = { formatoId: string; infladoCm: number; codigo: string; nudo: Vec3; direccion: Vec3; cuelloExtraCm: number; frente?: Vec3; estampado?: EstampadoGlobo; parte?: string; helio?: true; /** Capa de la pieza (0 es la primera): el cuarteto de una trenza, el anillo de un cono. La hoja de armado agrupa por ella. */ nivel?: number };
 
 /** Una mancha impresa: un polígono de color, en cm medidos sobre la superficie del globo (u a la derecha, v arriba). */
 export type CapaEstampado = { hex: string; puntos: Array<[number, number]> };

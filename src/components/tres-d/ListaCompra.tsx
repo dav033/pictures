@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { ChevronRight, ClipboardCopy } from "lucide-react";
+import { ChevronRight, ClipboardCopy, FileText } from "lucide-react";
 import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import type { MaterialDecoracion } from "@/lib/globos3d/figuras";
 import { corazonesSinCobertura } from "@/lib/globos3d/formatos";
@@ -66,9 +66,10 @@ function enTexto(nombre: string, escena: Escena, armada: EscenaArmada, calibraci
 
 /**
  * La lista de compra de la escena (lo que antes era «Materiales y detalle»): globos por formato y color, cuántos lleva
- * cada pieza, productos de fiesta, avisos y, del motor de la biblioteca, los productos exactos de la tienda.
+ * cada pieza, productos de fiesta, avisos y, del motor de la biblioteca, los productos exactos de la tienda. Con
+ * `onHojaDeArmado` (la bandera de la hoja encendida) lleva el botón «Hoja de armado», que pasa la calibración de la bomba.
  */
-export function ListaCompra({ nombre, escena, armada, productosExactos }: { nombre: string; escena: Escena; armada: EscenaArmada; productosExactos: ReactNode }) {
+export function ListaCompra({ nombre, escena, armada, productosExactos, onHojaDeArmado }: { nombre: string; escena: Escena; armada: EscenaArmada; productosExactos: ReactNode; onHojaDeArmado?: (calibracion: CalibracionBomba) => void }) {
   const [copiada, setCopiada] = useState(false);
   const [calibracion, setCalibracion] = useState<CalibracionBomba>({});
   useEffect(() => {
@@ -87,7 +88,10 @@ export function ListaCompra({ nombre, escena, armada, productosExactos }: { nomb
           <p className="text-[15px] font-semibold">Escena · <span className="font-mono">{escena.nodos.length}</span> {escena.nodos.length === 1 ? "pieza" : "piezas"} · <span className="font-mono">{armada.globos.length}</span> globos{armada.flores.length ? ` · ${armada.flores.length} flores` : ""}</p>
           <p className="font-mono text-xs text-taller-suave">Sala {m(escena.sala.anchoCm)} × {m(escena.sala.fondoCm)} × {m(escena.sala.altoCm)} m</p>
         </div>
-        <button type="button" onClick={() => void copiar()} className={BTN}><ClipboardCopy className="size-4" aria-hidden />{copiada ? "Lista copiada" : "Copiar la lista"}</button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => void copiar()} className={BTN}><ClipboardCopy className="size-4" aria-hidden />{copiada ? "Lista copiada" : "Copiar la lista"}</button>
+          {onHojaDeArmado && <button type="button" onClick={() => onHojaDeArmado(calibracion)} className={BTN}><FileText className="size-4" aria-hidden />Hoja de armado</button>}
+        </div>
       </section>
       <section aria-label="Globos">
         <h3 className="taller-rotulo mb-2">Globos</h3>

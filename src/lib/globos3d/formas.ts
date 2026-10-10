@@ -913,7 +913,7 @@ function armarCono(o: OpcionesCono): FormaArmada {
   const globos: GloboDeForma[] = [];
   niveles.forEach((nv, k) => nv.centros.forEach((c, i) => {
     const fuera = normalizar({ x: c.x, y: (k % 2 === 0 ? 1 : -1) * 0.12 * Math.hypot(c.x, c.z), z: c.z });
-    globos.push({ ...globoEn(formato.id, r1(nv.d), pintor(c, i, k), redondo3(c), fuera), parte: "cuerpo" });
+    globos.push({ ...globoEn(formato.id, r1(nv.d), pintor(c, i, k), redondo3(c), fuera), parte: "cuerpo", nivel: k });
   }));
   if (o.remate) {
     const ultimo = niveles[niveles.length - 1]!;

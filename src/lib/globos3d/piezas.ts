@@ -181,7 +181,7 @@ function armarPiezaBase(pieza: PiezaBase): PiezaArmada {
       const armada = pieza.tipo === "columna"
         ? armarColumna({ formato, infladoCm: pieza.infladoCm, alturaCm: pieza.alturaCm, patron: pieza.patron, colores: pieza.colores })
         : armarArco({ formato, infladoCm: pieza.infladoCm, forma: pieza.forma, anchoCm: pieza.anchoCm, altoCm: pieza.altoCm, patron: pieza.patron, colores: pieza.colores });
-      const globos: GloboDePieza[] = armada.globos.map((g) => ({ formatoId: formato.id, infladoCm: pieza.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.parte ? { parte: g.parte } : {}) }));
+      const globos: GloboDePieza[] = armada.globos.map((g) => ({ formatoId: formato.id, infladoCm: pieza.infladoCm, codigo: g.codigo, nudo: g.nudo, direccion: g.direccion, cuelloExtraCm: g.cuelloExtraCm, ...(g.parte ? { parte: g.parte } : {}), nivel: g.nivel }));
       return conCaja({ globos, tubos: [], flores: [], anclas: armada.anclas.map((a) => ({ posicion: a.posicion, normal: a.normal })), materiales: materialesPorFormato(globos) });
     }
     case "pared_malla": {
@@ -217,7 +217,7 @@ function armarPiezaBase(pieza: PiezaBase): PiezaArmada {
       const formato = formatoPorId(g.formatoId);
       if (!formato) throw new Error(`Formato desconocido: ${g.formatoId}`);
       const trenza = armarTrenza({ formato, infladoCm: g.infladoCm, patron: g.patron, colores: g.colores, recorrido: recorridoGuirnalda(g), reparto: "extremos" });
-      const globos: GloboDePieza[] = trenza.globos.map((x) => ({ formatoId: formato.id, infladoCm: g.infladoCm, codigo: x.codigo, nudo: x.nudo, direccion: x.direccion, cuelloExtraCm: x.cuelloExtraCm, ...(x.parte ? { parte: x.parte } : {}) }));
+      const globos: GloboDePieza[] = trenza.globos.map((x) => ({ formatoId: formato.id, infladoCm: g.infladoCm, codigo: x.codigo, nudo: x.nudo, direccion: x.direccion, cuelloExtraCm: x.cuelloExtraCm, ...(x.parte ? { parte: x.parte } : {}), nivel: x.nivel }));
       return conCaja({ globos, tubos: [], flores: [], anclas: trenza.anclas.map((a) => ({ posicion: a.posicion, normal: a.normal })), materiales: materialesPorFormato(globos) });
     }
     case "escenografia":

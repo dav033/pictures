@@ -59,9 +59,9 @@ function corteValido(valor: string | null | undefined): boolean | null {
 /**
  * Una fila de `ajustes_runtime` con un caché de `TTL_AJUSTE_MS` por instancia. Las lecturas simultáneas comparten una sola
  * consulta. Si la base falla, vale la última lectura buena (o «sin fila» si nunca la hubo) hasta que vence el caché: no se
- * reintenta en cada petición.
+ * reintenta en cada petición. La usa también la bandera de la hoja de armado del Taller (`taller/hoja-armado-bandera.ts`).
  */
-function crearAjusteConCache(leer: () => Promise<string | null>, ahora: () => number): () => Promise<string | null> {
+export function crearAjusteConCache(leer: () => Promise<string | null>, ahora: () => number): () => Promise<string | null> {
   let cache: { valor: string | null; venceEn: number } | null = null;
   let ultimaBuena: { valor: string | null } | null = null;
   let enCurso: Promise<string | null> | null = null;
@@ -98,14 +98,17 @@ export type ConsultaAjuste = (sql: string, valores: string[]) => Promise<{ rows:
 /** Postgres: «relation does not exist». La tabla llega con la migración 032; sin ella no hay fila, no un fallo. */
 const TABLA_INEXISTENTE = "42P01";
 
-/** El valor de una fila de `ajustes_runtime`, `null` si no la hay (o no hay tabla). Un fallo de la base se avisa y se lanza. */
-export async function leerFilaAjuste(consultar: ConsultaAjuste, clave: string): Promise<string | null> {
+/**
+ * El valor de una fila de `ajustes_runtime`, `null` si no la hay (o no hay tabla). Un fallo de la base se avisa y se lanza.
+ * `origen` es el prefijo del aviso en el log: quién leía la fila (`guiada-motor`, `taller-hoja-armado`).
+ */
+export async function leerFilaAjuste(consultar: ConsultaAjuste, clave: string, origen = "guiada-motor"): Promise<string | null> {
   try {
     const { rows } = await consultar("SELECT valor FROM ajustes_runtime WHERE clave = $1", [clave]);
     return rows[0]?.valor ?? null;
   } catch (causa) {
     if ((causa as { code?: unknown } | null)?.code === TABLA_INEXISTENTE) return null;
-    console.warn(`[guiada-motor] no se pudo leer ${clave} de ajustes_runtime; sigue la última lectura buena o la variable de entorno.`, causa instanceof Error ? causa.message : "error");
+    console.warn(`[${origen}] no se pudo leer ${clave} de ajustes_runtime; sigue la última lectura buena o la variable de entorno.`, causa instanceof Error ? causa.message : "error");
     throw causa;
   }
 }
