@@ -5,33 +5,17 @@
  * - el motor no importa, ni de rebote, `biblioteca.ts` ni `ideas-sempertex/*` (enormes y perezosas);
  * - ningún archivo del motor pasa de 500 líneas;
  * - `v1.ts` es solo de servidor (`server-only`); el único que lo importa en el motor es él mismo.
+ * Y las del catálogo (REQ-013, AC-9): el producto guiado (el motor, sus rutas, `guiada-motor`, `ia/guiado`, `components/guiado`)
+ * no alcanza, ni de rebote, nada del catálogo de repositorios salvo sus hojas (`CATALOGO_PERMITIDO`: ids, tipos,
+ * asignacion-fondos; solo ve Sempertex), y no importa directamente el catálogo de muebles ni el de fondos (el motor llega a ellos
+ * de rebote solo para armar un `mueble.id` guardado).
  */
 import assert from "node:assert/strict";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
+import { archivos, catalogoNoPermitido, cerradura, colado, especificadores, RAIZ, resolver, SRC } from "./lib-cerradura-imports";
 
-const RAIZ = path.resolve(__dirname, "..", "..");
-const SRC = path.join(RAIZ, "src");
 const MOTOR = path.join(SRC, "lib", "globos3d", "motor");
-
-function archivos(dir: string, salida: string[] = []): string[] {
-  for (const nombre of readdirSync(dir)) {
-    if (nombre === "node_modules" || nombre === ".next") continue;
-    const ruta = path.join(dir, nombre);
-    if (statSync(ruta).isDirectory()) archivos(ruta, salida);
-    else if (/\.(ts|tsx)$/.test(nombre)) salida.push(ruta);
-  }
-  return salida;
-}
-
-const IMPORTA = /(?:import|export)\s[^'"`;]*?from\s*["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)|import\s*["']([^"']+)["']/g;
-const especificadores = (archivo: string): string[] => [...readFileSync(archivo, "utf8").matchAll(IMPORTA)].map((m) => m[1] ?? m[2] ?? m[3]!);
-
-function resolver(desde: string, especificador: string): string | null {
-  const base = especificador.startsWith("@/") ? path.join(SRC, especificador.slice(2)) : especificador.startsWith(".") ? path.resolve(path.dirname(desde), especificador) : null;
-  if (!base) return null;
-  return [`${base}.ts`, `${base}.tsx`, path.join(base, "index.ts")].find(existsSync) ?? null;
-}
 
 // 1. Quién importa el motor.
 const dentro = (ruta: string) => ruta.startsWith(MOTOR + path.sep);
@@ -49,27 +33,10 @@ for (const archivo of [...archivos(SRC), ...archivos(path.join(RAIZ, "scripts"))
 }
 
 // 2. El motor no arrastra la biblioteca del Taller, ni de rebote.
+const visto = cerradura(archivos(MOTOR));
 const PROHIBIDOS = [path.join(SRC, "lib", "globos3d", "biblioteca.ts"), path.join(SRC, "lib", "globos3d", "ideas-sempertex") + path.sep];
-const visto = new Map<string, string | null>();
-const cola: string[] = archivos(MOTOR);
-cola.forEach((f) => visto.set(f, null));
-while (cola.length) {
-  const actual = cola.shift()!;
-  for (const especificador of especificadores(actual)) {
-    const destino = resolver(actual, especificador);
-    if (!destino || visto.has(destino)) continue;
-    visto.set(destino, actual);
-    cola.push(destino);
-  }
-}
-for (const prohibido of PROHIBIDOS) {
-  const colado = [...visto.keys()].find((f) => f === prohibido || f.startsWith(prohibido));
-  if (colado) {
-    const cadena: string[] = [];
-    for (let c: string | null | undefined = colado; c; c = visto.get(c)) cadena.push(path.relative(SRC, c));
-    assert.fail(`el motor arrastra ${path.relative(SRC, prohibido)}: ${cadena.reverse().join(" -> ")}`);
-  }
-}
+const arrastrada = colado(visto, PROHIBIDOS);
+if (arrastrada) assert.fail(`el motor arrastra ${arrastrada}`);
 
 // 3. Tamaño de los archivos y el guardia de servidor.
 for (const archivo of archivos(MOTOR)) {
@@ -79,4 +46,17 @@ for (const archivo of archivos(MOTOR)) {
 assert.match(readFileSync(path.join(MOTOR, "v1.ts"), "utf8"), /^import "server-only";/m, "v1.ts debe ser solo de servidor");
 for (const archivo of archivos(MOTOR)) if (!archivo.endsWith(`${path.sep}v1.ts`)) assert.ok(!/import "server-only"/.test(readFileSync(archivo, "utf8")), `${path.basename(archivo)}: solo v1.ts lleva server-only (los esquemas los lee el script de contratos)`);
 
-console.log(`test-motor-guiada-fronteras: ok (${visto.size} archivos en la cerradura del motor, ${importadores} importaciones desde fuera)`);
+// 4. El producto guiado no ve el registro de repositorios ni importa directamente el catálogo de muebles y fondos (REQ-013).
+const GUIADO = [
+  MOTOR, path.join(SRC, "app", "api", "asistente-guiado"), path.join(SRC, "app", "api", "guiada"), path.join(SRC, "lib", "guiada-motor"),
+  path.join(SRC, "lib", "ia", "guiado"), path.join(SRC, "components", "guiado"),
+].flatMap((ruta) => archivos(ruta));
+const guiado = cerradura(GUIADO);
+assert.deepEqual(catalogoNoPermitido(guiado), [], "el producto guiado solo alcanza del catálogo ids, tipos y asignacion-fondos");
+const CATALOGO_MUEBLES = new Set(["mobiliario-catalogo.ts", "fondos-escenografia.ts"].map((f) => path.join(SRC, "lib", "globos3d", f)));
+for (const archivo of GUIADO) for (const especificador of especificadores(archivo)) {
+  const destino = resolver(archivo, especificador);
+  if (destino && CATALOGO_MUEBLES.has(destino)) assert.fail(`${path.relative(RAIZ, archivo)} importa ${path.basename(destino)}: el producto guiado no lista muebles ni fondos`);
+}
+
+console.log(`test-motor-guiada-fronteras: ok (${visto.size} archivos en la cerradura del motor, ${importadores} importaciones desde fuera, ${guiado.size} en la del producto guiado)`);

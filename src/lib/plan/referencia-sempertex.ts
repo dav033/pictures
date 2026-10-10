@@ -26,7 +26,7 @@ import { acabadoObservado, type FamiliaSempertex } from "@/lib/plan/acabado-obse
  * aquí no se edita a mano: un color se cambia allá y se vuelve a generar.
  */
 
-const ReferenciaSchema = z
+export const ReferenciaSchema = z
   .object({
     codigo: z.string().regex(/^[0-9]{3}$/),
     nombre: z.string().min(1),

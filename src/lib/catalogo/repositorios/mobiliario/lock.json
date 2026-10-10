@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "huella": "956545a220cc29d9514be6685c523fce7163cd547afdb1d3b721673287b10646",
+  "historial": [
+    {
+      "version": "1.0.0",
+      "nota": "REQ-013 fase 1: vista sobre los asientos y mesas de FONDOS_CATALOGO y los generadores mesa_param y sillas_param."
+    }
+  ]
+}

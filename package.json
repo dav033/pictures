@@ -24,6 +24,7 @@
     "test-columna-asimetrica-densa": "tsx --conditions=react-server scripts/test/test-columna-asimetrica-densa.ts",
     "test-motor-guiada-golden": "tsx --conditions=react-server scripts/test/test-motor-guiada-golden.ts",
     "test-motor-guiada-precio": "tsx --conditions=react-server scripts/test/test-motor-guiada-precio.ts",
+    "catalogo:test": "tsx --conditions=react-server scripts/test/test-catalogo-ids.ts && tsx --conditions=react-server scripts/test/test-catalogo-dorado.ts && tsx --conditions=react-server scripts/test/test-catalogo-identidad.ts && tsx --conditions=react-server scripts/test/test-catalogo-lock.ts && tsx --conditions=react-server scripts/test/test-catalogo-capas.ts && tsx --conditions=react-server scripts/test/test-catalogo-escritura.ts && tsx --conditions=react-server scripts/test/test-catalogo-compatibilidad.ts && tsx --conditions=react-server scripts/test/test-catalogo-repositorios.ts && tsx --conditions=react-server scripts/test/test-motor-guiada-fronteras.ts && tsx --conditions=react-server scripts/test/test-motor3d-frontera.ts && tsx --conditions=react-server scripts/test/test-estudio-fronteras.ts",
     "test-rotacion-secretos": "npm run build --workspace=@sempertex/happie-package-ia && tsx --conditions=react-server scripts/test/test-rotacion-secretos.ts",
     "start": "node scripts/next-with-system-ca.cjs start",
     "lint": "eslint",

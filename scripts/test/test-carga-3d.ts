@@ -7,7 +7,9 @@
  * tarda en ejecutarse (cargar el módulo y todo lo que importa al nivel superior). Falla si alguno pasa de `TOPE_MS`:
  * - `Taller3D.tsx`: lo que la página /3d evalúa al cargar (lo que va por `import()`/`next/dynamic` queda perezoso: no cuenta);
  * - `biblioteca.ts`: la biblioteca de fábrica (todas las ideas de Sempertex) sin armar nada;
- * - `herramientas-escena-biblioteca.ts`: lo que importa la IA de la escena (/api/escena-ia).
+ * - `herramientas-escena-biblioteca.ts`: lo que importa la IA de la escena (/api/escena-ia);
+ * - `catalogo/registro.ts`: el registro de repositorios de catálogo (REQ-013; que no cargue ninguno al importarse lo comprueba
+ *   `test-catalogo-repositorios`).
  *
  * Así una idea o un lote nuevo que arme su escena al importarse (en vez de perezosa, ver `ideas-sempertex/tipos.ts`)
  * rompe esta prueba y no vuelve a congelar el navegador. `--detalle` imprime los tiempos de cada corrida.
@@ -29,6 +31,7 @@ const ENTRADAS: ReadonlyArray<{ nombre: string; archivo: string }> = [
   { nombre: "Taller3D (página /3d)", archivo: "src/components/tres-d/Taller3D.tsx" },
   { nombre: "biblioteca.ts", archivo: "src/lib/globos3d/biblioteca.ts" },
   { nombre: "herramientas-escena-biblioteca.ts", archivo: "src/lib/globos3d/herramientas-escena-biblioteca.ts" },
+  { nombre: "catalogo/registro.ts", archivo: "src/lib/catalogo/registro.ts" },
 ];
 
 /** Empaqueta la entrada (con sus dependencias, también las de node_modules) en ESM partido para node; da el archivo de entrada. */

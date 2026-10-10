@@ -1,3 +1,4 @@
+import { idCortoDeFondo } from "@/lib/catalogo/asignacion-fondos";
 import { avisar, avisosDe, type AvisoUsuario } from "./avisos-usuario";
 import { z } from "zod";
 import { armarEscena, idNuevo, type Colocacion, type Escena, type NodoEscena } from "./escena";
@@ -79,8 +80,15 @@ function medidaAcotada(valor: number, rango: { min: number; max: number }, etiqu
   return v;
 }
 
+/** El `id` puede llegar calificado (`mobiliario:silla_tiffany`, REQ-013): se guarda el corto; uno de otro repositorio no vale. */
+function conIdCorto(argumentos: unknown): unknown {
+  if (typeof argumentos !== "object" || argumentos === null || !("id" in argumentos) || typeof argumentos.id !== "string") return argumentos;
+  const corto = idCortoDeFondo(argumentos.id);
+  return corto !== null ? { ...argumentos, id: corto } : fallar(`«${argumentos.id}» no es de ese repositorio del catálogo: usa el id sin prefijo.`);
+}
+
 function aplicar(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string; avisos: AvisoUsuario[] } {
-  const a = MobiliarioSchema.parse(argumentos ?? {});
+  const a = MobiliarioSchema.parse(conIdCorto(argumentos ?? {}));
   const entrada = FONDOS_CATALOGO.find((f) => f.id === a.id) ?? fallar(`No hay «${a.id}» en el catálogo de mobiliario.`);
   const notas: string[] = [];
   const veredicto = comprobarNombreMueble(entrada, a.nombre);

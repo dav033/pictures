@@ -61,6 +61,7 @@ jobs:
       - run: npm run test-columna-asimetrica-densa
       - run: npm run test-motor-guiada-golden
       - run: npm run test-motor-guiada-precio
+      - run: npm run catalogo:test
       - run: npm run contracts:test
       - run: npm run contracts:test:domain
       - run: npm run contracts:test:operational

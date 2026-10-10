@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { idCortoDeFondo } from "@/lib/catalogo/asignacion-fondos";
 import type { AcabadoEscenografia, ElementoEscenografia, RotuloEscenografia } from "./escenografia";
 import { entradaDeCatalogo } from "./fondos-escenografia";
 import { muebleDe } from "./mobiliario-catalogo";
@@ -38,7 +39,8 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 
 /** El esquema de lo guardado en una pieza (lo usa la API de la IA de escena para no dejar pasar medidas ni colores a ciegas). */
 export const MuebleDePiezaSchema = z.object({
-  id: z.string().min(1).max(60),
+  /** Corto o calificado con SU repositorio (`mobiliario:silla_tiffany`); el que llega calificado se guarda corto (`esquema-escena.ts`). */
+  id: z.string().min(1).max(60).refine((id) => idCortoDeFondo(id) !== null, "un id calificado tiene que ser de su repositorio"),
   opciones: z.object({
     anchoCm: z.number().finite().positive().max(3000), fondoCm: z.number().finite().positive().max(3000), altoCm: z.number().finite().positive().max(1500),
     colores: z.array(z.string().regex(HEX)).min(1).max(3),

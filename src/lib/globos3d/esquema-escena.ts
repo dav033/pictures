@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { idCortoDeFondo } from "@/lib/catalogo/asignacion-fondos";
 import type { Colocacion, Escena } from "./escena";
 import { MAX_NODOS, TIPOS_PIEZA } from "./herramientas-escena";
 import type { Pieza } from "./piezas";
@@ -23,6 +24,13 @@ const ColocacionSchema: z.ZodType<Colocacion> = z.discriminatedUnion("en", [
   z.object({ en: z.literal("sobre"), padreId: z.string().min(1).max(80), puntoCm: Vec, normal: Vec, giroGrados: Numero, encima: z.boolean().optional() }),
 ]);
 
+/** Lo que se guarda es el id corto del mueble (SPEC §5.2): uno que llega calificado con su repositorio se normaliza aquí. */
+function conMuebleCorto(p: Pieza): Pieza {
+  if (p.tipo !== "escenografia" || !p.mueble) return p;
+  const corto = idCortoDeFondo(p.mueble.id);
+  return corto === null || corto === p.mueble.id ? p : { ...p, mueble: { ...p.mueble, id: corto } };
+}
+
 /**
  * La pieza la arma el taller (que ya valida sus datos al armar): aquí basta con que sea un objeto de un tipo conocido.
  * Todos los tipos: una escena con formas, letras, metalizados, murales, techo o árboles (las de la biblioteca) también vale.
@@ -36,7 +44,7 @@ const PiezaSchema = z.custom<Pieza>((v) => {
   const elementos = esEscenografia ? (v as { elementos?: unknown }).elementos : undefined;
   const rotulosBuenos = !Array.isArray(elementos) || elementos.every((e) => typeof e !== "object" || e === null || !("rotulo" in e) || (e as { rotulo?: unknown }).rotulo === undefined || RotuloSchema.safeParse((e as { rotulo: unknown }).rotulo).success);
   return rotulosBuenos && (mueble === undefined || MuebleDePiezaSchema.safeParse(mueble).success);
-}, "Pieza desconocida o con un mueble o un rótulo de medidas, colores o texto no válidos");
+}, "Pieza desconocida o con un mueble o un rótulo de medidas, colores o texto no válidos").transform(conMuebleCorto);
 
 /** El registro del salón de eventos (salon-registro.ts): qué piezas armó el salón y dónde las puso. */
 const RegistroSalonSchema = z.object({
