@@ -19,6 +19,7 @@ import { exigirLetraDeRotulos } from "./fuente-rotulos";
 import type { EscenaGlobos } from "./escena-globos";
 import { armarEnMotor, useMotorBiblioteca, type Armado } from "./biblioteca-cliente";
 import { ArrastreDecoracionContexto, arrastreDeItem } from "./arrastre-decoracion";
+import { TarjetaReceta } from "./TarjetaReceta";
 
 /**
  * Pestaña **Biblioteca** de /3d: todo lo reutilizable del taller, cada cosa por separado (escenas, estructuras con sus
@@ -538,6 +539,7 @@ export function Ficha({ item, biblioteca, huellas, minis, onVer, onVolver, accio
           )}
         </div>
       </div>
+      {productos && armada !== null && <TarjetaReceta item={item} productos={productos} armada={armada} />}
       {productos ? <TablaProductos item={item} productos={productos} /> : (
         <section className={`${TARJETA} p-3 text-sm text-texto-suave`} aria-label="Productos" role="status">{hecho && "error" in hecho ? "Sin lista de productos: no se pudo armar." : "Calculando la lista de productos…"}</section>
       )}

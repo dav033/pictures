@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { AmbienteSala } from "@/lib/globos3d/escena";
+import { OPTICO_NEUTRO, type AjusteLuzVisor, type AjusteOpticoVisor } from "@/lib/globos3d/ambiente-visor";
 
 /**
  * Ambiente de la sala de una escena: piso de tablones de madera con brillo, luces empotradas en el techo y, si se pide,
@@ -146,21 +147,79 @@ export function ventanaDerecha(ancho: number, fondo: number): THREE.Mesh {
   return malla;
 }
 
+const RELLENO_CALIDO = 0.3;
+const RELLENO_TENUE = 0.04;
+
+/** La luz de ambiente del visor sin ajuste: blanca y de 0,08. */
+const AMBIENTE_BASE = { color: 0xffffff, intensidad: 0.08 };
+
 /**
  * La luz de una sala con ambiente: la principal (`sol`) más cálida y suave y un relleno de cielo cálido; sin ambiente,
- * la luz neutra de siempre (que no cambia el color de nada, ni el de las miniaturas de la biblioteca).
+ * la luz neutra de siempre (que no cambia el color de nada, ni el de las miniaturas de la biblioteca). El ambiente
+ * óptico que elige el usuario (`reemplazar`) pisa el sol y la luz de ambiente solo mientras está puesto; `null` vuelve
+ * a la luz de la sala. La sala la vuelve a poner cada vez que se muestra, así que lo elegido se pinta de nuevo ahí.
  */
-export function crearLucesDeSala(escena: THREE.Scene, sol: THREE.DirectionalLight) {
-  const relleno = new THREE.HemisphereLight(0xfff3e2, 0xb89572, 0.3);
+export function crearLucesDeSala(escena: THREE.Scene, sol: THREE.DirectionalLight, ambiente: THREE.AmbientLight) {
+  const relleno = new THREE.HemisphereLight(0xfff3e2, 0xb89572, RELLENO_CALIDO);
   relleno.visible = false;
   escena.add(relleno);
-  return {
-    aplicar(conAmbiente: boolean) {
+  let conAmbiente = false;
+  let reemplazo: AjusteLuzVisor | null = null;
+  const pintar = () => {
+    if (reemplazo) {
+      sol.color.set(reemplazo.colorSol);
+      sol.intensity = reemplazo.intensidadSol;
+      ambiente.color.set(reemplazo.colorAmbiente);
+      ambiente.intensity = reemplazo.intensidadAmbiente;
+    } else {
       sol.color.set(conAmbiente ? 0xffeedc : 0xffffff);
       sol.intensity = conAmbiente ? 1.25 : 1.4;
-      sol.shadow.radius = conAmbiente ? 4 : 1;
-      relleno.visible = conAmbiente;
+      ambiente.color.set(AMBIENTE_BASE.color);
+      ambiente.intensity = AMBIENTE_BASE.intensidad;
+    }
+    sol.shadow.radius = conAmbiente ? 4 : 1;
+    relleno.visible = conAmbiente;
+    // Con una luz elegida, el relleno cálido se apaga y toma su color (la fría o la UV no lo tienen).
+    relleno.color.set(reemplazo ? reemplazo.colorAmbiente : 0xfff3e2);
+    relleno.intensity = reemplazo ? RELLENO_TENUE : RELLENO_CALIDO;
+  };
+  return {
+    aplicar(sala: boolean) {
+      conAmbiente = sala;
+      pintar();
+    },
+    reemplazar(luz: AjusteLuzVisor | null) {
+      reemplazo = luz;
+      pintar();
     },
     liberar() { escena.remove(relleno); relleno.dispose(); },
+  };
+}
+
+/**
+ * La óptica del visor (la luz elegida, la intensidad del entorno y el campo de visión de la cámara). Las capturas
+ * (`enOpticaNeutra`) salen con la óptica neutra y luego vuelven a la del usuario.
+ */
+export function crearOpticaVisor(escena: THREE.Scene, camara: THREE.PerspectiveCamera, luces: { reemplazar: (luz: AjusteLuzVisor | null) => void }, alCambiar: () => void) {
+  let actual: AjusteOpticoVisor = OPTICO_NEUTRO;
+  /** Pone la óptica; `true` si cambió el campo de visión (la escena hay que encuadrarla de nuevo). */
+  const aplicar = (ajuste: AjusteOpticoVisor): boolean => {
+    const cambiaLente = camara.fov !== ajuste.fovGrados;
+    actual = ajuste;
+    luces.reemplazar(ajuste.luz);
+    escena.environmentIntensity = ajuste.intensidadEntorno;
+    camara.fov = ajuste.fovGrados;
+    camara.updateProjectionMatrix();
+    return cambiaLente;
+  };
+  return {
+    aplicar,
+    enOpticaNeutra<A extends unknown[], R>(hacer: (...args: A) => R) {
+      return (...args: A): R => {
+        const previa = actual;
+        aplicar(OPTICO_NEUTRO);
+        try { return hacer(...args); } finally { aplicar(previa); alCambiar(); }
+      };
+    },
   };
 }

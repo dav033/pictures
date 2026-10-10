@@ -18,6 +18,7 @@ import { ACTIVO, BOTON, Deslizador, INACTIVO, SelectorColor } from "./PanelFlor"
 import { EditorArcoOrganico, EditorPieza } from "./PanelEscena";
 import { PanelPared, PARED_INICIAL, type OpcionesPared } from "./PanelPared";
 import { AJUSTES_QUINCE_AZUL, PanelOrganico, ajustesDeOpciones, aplicarAjustes, opcionesDeAjustes } from "./PanelOrganico";
+import { SelectorPerfilTamano } from "./SelectorPerfilTamano";
 import { EditorDecoracionCompleto, PanelDecoracion, nombreDecoracion } from "./PanelDecoracion";
 import { CHIP, CHIP_ON, centimetros, metros } from "./ui-taller";
 import { EditorTrazo } from "./EditorTrazo";
@@ -332,6 +333,7 @@ function EditorOrganico({ pieza, onPieza }: { pieza: Extract<Pieza, { tipo: "org
           if (a === AJUSTES_QUINCE_AZUL) { onPieza({ ...pieza, opciones: opcionesDeAjustes(a), flores: structuredClone(COLUMNA_QUINCE_AZUL.flores) }); return; }
           onPieza({ ...pieza, opciones: aplicarAjustes(pieza.opciones, ajustes, a), flores: a.conFlores ? pieza.flores ?? structuredClone(COLUMNA_QUINCE_AZUL.flores) : null }, "organico");
         }} />
+      <SelectorPerfilTamano opciones={pieza.opciones} onElegir={(o) => onPieza({ ...pieza, opciones: o }, "organico")} />
       <p className="text-xs text-taller-suave">El pedestal es una pieza aparte (escenografía): muévelo o quítalo desde la escena. Cada cambio rearma la pieza (medio segundo).</p>
     </section>
   );

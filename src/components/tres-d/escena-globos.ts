@@ -12,11 +12,12 @@ import type { TipoFlorArtificial } from "@/lib/globos3d/flores-artificiales";
 import { MEDIR_VISOR, cronometrar, infoDe, registrarVisor, type VisorMedible } from "./medicion-visor";
 import { camaraEstandar, type VistaEstandar } from "./camara-estandar";
 import { crearEntornoEstudio } from "./entorno-estudio";
-import { ambienteActivo, ambienteDe, crearLucesDeSala, lucesDeTecho, materialPiso, texturaTablones, ventanaDerecha } from "./sala-ambiente";
+import { ambienteActivo, ambienteDe, crearLucesDeSala, crearOpticaVisor, lucesDeTecho, materialPiso, texturaTablones, ventanaDerecha } from "./sala-ambiente";
 import { ajustarSombraDelSol } from "./sombra-sala";
 import { CONFETI_PLATA, TOPE_CONFETI, discosConfeti, geometriaConfeti, materialConfeti, tinteDeConfeti, topePorGlobo } from "./confeti-visor";
 import { achatadoDe } from "./deformacion-globo";
 import type { AmbienteSala } from "@/lib/globos3d/escena";
+import type { AjusteOpticoVisor } from "@/lib/globos3d/ambiente-visor";
 import { crearEscenografiaVisor } from "./escenografia-visor";
 import { letraParaCapturar } from "./fuente-rotulos";
 
@@ -158,6 +159,8 @@ export type EscenaGlobos = {
    * a una pieza en la pantalla (su etiqueta, la regla de alturas). Devuelve cómo dejar de escuchar. En reposo no avisa.
    */
   alDibujar: (oyente: () => void) => () => void;
+  /** Luz, entorno y lente del visor; con un cambio de lente encuadra de nuevo. Las capturas siempre salen con la óptica neutra. */
+  ajustarOptico: (ajuste: AjusteOpticoVisor) => void;
   destruir: () => void;
 };
 
@@ -608,9 +611,10 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   sol.shadow.mapSize.set(1024, 1024);
   // Sin sesgo, las caras casi verticales y algo inclinadas (la falda de un mantel) se autosombrean en rayas: 1,5 cm de sesgo por la normal las quita.
   sol.shadow.normalBias = 0.015;
-  escena.add(sol, new THREE.AmbientLight(0xffffff, 0.08));
+  const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.08);
+  escena.add(sol, luzAmbiente);
   // Con una sala con ambiente, luz de estudio cálida; sin él, la neutra de siempre.
-  const lucesDeSala = crearLucesDeSala(escena, sol);
+  const lucesDeSala = crearLucesDeSala(escena, sol, luzAmbiente);
   /** La textura de tablones (una sola, neutra: el tono lo pone el material), hecha la primera vez que un piso la pide. */
   let tablones: THREE.CanvasTexture | null | undefined;
   const anisotropia = Math.min(8, renderer.capabilities.getMaxAnisotropy());
@@ -1124,6 +1128,26 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     controles.update();
   }
 
+  /** Vuelve a encuadrar con la lente nueva por la misma dirección de mirada (no resetea el ángulo). */
+  function reencuadrarConLaLente() {
+    const caja = new THREE.Box3().setFromObject(contenido);
+    const centro = caja.getCenter(new THREE.Vector3());
+    const tamano = caja.getSize(new THREE.Vector3());
+    const direccion = camara.position.clone().sub(controles.target);
+    if (direccion.lengthSq() < 1e-9) direccion.set(0.35, 0.25, 1);
+    direccion.normalize();
+    const radio = Math.max(tamano.x, tamano.y, tamano.z, 0.05) * 0.62;
+    const distancia = radio / Math.tan(THREE.MathUtils.degToRad(camara.fov / 2)) * 0.9;
+    camara.position.copy(centro).addScaledVector(direccion, distancia);
+    camara.near = distancia / 100;
+    camara.far = distancia * 20;
+    camara.updateProjectionMatrix();
+    controles.target.copy(centro);
+    controles.minDistance = distancia * 0.25;
+    controles.maxDistance = distancia * 4;
+    controles.update();
+  }
+
   /** La cámara mirando a lo que se ve desde una dirección fija, con todo en cuadro (`3d`: el ángulo de siempre). */
   function verDesde(vista: VistaFija) {
     if (vista === "3d") { encuadrar(); pedirCuadro(); return; }
@@ -1553,6 +1577,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   } : null;
   const quitarMedicion = medible ? registrarVisor(medible) : () => {};
 
+  const optica = crearOpticaVisor(escena, camara, lucesDeSala, () => pedirCuadro());
   const api: EscenaGlobos = {
     mostrar: (globos) => cronometrar(medible, "mostrar", () => mostrar(globos)),
     mostrarModulo: (globos, anclas, tubos, extras) => cronometrar(medible, "mostrarModulo", () => mostrarModulo(globos, anclas, tubos, extras)),
@@ -1586,6 +1611,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     },
     verDesde,
     alDibujar(oyente) { oyentesCuadro.add(oyente); return () => { oyentesCuadro.delete(oyente); }; },
+    ajustarOptico(ajuste) { if (optica.aplicar(ajuste)) reencuadrarConLaLente(); pedirCuadro(); },
     aPantalla(p) {
       const v = new THREE.Vector3(p.x * CM, p.y * CM, p.z * CM).project(camara);
       if (v.z > 1) return null;
@@ -1767,6 +1793,9 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       renderer.dispose();
     },
   };
+  api.capturar = optica.enOpticaNeutra(api.capturar);
+  api.renderEstandar = optica.enOpticaNeutra(api.renderEstandar);
+  api.renderFoto = optica.enOpticaNeutra(api.renderFoto);
   if (medible) medible.capturar = (opciones) => api.capturar(opciones).datos;
   if (medible) medible.desglose = () => {
     const cuenta: Record<string, number> = {};

@@ -53,7 +53,8 @@ export function ajustesDeOpciones(o: OpcionesOrganico, conFlores: boolean): Ajus
  */
 export function aplicarAjustes(o: OpcionesOrganico, antes: AjustesOrganico, a: AjustesOrganico): OpcionesOrganico {
   const forma = a.altoCm !== antes.altoCm || a.grosor !== antes.grosor;
-  const tramos = forma ? [formaColumna({ altoCm: a.altoCm, radioBaseCm: 42 * a.grosor, radioMedioCm: 36 * a.grosor, radioPuntaCm: 27 * a.grosor, inclinacionCm: 8, serpenteoCm: 3 }), ...o.tramos.slice(1)] : o.tramos;
+  // La columna nueva conserva la mezcla de tamaños que tenía (un perfil elegido no se pierde al cambiar su alto o grosor).
+  const tramos = forma ? [formaColumna({ altoCm: a.altoCm, radioBaseCm: 42 * a.grosor, radioMedioCm: 36 * a.grosor, radioPuntaCm: 27 * a.grosor, inclinacionCm: 8, serpenteoCm: 3, mezcla: o.tramos[0]?.mezcla }), ...o.tramos.slice(1)] : o.tramos;
   return { ...o, semilla: a.semilla, densidad: a.densidad, colores: a.colores, huecosFlores: a.conFlores ? a.huecosFlores : 0, tramos };
 }
 

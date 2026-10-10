@@ -63,6 +63,7 @@ jobs:
       - run: npm run test-motor-guiada-precio
       - run: npm run catalogo:test
       - run: npm run kontext:test
+      - run: npm run globos3d:test
       - run: npm run contracts:test
       - run: npm run contracts:test:domain
       - run: npm run contracts:test:operational

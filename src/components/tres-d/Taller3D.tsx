@@ -50,6 +50,7 @@ import { ListaCompra } from "./ListaCompra";
 import { EtiquetasMedidas } from "./EtiquetasMedidas";
 import { useMedidasDePieza } from "./useMedidasDePieza";
 import { BarraHerramientas, BotonMedidas, EtiquetaElegida, ReglaAlturas, type Herramienta } from "./SobreVisor";
+import { SelectorAmbienteVisor } from "./SelectorAmbienteVisor";
 import { medidaPrincipal, NOMBRE_TIPO } from "./tipos-pieza";
 import { leerGuardada, guardarEscena } from "./guardado-escena";
 import { conSalaNueva } from "@/lib/globos3d/salon-techos";
@@ -747,6 +748,7 @@ export function Taller3D() {
             onVista={(v) => { setVistaFija(v); visor?.verDesde(v); }} onEncuadrar={() => { setVistaFija("3d"); visor?.verDesde("3d"); }} medidas={verMedidas} onMedidas={alternarMedidas} puedeMedir={puedeMedir} />
         </div>
       )}
+      <SelectorAmbienteVisor visor={visor} activo={esAncho} />
       {nodoElegido && hechoElegido && !todosLosGlobos && !(solitario.activo && nodoElegido.id === solitario.solitario?.raizId) && (
         <EtiquetaElegida visor={visor} caja={(copiaElegida ? hechoElegido.puestas[copiaElegida.copia]?.caja : undefined) ?? hechoElegido.caja} contenedor={visorCajaRef}
           texto={`${nodoElegido.nombre}${medida ? ` · ${medida}` : ""}`} />
