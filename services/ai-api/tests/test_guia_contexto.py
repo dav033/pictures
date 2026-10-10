@@ -116,6 +116,9 @@ async def test_el_corazon_metalizado_de_18_sin_armado_se_dibuja_foil_de_18() -> 
     estructura, datos = _datos(await _resolve(_plan(_bouquet())))
     assert estructura.get("armado_bouquet") is None
     tonos = [hex_del_material(m) for m in estructura["materiales"]]
+    # Con las líneas resueltas la guía pinta el tono del producto comprado («Dorado Mate»), no el de la familia.
+    tonos_comprados = [hex_del_material(m, datos["lineas"]) for m in estructura["materiales"]]
+    assert tonos_comprados[2] != tonos[2]
 
     sin_contexto = pieza_de_guia(estructura, datos["mezcla_real"])
     con_contexto = pieza_de_guia(estructura, datos["mezcla_real"], datos)
@@ -127,12 +130,15 @@ async def test_el_corazon_metalizado_de_18_sin_armado_se_dibuja_foil_de_18() -> 
     )
     # Con las líneas resueltas, el corazón es el foil de 18" del diseñador y el látex sigue en R-12.
     radios = _radios_por_color(con_contexto)
-    assert [round(r, 3) for r in radios[tonos[2]]] == [round(CORAZON_18_M, 3)]
-    assert all(r == pytest.approx(R12_M, abs=1e-4) for r in radios[tonos[0]] | radios[tonos[1]])
+    assert [round(r, 3) for r in radios[tonos_comprados[2]]] == [round(CORAZON_18_M, 3)]
+    assert all(
+        r == pytest.approx(R12_M, abs=1e-4)
+        for r in radios[tonos_comprados[0]] | radios[tonos_comprados[1]]
+    )
     assert Counter(d["hex"] for d in cast(list[dict[str, Any]], con_contexto["discos"])) == {
-        tonos[0]: 3,
-        tonos[1]: 3,
-        tonos[2]: 1,
+        tonos_comprados[0]: 3,
+        tonos_comprados[1]: 3,
+        tonos_comprados[2]: 1,
     }
 
 
@@ -157,7 +163,7 @@ async def test_la_leyenda_del_armado_resuelto_manda_sobre_las_lineas() -> None:
 
     pieza = pieza_de_guia(estructura, datos["mezcla_real"], {**datos, "leyenda": otra})
     assert not isinstance(pieza, str)
-    tono_foil = hex_del_material(estructura["materiales"][2])
+    tono_foil = hex_del_material(estructura["materiales"][2], datos["lineas"])
     assert [round(r, 4) for r in _radios_por_color(pieza)[tono_foil]] == [round(36 * 0.0254 / 2, 4)]
 
 

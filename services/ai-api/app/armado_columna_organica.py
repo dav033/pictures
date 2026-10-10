@@ -243,7 +243,7 @@ def _config_desde_armado(
     # la cuota global de cada color y la mezcla global de tallas; los acentos pasan
     # a las tallas <= R12, repartidos allí proporcionalmente.
     colores_cfg = cast(dict[str, object], cfg["colores"])
-    lista = cast(list[dict[str, object]], colores_cfg["lista"])
+    lista = cast(list[dict[str, Any]], colores_cfg["lista"])
     materiales_por_capa = list(materiales_por_color)
     acentos = [i for i, color in enumerate(lista) if color.get("rol") == "acento"]
     base = [i for i in range(len(lista)) if i not in acentos]

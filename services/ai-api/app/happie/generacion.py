@@ -126,7 +126,7 @@ async def generar_happie_gemini(
     # Auditado (app/registro.py): prompt, esquema, respuesta y tokens.
     client = cliente_auditado((client_factory or _default_client)(api_key), "happie")
     try:
-        response = await client.aio.models.generate_content(  # type: ignore[attr-defined]
+        response = await client.aio.models.generate_content(
             model=payload.model,
             contents=[{"role": "user", "parts": [{"text": part} for part in payload.parts]}],
             config=types.GenerateContentConfig(

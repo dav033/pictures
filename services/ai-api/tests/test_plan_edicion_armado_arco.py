@@ -28,7 +28,15 @@ from app.main import Settings, build_signature, create_app
 from app.operational_store import InMemoryOperationalStore
 from app.plan import PlanResolutionError
 from app.plan_edicion import Edicion, LineaBase, LineasBaseEstructura, PlanEditado, editar_plan
-from tests.guirnalda_datos import arco, guirnalda, lineas, material, plan, resolver
+from tests.guirnalda_datos import (
+    allowlist_hasta,
+    arco,
+    guirnalda,
+    lineas,
+    material,
+    plan,
+    resolver,
+)
 
 SECRET = "r" * 32
 ARCO = "EST_02_ARCO"
@@ -422,13 +430,26 @@ def test_un_color_de_la_pieza_que_el_armado_no_toma_se_avisa_antes_de_comprar_si
     assert not editar_plan(plan(_arco_con_catalogo()), _edicion(ARMADO)).avisos
 
 
-def test_un_tamano_de_globo_que_el_catalogo_no_vende_deja_la_pieza_sin_cobertura() -> None:
+def test_un_r36_que_el_producto_no_vende_se_compra_como_su_r24_y_se_dice() -> None:
     editado = editar_plan(plan(_arco_con_catalogo()), _edicion(_grande(nominal=36))).plan
 
     resuelto = _resolver(editado)
 
-    # R36 no está en el catálogo de prueba: la resolución lo dice en `sin_cobertura` y la ruta de Next lo rechaza
-    # antes de firmar (`aplicar-edicion.ts`), en vez de firmar una propuesta a la que le faltan globos.
+    # R36 no está en el catálogo de prueba pero el R24 del mismo producto sí: se compra ese (b7f5cfe2) y la
+    # resolución lo cuenta en `sustituciones`, que es lo que se le dice al cliente. No queda nada sin cobertura.
+    assert not resuelto["sin_cobertura"]
+    sustituciones = cast(list[dict[str, str]], resuelto["sustituciones"])
+    assert {(s["pedido"], s["entregado"]) for s in sustituciones} == {("R-36", "R-24")}
+
+
+def test_un_tamano_de_globo_que_ningun_producto_sirve_deja_la_pieza_sin_cobertura() -> None:
+    editado = editar_plan(plan(_arco_con_catalogo()), _edicion(_grande(nominal=36))).plan
+
+    # Sin R24 ni R36 en lo que se puede comprar no hay con qué sustituir el R36 (el 36 solo se sirve con el 24).
+    resuelto = asyncio.run(resolver(editado, allowlist=allowlist_hasta(18)))
+
+    # La resolución lo dice en `sin_cobertura` y la ruta de Next lo rechaza antes de firmar (`aplicar-edicion.ts`),
+    # en vez de firmar una propuesta a la que le faltan globos.
     assert resuelto["sin_cobertura"], "sin cobertura de catálogo"
 
 

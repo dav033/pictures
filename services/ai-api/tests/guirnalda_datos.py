@@ -127,6 +127,17 @@ def plan(*estructuras: dict[str, object]) -> dict[str, object]:
     }
 
 
+def allowlist_hasta(diametro_maximo: int) -> list[dict[str, object]]:
+    """Las variantes del catálogo de prueba que se pueden comprar, sin las de más de ``diametro_maximo`` pulgadas."""
+    return [
+        {
+            "product_id": f"prod-{color}",
+            "variant_ids": [f"var-{color}-{d}" for d in DIAMETROS if d <= diametro_maximo],
+        }
+        for color in COLORES
+    ]
+
+
 def request(plan_: Mapping[str, object], **extra: object) -> PlanResolutionRequest:
     return PlanResolutionRequest.model_validate(
         {
@@ -141,13 +152,7 @@ def request(plan_: Mapping[str, object], **extra: object) -> PlanResolutionReque
             },
             "schema_version": "plan-resolution.v1",
             "plan": plan_,
-            "allowlist": [
-                {
-                    "product_id": f"prod-{color}",
-                    "variant_ids": [f"var-{color}-{d}" for d in DIAMETROS],
-                }
-                for color in COLORES
-            ],
+            "allowlist": allowlist_hasta(max(DIAMETROS)),
             "catalog_snapshot_id": SNAPSHOT,
             **extra,
         }

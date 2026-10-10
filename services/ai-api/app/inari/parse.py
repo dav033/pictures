@@ -114,7 +114,7 @@ async def interpretar_consulta_gemini(
     # Auditado (app/registro.py): prompt, esquema, respuesta y tokens.
     client = cliente_auditado((client_factory or _default_client)(api_key), "parser_intencion")
     try:
-        response = await client.aio.models.generate_content(  # type: ignore[attr-defined]
+        response = await client.aio.models.generate_content(
             model=payload.model,
             contents=[{"role": "user", "parts": [{"text": payload.message}]}],
             config=types.GenerateContentConfig(

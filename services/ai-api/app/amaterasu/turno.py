@@ -215,7 +215,7 @@ async def ejecutar_turno_gemini(
     )
 
     try:
-        response = await client.aio.models.generate_content(  # type: ignore[attr-defined]
+        response = await client.aio.models.generate_content(
             model=payload.model,
             contents=[content],
             config=types.GenerateContentConfig(

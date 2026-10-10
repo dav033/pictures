@@ -1344,7 +1344,7 @@ def _medir_desde_cajas(
     for estructura_original in _mappings(plan.get("estructuras")):
         estructura = dict(estructura_original)
         referencia = _text(estructura.get("referencia_element_id"))
-        pieza = next(
+        pieza_de_la_estructura = next(
             (
                 item
                 for item in piezas
@@ -1352,12 +1352,12 @@ def _medir_desde_cajas(
             ),
             None,
         )
-        if pieza is None:
+        if pieza_de_la_estructura is None:
             nuevas_estructuras.append(
                 cortadas.get(_text(estructura.get("estructura_id")) or "", estructura)
             )
             continue
-        _, caja, medidas_originales, pista = pieza
+        _, caja, medidas_originales, pista = pieza_de_la_estructura
         id_estructura = _text(estructura.get("estructura_id")) or referencia or "pieza"
         source_image_id = _text(pista.get("source_image_id")) or ""
         if source_image_id not in escalas:
@@ -1477,6 +1477,7 @@ def _medir_desde_cajas(
         cambio = (anterior_alto is not None and abs(anterior_alto - alto_final) >= 0.05) or (
             dimensiones_ancho
             and anterior_ancho is not None
+            and ancho_final is not None
             and abs(anterior_ancho - ancho_final) >= 0.05
         )
         if cambio:
@@ -2018,9 +2019,11 @@ def _ids_for_plan(
         flores = structure.get("flores")
         if isinstance(flores, Mapping):
             for parte in ("petalo", "centro"):
-                material = flores.get(parte)
+                material_de_flor = flores.get(parte)
                 product_id = (
-                    _text(material.get("product_id")) if isinstance(material, Mapping) else None
+                    _text(material_de_flor.get("product_id"))
+                    if isinstance(material_de_flor, Mapping)
+                    else None
                 )
                 if product_id:
                     product_ids.add(product_id)
@@ -7055,7 +7058,7 @@ async def cotizar_lista_materiales(
         "lineas": lineas,
         "total": total,
     }
-    return ListaMaterialesResult.model_validate(resultado).model_dump()
+    return cast(dict[str, object], ListaMaterialesResult.model_validate(resultado).model_dump())
 
 
 __all__ = [
