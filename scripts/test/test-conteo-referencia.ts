@@ -322,7 +322,7 @@ async function main(): Promise<void> {
   const lineaDe = (id: string) => conTexto.find((linea) => linea.includes(id)) ?? "";
   assert.match(lineaDe("REF_01_E01"), /conteo leído en la foto: 5 globos \(cuenta exacta\)\. Si la pieza es un kit/);
   assert.match(lineaDe("REF_01_E02"), /conteo leído en la foto: unos 96 globos \(aproximado; 58 visibles\), 24 racimos de 4\./);
-  assert.match(lineaDe("REF_01_E02"), /Python ajusta densidad y medidas a esa cuenta/);
+  assert.match(lineaDe("REF_01_E02"), /Python ajusta densidad a esa cuenta/);
   // ADR-0031, enmienda 2026-09-28: unas medidas inventadas centraban la ventana del eje lejos de la foto.
   assert.match(lineaDe("REF_01_E02"), /no calcules globos ni le pongas medidas que el cliente no dio \(manda medidas vacío\)/);
   assert.equal(serializeReferenceBlueprint(sinConteo), serializeReferenceBlueprint(conConteosDe(sinConteo, sinConteo)), "sin conteo, la línea de siempre");

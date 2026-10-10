@@ -1228,8 +1228,12 @@ def _centro_contado(
     if es_centro_contado(estructura) and _globos_actuales(estructura, puerto) == cuenta.globos:
         # Una segunda resolución del mismo plan es punto fijo: no se reelige nada.
         actual = cuenta.globos
-        return _Resultado(dict(estructura), "coincide", actual, actual, actual, [], "El plan ya sigue la foto.")
-    materiales = [dict(m) for m in cast(Sequence[Mapping[str, object]], estructura.get("materiales") or [])]
+        return _Resultado(
+            dict(estructura), "coincide", actual, actual, actual, [], "El plan ya sigue la foto."
+        )
+    materiales = [
+        dict(m) for m in cast(Sequence[Mapping[str, object]], estructura.get("materiales") or [])
+    ]
     if not materiales:
         return None
 
@@ -1247,12 +1251,16 @@ def _centro_contado(
     elegidos: list[dict[str, object]] = []
     for indice in quedan:
         material = materiales[indice]
-        variante = _variante_de_clase(puerto.variantes_redondas(str(material.get("product_id") or "")), clase)
+        variante = _variante_de_clase(
+            puerto.variantes_redondas(str(material.get("product_id") or "")), clase
+        )
         if variante is None:
             return None
         elegidos.append({**material, "variant_id": variante})
     suma = sum(
-        float(cast(float, m["participacion"])) for m in elegidos if isinstance(m.get("participacion"), (int, float))
+        float(cast(float, m["participacion"]))
+        for m in elegidos
+        if isinstance(m.get("participacion"), (int, float))
     )
     for material in elegidos:
         parte = material.get("participacion")
@@ -1262,7 +1270,9 @@ def _centro_contado(
             else round(1 / len(elegidos), 4)
         )
     # Las participaciones suman 1 (±0,001): el redondeo se lo queda el primero.
-    elegidos[0]["participacion"] = round(1 - sum(float(cast(float, m["participacion"])) for m in elegidos[1:]), 4)
+    elegidos[0]["participacion"] = round(
+        1 - sum(float(cast(float, m["participacion"])) for m in elegidos[1:]), 4
+    )
     if not any(m.get("rol_material") == "principal" for m in elegidos):
         elegidos[0]["rol_material"] = "principal"
     reps = max(1, cast(int, estructura.get("repeticiones") or 1))
@@ -1276,7 +1286,11 @@ def _centro_contado(
         nombre,
         f"la foto muestra {cuenta.globos} {'globo' if cuenta.globos == 1 else 'globos'} por pieza, contados uno a uno:"
         f" se compran {cuenta.globos * reps} en vez de {antes * reps}"
-        + (f" y se dejan fuera {quitados} {'color' if quitados == 1 else 'colores'} que no caben" if quitados else "")
+        + (
+            f" y se dejan fuera {quitados} {'color' if quitados == 1 else 'colores'} que no caben"
+            if quitados
+            else ""
+        )
         + ".",
     )
     return _Resultado(
@@ -1407,9 +1421,10 @@ def aplicar(
                 armados.pop(str(elemento), None)
             elif confiable and lectura_armado is not None:
                 armados[str(elemento)] = dict(lectura_armado)
-        elif tipo == "centro_mesa" and (
-            contado := _centro_contado(estructura, lectura, cuenta, puerto)
-        ) is not None:
+        elif (
+            tipo == "centro_mesa"
+            and (contado := _centro_contado(estructura, lectura, cuenta, puerto)) is not None
+        ):
             resultado = contado
         elif es_centro_contado(estructura):
             # Ya se compra por globos y esta cuenta no es de pocos globos exactos: la geometría no

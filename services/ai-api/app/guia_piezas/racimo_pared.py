@@ -36,5 +36,7 @@ def pieza_de(
     cuantos = min(len(colores), len(materiales_de(estructura)))
     if cuantos == 0:
         return None
-    unidades = _unidades(_cantidades(estructura, cuantos), colores, estructura.get("mezcla"), contexto)
+    unidades = _unidades(
+        _cantidades(estructura, cuantos), colores, estructura.get("mezcla"), contexto
+    )
     return PiezaDePlugin(_ovalo(unidades, _aspecto_ovalo(contexto)), anclaje="pared")

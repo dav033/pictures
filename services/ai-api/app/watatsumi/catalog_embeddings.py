@@ -64,7 +64,9 @@ class GeminiEmbeddingProvider:
             from google import genai
 
             # Auditado (app/registro.py): cuántos textos, una muestra y las dimensiones devueltas.
-            self._client = cliente_auditado(genai.Client(api_key=self._api_key), "embedding_catalogo")
+            self._client = cliente_auditado(
+                genai.Client(api_key=self._api_key), "embedding_catalogo"
+            )
         return self._client
 
     async def embed(

@@ -71,7 +71,9 @@ def _unitario(matriz: np.ndarray) -> np.ndarray:
     return unitaria
 
 
-def ranking_por_item(consulta: np.ndarray, pool: Sequence[VectorItem]) -> list[tuple[str, str, float]]:
+def ranking_por_item(
+    consulta: np.ndarray, pool: Sequence[VectorItem]
+) -> list[tuple[str, str, float]]:
     """Items ordenados por su mejor similitud coseno: ``(item, modalidad del mejor vector, similitud)``."""
     if not pool:
         return []
@@ -81,7 +83,9 @@ def ranking_por_item(consulta: np.ndarray, pool: Sequence[VectorItem]) -> list[t
         actual = mejor.get(vector.item)
         if actual is None or similitud > actual[0]:
             mejor[vector.item] = (float(similitud), vector.modalidad)
-    return sorted(((item, modalidad, s) for item, (s, modalidad) in mejor.items()), key=lambda f: -f[2])
+    return sorted(
+        ((item, modalidad, s) for item, (s, modalidad) in mejor.items()), key=lambda f: -f[2]
+    )
 
 
 def evaluar_escenario(
@@ -108,13 +112,17 @@ def evaluar_escenario(
             if rango is not None and rango <= k:
                 resultado.aciertos[k] += 1
         resultado.mrr += 1.0 / rango if rango else 0.0
-        resultado.detalle[clave] = [(item, mod, s, item in correctos) for item, mod, s in ranking[:top_detalle]]
+        resultado.detalle[clave] = [
+            (item, mod, s, item in correctos) for item, mod, s in ranking[:top_detalle]
+        ]
     if resultado.evaluadas:
         resultado.mrr /= resultado.evaluadas
     return resultado
 
 
-def verdad_del_dueno(fichas_dueno: Mapping[int, str], ids_conocidos: Sequence[str], con_derivados: bool = True) -> dict[str, set[str]]:
+def verdad_del_dueno(
+    fichas_dueno: Mapping[int, str], ids_conocidos: Sequence[str], con_derivados: bool = True
+) -> dict[str, set[str]]:
     """``{str(numero): {id de la escena y, si se pide, ids de sus piezas ``escena~...``}}``."""
     verdad: dict[str, set[str]] = {}
     for numero, escena in fichas_dueno.items():
@@ -141,19 +149,25 @@ def correr(
     todos = cargar_vectores(cache, modelo, dims)
     numero_de = {escena: numero for numero, escena in escena_de.items()}
     consultas = {
-        str(numero_de[v.item]): v.vector for v in todos if v.modalidad == "imagen_foto" and v.item in numero_de
+        str(numero_de[v.item]): v.vector
+        for v in todos
+        if v.modalidad == "imagen_foto" and v.item in numero_de
     }
     faltan = [str(n) for n in sorted(escena_de) if str(n) not in consultas]
     base = [v for v in todos if not (v.modalidad == "imagen_foto" and v.item in ids_dueno)]
     verdad = verdad_del_dueno(escena_de, [f.id for f in fichas], con_derivados)
     resultados = [
-        evaluar_escenario(nombre, consultas, [v for v in base if v.modalidad in modalidades], verdad)
+        evaluar_escenario(
+            nombre, consultas, [v for v in base if v.modalidad in modalidades], verdad
+        )
         for nombre, modalidades in ESCENARIOS.items()
     ]
     return resultados, faltan
 
 
-def formatear(resultados: Sequence[ResultadoEscenario], faltan: Sequence[str], ks: Sequence[int] = KS) -> str:
+def formatear(
+    resultados: Sequence[ResultadoEscenario], faltan: Sequence[str], ks: Sequence[int] = KS
+) -> str:
     lineas: list[str] = []
     if faltan:
         lineas.append(
@@ -166,14 +180,19 @@ def formatear(resultados: Sequence[ResultadoEscenario], faltan: Sequence[str], k
         celdas = "".join(f"{r.aciertos.get(k, 0):>5}/{r.evaluadas:<2}" for k in ks)
         lineas.append(f"{r.nombre:<20}{r.evaluadas:>10} {celdas}{r.mrr:>8.3f}")
         if r.sin_objetivo:
-            lineas.append(f"  sin objetivo en el conjunto (no cuentan): fotos {', '.join(sorted(r.sin_objetivo, key=int))}")
+            lineas.append(
+                f"  sin objetivo en el conjunto (no cuentan): fotos {', '.join(sorted(r.sin_objetivo, key=int))}"
+            )
     for r in resultados:
         if not r.detalle:
             continue
         lineas.append(f"\nConfusion {r.nombre} (top-3 por foto; * = item correcto):")
         for clave in sorted(r.detalle, key=int):
             rango = r.rango[clave]
-            top = "  ".join(f"{'*' if ok else ' '}{item} [{mod}] {s:.3f}" for item, mod, s, ok in r.detalle[clave])
+            top = "  ".join(
+                f"{'*' if ok else ' '}{item} [{mod}] {s:.3f}"
+                for item, mod, s, ok in r.detalle[clave]
+            )
             lineas.append(f"  foto {clave:>2} (rango {rango if rango else '>pool'}): {top}")
     return "\n".join(lineas)
 
@@ -184,18 +203,33 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.add_argument("--fichas", type=Path, default=DATOS / "fichas.jsonl")
     p.add_argument("--modelo", default=MODELO)
     p.add_argument("--dims", type=int, default=DIMENSIONES)
-    p.add_argument("--sin-derivados", action="store_true", help="solo cuenta la escena, no sus piezas derivadas")
+    p.add_argument(
+        "--sin-derivados",
+        action="store_true",
+        help="solo cuenta la escena, no sus piezas derivadas",
+    )
     p.add_argument("--json", type=Path, default=None, help="guarda las metricas en este archivo")
     args = p.parse_args(argv)
     if not args.fichas.exists() or not (args.cache / "indice.jsonl").exists():
-        print("Falta data/taller/fichas.jsonl o la cache de vectores (embeber_biblioteca).", file=sys.stderr)
+        print(
+            "Falta data/taller/fichas.jsonl o la cache de vectores (embeber_biblioteca).",
+            file=sys.stderr,
+        )
         return 2
-    resultados, faltan = correr(CacheVectores(args.cache), args.fichas, args.modelo, args.dims, not args.sin_derivados)
+    resultados, faltan = correr(
+        CacheVectores(args.cache), args.fichas, args.modelo, args.dims, not args.sin_derivados
+    )
     print(formatear(resultados, faltan))
     if args.json:
         salida = [
-            {"escenario": r.nombre, "evaluadas": r.evaluadas, "hit": {str(k): r.aciertos[k] for k in r.aciertos},
-             "mrr": r.mrr, "sin_objetivo": r.sin_objetivo, "rango": r.rango}
+            {
+                "escenario": r.nombre,
+                "evaluadas": r.evaluadas,
+                "hit": {str(k): r.aciertos[k] for k in r.aciertos},
+                "mrr": r.mrr,
+                "sin_objetivo": r.sin_objetivo,
+                "rango": r.rango,
+            }
             for r in resultados
         ]
         args.json.write_text(json.dumps(salida, ensure_ascii=False, indent=2), encoding="utf-8")

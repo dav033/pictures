@@ -16,17 +16,25 @@ jobs:
   types-and-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - if: ${{ !cancelled() }}
+        uses: actions/checkout@v4
+      - if: ${{ !cancelled() }}
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run build --workspaces --if-present
-      - run: npm run contracts:check
-      - run: npm run lint
-      - run: npm run build
-      - run: npx tsc --noEmit
+      - if: ${{ !cancelled() }}
+        run: npm ci
+      - if: ${{ !cancelled() }}
+        run: npm run build --workspaces --if-present
+      - if: ${{ !cancelled() }}
+        run: npm run contracts:check
+      - if: ${{ !cancelled() }}
+        run: npm run lint
+      - if: ${{ !cancelled() }}
+        run: npm run build
+      - if: ${{ !cancelled() }}
+        run: npx tsc --noEmit
 
   deterministic-tests:
     runs-on: ubuntu-latest
@@ -56,28 +64,54 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run rag:migrate
-      - run: npm run test-guardia-prerender
-      - run: npm run test-columna-asimetrica-densa
-      - run: npm run test-motor-guiada-golden
-      - run: npm run test-motor-guiada-precio
-      - run: npm run test-motor-guiada-integracion
-      - run: npm run catalogo:test
-      - run: npm run kontext:test
-      - run: npm run test-escenarios-matriz
-      - run: npm run globos3d:test
-      - run: npm run contracts:test
-      - run: npm run contracts:test:domain
-      - run: npm run contracts:test:operational
-      - run: npm run contracts:test:cancel
-      - run: npm run contracts:test:python-adapter
-      - run: npm run test-proxy-matcher
-      - run: npm run test-comparar-constante
-      - run: npm run test-rotacion-secretos
-      - run: npm run plan:test
-      - run: npm run chat:test-historial
-      - run: npm run happie:test-webhook
-      - run: npx tsx scripts/test/test-idempotency-store.ts
+      - if: ${{ !cancelled() }}
+        run: npm run build --workspaces --if-present
+      - if: ${{ !cancelled() }}
+        run: npm run rag:migrate
+      # Cada paso corre aunque uno anterior falle (salvo cancelación): el job reporta todas las suites y falla al final.
+      - if: ${{ !cancelled() }}
+        run: npm run test-guardia-prerender
+      - if: ${{ !cancelled() }}
+        run: npm run test-columna-asimetrica-densa
+      - if: ${{ !cancelled() }}
+        run: npm run test-motor-guiada-golden
+      - if: ${{ !cancelled() }}
+        run: npm run test-motor-guiada-precio
+      - if: ${{ !cancelled() }}
+        run: npm run test-motor-guiada-integracion
+      - if: ${{ !cancelled() }}
+        run: npm run catalogo:test
+      - if: ${{ !cancelled() }}
+        run: npm run kontext:test
+      - if: ${{ !cancelled() }}
+        run: npm run test-escenarios-matriz
+      - if: ${{ !cancelled() }}
+        run: npm run globos3d:test
+      - if: ${{ !cancelled() }}
+        run: npm run contracts:test
+      - if: ${{ !cancelled() }}
+        run: npm run contracts:test:domain
+      - if: ${{ !cancelled() }}
+        run: npm run contracts:test:operational
+      - if: ${{ !cancelled() }}
+        run: npm run contracts:test:cancel
+      - if: ${{ !cancelled() }}
+        run: npm run contracts:test:python-adapter
+      - if: ${{ !cancelled() }}
+        run: npm run test-proxy-matcher
+      - if: ${{ !cancelled() }}
+        run: npm run test-comparar-constante
+      - if: ${{ !cancelled() }}
+        run: npm run test-rotacion-secretos
+      # plan:test encadena decenas de suites con &&; el runner las corre todas y reporta cada falla.
+      - if: ${{ !cancelled() }}
+        run: node scripts/test/run-suites.mjs plan:test
+      - if: ${{ !cancelled() }}
+        run: npm run chat:test-historial
+      - if: ${{ !cancelled() }}
+        run: npm run happie:test-webhook
+      - if: ${{ !cancelled() }}
+        run: npx tsx scripts/test/test-idempotency-store.ts
 
   python-quality:
     runs-on: ubuntu-latest
@@ -85,21 +119,31 @@ jobs:
       run:
         working-directory: services/ai-api
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - if: ${{ !cancelled() }}
+        uses: actions/checkout@v4
+      - if: ${{ !cancelled() }}
+        uses: astral-sh/setup-uv@v6
         with:
           version: "0.8.15"
           enable-cache: true
-      - uses: actions/setup-python@v5
+      - if: ${{ !cancelled() }}
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: uv lock --check
-      - run: uv sync --locked --extra test --extra quality
-      - run: uv run ruff check app scripts tests
-      - run: uv run ruff format --check app scripts tests
-      - run: uv run mypy app scripts
-      - run: uv run python scripts/generate_models.py --check
-      - run: uv run pytest
+      - if: ${{ !cancelled() }}
+        run: uv lock --check
+      - if: ${{ !cancelled() }}
+        run: uv sync --locked --extra test --extra quality
+      - if: ${{ !cancelled() }}
+        run: uv run ruff check app scripts tests
+      - if: ${{ !cancelled() }}
+        run: uv run ruff format --check app scripts tests
+      - if: ${{ !cancelled() }}
+        run: uv run mypy app scripts
+      - if: ${{ !cancelled() }}
+        run: uv run python scripts/generate_models.py --check
+      - if: ${{ !cancelled() }}
+        run: uv run pytest
 
   secret-scan:
     runs-on: ubuntu-latest

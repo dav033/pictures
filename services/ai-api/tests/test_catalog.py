@@ -371,7 +371,11 @@ async def test_catalog_search_finds_burgundy_by_the_wine_title() -> None:
     """CASE-006 (2026-10-05): the live catalog files Fashion Merlot as "rojo". A "burdeos" request is present
     through the title (app.colores_titulo): no substitution to another hue, and the main query also matches the
     title."""
-    merlot = {**_red_balloon_row("rojo"), "product_id": "P-MERLOT", "title": "Globo Latex Redondo Fashion Merlot"}
+    merlot = {
+        **_red_balloon_row("rojo"),
+        "product_id": "P-MERLOT",
+        "title": "Globo Latex Redondo Fashion Merlot",
+    }
     pool = FakeColorResolutionPool(present_colors=["rojo"], candidate_rows=[merlot])
     store = CatalogStore("postgresql://demo:demo@localhost/demo", pool=pool)
 
@@ -1039,9 +1043,7 @@ def _recommendation_store(connection: FakeRecommendationConnection) -> CatalogSt
 async def test_catalog_recommendations_apply_commercial_predicates_before_limit() -> None:
     connection = FakeRecommendationConnection(reference=_reference())
 
-    await _recommendation_store(connection).recommend(
-        _recommendation_request(limit=40)
-    )
+    await _recommendation_store(connection).recommend(_recommendation_request(limit=40))
 
     reference_query, reference_args = connection.fetch_calls[0]
     assert reference_args == ("var-rojo-12", RECOMMENDATION_SNAPSHOT)

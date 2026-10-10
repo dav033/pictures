@@ -313,11 +313,17 @@ async def _generar_flux_fal(
         raise FluxGenerateError("flux_unavailable", 503)
 
     endpoint = (
-        EDIT_ENDPOINT_WITH_ADAPTERS if payload.loras else EDIT_ENDPOINT
-    ) if payload.mode == "edit" else TEXT_ENDPOINT
+        (EDIT_ENDPOINT_WITH_ADAPTERS if payload.loras else EDIT_ENDPOINT)
+        if payload.mode == "edit"
+        else TEXT_ENDPOINT
+    )
     body: dict[str, object] = {
         "prompt": payload.prompt,
-        **({"loras": [{"path": lora.path, "scale": lora.scale} for lora in payload.loras]} if payload.loras else {}),
+        **(
+            {"loras": [{"path": lora.path, "scale": lora.scale} for lora in payload.loras]}
+            if payload.loras
+            else {}
+        ),
         "guidance_scale": payload.guidance_scale,
         "num_inference_steps": payload.num_inference_steps,
         "image_size": {"width": payload.image_width, "height": payload.image_height},

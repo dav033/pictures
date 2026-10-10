@@ -425,7 +425,8 @@ def globos_de_centro_contado(
     datos = datos_de(estructura, mezcla_real)
     colores = datos["colores"]
     tamanos = sorted(
-        (tamano for tamano, unidades in datos["mezcla"].items() for _ in range(int(unidades))), reverse=True
+        (tamano for tamano, unidades in datos["mezcla"].items() for _ in range(int(unidades))),
+        reverse=True,
     )
     if not colores or not tamanos:
         return None

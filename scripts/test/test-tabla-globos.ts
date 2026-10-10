@@ -61,16 +61,14 @@ prueba("tablaGlobos sobre nueva-sempertex-07: 1 fila, 5 tamaños (5, 9, 12, 18, 
   assert.deepEqual(tabla.filas[0]!.celdas, [32, 27, 81, 8, 3], "dos líneas de 12″ del mismo color se suman en una celda");
 });
 
-prueba("tablaGlobos sobre real-05: 4 colores en orden de aparición, una sola columna (12″) y 102 globos", () => {
+prueba("tablaGlobos sobre real-05: una fila por producto en orden de aparición, 5 tamaños y 102 globos", () => {
   const plan = planResuelto("real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec.plan.json");
   const crudas = plan.estructuras.flatMap((estructura) => estructura.lineas);
   const tabla = tablaGlobos(lineas(crudas));
-  assert.equal(tabla.filas.length, 4);
-  assert.equal(tabla.columnas.length, 1);
-  assert.equal(tabla.columnas[0]!.etiqueta, "12″");
+  assert.equal(tabla.filas.length, 5);
+  assert.deepEqual(tabla.columnas.map((columna) => columna.etiqueta), ["5″", "9″", "12″", "18″", "24″"]);
   assert.equal(tabla.total, 102);
-  const primeros = [...new Set(crudas.map((cruda) => cruda.color))];
-  assert.deepEqual(tabla.filas.map((fila) => fila.color), primeros);
+  assert.deepEqual(tabla.filas.map((fila) => fila.producto), ["Reflex Dorado Rosa", "Fashion Arena", "Fashion Rosado", "Fashion Frambuesa", "Fashion Palo de Rosa"]);
   assert.equal(tabla.filas.reduce((suma, fila) => suma + fila.total, 0), 102);
 });
 

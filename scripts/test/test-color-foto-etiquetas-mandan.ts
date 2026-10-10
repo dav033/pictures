@@ -185,7 +185,9 @@ async function main(): Promise<void> {
   });
 
   await caso("decisión 1 · la regla 3 no cambia un color nombrado aunque quede fuera de los tres dominantes", () => {
+    // Con medición, el cuarto tono solo entra con presencia medida (sin medición entran hasta cinco, CASE-004).
     const ap = apariencia(["pink", "white", "gold", "silver"], {
+      measured_colors: [{ color: "rosado", share: 0.4 }, { color: "blanco", share: 0.3 }, { color: "dorado", share: 0.2 }],
       referencias_medidas: [referencia("409", "Satín Rosado", "satin", 0.4), referencia("970", "Reflex Dorado", "reflex", 0.3), referencia("005", "Fashion Blanco", "fashion", 0.2, false)],
     });
     assert.deepEqual(colores.coloresDominantesReferencia(ap), ["rosado", "blanco", "dorado"]);

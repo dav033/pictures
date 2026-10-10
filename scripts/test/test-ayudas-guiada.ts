@@ -75,7 +75,9 @@ for (const archivo of archivos(path.join(process.cwd(), "src"))) {
     usos.set(clave!, [...(usos.get(clave!) ?? []), path.relative(process.cwd(), archivo)]);
   }
   for (const [etiqueta] of fuente.matchAll(/<Ayuda\b[^>]*>/g)) {
-    if (!/^<Ayuda\s+\{\.\.\.AYUDAS\.\w+\}/.test(etiqueta)) ayudasSueltas.push(`${path.relative(process.cwd(), archivo)}: ${etiqueta}`);
+    // El diálogo «Ayuda y atajos» del taller es el componente `Ayuda` sin props (AyudaTaller.tsx), no un «?» de pantalla.
+    const dialogoTaller = path.relative(process.cwd(), archivo) === path.join("src", "components", "tres-d", "Taller3D.tsx") && etiqueta === "<Ayuda />";
+    if (!dialogoTaller && !/^<Ayuda\s+\{\.\.\.AYUDAS\.\w+\}/.test(etiqueta)) ayudasSueltas.push(`${path.relative(process.cwd(), archivo)}: ${etiqueta}`);
   }
 }
 for (const ayuda of lista) assert.ok(usos.has(ayuda.clave), `AYUDAS.${ayuda.clave} no se usa en ninguna pantalla (texto huérfano)`);

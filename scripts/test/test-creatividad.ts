@@ -139,16 +139,18 @@ const compilar = (nivel: 2 | 5, maxLength?: number) => compileFluxCaption({ scen
 const sinPistas = compileFluxCaption({ sceneSpec: escena, visualContext: contexto });
 assert.equal(compilar(2).prompt, sinPistas.prompt, "level 2 prompt is unchanged");
 const libre = compilar(5);
-for (const pista of perfilCreatividad(5).pistasPrompt) assert.ok(libre.prompt.includes(pista), pista);
+for (const pista of perfilCreatividad(5).pistasPrompt) assert.ok(libre.prompt.toLowerCase().includes(pista), pista); // la pista puede abrir la frase: «Lush flower…»
 // El tope es el del caption base (1000): el viejo 750 era del dialecto LoRA. Con semiarco + columna, la escena
 // cuenta sus piezas sueltas y el hueco entre ellas (`piezasDePieSueltas`, 2026-10-07).
 assert.ok(libre.prompt.length <= BASE_PROMPT_MAX_LENGTH, `largo ${libre.prompt.length}`);
 assert.deepEqual(findFluxPromptLanguageLeaks(libre.prompt), []);
-const ajustado = compilar(5, sinPistas.prompt.length);
-assert.doesNotMatch(ajustado.prompt, /rich layered styling|cinematic|editorial/, "cues are dropped before anything else when the budget is tight");
+// Presupuesto estrecho: el compilador primero compacta la redacción y al final suelta las pistas (hoy: paso 8 a 650).
+const ajustado = compilar(5, 650);
+assert.ok(ajustado.prompt.length <= 650, `largo ${ajustado.prompt.length}`);
+assert.doesNotMatch(ajustado.prompt, /rich layered styling|cinematic|editorial/, "las pistas caen con presupuesto estrecho");
 assert.match(ajustado.prompt, /column/);
 assert.match(ajustado.prompt, /one-sided curved/);
-ok("el prompt LoRA lleva las pistas del nivel y la compactación las descarta primero");
+ok("el prompt lleva las pistas del nivel; con presupuesto estrecho caen en el paso minimalTail, tras las tallas en none");
 
 // 7. The signed plan records the level it was designed with; generation uses it
 // instead of whatever the slider says now. Tokens issued before the field existed

@@ -290,7 +290,10 @@ def conteo_del_motor(
     totales: dict[tuple[float, str], int] = {}
     # El remate de la columna también se compra desde el 2026-10-06 (`plan._conteo_del_motor`).
     remate = cast(dict[str, Any], resuelto_motor.get("remate") or {})
-    for entrada in [*cast(list[dict[str, Any]], resuelto_motor["conteo"]), *cast(list[dict[str, Any]], remate.get("globos") or [])]:
+    for entrada in [
+        *cast(list[dict[str, Any]], resuelto_motor["conteo"]),
+        *cast(list[dict[str, Any]], remate.get("globos") or []),
+    ]:
         nominal = entrada.get("tamano")
         diametro = float(cast(float, nominal)) if nominal is not None else 12.0
         clave = (diametro, colores[int(entrada["material"])])
@@ -746,7 +749,9 @@ async def test_una_columna_con_armado_cuenta_los_globos_que_el_motor_coloco() ->
     pieza = estructura(resuelto, COLUMNA)
 
     assert pieza["eje_m"] == round(cast(float, del_motor["alto_total_m"]), 2)
-    assert pieza["total_unidades"] == len(cast(list[object], del_motor["globos"])) + globos_del_remate(del_motor)
+    assert pieza["total_unidades"] == len(
+        cast(list[object], del_motor["globos"])
+    ) + globos_del_remate(del_motor)
     assert globos_del_remate(del_motor) == 1, "el remate por defecto es un globo"
     assert unidades_por_tamano_y_color(pieza) == conteo_del_motor(del_motor, COLORES_COLUMNA)
     assert pieza["eje_m"] != 1.6 and pieza["total_unidades"] != 31

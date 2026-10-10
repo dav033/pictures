@@ -28,7 +28,9 @@ T = TypeVar("T")
 
 
 class ClienteEmbeddings(Protocol):
-    async def embeber_texto(self, texto: str, tarea: str = EMBEDDING_TASK_TYPE) -> Sequence[float]: ...
+    async def embeber_texto(
+        self, texto: str, tarea: str = EMBEDDING_TASK_TYPE
+    ) -> Sequence[float]: ...
 
     async def embeber_imagen(self, datos: bytes, mime: str) -> Sequence[float]: ...
 
@@ -94,7 +96,9 @@ class ClienteGemini:
 
             from app.registro import cliente_auditado
 
-            self._cliente = cliente_auditado(genai.Client(api_key=self._api_key), "embedding_biblioteca")
+            self._cliente = cliente_auditado(
+                genai.Client(api_key=self._api_key), "embedding_biblioteca"
+            )
         return self._cliente
 
     async def _llamar(self, peticion: Mapping[str, Any]) -> tuple[float, ...]:

@@ -55,7 +55,10 @@ FLORES = {
 
 
 def _con_flores(
-    flores: dict[str, object] | None, *, repeticiones: int = 1, allowlist: list[dict[str, object]] | None = None
+    flores: dict[str, object] | None,
+    *,
+    repeticiones: int = 1,
+    allowlist: list[dict[str, object]] | None = None,
 ) -> PlanResolutionRequest:
     payload = _request(allowlist=allowlist or ALLOWLIST).model_dump(mode="json", exclude_none=True)
     plan = json.loads(json.dumps(payload["plan"]))
@@ -71,7 +74,9 @@ def _resuelto(resultado: dict[str, object]) -> dict[str, object]:
 
 
 def _lineas(resuelto: dict[str, object]) -> list[dict[str, object]]:
-    return cast(list[dict[str, object]], cast(list[dict[str, object]], resuelto["estructuras"])[0]["lineas"])
+    return cast(
+        list[dict[str, object]], cast(list[dict[str, object]], resuelto["estructuras"])[0]["lineas"]
+    )
 
 
 def test_las_reglas_salen_del_contrato_y_cuentan_por_pieza_y_repeticiones() -> None:
@@ -83,7 +88,9 @@ def test_las_reglas_salen_del_contrato_y_cuentan_por_pieza_y_repeticiones() -> N
         ("centro", "prod-dorado", 4 * 2),
     ]
     # Sin centro, la flor es solo de pétalos; con `petalos`, los que diga.
-    solo = partes_de_flores({"cantidad": 2, "petalos": 5, "petalo": {"product_id": "prod-blanco"}}, 1)
+    solo = partes_de_flores(
+        {"cantidad": 2, "petalos": 5, "petalo": {"product_id": "prod-blanco"}}, 1
+    )
     assert [(parte.parte, parte.unidades, parte.color) for parte in solo] == [("petalo", 10, None)]
 
 
@@ -105,15 +112,29 @@ async def test_las_flores_se_cuentan_y_se_cotizan_como_cualquier_linea() -> None
         (linea["variant_id"], linea["unidades"]) for linea in _lineas(sin)
     ]
     estructura = cast(list[dict[str, object]], con["estructuras"])[0]
-    assert estructura["mezcla_real"] == cast(list[dict[str, object]], sin["estructuras"])[0]["mezcla_real"]
-    assert estructura["total_unidades"] == cast(int, cast(list[dict[str, object]], sin["estructuras"])[0]["total_unidades"]) + 16
+    assert (
+        estructura["mezcla_real"]
+        == cast(list[dict[str, object]], sin["estructuras"])[0]["mezcla_real"]
+    )
+    assert (
+        estructura["total_unidades"]
+        == cast(int, cast(list[dict[str, object]], sin["estructuras"])[0]["total_unidades"]) + 16
+    )
     # Se compran por paquete: 12 pétalos (+ merma) en el paquete de 12 o el de 50, el más barato que cubre; 4 centros en uno de 20.
-    compras = {cast(str, compra["variant_id"]): compra for compra in cast(list[dict[str, object]], con["compras"])}
+    compras = {
+        cast(str, compra["variant_id"]): compra
+        for compra in cast(list[dict[str, object]], con["compras"])
+    }
     assert compras["var-dorado-5-x20"]["design_quantity"] == 4
     assert compras["var-dorado-5-x20"]["paquetes"] == 1
-    petalos = [compra for variante, compra in compras.items() if variante.startswith("var-blanco-5")]
+    petalos = [
+        compra for variante, compra in compras.items() if variante.startswith("var-blanco-5")
+    ]
     assert sum(cast(int, compra["design_quantity"]) for compra in petalos) == 12
-    assert cast(dict[str, int], con["totales"])["total_cop"] > cast(dict[str, int], sin["totales"])["total_cop"]
+    assert (
+        cast(dict[str, int], con["totales"])["total_cop"]
+        > cast(dict[str, int], sin["totales"])["total_cop"]
+    )
     assert "plan.flores" not in json.dumps(con["advertencias"])
 
 
@@ -134,10 +155,17 @@ async def test_sin_r5_las_flores_van_en_la_talla_mas_cercana_y_se_avisa() -> Non
     ]
     store = FakePlanStore([_row(), BLANCO_5_X12, DORADO_9_X20])
     con = _resuelto(await resolve_plan(_con_flores(FLORES, allowlist=allowlist), store))
-    centro = next(linea for linea in _lineas(con) if linea.get("adorno") == ADORNO_FLOR and linea["color"] == "dorado")
+    centro = next(
+        linea
+        for linea in _lineas(con)
+        if linea.get("adorno") == ADORNO_FLOR and linea["color"] == "dorado"
+    )
     assert centro["diam_pulg"] == 9
     assert cast(dict[str, str], centro["sustitucion"])["pedido"] == "R-5"
-    assert any(aviso.startswith("flores_talla_sustituida:EST_01_ARCO") for aviso in cast(list[str], con["advertencias"]))
+    assert any(
+        aviso.startswith("flores_talla_sustituida:EST_01_ARCO")
+        for aviso in cast(list[str], con["advertencias"])
+    )
     assert not con["sin_cobertura"]
 
 
@@ -152,18 +180,30 @@ async def test_sin_globo_redondo_las_flores_quedan_sin_cobertura_y_se_avisa() ->
     assert {"estructura_id": "EST_01_ARCO", "product_id": "prod-dorado", "tamano": "R-5"} in cast(
         list[dict[str, object]], con["sin_cobertura"]
     )
-    assert any(aviso.startswith("flores_sin_cobertura:EST_01_ARCO") for aviso in cast(list[str], con["advertencias"]))
+    assert any(
+        aviso.startswith("flores_sin_cobertura:EST_01_ARCO")
+        for aviso in cast(list[str], con["advertencias"])
+    )
     # Los pétalos, que sí hay, se compran igual.
-    assert any(linea.get("adorno") == ADORNO_FLOR and linea["color"] == "blanco" for linea in _lineas(con))
+    assert any(
+        linea.get("adorno") == ADORNO_FLOR and linea["color"] == "blanco" for linea in _lineas(con)
+    )
 
 
 def test_la_edicion_pone_y_quita_las_flores_sin_tocar_lo_demas() -> None:
     plan = _con_flores(None).plan
-    con = editar_plan(plan, EdicionFlores(accion="flores", estructura_id="EST_01_ARCO", flores=FLORES)).plan
+    con = editar_plan(
+        plan, EdicionFlores(accion="flores", estructura_id="EST_01_ARCO", flores=FLORES)
+    ).plan
     estructura = cast(list[dict[str, object]], con["estructuras"])[0]
     assert estructura["flores"] == FLORES
-    assert estructura["materiales"] == cast(list[dict[str, object]], plan["estructuras"])[0]["materiales"]
-    sin = editar_plan(con, EdicionFlores(accion="flores", estructura_id="EST_01_ARCO", flores=None)).plan
+    assert (
+        estructura["materiales"]
+        == cast(list[dict[str, object]], plan["estructuras"])[0]["materiales"]
+    )
+    sin = editar_plan(
+        con, EdicionFlores(accion="flores", estructura_id="EST_01_ARCO", flores=None)
+    ).plan
     assert "flores" not in cast(list[dict[str, object]], sin["estructuras"])[0]
 
 

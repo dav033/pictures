@@ -160,7 +160,13 @@ def version_codigo() -> str:
         return cacheada
     valor = "desconocida"
     try:
-        for nombre in ("REGISTRO_VERSION", "GIT_COMMIT_SHA", "GIT_SHA", "SOURCE_COMMIT", "COMMIT_SHA"):
+        for nombre in (
+            "REGISTRO_VERSION",
+            "GIT_COMMIT_SHA",
+            "GIT_SHA",
+            "SOURCE_COMMIT",
+            "COMMIT_SHA",
+        ):
             entorno = (os.getenv(nombre) or "").strip()
             if entorno:
                 valor = entorno[:12].lower() if _RE_SHA.match(entorno) else entorno[:40]
@@ -241,7 +247,9 @@ def _secretos_entorno() -> list[str]:
 
 _PATRONES_SECRETOS: tuple[tuple[re.Pattern[str], str], ...] = (
     (
-        re.compile(r"\b(Bearer|Key|Basic|Token)\s+(?=[A-Za-z0-9._~+/=:-]*\d)[A-Za-z0-9._~+/=:-]{16,}"),
+        re.compile(
+            r"\b(Bearer|Key|Basic|Token)\s+(?=[A-Za-z0-9._~+/=:-]*\d)[A-Za-z0-9._~+/=:-]{16,}"
+        ),
         rf"\1 {MARCA_OCULTO}",
     ),
     (re.compile(r"AIza[0-9A-Za-z_-]{35}"), MARCA_OCULTO),
@@ -252,7 +260,10 @@ _PATRONES_SECRETOS: tuple[tuple[re.Pattern[str], str], ...] = (
         ),
         MARCA_OCULTO,
     ),
-    (re.compile(r"\b([a-z][a-z0-9+.-]*://)([^\s:@/]+):([^\s@/]+)@", re.I), rf"\1\2:{MARCA_OCULTO}@"),
+    (
+        re.compile(r"\b([a-z][a-z0-9+.-]*://)([^\s:@/]+):([^\s@/]+)@", re.I),
+        rf"\1\2:{MARCA_OCULTO}@",
+    ),
     (
         re.compile(
             r"([?&](?:key|api_key|apikey|api-key|token|access_token|auth|sig|signature|secret|password)=)[^&#\s\"'<>]*",
@@ -320,7 +331,9 @@ def _redactar_cadena(texto: str, limite: int, clave: str = "") -> object:
     return _recortar(sanear_texto(texto), limite)
 
 
-def redactar(valor: object, limite: int = LIMITE_CADENA, profundidad: int = 0, clave: str = "") -> object:
+def redactar(
+    valor: object, limite: int = LIMITE_CADENA, profundidad: int = 0, clave: str = ""
+) -> object:
     """Copia JSON-segura y redactada de cualquier valor (incluidos modelos pydantic del SDK). Nunca lanza."""
     try:
         if valor is None or isinstance(valor, bool | int):
@@ -363,9 +376,14 @@ def redactar(valor: object, limite: int = LIMITE_CADENA, profundidad: int = 0, c
             return {"tipo": type(valor).__name__, "mensaje": sanear_texto(str(valor))[:4_000]}
         atributos = getattr(valor, "__dict__", None)
         if isinstance(atributos, dict):
-            publicos = {clave: interno for clave, interno in atributos.items() if not clave.startswith("_")}
+            publicos = {
+                clave: interno for clave, interno in atributos.items() if not clave.startswith("_")
+            }
             redactado = redactar(publicos, limite, profundidad + 1)
-            return {"tipo": type(valor).__name__, **(redactado if isinstance(redactado, dict) else {"valor": redactado})}
+            return {
+                "tipo": type(valor).__name__,
+                **(redactado if isinstance(redactado, dict) else {"valor": redactado}),
+            }
         return _recortar(sanear_texto(str(valor)), 500)
     except Exception:
         return "[valor no redactable]"
@@ -403,15 +421,18 @@ class FormateadorJson(logging.Formatter):
             contexto = contexto_actual()
             evento = extra.pop("evento", None) or record.getMessage()
             linea: dict[str, object] = {
-                "ts": datetime.fromtimestamp(record.created, timezone.utc).isoformat(
-                    timespec="milliseconds"
-                ).replace("+00:00", "Z"),
-                "nivel": {"WARNING": "warn", "CRITICAL": "error"}.get(record.levelname, record.levelname.lower()),
+                "ts": datetime.fromtimestamp(record.created, timezone.utc)
+                .isoformat(timespec="milliseconds")
+                .replace("+00:00", "Z"),
+                "nivel": {"WARNING": "warn", "CRITICAL": "error"}.get(
+                    record.levelname, record.levelname.lower()
+                ),
                 "servicio": SERVICIO,
                 "version": version_codigo(),
                 "evento": _recortar(sanear_texto(str(evento)), 2_000),
                 "request_id": contexto["request_id"] or extra.pop("request_id", None),
-                "conversacion_id": contexto["conversacion_id"] or extra.pop("conversacion_id", None),
+                "conversacion_id": contexto["conversacion_id"]
+                or extra.pop("conversacion_id", None),
                 "ruta": contexto["ruta"] or extra.pop("ruta", None),
             }
             for clave in ("ms", "estado", "metodo"):
@@ -422,7 +443,10 @@ class FormateadorJson(logging.Formatter):
             extra.pop("ruta", None)
             datos = extra.pop("datos", None)
             if extra:
-                datos = {**(datos if isinstance(datos, dict) else {"datos": datos} if datos else {}), **extra}
+                datos = {
+                    **(datos if isinstance(datos, dict) else {"datos": datos} if datos else {}),
+                    **extra,
+                }
             if datos is not None:
                 linea["datos"] = redactar(datos, limite)
             if record.exc_info and record.exc_info[1] is not None:
@@ -466,7 +490,9 @@ class ArchivoDiario(logging.Handler):
             fecha = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             with self._candado:
                 self.carpeta.mkdir(parents=True, exist_ok=True)
-                with (self.carpeta / f"ai-api-{fecha}.jsonl").open("a", encoding="utf-8") as archivo:
+                with (self.carpeta / f"ai-api-{fecha}.jsonl").open(
+                    "a", encoding="utf-8"
+                ) as archivo:
                     archivo.write(linea + "\n")
         except Exception:
             self._apagado = True
@@ -559,7 +585,11 @@ def instalar_registro(application: Any) -> None:
         estado = int(getattr(respuesta, "status_code", 0))
         registrar_evento(
             "peticion.fin",
-            nivel=logging.ERROR if estado >= 500 else logging.WARNING if estado >= 400 else logging.INFO,
+            nivel=logging.ERROR
+            if estado >= 500
+            else logging.WARNING
+            if estado >= 400
+            else logging.INFO,
             metodo=request.method,
             estado=estado,
             ms=round((time.perf_counter() - inicio) * 1000),
@@ -636,7 +666,11 @@ def _respuesta_gemini(respuesta: object) -> dict[str, object]:
         **({"llamadas": llamadas} if llamadas else {}),
         **({"motivo_fin": _enum(getattr(primero, "finish_reason", None))} if primero else {}),
         **({"bloqueo": _enum(getattr(feedback, "block_reason", None))} if feedback else {}),
-        **({"modelo_version": getattr(respuesta, "model_version", None)} if getattr(respuesta, "model_version", None) else {}),
+        **(
+            {"modelo_version": getattr(respuesta, "model_version", None)}
+            if getattr(respuesta, "model_version", None)
+            else {}
+        ),
     }
 
 
@@ -645,7 +679,9 @@ def _describir_peticion(kwargs: Mapping[str, object], embedding: bool) -> dict[s
     volcado = redactar(config, LIMITE_CADENA_MODELO) if config is not None else {}
     config_dict = dict(volcado) if isinstance(volcado, dict) else {"config": volcado}
     sistema = config_dict.pop("system_instruction", None)
-    esquema = config_dict.pop("response_schema", None) or config_dict.pop("response_json_schema", None)
+    esquema = config_dict.pop("response_schema", None) or config_dict.pop(
+        "response_json_schema", None
+    )
     herramientas = config_dict.pop("tools", None)
     contenidos: object = kwargs.get("contents")
     if embedding and isinstance(contenidos, list | tuple):
@@ -657,8 +693,16 @@ def _describir_peticion(kwargs: Mapping[str, object], embedding: bool) -> dict[s
         "modelo": kwargs.get("model"),
         **({"sistema": _completo_o_ref("sistema", sistema)} if sistema is not None else {}),
         "contenidos": contenidos,
-        **({"esquema_respuesta": _completo_o_ref("esquema", esquema)} if esquema is not None else {}),
-        **({"herramientas": _completo_o_ref("herramientas", herramientas)} if herramientas is not None else {}),
+        **(
+            {"esquema_respuesta": _completo_o_ref("esquema", esquema)}
+            if esquema is not None
+            else {}
+        ),
+        **(
+            {"herramientas": _completo_o_ref("herramientas", herramientas)}
+            if herramientas is not None
+            else {}
+        ),
         "config": config_dict,
     }
 
@@ -715,14 +759,22 @@ class _ModelosAuditados:
                 respuesta = await original(*args, **kwargs)
             except BaseException as error:
                 registrar_llamada_modelo(
-                    proposito=self._proposito, proveedor="gemini", peticion=peticion,
-                    respuesta=None, tokens=None, inicio=inicio, error=error,
+                    proposito=self._proposito,
+                    proveedor="gemini",
+                    peticion=peticion,
+                    respuesta=None,
+                    tokens=None,
+                    inicio=inicio,
+                    error=error,
                 )
                 raise
             registrar_llamada_modelo(
-                proposito=self._proposito, proveedor="gemini", peticion=peticion,
+                proposito=self._proposito,
+                proveedor="gemini",
+                peticion=peticion,
                 respuesta=_respuesta_gemini(respuesta),
-                tokens=_tokens(getattr(respuesta, "usage_metadata", None)), inicio=inicio,
+                tokens=_tokens(getattr(respuesta, "usage_metadata", None)),
+                inicio=inicio,
             )
             return respuesta
 
@@ -736,16 +788,24 @@ class _ModelosAuditados:
                 respuesta = await original(*args, **kwargs)
             except BaseException as error:
                 registrar_llamada_modelo(
-                    proposito=self._proposito, proveedor="gemini", peticion=peticion,
-                    respuesta=None, tokens=None, inicio=inicio, error=error,
+                    proposito=self._proposito,
+                    proveedor="gemini",
+                    peticion=peticion,
+                    respuesta=None,
+                    tokens=None,
+                    inicio=inicio,
+                    error=error,
                 )
                 raise
             vectores = getattr(respuesta, "embeddings", None) or []
             primero = getattr(vectores[0], "values", None) if vectores else None
             registrar_llamada_modelo(
-                proposito=self._proposito, proveedor="gemini", peticion=peticion,
+                proposito=self._proposito,
+                proveedor="gemini",
+                peticion=peticion,
                 respuesta={"vectores": len(vectores), "dimensiones": len(primero or [])},
-                tokens=None, inicio=inicio,
+                tokens=None,
+                inicio=inicio,
             )
             return respuesta
 
@@ -761,14 +821,23 @@ class _ModelosAuditados:
                 flujo = await original(*args, **kwargs)
             except BaseException as error:
                 registrar_llamada_modelo(
-                    proposito=proposito, proveedor="gemini", peticion=peticion,
-                    respuesta=None, tokens=None, inicio=inicio, error=error,
+                    proposito=proposito,
+                    proveedor="gemini",
+                    peticion=peticion,
+                    respuesta=None,
+                    tokens=None,
+                    inicio=inicio,
+                    error=error,
                 )
                 raise
             if not hasattr(flujo, "__aiter__"):
                 registrar_llamada_modelo(
-                    proposito=proposito, proveedor="gemini", peticion=peticion,
-                    respuesta={"texto": "[respuesta no iterable]"}, tokens=None, inicio=inicio,
+                    proposito=proposito,
+                    proveedor="gemini",
+                    peticion=peticion,
+                    respuesta={"texto": "[respuesta no iterable]"},
+                    tokens=None,
+                    inicio=inicio,
                 )
                 return flujo
             return _flujo_auditado(flujo, proposito, peticion, inicio)
@@ -794,25 +863,37 @@ async def _flujo_auditado(
             yield fragmento
         registrado = True
         registrar_llamada_modelo(
-            proposito=proposito, proveedor="gemini", peticion=peticion,
+            proposito=proposito,
+            proveedor="gemini",
+            peticion=peticion,
             respuesta={**ultimo, "texto": texto, **({"llamadas": llamadas} if llamadas else {})},
-            tokens=tokens, inicio=inicio,
+            tokens=tokens,
+            inicio=inicio,
         )
     except BaseException as error:
         if not registrado:
             registrado = True
             registrar_llamada_modelo(
-                proposito=proposito, proveedor="gemini", peticion=peticion,
+                proposito=proposito,
+                proveedor="gemini",
+                peticion=peticion,
                 respuesta={"texto": texto, **({"llamadas": llamadas} if llamadas else {})},
-                tokens=tokens, inicio=inicio, error=error if isinstance(error, Exception) else None,
+                tokens=tokens,
+                inicio=inicio,
+                error=error if isinstance(error, Exception) else None,
                 interrumpida=True,
             )
         raise
     finally:
         if not registrado:
             registrar_llamada_modelo(
-                proposito=proposito, proveedor="gemini", peticion=peticion,
-                respuesta={"texto": texto}, tokens=tokens, inicio=inicio, interrumpida=True,
+                proposito=proposito,
+                proveedor="gemini",
+                peticion=peticion,
+                respuesta={"texto": texto},
+                tokens=tokens,
+                inicio=inicio,
+                interrumpida=True,
             )
         # Cerrar el flujo del SDK cierra la respuesta HTTP del proveedor (lo que hacía el llamante).
         cerrar = getattr(flujo, "aclose", None)
@@ -869,13 +950,20 @@ async def auditar_llamada(
 ) -> T:
     """Para lo que no es un cliente de Gemini (fal/FLUX, el cross-encoder): una línea con petición y resultado."""
     inicio = time.perf_counter()
-    descripcion = {clave: redactar(valor, LIMITE_CADENA_MODELO) for clave, valor in peticion.items()}
+    descripcion = {
+        clave: redactar(valor, LIMITE_CADENA_MODELO) for clave, valor in peticion.items()
+    }
     try:
         resultado = await ejecutar()
     except BaseException as error:
         registrar_llamada_modelo(
-            proposito=proposito, proveedor=proveedor, peticion=descripcion, respuesta=None,
-            tokens=None, inicio=inicio, error=error,
+            proposito=proposito,
+            proveedor=proveedor,
+            peticion=descripcion,
+            respuesta=None,
+            tokens=None,
+            inicio=inicio,
+            error=error,
         )
         raise
     try:
@@ -883,8 +971,12 @@ async def auditar_llamada(
     except Exception:
         resumen = {"resultado": "[no se pudo resumir]"}
     registrar_llamada_modelo(
-        proposito=proposito, proveedor=proveedor, peticion=descripcion,
-        respuesta=dict(resumen), tokens=None, inicio=inicio,
+        proposito=proposito,
+        proveedor=proveedor,
+        peticion=descripcion,
+        respuesta=dict(resumen),
+        tokens=None,
+        inicio=inicio,
     )
     return resultado
 

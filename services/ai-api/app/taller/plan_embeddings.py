@@ -65,7 +65,12 @@ class Plan:
 
     @property
     def tareas(self) -> list[Tarea]:
-        return [t for m in MODALIDADES if m in self.por_modalidad for t in self.por_modalidad[m].pendientes]
+        return [
+            t
+            for m in MODALIDADES
+            if m in self.por_modalidad
+            for t in self.por_modalidad[m].pendientes
+        ]
 
     @property
     def usd_total(self) -> float:
@@ -88,16 +93,22 @@ def construir_plan(
         if "texto" in plan.por_modalidad:
             _planear_texto(plan.por_modalidad["texto"], ficha, cache, modelo, dims)
         if "imagen_render" in plan.por_modalidad:
-            _planear_render(plan.por_modalidad["imagen_render"], ficha, renders, cache, modelo, dims)
+            _planear_render(
+                plan.por_modalidad["imagen_render"], ficha, renders, cache, modelo, dims
+            )
         if "imagen_foto" in plan.por_modalidad:
-            _planear_foto(plan.por_modalidad["imagen_foto"], ficha, fotos_dir, descargar, cache, modelo, dims)
+            _planear_foto(
+                plan.por_modalidad["imagen_foto"], ficha, fotos_dir, descargar, cache, modelo, dims
+            )
     if limite is not None:
         for resumen in plan.por_modalidad.values():
             del resumen.pendientes[limite:]
     return plan
 
 
-def _planear_texto(resumen: ResumenModalidad, ficha: Ficha, cache: CacheVectores, modelo: str, dims: int) -> None:
+def _planear_texto(
+    resumen: ResumenModalidad, ficha: Ficha, cache: CacheVectores, modelo: str, dims: int
+) -> None:
     resumen.total += 1
     if not ficha.texto.strip():
         resumen.omitidos["ficha_vacia"] += 1
@@ -108,12 +119,25 @@ def _planear_texto(resumen: ResumenModalidad, ficha: Ficha, cache: CacheVectores
         return
     tokens = tokens_estimados(ficha.texto)
     resumen.pendientes.append(
-        Tarea(ficha.id, "texto", hash_entrada, usd_de_tokens(tokens), tokens, "tokens_est", texto=ficha.texto)
+        Tarea(
+            ficha.id,
+            "texto",
+            hash_entrada,
+            usd_de_tokens(tokens),
+            tokens,
+            "tokens_est",
+            texto=ficha.texto,
+        )
     )
 
 
 def _planear_render(
-    resumen: ResumenModalidad, ficha: Ficha, renders: dict[str, Path], cache: CacheVectores, modelo: str, dims: int
+    resumen: ResumenModalidad,
+    ficha: Ficha,
+    renders: dict[str, Path],
+    cache: CacheVectores,
+    modelo: str,
+    dims: int,
 ) -> None:
     resumen.total += 1
     ruta = renders.get(ficha.id)
@@ -133,15 +157,24 @@ def _planear_render(
 
 
 def _planear_foto(
-    resumen: ResumenModalidad, ficha: Ficha, fotos_dir: Path | None, descargar: bool,
-    cache: CacheVectores, modelo: str, dims: int,
+    resumen: ResumenModalidad,
+    ficha: Ficha,
+    fotos_dir: Path | None,
+    descargar: bool,
+    cache: CacheVectores,
+    modelo: str,
+    dims: int,
 ) -> None:
     resumen.total += 1
     foto = resolver_foto(ficha, fotos_dir)
     if foto is None:
         resumen.omitidos["archivo_de_foto_inexistente" if ficha.foto else "sin_foto"] += 1
         return
-    hash_entrada = hash_entrada_url(foto.valor) if foto.clase == "url" else hash_entrada_archivo(Path(foto.valor))
+    hash_entrada = (
+        hash_entrada_url(foto.valor)
+        if foto.clase == "url"
+        else hash_entrada_archivo(Path(foto.valor))
+    )
     if cache.acierto(ficha.id, "imagen_foto", modelo, dims, hash_entrada):
         resumen.en_cache += 1
         return
@@ -165,7 +198,9 @@ def formatear_plan(plan: Plan, tope_usd: float | None = None) -> str:
             f"{resumen.modalidad:<14}{resumen.total:>7}{resumen.en_cache:>10}{len(resumen.pendientes):>12}"
             f"{omitidos:>10}{resumen.unidades_pendientes:>8} {unidad}{resumen.usd_pendiente:>11.4f}"
         )
-    lineas.append(f"{'TOTAL':<14}{'':>7}{'':>10}{len(plan.tareas):>12}{'':>10}{'':>12}{plan.usd_total:>11.4f}")
+    lineas.append(
+        f"{'TOTAL':<14}{'':>7}{'':>10}{len(plan.tareas):>12}{'':>10}{'':>12}{plan.usd_total:>11.4f}"
+    )
     for resumen in plan.por_modalidad.values():
         for motivo, cantidad in sorted(resumen.omitidos.items()):
             lineas.append(f"  omitidos en {resumen.modalidad}: {motivo} = {cantidad}")
@@ -175,6 +210,8 @@ def formatear_plan(plan: Plan, tope_usd: float | None = None) -> str:
                 f"  con --descargar se sumarían {len(resumen.potencial_url)} llamadas de {resumen.modalidad} (USD {extra:.4f})"
             )
     if tope_usd is not None:
-        veredicto = "dentro del tope" if plan.usd_total <= tope_usd else "EXCEDE el tope: no se ejecutaría"
+        veredicto = (
+            "dentro del tope" if plan.usd_total <= tope_usd else "EXCEDE el tope: no se ejecutaría"
+        )
         lineas.append(f"Tope {tope_usd:.4f} USD: {veredicto}.")
     return "\n".join(lineas)

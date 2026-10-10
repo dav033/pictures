@@ -13,7 +13,9 @@ from __future__ import annotations
 import re
 
 #: A wine shade in a folded (lowercase, no accents) title.
-WINE_TITLE = re.compile(r"\b(?:merlot|vinotinto|vino tinto|burdeos|borgona|granate|marsala|burgundy|wine)\b")
+WINE_TITLE = re.compile(
+    r"\b(?:merlot|vinotinto|vino tinto|burdeos|borgona|granate|marsala|burgundy|wine)\b"
+)
 
 #: The color a title rule gives and the catalog family it replaces.
 COLOR_BURDEOS = "burdeos"

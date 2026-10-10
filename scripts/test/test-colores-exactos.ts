@@ -51,7 +51,7 @@ console.log("[PASS] colores exactos: el tono del producto comprado manda sobre e
 
 // 3. El caption base: el color de la lámina, matizado por el globo medido, y ninguna cifra.
 assert.equal(colorDeReferencia(referenciaDelCatalogo("dorado", "reflex")!), "gold", "sin «chrome»: el acabado se escribe aparte");
-assert.equal(colorDeReferencia(referenciaDelCatalogo("azul", "pastel dusk")!), "dusty light blue", "sin «pastel», nombre de línea");
+assert.equal(colorDeReferencia(referenciaDelCatalogo("azul", "pastel dusk")!), "dusty light blue (#7396A9)", "sin «pastel», nombre de línea; el hex va pegado al nombre desde 2026-10-06 (FLUX lo recibe)");
 const DORADO = "7109611258049";
 const escena = {
   schema_version: "1.0", generation_mode: "text_to_image",

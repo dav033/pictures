@@ -80,4 +80,3 @@ class RegistroGasto:
         }
         with self._ruta.open("a", encoding="utf-8") as archivo:
             archivo.write(json.dumps(linea, ensure_ascii=False) + "\n")
-

@@ -398,7 +398,9 @@ def test_excepcion_operativa_registra_traceback_y_request_id(
     with caplog.at_level(logging.ERROR, logger="decoracion.ai_api"):
         status, _body = _post(_operacion(plan_motores), "00000000-0000-4000-8000-000000000ef0")
 
-    registro = next(record for record in caplog.records if record.message == "operational endpoint failed")
+    registro = next(
+        record for record in caplog.records if record.message == "operational endpoint failed"
+    )
     assert status == 500
     assert registro.request_id == request_id
     assert registro.operation == "plan.guia_escena"

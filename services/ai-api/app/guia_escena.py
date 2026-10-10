@@ -606,7 +606,10 @@ def _aro_colgado(estructura: Mapping[str, object], datos: Mapping[str, object] |
 
     Lo dice la foto, no la ubicación del plan: un aro de pie contra la pared del fondo también va en ``fondo_pared``.
     """
-    return _texto(estructura.get("estructura_oficial")) == "aro_circular" and (datos or {}).get("colgada") is True
+    return (
+        _texto(estructura.get("estructura_oficial")) == "aro_circular"
+        and (datos or {}).get("colgada") is True
+    )
 
 
 def _toca_el_piso(elemento: ElementoDibujo) -> bool:
@@ -675,7 +678,11 @@ def pieza_de_guia(
         for g in sorted(del_dibujo, key=lambda g: g.capa)
     ]
     return _pieza(
-        estructura_id, "dibujo", globos, anclaje="pared" if colgado else None, elementos=estructura_visible
+        estructura_id,
+        "dibujo",
+        globos,
+        anclaje="pared" if colgado else None,
+        elementos=estructura_visible,
     )
 
 

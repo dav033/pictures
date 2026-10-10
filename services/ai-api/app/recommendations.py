@@ -51,7 +51,6 @@ class CatalogRecommendationsRequest(OperationalRequest):
         return normalized
 
 
-
 __all__ = [
     "CATALOG_RECOMMENDATIONS_RESULT_SCHEMA_VERSION",
     "CATALOG_RECOMMENDATIONS_SCHEMA_VERSION",

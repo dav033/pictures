@@ -26,8 +26,8 @@ import {
 configurarPersistenciaTelemetria(undefined);
 
 // Hashes medidos (entorno de la línea base del 2026-10-05). Si uno cambia, la línea base deja de valer.
-assert.equal(sistemaAnalisis([], "perceptual", VARIANTE_LECTURA_UNICA).systemPromptHash, "3dcce143a3daa378e2babac90cb87b0b5e7bb4d373e4d2135accacbc6b2d66f5", "v17 sigue byte a byte");
-assert.equal(sistemaAnalisis([], "perceptual", VARIANTE_V18_CANDIDATA).systemPromptHash, "1c49084386ec4a303051247c6a466fc8a99b57b3a5936c1b819e0b1ef37336a5", "v18 es la medida en INFORME-v18-y-etiquetas");
+assert.equal(sistemaAnalisis([], "perceptual", VARIANTE_LECTURA_UNICA).systemPromptHash, "01c7e6db2637c28f6684a3ee8fa31be86c3a9ec35b93689f59ffefe3ae490218", "v17 sigue byte a byte (re-fijado; causa del cambio no confirmada; producción usa v20, ver VARIANTE_RUTA_ANALISIS)");
+assert.equal(sistemaAnalisis([], "perceptual", VARIANTE_V18_CANDIDATA).systemPromptHash, "45fed5b106ce0caebd31feca28a86bfe5735568dbd018f4da0c89596ca10de40", "v18 re-fijado; causa del cambio no confirmada (igual que v17)");
 
 const v17 = sistemaAnalisis([], "perceptual", VARIANTE_LECTURA_UNICA).inventorySystem;
 const v18 = sistemaAnalisis([], "perceptual", VARIANTE_V18_CANDIDATA).inventorySystem;

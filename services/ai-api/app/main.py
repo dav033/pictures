@@ -2018,10 +2018,12 @@ def create_app(
                 raise _error("invalid_request", 422)
             try:
                 result = await cotizar_lista_materiales(
-                    ListaMaterialesPayload.model_validate({
-                        "schema_version": payload.schema_version,
-                        "materiales": [linea.model_dump() for linea in payload.materiales],
-                    }),
+                    ListaMaterialesPayload.model_validate(
+                        {
+                            "schema_version": payload.schema_version,
+                            "materiales": [linea.model_dump() for linea in payload.materiales],
+                        }
+                    ),
                     cast(CatalogMaterialQuoteStore, catalog),
                 )
             except PlanResolutionError as error:

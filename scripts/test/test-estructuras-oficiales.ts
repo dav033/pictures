@@ -135,10 +135,8 @@ const columnas = scene([
   element("COL_R", "Columna derecha", "columna", "lateral_derecho", "soporte", "media"),
 ]);
 const producto = compileFluxCaption({ sceneSpec: columnas, visualContext: context });
-// `airy` no está ni una vez en las 345 captions del corpus; el sustantivo que queda, `organic balloon
-// arch`, aparece 107 veces. Ver `productDialectNoun`.
-assert.match(producto.prompt, /organic balloon arch/);
-assert.doesNotMatch(producto.prompt, /airy/);
+// «Arco no denso» se expresa como arco orgánico ligero; `garland` nombra la guirnalda que lo forma.
+assert.match(producto.prompt, /airy organic balloon garland arch/i);
 // 2026-10-03: el sustantivo de la columna pasó al del corpus (`balloon column`, 69 veces en sus 345
 // captions). «asymmetrical» solo lo usa el corpus para un medio arco, y el LoRA dibujaba la columna
 // doblada; ver `estructuras-oficiales.ts`.
@@ -147,11 +145,11 @@ assert.doesNotMatch(producto.prompt, /asymmetrical[a-z ]*balloon column/);
 assert.equal(producto.clauses.length, 3, "an asymmetrical column never pairs with a plain one");
 const escena = compileFluxCaption({ sceneSpec: columnas, visualContext: context });
 // El sustantivo del arco no se tocó en esta pasada: sigue llevando «airy» dentro (`arco_no_denso`).
-assert.match(escena.prompt, /an airy organic balloon garland arch/);
+assert.match(escena.prompt, /an airy organic balloon garland arch/i);
 assert.match(escena.prompt, /a balloon column/);
 assert.doesNotMatch(escena.prompt, /matching one another|one standing on the left and one on the right/);
 const pared = compileFluxCaption({ sceneSpec: scene([element("PARED", "Pared de globos densa", "pared", "fondo_pared", "focal", "lujosa")]), visualContext: context });
-assert.match(pared.prompt, /dense balloon wall installation in blue against the rear wall/);
+assert.match(pared.prompt, /dense balloon wall installation made of latex balloons in blue against the rear wall/);
 pass("official variants reach both LoRA wordings and keep separate pieces separate");
 
 // 6. Contract: `estructura_oficial` is declared, validated in Next and exported to Python.

@@ -1,4 +1,5 @@
 /** Arnés del navegador para `test-voz-hook.ts`: monta `useDictado` en una página y deja sus controles en `window`. */
+import { useLayoutEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { useDictado, type Dictado } from "../../../../src/components/voz/useDictado";
 import { instalarFalsos } from "./falsos";
@@ -17,7 +18,9 @@ window.__textos = [];
 
 function Prueba() {
   const dictado = useDictado((texto) => window.__textos.push(texto));
-  window.__dictado = dictado;
+  useLayoutEffect(() => {
+    window.__dictado = dictado;
+  });
   const { estado } = dictado;
   return <p id="fase">{estado.fase === "reposo" ? `reposo:${estado.error ?? ""}` : estado.fase}</p>;
 }

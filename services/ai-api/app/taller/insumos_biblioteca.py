@@ -53,9 +53,13 @@ def leer_fichas(ruta: Path) -> list[Ficha]:
             fuente = registro.get("fuente") or {}
             fichas.append(
                 Ficha(
-                    id=registro["id"], hash=registro.get("hash", ""), texto=registro["ficha"],
-                    tipo=registro.get("tipo", ""), fuente_tipo=fuente.get("tipo", ""),
-                    titulo=fuente.get("titulo") or "", foto=fuente.get("foto") or None,
+                    id=registro["id"],
+                    hash=registro.get("hash", ""),
+                    texto=registro["ficha"],
+                    tipo=registro.get("tipo", ""),
+                    fuente_tipo=fuente.get("tipo", ""),
+                    titulo=fuente.get("titulo") or "",
+                    foto=fuente.get("foto") or None,
                 )
             )
     return fichas
@@ -165,7 +169,9 @@ async def descargar_foto(url: str, carpeta_cache: Path, cliente: httpx.AsyncClie
     if destino.exists():
         return destino.read_bytes()
     datos = bytearray()
-    async with cliente.stream("GET", url, timeout=TIMEOUT_DESCARGA_S, follow_redirects=True) as respuesta:
+    async with cliente.stream(
+        "GET", url, timeout=TIMEOUT_DESCARGA_S, follow_redirects=True
+    ) as respuesta:
         respuesta.raise_for_status()
         async for trozo in respuesta.aiter_bytes():
             datos.extend(trozo)

@@ -707,7 +707,8 @@ async function testFluxGenerateEnvelope(): Promise<void> {
   };
   assert.equal(body.schema_version, "lora-generate.v1");
   assert.equal(body.mode, "edit");
-  assert.deepEqual(body.loras, [{ path: "loras/eventdecor-style-v3.safetensors", scale: 1 }]);
+  // Sin LoRA en el producto: el adaptador reenvía la lista vacía.
+  assert.deepEqual(body.loras, []);
   assert.equal(body.guidance_scale, 3.5);
   assert.equal(body.num_inference_steps, 28);
   assert.equal(body.image_width, 1536);

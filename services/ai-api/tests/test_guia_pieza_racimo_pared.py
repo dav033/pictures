@@ -12,7 +12,9 @@ from app.guia_piezas.racimo_pared import es_racimo_pared, pieza_de
 from tests.guirnalda_datos import material
 
 
-def _racimo(oficial: str = "racimo_pared", unidades: int = 16, repeticiones: int = 1) -> dict[str, object]:
+def _racimo(
+    oficial: str = "racimo_pared", unidades: int = 16, repeticiones: int = 1
+) -> dict[str, object]:
     return {
         "estructura_id": "EST_01_RACIMO",
         "nombre": "Racimo de pared rosa",

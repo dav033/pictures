@@ -1774,8 +1774,13 @@ def _armado_columna_organica(
         # «lleno» mandaban el 80 % de los grandes abajo y pasaban de 1,1 m de base a 0,7 m de punta; la columna
         # dorada del CASE-001 de images-judge (casi toda de dorados grandes, de ancho casi constante) se dibujaba
         # cónica y con los grandes en el pie, y la guía de escena es lo que sigue FLUX (UI-4, 2026-10-05).
-        tamanos["grandesAbajo"] = min(float(tamanos.get("grandesAbajo", GRANDES_ABAJO_CON_GRANDES)), GRANDES_ABAJO_CON_GRANDES)
-        volumen["grosorCimaM"] = max(float(volumen["grosorCimaM"]), round(PUNTA_MINIMA_CON_GRANDES * float(volumen["grosorPatasM"]), 3))
+        tamanos["grandesAbajo"] = min(
+            float(tamanos.get("grandesAbajo", GRANDES_ABAJO_CON_GRANDES)), GRANDES_ABAJO_CON_GRANDES
+        )
+        volumen["grosorCimaM"] = max(
+            float(volumen["grosorCimaM"]),
+            round(PUNTA_MINIMA_CON_GRANDES * float(volumen["grosorPatasM"]), 3),
+        )
     alto = pieza.alto_m or float(forma["altoM"])
     forma["altoM"] = alto
     if inclinacion is None and lista is not None:
@@ -1927,7 +1932,11 @@ def _cruza_por_arriba(lectura_linea: Mapping[str, object] | None) -> bool:
         return False
     confianza = lectura_linea.get("confianza")
     soporte = lectura_linea.get("soporte")
-    return isinstance(confianza, (int, float)) and confianza >= 0.5 and soporte in ("pared", "sobre_estructura")
+    return (
+        isinstance(confianza, (int, float))
+        and confianza >= 0.5
+        and soporte in ("pared", "sobre_estructura")
+    )
 
 
 def _corte_hasta_la_esquina(forma: Mapping[str, Any], volumen: Mapping[str, Any]) -> float:
@@ -1954,7 +1963,11 @@ def _corte_hasta_la_esquina(forma: Mapping[str, Any], volumen: Mapping[str, Any]
         largos.append(largos[-1] + math.hypot(x1 - x0, y1 - y0))
     cumbre = max(range(len(puntos)), key=lambda i: puntos[i][1])
     corte = next(
-        (largos[i] / largos[-1] for i in range(cumbre, len(puntos)) if puntos[i][1] < _MARGEN_ESQUINA * hs),
+        (
+            largos[i] / largos[-1]
+            for i in range(cumbre, len(puntos))
+            if puntos[i][1] < _MARGEN_ESQUINA * hs
+        ),
         1.0,
     )
     return round(_acotar(corte, 0.55, 0.95), 3)
@@ -2010,7 +2023,11 @@ def _armado_arco_organico(
         # «medio-corto» y el asimétrico la pata gruesa de «medio-pila» con el mismo corte (``FORMA_SEMIARCO``).
         lista = _FORMA_LISTA_ARCO[FORMA_SEMIARCO_ASIMETRICO if pieza.asimetrica else FORMA_SEMIARCO]
         forma = {**forma, **lista.forma}
-        forma["corte"] = min(float(forma["corte"]), _CORTE_DE_FORMA[FORMA_SEMIARCO], _corte_del_medio_arco(inclinacion))
+        forma["corte"] = min(
+            float(forma["corte"]),
+            _CORTE_DE_FORMA[FORMA_SEMIARCO],
+            _corte_del_medio_arco(inclinacion),
+        )
         # El lado: el que la tarjeta ya dibuja (`IconoEstructura`, `ubicacion === "lateral_derecho"`). Sin
         # espejo la pata queda a la izquierda y la punta se va a la derecha.
         forma["espejo"] = pieza.espejo
@@ -2052,10 +2069,16 @@ def _armado_arco_organico(
         # la pieza que se ve mide el arco completo de ancho, así que `anchoM` es el del plan sin buscar.
         forma["curva"] = CURVA_EN_ESCUADRA
         # Dentro de lo que el motor arma (``organico/limites.py``): ancho mínimo y alto hasta 1,8 veces el ancho.
-        ancho = max(float(pieza.ancho_m or forma["anchoM"]), ARCO_ORGANICO_ANCHO_MIN, float(forma["altoM"]) / 1.8)
+        ancho = max(
+            float(pieza.ancho_m or forma["anchoM"]),
+            ARCO_ORGANICO_ANCHO_MIN,
+            float(forma["altoM"]) / 1.8,
+        )
         ancho = math.ceil(ancho * 100) / 100
         if pieza.ancho_m and ancho > pieza.ancho_m + 1e-9:
-            avisos.append(f"El ancho de la pieza en L se acoto a {ancho:g} m: el motor no arma una escuadra mas estrecha para ese alto.")
+            avisos.append(
+                f"El ancho de la pieza en L se acoto a {ancho:g} m: el motor no arma una escuadra mas estrecha para ese alto."
+            )
         forma["anchoM"] = ancho
         # Una banda que enmarca un fondo, no la pila de un medio arco: con el grosor de «medio-pila» (1,15 m) una
         # pieza de 1,6 m de ancho se quedaba en 45 cm de cima y la L no se veía.
@@ -2162,7 +2185,9 @@ def _receta(
     if pieza.tipo == "semiarco":
         del_reparto = reparto_del_motor("arco_organico", pista, de_la_pieza, avisos, medio=True)
         en_escuadra = _cruza_por_arriba(lectura_linea)
-        armado = _armado_arco_organico(pieza, avisos, del_reparto, inclinacion, medio=True, en_escuadra=en_escuadra)
+        armado = _armado_arco_organico(
+            pieza, avisos, del_reparto, inclinacion, medio=True, en_escuadra=en_escuadra
+        )
         if en_escuadra:
             armado["origen"] = "referencia"
         if del_reparto is not None:
@@ -2356,13 +2381,18 @@ def _resumen_arco(resuelto: Mapping[str, Any]) -> dict[str, Any]:
 def globos_del_remate(resuelto: Mapping[str, Any]) -> int:
     """Los globos del remate de una columna resuelta (``remate.globos``): se colocan y se compran (``plan.py``)."""
     globos = cast(Mapping[str, Any], resuelto.get("remate") or {}).get("globos") or []
-    return sum(int(globo.get("cantidad") or 0) for globo in cast(Sequence[Mapping[str, Any]], globos) if globo.get("tamano"))
+    return sum(
+        int(globo.get("cantidad") or 0)
+        for globo in cast(Sequence[Mapping[str, Any]], globos)
+        if globo.get("tamano")
+    )
 
 
 def _resumen_columna(resuelto: Mapping[str, Any]) -> dict[str, Any]:
     """Lo que el modelo necesita saber de la columna resuelta. El total cuenta su remate, como la compra."""
     return {
-        "total_globos": len(cast(Sequence[object], resuelto["globos"])) + globos_del_remate(resuelto),
+        "total_globos": len(cast(Sequence[object], resuelto["globos"]))
+        + globos_del_remate(resuelto),
         "capas": resuelto["capas"],
         "alto_cuerpo_m": resuelto["alto_cuerpo_m"],
         "alto_total_m": resuelto["alto_total_m"],
@@ -2752,7 +2782,9 @@ def armado_con_densidad(
         return None
     completa = cast(
         Mapping[str, Any],
-        cast(Sequence[object], completar_medidas({"estructuras": [dict(estructura)]})["estructuras"])[0],
+        cast(
+            Sequence[object], completar_medidas({"estructuras": [dict(estructura)]})["estructuras"]
+        )[0],
     )
     actual = _pieza_del_plan(completa)
     otra = _pieza_del_plan({**completa, "densidad": densidad})
@@ -2796,7 +2828,7 @@ def completar(request: ArmadoEstructuraRequest) -> dict[str, Any]:
     estructuras = plan.get("estructuras")
     if not isinstance(estructuras, Sequence) or isinstance(estructuras, (str, bytes)):
         raise PlanResolutionError("invalid_plan", 422)
-    propuestos ={propuesto.estructura_id: propuesto for propuesto in (request.armados or [])}
+    propuestos = {propuesto.estructura_id: propuesto for propuesto in (request.armados or [])}
     # Una pista por elemento de la referencia: la aplica cada estructura que materializa ese elemento, que es
     # la misma regla que `pistas_patron` en la resolución (ADR-0028 §7).
     pistas = {

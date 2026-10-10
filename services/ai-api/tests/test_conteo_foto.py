@@ -975,7 +975,9 @@ async def test_s1_ej01_la_altura_estandar_no_es_fija_y_el_plan_llega_a_la_foto()
     assert alto > 1.8
     assert conteo["cambios"] == [{"campo": "alto_m", "antes": 1.8, "despues": alto}]
     # Las dos columnas se cobran con la cantidad de la foto, dentro de la puerta física.
-    assert cast(list[dict[str, object]], resolved["estructuras"])[0]["total_unidades"] == 2 * despues
+    assert (
+        cast(list[dict[str, object]], resolved["estructuras"])[0]["total_unidades"] == 2 * despues
+    )
     assert any("m equivalente a la foto (no medido)" in s for s in _supuestos(resolved))
     assert not [
         a for a in cast(list[str], resolved["advertencias"]) if a.startswith("puerta_fisica:")
@@ -1041,7 +1043,9 @@ async def test_s1_con_la_receta_del_motor_el_armado_fija_la_cantidad_y_lo_dice()
     assert cast(list[dict[str, object]], resolved["estructuras"])[0]["total_unidades"] == 2 * motor
     assert not any(s.startswith("Columna orgánica lateral: la foto") for s in _supuestos(resolved))
     # Si la foto cuenta lo que el motor coloca, coincide, como sin armado.
-    igual = await _confirmar_ej01(con_armado, conteos=({**CONTEO_EJ01_IZQUIERDA, "estimado_total": motor},))
+    igual = await _confirmar_ej01(
+        con_armado, conteos=({**CONTEO_EJ01_IZQUIERDA, "estimado_total": motor},)
+    )
     assert [c["decision"] for c in _conteos(igual)] == ["coincide"]
 
 
@@ -1136,7 +1140,9 @@ async def test_i4_ej01_con_receta_del_motor_cada_columna_sigue_su_cuenta_y_no_16
         == guirnalda["armado_guirnalda_organica"]
     )
     assert totales["EST_03_GUIRNALDA"] == antes_guirnalda
-    assert any("la foto muestra unos 75 globos y el plan tenía 165" in s for s in _supuestos(resolved))
+    assert any(
+        "la foto muestra unos 75 globos y el plan tenía 165" in s for s in _supuestos(resolved)
+    )
 
 
 @pytest.mark.anyio
@@ -1159,7 +1165,9 @@ async def test_i4_la_guirnalda_con_cuenta_de_la_foto_toma_la_receta_mas_cercana(
 @pytest.mark.anyio
 async def test_i4_sin_cuenta_fiable_la_receta_del_motor_no_cambia() -> None:
     columna = _con_receta(_columnas_ej01())
-    resolved = await _confirmar_ej01(columna, conteos=({**CONTEO_EJ01_IZQUIERDA, "confianza": 0.3},))
+    resolved = await _confirmar_ej01(
+        columna, conteos=({**CONTEO_EJ01_IZQUIERDA, "confianza": 0.3},)
+    )
     [conteo] = _conteos(resolved)
     assert conteo["decision"] == "no_confiable"
     estructura = _estructura(resolved)
@@ -1346,7 +1354,12 @@ async def test_f7_3_el_racimo_compra_la_mezcla_de_tamanos_leida() -> None:
         "densidad": "media",
         "mezcla": "clasica",
         "materiales": [
-            {"product_id": "prod-blanco", "color": "blanco", "participacion": 1.0, "rol_material": "principal"}
+            {
+                "product_id": "prod-blanco",
+                "color": "blanco",
+                "participacion": 1.0,
+                "rol_material": "principal",
+            }
         ],
         "unidades_declaradas": 40,
         "porque": "Racimo orgánico fijado a la pared.",
@@ -1494,7 +1507,9 @@ async def test_el_hash_sobrevive_al_viaje_por_javascript() -> None:
         pistas_conteo=[_conteo(globos_visibles=120, estimado_total=250)],
     )
     plan = cast(dict[str, object], resolved["plan"])
-    medidas = cast(dict[str, object], cast(list[dict[str, object]], plan["estructuras"])[0]["medidas"])
+    medidas = cast(
+        dict[str, object], cast(list[dict[str, object]], plan["estructuras"])[0]["medidas"]
+    )
     assert any(isinstance(v, float) and v.is_integer() for v in medidas.values()), medidas
     segunda = await _resolver_geometrico(cast(dict[str, object], _como_javascript(plan)))
     assert segunda["plan_hash"] == resolved["plan_hash"]

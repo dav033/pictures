@@ -54,8 +54,12 @@ def test_wine_is_not_red() -> None:
     ``src/lib/plan/colores-producto.ts``. (This test used to pin Fashion Merlot as ("rojo", "burdeos").)
     """
     assert _product_colors("B2b Globo Latex Redondo Metal Vinotinto", ("rojo",)) == ("burdeos",)
-    assert _product_colors("B2b Globo Latex Redondo Fashion Merlot", ("rojo", "burdeos")) == ("burdeos",)
-    assert _variant_real_colors("B2b Globo Latex Tubito Fashion Merlot", (), ("rojo",)) == ("burdeos",)
+    assert _product_colors("B2b Globo Latex Redondo Fashion Merlot", ("rojo", "burdeos")) == (
+        "burdeos",
+    )
+    assert _variant_real_colors("B2b Globo Latex Tubito Fashion Merlot", (), ("rojo",)) == (
+        "burdeos",
+    )
     assert _product_colors("B2b Globo Latex Redondo Fashion Rojo", ("rojo",)) == ("rojo",)
 
 
@@ -82,10 +86,10 @@ def test_line_color_keeps_the_requested_color_when_the_variant_has_several() -> 
     assert _line_color(rosado, "rosado") == "rosado"
     assert _line_color(rosado, None) == "rosado"
     merlot_title = "Globo Latex Redondo Fashion Merlot"
-    merlot = _candidate(
-        merlot_title, _variant_real_colors(merlot_title, (), ("rojo",)), ("rojo",)
+    merlot = _candidate(merlot_title, _variant_real_colors(merlot_title, (), ("rojo",)), ("rojo",))
+    assert _line_color(merlot, "rojo") == "burdeos", (
+        "el vino se cotiza burdeos aunque el plan diga rojo"
     )
-    assert _line_color(merlot, "rojo") == "burdeos", "el vino se cotiza burdeos aunque el plan diga rojo"
 
 
 def test_grey_title_replaces_derived_silver() -> None:

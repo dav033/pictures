@@ -1855,7 +1855,7 @@ export function compileFluxCaption(input: {
    * never products, never quoted.
    */
   ambientDecor?: readonly string[];
-  /** Plain English styling cues of the creativity level (creatividad.ts); dropped first when compacting. */
+  /** Plain English styling cues of the creativity level (creatividad.ts); dropped only at the minimalTail step, after sizes go to none. */
   creativeCues?: readonly string[];
   /**
    * `plan_resuelto.patrones_color`, `armados_bouquet` and `armados_guirnalda`

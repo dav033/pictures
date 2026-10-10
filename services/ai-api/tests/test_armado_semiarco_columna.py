@@ -251,23 +251,33 @@ def test_un_semiarco_sin_medidas_se_arma_con_las_medidas_que_el_plan_le_pone() -
     usaba la plantilla de la forma lista (un semiarco de 3,4 × 2,5 m) y el plan mostraba 1,2 × 2,2 m: la curva
     dibujada no era la de la pieza. Ahora una pieza sin medidas se arma exactamente como con las que el plan le pone.
     """
-    sin_medidas = cast(dict[str, Any], completado(pieza("semiarco", "semiarco", {}))["armado"]["forma"])
+    sin_medidas = cast(
+        dict[str, Any], completado(pieza("semiarco", "semiarco", {}))["armado"]["forma"]
+    )
     con_las_del_plan = cast(
         dict[str, Any],
-        completado(pieza("semiarco", "semiarco", {"ancho_m": 1.2, "alto_m": 2.2}))["armado"]["forma"],
+        completado(pieza("semiarco", "semiarco", {"ancho_m": 1.2, "alto_m": 2.2}))["armado"][
+            "forma"
+        ],
     )
     assert sin_medidas == con_las_del_plan
     assert sin_medidas["altoM"] == 2.2, "el alto es el del plan, no el de la plantilla del motor"
     lista = _FORMA[FORMA_SEMIARCO]
-    assert sin_medidas["anchoM"] != lista.forma["anchoM"], "el ancho se ajusta a las medidas, no es el de la plantilla"
+    assert sin_medidas["anchoM"] != lista.forma["anchoM"], (
+        "el ancho se ajusta a las medidas, no es el de la plantilla"
+    )
 
 
 def test_las_medidas_que_el_modelo_si_escribio_no_se_pisan_con_las_del_plan() -> None:
     propias = cast(
         dict[str, Any],
-        completado(pieza("semiarco", "semiarco", {"ancho_m": 1.8, "alto_m": 2.0}))["armado"]["forma"],
+        completado(pieza("semiarco", "semiarco", {"ancho_m": 1.8, "alto_m": 2.0}))["armado"][
+            "forma"
+        ],
     )
-    por_defecto = cast(dict[str, Any], completado(pieza("semiarco", "semiarco", {}))["armado"]["forma"])
+    por_defecto = cast(
+        dict[str, Any], completado(pieza("semiarco", "semiarco", {}))["armado"]["forma"]
+    )
     assert propias["altoM"] == 2.0
     assert propias != por_defecto
 
@@ -278,7 +288,11 @@ def test_la_columna_asimetrica_que_la_foto_muestra_recta_sale_recta() -> None:
     Sin lectura la asimétrica se tuerce lo que su forma lista (25 % del alto); con un 0 de la foto, no.
     """
     base = pieza(
-        "columna", "columna_asimetrica", {"alto_m": 1.8}, mezcla="organica_fina", referencia_element_id="REF_01_E01"
+        "columna",
+        "columna_asimetrica",
+        {"alto_m": 1.8},
+        mezcla="organica_fina",
+        referencia_element_id="REF_01_E01",
     )
     sin_lectura = cast(dict[str, Any], completado(base)["armado"]["forma"])
     assert sin_lectura["inclinacionM"] == pytest.approx(1.8 * 0.6 / 2.4)
@@ -286,7 +300,9 @@ def test_la_columna_asimetrica_que_la_foto_muestra_recta_sale_recta() -> None:
     assert recta["inclinacionM"] == 0.0
     inclinada = cast(dict[str, Any], completado_con_inclinacion(base, 0.22)["armado"]["forma"])
     assert inclinada["inclinacionM"] == pytest.approx(1.8 * 0.22)
-    hacia_la_izquierda = cast(dict[str, Any], completado_con_inclinacion(base, -0.22)["armado"]["forma"])
+    hacia_la_izquierda = cast(
+        dict[str, Any], completado_con_inclinacion(base, -0.22)["armado"]["forma"]
+    )
     assert hacia_la_izquierda["inclinacionM"] == pytest.approx(-1.8 * 0.22)
 
 
@@ -297,14 +313,21 @@ def test_el_medio_arco_solo_cuelga_la_punta_si_la_foto_vio_un_vuelo_fuerte() -> 
     aunque la foto dijera que la pieza apenas dobla la punta. Leve: la punta se queda en la cima. Fuerte o sin
     lectura: una caída moderada. El ancho visible sigue siendo el del plan.
     """
-    base = pieza("semiarco", "semiarco_asimetrico", {"ancho_m": 1.2, "alto_m": 2.2}, referencia_element_id="REF_01_E01")
+    base = pieza(
+        "semiarco",
+        "semiarco_asimetrico",
+        {"ancho_m": 1.2, "alto_m": 2.2},
+        referencia_element_id="REF_01_E01",
+    )
     leve = cast(dict[str, Any], completado_con_inclinacion(base, 0.22)["armado"]["forma"])
     fuerte = cast(dict[str, Any], completado_con_inclinacion(base, -0.45)["armado"]["forma"])
     sin_lectura = cast(dict[str, Any], completado(base)["armado"]["forma"])
     assert leve["corte"] == CORTE_MEDIO_ARCO_LEVE
     assert fuerte["corte"] == sin_lectura["corte"] == CORTE_MEDIO_ARCO_FUERTE
     assert CORTE_MEDIO_ARCO_LEVE < CORTE_MEDIO_ARCO_FUERTE < _FORMA[FORMA_SEMIARCO].forma["corte"]
-    assert leve["anchoM"] != _FORMA[FORMA_SEMIARCO_ASIMETRICO].forma["anchoM"], "el ancho se busca con el corte nuevo"
+    assert leve["anchoM"] != _FORMA[FORMA_SEMIARCO_ASIMETRICO].forma["anchoM"], (
+        "el ancho se busca con el corte nuevo"
+    )
 
 
 @pytest.mark.parametrize("mezcla", ["organica_gruesa", "solo_grandes"])
@@ -317,13 +340,25 @@ def test_una_columna_de_globos_grandes_los_reparte_y_no_se_afila(mezcla: str) ->
     """
     grandes = cast(
         dict[str, Any],
-        completado(pieza("columna", "columna_asimetrica", {"alto_m": 2.2}, mezcla=mezcla, densidad="lujosa"))["armado"],
+        completado(
+            pieza(
+                "columna", "columna_asimetrica", {"alto_m": 2.2}, mezcla=mezcla, densidad="lujosa"
+            )
+        )["armado"],
     )
     assert grandes["tamanos"]["grandesAbajo"] <= 0.4
     assert grandes["volumen"]["grosorCimaM"] >= 0.85 * grandes["volumen"]["grosorPatasM"] - 1e-9
     chicos = cast(
         dict[str, Any],
-        completado(pieza("columna", "columna_asimetrica", {"alto_m": 2.2}, mezcla="organica_fina", densidad="lujosa"))["armado"],
+        completado(
+            pieza(
+                "columna",
+                "columna_asimetrica",
+                {"alto_m": 2.2},
+                mezcla="organica_fina",
+                densidad="lujosa",
+            )
+        )["armado"],
     )
     assert chicos["tamanos"]["grandesAbajo"] > 0.4, "una columna de chicos conserva su plantilla"
     assert chicos["volumen"]["grosorCimaM"] < 0.85 * chicos["volumen"]["grosorPatasM"]

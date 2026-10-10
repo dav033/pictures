@@ -21,8 +21,14 @@ LECTURA_L = {"soporte": "pared", "forma": "u_invertida", "confianza": 0.95}
 
 def _semiarco() -> PiezaArmado:
     return PiezaArmado(
-        tipo="semiarco", colores=3, alto_m=2.2, ancho_m=1.6, mezcla="organica_fina",
-        tonos=["azul", "dorado", "crema"], espejo=True, asimetrica=True,
+        tipo="semiarco",
+        colores=3,
+        alto_m=2.2,
+        ancho_m=1.6,
+        mezcla="organica_fina",
+        tonos=["azul", "dorado", "crema"],
+        espejo=True,
+        asimetrica=True,
     )
 
 
@@ -48,12 +54,18 @@ def test_la_l_invertida_tiene_cima_recta_y_llega_a_la_esquina() -> None:
     assert forma["curva"] == CURVA_EN_ESCUADRA
     assert forma["anchoM"] == 1.6, "cortada en la esquina, la pieza que se ve mide el arco completo"
     volumen = armado["volumen"]
-    assert volumen["grosorPatasM"] <= 0.3 * 1.6 + 1e-9, "una banda que enmarca, no la pila de un medio arco"
+    assert volumen["grosorPatasM"] <= 0.3 * 1.6 + 1e-9, (
+        "una banda que enmarca, no la pila de un medio arco"
+    )
     # La cima cruza el ancho y se corta en la esquina lejana: más allá de una pata y la cima casi entera.
     a = (1.6 - volumen["grosorPatasM"]) / 2
     hs = 2.2 - volumen["grosorCimaM"] / 2
-    assert forma["corte"] > (hs + 1.5 * a) / (2 * hs + 2 * a), "la punta no se queda en la mitad de la cima"
-    assert forma["corte"] < (2 * hs + 2 * a - 0.05 * hs) / (2 * hs + 2 * a), "ni baja por el otro lado"
+    assert forma["corte"] > (hs + 1.5 * a) / (2 * hs + 2 * a), (
+        "la punta no se queda en la mitad de la cima"
+    )
+    assert forma["corte"] < (2 * hs + 2 * a - 0.05 * hs) / (2 * hs + 2 * a), (
+        "ni baja por el otro lado"
+    )
     assert 2 * a > 1.0, "la cima recorre más de un metro"
     assert forma["espejo"] is True
     assert armado["origen"] == "referencia"
@@ -64,8 +76,14 @@ def test_una_escuadra_estrecha_para_su_alto_se_acota_y_sigue_siendo_valida() -> 
     # Un plan de 1,45 × 2,66 m dejaba el armado inválido (el motor no arma menos de 1,5 m de ancho) y la pieza salía
     # sin armado ni guía de escena.
     pieza = PiezaArmado(
-        tipo="semiarco", colores=3, alto_m=2.66, ancho_m=1.45, mezcla="organica_fina",
-        tonos=["azul", "champagne", "dorado"], espejo=True, asimetrica=True,
+        tipo="semiarco",
+        colores=3,
+        alto_m=2.66,
+        ancho_m=1.45,
+        mezcla="organica_fina",
+        tonos=["azul", "champagne", "dorado"],
+        espejo=True,
+        asimetrica=True,
     )
     avisos: list[str] = []
     armado = _receta(pieza, avisos, lectura_linea=LECTURA_L)

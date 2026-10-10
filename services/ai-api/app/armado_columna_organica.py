@@ -277,9 +277,7 @@ def _config_desde_armado(
                 if indice in acentos:
                     cuota_local = pesos[indice] / (total_pesos * share_pequeno)
                 elif permitido_acento:
-                    cuota_local = (
-                        (1 - fraccion_acento / share_pequeno) * pesos[indice] / peso_base
-                    )
+                    cuota_local = (1 - fraccion_acento / share_pequeno) * pesos[indice] / peso_base
                 else:
                     cuota_local = pesos[indice] / peso_base
                 if cuota_local <= 0:

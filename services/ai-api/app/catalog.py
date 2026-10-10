@@ -1158,7 +1158,9 @@ def _base_query(
         params.append(_normalized_values(colors))
         position = len(params)
         # A color only a title says (app.colores_titulo) is also found by the title.
-        patrones = sorted({p for p in (patron_titulo_sql(color) for color in colors) if p is not None})
+        patrones = sorted(
+            {p for p in (patron_titulo_sql(color) for color in colors) if p is not None}
+        )
         por_titulo = ""
         if patrones:
             params.append("|".join(patrones))

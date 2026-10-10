@@ -42,8 +42,18 @@ def _centro(**extra: object) -> dict[str, object]:
         "referencia_element_id": "REF_01_E01",
         "porque": "Centro de mesa de la foto.",
         "materiales": [
-            {"product_id": "prod-blanco", "color": "blanco", "participacion": 0.6, "rol_material": "principal"},
-            {"product_id": "prod-negro", "color": "negro", "participacion": 0.4, "rol_material": "secundario"},
+            {
+                "product_id": "prod-blanco",
+                "color": "blanco",
+                "participacion": 0.6,
+                "rol_material": "principal",
+            },
+            {
+                "product_id": "prod-negro",
+                "color": "negro",
+                "participacion": 0.4,
+                "rol_material": "secundario",
+            },
         ],
         **extra,
     }
@@ -66,7 +76,12 @@ def _puerto(variantes: Mapping[str, tuple[tuple[str, float], ...]]) -> PuertoPla
 
 
 VARIANTES = {
-    "prod-blanco": (("var-blanco-12", 12.0), ("var-blanco-18", 18.0), ("var-blanco-24", 24.0), ("var-blanco-36", 36.0)),
+    "prod-blanco": (
+        ("var-blanco-12", 12.0),
+        ("var-blanco-18", 18.0),
+        ("var-blanco-24", 24.0),
+        ("var-blanco-36", 36.0),
+    ),
     "prod-negro": (("var-negro-12", 12.0), ("var-negro-18", 18.0)),
 }
 
@@ -86,31 +101,58 @@ def _aplicar(
 
 
 def test_un_globo_contado_se_compra_como_un_globo_del_tamano_leido() -> None:
-    lectura = _conteo(globos_visibles=1, exacto=True, por_tamano=[{"clase": "gigante", "proporcion": 1.0}], confianza=0.92)
+    lectura = _conteo(
+        globos_visibles=1,
+        exacto=True,
+        por_tamano=[{"clase": "gigante", "proporcion": 1.0}],
+        confianza=0.92,
+    )
     estructura, conteo = _aplicar(_centro(patron_color={"modo": "aleatorio"}), lectura)
     assert estructura["unidades_declaradas"] == 1
     # Un globo solo: el material que más pesa, con la mayor variante de la clase leída (24"-36").
     assert estructura["materiales"] == [
-        {"product_id": "prod-blanco", "color": "blanco", "participacion": 1.0, "rol_material": "principal", "variant_id": "var-blanco-36"}
+        {
+            "product_id": "prod-blanco",
+            "color": "blanco",
+            "participacion": 1.0,
+            "rol_material": "principal",
+            "variant_id": "var-blanco-36",
+        }
     ]
     assert "patron_color" not in estructura, "un globo no tiene racimos que pintar"
     assert es_centro_contado(estructura) and not es_geometrica(estructura)
-    assert (conteo["decision"], conteo["globos_antes"], conteo["globos_despues"]) == ("ajustado", FORMULA, 1)
+    assert (conteo["decision"], conteo["globos_antes"], conteo["globos_despues"]) == (
+        "ajustado",
+        FORMULA,
+        1,
+    )
     assert conteo["cambios"] == [{"campo": "unidades_declaradas", "antes": FORMULA, "despues": 1}]
 
 
 def test_las_repeticiones_multiplican_y_se_quedan_los_materiales_que_caben() -> None:
-    lectura = _conteo(globos_visibles=2, exacto=True, por_tamano=[{"clase": "grande", "proporcion": 1.0}])
+    lectura = _conteo(
+        globos_visibles=2, exacto=True, por_tamano=[{"clase": "grande", "proporcion": 1.0}]
+    )
     estructura, _ = _aplicar(_centro(repeticiones=5), lectura)
     assert estructura["unidades_declaradas"] == 10
-    assert [m["variant_id"] for m in cast(list[dict[str, object]], estructura["materiales"])] == ["var-blanco-18", "var-negro-18"]
-    assert sum(cast(float, m["participacion"]) for m in cast(list[dict[str, object]], estructura["materiales"])) == pytest.approx(1.0, abs=0.001)
+    assert [m["variant_id"] for m in cast(list[dict[str, object]], estructura["materiales"])] == [
+        "var-blanco-18",
+        "var-negro-18",
+    ]
+    assert sum(
+        cast(float, m["participacion"])
+        for m in cast(list[dict[str, object]], estructura["materiales"])
+    ) == pytest.approx(1.0, abs=0.001)
 
 
 def test_sin_variante_de_la_clase_se_elige_la_mas_cercana() -> None:
-    lectura = _conteo(globos_visibles=1, exacto=True, por_tamano=[{"clase": "chico", "proporcion": 1.0}])
+    lectura = _conteo(
+        globos_visibles=1, exacto=True, por_tamano=[{"clase": "chico", "proporcion": 1.0}]
+    )
     estructura, _ = _aplicar(_centro(), lectura)
-    assert cast(list[dict[str, object]], estructura["materiales"])[0]["variant_id"] == "var-blanco-12"
+    assert (
+        cast(list[dict[str, object]], estructura["materiales"])[0]["variant_id"] == "var-blanco-12"
+    )
 
 
 @pytest.mark.parametrize(
@@ -134,7 +176,9 @@ def test_sin_variantes_en_el_turno_no_se_inventa_una() -> None:
 
 
 def test_resolver_dos_veces_es_punto_fijo() -> None:
-    lectura = _conteo(globos_visibles=1, exacto=True, por_tamano=[{"clase": "gigante", "proporcion": 1.0}])
+    lectura = _conteo(
+        globos_visibles=1, exacto=True, por_tamano=[{"clase": "gigante", "proporcion": 1.0}]
+    )
     primera, _ = _aplicar(_centro(), lectura)
     segunda, conteo = _aplicar(primera, lectura)
     assert segunda == primera and conteo["decision"] == "coincide"
@@ -146,13 +190,20 @@ async def test_la_resolucion_completa_compra_un_solo_globo() -> None:
         _plan_geometrico(_centro()),
         completar_conteos=True,
         pistas_conteo=[
-            _conteo(globos_visibles=1, exacto=True, por_tamano=[{"clase": "gigante", "proporcion": 1.0}], confianza=0.92)
+            _conteo(
+                globos_visibles=1,
+                exacto=True,
+                por_tamano=[{"clase": "gigante", "proporcion": 1.0}],
+                confianza=0.92,
+            )
         ],
     )
     plan = cast(dict[str, object], resolved["plan"])
     estructura = cast(list[dict[str, object]], plan["estructuras"])[0]
     assert estructura["unidades_declaradas"] == 1
-    lineas = cast(list[dict[str, object]], cast(list[dict[str, object]], resolved["estructuras"])[0]["lineas"])
+    lineas = cast(
+        list[dict[str, object]], cast(list[dict[str, object]], resolved["estructuras"])[0]["lineas"]
+    )
     # FILAS tiene R-5 a R-24: la mayor de «gigante» es la de 24".
     assert [(linea["variant_id"], linea["unidades"]) for linea in lineas] == [("var-blanco-24", 1)]
     assert any(str(fila["variant_id"]) == "var-blanco-24" for fila in FILAS)
@@ -164,7 +215,18 @@ def test_la_guia_dibuja_exactamente_los_globos_contados() -> None:
     from app.dibujo_estructura import globos_de_centro_contado
     from app.guia_escena import pieza_de_guia
 
-    uno = _centro(unidades_declaradas=1, materiales=[{"product_id": "p", "variant_id": "v", "color": "transparente", "participacion": 1, "rol_material": "principal"}])
+    uno = _centro(
+        unidades_declaradas=1,
+        materiales=[
+            {
+                "product_id": "p",
+                "variant_id": "v",
+                "color": "transparente",
+                "participacion": 1,
+                "rol_material": "principal",
+            }
+        ],
+    )
     mezcla_uno = [{"diam_pulg": 18, "forma": "redondo", "unidades": 1, "pct": 100}]
     pieza = pieza_de_guia(uno, mezcla_uno)
     assert isinstance(pieza, dict)

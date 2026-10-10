@@ -22,7 +22,7 @@ import { ESCENAS_PREDEFINIDAS, escenaPredefinida } from "../../src/lib/globos3d/
 import { IDEAS_SEMPERTEX } from "../../src/lib/globos3d/ideas-sempertex";
 import { sumarMateriales } from "../../src/lib/globos3d/mezcla";
 import type { MaterialDecoracion } from "../../src/lib/globos3d/figuras";
-import { coloresDelFormato, FORMATOS_GLOBO } from "../../src/lib/globos3d/formatos";
+import { corazonesSinCobertura, coloresDelFormato, FORMATOS_GLOBO } from "../../src/lib/globos3d/formatos";
 import { TABLA_SEMPERTEX } from "../../src/lib/plan/referencia-sempertex";
 import { GLOBOS_TIENDA, NO_ESTAN_EN_LA_TIENDA, productoDeGlobo } from "../../src/lib/globos3d/productos-tienda";
 import { IMPRESOS_TIENDA } from "../../src/lib/globos3d/impresos-catalogo";
@@ -219,7 +219,8 @@ for (const ref of TABLA_SEMPERTEX.referencias) {
       verificados++;
     } else {
       assert.ok(p.url.startsWith(`${TIENDA}search?q=`), `${f.id} ${ref.codigo}: sin verificar, con búsqueda`);
-      assert.ok(NO_ESTAN_EN_LA_TIENDA.some((x) => x.codigo === ref.codigo && x.tipo === f.tipo), `${f.id} ${ref.codigo}: está en la lista de lo que no está en la tienda`);
+      const sinCobertura = corazonesSinCobertura([{ formatoId: f.id, codigo: ref.codigo }]).length === 1;
+      assert.ok(NO_ESTAN_EN_LA_TIENDA.some((x) => x.codigo === ref.codigo && x.tipo === f.tipo) || sinCobertura, `${f.id} ${ref.codigo}: está en la lista de lo que no está en la tienda o es un corazón sin cobertura`);
       sinVerificar++;
     }
   }

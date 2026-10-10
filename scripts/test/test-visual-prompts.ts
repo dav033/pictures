@@ -59,12 +59,13 @@ const sceneSpec = {
 // la auditoría del corpus). El prompt debe quedarse
 // en registro de caption: una oración fluida, sin etiquetas ni ALL-CAPS.
 const loraPrompt = buildFluxImagePrompt({ sceneSpec, visualContext: christmasNight });
-assert.match(loraPrompt, /^eventdecor_style_v2,/);
+// FLUX base: el trigger del LoRA retirado ya no va en el prompt (51093be6).
+assert.doesNotMatch(loraPrompt, /eventdecor/);
 // `element.name`/`resolved_colors`/`eventType` come from the catalog in
 // Spanish; the training captions are 100% English, so the LoRA prompt must
 // translate shape+color+event (see loraStructureNoun/loraColorWord/
 // FLUX_EVENT_WORDS above) instead of embedding the raw Spanish text.
-assert.match(loraPrompt, /balloon arch/i);
+assert.match(loraPrompt, /balloon garland arch/i); // la guirnalda lleva su sustantivo (76792226)
 assert.match(loraPrompt, /red, green and gold/i);
 assert.match(loraPrompt, /christmas celebration/i);
 assert.match(loraPrompt, /outdoor garden/i);
@@ -88,7 +89,7 @@ const twoColumnsSceneSpec = {
   ],
 } as unknown as SceneSpec;
 const twoColumnsPrompt = buildFluxImagePrompt({ sceneSpec: twoColumnsSceneSpec, visualContext: buildVisualContext({}) });
-assert.match(twoColumnsPrompt, /two balloon columns in pink/i);
+assert.match(twoColumnsPrompt, /two balloon columns made of latex balloons in pink/i);
 assert.doesNotMatch(twoColumnsPrompt, /pink,\s*a balloon column in pink/i);
 
 const imageSceneSpec = {

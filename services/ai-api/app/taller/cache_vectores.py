@@ -59,8 +59,12 @@ class CacheVectores:
                 try:
                     bruto = json.loads(linea)
                     entrada = EntradaIndice(
-                        id=bruto["id"], modalidad=bruto["modalidad"], modelo=bruto["modelo"],
-                        dims=int(bruto["dims"]), hash_entrada=bruto["hash_entrada"], offset=int(bruto["offset"]),
+                        id=bruto["id"],
+                        modalidad=bruto["modalidad"],
+                        modelo=bruto["modelo"],
+                        dims=int(bruto["dims"]),
+                        hash_entrada=bruto["hash_entrada"],
+                        offset=int(bruto["offset"]),
                     )
                 except (ValueError, KeyError, TypeError):
                     continue  # línea truncada por una corrida cortada: se ignora
@@ -78,7 +82,13 @@ class CacheVectores:
         return entrada is not None and entrada.hash_entrada == hash_entrada
 
     def agregar(
-        self, id: str, modalidad: str, modelo: str, dims: int, hash_entrada: str, vector: Sequence[float]
+        self,
+        id: str,
+        modalidad: str,
+        modelo: str,
+        dims: int,
+        hash_entrada: str,
+        vector: Sequence[float],
     ) -> None:
         if len(vector) != dims:
             raise ValueError(f"VECTOR_DIMS_MISMATCH: esperado={dims} actual={len(vector)}")
@@ -91,16 +101,25 @@ class CacheVectores:
             archivo.write(valores.tobytes())
         entrada = EntradaIndice(id, modalidad, modelo, dims, hash_entrada, offset)
         linea = {
-            "id": id, "modalidad": modalidad, "modelo": modelo, "dims": dims, "hash_entrada": hash_entrada,
-            "offset": offset, "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "id": id,
+            "modalidad": modalidad,
+            "modelo": modelo,
+            "dims": dims,
+            "hash_entrada": hash_entrada,
+            "offset": offset,
+            "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         }
         with self._indice.open("a", encoding="utf-8") as archivo:
             archivo.write(json.dumps(linea, ensure_ascii=False) + "\n")
         self._vigentes[entrada.clave] = entrada
 
-    def entradas(self, modelo: str | None = None, dims: int | None = None) -> Iterator[EntradaIndice]:
+    def entradas(
+        self, modelo: str | None = None, dims: int | None = None
+    ) -> Iterator[EntradaIndice]:
         for entrada in self._vigentes.values():
-            if (modelo is None or entrada.modelo == modelo) and (dims is None or entrada.dims == dims):
+            if (modelo is None or entrada.modelo == modelo) and (
+                dims is None or entrada.dims == dims
+            ):
                 yield entrada
 
     def leer(self, entrada: EntradaIndice) -> tuple[float, ...]:

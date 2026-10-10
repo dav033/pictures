@@ -54,17 +54,26 @@ class ClienteFalso:
 
 
 def escribir_fichas(ruta: Path, registros: list[dict[str, object]]) -> None:
-    ruta.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in registros), encoding="utf-8")
+    ruta.write_text(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in registros), encoding="utf-8"
+    )
 
 
-def registro(id: str, ficha: str, foto: str | None = None, tipo: str = "idea-sempertex", titulo: str = "t") -> dict[str, object]:
+def registro(
+    id: str, ficha: str, foto: str | None = None, tipo: str = "idea-sempertex", titulo: str = "t"
+) -> dict[str, object]:
     return {
-        "id": id, "tipo": "decoracion", "hash": "h-" + id, "ficha": ficha,
+        "id": id,
+        "tipo": "decoracion",
+        "hash": "h-" + id,
+        "ficha": ficha,
         "fuente": {"tipo": tipo, "titulo": titulo, "url": None, "foto": foto},
     }
 
 
-def png(ruta: Path, tamano: tuple[int, int] = (64, 48), color: tuple[int, int, int] = (200, 30, 30)) -> Path:
+def png(
+    ruta: Path, tamano: tuple[int, int] = (64, 48), color: tuple[int, int, int] = (200, 30, 30)
+) -> Path:
     Image.new("RGB", tamano, color).save(ruta, format="PNG")
     return ruta
 
@@ -75,7 +84,9 @@ def espacio(tmp_path: Path) -> dict[str, Path]:
     renders.mkdir()
     png(renders / "a.png", color=(10, 20, 30))
     png(renders / "b.png", color=(30, 20, 10))
-    (renders / "manifest.json").write_text(json.dumps({"a": "a.png", "b": {"png": "b.png"}}), encoding="utf-8")
+    (renders / "manifest.json").write_text(
+        json.dumps({"a": "a.png", "b": {"png": "b.png"}}), encoding="utf-8"
+    )
     fotos = tmp_path / "fotos"
     fotos.mkdir()
     png(fotos / "01-abc.jpg", color=(1, 2, 3))
@@ -84,20 +95,43 @@ def espacio(tmp_path: Path) -> dict[str, Path]:
         [
             registro("a", "Arco organico rosa y dorado " * 4, foto="https://ejemplo.test/a.jpg"),
             registro("b", "Columna blanca con globos plateados", foto=None),
-            registro("referencia:x", "Guirnalda de referencia", tipo="referencia-dueno", titulo="Referencias del dueño — foto 1 del lote 1"),
-            registro("referencia:x~guirnalda", "Pieza derivada", tipo="referencia-dueno", titulo="Referencias del dueño — foto 1 del lote 1"),
+            registro(
+                "referencia:x",
+                "Guirnalda de referencia",
+                tipo="referencia-dueno",
+                titulo="Referencias del dueño — foto 1 del lote 1",
+            ),
+            registro(
+                "referencia:x~guirnalda",
+                "Pieza derivada",
+                tipo="referencia-dueno",
+                titulo="Referencias del dueño — foto 1 del lote 1",
+            ),
         ],
     )
     return {
-        "raiz": tmp_path, "fichas": tmp_path / "fichas.jsonl", "manifest": renders / "manifest.json",
-        "cache": tmp_path / "emb", "gasto": tmp_path / "gasto.jsonl", "fotos": fotos,
+        "raiz": tmp_path,
+        "fichas": tmp_path / "fichas.jsonl",
+        "manifest": renders / "manifest.json",
+        "cache": tmp_path / "emb",
+        "gasto": tmp_path / "gasto.jsonl",
+        "fotos": fotos,
     }
 
 
 def argumentos(e: dict[str, Path], *extra: str) -> list[str]:
     return [
-        "--fichas", str(e["fichas"]), "--manifest-renders", str(e["manifest"]), "--salida", str(e["cache"]),
-        "--gasto-log", str(e["gasto"]), "--fotos-dir", str(e["fotos"]), *extra,
+        "--fichas",
+        str(e["fichas"]),
+        "--manifest-renders",
+        str(e["manifest"]),
+        "--salida",
+        str(e["cache"]),
+        "--gasto-log",
+        str(e["gasto"]),
+        "--fotos-dir",
+        str(e["fotos"]),
+        *extra,
     ]
 
 
@@ -135,8 +169,20 @@ def test_cache_ignora_una_linea_cortada_y_un_vector_incompleto(tmp_path: Path) -
     cache.agregar("a", "texto", MODELO, 768, "h1", [0.1] * 768)
     with (tmp_path / "indice.jsonl").open("a", encoding="utf-8") as archivo:
         archivo.write('{"id": "b", "modalidad": "texto", "mod')
-        archivo.write("\n" + json.dumps({"id": "c", "modalidad": "texto", "modelo": MODELO, "dims": 768,
-                                         "hash_entrada": "h", "offset": 10_000_000}) + "\n")
+        archivo.write(
+            "\n"
+            + json.dumps(
+                {
+                    "id": "c",
+                    "modalidad": "texto",
+                    "modelo": MODELO,
+                    "dims": 768,
+                    "hash_entrada": "h",
+                    "offset": 10_000_000,
+                }
+            )
+            + "\n"
+        )
 
     recargado = CacheVectores(tmp_path)
     assert len(recargado) == 1
@@ -151,7 +197,9 @@ def test_cache_rechaza_un_vector_con_otras_dimensiones(tmp_path: Path) -> None:
 # --- plan y corrida seca --------------------------------------------------------------------------------------------
 
 
-def test_dry_run_no_llama_a_nadie_ni_escribe_nada(espacio: dict[str, Path], capsys: pytest.CaptureFixture[str]) -> None:
+def test_dry_run_no_llama_a_nadie_ni_escribe_nada(
+    espacio: dict[str, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
     cliente = ClienteFalso()
 
     codigo = main(argumentos(espacio), cliente=cliente)
@@ -188,11 +236,15 @@ def test_plan_distingue_cache_pendientes_y_omitidos(espacio: dict[str, Path]) ->
     assert [t.id for t in fotos.pendientes] == ["referencia:x"]
     assert fotos.omitidos["url_sin_--descargar"] == 1 and fotos.omitidos["sin_foto"] == 2
 
-    descargando = construir_plan(fichas, renders, cache, MODELO, DIMENSIONES, fotos_dir=espacio["fotos"], descargar=True)
+    descargando = construir_plan(
+        fichas, renders, cache, MODELO, DIMENSIONES, fotos_dir=espacio["fotos"], descargar=True
+    )
     assert len(descargando.por_modalidad["imagen_foto"].pendientes) == 2
 
 
-def test_segunda_corrida_no_repite_llamadas_y_un_cambio_de_ficha_solo_reembebe_esa(espacio: dict[str, Path]) -> None:
+def test_segunda_corrida_no_repite_llamadas_y_un_cambio_de_ficha_solo_reembebe_esa(
+    espacio: dict[str, Path],
+) -> None:
     cliente = ClienteFalso()
     base = argumentos(espacio, "--ejecutar", "--tope-usd", "1")
 
@@ -202,7 +254,9 @@ def test_segunda_corrida_no_repite_llamadas_y_un_cambio_de_ficha_solo_reembebe_e
     assert main(base, cliente=cliente) == 0
     assert cliente.llamadas == primeras
 
-    registros = [json.loads(fila) for fila in espacio["fichas"].read_text(encoding="utf-8").splitlines()]
+    registros = [
+        json.loads(fila) for fila in espacio["fichas"].read_text(encoding="utf-8").splitlines()
+    ]
     registros[1]["ficha"] += " ahora con dorado"
     escribir_fichas(espacio["fichas"], registros)
     assert main(base, cliente=cliente) == 0
@@ -232,7 +286,9 @@ def test_corrida_cuyo_costo_estimado_pasa_el_tope_se_rechaza_sin_llamar(
     assert not espacio["cache"].exists()
 
 
-def test_el_gasto_corriente_detiene_la_corrida_en_el_tope(espacio: dict[str, Path], tmp_path: Path) -> None:
+def test_el_gasto_corriente_detiene_la_corrida_en_el_tope(
+    espacio: dict[str, Path], tmp_path: Path
+) -> None:
     from app.taller.insumos_biblioteca import leer_fichas
 
     fichas = leer_fichas(espacio["fichas"])
@@ -243,7 +299,14 @@ def test_el_gasto_corriente_detiene_la_corrida_en_el_tope(espacio: dict[str, Pat
     presupuesto = Presupuesto(tope_usd=0.00012)  # alcanza para una sola imagen
 
     resultado = asyncio.run(
-        ejecutar_plan(plan, cliente, cache, presupuesto, RegistroGasto(espacio["gasto"], "run", MODELO), concurrencia=3)
+        ejecutar_plan(
+            plan,
+            cliente,
+            cache,
+            presupuesto,
+            RegistroGasto(espacio["gasto"], "run", MODELO),
+            concurrencia=3,
+        )
     )
 
     assert cliente.llamadas == 1
@@ -263,29 +326,58 @@ def test_presupuesto_reserva_confirma_y_libera() -> None:
         Presupuesto(tope_usd=0)
 
 
-def test_un_fallo_no_cobra_ni_detiene_las_demas_y_queda_registrado(espacio: dict[str, Path]) -> None:
+def test_un_fallo_no_cobra_ni_detiene_las_demas_y_queda_registrado(
+    espacio: dict[str, Path],
+) -> None:
     class Falla(ClienteFalso):
         async def embeber_texto(self, texto: str, tarea: str = "RETRIEVAL_DOCUMENT") -> list[float]:
             if texto.startswith("Pieza"):
                 raise RuntimeError("boom")
             return await super().embeber_texto(texto, tarea)
 
-    codigo = main(argumentos(espacio, "--ejecutar", "--tope-usd", "1", "--modalidades", "texto"), cliente=Falla())
+    codigo = main(
+        argumentos(espacio, "--ejecutar", "--tope-usd", "1", "--modalidades", "texto"),
+        cliente=Falla(),
+    )
 
     assert codigo == 1
-    fallos = [json.loads(fila) for fila in (espacio["cache"] / "fallos.jsonl").read_text(encoding="utf-8").splitlines()]
+    fallos = [
+        json.loads(fila)
+        for fila in (espacio["cache"] / "fallos.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
     assert [f["id"] for f in fallos] == ["referencia:x~guirnalda"]
     gasto = [json.loads(fila) for fila in espacio["gasto"].read_text(encoding="utf-8").splitlines()]
-    assert gasto[0]["unidades"] == sum(tokens_estimados(t) for t in [
-        "Arco organico rosa y dorado " * 4, "Columna blanca con globos plateados", "Guirnalda de referencia"
-    ])
+    assert gasto[0]["unidades"] == sum(
+        tokens_estimados(t)
+        for t in [
+            "Arco organico rosa y dorado " * 4,
+            "Columna blanca con globos plateados",
+            "Guirnalda de referencia",
+        ]
+    )
 
 
 def test_el_registro_de_gasto_tiene_los_campos_del_libro(espacio: dict[str, Path]) -> None:
-    assert main(argumentos(espacio, "--ejecutar", "--tope-usd", "1", "--modalidades", "imagen_render"), cliente=ClienteFalso()) == 0
+    assert (
+        main(
+            argumentos(espacio, "--ejecutar", "--tope-usd", "1", "--modalidades", "imagen_render"),
+            cliente=ClienteFalso(),
+        )
+        == 0
+    )
 
-    (linea,) = [json.loads(fila) for fila in espacio["gasto"].read_text(encoding="utf-8").splitlines()]
-    assert set(linea) == {"ts", "modelo", "modalidad", "unidades", "unidad", "usd_estimado", "run_id"}
+    (linea,) = [
+        json.loads(fila) for fila in espacio["gasto"].read_text(encoding="utf-8").splitlines()
+    ]
+    assert set(linea) == {
+        "ts",
+        "modelo",
+        "modalidad",
+        "unidades",
+        "unidad",
+        "usd_estimado",
+        "run_id",
+    }
     assert linea["modelo"] == MODELO and linea["modalidad"] == "imagen_render"
     assert linea["unidades"] == 2 and linea["usd_estimado"] == pytest.approx(0.00024)
     assert linea["run_id"].startswith("emb-")
@@ -296,7 +388,20 @@ def test_el_registro_de_gasto_tiene_los_campos_del_libro(espacio: dict[str, Path
 
 def test_cada_imagen_va_en_su_propia_llamada(espacio: dict[str, Path]) -> None:
     cliente = ClienteFalso()
-    assert main(argumentos(espacio, "--ejecutar", "--tope-usd", "1", "--modalidades", "imagen_render,imagen_foto"), cliente=cliente) == 0
+    assert (
+        main(
+            argumentos(
+                espacio,
+                "--ejecutar",
+                "--tope-usd",
+                "1",
+                "--modalidades",
+                "imagen_render,imagen_foto",
+            ),
+            cliente=cliente,
+        )
+        == 0
+    )
     assert len(cliente.imagenes) == 3 and cliente.textos == []
 
 
@@ -405,9 +510,21 @@ def test_preparar_imagen_no_agranda_y_pone_blanco_bajo_la_transparencia(tmp_path
         assert min(resultado.getpixel((5, 5))) > 240
 
 
-def test_foto_del_dueno_se_busca_por_numero_y_las_derivadas_no_tienen(espacio: dict[str, Path]) -> None:
-    escena = Ficha("referencia:x", "h", "t", "escena", "referencia-dueno", "Referencias del dueño — foto 1 del lote 1", None)
-    derivada = Ficha("referencia:x~g", "h", "t", "estructura", "referencia-dueno", escena.titulo, None)
+def test_foto_del_dueno_se_busca_por_numero_y_las_derivadas_no_tienen(
+    espacio: dict[str, Path],
+) -> None:
+    escena = Ficha(
+        "referencia:x",
+        "h",
+        "t",
+        "escena",
+        "referencia-dueno",
+        "Referencias del dueño — foto 1 del lote 1",
+        None,
+    )
+    derivada = Ficha(
+        "referencia:x~g", "h", "t", "estructura", "referencia-dueno", escena.titulo, None
+    )
 
     assert numero_foto_dueno(escena) == 1 and numero_foto_dueno(derivada) is None
     foto = resolver_foto(escena, espacio["fotos"])
@@ -425,9 +542,16 @@ def test_foto_url_local_relativa_y_faltante() -> None:
 
 
 def test_manifest_de_renders_acepta_dict_lista_y_rutas_relativas(tmp_path: Path) -> None:
-    (tmp_path / "m1.json").write_text(json.dumps({"a": "x/a.png", "b": {"path": "b.png"}, "c": {"otra": 1}}), encoding="utf-8")
-    (tmp_path / "m2.json").write_text(json.dumps({"renders": [{"id": "z", "png": "z.png"}]}), encoding="utf-8")
+    (tmp_path / "m1.json").write_text(
+        json.dumps({"a": "x/a.png", "b": {"path": "b.png"}, "c": {"otra": 1}}), encoding="utf-8"
+    )
+    (tmp_path / "m2.json").write_text(
+        json.dumps({"renders": [{"id": "z", "png": "z.png"}]}), encoding="utf-8"
+    )
 
-    assert leer_manifest_renders(tmp_path / "m1.json") == {"a": tmp_path / "x" / "a.png", "b": tmp_path / "b.png"}
+    assert leer_manifest_renders(tmp_path / "m1.json") == {
+        "a": tmp_path / "x" / "a.png",
+        "b": tmp_path / "b.png",
+    }
     assert leer_manifest_renders(tmp_path / "m2.json") == {"z": tmp_path / "z.png"}
     assert leer_manifest_renders(tmp_path / "no-existe.json") == {}
