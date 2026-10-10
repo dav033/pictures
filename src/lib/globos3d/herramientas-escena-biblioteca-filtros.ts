@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { IdRepositorio } from "@/lib/catalogo/tipos";
 import { celebracionesDeTexto, idsCelebracionCanonicos, tematicaPorId, tematicasDeTexto } from "../taller/taxonomia-celebraciones";
 
 /**
@@ -29,6 +30,20 @@ export const CAMPOS_FILTROS_BIBLIOTECA = {
   ancho_cm: z.number().min(10).max(3000).optional().describe("ancho aproximado en cm (busca ±25 %)"),
   fuente: z.enum(FUENTES_PEDIBLES).optional().describe("de dónde sale: referencias_dueno (fotos que pasó el dueño), ideas_sempertex (ideas de sempertex.com), revista_celebra (revista Celebra), bases_organicas (bases orgánicas de referencia)"),
 };
+
+/** Lo que el modelo necesita saber de cada repositorio para elegir (el manifiesto lo describe para las personas, más largo). */
+const PISTA_DE_REPOSITORIO: Readonly<Partial<Record<IdRepositorio, string>>> = {
+  sempertex: "ideas, estructuras y decoraciones de globos",
+  mobiliario: "sillas, mesas, sofás",
+  escenografia: "paneles, cortinas, aros, arcos metálicos, pedestales, pastel",
+};
+
+/**
+ * El campo `repositorio` de `buscar_en_biblioteca` (REQ-013), que solo se declara con `CATALOGO_FILTRO_IA` (`catalogo/herramientas-ia.ts`).
+ * Es un texto y no una enumeración: a Gemini le quedan pocos valores de enumeración (`test-esquema-gemini`); lo valida el servidor.
+ */
+export const campoRepositorio = (visibles: readonly IdRepositorio[]) =>
+  z.string().trim().min(1).max(40).optional().describe(`repositorio del catálogo donde buscar: ${visibles.map((id) => `${id}${PISTA_DE_REPOSITORIO[id] ? ` (${PISTA_DE_REPOSITORIO[id]})` : ""}`).join("; ")}; sin él, en todos`);
 
 export type FiltrosBibliotecaNuevos = {
   celebracion?: string;

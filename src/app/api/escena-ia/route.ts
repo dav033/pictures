@@ -6,7 +6,8 @@ import type { ModeloEscenaIA, RespuestaHerramientaEscena, UsoPasoEscena } from "
 import { conRegistro, decidir } from "@/lib/registro/servidor";
 import { DECLARACIONES_ESCENA, MAX_NODOS, idsDeEscena } from "@/lib/globos3d/herramientas-escena";
 import { EscenaSchema } from "@/lib/globos3d/esquema-escena";
-import { aplicarHerramientaAsincrona } from "@/lib/globos3d/escena-ia-biblioteca";
+import { declaracionesIA, politicaIA, reglaCatalogoIA } from "@/lib/catalogo/herramientas-ia";
+import { aplicarHerramientaIA } from "@/lib/catalogo/herramientas-ia-aplicar";
 import { seccionVocabularioEscena } from "@/lib/globos3d/prompt-escena";
 import { REGLAS_AGENTE, SeleccionSchema, seleccionValida, textoSeleccion } from "@/lib/globos3d/escena-ia-agente";
 import { PREGUNTAR_USUARIO, preguntaDe, type PreguntaUsuario } from "@/lib/globos3d/herramientas-escena-extra";
@@ -165,8 +166,10 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   }
   const base = adjunta?.escena ?? inicial;
   const textoUsuario = [mensaje, "", textoSeleccion(inicial, seleccion), `[Piezas que ya hay: ${idsDeEscena(base)}]`, adjunta?.texto ?? ""].filter((l, i) => i < 2 || l).join("\n");
-  const declaraciones = refinar ? declaracionesDeRefinado(DECLARACIONES_ESCENA)
-    : adjunta ? DECLARACIONES_ESCENA : DECLARACIONES_ESCENA.filter((d) => d.name !== MODELAR_DESDE_FOTO);
+  // Lo que la IA ve del catálogo (REQ-013): por defecto las declaraciones de siempre, la misma lista.
+  const politica = await politicaIA();
+  const declaraciones = declaracionesIA(refinar ? declaracionesDeRefinado(DECLARACIONES_ESCENA)
+    : adjunta ? DECLARACIONES_ESCENA : DECLARACIONES_ESCENA.filter((d) => d.name !== MODELAR_DESDE_FOTO), politica);
   // Con foto y la sala ya con piezas, el primer paso del modelo TIENE que ser aplicar la foto (o preguntar): si no, armaba la decoración por su cuenta con agregar_pieza y quedaba abajo de la pared.
   const forzarFoto = Boolean(adjunta && !adjunta.aplicada);
   const maxPasos = refinar ? MAX_PASOS_REFINAR : MAX_PASOS;
@@ -174,7 +177,7 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   if (seleccion) decidir("regla:escena_ia_seleccion", "pieza elegida en el editor que viaja con el pedido", { seleccion, valida: seleccionValida(inicial, seleccion) });
   // Con la ronda de refinado, el modelo solo ve el mensaje de la ronda (sin historial).
   const sesion = modeloIA.iniciar({
-    sistema: `${SISTEMA}\n\n${REGLAS_AGENTE}${reglasExtra}`,
+    sistema: `${SISTEMA}\n\n${REGLAS_AGENTE}${reglasExtra}${reglaCatalogoIA(politica, declaraciones)}`,
     declaraciones,
     historial: partesRefinar ? [] : historial,
     partesUsuario: partesRefinar ?? (adjunta ? [{ text: textoUsuario }, adjunta.imagen] : [{ text: textoUsuario }]),
@@ -208,14 +211,14 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
       for (const llamada of funciones) {
         const nombre = llamada.nombre;
         llamadas += 1;
-        // `buscar_en_biblioteca` va por la búsqueda de la biblioteca (async, con TALLER_RAG_ENABLED); el resto, síncrono como siempre.
+        // `buscar_en_biblioteca` va por la búsqueda de la biblioteca (async, con TALLER_RAG_ENABLED) y, con la política del catálogo, acotada al repositorio que pidió el modelo; el resto, síncrono como siempre.
         const { resultado: hecho, busqueda } = llamadas > MAX_LLAMADAS
           ? { resultado: { ok: false as const, escena, error: `Tope de ${MAX_LLAMADAS} herramientas por mensaje: no se aplicó.` }, busqueda: null }
           : nombre === MODELAR_DESDE_FOTO
             ? { resultado: aplicarModeladoDeFoto(escena, adjunta, llamada.args, MAX_NODOS), busqueda: null }
             : nombre === REPORTAR_COMPARACION && refinar
               ? { resultado: aplicarReporte(escena, llamada.args, reportes), busqueda: null }
-              : await aplicarHerramientaAsincrona(escena, nombre, llamada.args ?? {}, { buscar: (entrada) => buscarVisible(entrada) });
+              : await aplicarHerramientaIA(escena, nombre, llamada.args ?? {}, politica, { buscar: (entrada) => buscarVisible(entrada) });
         decidir("herramienta:escena_ia", `aplicar ${nombre} a la escena del taller 3D`, hecho.ok ? { ok: true, resumen: hecho.resumen, piezas: hecho.escena.nodos.length, ...(busqueda ? { busqueda: { fuente: busqueda.fuente, ids: busqueda.ids, motivo: busqueda.motivo ?? null } } : {}) } : { ok: false, error: hecho.error }, { entrada: { herramienta: nombre, argumentos: llamada.args ?? {}, paso: pasos, ...(busqueda?.entrada ? { busqueda: busqueda.entrada } : {}) } });
         intentos.push({ herramienta: nombre, ok: hecho.ok, objetivo: objetivoDe(llamada.args, nombre), ...(hecho.ok ? {} : { error: hecho.error }) });
         avisar?.({ tipo: "paso", n: llamadas, herramienta: nombre, resumen: corto((hecho.ok ? hecho.resumen : hecho.error).split("\n")[0] ?? "", 140), consulta: hecho.ok && hecho.consulta, ok: hecho.ok });

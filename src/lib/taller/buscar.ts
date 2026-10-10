@@ -84,8 +84,8 @@ export type DependenciasBuscar = {
   afinado?: Partial<Afinado>;
   /** Embedding de la consulta (por defecto `embeddingOpcional` del RAG, 2,5 s; si falla, la búsqueda sigue solo léxica). */
   embeberConsulta?: (texto: string) => Promise<number[] | undefined>;
-  /** Los repositorios que el RAG puede ver; las rutas pasan `reposVisibles("rag")` (`buscar-visible.ts`). Por defecto `REPOSITORIOS_SIN_POLITICA`. */
-  repositoriosVisibles?: () => readonly IdRepositorio[];
+  /** Los repositorios que el RAG puede ver; las rutas pasan `reposVisiblesVigentes("rag")` (`buscar-visible.ts`). Por defecto `REPOSITORIOS_SIN_POLITICA`. */
+  repositoriosVisibles?: () => readonly IdRepositorio[] | Promise<readonly IdRepositorio[]>;
 };
 
 /**
@@ -322,7 +322,7 @@ async function filasConParticion(pool: Pick<Pool, "query">, consulta: ConsultaBu
 
 export async function buscarEnTaller(entrada: EntradaBusqueda, dependencias: DependenciasBuscar = {}): Promise<RespuestaBusquedaTaller> {
   const memoria = dependencias.memoria ?? buscarEnBiblioteca;
-  const visibles = dependencias.repositoriosVisibles?.() ?? REPOSITORIOS_SIN_POLITICA;
+  const visibles = (await dependencias.repositoriosVisibles?.()) ?? REPOSITORIOS_SIN_POLITICA;
   const repositorios = repositoriosDeBusqueda(visibles, entrada.filtros?.repositorios);
   if (!(dependencias.habilitado ?? TALLER_RAG_ENABLED)) return buscarEnMemoria(entrada, memoria, null, repositorios);
 

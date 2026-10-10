@@ -6,6 +6,8 @@ import { clienteGenerativoDe, destinoGenerativo, type DestinoGenerativo } from "
 import { paraGoogleSchema } from "@/lib/ia/nucleo/esquema-google";
 import { registrarSegunProveedor, resultadoTelemetria } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { decidir } from "@/lib/registro/servidor";
+import type { IdRepositorio } from "@/lib/catalogo/tipos";
+import { acotarFondosLeidos, fondosParaFoto } from "./fondos-foto";
 import { corregirFondosLeidos } from "./fondos-sinonimos";
 import { ESQUEMA_LECTURA_FOTO, LecturaFotoSchema, PiezaLeidaSchema, type LecturaFoto } from "./lectura-foto";
 import { PEDIDO_LECTURA, construirPromptLectura } from "./prompt-lectura-foto";
@@ -170,6 +172,8 @@ export type OpcionesLectura = {
   signal?: AbortSignal;
   /** Para la telemetría: de dónde vino el pedido. */
   superficie?: string;
+  /** Los repositorios que ve la lectura de fotos (REQ-013, `reposVisibles("foto")`); sin ellos, el catálogo entero. */
+  repositoriosFoto?: readonly IdRepositorio[];
 };
 
 /**
@@ -179,7 +183,8 @@ export type OpcionesLectura = {
 export async function leerFotoConIA(foto: FotoLectura, opciones: OpcionesLectura = {}): Promise<ResultadoLectura> {
   const generar = opciones.generar ?? generarConModelo;
   const destino = opciones.generar ? GEMINI_INYECTADO : destinoGenerativo();
-  const sistema = construirPromptLectura(opciones.excluirEjemplos);
+  const fondos = fondosParaFoto(opciones.repositoriosFoto);
+  const sistema = construirPromptLectura(opciones.excluirEjemplos, fondos);
   const esquema = esquemaLecturaParaGemini();
   const imagen = { inlineData: { mimeType: foto.mime, data: Buffer.from(foto.bytes).toString("base64") } };
   const contents: Content[] = [{ role: "user", parts: [imagen, { text: PEDIDO_LECTURA }] }];
@@ -207,7 +212,10 @@ export async function leerFotoConIA(foto: FotoLectura, opciones: OpcionesLectura
       intento, ok: validada.ok, error: validada.ok ? null : corto(validada.error, 400), tokens: g.uso, costeEstimadoUsd: costeUsoUsd(g.uso, destino.modelo, destino.transporte), modelo: destino.modelo, finishReason: g.finishReason ?? null,
       piezas: validada.ok ? validada.lectura.piezas.map((p) => p.tipo) : null, ...(validada.correcciones.length ? { fondosCorregidos: validada.correcciones } : {}),
     }, { entrada: { bytesFoto: foto.bytes.byteLength, mime: foto.mime } });
-    if (validada.ok) return { lectura: validada.lectura, descartadas: [], uso, costeEstimadoUsd: costeUsoUsd(uso, destino.modelo, destino.transporte), intentos: intento, modelo: destino.modelo };
+    if (validada.ok) {
+      const acotada = acotarFondosLeidos(validada.lectura, fondos);
+      return { lectura: acotada.lectura, descartadas: acotada.descartadas, uso, costeEstimadoUsd: costeUsoUsd(uso, destino.modelo, destino.transporte), intentos: intento, modelo: destino.modelo };
+    }
     ultimo = validada;
     contents.push(
       { role: "model", parts: [{ text: corto(g.texto, 20_000) }] },
@@ -216,7 +224,8 @@ export async function leerFotoConIA(foto: FotoLectura, opciones: OpcionesLectura
   }
 
   if (ultimo && !ultimo.ok && ultimo.parcial) {
-    return { lectura: ultimo.parcial.lectura, descartadas: ultimo.parcial.descartadas, uso, costeEstimadoUsd: costeUsoUsd(uso, destino.modelo, destino.transporte), intentos: 2, modelo: destino.modelo };
+    const acotada = acotarFondosLeidos(ultimo.parcial.lectura, fondos);
+    return { lectura: acotada.lectura, descartadas: [...ultimo.parcial.descartadas, ...acotada.descartadas], uso, costeEstimadoUsd: costeUsoUsd(uso, destino.modelo, destino.transporte), intentos: 2, modelo: destino.modelo };
   }
   throw new ErrorLecturaFoto(`La IA no devolvió una lectura válida de la foto${ultimo && !ultimo.ok ? `: ${corto(ultimo.error, 300)}` : ""}.`, "invalida");
 }

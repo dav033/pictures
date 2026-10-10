@@ -51,7 +51,7 @@ export async function modelarDesdeFoto(foto: FotoLectura, deps: DependenciasMode
   const buscar = deps.plantillas
     ? deps.plantillas(foto).catch((error: unknown): Plantilla[] => { avisos.push(`No se pudo buscar plantillas en la biblioteca: ${error instanceof Error ? error.message : String(error)}`); return []; })
     : Promise.resolve<Plantilla[]>([]);
-  const detectar = deps.detectar !== undefined ? deps.detectar : deps.leer || deps.opciones?.generar ? null : (f: FotoLectura) => detectarGlobos(f, { signal: deps.opciones?.signal, superficie: deps.opciones?.superficie });
+  const detectar = deps.detectar !== undefined ? deps.detectar : deps.leer || deps.opciones?.generar ? null : (f: FotoLectura) => detectarGlobos(f, { signal: deps.opciones?.signal, superficie: deps.opciones?.superficie, repositoriosFoto: deps.opciones?.repositoriosFoto });
   const detectando = detectar
     ? detectar(foto).catch((error: unknown): null => { avisos.push(`No se pudieron detectar los globos uno por uno (la lectura va sin medir): ${error instanceof Error ? error.message : String(error)}`); return null; })
     : Promise.resolve(null);

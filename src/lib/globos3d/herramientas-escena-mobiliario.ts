@@ -29,11 +29,13 @@ import { armarPieza, type Pieza } from "./piezas";
  * (vinilo, con `color_texto`, `acabado_texto`, `alto_texto_cm`, `altura_texto_cm`) o el nombre de acrílico suelto.
  */
 
-const IDS = FONDOS_CATALOGO.map((f) => f.id) as [string, ...string[]];
 const ACABADOS = ACABADOS_MUEBLE;
 
+/** El `id` de `agregar_mobiliario` para estos fondos, en su orden (REQ-013: `catalogo/herramientas-ia.ts` lo acota a los repositorios que ve la IA). */
+const idDeFondos = (fondos: readonly FondoCatalogo[]) => z.enum(fondos.map((f) => f.id) as [string, ...string[]]).describe(fondos.map((f) => `${f.id}: ${descripcionConColores(f)}`).join(" "));
+
 const MobiliarioSchema = z.object({
-  id: z.enum(IDS).describe(FONDOS_CATALOGO.map((f) => `${f.id}: ${descripcionConColores(f)}`).join(" ")),
+  id: idDeFondos(FONDOS_CATALOGO),
   nombre: z.string().min(1).max(60).optional().describe("nombre visible (por defecto, el del catálogo)"),
   cantidad: z.number().int().min(1).max(24).optional().describe("cuántos iguales (1 por defecto); más de uno se reparte con disposicion"),
   disposicion: z.enum(["fila", "alrededor"]).optional().describe("fila: en línea de izquierda a derecha, centrados en x_cm/z_cm; alrededor: repartidos alrededor de la mesa alrededor_de, mirando a ella (sillas y taburetes)"),
@@ -57,6 +59,9 @@ const MobiliarioSchema = z.object({
   altura_cm: z.number().min(0).max(500).optional().describe("solo de pared: altura del borde de abajo"),
 });
 type Pedido = z.infer<typeof MobiliarioSchema>;
+
+/** El esquema de `agregar_mobiliario` solo con estos fondos (mismas propiedades y orden; solo cambia el `id`). */
+export const esquemaMobiliarioPara = (fondos: readonly FondoCatalogo[]) => MobiliarioSchema.extend({ id: idDeFondos(fondos) });
 
 const r0 = (n: number) => Math.round(n);
 

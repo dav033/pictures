@@ -1,5 +1,5 @@
 import { FONDOS_CATALOGO } from "./fondos-escenografia";
-import { descripcionConColores } from "./mobiliario-tipos";
+import { descripcionConColores, type FondoCatalogo } from "./mobiliario-tipos";
 import { coloresDelFormato } from "./formatos";
 import { RACIMOS_PREDEFINIDOS } from "./racimos-globos";
 import { REFERENCIAS_DUENO, type ReferenciaDueno } from "./referencias-dueno";
@@ -74,19 +74,26 @@ Responde SOLO el JSON.`;
 
 const nombresDeColor = () => [...new Set(coloresDelFormato("R-12").map((c) => c.nombreCompleto))].join(", ");
 
-const fondosDelCatalogo = () => FONDOS_CATALOGO.map((f) => `${f.id}: ${descripcionConColores(f)}`).join(" ");
+const fondosDelCatalogo = (fondos: readonly FondoCatalogo[]) => {
+  const lista = fondos.map((f) => `${f.id}: ${descripcionConColores(f)}`).join(" ");
+  // Acotada (REQ-013): las reglas de arriba nombran muebles que quizá esta superficie no ofrece; solo vale la lista.
+  return fondos === FONDOS_CATALOGO ? lista : `${lista} (solo existen los fondos de esta lista: lo que no esté en ella, aunque las reglas lo nombren, va como «otro»)`;
+};
 
 const racimosDelCatalogo = () => RACIMOS_PREDEFINIDOS.map((r) => `${r.id}: ${r.descripcion}`).join(" ");
 
-/** La instrucción de sistema completa: reglas, colores Sempertex, decoraciones del catálogo y las lecturas de ejemplo. */
-export function construirPromptLectura(excluirIds: readonly string[] = []): string {
+/**
+ * La instrucción de sistema completa: reglas, colores Sempertex, decoraciones del catálogo y las lecturas de ejemplo. `fondos`: los
+ * que ve esta superficie (`fondos-foto.ts`); por defecto el catálogo entero, y entonces el texto es el de siempre.
+ */
+export function construirPromptLectura(excluirIds: readonly string[] = [], fondos: readonly FondoCatalogo[] = FONDOS_CATALOGO): string {
   const ejemplos = ejemplosDeLectura(excluirIds)
     .map((e, i) => `EJEMPLO ${i + 1} (${e.nombre}):\n${JSON.stringify(e.lectura)}`)
     .join("\n\n");
   return [
     REGLAS,
     `COLORES SEMPERTEX (nombres para "nombre"): ${nombresDeColor()}.`,
-    `FONDOS DEL CATÁLOGO (tipo "fondo"): ${fondosDelCatalogo()}`,
+    `FONDOS DEL CATÁLOGO (tipo "fondo"): ${fondosDelCatalogo(fondos)}`,
     `DECORACIONES DEL CATÁLOGO (tipo "decoracion"): ${racimosDelCatalogo()}`,
     `Lecturas hechas a mano por el decorador de OTRAS fotos, para que veas el formato y el criterio (no las copies):\n\n${ejemplos}`,
   ].join("\n\n");

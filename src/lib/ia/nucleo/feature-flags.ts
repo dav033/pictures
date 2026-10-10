@@ -19,7 +19,9 @@ export type FeatureFlag =
   | "ANALISIS_COLOR_SEMPERTEX_V1"
   | "GUIA_ESTRUCTURA_V1"
   | "GUIA_ESCENA_V1"
-  | "GUIA_ESCENA_SIN_FOTO_V1";
+  | "GUIA_ESCENA_SIN_FOTO_V1"
+  | "CATALOGO_FILTRO_IA"
+  | "CATALOGO_PERMITIR_SIN_PRECIO_CLIENTE";
 
 /**
  * Valor por defecto de cada bandera: **el mismo en local y en producción**.
@@ -63,10 +65,19 @@ export type FeatureFlag =
  * CONTEO_REFERENCIA_V1 → ADR-0031). Varias cambian `plan_hash`, cantidades o
  * precio de los planes **nuevos**; los ya aprobados no cambian.
  */
-const DEFAULT_APAGADAS: ReadonlySet<FeatureFlag> = new Set<FeatureFlag>(["SCENE_PLAN_V2_SHADOW", "GUIA_ESTRUCTURA_V1", "ARMADO_ARCO_COLUMNA_V1"]);
+const DEFAULT_APAGADAS: ReadonlySet<FeatureFlag> = new Set<FeatureFlag>([
+  "SCENE_PLAN_V2_SHADOW", "GUIA_ESTRUCTURA_V1", "ARMADO_ARCO_COLUMNA_V1", "CATALOGO_FILTRO_IA", "CATALOGO_PERMITIR_SIN_PRECIO_CLIENTE",
+]);
 
-export function featureEnabled(name: FeatureFlag): boolean {
-  const raw = process.env[name];
+/**
+ * `entorno`: de dónde se lee (por defecto `process.env`); las pruebas y `catalogo/visibilidad.ts` pasan el suyo.
+ *
+ * Repositorios de catálogo (REQ-013), ambas apagadas por defecto: `CATALOGO_FILTRO_IA` declara el parámetro `repositorio` de
+ * `buscar_en_biblioteca` en la IA de escena; `CATALOGO_PERMITIR_SIN_PRECIO_CLIENTE` deja que la guiada y el estudio vean un
+ * repositorio sin precio (mobiliario, escenografía), cosa que solo decide el dueño.
+ */
+export function featureEnabled(name: FeatureFlag, entorno: Readonly<Record<string, string | undefined>> = process.env): boolean {
+  const raw = entorno[name];
   if (raw === undefined) return !DEFAULT_APAGADAS.has(name);
   return raw === "1" || raw.toLowerCase() === "true" || raw.toLowerCase() === "on";
 }

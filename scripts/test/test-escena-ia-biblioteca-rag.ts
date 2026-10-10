@@ -186,12 +186,12 @@ const consultaOk = (h: Awaited<ReturnType<typeof aplicarHerramientaAsincrona>>) 
     if (aviso.ok) assert.match(aviso.resumen, /Sin efecto en esta búsqueda: tematica, alto_cm/);
   });
 
-  await prueba("contrato de la ruta: pasa por aplicarHerramientaAsincrona, registra la búsqueda y el sistema nombra los filtros", () => {
+  await prueba("contrato de la ruta: pasa por la política del catálogo y aplicarHerramientaAsincrona, registra la búsqueda y el sistema nombra los filtros", () => {
     const ruta = readFileSync(new URL("../../src/app/api/escena-ia/route.ts", import.meta.url), "utf8");
     for (const re of [
-      /import \{ aplicarHerramientaAsincrona \} from "@\/lib\/globos3d\/escena-ia-biblioteca"/,
-      // REQ-013: la ruta le pasa a la búsqueda la visibilidad del catálogo para el RAG (`buscarVisible`).
-      /await aplicarHerramientaAsincrona\(escena, nombre, llamada\.args \?\? \{\}, \{ buscar: \(entrada\) => buscarVisible\(entrada\) \}\)/,
+      // REQ-013: la ruta pasa por la política del catálogo (`aplicarHerramientaIA`, que delega en `aplicarHerramientaAsincrona`) y le da a la búsqueda la visibilidad del RAG (`buscarVisible`).
+      /import \{ aplicarHerramientaIA \} from "@\/lib\/catalogo\/herramientas-ia-aplicar"/,
+      /await aplicarHerramientaIA\(escena, nombre, llamada\.args \?\? \{\}, politica, \{ buscar: \(entrada\) => buscarVisible\(entrada\) \}\)/,
       /busqueda: \{ fuente: busqueda\.fuente, ids: busqueda\.ids/,
       /celebracion, tematica, formato \(R-24…\), parte, alto_cm\/ancho_cm aproximados y fuente \(referencias_dueno, ideas_sempertex, revista_celebra, bases_organicas\)/,
     ]) assert.match(ruta, re);

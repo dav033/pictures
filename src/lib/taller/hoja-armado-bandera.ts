@@ -1,12 +1,11 @@
 import "server-only";
 import { z } from "zod";
-import { crearAjusteConCache, leerFilaAjuste, type ConsultaAjuste } from "@/lib/guiada-motor/bandera";
-import { getRagPool } from "@/lib/rag/db";
+import { crearAjusteConCache, leerAjusteNeon, leerFilaAjuste, type ConsultaAjuste } from "@/lib/ajustes/ajustes-runtime";
 import type { LecturaHojaArmado } from "./hoja-armado-bandera-tipos";
 
 /**
  * La bandera de ejecución de la «Hoja de armado» del Taller 3D (PRO-01): si el botón sale en la lista de compra. **Apagada por
- * defecto.** Se lee como la de la guiada (`guiada-motor/bandera.ts`), de mayor a menor prioridad:
+ * defecto.** Se lee como la de la guiada (`guiada-motor/bandera.ts`, con el lector de `ajustes/ajustes-runtime.ts`), de mayor a menor prioridad:
  *   1. fila `taller_hoja_armado` de `ajustes_runtime` (`activo`|`inactivo`), con un caché de 30 s por instancia;
  *   2. variable de entorno `TALLER_HOJA_ARMADO` (`activo`|`inactivo`);
  *   3. apagada.
@@ -17,6 +16,7 @@ import type { LecturaHojaArmado } from "./hoja-armado-bandera-tipos";
  */
 
 export const CLAVE_AJUSTE_HOJA_ARMADO = "taller_hoja_armado";
+const ORIGEN_AVISO = "taller-hoja-armado";
 
 export type DependenciasHojaArmado = {
   /** Valor crudo de la fila, o `null` si no hay. LANZA si la base falló. */
@@ -44,13 +44,10 @@ export function crearLectorHojaArmado(deps: DependenciasHojaArmado): () => Promi
 }
 
 /** La fila `taller_hoja_armado`; un fallo de la base se avisa en el log como `[taller-hoja-armado]` y se lanza. */
-export const leerFilaHojaArmado = (consultar: ConsultaAjuste): Promise<string | null> => leerFilaAjuste(consultar, CLAVE_AJUSTE_HOJA_ARMADO, "taller-hoja-armado");
+export const leerFilaHojaArmado = (consultar: ConsultaAjuste): Promise<string | null> => leerFilaAjuste(consultar, CLAVE_AJUSTE_HOJA_ARMADO, ORIGEN_AVISO);
 
 export const leerHojaArmado = crearLectorHojaArmado({
-  leerAjuste: async () => {
-    if (!process.env.DATABASE_URL) return null;
-    return leerFilaHojaArmado((sql, valores) => getRagPool().query<{ valor: string }>(sql, valores));
-  },
+  leerAjuste: () => leerAjusteNeon(CLAVE_AJUSTE_HOJA_ARMADO, ORIGEN_AVISO),
   env: () => process.env.TALLER_HOJA_ARMADO,
   ahora: () => Date.now(),
 });

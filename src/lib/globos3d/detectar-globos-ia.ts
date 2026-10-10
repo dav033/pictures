@@ -4,7 +4,8 @@ import { MODELO_CHAT } from "@/lib/gemini";
 import { clienteGenerativoDe, type ClienteGenerativo, type DestinoGenerativo } from "@/lib/ia/nucleo/cliente-generativo";
 import { registrarSegunProveedor, resultadoTelemetria } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { decidir } from "@/lib/registro/servidor";
-import { FONDOS_CATALOGO } from "./fondos-escenografia";
+import type { IdRepositorio } from "@/lib/catalogo/tipos";
+import { fondosParaFoto } from "./fondos-foto";
 import { costeUsoUsd, type FotoLectura, type UsoModelo } from "./leer-foto-ia";
 import { COLORES_DETECCION } from "./medir-colores";
 import type { FondoDetectado, GloboDetectado } from "./medir-con-detecciones";
@@ -85,13 +86,14 @@ async function decodificar(foto: FotoLectura): Promise<{ data: Buffer; width: nu
 }
 
 /** Detecta los globos y los fondos de la foto. Lanza solo si no responde ningún trozo; un trozo que falla queda en `fallidos`. */
-export async function detectarGlobos(foto: FotoLectura, opciones: { signal?: AbortSignal; superficie?: string } = {}): Promise<Deteccion> {
+export async function detectarGlobos(foto: FotoLectura, opciones: { signal?: AbortSignal; superficie?: string; repositoriosFoto?: readonly IdRepositorio[] } = {}): Promise<Deteccion> {
   const generativo = clienteGenerativoDe(PROPOSITO_DETECCION_GLOBOS);
   if (!generativo) throw new Error("La IA no está configurada en este servidor.");
   const { cliente } = generativo;
   const superficie = opciones.superficie ? `${opciones.superficie}:deteccion` : "deteccion_globos";
   const { data, width, height, channels } = await decodificar(foto);
   const trozos = trozosDelMosaico();
+  const fondosFoto = fondosParaFoto(opciones.repositoriosFoto);
   const [resultados, fondos] = await Promise.all([
     Promise.all(trozos.map(async (t) => {
       const inicio = Date.now();
@@ -123,7 +125,7 @@ export async function detectarGlobos(foto: FotoLectura, opciones: { signal?: Abo
     // Los fondos no son imprescindibles: si fallan, la lectura va con los que leyó el modelo.
     // La foto ya girada (con el mismo sistema de coordenadas que los trozos), no los bytes originales con su EXIF.
     sharp(data, { raw: { width, height, channels } }).jpeg({ quality: CALIDAD_JPEG }).toBuffer()
-      .then((bytes) => detectarFondos({ bytes, mime: "image/jpeg" }, FONDOS_CATALOGO, { signal: opciones.signal, superficie }))
+      .then((bytes) => (fondosFoto.length ? detectarFondos({ bytes, mime: "image/jpeg" }, fondosFoto, { signal: opciones.signal, superficie }) : { fondos: [] as FondoDetectado[], uso: SIN_USO, costeEstimadoUsd: 0 }))
       .catch((error: unknown) => {
         decidir("modelo:deteccion_fondos", "no se pudieron detectar los fondos de la foto", { error: error instanceof Error ? error.message.slice(0, 300) : String(error) });
         return { fondos: [] as FondoDetectado[], uso: SIN_USO, costeEstimadoUsd: 0 };
