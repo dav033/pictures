@@ -1,4 +1,5 @@
 import { conReintento, type ChatPort, type FragmentoChat, type PeticionChat, type TurnoChat } from "@sempertex/agente-core";
+import { crearClienteClaudeCli } from "./cli/cliente";
 import { crearClienteAnthropic } from "./cliente";
 import type { ConfigClaude } from "./config";
 import { cuerpoMensajes } from "./cuerpo";
@@ -13,7 +14,8 @@ import type { CuerpoMensajes } from "./tipos";
  * ChatPort de Claude (solo local; lo entrega `chatDe("claude")` ya envuelto con `envolverChatPort`). Mismo contrato que el
  * adaptador de Gemini: reintenta 429/5xx con `conReintento`, traduce los fallos a `ErrorIA`, y en flujo solo reintenta
  * la apertura (nunca después del primer byte). `temperatura` no se envía: Haiku 5.5 la rechaza. El corte (`signal`) llega
- * al `fetch`; un corte se relanza tal cual, sin disfrazarlo de fallo del proveedor.
+ * al `fetch` (o mata el proceso de Claude Code con el transporte `cli`); un corte se relanza tal cual, sin disfrazarlo de
+ * fallo del proveedor.
  */
 
 function cuerpoDeTurno(peticion: PeticionChat, config: ConfigClaude): { cuerpo: CuerpoMensajes; bytesImagen: number } {
@@ -35,7 +37,7 @@ function fallo(error: unknown, signal: AbortSignal | undefined, conImagenes: boo
 }
 
 export function crearChatClaude(config: ConfigClaude & { fetch?: typeof fetch }): ChatPort {
-  const cliente = crearClienteAnthropic({ apiKey: config.apiKey, fetch: config.fetch });
+  const cliente = config.transporte === "cli" ? crearClienteClaudeCli() : crearClienteAnthropic({ apiKey: config.apiKey, fetch: config.fetch });
   const reintentable = (conImagenes: boolean) => (error: unknown) => categorizarErrorClaude(error, conImagenes).reintentable;
 
   return {

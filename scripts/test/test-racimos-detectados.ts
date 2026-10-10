@@ -88,6 +88,16 @@ async function main() {
     await assert.rejects(descartarRacimos(cancelado, await pixeles(), foto05, { superficie: "prueba", signal: corte.signal }), /abortado/);
   });
 
+  await prueba("un fallo se reintenta una vez con Gemini; por Claude Code (cli) no", async () => {
+    let llamadas = 0;
+    const roto = { models: { generateContent: async () => { llamadas += 1; throw new Error("caído"); } } } as unknown as Cliente;
+    const conCli = await descartarRacimos(roto, await pixeles(), foto05, { superficie: "prueba" }, { proveedor: "claude", modelo: "haiku", transporte: "cli" });
+    assert.equal(llamadas, 1);
+    assert.match(conCli.revision.fallo ?? "", /caído/);
+    llamadas = 0;
+    await descartarRacimos(roto, await pixeles(), foto05, { superficie: "prueba" });
+    assert.equal(llamadas, 2);
+  });
   await prueba("una respuesta con números de recorte que no existen no quita nada", async () => {
     const r = await descartarRacimos(clienteQueResponde([{ recorte: 9, globos: 6, mayor: 40 }, { recorte: 0, globos: 6, mayor: 40 }]), await pixeles(), foto05, { superficie: "prueba" });
     assert.equal(r.globos.length, foto05.length);

@@ -388,7 +388,7 @@ async function* flujoChatAuditado(flujo: AsyncIterable<FragmentoChat>, descripci
  * parámetros) y `respuesta_ia` (texto, llamadas a herramientas, motivo de fin, tokens, ms o error).
  * Idempotente: envolver dos veces no duplica la auditoría.
  */
-export function envolverChatPort(chat: ChatPort, opciones: { proposito: string; versionSistema?: string }): ChatPort {
+export function envolverChatPort(chat: ChatPort, opciones: { proposito: string; versionSistema?: string; parametros?: Record<string, unknown> }): ChatPort {
   if (yaEnvuelto(chat)) return chat;
   const describir = (peticion: PeticionChat): DescripcionLlamadaIa => ({
     proveedor: chat.id,
@@ -398,7 +398,7 @@ export function envolverChatPort(chat: ChatPort, opciones: { proposito: string; 
     ...(opciones.versionSistema ? { versionSistema: opciones.versionSistema } : {}),
     mensajes: peticion.historial,
     herramientas: peticion.herramientas,
-    parametros: { temperatura: peticion.temperatura, maxTokens: peticion.maxTokens, thinkingLevel: chat.thinkingLevel },
+    parametros: { temperatura: peticion.temperatura, maxTokens: peticion.maxTokens, thinkingLevel: chat.thinkingLevel, ...opciones.parametros },
   });
   const envuelto: ChatPort = {
     get id() {

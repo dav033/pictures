@@ -8,6 +8,7 @@ import {
   type PersistenciaTelemetria,
 } from "@sempertex/agente-core";
 import { getRagPool } from "@/lib/rag/db";
+import { transporteClaudeActivo } from "@/lib/ia/claude/config";
 import { usoDeAnthropic } from "@/lib/ia/claude/respuesta";
 import type { UsoAnthropic } from "@/lib/ia/claude/tipos";
 import type { ProveedorId } from "./tipos";
@@ -17,9 +18,22 @@ import type { ProveedorId } from "./tipos";
  * pero el bucle de `ejecutar.ts` corre desde su `dist` compilado: en la copia principal (servidor de :3010) un `dist`
  * sin reconstruir mandaría `claude` y el CHECK perdería la fila en silencio. Traducirlo también aquí, justo antes del
  * INSERT, hace que funcione con o sin reconstruir el paquete.
+ * Con Claude por Claude Code (`IA_CLAUDE_TRANSPORTE=cli`, solo local) toda fila de Anthropic es de la suscripción: su
+ * modelo va como `cli:<modelo>` (ninguna fila de `ai_model_pricing` lo cotiza: coste 0) y sin coste. En producción
+ * Claude no está activo y las filas quedan como siempre.
  */
-export function conProveedorDeEmpresa(base: PersistenciaTelemetria): PersistenciaTelemetria {
-  return { guardar: (evento) => base.guardar(evento.proveedor === "claude" ? { ...evento, proveedor: "anthropic" } : evento) };
+export const PREFIJO_MODELO_CLI = "cli:";
+
+export function conProveedorDeEmpresa(base: PersistenciaTelemetria, entorno: Readonly<Record<string, string | undefined>> = process.env): PersistenciaTelemetria {
+  return {
+    guardar: (evento) => {
+      if (evento.proveedor !== "claude" && evento.proveedor !== "anthropic") return base.guardar(evento);
+      const anthropic = { ...evento, proveedor: "anthropic" as const };
+      if (transporteClaudeActivo(entorno) !== "cli") return base.guardar(anthropic);
+      const modelo = anthropic.modelo.startsWith(PREFIJO_MODELO_CLI) ? anthropic.modelo : `${PREFIJO_MODELO_CLI}${anthropic.modelo}`;
+      return base.guardar({ ...anthropic, modelo, pricingId: undefined, costeEstimado: undefined, moneda: undefined });
+    },
+  };
 }
 
 // Se configura sin abrir conexión. Cada escritura ocurre fuera de ruta crítica;

@@ -16,6 +16,18 @@ export class ErrorApiAnthropic extends Error {
   }
 }
 
+/**
+ * Fallo del transporte por Claude Code (`claude -p`, ver cli/): se categoriza igual que uno de la API (`status` es el
+ * de la API cuando Claude Code lo informa; 0 si no). El detalle nunca lleva el entorno ni credenciales.
+ */
+export class ErrorCliClaude extends ErrorApiAnthropic {
+  constructor(status: number, tipo: string, detalle: string) {
+    super(status, tipo, detalle);
+    this.message = `Claude CLI ${status ? `${status} ` : ""}${tipo}: ${detalle.slice(0, MAX_TEXTO_ERROR)}`;
+    this.name = "ErrorCliClaude";
+  }
+}
+
 /** Un 400 que no habla de la imagen es de la petición (herramientas, historial, parámetros): reintentar no cambia nada. */
 const HABLA_DE_IMAGEN = /\bimage\b|media_type|base64/i;
 
@@ -23,8 +35,15 @@ const HABLA_DE_IMAGEN = /\bimage\b|media_type|base64/i;
  * Traduce cualquier fallo del transporte a `ErrorIA` (el mismo contrato que el adaptador de Gemini): 401/403 sin llave,
  * 429 cuota, 5xx y 529 (sobrecarga) reintentables, 400 nunca reintentable, red caída reintentable.
  * `conImagenes`: la petición llevaba imágenes; un 400 sobre la imagen lleva `PREFIJO_IMAGEN_RECHAZADA` como en Gemini.
+ * Un fallo del transporte `cli` (Claude Code) nunca es reintentable: Claude Code ya reintenta por dentro, cada intento es
+ * un proceso de minutos, y un límite de uso de la suscripción no se libera en segundos.
  */
 export function categorizarErrorClaude(error: unknown, conImagenes = false): ErrorIA {
+  const categoria = categorizar(error, conImagenes);
+  return error instanceof ErrorCliClaude && categoria.reintentable ? new ErrorIA(categoria.causa, "claude", categoria.message, false) : categoria;
+}
+
+function categorizar(error: unknown, conImagenes: boolean): ErrorIA {
   if (error instanceof ErrorIA) return error;
   const mensaje = error instanceof Error ? error.message : "Error desconocido";
   if (error instanceof ErrorApiAnthropic) {

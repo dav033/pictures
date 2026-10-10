@@ -47,8 +47,9 @@ export function crearModeloEscenaClaude(
   return {
     proveedor: "claude",
     modelo: config.modelo,
-    // La tarifa (normal o de prompt largo) depende de cada petición: se suma vuelta por vuelta.
-    costeUsd: (usos) => usos.reduce((suma, uso) => suma + (costeClaudeUsd(config.modelo, usoAnthropicDe(uso)) ?? 0), 0),
+    // La tarifa (normal o de prompt largo) depende de cada petición: se suma vuelta por vuelta. Por Claude Code (`cli`) la
+    // paga la suscripción del dueño: 0.
+    costeUsd: (usos) => (config.transporte === "cli" ? 0 : usos.reduce((suma, uso) => suma + (costeClaudeUsd(config.modelo, usoAnthropicDe(uso)) ?? 0), 0)),
     iniciar({ sistema, declaraciones, historial, partesUsuario, signal }) {
       const todas = declaraciones.map(herramientaDeDeclaracion);
       const herramientas = herramientasAnthropic(todas);

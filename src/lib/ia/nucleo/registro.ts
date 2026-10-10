@@ -100,7 +100,9 @@ export async function chatDe(id: ProveedorId, proposito = "chat"): Promise<ChatP
 /** `configClaudeLocal` vuelve a exigir local + `IA_PROVEEDOR=claude` + llave: aunque alguien pase el id a mano, fuera de local lanza. */
 async function chatClaude(proposito: string): Promise<ChatPort> {
   const { crearChatClaude } = await import("@/lib/ia/claude/chat");
-  return envolverChatPort(crearChatClaude(configClaudeLocal()), { proposito });
+  const config = configClaudeLocal();
+  // Por Claude Code, la auditoría de cada turno lo dice (`parametros.transporte`): lo paga la suscripción, no la API.
+  return envolverChatPort(crearChatClaude(config), { proposito, ...(config.transporte === "cli" ? { parametros: { transporte: "cli" } } : {}) });
 }
 
 /**

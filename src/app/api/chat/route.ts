@@ -21,12 +21,12 @@ import {
   type ErrorCodeV1,
 } from "@/lib/ia/contracts/chat-v1";
 import {
-  crearDeadlineSignal,
   leerContextoOperativo,
   remainingDeadlineMs,
   sha256Body,
 } from "@/lib/ia/contracts/operational-v1";
 import { conRegistro, decidir } from "@/lib/registro/servidor";
+import { crearDeadlineIA } from "@/lib/ia/plazo-servidor";
 
 type LegacyBody = {
   messages: ChatMessage[];
@@ -287,7 +287,8 @@ async function atenderPOST(request: Request) {
   // La respuesta SSE se abre antes de esperar al proveedor. Esperar el primer
   // fragmento aquí bloqueaba los headers y permitía que el timeout absoluto
   // del navegador venciera durante un turno válido con varias herramientas.
-  const deadline = crearDeadlineSignal(request.signal, contextoOperativo.deadline_ms);
+  // Con Claude por Claude Code (solo local) el plazo y su tope se estiran (`crearDeadlineIA`); en producción, el del contrato.
+  const deadline = crearDeadlineIA(request.signal, contextoOperativo.deadline_ms);
   const generador = ejecutarConversacionStream({
     chat,
     sistema,

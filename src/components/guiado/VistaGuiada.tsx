@@ -53,6 +53,7 @@ import { CIUDADES_PROVEEDORES } from "@/lib/biblioteca-sempertex/ciudades";
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
 import { BriefGuiadoSchema, CotizacionGuiadaSchema, CotizacionPlanGuiadoSchema, IdeaVisibleGuiadaSchema, PlanGuiadoSchema, PropuestaComposicionSchema, type BriefGuiado, type IdeaVisibleGuiada, type PlanActualGuiado } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { contextoClienteGuiado, entradaImagenGuiada, type ContextoClienteGuiado } from "@/lib/ia/guiado/contexto-cliente";
+import { cargarFactorPlazoCliente, factorPlazoCliente } from "@/lib/ia/plazo-cliente";
 import { prepararHistorialGuiado, sinUltimoTurnoGuiado } from "@/lib/ia/guiado/utilidades";
 import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-referencia";
 import { prepararFotoReferencia } from "@/lib/imagen-cliente/preparar-foto";
@@ -241,6 +242,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const [imagenesLocales, setImagenesLocales] = useState<Readonly<Record<string, string>>>({});
   // Las imágenes guardadas en este navegador vuelven tras una recarga (el servidor no guarda ninguna).
   useEffect(() => {
+    void cargarFactorPlazoCliente();
     void leerImagenesNavegador().then((guardadas) => {
       if (Object.keys(guardadas).length) setImagenesLocales((actuales) => ({ ...guardadas, ...actuales }));
     });
@@ -615,7 +617,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const turno = ++turnoRef.current;
     const control = new AbortController();
     controlRef.current = control;
-    const reloj = window.setTimeout(() => control.abort("tiempo"), LIMITE_TURNO_MS);
+    const reloj = window.setTimeout(() => control.abort("tiempo"), LIMITE_TURNO_MS * factorPlazoCliente());
     // «Reintentar» repite el MISMO mensaje del cliente: conserva su burbuja (mismo id) en vez de quitarla y poner otra
     // igual, que se veía dos veces mientras la vieja salía (probador 124, hallazgo 14).
     const idUsuario = (opciones.reintentar ? idParaReintento(mensajes, contenido) : null) ?? nuevoId();
@@ -838,7 +840,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       const intento = new AbortController();
       const cortar = () => intento.abort();
       control.signal.addEventListener("abort", cortar);
-      const reloj = window.setTimeout(cortar, LIMITE_PLAN_MS);
+      const reloj = window.setTimeout(cortar, LIMITE_PLAN_MS * factorPlazoCliente());
       let rechazos = 0;
       try {
         const respuesta = await pedirPlanChat(armarCuerpo(reintento, faltantes), intento.signal, (nombre, estado, ok) => {
@@ -2157,7 +2159,7 @@ async function analizarFoto(imagen: FotoInspiracion, senalTurno: AbortSignal): P
   const control = new AbortController();
   const cortar = () => control.abort();
   senalTurno.addEventListener("abort", cortar);
-  const reloj = window.setTimeout(cortar, LIMITE_FOTO_MS);
+  const reloj = window.setTimeout(cortar, LIMITE_FOTO_MS * factorPlazoCliente());
   try {
     const respuesta = await fetch("/api/references/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ images: [imagen] }), signal: control.signal });
     if (!respuesta.ok) throw new Error(`/api/references/analyze respondió con estado ${respuesta.status}.`);

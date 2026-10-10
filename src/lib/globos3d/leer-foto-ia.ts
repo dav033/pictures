@@ -54,8 +54,12 @@ export function costeFlashUsd(uso: UsoModelo): number {
   return Math.round(((uso.entrada * 0.5 + (uso.salida + uso.pensamiento) * 3) / 1e6) * 1e5) / 1e5;
 }
 
-/** Con un modelo de Claude, sus precios (sin desglose de caché: el exacto queda en `respuesta_ia`); si no, `costeFlashUsd`. */
-export function costeUsoUsd(uso: UsoModelo, modelo: string): number {
+/**
+ * Con un modelo de Claude, sus precios (sin desglose de caché: el exacto queda en `respuesta_ia`); si no, `costeFlashUsd`.
+ * Por Claude Code (`transporte: "cli"`) 0: lo paga la suscripción, no hay factura por llamada.
+ */
+export function costeUsoUsd(uso: UsoModelo, modelo: string, transporte?: DestinoGenerativo["transporte"]): number {
+  if (transporte === "cli") return 0;
   const claude = costeClaudeUsd(modelo, { input_tokens: uso.entrada, output_tokens: uso.salida + uso.pensamiento });
   return claude === undefined ? costeFlashUsd(uso) : Math.round(claude * 1e5) / 1e5;
 }
@@ -200,10 +204,10 @@ export async function leerFotoConIA(foto: FotoLectura, opciones: OpcionesLectura
     });
     const validada = validarLectura(g.texto);
     decidir("modelo:lectura_foto", validada.ok ? "lectura de la foto válida" : "lectura de la foto con errores de esquema", {
-      intento, ok: validada.ok, error: validada.ok ? null : corto(validada.error, 400), tokens: g.uso, costeEstimadoUsd: costeUsoUsd(g.uso, destino.modelo), modelo: destino.modelo, finishReason: g.finishReason ?? null,
+      intento, ok: validada.ok, error: validada.ok ? null : corto(validada.error, 400), tokens: g.uso, costeEstimadoUsd: costeUsoUsd(g.uso, destino.modelo, destino.transporte), modelo: destino.modelo, finishReason: g.finishReason ?? null,
       piezas: validada.ok ? validada.lectura.piezas.map((p) => p.tipo) : null, ...(validada.correcciones.length ? { fondosCorregidos: validada.correcciones } : {}),
     }, { entrada: { bytesFoto: foto.bytes.byteLength, mime: foto.mime } });
-    if (validada.ok) return { lectura: validada.lectura, descartadas: [], uso, costeEstimadoUsd: costeUsoUsd(uso, destino.modelo), intentos: intento, modelo: destino.modelo };
+    if (validada.ok) return { lectura: validada.lectura, descartadas: [], uso, costeEstimadoUsd: costeUsoUsd(uso, destino.modelo, destino.transporte), intentos: intento, modelo: destino.modelo };
     ultimo = validada;
     contents.push(
       { role: "model", parts: [{ text: corto(g.texto, 20_000) }] },
@@ -212,7 +216,7 @@ export async function leerFotoConIA(foto: FotoLectura, opciones: OpcionesLectura
   }
 
   if (ultimo && !ultimo.ok && ultimo.parcial) {
-    return { lectura: ultimo.parcial.lectura, descartadas: ultimo.parcial.descartadas, uso, costeEstimadoUsd: costeUsoUsd(uso, destino.modelo), intentos: 2, modelo: destino.modelo };
+    return { lectura: ultimo.parcial.lectura, descartadas: ultimo.parcial.descartadas, uso, costeEstimadoUsd: costeUsoUsd(uso, destino.modelo, destino.transporte), intentos: 2, modelo: destino.modelo };
   }
   throw new ErrorLecturaFoto(`La IA no devolvió una lectura válida de la foto${ultimo && !ultimo.ok ? `: ${corto(ultimo.error, 300)}` : ""}.`, "invalida");
 }

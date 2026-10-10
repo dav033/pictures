@@ -138,7 +138,7 @@ export async function detectarGlobos(foto: FotoLectura, opciones: { signal?: Abo
   const racimos = await descartarRacimos(cliente, { data, width, height, channels }, fundirRepetidas(resultados.flatMap((r) => r.globos)), { signal: opciones.signal, superficie }, generativo);
   const globos = racimos.globos;
   uso = sumarUso(uso, racimos.uso);
-  const costeEstimadoUsd = costeUsoUsd(uso, generativo.modelo);
+  const costeEstimadoUsd = costeUsoUsd(uso, generativo.modelo, generativo.transporte);
   decidir("modelo:deteccion_globos", "globos y fondos detectados en la foto", { globos: globos.length, fondos: fondos.fondos.map((f) => f.id), trozos: trozos.length, fallidos, tokens: uso, costeEstimadoUsd }, { entrada: { bytesFoto: foto.bytes.byteLength } });
   return { globos, fondos: fondos.fondos, uso, costeEstimadoUsd, trozos: trozos.length, fallidos, racimos: racimos.revision };
 }
@@ -187,8 +187,9 @@ export async function descartarRacimos(cliente: ClienteGenerativo, px: Pixeles, 
   let r: Awaited<ReturnType<typeof pedir>>;
   try {
     // Llega justo después de los nueve trozos y los fondos: un fallo pasajero (cuota, red) se reintenta una vez, tras una pausa.
+    // Por Claude Code (cli) no: cada intento es un proceso de minutos y Claude Code ya reintenta por dentro.
     r = await pedir().catch(async (error: unknown) => {
-      if (opciones.signal?.aborted) throw error;
+      if (opciones.signal?.aborted || destino.transporte === "cli") throw error;
       await new Promise((listo) => setTimeout(listo, ESPERA_REINTENTO_MS));
       return pedir();
     });
@@ -241,7 +242,7 @@ export async function detectarFondos(foto: FotoLectura, catalogo: ReadonlyArray<
       const caja = (f as { box_2d?: unknown }).box_2d, id = (f as { id?: unknown }).id;
       return esCaja(caja) && typeof id === "string" && id !== "otro" ? [{ box_2d: caja, id }] : [];
     });
-    return { fondos, uso, costeEstimadoUsd: costeUsoUsd(uso, generativo.modelo) };
+    return { fondos, uso, costeEstimadoUsd: costeUsoUsd(uso, generativo.modelo, generativo.transporte) };
   } catch (error) {
     registrarSegunProveedor(generativo.proveedor, { flujo: "analisis_referencia", capacidad: "analisis_referencia_inventario", modelo: generativo.modelo, inicio, resultado: resultadoTelemetria(error), contexto: { superficie }, thinkingLevel: generativo.esfuerzo ?? "low" });
     throw error;

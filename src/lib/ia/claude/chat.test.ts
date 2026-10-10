@@ -25,7 +25,7 @@ const mensaje = (content: unknown[], stop_reason = "end_turn", usage: Record<str
   ({ id: "msg_1", type: "message", role: "assistant", model: "claude-haiku-5-5", content, stop_reason, usage });
 
 const config = (fetch: typeof globalThis.fetch, extra: Partial<ConfigClaude> = {}): ConfigClaude & { fetch: typeof globalThis.fetch } =>
-  ({ apiKey: "clave-de-prueba", modelo: "claude-haiku-5-5", esfuerzo: "medium", pensamiento: true, maxTokens: 16_000, fetch, ...extra });
+  ({ transporte: "api", apiKey: "clave-de-prueba", modelo: "claude-haiku-5-5", esfuerzo: "medium", pensamiento: true, maxTokens: 16_000, fetch, ...extra });
 
 const HERRAMIENTAS = [
   { nombre: "buscar_catalogo_rag", descripcion: "Busca productos.", esquema: { $schema: "http://json-schema.org/draft-07/schema#", type: "object", properties: { consulta: { type: "string" } }, required: ["consulta"] } },

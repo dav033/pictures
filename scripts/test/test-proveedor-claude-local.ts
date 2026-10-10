@@ -19,7 +19,7 @@ import { conProveedorDeEmpresa } from "../../src/lib/ia/nucleo/telemetria-llamad
 let pruebas = 0;
 const prueba = async (nombre: string, fn: () => void | Promise<void>) => { await fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
 
-const VARIABLES = ["NODE_ENV", "VERCEL", "IA_PROVEEDOR", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "IA_LOCAL_ESFUERZO"] as const;
+const VARIABLES = ["NODE_ENV", "VERCEL", "IA_PROVEEDOR", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "IA_LOCAL_ESFUERZO", "IA_CLAUDE_TRANSPORTE"] as const;
 const original = Object.fromEntries(VARIABLES.map((v) => [v, process.env[v]]));
 
 /** Deja el entorno exactamente como se pide (las variables que no se nombran quedan sin definir). */
@@ -30,6 +30,8 @@ function entorno(valores: Partial<Record<(typeof VARIABLES)[number], string | un
 }
 
 const LOCAL = { NODE_ENV: "development", IA_PROVEEDOR: "claude", ANTHROPIC_API_KEY: "sk-ant-prueba-no-real", GEMINI_API_KEY: "clave-gemini-de-prueba" };
+/** Sin llave de Anthropic: Claude Code instalado (IA_CLAUDE_TRANSPORTE=cli). */
+const LOCAL_CLI = { NODE_ENV: "development", IA_PROVEEDOR: "claude", IA_CLAUDE_TRANSPORTE: "cli", GEMINI_API_KEY: "clave-gemini-de-prueba" };
 const esSinLlaveClaude = (error: unknown) => error instanceof ErrorIA && error.proveedor === "claude" && error.causa === "sin_llave" && !error.reintentable;
 
 async function main() {
@@ -64,8 +66,26 @@ async function main() {
     assert.equal(resolverProveedor({ override: "claude", cookie: "claude" }), "gemini");
   });
 
+  await prueba("transporte cli sin llave: el registro ofrece Claude y chat, lectura de foto, escena y cliente directo salen con el alias haiku (esfuerzo low)", async () => {
+    entorno(LOCAL_CLI);
+    assert.deepEqual(proveedoresDisponibles(), ["gemini", "claude"]);
+    assert.equal(resolverProveedor({ override: "gemini", cookie: "gemini" }), "claude");
+    const chat = await chatDe("claude", "chat_guiado");
+    assert.equal(chat.id, "claude");
+    assert.equal(chat.modelo, "haiku");
+    assert.equal(chat.thinkingLevel, "low");
+    assert.equal((await chatLecturaFotoDe("claude")).modelo, "haiku");
+    assert.equal(modeloEscenaIADe("claude")?.modelo, "haiku");
+    assert.notEqual(getClaudeClient("escena_ia"), null, "sin ANTHROPIC_API_KEY");
+    assert.deepEqual(destinoGenerativo(), { proveedor: "claude", modelo: "haiku", esfuerzo: "low", transporte: "cli" });
+    assert.equal(clienteGenerativoDe("lectura_foto_escena")?.proveedor, "claude");
+  });
+
   const contextos = [
     ["NODE_ENV=production (VPS en Docker, sin VERCEL; next start)", { ...LOCAL, NODE_ENV: "production" }],
+    ["cli con NODE_ENV=production (VPS)", { ...LOCAL_CLI, NODE_ENV: "production" }],
+    ["cli en Vercel", { ...LOCAL_CLI, VERCEL: "1" }],
+    ["cli sin NODE_ENV", { ...LOCAL_CLI, NODE_ENV: undefined }],
     ["Vercel", { ...LOCAL, VERCEL: "1" }],
     ["Vercel en preview (NODE_ENV=production)", { ...LOCAL, VERCEL: "1", NODE_ENV: "production" }],
     ["sin NODE_ENV (un script que no lo puso)", { ...LOCAL, NODE_ENV: undefined }],

@@ -15,6 +15,7 @@ import { CotizacionProfesional } from "@/components/cotizacion/CotizacionProfesi
 import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
 import { ReferenceAnalysisController } from "@/components/references/ReferenceAnalysisController";
 import { SOLO_ANALISIS_FOTO } from "@/lib/ia/nucleo/feature-flags";
+import { cargarFactorPlazoCliente, factorPlazoCliente } from "@/lib/ia/plazo-cliente";
 import type { ReferenceDraft } from "@/components/references/ReferenceReviewPanel";
 import { PasosAsistente } from "@/components/propuesta";
 import { useSeleccion } from "@/lib/estado/seleccion";
@@ -680,6 +681,7 @@ export default function Page() {
   }, [mensajes, brief, creatividad, cargadoDeStorage]);
 
   useEffect(() => {
+    void cargarFactorPlazoCliente();
     fetch("/api/ia/salud")
       .then((r) => r.json())
       .then((data) => {
@@ -888,7 +890,7 @@ export default function Page() {
     // reenviar el turno. Termina en cuanto el análisis acaba o falla (el turno
     // sale sin plano de la foto y el cliente ve el error del análisis aparte);
     // el límite solo cubre un análisis que no responde.
-    if (imagenesReferenciaRef.current.length > 0) await esperaAnalisis.esperar(LIMITE_ESPERA_ANALISIS_MS);
+    if (imagenesReferenciaRef.current.length > 0) await esperaAnalisis.esperar(LIMITE_ESPERA_ANALISIS_MS * factorPlazoCliente());
     // Fotos que realmente viajan en este turno (leídas de los refs, igual que el cuerpo).
     const adjuntosTurno = adjuntosDelTurno(imagenesReferenciaRef.current, fotoEspacioRef.current);
     const controlador = new AbortController();
@@ -900,7 +902,7 @@ export default function Page() {
       temporizador = window.setTimeout(() => {
         excedioTiempo = true;
         controlador.abort();
-      }, LIMITE_INACTIVIDAD_CHAT_MS);
+      }, LIMITE_INACTIVIDAD_CHAT_MS * factorPlazoCliente());
     };
     reiniciarLimiteInactividad();
 

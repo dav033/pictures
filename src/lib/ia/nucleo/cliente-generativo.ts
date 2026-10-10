@@ -2,7 +2,7 @@ import type { Content, GenerateContentParameters, GenerateContentResponseUsageMe
 import { getClaudeClient } from "@/lib/claude";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { comoClienteGemini } from "@/lib/ia/claude/como-gemini";
-import { claudeLocalPermitido, configClaudeLocal } from "@/lib/ia/claude/config";
+import { claudeLocalPermitido, configClaudeLocal, type TransporteClaude } from "@/lib/ia/claude/config";
 import type { EsfuerzoClaude } from "@/lib/ia/claude/tipos";
 
 /**
@@ -33,12 +33,14 @@ export type DestinoGenerativo = {
   modelo: string;
   /** Claude: el esfuerzo que de verdad se manda (para `thinking_level` de la telemetría). */
   esfuerzo?: EsfuerzoClaude;
+  /** Claude por Claude Code (`cli`): lo paga la suscripción, así que su coste estimado es 0. Ausente = API. */
+  transporte?: Extract<TransporteClaude, "cli">;
 };
 
 export function destinoGenerativo(): DestinoGenerativo {
   if (!claudeLocalPermitido()) return { proveedor: "gemini", modelo: MODELO_CHAT };
   const config = configClaudeLocal();
-  return { proveedor: "claude", modelo: config.modelo, esfuerzo: config.esfuerzo };
+  return { proveedor: "claude", modelo: config.modelo, esfuerzo: config.esfuerzo, ...(config.transporte === "cli" ? { transporte: "cli" as const } : {}) };
 }
 
 /** `null` si el proveedor que toca no está configurado (los llamadores lo tratan como «sin IA», igual que antes). */

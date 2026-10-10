@@ -48,8 +48,8 @@ export type OperationalContextV1 = z.infer<typeof OperationalContextV1Schema>;
 export type InternalRequestSignatureV1 = z.infer<typeof InternalRequestSignatureV1Schema>;
 export type BackendSelectionV1 = z.infer<typeof BackendSelectionV1Schema>;
 
-function clampDeadline(value: number): number {
-  return Math.min(DEADLINE_MAX_MS, Math.max(1, Math.trunc(value)));
+function clampDeadline(value: number, maxMs: number = DEADLINE_MAX_MS): number {
+  return Math.min(maxMs, Math.max(1, Math.trunc(value)));
 }
 
 function headerUuid(request: Request, name: string, fallback: string): string {
@@ -188,7 +188,8 @@ export function seleccionarBackendMigracion(): BackendSelectionV1 {
   });
 }
 
-export function crearDeadlineSignal(parentSignal: AbortSignal, deadlineMs: number): {
+/** `maxMs`: el tope del recorte; solo `crearDeadlineIA` (plazo-servidor.ts) lo sube, con Claude por Claude Code en local. */
+export function crearDeadlineSignal(parentSignal: AbortSignal, deadlineMs: number, maxMs: number = DEADLINE_MAX_MS): {
   signal: AbortSignal;
   deadlineAt: number;
   wasDeadlineExceeded: () => boolean;
@@ -196,7 +197,7 @@ export function crearDeadlineSignal(parentSignal: AbortSignal, deadlineMs: numbe
   dispose: () => void;
 } {
   const controller = new AbortController();
-  const deadlineAt = Date.now() + clampDeadline(deadlineMs);
+  const deadlineAt = Date.now() + clampDeadline(deadlineMs, maxMs);
   let deadlineExceeded = false;
   const onParentAbort = () => controller.abort(parentSignal.reason);
   const timer = setTimeout(() => {

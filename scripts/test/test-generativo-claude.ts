@@ -132,7 +132,7 @@ async function main() {
   await prueba("parámetros de Gemini que no se traducen (tools, toolConfig, responseModalities, responseSchema, otros) lanzan antes de llamar", async () => {
     const { comoClienteGemini } = await import("@/lib/ia/claude/como-gemini");
     const { crearClienteAnthropic } = await import("@/lib/ia/claude/cliente");
-    const generativo = comoClienteGemini(crearClienteAnthropic({ apiKey: "x" }), { apiKey: "x", modelo: "claude-haiku-5-5", esfuerzo: "medium", pensamiento: true, maxTokens: 16_000 });
+    const generativo = comoClienteGemini(crearClienteAnthropic({ apiKey: "x" }), { transporte: "api", apiKey: "x", modelo: "claude-haiku-5-5", esfuerzo: "medium", pensamiento: true, maxTokens: 16_000 });
     const base = { model: "claude-haiku-5-5", contents: [{ role: "user", parts: [{ text: "hola" }] }] };
     for (const config of [{ tools: [{ functionDeclarations: [] }] }, { toolConfig: {} }, { responseModalities: ["IMAGE"] }, { responseSchema: { type: "OBJECT" } }, { topP: 0.5 }, { responseMimeType: "text/x.enum" }]) {
       await assert.rejects(generativo.models.generateContent({ ...base, config } as Parameters<typeof generativo.models.generateContent>[0]), /Claude local no traduce/, JSON.stringify(config));

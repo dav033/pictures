@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { obtenerAjusteGlobal, proveedoresDisponibles, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { proveedoresEnSalud } from "@/lib/ia/nucleo/salud-proveedores";
+import { factorPlazoIA } from "@/lib/ia/claude/config";
 import { ultimosEventos } from "@sempertex/agente-core";
 
 export async function GET() {
@@ -15,11 +16,14 @@ export async function GET() {
   // body: respeta IA_PROVEEDOR y el ajuste global, no solo "el primero que
   // haya en la lista fija" (con Claude activo en local, Claude).
   const predeterminado = disponibles.length ? resolverProveedor({}) : null;
+  // Solo con Claude por Claude Code (local): el navegador estira sus plazos con él (plazo-cliente.ts).
+  const factorPlazo = factorPlazoIA();
 
   return Response.json({
     proveedores: proveedoresEnSalud(disponibles),
     ajusteGlobal: obtenerAjusteGlobal() ?? null,
     predeterminado,
     telemetria: ultimosEventos().slice(0, 20),
+    ...(factorPlazo > 1 ? { factorPlazo } : {}),
   });
 }

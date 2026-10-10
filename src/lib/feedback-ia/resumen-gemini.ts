@@ -1,4 +1,5 @@
 import { ThinkingLevel } from "@google/genai";
+import { plazoIA } from "@/lib/ia/claude/config";
 import { costeClaudeUsd } from "@/lib/ia/claude/precios";
 import { clienteGenerativoDe } from "@/lib/ia/nucleo/cliente-generativo";
 import { registrarSegunProveedor, resultadoTelemetria } from "@/lib/ia/nucleo/telemetria-llamadas";
@@ -67,12 +68,13 @@ export async function resumirConGemini(resultado: ResultadoAgregacion, dias: num
     const respuesta = await cliente.models.generateContent({
       model: modelo,
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: MAX_TOKENS_SALIDA, temperature: 0.2, abortSignal: AbortSignal.timeout(TIEMPO_MAXIMO_MS) },
+      config: { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }, maxOutputTokens: MAX_TOKENS_SALIDA, temperature: 0.2, abortSignal: AbortSignal.timeout(plazoIA(TIEMPO_MAXIMO_MS)) },
     });
     registrarSegunProveedor(generativo.proveedor, { flujo: "evaluacion", capacidad: "chat_turno", modelo, inicio, resultado: "ok", contexto: { superficie: PROPOSITO_RESUMEN }, usage: respuesta.usageMetadata, thinkingLevel: generativo.esfuerzo ?? "low", finishReason: respuesta.candidates?.[0]?.finishReason });
     const uso = respuesta.usageMetadata;
     const costeClaude = costeClaudeUsd(modelo, { input_tokens: uso?.promptTokenCount ?? 0, output_tokens: (uso?.candidatesTokenCount ?? 0) + (uso?.thoughtsTokenCount ?? 0) });
-    const costeUsd = Math.round((costeClaude ?? (uso?.promptTokenCount ?? 0) * USD_ENTRADA_POR_TOKEN + ((uso?.candidatesTokenCount ?? 0) + (uso?.thoughtsTokenCount ?? 0)) * USD_SALIDA_POR_TOKEN) * 1e6) / 1e6;
+    // Por Claude Code (cli) lo paga la suscripción: 0.
+    const costeUsd = generativo.transporte === "cli" ? 0 : Math.round((costeClaude ?? (uso?.promptTokenCount ?? 0) * USD_ENTRADA_POR_TOKEN + ((uso?.candidatesTokenCount ?? 0) + (uso?.thoughtsTokenCount ?? 0)) * USD_SALIDA_POR_TOKEN) * 1e6) / 1e6;
     const texto = respuesta.text?.trim();
     decidir("modelo:feedback_ia_resumen", texto ? "resumen de los huecos recurrentes redactado" : "el modelo no devolvió texto", { dias, calificados: resultado.totalCalificados, costeEstimadoUsd: costeUsd, modelo });
     return texto ? { texto: texto.slice(0, 8000), modelo, costeUsd } : null;

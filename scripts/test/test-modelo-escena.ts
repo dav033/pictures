@@ -117,7 +117,7 @@ async function probarClaude() {
     return new Response(JSON.stringify(cuerpo), { status: 200, headers: { "content-type": "application/json" } });
   }) as typeof fetch;
   const registradas: Array<Parameters<typeof registrarClaude>[0]> = [];
-  const config = { apiKey: "clave-de-prueba", modelo: "claude-haiku-5-5", esfuerzo: "medium" as const, pensamiento: true, maxTokens: 16_000 };
+  const config = { transporte: "api" as const, apiKey: "clave-de-prueba", modelo: "claude-haiku-5-5", esfuerzo: "medium" as const, pensamiento: true, maxTokens: 16_000 };
   const modelo = crearModeloEscenaClaude(crearClienteAnthropic({ apiKey: config.apiKey, fetch: fetchFalso }), config, { registrar: (entrada) => { registradas.push(entrada); } });
   const corte = new AbortController();
   const sesion = modelo.iniciar({ sistema: SISTEMA, declaraciones: DECLARACIONES_ESCENA, historial: HISTORIAL, partesUsuario: PARTES, signal: corte.signal });

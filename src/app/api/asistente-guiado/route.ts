@@ -13,7 +13,6 @@ import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { PROMPT_GUIADO } from "@/lib/ia/guiado/prompt-guiado";
 import { ChatSseEventV1Schema, CHAT_SSE_CONTRACT_VERSION } from "@/lib/ia/contracts/chat-v1";
 import { ListaMaterialesRequestSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
-import { crearDeadlineSignal } from "@/lib/ia/contracts/operational-v1";
 import { llamarPythonListaMateriales } from "@/lib/ia/nucleo/python-adapter";
 import { leerMotorGuiada } from "@/lib/guiada-motor/bandera";
 import { avisoEdicionDelPlanAbierto } from "@/lib/ia/guiado/aviso-edicion-plan";
@@ -33,6 +32,7 @@ import { textoPlanActual } from "@/lib/ia/guiado/instruccion-plan";
 import { briefConHechos, etiquetaEdadCliente, hechosDelCliente, pedidoCompletoDePieza, piezaOrganicaDelBoton, propuestaConLoPedido, textoHechosCliente, usoDeTexto } from "@/lib/ia/guiado/hechos-cliente";
 import type { BriefGuiado } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { conRegistro, contextoActual, decidir, envolverRegistroHerramientas } from "@/lib/registro";
+import { crearDeadlineIA } from "@/lib/ia/plazo-servidor";
 import { detectarEleccionIdea, detectarPedidoEdicion, fraseDelPedido, HERRAMIENTA_ELEGIR_IDEA, HERRAMIENTAS_EDICION, herramientasConEdicion, ideaDesdeHerramienta, pedidoDesdeHerramienta, textoIdeasParaModelo, textoPiezasParaModelo, type DeteccionEdicion, type HerramientaEdicion } from "@/lib/ia/guiado/edicion-plan-chat";
 
 export const maxDuration = 75;
@@ -199,7 +199,7 @@ async function turnoGuiado(request: Request) {
   const datos: Record<string, unknown> = {};
   // El uso que dijo con sus palabras vuelve a la interfaz: «Cuánto cuesta» lo abre ya elegido.
   if (usoConfirmado && usoConfirmado !== estado?.uso) datos.uso = usoConfirmado;
-  const deadline = crearDeadlineSignal(request.signal, DEADLINE_TURNO_MS);
+  const deadline = crearDeadlineIA(request.signal, DEADLINE_TURNO_MS);
   try {
     const id = resolverProveedor({ cookie: request.headers.get("cookie")?.match(/ia_proveedor=(gemini)/)?.[1] });
     const chat = await chatOmoikaneDe(id, { requestId, correlationId: requestId }, "chat_guiado");

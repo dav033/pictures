@@ -10,11 +10,15 @@ import { auditarLlamadaIa, iniciarLlamadaIa, type DescripcionLlamadaIa, type Lla
  * `messages.stream` deja `llamada_ia` (sistema, mensajes, herramientas, parámetros) y `respuesta_ia` (texto, llamadas,
  * motivo de fin, tokens con lectura y escritura de caché, coste estimado, ms o error). Devuelve y lanza exactamente lo
  * mismo que el cliente envuelto. Las imágenes base64 se guardan como huella (redacción del registro).
+ * Con el transporte `cli` (Claude Code con la suscripción del dueño) la petición lleva `transporte: "cli"` en sus
+ * parámetros y el coste es 0: no hay factura por llamada; los tokens se guardan igual.
  */
 
 const PROVEEDOR_REGISTRO = "claude";
 
-export function describirPeticionAnthropic(cuerpo: CuerpoMensajes, proposito: string): DescripcionLlamadaIa {
+type Transporte = "api" | "cli";
+
+export function describirPeticionAnthropic(cuerpo: CuerpoMensajes, proposito: string, transporte: Transporte = "api"): DescripcionLlamadaIa {
   return {
     proveedor: PROVEEDOR_REGISTRO,
     modelo: cuerpo.model,
@@ -22,14 +26,14 @@ export function describirPeticionAnthropic(cuerpo: CuerpoMensajes, proposito: st
     ...(cuerpo.system ? { sistema: cuerpo.system.map((bloque) => bloque.text).join("\n") } : {}),
     mensajes: cuerpo.messages,
     ...(cuerpo.tools ? { herramientas: cuerpo.tools } : {}),
-    parametros: { max_tokens: cuerpo.max_tokens, thinking: cuerpo.thinking, output_config: cuerpo.output_config, tool_choice: cuerpo.tool_choice },
+    parametros: { max_tokens: cuerpo.max_tokens, thinking: cuerpo.thinking, output_config: cuerpo.output_config, tool_choice: cuerpo.tool_choice, ...(transporte === "cli" ? { transporte } : {}) },
   };
 }
 
-export function extraerRespuestaAnthropic(respuesta: RespuestaAnthropic): ResultadoLlamadaIa {
+export function extraerRespuestaAnthropic(respuesta: RespuestaAnthropic, transporte: Transporte = "api"): ResultadoLlamadaIa {
   const uso = usoDeAnthropic(respuesta.usage);
   const llamadas = respuesta.content.filter(esUsoHerramienta).map((bloque) => ({ nombre: bloque.name, id: bloque.id, argumentos: bloque.input }));
-  const coste = costeClaudeUsd(respuesta.model, respuesta.usage);
+  const coste = transporte === "cli" ? 0 : costeClaudeUsd(respuesta.model, respuesta.usage);
   return {
     texto: textoDeContenido(respuesta.content),
     ...(llamadas.length ? { llamadasHerramientas: llamadas } : {}),
@@ -37,10 +41,11 @@ export function extraerRespuestaAnthropic(respuesta: RespuestaAnthropic): Result
     tokens: { entrada: uso.entrada, salida: uso.salida, pensamiento: uso.pensamiento, cacheados: uso.cacheados, cacheEscritos: uso.cacheEscritos },
     modelo: respuesta.model,
     ...(coste !== undefined ? { costeEstimadoUsd: coste } : {}),
+    ...(respuesta.tiemposCli ? { crudo: { tiemposCli: respuesta.tiemposCli } } : {}),
   };
 }
 
-async function* flujoAuditado(flujo: AsyncIterable<EventoFlujoAnthropic>, llamada: LlamadaIaEnCurso): AsyncGenerator<EventoFlujoAnthropic> {
+async function* flujoAuditado(flujo: AsyncIterable<EventoFlujoAnthropic>, llamada: LlamadaIaEnCurso, transporte: Transporte): AsyncGenerator<EventoFlujoAnthropic> {
   const acumulador = crearAcumuladorMensaje();
   let texto = "";
   let cerrada = false;
@@ -50,7 +55,7 @@ async function* flujoAuditado(flujo: AsyncIterable<EventoFlujoAnthropic>, llamad
       yield evento;
     }
     cerrada = true;
-    llamada.terminar(extraerRespuestaAnthropic(acumulador.mensaje()));
+    llamada.terminar(extraerRespuestaAnthropic(acumulador.mensaje(), transporte));
   } catch (error) {
     cerrada = true;
     llamada.fallar(error, { texto, interrumpida: true });
@@ -63,17 +68,18 @@ async function* flujoAuditado(flujo: AsyncIterable<EventoFlujoAnthropic>, llamad
 
 const envueltos = new WeakSet<ClienteAnthropic>();
 
-export function envolverClienteAnthropic(cliente: ClienteAnthropic, opciones: { proposito: string }): ClienteAnthropic {
+export function envolverClienteAnthropic(cliente: ClienteAnthropic, opciones: { proposito: string; transporte?: Transporte }): ClienteAnthropic {
   if (envueltos.has(cliente)) return cliente;
+  const transporte = opciones.transporte ?? "api";
   const envuelto: ClienteAnthropic = {
     messages: {
       create: (cuerpo, llamada) => auditarLlamadaIa(
-        describirPeticionAnthropic(cuerpo, opciones.proposito),
+        describirPeticionAnthropic(cuerpo, opciones.proposito, transporte),
         () => cliente.messages.create(cuerpo, llamada),
-        extraerRespuestaAnthropic,
+        (respuesta) => extraerRespuestaAnthropic(respuesta, transporte),
       ),
       stream: async (cuerpo, llamada) => {
-        const enCurso = iniciarLlamadaIa(describirPeticionAnthropic(cuerpo, opciones.proposito));
+        const enCurso = iniciarLlamadaIa(describirPeticionAnthropic(cuerpo, opciones.proposito, transporte));
         let flujo: AsyncIterable<EventoFlujoAnthropic>;
         try {
           flujo = await cliente.messages.stream(cuerpo, llamada);
@@ -81,7 +87,7 @@ export function envolverClienteAnthropic(cliente: ClienteAnthropic, opciones: { 
           enCurso.fallar(error);
           throw error;
         }
-        return flujoAuditado(flujo, enCurso);
+        return flujoAuditado(flujo, enCurso, transporte);
       },
     },
   };

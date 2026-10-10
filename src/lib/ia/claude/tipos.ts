@@ -73,6 +73,8 @@ export type RespuestaAnthropic = {
   content: BloqueCrudo[];
   stop_reason: string | null;
   usage: UsoAnthropic;
+  /** Solo el transporte `cli`: vueltas internas de Claude Code y en qué se fue el tiempo (para la auditoría). */
+  tiemposCli?: { turnos?: number; msTotal?: number; msApi?: number };
 };
 
 export type DeltaBloque =

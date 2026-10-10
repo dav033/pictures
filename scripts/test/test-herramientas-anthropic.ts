@@ -94,7 +94,7 @@ async function main() {
   };
   const fetchFalso = (async () => new Response(JSON.stringify(respuestaApi), { status: 200, headers: { "content-type": "application/json" } })) as typeof fetch;
   const cliente = crearClienteAnthropic({ apiKey: "clave-de-prueba", fetch: fetchFalso });
-  const modelo = crearModeloEscenaClaude(cliente, { apiKey: "clave-de-prueba", modelo: "claude-haiku-5-5", esfuerzo: "medium", pensamiento: true, maxTokens: 16_000 }, { registrar: () => undefined });
+  const modelo = crearModeloEscenaClaude(cliente, { transporte: "api", apiKey: "clave-de-prueba", modelo: "claude-haiku-5-5", esfuerzo: "medium", pensamiento: true, maxTokens: 16_000 }, { registrar: () => undefined });
   const sesion = modelo.iniciar({ sistema: "s", declaraciones: DECLARACIONES_ESCENA, historial: [], partesUsuario: [{ text: "arma algo" }], signal: new AbortController().signal });
   const paso = await sesion.pedir();
 
