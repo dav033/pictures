@@ -7,6 +7,8 @@
  * Sin la cabecera, la ruta responde como siempre (un JSON): el contrato de los demás clientes no cambia. Compartido por el
  * servidor (codifica) y el navegador (decodifica); puro y sin red.
  */
+import { TEXTO_IA_CAIDA } from "@/lib/globos3d/honestidad-respuesta";
+
 
 export const TIPO_NDJSON = "application/x-ndjson";
 
@@ -140,7 +142,7 @@ export function responderEnFlujo(entrada: {
         escribir({ tipo: "final", estado, cuerpo: await respuesta.json().catch(() => null) });
       } catch (error) {
         alFallo(error);
-        escribir({ tipo: "final", estado, cuerpo: { error: "No pude hablar con la IA ahora. Vuelve a intentarlo." } });
+        escribir({ tipo: "final", estado, cuerpo: { error: TEXTO_IA_CAIDA } });
       } finally {
         alTerminar?.(estado);
         const fin = !cerrado;

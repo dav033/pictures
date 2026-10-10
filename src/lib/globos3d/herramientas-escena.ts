@@ -509,15 +509,15 @@ function colocacionDe(donde: Donde, escena: Escena, previa: Colocacion | null, p
   };
   if (donde.en === "piso") {
     const m = mismo?.en === "piso" ? mismo : null;
-    return { en: "piso", xCm: dentro(donde.x_cm ?? m?.xCm ?? 0, s.anchoCm / 2, "x_cm"), zCm: dentro(donde.z_cm ?? m?.zCm ?? 0, s.fondoCm / 2, "z_cm"), giroGrados: giroNormal(donde.giro_grados ?? m?.giroGrados ?? 0) };
+    return { en: "piso", xCm: dentro(donde.x_cm ?? m?.xCm ?? 0, s.anchoCm / 2, "La posición izquierda-derecha"), zCm: dentro(donde.z_cm ?? m?.zCm ?? 0, s.fondoCm / 2, "La posición adelante-atrás"), giroGrados: giroNormal(donde.giro_grados ?? m?.giroGrados ?? 0) };
   }
   if (donde.en === "pared") {
     const m = mismo?.en === "pared" ? mismo : null;
     const pared: ParedSala = donde.pared ?? m?.pared ?? "fondo";
     const largo = marcoDePared(s, pared).largoCm;
     const altura = donde.altura_cm ?? m?.alturaCm ?? (pieza.tipo === "guirnalda" ? 200 : 0);
-    if (!Number.isFinite(altura) || altura < 0 || altura > s.altoCm) fallar(`altura_cm = ${altura} cm: va de 0 a ${r0(s.altoCm)} cm (el alto de la sala).`);
-    return { en: "pared", pared, aLoLargoCm: dentro(donde.a_lo_largo_cm ?? (m && m.pared === pared ? m.aLoLargoCm : 0), largo / 2, `a_lo_largo_cm en la ${NOMBRE_PARED[pared].toLowerCase()}`), alturaCm: r0(altura) };
+    if (!Number.isFinite(altura) || altura < 0 || altura > s.altoCm) fallar(`La altura ${altura} cm pasa del alto de la sala: va de 0 a ${r0(s.altoCm)} cm.`);
+    return { en: "pared", pared, aLoLargoCm: dentro(donde.a_lo_largo_cm ?? (m && m.pared === pared ? m.aLoLargoCm : 0), largo / 2, `La posición a lo largo de la ${NOMBRE_PARED[pared].toLowerCase()}`), alturaCm: r0(altura) };
   }
   if (donde.en === "techo") {
     const m = mismo?.en === "techo" ? mismo : null;
@@ -525,7 +525,7 @@ function colocacionDe(donde: Donde, escena: Escena, previa: Colocacion | null, p
     const maximo = Math.max(0, s.altoCm - 40);
     if (!Number.isFinite(cuelga) || cuelga < 0 || cuelga > maximo) fallar(`cuelga_cm = ${cuelga} cm: va de 0 a ${r0(maximo)} cm en esta sala.`);
     return {
-      en: "techo", xCm: dentro(donde.x_cm ?? m?.xCm ?? 0, s.anchoCm / 2, "x_cm"), zCm: dentro(donde.z_cm ?? m?.zCm ?? 0, s.fondoCm / 2, "z_cm"),
+      en: "techo", xCm: dentro(donde.x_cm ?? m?.xCm ?? 0, s.anchoCm / 2, "La posición izquierda-derecha"), zCm: dentro(donde.z_cm ?? m?.zCm ?? 0, s.fondoCm / 2, "La posición adelante-atrás"),
       cuelgaCm: r0(cuelga), giroGrados: giroNormal(donde.giro_grados ?? m?.giroGrados ?? 0), volteada: donde.volteada ?? m?.volteada ?? pieza.tipo === "decoracion",
     };
   }
@@ -1227,14 +1227,14 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       const s = escena.sala;
       const hex = (v: string | undefined, que: string, previo: string) => {
         if (v === undefined) return previo;
-        if (!/^#[0-9a-fA-F]{6}$/.test(v)) fallar(`${que} debe ser un color hex como #f1ece6.`);
+        if (!/^#[0-9a-fA-F]{6}$/.test(v)) fallar(`${que} no es un color válido: usa su nombre o un código como #f1ece6.`);
         return v.toLowerCase();
       };
       const sala: Sala = {
         anchoCm: a.ancho_cm !== undefined ? enRango(a.ancho_cm, RANGOS.sala.ancho_cm, "ancho_cm") : s.anchoCm,
         fondoCm: a.fondo_cm !== undefined ? enRango(a.fondo_cm, RANGOS.sala.fondo_cm, "fondo_cm") : s.fondoCm,
         altoCm: a.alto_cm !== undefined ? enRango(a.alto_cm, RANGOS.sala.alto_cm, "alto_cm") : s.altoCm,
-        tonos: { piso: hex(a.tono_piso, "tono_piso", s.tonos.piso), paredes: hex(a.tono_paredes, "tono_paredes", s.tonos.paredes), techo: hex(a.tono_techo, "tono_techo", s.tonos.techo) },
+        tonos: { piso: hex(a.tono_piso, "El tono del piso", s.tonos.piso), paredes: hex(a.tono_paredes, "El tono de las paredes", s.tonos.paredes), techo: hex(a.tono_techo, "El tono del techo", s.tonos.techo) },
         mostrar: { piso: a.mostrar_piso ?? s.mostrar.piso, fondo: a.mostrar_fondo ?? s.mostrar.fondo, laterales: a.mostrar_laterales ?? s.mostrar.laterales, techo: a.mostrar_techo ?? s.mostrar.techo },
         // El ambiente que ya tenía se conserva; solo cambia lo que se pide.
         ...(a.piso_madera !== undefined || a.luces_techo !== undefined || a.ventana !== undefined || s.ambiente
@@ -1270,7 +1270,7 @@ function sitioSobreDescrito(escena: Escena, armada: EscenaArmada, a: { padre_id:
  * valor fuera de rango devuelven `ok: false` con la escena intacta y el motivo en español.
  */
 export function aplicarHerramienta(escena: Escena, nombre: string, argumentos: unknown): ResultadoHerramienta {
-  if (!NOMBRES_HERRAMIENTAS.includes(nombre)) return { ok: false, escena, error: `No existe la herramienta «${nombre}». Hay: ${NOMBRES_HERRAMIENTAS.join(", ")}.` };
+  if (!NOMBRES_HERRAMIENTAS.includes(nombre)) return { ok: false, escena, error: `No existe la herramienta «${nombre.replace(/_/g, " ")}». Hay: ${NOMBRES_HERRAMIENTAS.join(", ")}.` };
   try {
     const extra = HERRAMIENTAS_EXTRA[nombre];
     // Una clave que la herramienta no conoce (`cuelga` por `cuelga_cm`) es un error con la clave buena, no algo que se descarta en silencio.

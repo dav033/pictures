@@ -8,6 +8,15 @@ import type { ProblemaEscena } from "./problemas-escena";
  * admite se le agrega una lista factual «No pude: …». Lo mismo con lo que quedó mal puesto en la escena final. Puro.
  */
 
+/** Lo que la ruta responde cuando la IA no puede atender el pedido (D-023: un «No pude:» en palabras de cliente). */
+export const TEXTO_CUOTA_IA = "No pude: la IA no tiene cuota disponible ahora. Inténtalo en un rato.";
+export const TEXTO_IA_CAIDA = "No pude: no logré hablar con la IA ahora. Vuelve a intentarlo.";
+export const TEXTO_SIN_IA = "No pude: la IA no está configurada en este servidor.";
+export const TEXTO_FOTO_NO_CLARA = "No pude: la IA no pudo leer la foto con claridad. Prueba con otra foto o más cercana.";
+export const TEXTO_FOTO_NO_LEIDA = "No pude: no logré leer la foto con la IA ahora. Vuelve a intentarlo.";
+/** El tope por hora de pedidos a la IA de la escena (la ruta lo dice con su número). */
+export const textoTopeHora = (tope: number): string => `No pude: se alcanzó el límite de ${tope} pedidos por hora a la IA de la escena. Inténtalo más tarde.`;
+
 /** `objetivo`: la pieza sobre la que actuó la herramienta (la mesa de un `poner_sobre`), para no dar por resuelta la mesa 1 con un éxito en la mesa 2. */
 export type Intento = { herramienta: string; ok: boolean; error?: string; objetivo?: string };
 export type FalloPendiente = { herramienta: string; error: string; veces: number };

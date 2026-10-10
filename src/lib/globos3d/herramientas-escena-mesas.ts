@@ -254,7 +254,7 @@ function agregarMesas(escena: Escena, argumentos: unknown): { escena: Escena; re
   }
   const ocupaAncho = rejilla.columnas * celdaAncho - pasillo, ocupaFondo = rejilla.filas * celdaFondo - pasillo;
   if (caben > 1 && (ocupaAncho > escena.sala.anchoCm || ocupaFondo > escena.sala.fondoCm)) {
-    avisar(notas, `Los ${caben} conjuntos ocupan ${Math.round(ocupaAncho) / 100} × ${Math.round(ocupaFondo) / 100} m y la sala mide ${Math.round(escena.sala.anchoCm) / 100} × ${Math.round(escena.sala.fondoCm) / 100} m: se salen de la sala. Agrándala, pon menos mesas o usa una separacion_cm menor.`, "se salen de la sala", "se salen", "no caben");
+    avisar(notas, `Los ${caben} conjuntos ocupan ${Math.round(ocupaAncho) / 100} × ${Math.round(ocupaFondo) / 100} m y la sala mide ${Math.round(escena.sala.anchoCm) / 100} × ${Math.round(escena.sala.fondoCm) / 100} m: se salen de la sala. Agrándala, pon menos mesas o usa un pasillo más angosto.`, "se salen de la sala", "se salen", "no caben");
   }
 
   let actual = escena;

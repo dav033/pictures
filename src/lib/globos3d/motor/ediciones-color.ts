@@ -19,7 +19,8 @@ type Op<T extends EdicionEspecV1["op"]> = Extract<EdicionEspecV1, { op: T }>;
 
 /** Entrega el resultado de recorrer las piezas: lo cambiado, lo saltado y por qué. */
 function resultado(espec: EspecClienteV1, cambios: Map<string, PiezaEspec>, avisos: string[], descripcion: (tocadas: PiezaEspec[]) => string, sinCambio: string): ResultadoEdicion {
-  if (!cambios.size) return noAplicado(espec, sinCambio, avisos);
+  // Sin cambio, se dice el genérico y, detrás, el aviso que explica por qué (el máximo de colores, una pieza que no lo admite).
+  if (!cambios.size) return noAplicado(espec, avisos.length ? `${sinCambio} ${avisos.map((aviso) => aviso.charAt(0).toLocaleUpperCase("es") + aviso.slice(1)).join(" ")}` : sinCambio, avisos);
   const nueva = conPiezasCambiadas(espec, cambios);
   const tocadas = nueva.piezas.filter((pieza) => cambios.has(pieza.id));
   return { espec: nueva, avisos, descripcion: descripcion(tocadas), tocadas: tocadas.map((pieza) => pieza.id) };

@@ -88,6 +88,8 @@ jobs:
       - if: ${{ !cancelled() }}
         run: npm run globos3d:test
       - if: ${{ !cancelled() }}
+        run: npm run test-honestidad-forzada
+      - if: ${{ !cancelled() }}
         run: npm run contracts:test
       - if: ${{ !cancelled() }}
         run: npm run contracts:test:domain

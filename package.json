@@ -22,6 +22,7 @@
     "test-proxy-matcher": "tsx scripts/test/test-proxy-matcher.ts",
     "test-comparar-constante": "tsx scripts/test/test-comparar-constante.ts",
     "test-guardia-prerender": "tsx scripts/test/test-guardia-prerender.ts",
+    "test-honestidad-forzada": "tsx --conditions=react-server scripts/test/test-honestidad-forzada.ts",
     "test-columna-asimetrica-densa": "tsx --conditions=react-server scripts/test/test-columna-asimetrica-densa.ts",
     "test-motor-guiada-golden": "tsx --conditions=react-server scripts/test/test-motor-guiada-golden.ts",
     "test-motor-guiada-precio": "tsx --conditions=react-server scripts/test/test-motor-guiada-precio.ts",

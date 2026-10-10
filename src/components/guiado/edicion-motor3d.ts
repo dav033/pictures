@@ -30,8 +30,17 @@ export class FalloMotor3dApagado extends FalloPlanEditar {
   }
 }
 
-export const TEXTO_MOTOR_3D_APAGADO = "No pude: por ahora no puedo cambiar este plan porque el armado en 3D no está disponible. Tu plan sigue como estaba; si quieres, pídeme armarlo de nuevo.";
+export const TEXTO_MOTOR_3D_APAGADO = "No pude: por ahora no puedo cambiar este plan porque la vista 3D no está disponible. Tu plan sigue como estaba; si quieres, pídeme armarlo de nuevo.";
 const RESPALDO = "No pude: no logré hacer ese cambio. Tu plan sigue como estaba.";
+
+/** El color que el servidor no pudo leer: un 400 de validación cuya ruta apunta a un campo de color, con el nombre que escribió el cliente. */
+function colorQueNoSeLee(datos: unknown, edicion: EdicionDelCliente): string | null {
+  const detalles = (datos as { detalles?: Array<{ ruta?: string }> } | null)?.detalles ?? [];
+  const campo = detalles.map((detalle) => detalle.ruta?.split(".").pop() ?? "").find((nombre) => nombre === "colorNuevo" || nombre === "color");
+  if (!campo || edicion.tipo !== "pedido") return null;
+  const valor: unknown = (edicion.pedido as Record<string, unknown>)[campo];
+  return typeof valor === "string" && valor.trim() ? valor.trim() : null;
+}
 
 export function crearDependenciasEdicion3d(opciones: { signal?: AbortSignal; red?: Red; plazoMs?: number } = {}): DependenciasEdicion3d {
   return {
@@ -60,6 +69,8 @@ export function crearDependenciasEdicion3d(opciones: { signal?: AbortSignal; red
       if (!respuesta.ok) {
         const fallo = FalloEditarMotorSchema.safeParse(datos);
         if (fallo.success && fallo.data.fallback?.razon === "bandera_python") throw new FalloMotor3dApagado();
+        const colorNoLeido = colorQueNoSeLee(datos, edicion);
+        if (respuesta.status === 400 && colorNoLeido) throw new FalloPlanEditar(`No pude: no reconozco el color «${colorNoLeido}». Tu plan sigue como estaba.`);
         // 409, 422 y 429 traen frases pensadas para el cliente; lo demás (400, 401, 500) es técnico y se dice con el respaldo.
         // Un 422 puede traer varias razones (una tanda parcial): se dicen todas, en palabras de cliente.
         if (!fallo.success || ![409, 422, 429].includes(respuesta.status)) throw new FalloPlanEditar(RESPALDO);

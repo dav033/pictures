@@ -2,6 +2,7 @@ import { devolverCupoEscenaIA, tomarCupoEscenaIA, TOPE_POR_HORA } from "@/lib/gl
 import { ErrorLecturaFoto, type FotoLectura } from "@/lib/globos3d/leer-foto-ia";
 import type { Modelado } from "@/lib/globos3d/modelar-desde-foto";
 import { MIMES_FOTO, TOPE_BYTES_FOTO } from "./buscar-foto";
+import { TEXTO_CUOTA_IA, TEXTO_FOTO_NO_CLARA, TEXTO_FOTO_NO_LEIDA, TEXTO_SIN_IA } from "@/lib/globos3d/honestidad-respuesta";
 
 /**
  * `POST /api/escena-desde-foto` (REQ-001 paso 7): recibe la foto de una decoración (multipart, campo `imagen`, ≤ 6 MB,
@@ -34,11 +35,11 @@ export function motivoFotoInvalida(bytes: number, mime: string): { status: numbe
 /** Del error de la lectura a la respuesta HTTP (y si el pedido no gastó cupo: la IA sin configurar). */
 export function respuestaDeErrorLectura(error: unknown): { status: number; error: string; sinIA: boolean } {
   if (error instanceof ErrorLecturaFoto) {
-    if (error.causa === "sin_ia") return { status: 503, error: "La IA no está configurada en este servidor.", sinIA: true };
-    if (error.causa === "invalida") return { status: 502, error: "La IA no pudo leer la foto con claridad. Prueba con otra foto o más cercana.", sinIA: false };
-    if (/429|RESOURCE_EXHAUSTED|quota/i.test(error.message)) return { status: 429, error: "La IA no tiene cuota disponible ahora. Inténtalo en un rato.", sinIA: false };
+    if (error.causa === "sin_ia") return { status: 503, error: TEXTO_SIN_IA, sinIA: true };
+    if (error.causa === "invalida") return { status: 502, error: TEXTO_FOTO_NO_CLARA, sinIA: false };
+    if (/429|RESOURCE_EXHAUSTED|quota/i.test(error.message)) return { status: 429, error: TEXTO_CUOTA_IA, sinIA: false };
   }
-  return { status: 502, error: "No pude leer la foto con la IA ahora. Vuelve a intentarlo.", sinIA: false };
+  return { status: 502, error: TEXTO_FOTO_NO_LEIDA, sinIA: false };
 }
 
 export async function atenderEscenaDesdeFoto(request: Request, deps: DependenciasEscenaDesdeFoto): Promise<Response> {

@@ -12,7 +12,7 @@ import { REGLAS_AGENTE, SeleccionSchema, seleccionValida, textoSeleccion } from 
 import { PREGUNTAR_USUARIO, preguntaDe, type PreguntaUsuario } from "@/lib/globos3d/herramientas-escena-extra";
 import { verificarCambios } from "@/lib/globos3d/verificacion-escena";
 import type { AvisoUsuario } from "@/lib/globos3d/avisos-usuario";
-import { conHonestidad, fallosPendientes, objetivoDe, type Intento } from "@/lib/globos3d/honestidad-respuesta";
+import { TEXTO_CUOTA_IA, TEXTO_IA_CAIDA, TEXTO_SIN_IA, conHonestidad, fallosPendientes, objetivoDe, textoTopeHora, type Intento } from "@/lib/globos3d/honestidad-respuesta";
 import { problemasNuevos } from "@/lib/globos3d/problemas-escena";
 import { tomarCupoEscenaIA, TOPE_POR_HORA } from "@/lib/globos3d/cupo-escena-ia";
 import { FotoCuerpoSchema, REGLAS_FOTO, aplicarModeladoDeFoto, prepararFotoAdjunta, type FotoPreparada } from "@/lib/globos3d/escena-ia-foto";
@@ -131,9 +131,9 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   const { escena: inicial, mensaje, historial, seleccion, foto, refinar } = validado.data;
 
   const modeloIA = modeloDeEscena();
-  if (!modeloIA) return Response.json({ error: "La IA no está configurada en este servidor." }, { status: 503 });
+  if (!modeloIA) return Response.json({ error: TEXTO_SIN_IA }, { status: 503 });
   if (!tomarCupoEscenaIA()) {
-    return Response.json({ error: `Se alcanzó el límite de ${TOPE_POR_HORA} pedidos por hora a la IA de la escena. Inténtalo más tarde.` }, { status: 429 });
+    return Response.json({ error: textoTopeHora(TOPE_POR_HORA) }, { status: 429 });
   }
 
   // Foto adjunta: se lee (visión), se compila y, con la sala vacía, se arma antes de que hable el modelo.
@@ -247,7 +247,7 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
       // Lo ya aplicado se devuelve: el usuario puede deshacerlo con un clic.
       return Response.json({ escena, respuesta: conHonestidad("La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer.", fallosPendientes(intentos), problemasNuevos(base, escena), avisosUsuario), acciones, uso: { pasos, llamadas, costeEstimadoUsd: costeUsd(modeloIA, usos, adjunta?.modelado.uso.costeEstimadoUsd ?? 0) } });
     }
-    return Response.json({ error: cuota ? "La IA no tiene cuota disponible ahora. Inténtalo en un rato." : "No pude hablar con la IA ahora. Vuelve a intentarlo." }, { status: cuota ? 429 : 502 });
+    return Response.json({ error: cuota ? TEXTO_CUOTA_IA : TEXTO_IA_CAIDA }, { status: cuota ? 429 : 502 });
   }
 
   const cambios = acciones.filter((a) => !a.consulta);

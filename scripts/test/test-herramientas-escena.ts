@@ -246,7 +246,7 @@ prueba("cambiar_sala: medidas, tonos y superficies; no toca las piezas", () => {
   assert.deepEqual(r.escena.nodos, escena.nodos);
   error(aplicarHerramienta(escena, "cambiar_sala", { alto_cm: 100 }), /fuera de rango: va de 240 a 1000/);
   error(aplicarHerramienta(escena, "cambiar_sala", { alto_cm: 240 }), /no cabe bajo el techo/);
-  error(aplicarHerramienta(escena, "cambiar_sala", { tono_piso: "rojo" }), /hex/);
+  error(aplicarHerramienta(escena, "cambiar_sala", { tono_piso: "rojo" }), /no es un color válido/);
 });
 
 prueba("agregar_del_catalogo: la decoración real, sin tocar lo demás", () => {

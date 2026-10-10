@@ -127,7 +127,7 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
     return error("MOTOR_PYTHON", "Este plan se arma con el motor de siempre.", 409, { fallback: { razon: "bandera_python" } });
   }
   const cupo = deps.tomarEdicion(navegador);
-  if (!cupo.ok) return rechazar("LIMITE_EDICIONES", "Llegaste al límite de cambios por hora. Espera un rato y vuelve a intentarlo; tu plan sigue como estaba.", 429, "tope_por_navegador", { tope: cupo.tope });
+  if (!cupo.ok) return rechazar("LIMITE_EDICIONES", "No pude: hiciste demasiados cambios en una hora. Espera un rato y vuelve a intentarlo; tu plan sigue como estaba.", 429, "tope_por_navegador", { tope: cupo.tope });
   const base = verificarPlanConConcepto(cuerpo.plan, navegador);
   if ("codigo" in base) return rechazar(base.codigo, base.mensaje, base.estado, base.motivo);
 
