@@ -235,10 +235,10 @@ test("cada nombre de la tarjeta cambia su color y solo ese, sin preguntar, en la
 
 test("una palabra de la paleta no nombra el color que la tarjeta llama con otra: se dice lo que lleva", () => {
   const casos: Array<[ColorPropuestaV2[], string, RegExp]> = [
-    [["azul", "blanco"], "celeste", /tu plan no lleva celeste; lleva azul\./],
-    [["rosado", "blanco"], "rosa pastel", /tu plan no lleva rosa pastel; lleva rosado\./],
-    [["menta", "blanco"], "verde", /tu plan no lleva verde; lleva menta\./],
-    [["celeste", "blanco"], "azul", /tu plan no lleva azul; lleva celeste\./],
+    [["azul", "blanco"], "celeste", /no encontré «celeste»; tu plan lleva azul: ¿es ese\?/],
+    [["rosado", "blanco"], "rosa pastel", /no encontré «rosa pastel»; tu plan lleva rosado: ¿es ese\?/],
+    [["menta", "blanco"], "verde", /no encontré «verde»; tu plan lleva menta: ¿es ese\?/],
+    [["celeste", "blanco"], "azul", /no encontré «azul»; tu plan lleva celeste: ¿es ese\?/],
   ];
   for (const [paleta, dice, motivo] of casos) {
     const espec = enPalabras(...paleta);
@@ -253,6 +253,71 @@ test("una palabra de la paleta no nombra el color que la tarjeta llama con otra:
     assert.ok(r.espec.piezas.every((p) => !p.colores.some((c) => c.codigo === sale)), `«${dice}» tenía que cambiar el ${sale}`);
     assert.equal(r.espec.piezas.flatMap((p) => p.colores).length, enPalabras(...paleta).piezas.flatMap((p) => p.colores).length);
   }
+});
+
+test("no encontrar el color dicho: «no encontré «azul claro»; tu plan lleva azul: ¿es ese?», y sin nada parecido, «tu plan no lleva» (P-052 c)", () => {
+  const espec = enPalabras("azul", "blanco");
+  const r = aplicarEdicion(espec, reemplazo("azul claro", "081"));
+  assert.match(r.noAplicado ?? "", /^No pude: no encontré «azul claro»; tu plan lleva azul: ¿es ese\?$/);
+  assert.deepEqual(r.espec, espec);
+  const sinParecido = aplicarEdicion(enPalabras("verde", "blanco"), reemplazo("azul claro", "081"));
+  assert.match(sinParecido.noAplicado ?? "", /^No pude: tu plan no lleva azul claro\.$/);
+  const variosParecidos = enPalabras("celeste", "turquesa", "blanco");
+  const varios = aplicarEdicion(variosParecidos, reemplazo("azul", "081"));
+  assert.match(varios.noAplicado ?? "", /^No pude: no encontré «azul»; tu plan lleva celeste y turquesa: ¿es alguno de esos\?$/, "con varios parecidos no se pregunta «¿es ese?»");
+  assert.deepEqual(varios.espec, variosParecidos);
+});
+
+const ROSAS: ReadonlyArray<[string, string]> = [["011", "Rosa"], ["009", "Rosado"], ["005", "blanco"]];
+const editada = (espec: EspecClienteV1): EspecClienteV1 => ({ ...espec, origen: { tipo: "edicion" } });
+
+test("el nombre de una tarjeta gana siempre: «rosa» es la tarjeta «Rosa» (011) y «rosado» la «Rosado» (009), cambiando, quitando o repitiendo (P-052 b)", () => {
+  const plan = conNombres({ [ARCO]: ROSAS });
+  for (const espec of [plan, editada(plan)]) {
+    const rosa = aplicarEdicion(espec, reemplazo("rosa", "081"));
+    assert.equal(rosa.noAplicado, undefined);
+    assert.deepEqual(codigosDePieza(rosa.espec, ARCO), ["081", "009", "005"], "«rosa» cambia la tarjeta «Rosa», no el «Rosado» de la tienda");
+    assert.deepEqual(codigosDePieza(aplicarEdicion(espec, reemplazo("rosado", "081")).espec, ARCO), ["011", "081", "005"], "«rosado» cambia la tarjeta «Rosado»");
+    assert.deepEqual(codigosDePieza(aplicarEdicion(espec, { op: "quitar_color", color: "rosa" }).espec, ARCO), ["009", "005"], "quitar «rosa» quita la tarjeta «Rosa»");
+    assert.deepEqual(codigosDePieza(aplicarEdicion(espec, { op: "mas_menos_color", color: "rosa", direccion: 1 }).espec, ARCO).sort(), ["005", "009", "011"]);
+  }
+});
+
+test("cambiar «rosa» o «rosado» por un color que ya está, en un plan sin editar, no pregunta: no hay orden que repetir (P-052 b)", () => {
+  const sinEditar: Array<[string, Readonly<Record<string, ReadonlyArray<[string, string]>>>, string, string[]]> = [
+    ["rosa", { [ARCO]: [["011", "Rosa"], ["005", "Blanco"]] }, "blanco", ["005"]],
+    ["rosado", { [ARCO]: [["011", "Rosa"], ["005", "Blanco"]] }, "blanco", ["005"]],
+    ["rosa", { [ARCO]: [["011", "Rosa"], ["005", "Blanco"]], [COLUMNA]: [["040", "Azul"], ["005", "Blanco"]] }, "azul", ["040", "005"]],
+    ["rosa", { [ARCO]: [["009", "rosado"], ["005", "blanco"]] }, "blanco", ["005"]],
+  ];
+  for (const [dice, colores, a, quedan] of sinEditar) {
+    const r = aplicarEdicion(conNombres(colores), reemplazo(dice, a));
+    assert.equal(r.noAplicado, undefined, `«${dice}» por ${a}: ${r.noAplicado}`);
+    assert.equal(r.sinHacer, undefined);
+    assert.deepEqual(codigosDePieza(r.espec, ARCO), quedan, `«${dice}» por ${a}`);
+  }
+  // El nombre de la tarjeta es el asa: aunque la espec ya se haya editado, «Rosa» cambia su color sin preguntar.
+  const exacta = aplicarEdicion(editada(conNombres({ [ARCO]: [["011", "Rosa"], ["081", "Gris"]] })), reemplazo("Rosa", "081"));
+  assert.equal(exacta.noAplicado, undefined);
+  assert.deepEqual(codigosDePieza(exacta.espec, ARCO), ["081"]);
+});
+
+test("repetir «rosa» no pasa al otro rosa: tras cambiar la tarjeta «Rosa», la segunda vez pregunta por «Rosado», y al revés (P-052 b)", () => {
+  const plan = conNombres({ [ARCO]: ROSAS });
+  for (const [dice, primero, queda, opcion] of [["rosa", "011", "009", "Rosado"], ["rosado", "009", "011", "Rosa"]] as const) {
+    const una = aplicarEdicion(plan, reemplazo(dice, "081"));
+    assert.deepEqual(codigosDePieza(una.espec, ARCO).filter((codigo) => codigo === "011" || codigo === "009"), [queda], `«${dice}» cambia el ${primero}`);
+    assert.deepEqual(codigosDePieza(aplicarEdicion(plan, reemplazo(dice, "081")).espec, ARCO), codigosDePieza(una.espec, ARCO), "dar la primera orden otra vez da lo mismo");
+    const dos = aplicarEdicion(una.espec, reemplazo(dice, "081"));
+    assert.deepEqual(dos.espec, una.espec, `repetir «${dice}» no cambia el ${queda}`);
+    assert.equal(dos.noAplicado, `${PREFIJO_NO_PUDE}«${dice}» puede ser ${opcion} en el arco; si es ese, dímelo con su nombre.`);
+    assert.deepEqual(coloresNombrados(una.espec, una.espec.piezas, dice, ["081"]).get(ARCO)!.duda?.opciones, [{ frase: opcion, codigo: queda }]);
+    const respuesta = aplicarEdicion(una.espec, reemplazo(opcion, "081"));
+    assert.equal(respuesta.noAplicado, undefined, `responder «${opcion}» vuelve a preguntar`);
+    assert.ok(!codigosDePieza(respuesta.espec, ARCO).includes(queda), `«${opcion}» cambia el ${queda}`);
+  }
+  // Con una sola tarjeta de rosa y nada que repetir, «rosa» se cambia aunque el color que entra ya esté.
+  assert.deepEqual(codigosDePieza(aplicarEdicion(conNombres({ [ARCO]: [["011", "Rosa"], ["005", "blanco"]] }), reemplazo("rosa", "081")).espec, ARCO), ["081", "005"]);
 });
 
 test("el nombre de una tarjeta manda en todo el plan: «azul» es el azul de la columna, no el azul rey del arco", () => {

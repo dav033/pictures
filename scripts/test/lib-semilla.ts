@@ -32,10 +32,11 @@ export class Azar {
     return opciones[this.entero(0, opciones.length - 1)]!;
   }
 
-  /** Un subconjunto no vacío de `opciones`, en su orden original. */
+  /** Un subconjunto no vacío de `opciones`, de a lo sumo `maximo`, en su orden original. Los que sobran se descartan al azar: quedarse con los primeros dejaba casi sin salir a los últimos. */
   subconjunto<T>(opciones: readonly T[], maximo: number): T[] {
     const elegidas = opciones.filter(() => this.booleano(0.5));
     if (!elegidas.length) return [this.elegir(opciones)];
-    return elegidas.slice(0, maximo);
+    while (elegidas.length > maximo) elegidas.splice(this.entero(0, elegidas.length - 1), 1);
+    return elegidas;
   }
 }

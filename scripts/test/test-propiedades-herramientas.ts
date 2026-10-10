@@ -7,14 +7,16 @@
  *   que lo hace, y las que no cambian nunca son solo las de consulta (lista explícita);
  * - una llamada que funciona no toca la escena de partida, y la escena que devuelve es consistente (ids únicos, piezas
  *   con tipo y colocación, tope de piezas respetado);
- * - con claves que no existen, siempre se rechaza con mensaje.
+ * - con claves que no existen, siempre se rechaza con mensaje;
+ * - una llamada que funciona deja de funcionar si UN campo se sale de su esquema (fuera del enum, bajo el mínimo, sobre el
+ *   máximo, más largo o más corto de lo permitido): se rechaza siempre, sin tolerancia y sin caer en un error inesperado.
  */
 import assert from "node:assert/strict";
 import { aplicarHerramienta, DECLARACIONES_ESCENA, MAX_NODOS, NOMBRES_HERRAMIENTAS, type DeclaracionHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 import { escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
 import type { Escena } from "../../src/lib/globos3d/escena";
 import { Azar } from "./lib-semilla";
-import { configPropiedades, semillaDeNombre } from "./lib-config-propiedades";
+import { configPropiedades, semillaDeCaso } from "./lib-config-propiedades";
 
 const { casos: CASOS, semilla: SEMILLA } = configPropiedades();
 const PREFIJO_CRASH = "No se pudo aplicar";
@@ -70,8 +72,8 @@ function valorValido(esquema: Esquema, azar: Azar, contexto: Contexto, clave = "
   }
   if (clave === "ids" && esquema.type === "array") return subconjunto(azar, contexto.ids);
   if (clave === "mesas" && esquema.type === "array") return subconjunto(azar, contexto.mesas.length ? contexto.mesas : contexto.ids);
-  if (clave === "formato" && esquema.type === "string") return azar.elegir(FORMATOS);
-  if (clave === "formatos" && esquema.type === "array") return subconjunto(azar, FORMATOS);
+  if (clave === "formato" && esquema.type === "string") return azar.elegir(esquema.enum ? (esquema.enum as string[]) : FORMATOS);
+  if (clave === "formatos" && esquema.type === "array") return subconjunto(azar, (esquema.items as Esquema | undefined)?.enum ? ((esquema.items as Esquema).enum as string[]) : FORMATOS);
   if (esquema.const !== undefined) return esquema.const;
   switch (esquema.type) {
     case "string": {
@@ -113,16 +115,51 @@ function subconjunto<T>(azar: Azar, ids: readonly T[]): T[] {
   return [...ids].sort(() => azar.real() - 0.5).slice(0, cuantos);
 }
 
-/** Un valor que no cumple el esquema: un tipo cambiado, un nulo o una clave que no existe. */
+const MUNDO_AJENO = [null, 7, -3.5, "texto", true, [], { raro: 1 }, [1, "x"]];
+const TIPO_JSON = (valor: unknown): string => (valor === null ? "null" : Array.isArray(valor) ? "array" : typeof valor);
+/** Si `valor` tiene el tipo JSON que pide el esquema (un entero o un número son los dos «number»). */
+const encaja = (tipo: string, valor: unknown): boolean => (tipo === "integer" || tipo === "number" ? typeof valor === "number" : TIPO_JSON(valor) === tipo);
+
+/**
+ * Un valor que no cumple el esquema: un nulo, otro tipo JSON que el del campo (un texto donde va un número, una lista donde va
+ * un texto) o una clave que no existe. Un campo de texto libre acepta cualquier texto, así que nunca se le pone uno.
+ */
 function argumentosInvalidos(declaracion: DeclaracionHerramienta, azar: Azar, contexto: Contexto): unknown {
-  const mundo = [null, 7, -3.5, "texto", true, [], { raro: 1 }, [1, "x"]];
-  const base = valorValido(declaracion.parametersJsonSchema as Esquema, azar, contexto);
-  if (!base || typeof base !== "object" || Array.isArray(base)) return azar.elegir(mundo);
+  const esquema = declaracion.parametersJsonSchema as Esquema;
+  const base = valorValido(esquema, azar, contexto);
+  if (!base || typeof base !== "object" || Array.isArray(base)) return azar.elegir(MUNDO_AJENO);
   const copia: Record<string, unknown> = { ...(base as Record<string, unknown>) };
   const claves = Object.keys(copia);
-  if (claves.length && azar.booleano()) copia[azar.elegir(claves)] = azar.elegir(mundo);
-  else copia[`clave_que_no_existe_${azar.entero(1, 99)}`] = azar.elegir(mundo);
+  if (claves.length && azar.booleano()) {
+    const clave = azar.elegir(claves);
+    const propiedad = ((esquema.properties ?? {}) as Record<string, Esquema>)[clave];
+    const tipo = typeof propiedad?.type === "string" ? propiedad.type : TIPO_JSON(copia[clave]);
+    copia[clave] = azar.elegir(MUNDO_AJENO.filter((valor) => !encaja(tipo, valor)));
+  } else copia[`clave_que_no_existe_${azar.entero(1, 99)}`] = azar.elegir(MUNDO_AJENO);
   return copia;
+}
+
+/**
+ * Valores del tipo correcto que el esquema de un campo no admite: fuera del enum, bajo el mínimo, sobre el máximo, un texto
+ * más corto o más largo, una lista con menos o más elementos, o con un elemento que se sale de su esquema.
+ */
+function valoresFueraDelEsquema(esquema: Esquema, relleno: (esquemaItem: Esquema) => unknown): unknown[] {
+  const fuera: unknown[] = [];
+  const enumerado = esquema.enum as unknown[] | undefined;
+  if (enumerado) fuera.push(typeof enumerado[0] === "number" ? Math.max(...(enumerado as number[])) + 1000 : "valor_fuera_del_enum");
+  for (const [clave, delta] of [["minimum", -1], ["maximum", 1], ["exclusiveMinimum", 0], ["exclusiveMaximum", 0]] as const) {
+    if (typeof esquema[clave] === "number") fuera.push((esquema[clave] as number) + delta);
+  }
+  const minTexto = esquema.minLength as number | undefined;
+  if (minTexto) fuera.push("x".repeat(minTexto - 1));
+  if (typeof esquema.maxLength === "number") fuera.push("x".repeat(esquema.maxLength + 1));
+  const items = esquema.items as Esquema | undefined;
+  const elemento = (): unknown => relleno(items ?? { type: "string" });
+  const minItems = esquema.minItems as number | undefined;
+  if (minItems) fuera.push(Array.from({ length: minItems - 1 }, elemento));
+  if (typeof esquema.maxItems === "number") fuera.push(Array.from({ length: esquema.maxItems + 1 }, elemento));
+  if (esquema.type === "array" && items) for (const malo of valoresFueraDelEsquema(items, relleno)) fuera.push([malo]);
+  return fuera;
 }
 
 const contextoDe = (nombre: string, escena: Escena): Contexto => {
@@ -173,7 +210,7 @@ const EXENTAS: Record<string, string> = {
 /** Una sala sin piezas: para lo que se rechaza por la forma de los argumentos, no hace falta armar nada. */
 const sinPiezas: Escena = { ...escenaPredefinida("arco_organico_columnas_guirnalda"), nodos: [] };
 
-type Recuento = { validas: number; ok: number; cambios: number; rechazos: Map<string, number> };
+type Recuento = { validas: number; ok: number; cambios: number; fueraDelEsquema: number; rechazos: Map<string, number> };
 
 function llamar(escena: Escena, nombre: string, argumentos: unknown, donde: string): { ok: true; escena: Escena } | { ok: false; error: string } {
   const resultado = aplicarHerramienta(escena, nombre, argumentos);
@@ -186,20 +223,43 @@ function llamar(escena: Escena, nombre: string, argumentos: unknown, donde: stri
   return { ok: false, error: resultado.error };
 }
 
+const tieneCamposAcotados = (declaracion: DeclaracionHerramienta): boolean =>
+  Object.values(((declaracion.parametersJsonSchema as Esquema).properties ?? {}) as Record<string, Esquema>).some((campo) => valoresFueraDelEsquema(campo, () => null).length > 0);
+
+/**
+ * Con una llamada que funciona, un solo campo fuera de su esquema tiene que rechazarla, con un mensaje y sin error inesperado.
+ * Devuelve cuántos campos se probaron. Se llama sobre la escena de partida para que lo único que cambie sea ese campo.
+ */
+function probarFueraDelEsquema(declaracion: DeclaracionHerramienta, escena: Escena, argumentos: unknown, azar: Azar, contexto: Contexto, donde: string): number {
+  if (!argumentos || typeof argumentos !== "object" || Array.isArray(argumentos)) return 0;
+  const esquema = declaracion.parametersJsonSchema as Esquema;
+  const relleno = (item: Esquema): unknown => valorValido(item, azar, contexto);
+  let probados = 0;
+  for (const [campo, esquemaCampo] of Object.entries((esquema.properties ?? {}) as Record<string, Esquema>)) {
+    for (const malo of valoresFueraDelEsquema(esquemaCampo, relleno)) {
+      const r = aplicarHerramienta(escena, declaracion.name, { ...(argumentos as Record<string, unknown>), [campo]: malo });
+      assert.ok(!r.ok, `${donde}: aceptó «${campo}» = ${JSON.stringify(malo).slice(0, 80)}, que su esquema no admite`);
+      assert.ok(!r.error.startsWith(PREFIJO_CRASH), `${donde}: «${campo}» fuera del esquema cayó en un error inesperado: ${r.error}`);
+      probados += 1;
+    }
+  }
+  return probados;
+}
+
 /** Un motivo de rechazo corto y estable (sin ids ni números que cambian de un caso a otro) para contar cuántas llamadas cayeron por qué. */
 const motivoDe = (error: string): string => error.replace(/\d+/g, "N").replace(/«[^»]*»/g, "«…»").slice(0, 90);
 
 function main(): void {
-  const resumen: { nombre: string; ok: number; validas: number; cambios: number; referencia: boolean }[] = [];
+  const resumen: { nombre: string; ok: number; validas: number; cambios: number; fueraDelEsquema: number; referencia: boolean }[] = [];
   let invalidas = 0;
   let rechazadas = 0;
   for (const declaracion of DECLARACIONES_ESCENA) {
     const nombre = declaracion.name;
     assert.ok(NOMBRES_HERRAMIENTAS.includes(nombre), `${nombre} no está en el registro`);
-    const recuento: Recuento = { validas: 0, ok: 0, cambios: 0, rechazos: new Map() };
+    const recuento: Recuento = { validas: 0, ok: 0, cambios: 0, fueraDelEsquema: 0, rechazos: new Map() };
     if (!EXENTAS[nombre]) {
       for (let caso = 0; caso < CASOS; caso += 1) {
-        const azar = new Azar(SEMILLA + semillaDeNombre(nombre) + caso);
+        const azar = new Azar(semillaDeCaso(SEMILLA, nombre, caso));
         const base = baseDe(BASE_DE_HERRAMIENTA[nombre] ?? azar.elegir(BASE_INDICES));
         const antes = structuredClone(base);
         const donde = `${nombre} caso ${caso}`;
@@ -217,25 +277,30 @@ function main(): void {
         if (!aplicarHerramienta(sinPiezas, nombre, malos).ok) rechazadas += 1;
         const conClaveDeMas = aplicarHerramienta(sinPiezas, nombre, { ...(typeof argumentos === "object" && argumentos ? argumentos : {}), clave_que_no_existe: 1 });
         assert.ok(!conClaveDeMas.ok, `${donde}: aceptó una clave que no existe`);
+        if (r.ok) recuento.fueraDelEsquema += probarFueraDelEsquema(declaracion, base, argumentos, azar, contextoDe(nombre, base), donde);
       }
     }
     const referencia = REFERENCIAS[nombre];
     if (referencia) {
       const base = baseDe(referencia.base);
-      const r = llamar(base, nombre, referencia.argumentos(base), `${nombre} (referencia)`);
+      const argumentosDeReferencia = referencia.argumentos(base);
+      const r = llamar(base, nombre, argumentosDeReferencia, `${nombre} (referencia)`);
       assert.ok(r.ok, `${nombre}: la llamada de referencia tiene que funcionar`);
       if (r.ok && JSON.stringify(r.escena) !== JSON.stringify(base)) recuento.cambios += 1;
       if (r.ok) recuento.ok += 1;
+      recuento.fueraDelEsquema += probarFueraDelEsquema(declaracion, base, argumentosDeReferencia, new Azar(semillaDeCaso(SEMILLA, nombre, CASOS)), contextoDe(nombre, base), `${nombre} (referencia)`);
     }
-    resumen.push({ nombre, ok: recuento.ok, validas: recuento.validas, cambios: recuento.cambios, referencia: Boolean(referencia) });
+    resumen.push({ nombre, ok: recuento.ok, validas: recuento.validas, cambios: recuento.cambios, fueraDelEsquema: recuento.fueraDelEsquema, referencia: Boolean(referencia) });
+    if (tieneCamposAcotados(declaracion) && !EXENTAS[nombre]) assert.ok(recuento.fueraDelEsquema > 0, `${nombre}: tiene campos con enum o límites y ninguna llamada válida probó uno fuera de su esquema`);
     const sinFuncionar = recuento.ok === 0 && !EXENTAS[nombre];
     assert.ok(!sinFuncionar, `${nombre}: ninguna llamada válida funcionó (motivos: ${[...recuento.rechazos].map(([m, n]) => `${n}× ${m}`).join("; ") || "ninguna llamada"})`);
     if (!SOLO_CONSULTA.has(nombre) && !EXENTAS[nombre]) assert.ok(recuento.cambios > 0, `${nombre}: ninguna llamada válida cambió la escena`);
   }
   const ok = resumen.reduce((a, r) => a + r.ok, 0);
   const validas = resumen.reduce((a, r) => a + r.validas, 0);
-  console.log(`test-propiedades-herramientas (semilla ${SEMILLA}, ${CASOS} casos): ${DECLARACIONES_ESCENA.length} herramientas (${Object.keys(EXENTAS).length} exentas con motivo); ${ok} llamadas que aplicaron un resultado consistente de ${validas} válidas (${REFERENCIAS ? Object.keys(REFERENCIAS).length : 0} con referencia); ${rechazadas} de ${invalidas} llamadas inválidas rechazadas.`);
-  assert.ok(rechazadas >= Math.floor(invalidas * 0.9), `solo ${rechazadas} de ${invalidas} llamadas inválidas se rechazaron`);
+  const fueraDelEsquema = resumen.reduce((a, r) => a + r.fueraDelEsquema, 0);
+  console.log(`test-propiedades-herramientas (semilla ${SEMILLA}, ${CASOS} casos): ${DECLARACIONES_ESCENA.length} herramientas (${Object.keys(EXENTAS).length} exentas con motivo); ${ok} llamadas que aplicaron un resultado consistente de ${validas} válidas (${REFERENCIAS ? Object.keys(REFERENCIAS).length : 0} con referencia); ${rechazadas} de ${invalidas} llamadas inválidas rechazadas y ${fueraDelEsquema} campos fuera de su esquema rechazados (sin tolerancia).`);
+  assert.equal(rechazadas, invalidas, `${invalidas - rechazadas} de ${invalidas} llamadas inválidas se aceptaron`);
 }
 
 try {

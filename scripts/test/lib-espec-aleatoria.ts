@@ -7,6 +7,7 @@ import { nombreClienteDeReferencia } from "../../src/lib/globos3d/motor/colores-
 import { especDesdePropuesta, EspecClienteV1Schema, planActualDesdeEspec, type EdicionEspecV1, type EspecClienteV1, type PiezaEspec } from "../../src/lib/globos3d/motor/v1";
 import { ESTRUCTURAS_OFICIALES_IDS } from "../../src/lib/plan/estructuras-oficiales";
 import { referenciaPorCodigo } from "../../src/lib/plan/referencia-sempertex";
+import { plegarTexto } from "../../src/lib/rag/taxonomy/v2";
 import { Azar } from "./lib-semilla";
 import { semillaDeNombre } from "./lib-config-propiedades";
 import { FRASES_DEL_CLIENTE } from "./lib-oraculo-color";
@@ -21,6 +22,9 @@ export const ACABADOS = [
   { codigo: "040", nombre: "azul" },
   { codigo: "005", nombre: "blanco" },
   { codigo: "970", nombre: "dorado reflex" },
+  // Los dos rosas que se confunden: la tarjeta «Rosa» es el 011 y «rosa» y «rosado» son, para la tienda, el 009.
+  { codigo: "011", nombre: "fashion rosa" },
+  { codigo: "009", nombre: "rosado" },
 ] as const;
 
 /** El nombre con que la pieza guarda un acabado: el de catálogo («Reflex Dorado») o el que dijo el cliente («dorado reflex»). */
@@ -28,20 +32,29 @@ function nombreEnLaPieza(azar: Azar, acabado: (typeof ACABADOS)[number]): string
   return azar.booleano(0.6) ? nombreClienteDeReferencia(referenciaPorCodigo(acabado.codigo)!) : acabado.nombre;
 }
 
+/** La palabra de la paleta que dice lo mismo que la tarjeta con otra forma: «rosa» ante la tarjeta «Rosado», y al revés. */
+const HERMANA_DE_TARJETA: Readonly<Record<string, string>> = { rosa: "rosado", rosado: "rosa" };
+
 /**
- * Cómo nombra el cliente un color: una frase suya que puede ser algo de la pieza (así la pieza con dos dorados se topa con
- * «dorado»), una frase cualquiera (que puede no nombrar nada), o un nombre de la tarjeta, de esa pieza o de todo el plan, que
- * es lo que lee el modelo del chat (`planActualDesdeEspec`) y lo que más se repite.
+ * Cómo nombra el cliente un color: la misma palabra de la paleta que una tarjeta de la pieza dice de otro modo (el paso en que
+ * una orden repetida podría cambiar el otro rosa), una frase suya que puede ser algo de la pieza (así la pieza con dos dorados
+ * se topa con «dorado»), una frase cualquiera (que puede no nombrar nada), o un nombre de la tarjeta, de esa pieza o de todo el
+ * plan, que es lo que lee el modelo del chat (`planActualDesdeEspec`) y lo que más se repite.
  */
 function comoLoDice(azar: Azar, espec: EspecClienteV1, pieza: PiezaEspec): string {
   const codigos = pieza.colores.map((color) => color.codigo);
   const delaPieza = FRASES_DEL_CLIENTE.filter((frase) => frase.puedeSer.some((codigo) => codigos.includes(codigo)));
+  const hermanas = pieza.colores.flatMap((color) => HERMANA_DE_TARJETA[plegarTexto(color.nombre)] ?? []);
   const suerte = azar.real();
-  if (suerte < 0.35 && delaPieza.length) return azar.elegir(delaPieza).dice;
-  if (suerte < 0.5) return azar.elegir(FRASES_DEL_CLIENTE).dice;
-  if (suerte < 0.75) return azar.elegir(pieza.colores.map((color) => color.nombre));
+  if (suerte < 0.2 && hermanas.length) return azar.elegir(hermanas);
+  if (suerte < 0.45 && delaPieza.length) return azar.elegir(delaPieza).dice;
+  if (suerte < 0.55) return azar.elegir(FRASES_DEL_CLIENTE).dice;
+  if (suerte < 0.78) return azar.elegir(pieza.colores.map((color) => color.nombre));
   return azar.elegir(planActualDesdeEspec(espec).colores);
 }
+
+/** La misma espec como queda tras una orden anterior: el motor lo sabe por `origen.tipo` y de ahí decide si una frase puede ser la repetición de la orden. */
+export const comoEditada = (espec: EspecClienteV1): EspecClienteV1 => ({ ...espec, origen: { tipo: "edicion" } });
 
 const LUGARES = ["centro", "izquierda", "derecha", "fondo", "techo", "mesa"] as const;
 
@@ -90,9 +103,10 @@ export const OPERACIONES_ALEATORIAS = 12;
 export function edicionAleatoria(azar: Azar, espec: EspecClienteV1, operacion: number): EdicionEspecV1 {
   const pieza = azar.elegir(espec.piezas);
   const color = azar.elegir(ACABADOS).nombre;
+  const yaEstan = ACABADOS.filter((acabado) => pieza.colores.some((otro) => otro.codigo === acabado.codigo));
   const direccion = azar.booleano() ? 1 : -1;
   switch (operacion) {
-    case 0: return { op: "reemplazar_color", de: comoLoDice(azar, espec, pieza), a: color };
+    case 0: return { op: "reemplazar_color", de: comoLoDice(azar, espec, pieza), a: yaEstan.length && azar.booleano(0.5) ? azar.elegir(yaEstan).nombre : color };
     case 1: return { op: "agregar_color", color };
     case 2: return { op: "quitar_color", color: comoLoDice(azar, espec, pieza), piezas: [pieza.id] };
     case 3: return { op: "proporcion_color", pieza: pieza.id, pesos: pieza.colores.map(() => azar.entero(1, 5)) };

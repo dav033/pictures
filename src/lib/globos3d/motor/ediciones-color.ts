@@ -42,10 +42,15 @@ type Nombrados = ReturnType<typeof coloresNombrados>;
 
 const dudasDe = (nombrados: Nombrados): string[] => [...nombrados.values()].flatMap((nombrado) => (nombrado.duda ? [nombrado.duda.texto] : []));
 
-/** «tu plan no lleva azul; lleva celeste.»: lo que no está y, si la tarjeta lo llama con otra palabra, cómo. */
+/**
+ * Lo que no está. Si la tarjeta lo llama con otra palabra de la paleta, se pregunta si es esa («no encontré «azul claro»;
+ * tu plan lleva azul: ¿es ese?», o «¿es alguno de esos?» si son varias); si no hay nada parecido, se dice que el plan no lo lleva.
+ */
 function noLleva(dicho: string, enEsasPiezas: boolean, nombrados: Nombrados): string {
   const parecidos = [...new Set([...nombrados.values()].flatMap((nombrado) => nombrado.parecidos.map((nombre) => nombreColor({ nombre }))))];
-  return `tu plan no lleva ${colorEnPalabras(dicho)}${enEsasPiezas ? " en esas piezas" : ""}${parecidos.length ? `; lleva ${listaNatural(parecidos)}` : ""}.`;
+  const enPiezas = enEsasPiezas ? " en esas piezas" : "";
+  if (!parecidos.length) return `tu plan no lleva ${colorEnPalabras(dicho)}${enPiezas}.`;
+  return `no encontré «${colorEnPalabras(dicho)}»${enPiezas}; tu plan lleva ${listaNatural(parecidos)}: ${parecidos.length > 1 ? "¿es alguno de esos?" : "¿es ese?"}`;
 }
 
 export function reemplazarColor(espec: EspecClienteV1, edicion: Op<"reemplazar_color">): ResultadoEdicion {
