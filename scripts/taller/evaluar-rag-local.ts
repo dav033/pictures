@@ -15,6 +15,10 @@
  * `--afinado` prueba otros pesos o bonos (ver `Afinado` en buscar-sql.ts); `--grilla` prueba varios en una corrida y
  * imprime una línea por configuración (desarrollo, reserva y peor categoría contra la búsqueda de hoy).
  * `--salida=<archivo.json>` guarda el resumen (promedios de hoy y del RAG híbrido por oro, y de las fotos) para compararlo luego.
+ * `--oro=catalogo` (REQ-013 fase 3) indexa además mobiliario y escenografía (`data/catalogos/<repo>/{fichas.jsonl, embeddings/}`)
+ * y evalúa, con los tres repositorios visibles, el oro del catálogo (`oro-busqueda-catalogo.json`) y el de desarrollo de Sempertex.
+ * OJO: la primera vez embebe sus 20 consultas con Gemini (llamadas pagadas, ~US$0,00004 en total; luego quedan en la caché). Sin
+ * GEMINI_API_KEY no paga: la rama vectorial de esas consultas falla y la búsqueda sigue solo léxica.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { abrirPglite, leerMigracion, prepararEsquemaTaller } from "./pglite-taller";
@@ -26,6 +30,7 @@ import { consultasDeFoto, consultasDeTexto, desglosePorCategoria, evaluarSistema
 import { leerOro } from "../../src/lib/taller/evaluar-oro";
 import { sistemaActual } from "./sistemas-busqueda";
 import { embeberTexto } from "../../src/lib/rag/embeddings";
+import type { IdRepositorio } from "../../src/lib/catalogo/tipos";
 
 // PGlite no es dependencia del repo: se instala aparte (npm i @electric-sql/pglite @electric-sql/pglite-pgvector) y se pasa su carpeta.
 const argumento = (clave: string): string | undefined => process.argv.find((a) => a.startsWith(`--${clave}=`))?.slice(clave.length + 3);
@@ -36,7 +41,12 @@ const AFINADO: Partial<Afinado> = JSON.parse(argumento("afinado") ?? "{}");
 const GRILLA = argumento("grilla");
 const CONSULTA = argumento("consulta");
 const SALIDA = argumento("salida");
+const ORO = argumento("oro");
 if (!DIR_PGLITE) { console.error("Falta --pglite=<carpeta con node_modules/@electric-sql/pglite>"); process.exit(2); }
+if (ORO !== undefined && ORO !== "catalogo") { console.error(`--oro=${ORO}: solo «catalogo»`); process.exit(2); }
+/** Lo que se indexa además de Sempertex: con `--oro=catalogo`, los repositorios del catálogo (sus fichas y su caché de vectores). */
+const REPOS_EXTRA = ORO === "catalogo" ? (["mobiliario", "escenografia"] as const) : [];
+const TODOS_VISIBLES: readonly IdRepositorio[] = ["sempertex", "mobiliario", "escenografia"];
 const CACHE_Q = "data/taller/eval-vectores-consulta.json";
 const leerOroArchivo = (ruta: string): OroBusqueda => leerOro(JSON.parse(readFileSync(ruta, "utf8")));
 
@@ -50,9 +60,12 @@ const ANALIZAR = "ANALYZE taller_items; ANALYZE taller_items_embeddings;";
 
 async function abrirBase(): Promise<{ db: Db; fotosDueno: Map<string, number[]> }> {
   const db: Db = await abrirPglite(DIR_PGLITE!, DIR_BASE);
-  const { registros } = leerFichasJsonl(readFileSync("data/taller/fichas.jsonl", "utf8"));
+  const registros = [
+    ...leerFichasJsonl(readFileSync("data/taller/fichas.jsonl", "utf8")).registros,
+    ...REPOS_EXTRA.flatMap((r) => leerFichasJsonl(readFileSync(`data/catalogos/${r}/fichas.jsonl`, "utf8")).registros),
+  ];
   const fichaPorId = new Map(registros.map((r) => [r.id, r]));
-  const vecs = leerVectoresCacheados("data/taller/embeddings");
+  const vecs = [...leerVectoresCacheados("data/taller/embeddings"), ...REPOS_EXTRA.flatMap((r) => leerVectoresCacheados(`data/catalogos/${r}/embeddings`))];
   const fotosDueno = new Map<string, number[]>();
   for (const v of vecs) if (v.modalidad === "imagen_foto") fotosDueno.set(v.id, Array.from(v.vector));
 
@@ -113,6 +126,21 @@ async function correrGrilla(configs: Array<{ nombre: string; afinado: Partial<Af
   }
 }
 
+/** `--oro=catalogo`: el oro de mobiliario y escenografía y el de desarrollo de Sempertex, los dos con los tres repositorios visibles. */
+async function evaluarCatalogo(dev: OroBusqueda, deps: Deps): Promise<void> {
+  const catalogo = leerOroArchivo("scripts/test/fixtures/oro-busqueda-catalogo.json");
+  const sistema = (nombre: string, conVector: boolean): SistemaBusqueda => ({
+    nombre, buscarTexto: async (texto, limite) => (await buscarEnTaller({ texto, limite }, { ...deps(conVector), repositoriosVisibles: () => TODOS_VISIBLES })).ids,
+  });
+  for (const [titulo, oro] of [["Catálogo: mobiliario y escenografía", catalogo], ["Desarrollo de Sempertex con los tres visibles", dev]] as const) {
+    const consultas = consultasDeTexto(oro);
+    const corridas = [];
+    for (const s of [sistema("RAG léxico", false), sistema("RAG híbrido", true)]) corridas.push({ sistema: s.nombre, resultado: await evaluarSistema(s, consultas) });
+    console.log(`\n${tablaComparativa(`${titulo} (${consultas.length} consultas)`, corridas)}`);
+    for (const p of peoresConsultas(corridas[1]!.resultado, 5)) console.log("  peor", p.id, p.texto, "nDCG", p.metricas.ndcg10.toFixed(2), "→", p.devueltos.slice(0, 3).join(" | "));
+  }
+}
+
 async function main() {
   const { db, fotosDueno } = await abrirBase();
   const pool = { query: (t: string, v: unknown[]) => db.query(t, v) };
@@ -133,12 +161,13 @@ async function main() {
   };
 
   if (CONSULTA) {
-    const r = await buscarEnTaller({ texto: CONSULTA, limite: 15 }, deps(true));
+    const r = await buscarEnTaller({ texto: CONSULTA, limite: 15 }, { ...deps(true), ...(ORO ? { repositoriosVisibles: () => TODOS_VISIBLES } : {}) });
     console.log("interpretación:", JSON.stringify(r.interpretacion), "ramas", r.ramas.join(","));
     for (const x of r.resultados) console.log(x.puntaje.toFixed(4), x.id, "|", x.nombre.slice(0, 50), "|", Object.entries(x.ramas).filter(([, v]) => v).map(([k, v]) => k.replace("vector_", "v") + "#" + v!.rango).join(" "), "|", x.razones.filter((z) => !/^(Las palabras|Su nombre|Su significado)/.test(z)).map((z) => z.split(" (")[0]).join("; "));
     return;
   }
   if (GRILLA) { await correrGrilla(JSON.parse(readFileSync(GRILLA, "utf8")), dev, reserva, deps); return; }
+  if (ORO === "catalogo") { await evaluarCatalogo(dev, deps); return; }
 
   const resultados: Record<string, { actual: ResultadoSistema; hibrido: ResultadoSistema }> = {};
   for (const [titulo, oro] of [["Desarrollo", dev], ["Reserva", reserva]] as const) {

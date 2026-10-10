@@ -11,7 +11,8 @@ import { MODELO_EMBEDDING_TALLER, vectorComoLiteral, type ConsultaSql } from "./
  *     ninguna rama puede devolver algo que el filtro excluye. Entre ellos, siempre, la partición por repositorio (REQ-013,
  *     migración 034): `ParticionRepositorios` es obligatoria, no hay consulta a `taller_items` sin ella.
  *  2. Ramas: `fts` (tsvector español sin acentos, OR de palabras), `trigram` (nombre, sin acentos), `vector_texto`
- *     (modalidad texto) y `vector_imagen` (fotos y renders: mismo espacio que el texto en gemini-embedding-2).
+ *     (modalidad texto) y `vector_imagen` (fotos y renders: mismo espacio que el texto en gemini-embedding-2). Las vectoriales
+ *     son exactas cuando la partición trae un repositorio chico (`vectorExacto`).
  *     Solo existen las ramas pedidas; sin texto ni vectores hay una rama `filtro` (explorar por filtros).
  *  3. Fusión RRF dentro de SQL: Σ peso / (k + rango), con la MISMA fórmula y k que `rrf.ts` (`fusionarRankingsLocal`).
  *     Se hace en SQL y no con `rrf.ts` porque así solo salen de la base las ≤ `limite` filas finales (con sus rangos y
@@ -213,6 +214,15 @@ function condicionesDuras(f: FiltrosTaller, particion: ParticionRepositorios, p:
   return c;
 }
 
+/**
+ * ¿Las ramas vectoriales son exactas? Sí en cuanto la partición nombra un repositorio que no es Sempertex (REQ-013, riesgo R-2):
+ * son de decenas de filas, y si el planificador eligiera el HNSW (aproximado, `ef_search` 40, filtra DESPUÉS de recorrer el grafo)
+ * un repositorio de 28 filas entre ~3 300 vectores recibiría 1 o 2 candidatos (medido en PGlite). Se ordena por `distancia + 0`:
+ * el mismo orden (y un NaN de un vector nulo, al final), pero el índice no puede servirlo, así que se recorre lo filtrado entero
+ * (~3 300 vectores, lo que Neon ya hace hoy). Solo Sempertex: el SQL de siempre, byte a byte (el que se evaluó, AC-2).
+ */
+export const vectorExacto = (particion: ParticionRepositorios): boolean => particion.repositorios.some((r) => r !== "sempertex");
+
 /** Una rama: toma `interior` (id, puntaje ya acotado con LIMIT) y le pone el rango 1…n. */
 const rama = (nombre: string, interior: string) =>
   `${nombre} AS (\n  SELECT id, puntaje, row_number() OVER (ORDER BY puntaje DESC, id) AS rango\n  FROM (\n${interior}\n  ) c\n)`;
@@ -270,6 +280,7 @@ export function construirConsultaBusqueda(
 
   let modelo: string | null = null;
   const parametroModelo = () => (modelo ??= p.agregar(MODELO_EMBEDDING_TALLER, "text"));
+  const orden = (v: string) => (vectorExacto(particion) ? `(e.vector <=> ${v}) + 0` : `e.vector <=> ${v}`);
   if (entrada.vectorTexto) {
     const v = p.agregar(vectorComoLiteral(entrada.vectorTexto), "vector");
     ramas.push("vector_texto");
@@ -277,7 +288,7 @@ export function construirConsultaBusqueda(
     FROM taller_items_embeddings e
     JOIN filtrados f ON f.id = e.item_id
     WHERE e.modalidad = 'texto' AND e.modelo = ${parametroModelo()}
-    ORDER BY e.vector <=> ${v}, e.item_id
+    ORDER BY ${orden(v)}, e.item_id
     LIMIT ${porRama}`));
   }
   if (entrada.vectorImagen) {
@@ -290,7 +301,7 @@ export function construirConsultaBusqueda(
       FROM taller_items_embeddings e
       JOIN filtrados f ON f.id = e.item_id
       WHERE e.modalidad <> 'texto' AND e.modelo = ${parametroModelo()}
-      ORDER BY e.vector <=> ${v}, e.item_id
+      ORDER BY ${orden(v)}, e.item_id
       LIMIT ${porRama} * 2
     ) m
     GROUP BY id

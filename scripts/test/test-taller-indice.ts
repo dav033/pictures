@@ -17,6 +17,8 @@ import {
   VECTORES_POR_INSERT,
   construirUpsertItem,
   construirConsultaDeOtroRepositorio,
+  CONFIRMO_FILTRO_EN_PRODUCCION,
+  erroresDeAplicar,
   erroresDeCorrida,
   erroresDeOcupacion,
   faltaColumnaRepositorio,
@@ -248,6 +250,11 @@ function registro(extra: Partial<RegistroParaIndice> = {}): RegistroParaIndice {
   const { errores } = leerFichasJsonl([JSON.stringify({ id: "a", tipo: "t", nombre: "A", hash: "h" }), JSON.stringify({ id: "b", repositorio: "muebles", tipo: "t", nombre: "B", hash: "h" })].join("\n"));
   assert.match(corrida(sempertex, "sempertex", false, errores), /1 líneas inválidas en el archivo \(p\. ej\. línea 2: b: repositorio inválido\): corrígelas; no se indexa ni se desactiva nada/);
   ok("corrida: una línea inválida es fatal; otro repositorio solo con permiso; nunca un archivo mezclado");
+
+  assert.deepEqual(erroresDeAplicar("sempertex", false), [], "Sempertex se escribe como siempre");
+  assert.match(erroresDeAplicar("mobiliario", false).join(), new RegExp(`exige ${CONFIRMO_FILTRO_EN_PRODUCCION}: .*producción \\(VPS\\) ya filtra por repositorio`));
+  assert.deepEqual(erroresDeAplicar("escenografia", true), [], "con la confirmación explícita, sí");
+  ok("escribir otro repositorio exige --confirmo-filtro-en-produccion y dice por qué");
 
   const ocupados = construirConsultaDeOtroRepositorio(["silla_tiffany", "mesa_imperial"], "mobiliario");
   assert.deepEqual(ocupados.valores, [["silla_tiffany", "mesa_imperial"], "mobiliario"]);

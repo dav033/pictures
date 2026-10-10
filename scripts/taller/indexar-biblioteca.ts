@@ -10,7 +10,8 @@
  *
  * Repositorio de catálogo (REQ-013, migración 034): `--repositorio=<id>` (por defecto `sempertex`; el archivo por defecto es
  * `<datos del manifiesto>/fichas.jsonl`). Lo que lee y desactiva se acota a ese repositorio. Otro que Sempertex necesita
- * `--permitir-otros-repos` (fase 3: solo cuando la búsqueda desplegada ya filtra por repositorio). Una línea inválida del
+ * `--permitir-otros-repos` (fase 3: solo cuando la búsqueda desplegada ya filtra por repositorio), y escribirlo, además,
+ * `--confirmo-filtro-en-produccion` (quien aplica comprobó que producción corre ese código). Una línea inválida del
  * archivo, o un id que ya es de otro repositorio, detienen la corrida antes de escribir o desactivar nada.
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -28,6 +29,8 @@ import {
   construirInsertPartes,
   construirUpsertItem,
   construirConsultaDeOtroRepositorio,
+  CONFIRMO_FILTRO_EN_PRODUCCION,
+  erroresDeAplicar,
   erroresDeCorrida,
   erroresDeOcupacion,
   faltaColumnaRepositorio,
@@ -39,7 +42,7 @@ import {
 } from "../../src/lib/taller/indice";
 
 type Modo = "ensayo" | "comparar" | "aplicar";
-type Opciones = { modo: Modo; archivo: string; repositorio: IdRepositorio; permitirOtros: boolean };
+type Opciones = { modo: Modo; archivo: string; repositorio: IdRepositorio; permitirOtros: boolean; confirmoFiltro: boolean };
 
 const esFundador = (id: IdRepositorio): id is IdRepositorioFundador => (REPOSITORIOS_FUNDADORES as readonly string[]).includes(id);
 
@@ -48,6 +51,7 @@ function leerOpciones(argv: string[]): Opciones {
   let archivo: string | null = null;
   let repositorio: IdRepositorio = "sempertex";
   let permitirOtros = false;
+  let confirmoFiltro = false;
   const fijar = (nuevo: Modo) => {
     if (modo && modo !== nuevo) throw new Error("Usa una sola opción entre --ensayo, --comparar y --aplicar.");
     modo = nuevo;
@@ -58,6 +62,7 @@ function leerOpciones(argv: string[]): Opciones {
     else if (arg === "--comparar") fijar("comparar");
     else if (arg === "--aplicar") fijar("aplicar");
     else if (arg === "--permitir-otros-repos") permitirOtros = true;
+    else if (arg === CONFIRMO_FILTRO_EN_PRODUCCION) confirmoFiltro = true;
     else if (arg.startsWith("--repositorio=")) {
       const valor = arg.slice("--repositorio=".length);
       if (!esIdRepositorio(valor)) throw new Error(`--repositorio=${valor} no es un repositorio (sempertex, mobiliario, escenografia o terceros/<slug>).`);
@@ -67,11 +72,11 @@ function leerOpciones(argv: string[]): Opciones {
       if (!valor) throw new Error("--archivo necesita una ruta.");
       archivo = path.resolve(valor);
       i++;
-    } else throw new Error(`Opción desconocida: ${arg}. Válidas: --dry-run (por defecto), --comparar, --aplicar, --archivo <ruta>, --repositorio=<id>, --permitir-otros-repos.`);
+    } else throw new Error(`Opción desconocida: ${arg}. Válidas: --dry-run (por defecto), --comparar, --aplicar, --archivo <ruta>, --repositorio=<id>, --permitir-otros-repos, ${CONFIRMO_FILTRO_EN_PRODUCCION}.`);
   }
   if (!archivo && !esFundador(repositorio)) throw new Error(`«${repositorio}» no tiene carpeta de datos declarada: pasa --archivo <ruta>.`);
   const porDefecto = esFundador(repositorio) ? path.join(process.cwd(), MANIFIESTOS[repositorio].datos, "fichas.jsonl") : "";
-  return { modo: modo ?? "ensayo", archivo: archivo ?? porDefecto, repositorio, permitirOtros };
+  return { modo: modo ?? "ensayo", archivo: archivo ?? porDefecto, repositorio, permitirOtros, confirmoFiltro };
 }
 
 function cargarEntorno(): void {
@@ -160,6 +165,9 @@ async function main(): Promise<void> {
   if (!registros.length) throw new Error("El archivo no trae registros válidos: no se hace nada.");
   const impedimentos = erroresDeCorrida({ registros, erroresLectura: errores, repositorio: opciones.repositorio, permitirOtros: opciones.permitirOtros });
   if (impedimentos.length) throw new Error(impedimentos.join("\n"));
+  const sinConfirmar = erroresDeAplicar(opciones.repositorio, opciones.confirmoFiltro);
+  if (opciones.modo === "aplicar" && sinConfirmar.length) throw new Error(sinConfirmar.join("\n"));
+  for (const aviso of sinConfirmar) console.log(`AVISO (--aplicar se negaría): ${aviso}`);
 
   if (opciones.modo === "ensayo") {
     console.log(`\nEnsayo: no se tocó ninguna base de datos. Embeddings de texto necesarios si la base está vacía: ${registros.length}.`);

@@ -59,6 +59,19 @@ const ENTRADAS: Array<[string, EntradaBusqueda, Parameters<typeof construirConsu
   assert.ok(ninguno.valores.some((v) => Array.isArray(v) && v.length === 0), "lista vacía = ninguna fila (ANY de vacío), nunca «todas»");
   ok("la lista de repositorios va como parámetro; vacía no abre nada");
 
+  // Fase 3 (AC-8): con un repositorio chico en la partición, las ramas vectoriales ordenan por `distancia + 0` (el HNSW no puede
+  // servirlo: exactas); solo Sempertex conserva el orden por distancia de siempre. La ejecución está en `test-taller-repositorios-rag.ts`.
+  const ambos = { texto: "silla", vectorTexto: vector(), vectorImagen: vector(0.5) };
+  for (const repositorios of [["mobiliario"], ["sempertex", "mobiliario"], ["sempertex", "mobiliario", "escenografia"]] as const) {
+    const c = construirConsultaBusqueda(ambos, { repositorios, conColumna: true });
+    assert.equal(c.texto.match(/ORDER BY \(e\.vector <=> \$\d+::vector\) \+ 0, e\.item_id/g)?.length, 2, `${repositorios.join()}: las dos ramas vectoriales, exactas`);
+    assert.equal(cuenta(c.texto, "ORDER BY e.vector <=>"), 0, repositorios.join());
+  }
+  const soloSempertex = construirConsultaBusqueda(ambos, SOLO_SEMPERTEX);
+  assert.equal(cuenta(soloSempertex.texto, "ORDER BY e.vector <=>"), 2, "solo Sempertex: el orden por distancia de siempre");
+  assert.equal(cuenta(soloSempertex.texto, ") + 0, e.item_id"), 0);
+  ok("un repositorio chico en la partición vuelve exactas las ramas vectoriales; solo Sempertex, el SQL de siempre");
+
   const legado = construirConsultaBusqueda({ texto: "arco", vectorTexto: vector() }, { repositorios: ["sempertex"], conColumna: false });
   assert.ok(!/t\.repositorio/.test(legado.texto), "sin la columna no se nombra");
   assert.match(legado.texto, /'sempertex'::text AS repositorio/, "sin la columna, todo es Sempertex (R2)");

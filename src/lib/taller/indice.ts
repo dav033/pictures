@@ -212,6 +212,20 @@ export function erroresDeCorrida({ registros, erroresLectura, repositorio, permi
   return errores;
 }
 
+/** La bandera con que quien aplica confirma que el código que lee `taller_items` en producción ya filtra por repositorio. */
+export const CONFIRMO_FILTRO_EN_PRODUCCION = "--confirmo-filtro-en-produccion";
+
+/**
+ * Lo que impide ESCRIBIR una corrida de otro repositorio que Sempertex (REQ-013, riesgo R-1). Esas filas solo quedan invisibles si
+ * todo lo que lee `taller_items` en producción filtra por `repositorio` (fase 2, d4b4020d o posterior): un despliegue anterior no
+ * conoce la columna y las mostraría en la búsqueda del Taller, en la IA de escena y en la búsqueda por foto. Quien aplica lo
+ * confirma a mano. Vacío = se puede.
+ */
+export function erroresDeAplicar(repositorio: IdRepositorio, confirmoFiltro: boolean): string[] {
+  if (repositorio === "sempertex" || confirmoFiltro) return [];
+  return [`Escribir «${repositorio}» en la base exige ${CONFIRMO_FILTRO_EN_PRODUCCION}: sus filas solo quedan invisibles si el código que lee taller_items en producción (VPS) ya filtra por repositorio (REQ-013 fase 2, d4b4020d o posterior); uno anterior las mostraría en la búsqueda del Taller, la IA de escena y la búsqueda por foto. Comprueba la versión desplegada y repite con la bandera.`];
+}
+
 /** Los ids de la corrida que ya existen en la base con otro repositorio (o de un dueño en otro): no se los apropia nadie. */
 export function construirConsultaDeOtroRepositorio(ids: readonly string[], repositorio: IdRepositorio): ConsultaSql {
   return { texto: "SELECT id, repositorio FROM taller_items WHERE id = ANY($1::text[]) AND repositorio <> $2", valores: [[...ids], repositorio] };
