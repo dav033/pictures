@@ -20,6 +20,12 @@ import ts from "typescript";
  * Un hallazgo se da por revisado con un comentario `// prerender-seguro: <motivo>` al final de SU línea (no en una cadena,
  * no en la línea de arriba). Si el hallazgo está en un helper, el comentario va en la línea del helper.
  *
+ * **Componentes de servidor (P-037).** Con `cacheComponents` las páginas y layouts (`.tsx` sin `"use client"` que exportan un
+ * componente) también se prerenderizan. `hallazgosDelServidor` mira su render y su nivel de módulo con las mismas reglas, y
+ * con dos escapes: lo que va después de la primera sentencia que llama a `connection()` (ya es dinámico) y las funciones o
+ * archivos con `"use cache"`. Las rutas `route.ts` y las acciones de servidor no son render y no se miran. El opt-out es el
+ * mismo comentario `// prerender-seguro: <motivo>`.
+ *
  * **Puntos ciegos (la guardia es parcial):**
  *  - Un solo salto: lo que llama un helper no se sigue.
  *  - Solo se resuelven funciones con nombre (declaración o variable con función) del mismo archivo o importadas por nombre.
@@ -76,6 +82,75 @@ export function hallazgosDelArchivo(texto: string, archivo: string): Hallazgo[] 
   return [...salida.values()].sort((a, b) => a.linea - b.linea);
 }
 
+/** Componentes de servidor del archivo (`.tsx` sin directiva de cliente que exporta un componente): ver la cabecera (P-037). */
+export function hallazgosDelServidor(texto: string, archivo: string): Hallazgo[] {
+  if (!archivo.endsWith(".tsx")) return [];
+  const ctx: Contexto = { archivo, fuente: crearFuente(texto, archivo) };
+  if (tieneDirectivaCliente(ctx.fuente) || tieneDirectiva(ctx.fuente.statements, "use cache") || !exportaComponente(ctx.fuente)) return [];
+  const salida = new Map<string, Hallazgo>();
+  const explorar = (nodo: ts.Node): void => {
+    if (ts.isFunctionLike(nodo) && esComponenteOHook(nodo)) escanearRenderDeServidor(nodo, ctx, salida);
+    ts.forEachChild(nodo, explorar);
+  };
+  explorar(ctx.fuente);
+  for (const sentencia of ctx.fuente.statements) {
+    if (ts.isFunctionLike(sentencia) || ts.isClassDeclaration(sentencia)) continue;
+    escanear(sentencia, ctx, { ambito: "modulo", saltarFunciones: true, resolver: true, salida });
+  }
+  return [...salida.values()].sort((a, b) => a.linea - b.linea);
+}
+
+/** Parámetros y sentencias del render de un componente de servidor hasta la primera llamada a `connection()` (incluida). */
+function escanearRenderDeServidor(funcion: ts.SignatureDeclaration, ctx: Contexto, salida: Map<string, Hallazgo>): void {
+  const esc: Escaneo = { ambito: "render", saltarFunciones: true, resolver: true, salida };
+  for (const parametro of funcion.parameters) escanear(parametro, ctx, esc);
+  if (!("body" in funcion) || !funcion.body) return;
+  const cuerpo = funcion.body;
+  if (!ts.isBlock(cuerpo)) {
+    escanear(cuerpo, ctx, esc);
+    return;
+  }
+  if (tieneDirectiva(cuerpo.statements, "use cache")) return;
+  for (const sentencia of cuerpo.statements) {
+    escanear(sentencia, ctx, esc);
+    if (llamaAConnection(sentencia)) return;
+  }
+}
+
+function llamaAConnection(nodo: ts.Node): boolean {
+  if (ts.isCallExpression(nodo) && ts.isIdentifier(nodo.expression) && nodo.expression.text === "connection") return true;
+  let encontrado = false;
+  ts.forEachChild(nodo, (hijo) => {
+    encontrado = llamaAConnection(hijo);
+    return encontrado;
+  });
+  return encontrado;
+}
+
+/** Si la función o el archivo traen la directiva `"use cache"` en su prólogo (las funciones cacheadas no son render). */
+function tieneDirectiva(sentencias: readonly ts.Statement[], directiva: string): boolean {
+  for (const sentencia of sentencias) {
+    if (!ts.isExpressionStatement(sentencia) || !ts.isStringLiteral(sentencia.expression)) return false;
+    if (sentencia.expression.text === directiva) return true;
+  }
+  return false;
+}
+
+/** Exporta algo que parece un componente: función o variable con nombre en mayúscula, `export default`, o `export { Nombre }`. */
+function exportaComponente(fuente: ts.SourceFile): boolean {
+  return fuente.statements.some((sentencia) => {
+    if (ts.isExportAssignment(sentencia)) return true;
+    if (ts.isExportDeclaration(sentencia)) {
+      const enlaces = sentencia.exportClause;
+      return !sentencia.isTypeOnly && enlaces !== undefined && ts.isNamedExports(enlaces) && enlaces.elements.some((e) => /^[A-Z]/.test(e.name.text));
+    }
+    if (!ts.canHaveModifiers(sentencia) || !(ts.getModifiers(sentencia) ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) return false;
+    if (ts.isFunctionDeclaration(sentencia)) return esComponenteOHook(sentencia);
+    if (ts.isVariableStatement(sentencia)) return sentencia.declarationList.declarations.some((d) => ts.isIdentifier(d.name) && /^[A-Z]/.test(d.name.text));
+    return false;
+  });
+}
+
 /** `useState`, `React.useState`… : la llamada a un hook que guarda un valor inicial. */
 function esInicializador(nodo: ts.Node): nodo is ts.CallExpression {
   return ts.isCallExpression(nodo) && INICIALIZADORES.has(nombreLlamado(nodo));
@@ -113,7 +188,7 @@ function seguirFuncion(nombre: string, sitio: ts.Node, ctx: Contexto, esc: Escan
   const linea = ctx.fuente.getLineAndCharacterOfPosition(sitio.getStart(ctx.fuente)).line;
   if (tieneOptOut(ctx, linea)) return;
   const destino = resolverFuncion(nombre, ctx);
-  if (!destino) return;
+  if (!destino || tieneUseCache(destino.nodo)) return;
   const via = `${nombre}() llamada en ${path.relative(SRC, ctx.archivo).split(path.sep).join("/")}:${linea + 1}`;
   escanearCuerpo(destino.nodo, destino.ctx, { ...esc, via, resolver: false, saltarFunciones: true });
 }
@@ -240,11 +315,11 @@ function crearFuente(texto: string, archivo: string): ts.SourceFile {
 }
 
 function tieneDirectivaCliente(fuente: ts.SourceFile): boolean {
-  for (const sentencia of fuente.statements) {
-    if (!ts.isExpressionStatement(sentencia) || !ts.isStringLiteral(sentencia.expression)) return false;
-    if (sentencia.expression.text === "use client") return true;
-  }
-  return false;
+  return tieneDirectiva(fuente.statements, "use client");
+}
+
+function tieneUseCache(nodo: ts.Node): boolean {
+  return ts.isFunctionLike(nodo) && "body" in nodo && nodo.body !== undefined && ts.isBlock(nodo.body) && tieneDirectiva(nodo.body.statements, "use cache");
 }
 
 /** Componente (nombre en mayúscula, o `export default`) o hook (`useX` / `usarX`): los dos se evalúan al pintar. */

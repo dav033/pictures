@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { esArchivoCliente, hallazgosDelArchivo, type Hallazgo } from "../lib/guardia-prerender";
+import { esArchivoCliente, hallazgosDelArchivo, hallazgosDelServidor, type Hallazgo } from "../lib/guardia-prerender";
 
 const RAIZ_SRC = fileURLToPath(new URL("../../src", import.meta.url));
 const DIRECTORIO_FIXTURES = fileURLToPath(new URL("./fixtures/guardia-prerender", import.meta.url));
@@ -216,4 +216,38 @@ const hallazgos = clientes.flatMap((ruta) => hallazgosDelArchivo(readFileSync(ru
 const relativos = hallazgos.map((h) => `${path.relative(RAIZ_SRC, h.archivo).split(path.sep).join("/")}:${h.linea} ${h.patron} (${h.ambito}${h.via ? `, ${h.via}` : ""}): ${h.texto}`);
 assert.deepEqual(relativos, [], `hay ${hallazgos.length} valores no deterministas al pintar en componentes cliente (P-033); o se mueven a useEffect, o se revisan con // prerender-seguro: <motivo> al final de su línea`);
 
-console.log(`test-guardia-prerender: ok (guardia parcial; fixture: ${violaciones.length} violaciones, ${porSalto.length} por un salto; hook sin directiva marcado; Taller3D previo marcado; ${clientes.length} componentes cliente en src/ sin hallazgos)`);
+// 4. Componentes de servidor: páginas y layouts (cacheComponents los prerenderiza igual que a los de cliente).
+const RUTA_PAGINA = path.join(RAIZ_SRC, "app", "fixture-pagina", "page.tsx");
+const FIXTURE_SERVIDOR = `import { connection } from "next/server";
+
+export default async function Pagina() {
+  const ahora = new Date();
+  return <p>{String(ahora)}</p>;
+}
+
+export async function Protegida() {
+  await connection();
+  const ahora = new Date();
+  return <p>{String(ahora)}</p>;
+}
+
+export async function EnCache() {
+  "use cache";
+  return <p>{String(new Date())}</p>;
+}
+`;
+assert.deepEqual(
+  hallazgosDelServidor(FIXTURE_SERVIDOR, RUTA_PAGINA).map((h) => `${h.linea} ${h.patron} ${h.ambito}`),
+  [`${lineaDe(FIXTURE_SERVIDOR, "const ahora = new Date()")} new Date() render`],
+  'la página de servidor con new Date() en su cuerpo se marca; tras await connection() y en una función con "use cache" no',
+);
+assert.deepEqual(hallazgosDelServidor(FIXTURE_SERVIDOR, path.join(RAIZ_SRC, "app", "fixture-ruta", "route.ts")), [], "route.ts no es render");
+assert.deepEqual(hallazgosDelServidor(FIXTURE_VIOLACIONES, RUTA_VIRTUAL), [], "un archivo de cliente no se mira como servidor");
+
+const componentesDeServidor = archivosFuente(RAIZ_SRC).filter((ruta) => ruta.endsWith(".tsx") && !esArchivoCliente(readFileSync(ruta, "utf8"), ruta));
+assert.ok(componentesDeServidor.length >= 10, `se esperaban al menos 10 archivos .tsx de servidor en src/ y hay ${componentesDeServidor.length}: revisa la búsqueda`);
+const hallazgosServidor = componentesDeServidor.flatMap((ruta) => hallazgosDelServidor(readFileSync(ruta, "utf8"), ruta));
+const relativosServidor = hallazgosServidor.map((h) => `${path.relative(RAIZ_SRC, h.archivo).split(path.sep).join("/")}:${h.linea} ${h.patron} (${h.ambito}${h.via ? `, ${h.via}` : ""}): ${h.texto}`);
+assert.deepEqual(relativosServidor, [], `hay ${hallazgosServidor.length} valores no deterministas al pintar en componentes de servidor (P-037); o se llama a connection() antes, o se revisan con // prerender-seguro: <motivo> al final de su línea`);
+
+console.log(`test-guardia-prerender: ok (guardia parcial; fixture: ${violaciones.length} violaciones, ${porSalto.length} por un salto; hook sin directiva marcado; Taller3D previo marcado; ${clientes.length} componentes cliente en src/ sin hallazgos; ${componentesDeServidor.length} archivos de servidor sin hallazgos)`);
