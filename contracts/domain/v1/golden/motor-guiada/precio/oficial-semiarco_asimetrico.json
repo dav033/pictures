@@ -2,9 +2,9 @@
  "caso": "oficial-semiarco_asimetrico",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.2"
+  "version": "1.2.3"
  },
- "especHash": "1b58d91ae6c8cbd6d86f4577eb360dfda9dee2a4607e3e9fce8d159cee5459b8",
+ "especHash": "760e9f51003a872fd5ec8cdffb98676368baa35d96539947c56543b187a30f13",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

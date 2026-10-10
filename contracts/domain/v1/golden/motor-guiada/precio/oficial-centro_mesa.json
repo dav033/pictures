@@ -2,9 +2,9 @@
  "caso": "oficial-centro_mesa",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.2"
+  "version": "1.2.3"
  },
- "especHash": "c0972929c4d1e48027d74d5641523b73903b8cf06b584eefe287cb16560f20f1",
+ "especHash": "d67503495059b59442d3af550c9a804c052343b7071e95464deba13ba31d467c",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

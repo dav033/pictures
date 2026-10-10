@@ -2,9 +2,9 @@
  "caso": "oficial-guirnalda",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.2"
+  "version": "1.2.3"
  },
- "especHash": "3efbbad15bea3257d009d9ff26b46bc1378e0bfec685e6873f35a36bbd3cbb16",
+ "especHash": "bb43bebc14df3770b2881c8566dc28fa4b0ae44465c2fb66794ed5382f4ade2b",
  "noRepresentable": [],
  "piezas": {
   "EST_01_GUIRNALDA": {

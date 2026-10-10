@@ -2,9 +2,9 @@
  "caso": "oficial-arco_no_denso",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.2"
+  "version": "1.2.3"
  },
- "especHash": "ddf002f0c5de27a1b9f47846f59689408f8a2caba9e7e607ab2109c5118cb53d",
+ "especHash": "5f2592540dc1ba6c329f82c0ab2bfdac35f107f47daadb64551727d4b3885fae",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

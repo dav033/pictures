@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-20-semiarcoilusionazul-1200x1200",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.2"
+  "version": "1.2.3"
  },
- "especHash": "0587fec238a2a33e524701179e962a27e17514083f6e2745bad0d9753df16cfd",
+ "especHash": "764989af919b93bb44a1ea6ee11df010c7ad4ff0c2234c992e29dae47594c696",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

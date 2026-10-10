@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-28-aro-blanco-dorado-y-nude",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.2"
+  "version": "1.2.3"
  },
- "especHash": "cad858ce1df4e0d6e074f4446fcd7816bb9718ecdc33fd866d2482f7866683e2",
+ "especHash": "d15c4a8490ecdd25f05a84fcc0f7bfd5ca37414532f8dc30a84f1440656dea18",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

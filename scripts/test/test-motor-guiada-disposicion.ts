@@ -8,16 +8,16 @@
 import assert from "node:assert/strict";
 import { todosLosCasos, type CajaCm } from "../lib/casos-motor-guiada";
 import { distribuir, type ItemDeLayout } from "../../src/lib/globos3d/motor/layout";
+import { solapeTolerado } from "../../src/lib/globos3d/motor/solapes-tolerados";
 import { armarDesdeEspec, type PiezaEspec } from "../../src/lib/globos3d/motor/v1";
 
 const CLARO_MINIMO_CM = 200;
-const SE_TIENDEN_SOBRE_OTRAS = new Set<PiezaEspec["oficial"]>(["guirnalda", "pared_densa", "pared_no_densa", "pared_organica", "racimo_pared", "techo_globos"]);
 const esColumna = (p: PiezaEspec) => p.oficial.startsWith("columna");
 
 const seCruzan = (a: CajaCm, b: CajaCm) => [0, 1, 2].every((k) => a[k]! < b[k + 3]! && b[k]! < a[k + 3]!);
 
 // 1. El reparto, sin motor: lo que mide cada pieza decide dónde va.
-const columna = (id: string, lugar: ItemDeLayout["lugar"], anchoCm = 75): ItemDeLayout => ({ id, lugar, apoyo: "piso", anchoCm, alturaPared: 0 });
+const columna = (id: string, lugar: ItemDeLayout["lugar"], anchoCm = 75): ItemDeLayout => ({ id, lugar, apoyo: "piso", anchoCm, alturaPared: 0, alturaCm: 200 });
 const xDe = (items: ItemDeLayout[], id: string): number => {
   const c = distribuir(items).colocaciones.get(id);
   assert.ok(c && c.en === "piso", `${id} va en el piso`);
@@ -44,7 +44,7 @@ for (const caso of todosLosCasos()) {
   for (let i = 0; i < piezas.length; i++) {
     for (let j = i + 1; j < piezas.length; j++) {
       const [a, b] = [piezas[i]!, piezas[j]!];
-      if (SE_TIENDEN_SOBRE_OTRAS.has(de.get(a.id)!.oficial) || SE_TIENDEN_SOBRE_OTRAS.has(de.get(b.id)!.oficial)) continue;
+      if (solapeTolerado(de.get(a.id)!.oficial, de.get(b.id)!.oficial)) continue;
       pares += 1;
       assert.ok(!seCruzan(a.caja as CajaCm, b.caja as CajaCm), `${caso.id}: ${a.id} y ${b.id} se cruzan (cajas ${JSON.stringify(a.caja)} y ${JSON.stringify(b.caja)})`);
     }

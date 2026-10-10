@@ -2,9 +2,9 @@
  "caso": "oficial-bouquet",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.2"
+  "version": "1.2.3"
  },
- "especHash": "03f6ee3101a7b307fb224e099e9bdb587a0ea2ca450886babc6ff6181bb70478",
+ "especHash": "1d3a35ff75fb63f8fb1ec1ede0a53cd97ad461b8de48a3fbd8d69d03b2fa771a",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

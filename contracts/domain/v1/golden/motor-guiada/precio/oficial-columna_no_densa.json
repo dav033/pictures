@@ -2,9 +2,9 @@
  "caso": "oficial-columna_no_densa",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.2"
+  "version": "1.2.3"
  },
- "especHash": "fa460c6e54c8f7ca104abc379c6e0243eaf8ebfb62749db296e27d3d5ee3aa99",
+ "especHash": "8b1f13d4be09c48a4fc8631119290b09a058310ff78ca1b17e15d3a8bc2309a2",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

@@ -64,6 +64,7 @@ jobs:
       - run: npm run test-motor-guiada-integracion
       - run: npm run catalogo:test
       - run: npm run kontext:test
+      - run: npm run test-escenarios-matriz
       - run: npm run globos3d:test
       - run: npm run contracts:test
       - run: npm run contracts:test:domain

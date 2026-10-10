@@ -23,6 +23,12 @@ const SIN_CONSTRUCTOR: Readonly<Record<string, string>> = {
   pared_no_densa: "No hay un constructor de pared ligera que deje ver el fondo.",
 };
 
+/** Los avisos que la escena dice de una pieza: el texto exacto, para que la matriz los compare sin adivinar. */
+export const avisoAproximada = (nombre: string, motivo: string): string => `«${nombre}»: ${motivo}`;
+export const avisoDeclarada = (nombre: string): string => `«${nombre}» se cuenta de la lista del catálogo y no se dibuja.`;
+export const avisoTrenzaOrganica = (nombre: string, colores: number): string =>
+  `«${nombre}»: la trenza clásica no alcanza para sus ${colores} colores en ese tamaño; se armó orgánica, con globos de varios tamaños, para que lleve todos.`;
+
 /** La pared de malla lleva hasta cuatro colores (rombos). */
 const MAX_COLORES_PARED = 4;
 

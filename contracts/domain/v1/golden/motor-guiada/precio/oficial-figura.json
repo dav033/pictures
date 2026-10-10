@@ -2,9 +2,9 @@
  "caso": "oficial-figura",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.2"
+  "version": "1.2.3"
  },
- "especHash": "01d78eaf93d279e7a3c40f8d97dbd885cd11f23e3aca83441d0e9aea295056bc",
+ "especHash": "c76bf325e05b025cd4feb96194df9012c434954b321c921be7bfedb7df4cde5a",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

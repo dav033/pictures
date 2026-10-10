@@ -14,7 +14,7 @@ import { anchoEstimadoCm, distribuir, type ItemDeLayout } from "./layout";
 import { jsonEstable } from "./hash-espec";
 import { SEPARADOR_FLORES } from "./ids-nodos";
 import { DENSIDAD_POR_DEFECTO, medidasDe } from "./medidas-espec";
-import { representacionDe } from "./representable";
+import { avisoAproximada, avisoDeclarada, avisoTrenzaOrganica, representacionDe } from "./representable";
 
 /**
  * **Espec → escena.** PRIVADO del motor: solo `v1.ts` lo importa (lo vigila una prueba). Cada pieza oficial se arma con
@@ -91,10 +91,20 @@ function conHuecosParaFlores(pieza: Pieza, cantidad: number): Pieza {
   return { ...pieza, opciones: { ...pieza.opciones, huecosFlores: Math.max(pieza.opciones.huecosFlores, cantidad) } };
 }
 
-/** Los anclajes donde se cuelgan las flores: los que miran a quien ve la escena, repartidos parejo por la pieza. */
-function anclasParaFlores(armada: PiezaArmada, cantidad: number): number[] {
-  const delFrente = armada.anclas.map((ancla, indice) => ({ ancla, indice })).filter(({ ancla }) => ancla.normal.z > 0.3);
-  const candidatas = delFrente.length ? delFrente : armada.anclas.map((ancla, indice) => ({ ancla, indice }));
+/**
+ * El radio de una flor de globos, de su propia caja: la media diagonal de su ancho y su fondo, o lo que baja por debajo de su
+ * ancla si baja más. Una ancla a menos de este radio del borde de la pieza colgaría la flor bajo el piso o el borde.
+ */
+function radioDeFlor(flor: Pieza): number {
+  const { min, max } = armarPieza(flor).caja;
+  return Math.max(Math.hypot((max.x - min.x) / 2, (max.z - min.z) / 2), -min.y);
+}
+
+/** Los anclajes donde se cuelgan las flores: los que miran a quien ve la escena, repartidos parejo por la pieza y no más bajos que el radio de una flor. */
+function anclasParaFlores(armada: PiezaArmada, cantidad: number, radioCm: number): number[] {
+  const enPie = armada.anclas.map((ancla, indice) => ({ ancla, indice })).filter(({ ancla }) => ancla.posicion.y - armada.caja.min.y >= radioCm);
+  const delFrente = enPie.filter(({ ancla }) => ancla.normal.z > 0.3);
+  const candidatas = delFrente.length ? delFrente : enPie;
   const cuantas = Math.min(cantidad, candidatas.length);
   return Array.from({ length: cuantas }, (_, k) => candidatas[Math.floor(((k + 0.5) * candidatas.length) / cuantas)]!.indice);
 }
@@ -102,7 +112,7 @@ function anclasParaFlores(armada: PiezaArmada, cantidad: number): number[] {
 function nodosDeFlores(pieza: PiezaEspec, flor: Pieza | null, armada: PiezaArmada, avisos: string[]): NodoEscena[] {
   const flores = pieza.flores;
   if (!flores || !flor) return [];
-  const anclas = anclasParaFlores(armada, flores.cantidad);
+  const anclas = anclasParaFlores(armada, flores.cantidad, radioDeFlor(flor));
   if (!anclas.length) {
     avisos.push(`Las flores de «${pieza.nombre}» no se dibujan: esa pieza no tiene dónde colgarlas, pero se cuentan en la lista.`);
     return [];
@@ -153,7 +163,7 @@ function prepararCompleta(pieza: PiezaEspec): PiezaPreparada {
       if (!faltantes(pieza, organica.armada).length) {
         preparada = organica;
         avisosPieza.length = 0;
-        avisosPieza.push(...respaldo, `«${pieza.nombre}»: la trenza clásica no alcanza para sus ${pieza.colores.length} colores en ese tamaño; se armó orgánica, con globos de varios tamaños, para que lleve todos.`);
+        avisosPieza.push(...respaldo, avisoTrenzaOrganica(pieza.nombre, pieza.colores.length));
       }
     }
   } catch (error) {
@@ -176,8 +186,8 @@ export function escenaDesdeEspec(espec: EspecClienteV1, cachePiezas?: CachePieza
   for (const pieza of espec.piezas) {
     const representacion = representacionDe(pieza);
     if (representacion.estado === "fallback") { noRepresentables.push({ piezaId: pieza.id, motivo: representacion.motivo ?? "No se puede representar." }); continue; }
-    if (representacion.estado === "declarada") { declaradas.push(pieza); avisos.push(`«${pieza.nombre}» se cuenta de la lista del catálogo y no se dibuja.`); continue; }
-    if (representacion.estado === "aproximada" && representacion.motivo) avisos.push(`«${pieza.nombre}»: ${representacion.motivo}`);
+    if (representacion.estado === "declarada") { declaradas.push(pieza); avisos.push(avisoDeclarada(pieza.nombre)); continue; }
+    if (representacion.estado === "aproximada" && representacion.motivo) avisos.push(avisoAproximada(pieza.nombre, representacion.motivo));
     // La clave es la pieza entera sin su id: dos piezas iguales con ids distintos (o el mismo plan editado en otra) se arman una vez.
     const clave = cachePiezas ? jsonEstable({ ...pieza, id: undefined }) : "";
     let armadaDePieza = cachePiezas?.leer(clave);
@@ -195,7 +205,10 @@ export function escenaDesdeEspec(espec: EspecClienteV1, cachePiezas?: CachePieza
     if (lineas.length) lineasFlores[pieza.id] = lineas;
     listas.push({ espec: pieza, construida, armada, flor });
   }
-  const items: ItemDeLayout[] = listas.map(({ espec: pieza, construida }) => ({ id: pieza.id, lugar: pieza.lugar, apoyo: construida.apoyo, anchoCm: anchoEstimadoCm(pieza), alturaPared: alturaPared(pieza) }));
+  const items: ItemDeLayout[] = listas.map(({ espec: pieza, construida, armada }) => ({
+    id: pieza.id, lugar: pieza.lugar, apoyo: construida.apoyo, anchoCm: anchoEstimadoCm(pieza), alturaPared: alturaPared(pieza),
+    alturaCm: Math.ceil(armada.caja.max.y - armada.caja.min.y),
+  }));
   const { sala, colocaciones } = distribuir(items);
   const nodos = listas.flatMap(({ espec: pieza, construida, armada, flor }): NodoEscena[] => [
     { id: pieza.id, nombre: pieza.nombre, pieza: construida.pieza, colocacion: colocaciones.get(pieza.id)! },

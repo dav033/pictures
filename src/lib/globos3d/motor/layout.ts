@@ -11,12 +11,20 @@ import type { Apoyo } from "./constructores-organicos";
  * lo que ocupa el centro: dos columnas flanquean el claro, no se pegan entre sí. Si no caben, la sala se ensancha:
  * nada se encima.
  */
-export type ItemDeLayout = { id: string; lugar: LugarEspec; apoyo: Apoyo; anchoCm: number; /** Altura del borde de abajo de lo que cuelga de la pared. */ alturaPared: number };
+export type ItemDeLayout = {
+  id: string; lugar: LugarEspec; apoyo: Apoyo; anchoCm: number;
+  /** Altura del borde de abajo de lo que cuelga de la pared. */
+  alturaPared: number;
+  /** Lo alto que es la caja de la pieza (cm): la sala se levanta si la pieza más alta no cabe en la altura por defecto. */
+  alturaCm: number;
+};
 
 const SEPARACION_CM = 40;
 /** El claro de una entrada entre dos columnas (lo común es 2 a 2,5 m): con la inclinación hacia adentro, las puntas siguen separadas. */
 const CLARO_ENTRE_LADOS_CM = 240;
 const MARGEN_SALA_CM = 60;
+/** Holgura entre lo más alto de la pieza y el techo de la sala (cm). */
+const HOLGURA_TECHO_CM = 20;
 const Z_PIEZAS_DE_PISO = -160;
 const Z_MESA = 40;
 
@@ -53,7 +61,9 @@ export function distribuir(items: readonly ItemDeLayout[]): { sala: Sala; coloca
   const piso = de("piso", false), mesa = de("piso", true), pared = [...de("pared", false), ...de("pared", true)], techo = [...de("techo", false), ...de("techo", true)];
   const xPiso = filaX(piso), xMesa = filaX(mesa), xPared = filaX(pared), xTecho = filaX(techo);
   const mitadAncho = Math.max(extension(piso, xPiso), extension(mesa, xMesa), extension(pared, xPared), extension(techo, xTecho)) + MARGEN_SALA_CM;
-  const sala: Sala = { ...SALA_INICIAL, tonos: { ...SALA_INICIAL.tonos }, mostrar: { ...SALA_INICIAL.mostrar }, anchoCm: Math.max(SALA_INICIAL.anchoCm, Math.round(mitadAncho * 2)) };
+  const topeMasAlto = Math.max(0, ...items.map((i) => (i.apoyo === "techo" ? i.alturaCm : i.alturaPared + i.alturaCm)));
+  const altoCm = Math.max(SALA_INICIAL.altoCm, Math.ceil(topeMasAlto + HOLGURA_TECHO_CM));
+  const sala: Sala = { ...SALA_INICIAL, tonos: { ...SALA_INICIAL.tonos }, mostrar: { ...SALA_INICIAL.mostrar }, anchoCm: Math.max(SALA_INICIAL.anchoCm, Math.round(mitadAncho * 2)), altoCm };
   const colocaciones = new Map<string, Colocacion>();
   for (const i of piso) colocaciones.set(i.id, { en: "piso", xCm: xPiso.get(i.id) ?? 0, zCm: Z_PIEZAS_DE_PISO, giroGrados: 0 });
   for (const i of mesa) colocaciones.set(i.id, { en: "piso", xCm: xMesa.get(i.id) ?? 0, zCm: Z_MESA, giroGrados: 0 });

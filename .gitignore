@@ -110,3 +110,6 @@ packages/*/dist
 
 # Salida de los servicios de desarrollo (supervisar-ai-api.py y next dev)
 .logs/
+
+# Informes de la matriz de escenarios del motor 3D (scripts/escenarios/correr.ts)
+scripts/escenarios/salidas/
