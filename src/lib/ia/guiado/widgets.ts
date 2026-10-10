@@ -27,6 +27,12 @@ export const WidgetGuiadoSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("propuesta"), propuesta: PropuestaComposicionSchema, estado: z.enum(["resolviendo", "fallo", "en_espera"]).optional() }).strict(),
   z.object({
     tipo: z.literal("plan"), plan: PlanGuiadoSchema,
+    /**
+     * La propuesta que armó este plan DEL 3D: «Recalcular mi plan» (P-049) la repite con Python. Un plan de Python no la guarda
+     * (un despliegue anterior descartaría la conversación entera por una clave que no conoce) y los guardados antes no la traen.
+     * Con `.catch`, como `motor`: si ya no cumple el esquema (otro tope de piezas, un color retirado) se descarta ella sola.
+     */
+    propuesta: PropuestaComposicionSchema.optional().catch(undefined),
     /** Qué motor armó este plan (REQ-007): se decide al crearlo y sus ediciones e imágenes siguen con él. Los guardados antes de la bandera no lo traen: son de Python. */
     motor: MotorGuiadaSchema.catch(MOTOR_POR_DEFECTO), cotizacion: CotizacionPlanGuiadoSchema.optional(), pasos: z.array(PasoPlanSchema).optional(), fotoInspiracion: z.boolean().optional(),
     /** Con `fotoInspiracion`: el mensaje que trae la lectura de la foto de la que salió el plan (y sus versiones rehechas). */

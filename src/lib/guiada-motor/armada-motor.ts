@@ -3,7 +3,10 @@ import { isAuthenticatedRequest } from "@/lib/auth/request";
 import { exigirEscritura } from "@/lib/feedback-ia/acceso";
 import { svgDeArmada, type ArmadaCompactaV1, type EspecClienteV1, type ResultadoMotorV1 } from "@/lib/globos3d/motor/v1";
 import { CuerpoArmadaSchema } from "./armada-contrato";
+import { CODIGO_MOTOR_3D_CORTADO, crearAuditoriaDeCortes, etiquetaDelCorte } from "./corte-motor3d";
+import { TEXTO_DIBUJO_RECALCULO } from "./mensajes-cliente";
 import { huellaDeNavegador } from "./plan-motor";
+import type { RespuestaMotor } from "./tipos";
 import { verificarPlanFirmado } from "./verificar-plan";
 
 /**
@@ -16,7 +19,8 @@ import { verificarPlanFirmado } from "./verificar-plan";
  *
  * - misma identidad que la ruta del plan: sesión, mismo origen y token `globos3d` atado a ESTE navegador; un token de
  *   Python, de otro navegador o con la espec cambiada responde 409 (`verificar-plan.ts`);
- * - no mira la bandera: un plan del 3D que ya está en pantalla se sigue viendo aunque la bandera cambie;
+ * - la bandera solo corta con el corte del 3D (P-045, `fuente: "corte"`): 409 `MOTOR_3D_CORTADO`, sin armar ni mirar el plan.
+ *   Con la bandera en `python` un plan del 3D que ya está en pantalla se sigue viendo;
  * - la armada es determinista (misma espec y versión, mismos bytes): se guarda en una caché de servidor por `especHash`,
  *   acotada. No guarda recursos de GPU (esos viven en cada visor, D-017): solo números.
  */
@@ -40,6 +44,9 @@ export function crearCacheArmada(tope: number): CacheArmada {
 }
 
 export type DependenciasArmada = {
+  leerBandera: (request: Request) => Promise<RespuestaMotor>;
+  /** Qué conversación y plan ya quedaron registrados como cortados (una fila por cada uno, no por miniatura). Sin él, cada rechazo se registra. */
+  auditoriaCortes?: ReturnType<typeof crearAuditoriaDeCortes>;
   armar: (espec: EspecClienteV1) => Pick<ResultadoMotorV1, "armada" | "especHash">;
   cache: CacheArmada;
   auditar: (quien: string, que: string, resultado: unknown, extra?: { entrada?: unknown; motivo?: string }) => void;
@@ -62,7 +69,18 @@ export async function atenderArmadaMotor(request: Request, deps: DependenciasArm
   if (!isAuthenticatedRequest(request)) return error("SESION_REQUERIDA", "Sesión requerida.", 401);
   const acceso = exigirEscritura(request);
   if ("respuesta" in acceso) return acceso.respuesta;
+  // El corte se decide con la cookie y la bandera, antes de leer o validar el cuerpo: un plan cortado no pasa de aquí.
+  const bandera = await deps.leerBandera(request);
+  if (bandera.fuente === "corte") return rechazoCortado(request, deps, bandera);
   return acceso.conCookie(await atender(request, deps, huellaDeNavegador(acceso.usuarioId)));
+}
+
+async function rechazoCortado(request: Request, deps: DependenciasArmada, bandera: RespuestaMotor): Promise<Response> {
+  const etiqueta = await etiquetaDelCorte(request);
+  if (!deps.auditoriaCortes || deps.auditoriaCortes.primeraVez(etiqueta)) {
+    deps.auditar("regla:motor_guiada", "armada de la vista 3D: el motor 3D está cortado; el plan no se dibuja con el 3D", { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "ninguno", razon: "motor_3d_cortado" }, { entrada: { plan_hash: etiqueta.planHash }, motivo: TEXTO_DIBUJO_RECALCULO });
+  }
+  return error(CODIGO_MOTOR_3D_CORTADO, TEXTO_DIBUJO_RECALCULO, 409);
 }
 
 async function atender(request: Request, deps: DependenciasArmada, navegador: string): Promise<Response> {

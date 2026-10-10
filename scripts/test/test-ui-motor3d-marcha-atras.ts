@@ -18,7 +18,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { PlanGuiadoSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { WidgetGuiadoSchema } from "@/lib/ia/guiado/widgets";
 import { ETIQUETA_RECALCULAR, TEXTO_AVISO_RECALCULO, TITULO_AVISO_RECALCULO } from "@/lib/guiada-motor/mensajes-cliente";
 import { crearAvisosRecalculo, type AvisosRecalculo } from "@/components/guiado/aviso-recalculo";
@@ -29,6 +29,14 @@ import { TEXTO_REHECHO_EN_PYTHON } from "@/components/guiado/Plan3DEnPreparacion
 import { TarjetaError } from "@/components/guiado/TarjetaError";
 import { TarjetaPropuesta } from "@/components/guiado/TarjetaPropuesta";
 import { useMotorGuiada, type FalloMotor3d, type IntentoPropuesta } from "@/components/guiado/usarMotorGuiada";
+import { avisarCorte3d, avisarSiEsCorteDeLaImagen, CODIGO_MOTOR_3D_CORTADO, crearEscuchaCorte3d, debeMostrarAvisoCorte3d, hashAvisoCorteAlCargar, sinAvisoDeCorte, suscribirCorte3d, TIPO_ACCION_RECALCULAR_3D, type OrigenAviso } from "@/components/guiado/aviso-corte-3d";
+import { avisarAlCargarPlan } from "@/components/guiado/avisar-corte-3d-al-cargar";
+import { EstadoGuardadoSchema } from "@/components/guiado/estado-guardado";
+import { planActualDelPlan } from "@/components/guiado/plan-actual";
+import { prepararRecalculo3d, propuestaParaGuardar, TEXTO_RECALCULO_NO_POSIBLE } from "@/components/guiado/recalculo-3d";
+import { ErrorImagen, pedirImagenConRecuperacion } from "@/lib/generacion/pedir-imagen";
+import { TEXTO_AVISO_DIBUJO_RECALCULO } from "@/lib/guiada-motor/mensajes-cliente";
+import { crearGestorVista, FalloArmada, type FirmaPlan } from "@/components/guiado/motor3d/gestor-vista";
 
 const planPython = PlanGuiadoSchema.parse(JSON.parse(readFileSync("scripts/test/fixtures/plan-guiado-columnas-repetidas.json", "utf8")));
 const plan3d = { ...planPython, plan_hash: "3d".repeat(32) };
@@ -230,4 +238,258 @@ test("una conversación que empezó en Python: nunca el 3D, cada plan deja su le
       { metodo: "POST", url: "/api/plan-idea", cuerpo: JSON.stringify({ idea_id: "deco-real-09", base: planPython }) },
     ]);
   });
+});
+
+/**
+ * El aviso del corte del 3D (P-049): al cargar la conversación (si el plan vigente es del 3D y el corte está puesto), o cuando la
+ * armada o la imagen reciben `MOTOR_3D_CORTADO`. Ninguno cambia el plan; no pisa una tarjeta de fallo ni avisa dos veces.
+ */
+test("el aviso al cargar: solo un plan del 3D pregunta; con el corte puesto avisa una vez; un plan de Python no hace ninguna petición", async () => {
+  const avisados: string[] = [];
+  const quitar = suscribirCorte3d((hash) => { avisados.push(hash); });
+  try {
+    let lecturas = 0;
+    const contando = async () => { lecturas += 1; return { motor: "python" as const, fuente: "corte" as const, detenido: false }; };
+    await avisarAlCargarPlan(null, contando);
+    await avisarAlCargarPlan({ motor: "python", plan: { plan_hash: "pp".repeat(32) } }, contando);
+    assert.equal(lecturas, 0, "ni una conversación sin plan ni un plan de Python leen la bandera");
+    assert.deepEqual(avisados, []);
+
+    await avisarAlCargarPlan({ motor: "3d", plan: { plan_hash: plan3d.plan_hash } }, contando);
+    assert.equal(lecturas, 1);
+    assert.deepEqual(avisados, [plan3d.plan_hash], "el plan del 3D con el corte puesto avisa");
+
+    avisados.length = 0;
+    await avisarAlCargarPlan({ motor: "3d", plan: { plan_hash: plan3d.plan_hash } }, async () => ({ motor: "python", fuente: "ajuste", detenido: false }));
+    await avisarAlCargarPlan({ motor: "3d", plan: { plan_hash: plan3d.plan_hash } }, async () => ({ motor: "3d", fuente: "cookie", detenido: false }));
+    assert.deepEqual(avisados, [], "sin corte (ni con la cookie del administrador), nada");
+  } finally { quitar(); }
+
+  assert.equal(hashAvisoCorteAlCargar(plan3d.plan_hash, "corte"), plan3d.plan_hash);
+  assert.equal(hashAvisoCorteAlCargar(null, "corte"), null);
+});
+
+test("al cargar, la lectura usa GET /api/guiada/motor sin para (una sola vez, sin sondeo)", async () => {
+  await conRed({ bandera: { motor: "python", fuente: "corte" }, plan: prohibida("/api/guiada/motor/plan"), planIdea: prohibida("/api/plan-idea") }, async (llamadas) => {
+    await avisarAlCargarPlan({ motor: "3d", plan: { plan_hash: plan3d.plan_hash } });
+    assert.deepEqual(rutas(llamadas), ["GET /api/guiada/motor"]);
+  });
+});
+
+test("el aviso sale con su origen y deja de llegar al soltar la suscripción", () => {
+  const recibidos: Array<[string, string]> = [];
+  const quitar = suscribirCorte3d((hash, origen) => { recibidos.push([hash, origen]); });
+  avisarCorte3d("aa".repeat(32), "dibujo");
+  quitar();
+  avisarCorte3d("bb".repeat(32), "carga");
+  assert.deepEqual(recibidos, [["aa".repeat(32), "dibujo"]]);
+  assert.equal(CODIGO_MOTOR_3D_CORTADO, "MOTOR_3D_CORTADO");
+});
+
+const hashCortado = plan3d.plan_hash;
+const errorDelCorte = () => new ErrorImagen("rechazo", "/api/guiada/motor/imagen respondió con estado 409.", 409, CODIGO_MOTOR_3D_CORTADO);
+
+test("el aviso solo sale para el plan de la pantalla, sin petición en curso ni otra tarjeta, y una vez salvo que el cliente lo pida con un toque", () => {
+  const base = { planHash: hashCortado, origen: "dibujo" as OrigenAviso, planVigenteHash: hashCortado, yaAvisado: false, cargando: false, hayFallo: false };
+  assert.equal(debeMostrarAvisoCorte3d(base), true);
+  assert.equal(debeMostrarAvisoCorte3d({ ...base, planVigenteHash: otroPlan3d.plan_hash }), false, "el corte nombra un plan que ya no es el de la pantalla");
+  assert.equal(debeMostrarAvisoCorte3d({ ...base, planVigenteHash: null }), false, "sin plan en pantalla");
+  assert.equal(debeMostrarAvisoCorte3d({ ...base, cargando: true }), false, "no pisa una petición en curso");
+  assert.equal(debeMostrarAvisoCorte3d({ ...base, hayFallo: true }), false, "no pisa el último mensaje sin respuesta");
+  for (const origen of ["carga", "dibujo"] as const) assert.equal(debeMostrarAvisoCorte3d({ ...base, origen, yaAvisado: true }), false, `${origen}: no es un segundo aviso`);
+  assert.equal(debeMostrarAvisoCorte3d({ ...base, origen: "toque", yaAvisado: true }), true, "el cliente tocó «Ver cómo quedaría»: se le contesta aunque ya lo leyera");
+  assert.equal(debeMostrarAvisoCorte3d({ ...base, origen: "toque", yaAvisado: true, hayFallo: true }), false, "ni un toque pisa otra tarjeta");
+});
+
+test("el texto del aviso al cargar o al pedir una vista no habla de un cambio que nadie pidió, y dice que volver a pedirlo también recalcula", () => {
+  assert.doesNotMatch(TEXTO_AVISO_DIBUJO_RECALCULO, /ese cambio/);
+  assert.match(TEXTO_AVISO_DIBUJO_RECALCULO, /no se puede mostrar/);
+  assert.match(TEXTO_AVISO_DIBUJO_RECALCULO, /las cantidades y el precio pueden cambiar/);
+  assert.match(TEXTO_AVISO_DIBUJO_RECALCULO, /Recalcular mi plan/);
+  assert.match(TEXTO_AVISO_DIBUJO_RECALCULO, /o vuelve a pedírmelo/, "mostrarlo ya cuenta como aviso: el siguiente cambio recalcula sin otro");
+});
+
+test("«Ver cómo quedaría» con el corte: el 409 vuelve a mostrar el aviso aunque ya se hubiera mostrado, y no se queda mudo", () => {
+  const avisos = crearAvisosRecalculo();
+  const vista = { planVigenteHash: hashCortado as string | null, cargando: false, hayFallo: false };
+  const mostrados: OrigenAviso[] = [];
+  const quitar = suscribirCorte3d(crearEscuchaCorte3d({ avisos, estado: () => vista, mostrar: (_hash, origen) => { mostrados.push(origen); vista.hayFallo = true; } }));
+  try {
+    avisarCorte3d(hashCortado, "carga");
+    assert.deepEqual(mostrados, ["carga"]);
+    assert.equal(avisos.yaAvisado(hashCortado), true, "mostrarlo lo marca: el siguiente cambio ya recalcula");
+
+    avisarCorte3d(hashCortado, "dibujo");
+    assert.deepEqual(mostrados, ["carga"], "con la tarjeta a la vista no sale otra");
+
+    vista.hayFallo = false;
+    avisarCorte3d(hashCortado, "dibujo");
+    assert.deepEqual(mostrados, ["carga"], "las miniaturas que siguen fallando no la reabren tras cerrarla");
+
+    // El cliente toca «Ver cómo quedaría» (que quita la tarjeta) y la imagen vuelve con el 409 del corte.
+    assert.equal(avisarSiEsCorteDeLaImagen(errorDelCorte(), hashCortado), true);
+    assert.deepEqual(mostrados, ["carga", "toque"], "el toque recibe su respuesta: antes el botón dejaba de girar sin decir nada");
+    assert.equal(avisarSiEsCorteDeLaImagen(errorDelCorte(), hashCortado), true);
+    assert.deepEqual(mostrados, ["carga", "toque"], "con la tarjeta ya a la vista, otro toque no la duplica");
+
+    vista.hayFallo = false;
+    vista.planVigenteHash = otroPlan3d.plan_hash;
+    avisarSiEsCorteDeLaImagen(errorDelCorte(), hashCortado);
+    assert.deepEqual(mostrados, ["carga", "toque"], "si el plan de la pantalla ya es otro, no se avisa de este");
+  } finally { quitar(); }
+});
+
+test("la imagen que el servidor rechaza con el corte llega a la vista como el aviso; cualquier otro fallo, no", async () => {
+  const mostrados: OrigenAviso[] = [];
+  const orden: string[] = [];
+  const vista = { planVigenteHash: hashCortado as string | null, cargando: false, hayFallo: false };
+  const quitar = suscribirCorte3d(crearEscuchaCorte3d({ avisos: crearAvisosRecalculo(), estado: () => vista, mostrar: (_hash, origen) => { mostrados.push(origen); orden.push("aviso"); } }));
+  const pedirConRespuesta = (respuesta: () => Response) => pedirImagenConRecuperacion({
+    ruta: "/api/guiada/motor/imagen", cuerpo: {}, planHash: hashCortado, senal, limiteIntentoMs: 1_000, reintentoSilencioso: false,
+    dependencias: { fetch: async () => respuesta() },
+  });
+  try {
+    const delCorte = await pedirConRespuesta(() => Response.json({ error: "No pude", codigo: CODIGO_MOTOR_3D_CORTADO }, { status: 409 })).catch((causa: unknown) => causa);
+    assert.ok(delCorte instanceof ErrorImagen && delCorte.status === 409, "el cliente de imágenes falla tipado con el código del servidor");
+    assert.equal(avisarSiEsCorteDeLaImagen(delCorte, hashCortado, () => orden.push("causa registrada")), true);
+    assert.deepEqual(orden, ["causa registrada", "aviso"], "la causa queda registrada antes del aviso");
+    assert.deepEqual(mostrados, ["toque"]);
+
+    mostrados.length = 0;
+    const otros = [
+      await pedirConRespuesta(() => Response.json({ error: "x", codigo: "PLAN_ALTERADO" }, { status: 409 })).catch((causa: unknown) => causa),
+      new ErrorImagen("red", "sin red"),
+      new Error("otra cosa"),
+      "texto",
+    ];
+    for (const causa of otros) assert.equal(avisarSiEsCorteDeLaImagen(causa, hashCortado, () => orden.push("no debía")), false);
+    assert.deepEqual(mostrados, []);
+    assert.ok(!orden.includes("no debía"));
+  } finally { quitar(); }
+});
+
+test("al llegar un plan nuevo se quita el aviso de recálculo, y cualquier otra tarjeta se queda", () => {
+  const aviso = { titulo: "Antes de cambiar tu plan", accion: { tipo: TIPO_ACCION_RECALCULAR_3D, planHash: hashCortado } };
+  const sinRespuesta = { titulo: "Tu último mensaje quedó sin respuesta", accion: { tipo: "turno" } };
+  assert.equal(sinAvisoDeCorte(aviso), null);
+  assert.equal(sinAvisoDeCorte(sinRespuesta), sinRespuesta);
+  assert.equal(sinAvisoDeCorte(null), null);
+});
+
+/**
+ * «Recalcular mi plan» (P-049): con qué se vuelve a armar el plan. Los datos son un plan real (columnas repetidas) y su proyección
+ * (`planActualDelPlan`), no objetos a mano: lo que la vista le pasa a `aceptarPropuesta` sale de aquí.
+ */
+test("Recalcular mi plan: la propuesta guardada manda, y el plan anterior es el del plan o, si no lo da, lo que dice la propuesta", () => {
+  const guardada = PropuestaComposicionSchema.parse({ frase: "Te propongo un arco azul.", colores: ["azul"], piezas: [{ estructura: "arco", cantidad: 1, nombre: "Arco azul", medidas: { ancho_m: 2, alto_m: 2.2 } }] });
+  const planActual = planActualDelPlan(plan3d, "python");
+  assert.ok(planActual);
+  assert.deepEqual(prepararRecalculo3d({ guardada, planActual, piezasDelPlan: plan3d.plan.estructuras }), { propuesta: guardada, planAnterior: planActual });
+
+  const sinPlanActual = prepararRecalculo3d({ guardada, planActual: null, piezasDelPlan: plan3d.plan.estructuras });
+  assert.ok(sinPlanActual, "con la propuesta guardada siempre hay con qué recalcular, aunque el plan no se lea");
+  assert.equal(sinPlanActual.propuesta, guardada);
+  assert.deepEqual(sinPlanActual.planAnterior, { piezas: [{ estructura: "arco", cantidad: 1, nombre: "Arco azul", medidas: { ancho_m: 2, alto_m: 2.2 } }], colores: ["azul"] }, "sin esto no habría plan anterior ni la nota «recalculado»");
+});
+
+test("Recalcular mi plan: sin propuesta guardada se reconstruye del plan con TODAS sus piezas", () => {
+  const planActual = planActualDelPlan(plan3d, "python");
+  assert.ok(planActual);
+  const preparado = prepararRecalculo3d({ guardada: undefined, planActual, piezasDelPlan: plan3d.plan.estructuras });
+  assert.ok(preparado, "un plan que se describe entero se puede rehacer");
+  assert.deepEqual(preparado.planAnterior, planActual);
+  assert.deepEqual(preparado.propuesta.piezas.map((pieza) => [pieza.estructura, pieza.cantidad]), planActual.piezas.map((pieza) => [pieza.estructura, pieza.cantidad]));
+  assert.deepEqual(preparado.propuesta.colores, planActual.colores);
+  assert.deepEqual(preparado.propuesta.piezas[0]?.medidas, planActual.piezas[0]?.medidas, "las medidas se conservan");
+});
+
+test("Recalcular mi plan: si la proyección del plan dejaría piezas fuera, no recalcula en silencio (hay un mensaje)", () => {
+  const conPiezaSinOficial = structuredClone(plan3d);
+  delete conPiezaSinOficial.plan.estructuras[1]!.estructura_oficial;
+  const reducida = planActualDelPlan(conPiezaSinOficial, "python");
+  assert.ok(reducida && reducida.piezas.length < conPiezaSinOficial.plan.estructuras.length, "la proyección pierde la pieza sin estructura oficial");
+  assert.equal(prepararRecalculo3d({ guardada: undefined, planActual: reducida, piezasDelPlan: conPiezaSinOficial.plan.estructuras }), null, "la instrucción dice «SOLO las piezas de esta lista»: faltaría una");
+
+  const planActual = planActualDelPlan(plan3d, "python")!;
+  const repetida = plan3d.plan.estructuras.map((estructura, indice) => ({ ...estructura, repeticiones: indice === 0 ? 14 : estructura.repeticiones }));
+  const recortada = { ...planActual, piezas: planActual.piezas.map((pieza, indice) => ({ ...pieza, cantidad: indice === 0 ? 12 : pieza.cantidad })) };
+  assert.equal(prepararRecalculo3d({ guardada: undefined, planActual: recortada, piezasDelPlan: repetida }), null, "14 repeticiones no caben en las 12 de la proyección");
+
+  assert.equal(prepararRecalculo3d({ guardada: undefined, planActual: null, piezasDelPlan: plan3d.plan.estructuras }), null, "ni propuesta ni plan legible");
+  const colorAjeno = { ...planActual, colores: ["fashion azul rey"] };
+  assert.equal(prepararRecalculo3d({ guardada: undefined, planActual: colorAjeno, piezasDelPlan: plan3d.plan.estructuras }), null, "un color que la propuesta no admite: no se adivina");
+  assert.match(TEXTO_RECALCULO_NO_POSIBLE, /tu plan sigue como estaba/);
+});
+
+/**
+ * La propuesta que el plan guarda para «Recalcular mi plan» solo la escribe un plan del 3D: las conversaciones guardadas se leen con
+ * esquemas estrictos y un despliegue anterior descarta la conversación entera si una clave le es desconocida.
+ */
+test("la propuesta se guarda solo en un plan del 3D: un plan de Python no lleva la clave", () => {
+  const propuestaGuardable = PropuestaComposicionSchema.parse(propuestaArco);
+  assert.equal(propuestaParaGuardar("python", propuestaGuardable), undefined);
+  assert.equal(propuestaParaGuardar("3d", propuestaGuardable), propuestaGuardable);
+  const widgetDe = (motor: "3d" | "python") => {
+    const guardada = propuestaParaGuardar(motor, propuestaGuardable);
+    return { tipo: "plan" as const, plan: motor === "3d" ? plan3d : planPython, motor, ...(guardada ? { propuesta: guardada } : {}) };
+  };
+  assert.equal("propuesta" in widgetDe("python"), false, "el widget de un plan de Python no trae la clave");
+  assert.equal("propuesta" in JSON.parse(JSON.stringify(WidgetGuiadoSchema.parse(widgetDe("python")))), false, "ni al guardarse ni al volver");
+});
+
+test("un plan del 3D con su propuesta se guarda y se lee igual: por el widget y por la conversación guardada", () => {
+  const propuestaGuardable = PropuestaComposicionSchema.parse(propuestaArco);
+  const widget = { tipo: "plan" as const, plan: plan3d, motor: "3d" as const, propuesta: propuestaGuardable };
+  const leido = WidgetGuiadoSchema.parse(JSON.parse(JSON.stringify(widget)));
+  assert.deepEqual(leido.tipo === "plan" ? leido.propuesta : undefined, propuestaGuardable);
+
+  const guardado = { mensajes: [{ id: "m1", role: "assistant" as const, content: "Tu plan", widgets: [widget] }], brief: {}, seleccionadaId: null, uso: null };
+  const restaurado = EstadoGuardadoSchema.safeParse(JSON.parse(JSON.stringify(guardado)));
+  assert.ok(restaurado.success, "la conversación con la propuesta en el plan no se descarta");
+  const widgetRestaurado = restaurado.data.mensajes[0]?.widgets?.[0];
+  assert.deepEqual(widgetRestaurado?.tipo === "plan" ? widgetRestaurado.propuesta : undefined, propuestaGuardable);
+  assert.deepEqual(widgetRestaurado, { ...widget, motor: "3d" }, "ida y vuelta sin cambiar nada");
+
+  const sinPropuesta = EstadoGuardadoSchema.safeParse({ ...guardado, mensajes: [{ ...guardado.mensajes[0]!, widgets: [{ tipo: "plan", plan: planPython }] }] });
+  assert.ok(sinPropuesta.success, "los planes guardados antes (sin propuesta ni motor) siguen leyéndose");
+});
+
+test("una propuesta guardada que ya no cumple el esquema se descarta sola: el plan y la conversación se conservan", () => {
+  const rota = { frase: "x", colores: ["color-que-no-existe"], piezas: [] };
+  const widget = WidgetGuiadoSchema.parse({ tipo: "plan", plan: plan3d, motor: "3d", propuesta: rota });
+  assert.equal(widget.tipo === "plan" ? widget.propuesta : "no es un plan", undefined);
+  const estado = EstadoGuardadoSchema.safeParse({ mensajes: [{ id: "m1", role: "assistant", content: "Tu plan", widgets: [{ tipo: "plan", plan: plan3d, motor: "3d", propuesta: rota }] }] });
+  assert.ok(estado.success, "con `.catch` la conversación no se pierde por ella");
+});
+
+test("la armada del plan 3D con el corte puesto publica el aviso (no un error de dibujo) y falla tipado", async () => {
+  const avisados: string[] = [];
+  const quitar = suscribirCorte3d((hash) => { avisados.push(hash); });
+  const firma = { approval_token: "token", plan_hash: "cc".repeat(32), motor: { id: "globos3d", version: "v1" }, espec: {} } as unknown as FirmaPlan;
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => Response.json({ error: "No pude", codigo: CODIGO_MOTOR_3D_CORTADO }, { status: 409 })) as typeof fetch;
+  try {
+    const gestor = crearGestorVista({ red: globalThis.fetch, entorno: { webgl: false, memoriaGb: null, ahorroDatos: false }, visor: () => { throw new Error("sin visor en la prueba"); } });
+    await assert.rejects(() => gestor.imagen(firma, { vista: "frente", lado: 256 }), (causa: unknown) => causa instanceof FalloArmada && causa.estado === 409);
+    assert.deepEqual(avisados, ["cc".repeat(32)], "el aviso sale con el hash del plan que pidio la vista");
+  } finally {
+    globalThis.fetch = original;
+    quitar();
+  }
+});
+
+test("un 409 de la armada que no es el corte no publica el aviso", async () => {
+  const avisados: string[] = [];
+  const quitar = suscribirCorte3d((hash) => { avisados.push(hash); });
+  const firma = { approval_token: "token", plan_hash: "dd".repeat(32), motor: { id: "globos3d", version: "v1" }, espec: {} } as unknown as FirmaPlan;
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => Response.json({ error: "x", codigo: "PLAN_ALTERADO" }, { status: 409 })) as typeof fetch;
+  try {
+    const gestor = crearGestorVista({ red: globalThis.fetch, entorno: { webgl: false, memoriaGb: null, ahorroDatos: false }, visor: () => { throw new Error("sin visor en la prueba"); } });
+    await assert.rejects(() => gestor.imagen(firma, { vista: "frente", lado: 256 }));
+    assert.deepEqual(avisados, []);
+  } finally {
+    globalThis.fetch = original;
+    quitar();
+  }
 });

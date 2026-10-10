@@ -74,7 +74,7 @@ async function main(): Promise<void> {
   const armadaDe = async (p: unknown) => {
     const firma = firmaDePlan(PlanGuiadoSchema.parse(p))!;
     const cuerpo = { ...firma, salida: "armada" };
-    const respuesta = await atenderArmadaMotor(new Request("https://app.test/api/guiada/motor/armada", { method: "POST", headers: { "content-type": "application/json", cookie: cookies }, body: JSON.stringify(cuerpo) }), { armar: armarDesdeEspec, cache: crearCacheArmada(8), auditar: () => undefined });
+    const respuesta = await atenderArmadaMotor(new Request("https://app.test/api/guiada/motor/armada", { method: "POST", headers: { "content-type": "application/json", cookie: cookies }, body: JSON.stringify(cuerpo) }), { leerBandera: async () => ({ motor: "python" as const, fuente: "env" as const }), armar: armarDesdeEspec, cache: crearCacheArmada(8), auditar: () => undefined });
     return { cuerpo, estado: respuesta.status, texto: await respuesta.text() };
   };
   const editado = (respuestas.chat_color!.json as { plan: unknown }).plan;

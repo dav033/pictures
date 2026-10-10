@@ -15,7 +15,8 @@
  *   sin almacén no se escribe nada;
  * - Kontext retomable (P-038): si fal sigue generando al acabarse el plazo, 202 con token (no es un fallo); con el token la ruta
  *   retoma la misma solicitud sin gastar cupo, y un token que no sirve (de otro plan, navegador o VISTA) es 409 sin llamar a FLUX;
- *   si fal ya no tiene la solicitud (FAILED, 404), también 409: el navegador suelta el token y pide una imagen nueva.
+ *   si fal ya no tiene la solicitud (FAILED, 404), también 409: el navegador suelta el token y pide una imagen nueva;
+ * - con el corte del 3D (P-049) responde 409 `MOTOR_3D_CORTADO` antes de verificar nada: no llama a FLUX ni gasta cupo.
  *
  * Run: NODE_OPTIONS=--use-system-ca npx tsx --conditions=react-server scripts/test/test-motor3d-imagen-ruta.ts
  */
@@ -25,6 +26,9 @@ import sharp from "sharp";
 import { sessionToken, SESSION_COOKIE } from "../../src/lib/auth/session";
 import { crearTokenPlan } from "../../src/lib/plan/aprobacion";
 import { atenderImagenMotor, type DependenciasImagen } from "../../src/lib/guiada-motor/imagen-motor";
+import { TEXTO_DIBUJO_RECALCULO } from "../../src/lib/guiada-motor/mensajes-cliente";
+import type { RespuestaMotor } from "../../src/lib/guiada-motor/tipos";
+import { crearAuditoriaDeCortes } from "../../src/lib/guiada-motor/corte-motor3d";
 import { CuerpoImagenSchema, MAX_CARACTERES_CAPTURA, RUTA_IMAGEN_MOTOR } from "../../src/lib/guiada-motor/imagen-contrato";
 import { generarImagenGuiada3d, SUPERFICIE_IMAGEN_GUIADA_3D } from "../../src/lib/guiada-motor/imagen-flux";
 import { PASO_DE_MATERIALES, promptImagenGuiada } from "../../src/lib/guiada-motor/render-ia-guiada";
@@ -72,16 +76,17 @@ async function captura(formato: "png" | "jpeg", lado = 1024, ancho = lado): Prom
 /** Una imagen mínima de «lo que devolvió FLUX». */
 const IMAGEN_FLUX = { base64: Buffer.from("flux-simulado").toString("base64"), mime: "image/png" };
 
-type Auditoria = { quien: string; que: string; resultado: unknown };
+type Auditoria = { quien: string; que: string; resultado: unknown; entrada?: unknown };
 type Llamada = { prompt: string; ancho: number; alto: number; mime: string; bytes: number };
 /** Con `topeNavegador` por defecto muy alto: las pruebas del cupo global necesitan que un solo navegador llegue a las 30. */
-function entorno(opciones: { falla?: boolean; enCurso?: boolean; perdida?: boolean; almacen?: ConsultorPg | null; tomarFoto?: DependenciasImagen["tomarFoto"]; topeNavegador?: number } = {}) {
+function entorno(opciones: { falla?: boolean; enCurso?: boolean; perdida?: boolean; almacen?: ConsultorPg | null; tomarFoto?: DependenciasImagen["tomarFoto"]; topeNavegador?: number; bandera?: RespuestaMotor } = {}) {
   const auditorias: Auditoria[] = [];
   const llamadas: Llamada[] = [];
   const previas: Array<string | undefined> = [];
   let tomas = 0;
   let armados = 0;
   const deps: DependenciasImagen = {
+    leerBandera: async () => opciones.bandera ?? { motor: "python", fuente: "env" },
     describir: descripcionImagenDeEspec,
     armar: (espec) => { armados += 1; return armarDesdeEspec(espec); },
     generar: async (prompt, base, _senal, solicitudPrevia) => {
@@ -97,7 +102,7 @@ function entorno(opciones: { falla?: boolean; enCurso?: boolean; perdida?: boole
     tomarFotoDeNavegador: (navegador) => tomarImagenDeNavegador(navegador, Date.now(), opciones.topeNavegador ?? 1_000),
     devolverFotoDeNavegador: devolverImagenDeNavegador,
     almacen: opciones.almacen ? () => opciones.almacen! : null,
-    auditar: (quien, que, resultado) => { auditorias.push({ quien, que, resultado }); },
+    auditar: (quien, que, resultado, extra) => { auditorias.push({ quien, que, resultado, entrada: extra?.entrada }); },
   };
   return { deps, auditorias, llamadas, previas, tomas: () => tomas, armados: () => armados };
 }
@@ -233,6 +238,56 @@ test("con captura: llega a FLUX recodificada (JPEG, ≤ 1536 px) con el prompt d
     const auditoria = e.auditorias.find((a) => a.quien === "regla:imagen_guiada_3d_prompt");
     assert.deepEqual({ camino: (auditoria!.resultado as Record<string, unknown>).camino, origen: (auditoria!.resultado as Record<string, unknown>).origenBase }, { camino: "flux1_kontext_max", origen: "captura_del_navegador" });
   }
+});
+
+test("con el corte del 3D responde 409 MOTOR_3D_CORTADO con el aviso de recálculo: no llama a FLUX ni gasta cupo; sin corte la misma petición da la imagen", async () => {
+  reiniciarFotosPorHora();
+  const cortado = entorno({ bandera: { motor: "python", fuente: "corte" } });
+  const r = await atenderImagenMotor(pedir({ ...plan(IDEA_07), captura: await captura("png") }), cortado.deps);
+  assert.equal(r.status, 409);
+  const cuerpo = await r.json() as { codigo: string; error: string };
+  assert.equal(cuerpo.codigo, "MOTOR_3D_CORTADO");
+  assert.equal(cuerpo.error, TEXTO_DIBUJO_RECALCULO);
+  assert.equal(cortado.llamadas.length, 0, "FLUX no se llama");
+  assert.equal(cortado.tomas(), 0, "el cupo no se gasta");
+  assert.ok(cortado.auditorias.some((a) => a.quien === "regla:imagen_guiada_3d" && (a.resultado as { razon?: string }).razon === "motor_3d_cortado"));
+
+  const sinCorte = entorno({ bandera: { motor: "python", fuente: "ajuste" } });
+  assert.equal((await atenderImagenMotor(pedir({ ...plan(IDEA_07), captura: await captura("png") }), sinCorte.deps)).status, 200);
+  assert.equal(sinCorte.llamadas.length, 1);
+});
+
+test("con el corte, la imagen no lee el cuerpo y no paga; la cookie de administrador sí dibuja; un plan cortado repetido se audita una vez", async () => {
+  reiniciarFotosPorHora();
+  const roto = entorno({ bandera: { motor: "python", fuente: "corte" } });
+  assert.equal((await atenderImagenMotor(pedir("{no es json"), roto.deps)).status, 409, "el 409 llega antes de validar el cuerpo");
+  assert.equal(roto.llamadas.length, 0);
+
+  const admin = entorno({ bandera: { motor: "3d", fuente: "cookie" } });
+  assert.equal((await atenderImagenMotor(pedir({ ...plan(IDEA_07), captura: await captura("png") }), admin.deps)).status, 200, "la cookie de administrador no se corta");
+
+  reiniciarFotosPorHora();
+  const repetido = entorno({ bandera: { motor: "python", fuente: "corte" } });
+  const deps = { ...repetido.deps, auditoriaCortes: crearAuditoriaDeCortes() };
+  for (let i = 0; i < 3; i += 1) assert.equal((await atenderImagenMotor(pedir({ ...plan(IDEA_07), captura: await captura("png") }), deps)).status, 409);
+  assert.equal(repetido.auditorias.length, 1);
+  assert.equal(repetido.auditorias[0]!.quien, "regla:imagen_guiada_3d");
+  assert.equal((repetido.auditorias[0]!.entrada as { plan_hash?: string }).plan_hash, plan(IDEA_07).plan_hash);
+});
+
+test("con el corte, la auditoría etiqueta el plan_hash aunque la captura pese más de 1,5 MB, y deduplica por conversación y plan", async () => {
+  reiniciarFotosPorHora();
+  const e = entorno({ bandera: { motor: "python", fuente: "corte" } });
+  const deps = { ...e.deps, auditoriaCortes: crearAuditoriaDeCortes() };
+  const conConversacion = (cuerpo: unknown, conversacion: string) => pedir(cuerpo, [SESION, NAVEGADOR], { "x-conversacion-id": conversacion });
+  const enorme = { ...plan(IDEA_07), captura: `data:image/png;base64,${"A".repeat(1_600_000)}` };
+  assert.equal((await atenderImagenMotor(conConversacion(enorme, "conversacion-uno"), deps)).status, 409);
+  assert.equal((e.auditorias[0]!.entrada as { plan_hash?: string }).plan_hash, plan(IDEA_07).plan_hash);
+  assert.equal((await atenderImagenMotor(conConversacion(enorme, "conversacion-uno"), deps)).status, 409);
+  assert.equal(e.auditorias.length, 1);
+  assert.equal((await atenderImagenMotor(conConversacion(enorme, "conversacion-dos"), deps)).status, 409);
+  assert.equal(e.auditorias.length, 2);
+  assert.equal(e.llamadas.length, 0, "no se pagó ninguna imagen");
 });
 
 test("sin captura: el servidor rasteriza la proyección SVG de la armada (ambas cámaras) y la manda a FLUX", async () => {

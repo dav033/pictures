@@ -7,9 +7,12 @@ import { especHashDe, svgDeArmada, VERSION_MOTOR, type DescripcionImagen, type E
 import type { TomaDeFoto } from "@/lib/globos3d/tope-fotos-hora";
 import { capturaDesdeSvg, esRechazo, prepararCaptura, type CapturaPreparada } from "./captura-imagen";
 import { CuerpoImagenSchema, MAX_CARACTERES_CUERPO_IMAGEN } from "./imagen-contrato";
+import { CODIGO_MOTOR_3D_CORTADO, crearAuditoriaDeCortes, etiquetaDelCorte } from "./corte-motor3d";
+import { TEXTO_DIBUJO_RECALCULO } from "./mensajes-cliente";
 import { huellaDeNavegador } from "./plan-motor";
 import { promptImagenGuiada } from "./render-ia-guiada";
 import { devolverImagenDeNavegador, tomarImagenDeNavegador } from "./tope-imagenes-navegador";
+import type { RespuestaMotor } from "./tipos";
 import { verificarPlanFirmado, type RechazoPlan } from "./verificar-plan";
 import { KontextEnCursoError, SolicitudKontextInvalidaError } from "@/lib/ia/kagutsuchi/kontext";
 import { ambitoDeKontext, respuestaKontextEnCurso, solicitudPreviaDe } from "@/lib/ia/kagutsuchi/solicitud-kontext";
@@ -29,16 +32,21 @@ import { CODIGO_SOLICITUD_KONTEXT_INVALIDA } from "@/lib/generacion/solicitud-ko
  *   del cliente) llega al prompt. Del navegador entran píxeles: la captura del visor, que se reabre y se recodifica;
  * - el plan debe ser de la versión vigente del motor (si no, la escena contada podría no ser la que el cliente vio): 409.
  *
- * Qué no hace: no cotiza, no llama a Python ni a un modelo de texto, y no mira la bandera (un plan 3D en pantalla se sigue
- * dibujando aunque la bandera cambie). El servidor no guarda la imagen (pedido del dueño, 2026-10-07):
+ * - el corte del 3D (P-045, `fuente: "corte"`) lo frena antes de verificar nada: 409 `MOTOR_3D_CORTADO` y no se gasta cupo.
+ *
+ * Qué no hace: no cotiza, no llama a Python ni a un modelo de texto. Con la bandera en `python` un plan 3D en pantalla se sigue
+ * dibujando. El servidor no guarda la imagen (pedido del dueño, 2026-10-07):
  * `ALMACENAR_IMAGEN_EN_SERVIDOR` enciende la misma recuperación de `imagen-recuperable.ts` que usa /api/generate, apagada igual
  * que allá.
  */
 export const ALMACENAR_IMAGEN_EN_SERVIDOR: boolean = false;
 
-export type CodigoImagenMotor = RechazoPlan["codigo"] | "CUERPO_INVALIDO" | "SESION_REQUERIDA" | "CAPTURA_INVALIDA" | "PLAN_NO_REPRESENTABLE" | "TOPE_DE_IMAGENES" | "TOPE_DE_IMAGENES_NAVEGADOR" | "NO_SE_PUDO_DIBUJAR" | typeof CODIGO_SOLICITUD_KONTEXT_INVALIDA;
+export type CodigoImagenMotor = RechazoPlan["codigo"] | typeof CODIGO_MOTOR_3D_CORTADO | "CUERPO_INVALIDO" | "SESION_REQUERIDA" | "CAPTURA_INVALIDA" | "PLAN_NO_REPRESENTABLE" | "TOPE_DE_IMAGENES" | "TOPE_DE_IMAGENES_NAVEGADOR" | "NO_SE_PUDO_DIBUJAR" | typeof CODIGO_SOLICITUD_KONTEXT_INVALIDA;
 
 export type DependenciasImagen = {
+  leerBandera: (request: Request) => Promise<RespuestaMotor>;
+  /** Qué conversación y plan ya quedaron registrados como cortados (una fila por cada uno). Sin él, cada rechazo se registra. */
+  auditoriaCortes?: ReturnType<typeof crearAuditoriaDeCortes>;
   describir: (espec: EspecClienteV1) => DescripcionImagen;
   /** Solo para la imagen base sin captura: la armada que se proyecta a SVG. */
   armar: (espec: EspecClienteV1) => Pick<ResultadoMotorV1, "armada">;
@@ -69,7 +77,20 @@ export async function atenderImagenMotor(request: Request, deps: DependenciasIma
   if (!isAuthenticatedRequest(request)) return error("SESION_REQUERIDA", "Sesión requerida.", 401);
   const acceso = exigirEscritura(request);
   if ("respuesta" in acceso) return acceso.respuesta;
+  // El corte se decide con la cookie y la bandera, antes de leer o validar el cuerpo. Es intencional que también frene las
+  // peticiones de retomar una imagen ya pagada en fal (token de solicitud previa): el corte manda sobre la retoma, la imagen en
+  // curso se pierde para este navegador y el cliente recibe el aviso de recálculo en lugar de otra imagen.
+  const bandera = await deps.leerBandera(request);
+  if (bandera.fuente === "corte") return rechazoCortado(request, deps, bandera);
   return acceso.conCookie(await atender(request, deps, huellaDeNavegador(acceso.usuarioId)));
+}
+
+async function rechazoCortado(request: Request, deps: DependenciasImagen, bandera: RespuestaMotor): Promise<Response> {
+  const etiqueta = await etiquetaDelCorte(request);
+  if (!deps.auditoriaCortes || deps.auditoriaCortes.primeraVez(etiqueta)) {
+    deps.auditar("regla:imagen_guiada_3d", "imagen del plan 3D: el motor 3D está cortado; no se dibuja ni se paga la imagen", { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "ninguno", razon: "motor_3d_cortado" }, { entrada: { plan_hash: etiqueta.planHash }, motivo: TEXTO_DIBUJO_RECALCULO });
+  }
+  return error(CODIGO_MOTOR_3D_CORTADO, TEXTO_DIBUJO_RECALCULO, 409);
 }
 
 async function atender(request: Request, deps: DependenciasImagen, navegador: string): Promise<Response> {

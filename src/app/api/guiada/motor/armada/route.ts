@@ -1,3 +1,5 @@
+import { leerMotorGuiada } from "@/lib/guiada-motor/bandera";
+import { crearAuditoriaDeCortes } from "@/lib/guiada-motor/corte-motor3d";
 import { atenderArmadaMotor, crearCacheArmada, type DependenciasArmada } from "@/lib/guiada-motor/armada-motor";
 import { armarDesdeEspec } from "@/lib/globos3d/motor/v1";
 import { conRegistro, decidir } from "@/lib/registro";
@@ -9,6 +11,8 @@ import { conRegistro, decidir } from "@/lib/registro";
 export const maxDuration = 30;
 
 const dependencias: DependenciasArmada = {
+  leerBandera: leerMotorGuiada,
+  auditoriaCortes: crearAuditoriaDeCortes(),
   armar: armarDesdeEspec,
   cache: crearCacheArmada(48),
   auditar: decidir,

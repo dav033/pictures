@@ -30,7 +30,7 @@ async function main(): Promise<void> {
   // Solo lo que la vista necesita de cada pieza (sin `piezas-vista`, que arrastra React).
   const piezas = plan.plan.estructuras.map((e) => ({ id: e.estructura_id, oficial: (e.estructura_oficial ?? null) as EstructuraOficialId | null }));
 
-  const deps = { armar: armarDesdeEspec, cache: crearCacheArmada(8), auditar: () => undefined };
+  const deps = { leerBandera: async () => ({ motor: "python" as const, fuente: "env" as const }), armar: armarDesdeEspec, cache: crearCacheArmada(8), auditar: () => undefined };
   const pedir = async (extra: Record<string, unknown>) => {
     const cuerpo = { ...firma, ...extra };
     const respuesta = await atenderArmadaMotor(new Request("https://app.test/api/guiada/motor/armada", {

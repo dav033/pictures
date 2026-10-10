@@ -1,3 +1,5 @@
+import { leerMotorGuiada } from "@/lib/guiada-motor/bandera";
+import { crearAuditoriaDeCortes } from "@/lib/guiada-motor/corte-motor3d";
 import { getRagPool } from "@/lib/rag/db";
 import { aligerarImagenGenerada } from "@/lib/generacion/imagen-liviana";
 import { MAX_CARACTERES_CUERPO_IMAGEN } from "@/lib/guiada-motor/imagen-contrato";
@@ -16,6 +18,8 @@ import { conRegistro, decidir } from "@/lib/registro";
 export const maxDuration = 120;
 
 const dependencias: DependenciasImagen = {
+  leerBandera: leerMotorGuiada,
+  auditoriaCortes: crearAuditoriaDeCortes(),
   describir: descripcionImagenDeEspec,
   armar: armarDesdeEspec,
   generar: (prompt, base, senal, solicitudPrevia) => generarImagenGuiada3d(prompt, base, senal, undefined, solicitudPrevia),

@@ -7,7 +7,8 @@
  * - con un plan firmado: la armada es la del motor (mismos bytes), cumple su esquema y no pasa de 30 KB;
  * - caché por `especHash`: la segunda petición del mismo plan no vuelve a armar; otro plan, sí; la caché tiene tope;
  * - `salida: "svg"`: imagen SVG con sus cabeceras de seguridad, con tantos círculos como globos, y por pieza;
- * - no mira la bandera: un plan 3D ya en pantalla se ve aunque la bandera esté en `python`.
+ * - con la bandera en `python` (sin corte) un plan 3D ya en pantalla se sigue viendo; con el corte del 3D (P-049) responde
+ *   409 `MOTOR_3D_CORTADO` con el aviso de recálculo, sin armar ni mirar el plan, y sin el corte vuelve a dar la armada.
  *
  * Run: npx tsx --conditions=react-server scripts/test/test-motor3d-armada-ruta.ts
  */
@@ -17,6 +18,9 @@ import { sessionToken, SESSION_COOKIE } from "../../src/lib/auth/session";
 import { crearTokenPlan } from "../../src/lib/plan/aprobacion";
 import { atenderArmadaMotor, crearCacheArmada, type DependenciasArmada } from "../../src/lib/guiada-motor/armada-motor";
 import { huellaDeNavegador } from "../../src/lib/guiada-motor/plan-motor";
+import { TEXTO_DIBUJO_RECALCULO } from "../../src/lib/guiada-motor/mensajes-cliente";
+import type { RespuestaMotor } from "../../src/lib/guiada-motor/tipos";
+import { crearAuditoriaDeCortes } from "../../src/lib/guiada-motor/corte-motor3d";
 import { armarDesdeEspec, especHashDe, VERSION_MOTOR, type EspecClienteV1 } from "../../src/lib/globos3d/motor/v1";
 import { ArmadaCompactaV1Schema, TOPE_BYTES_ARMADA } from "../../src/lib/globos3d/motor/armada-compacta";
 import { todosLosCasos } from "../lib/casos-motor-guiada";
@@ -40,14 +44,15 @@ beforeEach(() => {
 });
 afterEach(() => { for (const [clave, valor] of Object.entries(anterior)) { if (valor === undefined) delete process.env[clave]; else process.env[clave] = valor; } });
 
-type Auditoria = { quien: string; resultado: Record<string, unknown> };
-function entorno(tope = 48) {
+type Auditoria = { quien: string; resultado: Record<string, unknown>; entrada?: unknown };
+function entorno(tope = 48, bandera: RespuestaMotor = { motor: "python", fuente: "env" }) {
   const auditorias: Auditoria[] = [];
   let armados = 0;
   const deps: DependenciasArmada = {
+    leerBandera: async () => bandera,
     armar: (espec) => { armados += 1; return armarDesdeEspec(espec); },
     cache: crearCacheArmada(tope),
-    auditar: (quien, _que, resultado) => { auditorias.push({ quien, resultado: resultado as Record<string, unknown> }); },
+    auditar: (quien, _que, resultado, extra) => { auditorias.push({ quien, resultado: resultado as Record<string, unknown>, entrada: extra?.entrada }); },
   };
   return { deps, auditorias, armados: () => armados };
 }
@@ -115,9 +120,64 @@ test("un plan firmado da su armada: la del motor, válida y de menos de 30 KB", 
   assert.equal(e.auditorias.length, 0, "lo normal no deja rastro; solo los rechazos");
 });
 
-test("no mira la bandera: con GUIADA_MOTOR=python un plan 3D ya en pantalla se sigue viendo", async () => {
+test("con GUIADA_MOTOR=python (sin corte) un plan 3D ya en pantalla se sigue viendo", async () => {
   assert.equal(process.env.GUIADA_MOTOR, "python");
   const r = await atenderArmadaMotor(pedir(plan(ESPEC)), entorno().deps);
+  assert.equal(r.status, 200);
+});
+
+test("con el corte del 3D la armada responde 409 MOTOR_3D_CORTADO con el aviso de recálculo, sin armar", async () => {
+  const e = entorno(48, { motor: "python", fuente: "corte" });
+  for (const salida of ["armada", "svg"] as const) {
+    const r = await atenderArmadaMotor(pedir({ ...plan(ESPEC), salida }), e.deps);
+    assert.equal(r.status, 409, salida);
+    const cuerpo = await r.json() as { codigo: string; error: string };
+    assert.equal(cuerpo.codigo, "MOTOR_3D_CORTADO");
+    assert.equal(cuerpo.error, TEXTO_DIBUJO_RECALCULO);
+    assert.match(cuerpo.error, /^No pude: .*tengo que volver a calcular tu plan completo.*las cantidades y el precio pueden cambiar/);
+  }
+  assert.equal(e.armados(), 0, "no arma: el plan no se toca");
+  assert.ok(e.auditorias.some((a) => a.quien === "regla:motor_guiada" && a.resultado.razon === "motor_3d_cortado" && a.resultado.fuente === "corte"));
+});
+
+test("con el corte, el 409 llega antes de leer el cuerpo: un cuerpo roto también recibe el aviso", async () => {
+  const e = entorno(48, { motor: "python", fuente: "corte" });
+  const r = await atenderArmadaMotor(pedir("{no es json"), e.deps);
+  assert.equal(r.status, 409);
+  assert.equal((await r.json() as { codigo: string }).codigo, "MOTOR_3D_CORTADO");
+});
+
+test("la cookie de administrador (fuente cookie) no se corta: la armada sigue dando el plan con el corte puesto", async () => {
+  const r = await atenderArmadaMotor(pedir(plan(ESPEC)), entorno(48, { motor: "3d", fuente: "cookie" }).deps);
+  assert.equal(r.status, 200);
+});
+
+test("la auditoría del corte lleva el plan_hash y efectivo ninguno, y un plan cortado repetido (miniaturas) queda una sola vez", async () => {
+  const e = entorno(48, { motor: "python", fuente: "corte" });
+  const deps = { ...e.deps, auditoriaCortes: crearAuditoriaDeCortes() };
+  for (let i = 0; i < 3; i += 1) assert.equal((await atenderArmadaMotor(pedir(plan(ESPEC)), deps)).status, 409);
+  assert.equal(e.auditorias.length, 1, "una fila por plan, no por miniatura");
+  assert.equal(e.auditorias[0]!.resultado.efectivo, "ninguno");
+  assert.equal((e.auditorias[0]!.entrada as { plan_hash?: string }).plan_hash, plan(ESPEC).plan_hash);
+});
+
+test("la auditoría del corte etiqueta el plan_hash también con un cuerpo de más de 1,5 MB sin Content-Length, y deduplica por conversación y plan", async () => {
+  const e = entorno(48, { motor: "python", fuente: "corte" });
+  const deps = { ...e.deps, auditoriaCortes: crearAuditoriaDeCortes() };
+  const enorme = { ...plan(ESPEC), relleno: "x".repeat(1_600_000) };
+  const peticion = pedir(enorme, [SESION, NAVEGADOR], { "x-conversacion-id": "conversacion-uno" });
+  assert.equal(peticion.headers.get("content-length"), null);
+  assert.equal((await atenderArmadaMotor(peticion, deps)).status, 409);
+  assert.equal((e.auditorias[0]!.entrada as { plan_hash?: string }).plan_hash, plan(ESPEC).plan_hash, "el hash sale de la cabeza del cuerpo, no de todo él");
+
+  assert.equal((await atenderArmadaMotor(pedir(plan(ESPEC), [SESION, NAVEGADOR], { "x-conversacion-id": "conversacion-uno" }), deps)).status, 409);
+  assert.equal(e.auditorias.length, 1, "la misma conversación y el mismo plan: una fila");
+  assert.equal((await atenderArmadaMotor(pedir(plan(ESPEC), [SESION, NAVEGADOR], { "x-conversacion-id": "conversacion-dos" }), deps)).status, 409);
+  assert.equal(e.auditorias.length, 2, "otra conversación con el mismo plan: otra fila");
+});
+
+test("con la bandera en python por ajuste (no el corte) la armada sigue dando el plan", async () => {
+  const r = await atenderArmadaMotor(pedir(plan(ESPEC)), entorno(48, { motor: "python", fuente: "ajuste" }).deps);
   assert.equal(r.status, 200);
 });
 

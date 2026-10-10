@@ -24,6 +24,13 @@ export const TITULO_AVISO_RECALCULO = "Antes de cambiar tu plan";
 export const TEXTO_AVISO_RECALCULO = `Para hacer ese cambio ${RECALCULO}. Si quieres que lo recalcule, toca «${ETIQUETA_RECALCULAR}» o vuelve a pedírmelo.`;
 /** Al cambiarlo (chat o «Ajustar mi plan»): la respuesta de `/api/guiada/motor/editar`. */
 export const TEXTO_EDICION_RECALCULO = `${PREFIJO_NO_PUDE}por ahora no puedo cambiar este plan tal como está: para hacerlo ${RECALCULO}; si quieres que lo recalcule, pídeme que lo arme de nuevo.`;
+/**
+ * El aviso de recálculo cuando el cliente no pidió ningún cambio (al cargar la conversación o al pedir una vista): el plan no
+ * cambia. Dice «o vuelve a pedírmelo» porque leerlo ya cuenta como aviso: el siguiente cambio que pida se recalcula sin otro.
+ */
+export const TEXTO_AVISO_DIBUJO_RECALCULO = `Tu plan del 3D no se puede mostrar tal como está: ${RECALCULO}. Si quieres que lo recalcule, toca «${ETIQUETA_RECALCULAR}» o vuelve a pedírmelo.`;
+/** Al dibujarlo (la armada o la imagen de un plan del 3D cortado): mismo aviso, con el verbo de dibujar. El plan no cambia. */
+export const TEXTO_DIBUJO_RECALCULO = `${PREFIJO_NO_PUDE}por ahora no puedo dibujar este plan tal como está: para hacerlo ${RECALCULO}; si quieres que lo recalcule, pídeme que lo arme de nuevo.`;
 
 /** Une las razones de un cambio que no se hizo (cada una ya dicha por el servidor) en una sola frase para el cliente. */
 export function unirNoPude(frases: readonly string[]): string {

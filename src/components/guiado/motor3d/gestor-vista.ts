@@ -1,5 +1,6 @@
 import type { ArmadaCompactaV1 } from "@/lib/globos3d/motor/v1";
 import { RUTA_ARMADA_MOTOR, type CuerpoArmadaEntrada, type VistaArmada } from "@/lib/guiada-motor/armada-contrato";
+import { avisarCorte3d, CODIGO_MOTOR_3D_CORTADO } from "../aviso-corte-3d";
 import { armadaDibujable } from "./desde-armada-compacta";
 import { FalloWebgl, visorDeLaPagina, type FichaSuspension, type VisorCompartido } from "./visor-compartido";
 
@@ -55,6 +56,11 @@ export type GestorVista = {
   degradar: () => void;
 };
 
+async function codigoDe(respuesta: Response): Promise<string | undefined> {
+  const datos = (await respuesta.json().catch(() => null)) as { codigo?: unknown } | null;
+  return typeof datos?.codigo === "string" ? datos.codigo : undefined;
+}
+
 const cuerpoDe = (firma: FirmaPlan, extra: Partial<CuerpoArmadaEntrada>): string => JSON.stringify({ ...firma, ...extra });
 
 export function crearGestorVista(deps: DependenciasGestor): GestorVista {
@@ -70,7 +76,11 @@ export function crearGestorVista(deps: DependenciasGestor): GestorVista {
     } catch (causa) {
       throw new FalloArmada(causa instanceof Error ? causa.message : "sin red", null);
     }
-    if (!respuesta.ok) throw new FalloArmada(`la vista respondió ${respuesta.status}`, respuesta.status);
+    if (!respuesta.ok) {
+      // El corte del 3D (P-049): la vista lo muestra como el aviso de recálculo, no como un error de dibujo.
+      if (respuesta.status === 409 && (await codigoDe(respuesta)) === CODIGO_MOTOR_3D_CORTADO) avisarCorte3d(firma.plan_hash, "dibujo");
+      throw new FalloArmada(`la vista respondió ${respuesta.status}`, respuesta.status);
+    }
     return respuesta;
   }
 

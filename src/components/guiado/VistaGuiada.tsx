@@ -57,15 +57,15 @@ import { cargarFactorPlazoCliente, factorPlazoCliente } from "@/lib/ia/plazo-cli
 import { prepararHistorialGuiado, sinUltimoTurnoGuiado } from "@/lib/ia/guiado/utilidades";
 import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-referencia";
 import { prepararFotoReferencia } from "@/lib/imagen-cliente/preparar-foto";
-import { WidgetGuiadoSchema, type WidgetGuiado } from "@/lib/ia/guiado/widgets";
+import type { WidgetGuiado } from "@/lib/ia/guiado/widgets";
+import { EstadoGuardadoSchema, MAX_MENSAJES_GUARDADOS, ReferenciaSchema, type Mensaje } from "./estado-guardado";
 import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
 import { coloresFaltantesPlanGuiado, cuerpoPlanGuiado, defectoPlanGuiado, referenciaDelPlan, resumenPlanGuiado, type ReferenciaDelPlan } from "@/lib/ia/guiado/instruccion-plan";
 import { cuerpoPlanFoto, lecturaConPiezaNueva, planLlevaPiezaPedida } from "@/lib/ia/guiado/foto-con-pieza";
 import { responderConsultaPlan } from "@/lib/ia/guiado/consulta-plan-chat";
 import type { ColorFotoFaltante } from "@/lib/plan/colores-foto-plan";
 import { lecturaSinRemateGrande, tieneRemateGrande } from "@/lib/ia/guiado/remate-foto";
-import { ESTRUCTURAS_OFICIALES_IDS, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
-import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
+import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { cuerpoGeneracion, fuentesDelPlan, resumenCuerpoGeneracion } from "@/lib/generacion/cuerpo-generacion";
 // De /api/generate interesan la imagen y su aviso de lo no cotizado (el plan que devuelve no trae approval_token y el de
 // la tarjeta sí): `ImagenGeneradaSchema` vive ahora en pedir-imagen.ts, con la recuperación ante cortes.
@@ -74,6 +74,11 @@ import { abrirConversacionGuiada, registrarAccionGuiada, registrarFalloGuiado, v
 import { AVISO_VERSION_NUEVA, CABECERA_VERSION_APP, RespuestaIncompatibleError, camposInvalidos, clasificarIncompatible, hayVersionNueva, idParaReintento, turnoSinRespuesta } from "./version-pagina";
 import { borrarEstadoGuiado } from "./empezar-de-nuevo";
 import { useMotorGuiada } from "./usarMotorGuiada";
+import { avisarSiEsCorteDeLaImagen, crearEscuchaCorte3d, sinAvisoDeCorte, suscribirCorte3d, TIPO_ACCION_RECALCULAR_3D, type EscuchaCorte3d } from "./aviso-corte-3d";
+import { avisarAlCargarPlan } from "./avisar-corte-3d-al-cargar";
+import { avisosRecalculo } from "./aviso-recalculo";
+import { prepararRecalculo3d, propuestaParaGuardar, TEXTO_RECALCULO_NO_POSIBLE } from "./recalculo-3d";
+import { TEXTO_AVISO_DIBUJO_RECALCULO } from "@/lib/guiada-motor/mensajes-cliente";
 import { TEXTO_IMAGEN_PLAN_3D } from "./Plan3DEnPreparacion";
 import { falloDelPlan } from "./fallo-plan";
 import { NotasPlan } from "./NotasPlan";
@@ -112,51 +117,15 @@ type AccionFallo =
   | { tipo: "foto"; referenciaId: string; mensajeId: string; sinRemate?: boolean; piezaNueva?: PiezaNuevaChat }
   /** Un cambio del plan pedido por chat (`edicion-chat-guiada.ts`) que no salió: se repite ESE cambio, sin el modelo. */
   | { tipo: "edicion"; pedido: PedidoEdicionPlan; mensajeId: string }
+  /** «Recalcular mi plan» del aviso de corte del 3D (P-049): da el consentimiento y pide el plan de nuevo (Python, sin preguntar otra vez). */
+  | { tipo: typeof TIPO_ACCION_RECALCULAR_3D; planHash: string; mensajeId: string }
   | { tipo: "subir-foto" }
   /** La página es de otro despliegue que el servidor (version-pagina.ts): recargar trae la nueva; la conversación queda. */
   | { tipo: "recargar" };
 type AlternativaFallo = "otros-colores" | "otra-pieza" | "idea-parecida" | "otra-foto";
 type Fallo = { titulo: string; detalle?: string; etiqueta?: string; accion: AccionFallo; alternativas?: AlternativaFallo[]; mensajeId?: string; variante?: "actualizar" };
 
-const ReferenciaSchema = z.object({ blueprint: ReferenceBlueprintV2Schema, frase: z.string(), aspecto: z.number().positive().optional(), piezas: z.array(z.object({ x: z.number(), y: z.number(), ancho: z.number(), alto: z.number() }).strict()), colores: z.array(z.object({ nombre: z.string(), hex: z.string() }).strict()) }).strict();
-const MensajeSchema = z.object({
-  id: z.string(),
-  role: z.enum(["user", "assistant"]),
-  content: z.string(),
-  widgets: z.array(WidgetGuiadoSchema).optional(),
-  miniatura: z.string().regex(/^data:image\/jpeg;base64,/).max(80_000).optional(),
-  referencia: ReferenciaSchema.optional(),
-  notaFoto: z.string().optional(),
-  /** La lectura de esta foto ya produjo un plan: «Sí, armémoslo» deja de mostrarse. */
-  fotoArmada: z.boolean().optional(),
-  /** Un cambio hecho a un plan del 3D (REQ-007, fase 5): el turno con su espec de antes y de después, para calificarlo. */
-  edicion3d: z.object({ turnoId: z.string(), antes: z.unknown(), despues: z.unknown() }).strict().optional(),
-  /** Respuestas rápidas de una pregunta local (sin modelo). */
-  rapidas: z.array(z.string().min(1).max(60)).max(8).optional(),
-  destacadas: z.array(z.string().min(1).max(60)).max(4).optional(),
-  /** Pregunta local de ciudad: lo que el cliente elija o escriba se convierte en la búsqueda correspondiente. */
-  pregunta: z.enum(["ciudad-decorador", "ciudad-distribuidor"]).optional(),
-  /**
-   * Lo que viajó con este mensaje del cliente además del texto (uso, alcance, pieza pedida): si se queda sin respuesta,
-   * «Reintentar» lo repite igual también después de recargar (probador 124, hallazgo 2).
-   */
-  envio: z.object({
-    uso: z.enum(["negocio", "personal"]).optional(),
-    alcance: z.enum(["completa", "individual"]).optional(),
-    pieza: z.enum(ESTRUCTURAS_OFICIALES_IDS).optional(),
-  }).strict().optional(),
-}).strict();
-type Mensaje = z.infer<typeof MensajeSchema>;
-
 const CLAVE_SESION = "demo_guiado_v2";
-const MAX_MENSAJES_GUARDADOS = 80;
-const EstadoGuardadoSchema = z.object({
-  mensajes: z.array(MensajeSchema).max(MAX_MENSAJES_GUARDADOS),
-  // El brief entero: también lo que dijo el cliente (uso, medida, pieza, lugar…) y el rango de edad que eligió.
-  brief: BriefGuiadoSchema.optional(),
-  seleccionadaId: z.string().nullable().optional(),
-  uso: z.enum(["negocio", "personal"]).nullable().optional(),
-}).strict();
 const ResultadoSchema = z.object({
   brief: BriefGuiadoSchema.optional(),
   decoraciones: z.array(DecoracionSempertexSchema).optional(),
@@ -379,6 +348,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       }
     }
     setRestaurado(true);
+    // Un plan del 3D abierto al cargar: si el corte está puesto, el aviso va ya, sin esperar a que el cliente pida un cambio.
+    void avisarAlCargarPlan(guardado ? buscarPlanVigente(guardado.mensajes)?.widget ?? null : null);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [versionPagina]);
 
@@ -497,6 +468,22 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   }
   function registrarAccion(evento: string, datos: Record<string, unknown> = {}): void { registrarAccionGuiada(evento, datos, estadoRegistro()); }
   function registrarFallo(evento: string, causa: unknown, datos: Record<string, unknown> = {}, nivel: "warn" | "error" = "error"): void { registrarFalloGuiado(evento, causa, datos, estadoRegistro(), nivel); }
+  // El corte del 3D (P-049): el plan de la pantalla dejó el 3D, así que el aviso va arriba, como el de rehacer (D-023). La
+  // escucha se rehace en cada pintado (lee el plan, la tarjeta de fallo y la petición del momento) y se suscribe una sola vez.
+  // Mostrarlo lo marca como avisado, como la edición: el siguiente cambio que pida el cliente ya recalcula con Python.
+  const alCorte3dRef = useRef<EscuchaCorte3d>(() => undefined);
+  useEffect(() => {
+    alCorte3dRef.current = crearEscuchaCorte3d({
+      avisos: avisosRecalculo,
+      estado: () => ({ planVigenteHash: planVigente?.widget.plan.plan_hash ?? null, cargando: cargandoRef.current, hayFallo: fallo !== null }),
+      mostrar: (planHash, origen) => {
+        const mensajeId = planVigente?.mensajeId ?? "";
+        registrarAccion("plan.aviso_corte_3d", { mensajeId, plan_hash: planHash, origen });
+        setFallo(falloDelPlan<AccionFallo>({ estado: "fallo", aviso: TEXTO_AVISO_DIBUJO_RECALCULO, accion: { tipo: TIPO_ACCION_RECALCULAR_3D, planHash, mensajeId }, mensajeId }).fallo);
+      },
+    });
+  });
+  useEffect(() => suscribirCorte3d((planHash, origen) => alCorte3dRef.current(planHash, origen)), []);
 
   // ── «Empezar de nuevo» (menú «Más opciones»): se confirma dentro de la página y deja la vista como una pestaña nueva ──
   function pedirEmpezarDeNuevo(): void {
@@ -923,12 +910,13 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
    * Deja el plan en el MISMO mensaje (la propuesta pasa a «Tu plan») y marca como versión anterior el que había. Con
    * `idea` («Agregar al plan»), el plan nuevo recuerda las ideas que lleva y dice qué se agregó y cuántos globos tiene.
    */
-  function colocarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, fotoInspiracion: boolean, idea?: IdeaAgregada, referenciaId?: string, motor: MotorGuiada = "python"): void {
+  function colocarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, fotoInspiracion: boolean, idea?: IdeaAgregada, referenciaId?: string, motor: MotorGuiada = "python", propuesta?: Propuesta): void {
     const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacionCruda);
     const cotizacion = precio.success ? { ...precio.data, lineas: precio.data.lineas.map((linea) => ({ ...linea, nombre: nombreLineaCliente(linea) })) } : undefined;
     const armado = generarPasosPlan(plan);
     const resumen = resumenPlanGuiado(plan);
     const total = totalDePlan(plan);
+    const propuestaGuardada = propuesta ? propuestaParaGuardar(motor, propuesta) : undefined;
     setMensajes((actuales) => {
       const previo = buscarPlanVigente(actuales.filter((mensaje) => mensaje.id !== mensajeId));
       const totalAnterior = previo ? totalDePlan(previo.widget.plan) : undefined;
@@ -936,6 +924,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       const ideas = idea ? [...new Set([...(previo?.widget.ideas ?? []), idea.id])].slice(-12) : [];
       const nuevo: WidgetPlan = {
         tipo: "plan", plan, pasos: armado.pasos, motor,
+        ...(propuestaGuardada ? { propuesta: propuestaGuardada } : {}),
         ...(cotizacion ? { cotizacion } : {}),
         ...(totalAnterior !== undefined ? { totalAnterior } : {}),
         ...(fotoInspiracion ? { fotoInspiracion: true, ...(referenciaId ? { referenciaId } : {}) } : {}),
@@ -949,6 +938,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       });
     });
     setSugerenciasCambio(null);
+    // Un plan nuevo deja atrás el aviso de un plan del 3D que el corte ya no nombra (P-049).
+    setFallo(sinAvisoDeCorte);
     pedirLlegada(mensajeId);
     setAnuncio(idea ? [textoIdeaAgregada(idea.titulo, total, idea.sumada), ...(idea.avisos ?? [])].join(" ") : "Tu plan está listo");
   }
@@ -1096,7 +1087,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     if (resultado.estado === "obsoleto") return "obsoleto";
     if (resultado.estado === "ok") {
       if (foto?.imagen) fotosRef.current.set(mensajeId, foto.imagen);
-      colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, Boolean(foto), idea, foto?.referenciaId, resultado.motor);
+      // Un plan del 3D guarda la propuesta que lo armó: «Recalcular mi plan» (P-049) la repite por este mismo camino.
+      colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, Boolean(foto), idea, foto?.referenciaId, resultado.motor, propuesta);
       // Un plan del 3D que se rehízo con Python se dice, sin tecnicismos.
       if (resultado.rehechoEnPython) actualizarWidget(mensajeId, "plan", (widget) => ({ ...widget, recalculado: true }));
     } else {
@@ -1269,6 +1261,9 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       void guardarImagenNavegador(mensajeId, salida.imagen);
     } catch (causa) {
       if (sesion !== sesionRef.current) return;
+      // El corte del 3D (P-049): no es un error de la imagen; el aviso de recálculo es el que la explica. Lo pidió el cliente con un
+      // toque, así que se le contesta aunque ya lo hubiera leído, y se anuncia por si la tarjeta no puede salir (hay otra a la vista).
+      if (avisarSiEsCorteDeLaImagen(causa, plan.plan_hash, () => registrarAccion("imagen.motor_3d_cortado", { mensajeId, plan_hash: plan.plan_hash }))) { setAnuncio(TEXTO_AVISO_DIBUJO_RECALCULO); return; }
       registrarFallo("imagen.fallo", causa, { mensajeId, plan_hash: plan.plan_hash, clase: causa instanceof ErrorImagen ? causa.clase : null });
       console.warn("[asistente-guiado] no se pudo dibujar la decoración", causa);
       // Sin tarjeta de error aparte: la del plan dice por qué falló y, solo si repetir puede servir, su botón principal es «Reintentar imagen».
@@ -1461,6 +1456,36 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     }
   }
 
+  /**
+   * «Recalcular mi plan» del aviso de corte (P-049): repite el plan con su propuesta por el mismo camino que «Intentar de nuevo»
+   * (`aceptarPropuesta` con su plan anterior). El aviso ya dio el consentimiento (`avisosRecalculo`), así que con el 3D cortado
+   * el plan se arma con Python. No hay mensaje ni foto del cliente de por medio, pero sí el modelo: `aceptarPropuesta` →
+   * `ejecutarPlan` → /api/chat, donde `confirmar_plan_decoracion` resuelve el plan (por eso cuesta y puede tardar).
+   */
+  function recalcularPlan3d(planHash: string): void {
+    const vigente = planVigente;
+    if (cargandoRef.current || vigente?.widget.plan.plan_hash !== planHash) return;
+    const preparado = prepararRecalculo3d({
+      guardada: vigente.widget.propuesta,
+      planActual: planActualDelPlan(vigente.widget.plan, vigente.widget.motor),
+      piezasDelPlan: vigente.widget.plan.plan.estructuras,
+    });
+    avisosRecalculo.marcar(planHash);
+    setFallo(null);
+    if (!preparado) {
+      // No se adivina cómo rehacerlo ni se reducen sus piezas sin decirlo: se le dice qué hacer, sin mandar nada.
+      agregar([{ id: nuevoId(), role: "assistant", content: TEXTO_RECALCULO_NO_POSIBLE }]);
+      pedirFinal();
+      registrarAccion("plan.recalcular_3d_sin_propuesta", { mensajeId: vigente.mensajeId, plan_hash: planHash });
+      return;
+    }
+    const idRecalculo = nuevoId();
+    agregar([{ id: idRecalculo, role: "assistant", content: "" }]);
+    pedirFinal();
+    registrarAccion("plan.recalcular_3d", { mensajeId: vigente.mensajeId, plan_hash: planHash, propuestaGuardada: Boolean(vigente.widget.propuesta) });
+    void aceptarPropuesta(preparado.propuesta, { mensajeId: idRecalculo, planAnterior: preparado.planAnterior });
+  }
+
   /** «Reintentar» de un plan que no llegó; si traía una idea, su botón vuelve a decir «Agregando a tu plan…». */
   async function reintentarPlan(accion: Extract<AccionFallo, { tipo: "plan" }>): Promise<void> {
     const { idea } = accion;
@@ -1649,6 +1674,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       case "plan": void reintentarPlan(accion); return;
       case "foto": void aceptarPlanFoto(accion.referenciaId, { mensajeId: accion.mensajeId, ...(accion.sinRemate ? { sinRemate: true } : {}), ...(accion.piezaNueva ? { piezaNueva: accion.piezaNueva } : {}) }); return;
       case "edicion": void reintentarEdicion(accion); return;
+      case "recalcular-3d": recalcularPlan3d(accion.planHash); return;
       case "subir-foto": setFallo(null); archivoRef.current?.click(); return;
       // La conversación ya está en la sesión (se guarda en cada cambio) y el mensaje sin respuesta vuelve con «Reintentar».
       case "recargar": window.location.reload(); return;

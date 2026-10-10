@@ -358,7 +358,7 @@ async function main(): Promise<void> {
     assert.match(fuente, /async function aplicarEdicionChat[\s\S]{0,500}const del3d = planDelMensaje\([^\n]*\?\.motor === "3d";/, "los cambios por chat saben si el plan es del 3D");
     assert.match(fuente, /dependenciasEdicionChat\(signal, del3d \? \{ turnoId: mensajeId \} : undefined\)/, "…y entonces van al servidor del 3D con el id del turno, no a /api/plan-editar");
     assert.match(fuente, /motor=\{widget\.motor\}/, "la tarjeta recibe el motor del plan");
-    assert.match(fuente, /colocarPlan\(mensajeId, resultado\.plan, resultado\.cotizacion, Boolean\(foto\), idea, foto\?\.referenciaId, resultado\.motor\)/, "el plan guarda el motor con que se armó");
+    assert.match(fuente, /colocarPlan\(mensajeId, resultado\.plan, resultado\.cotizacion, Boolean\(foto\), idea, foto\?\.referenciaId, resultado\.motor, propuesta\)/, "el plan guarda el motor con que se armó (y, si es del 3D, la propuesta que lo armó)");
     assert.doesNotMatch(fuente, /void leerMotorDelPlan\(\)/, "la lectura de la bandera ya no es solo auditoría");
     const hookFuente = readFileSync("src/components/guiado/usarMotorGuiada.ts", "utf8");
     assert.match(hookFuente, /if \(deFoto\) return null;/);
