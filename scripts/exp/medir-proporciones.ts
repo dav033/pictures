@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import sharp from "sharp";
 import { compilarLectura } from "../../src/lib/globos3d/compilar-lectura";
 import { encuadreDeLectura } from "../../src/lib/globos3d/encuadre-foto";
-import { armarEscena } from "../../src/lib/globos3d/escena";
+import { armarEscena, type Escena } from "../../src/lib/globos3d/escena";
 import { esTelon } from "../../src/lib/globos3d/fondos-escenografia";
 import { mismaFamiliaDeFondo } from "../../src/lib/globos3d/fondos-familias";
 import { centroDe } from "../../src/lib/globos3d/letras";
@@ -33,7 +33,11 @@ const palabraDeCodigo = (codigo: string): string | undefined => {
 
 /** Lo armado, en unidades de alto de la foto: sus globos como discos y los fondos como cajas. */
 export function armadoEnLaFoto(lectura: LecturaFoto): { discos: Disco[]; fondos: FondoMedido[] } {
-  const escena = compilarLectura(lectura).escena;
+  return armadoDeEscenaEnLaFoto(compilarLectura(lectura).escena, lectura);
+}
+
+/** Lo armado de una escena ya hecha (la del asistente, tras sus vueltas), proyectada con la cámara de la foto de la lectura. */
+export function armadoDeEscenaEnLaFoto(escena: Escena, lectura: LecturaFoto): { discos: Disco[]; fondos: FondoMedido[] } {
   const camara = camaraNumerica(encuadreDeLectura(lectura), escena.sala);
   const aImagen = (p: { x: number; y: number }) => ({ x: (p.x + camara.aspecto) / 2, y: (1 - p.y) / 2 });
   const armada = armarEscena(escena);

@@ -113,3 +113,6 @@ packages/*/dist
 
 # Informes de la matriz de escenarios del motor 3D (scripts/escenarios/correr.ts)
 scripts/escenarios/salidas/
+
+# Arnés de entrenamiento: corridas y registros (datos locales, no se versionan)
+/scripts/entrenamiento/corridas/

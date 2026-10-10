@@ -5,6 +5,7 @@ import { configuracion } from "./configuracion";
 import { contextoActual, idConversacionEfectivo } from "./contexto";
 import { rutaConversacion } from "./escritor";
 import { huellaBase64, huellaDataUrl, redactar, sanearTexto, serializarError, sha256 } from "./redaccion";
+import { avisarCierre } from "./observadores-llamadas";
 import { auditar } from "./registro";
 import type {
   ContextoRegistro,
@@ -232,6 +233,11 @@ export function iniciarLlamadaIa(descripcion: DescripcionLlamadaIa): LlamadaIaEn
         ms,
         ...(error !== undefined ? { error: serializarError(error) } : {}),
       }, { contexto, ms, ...(descripcion.limiteCadena ? { limiteCadena: descripcion.limiteCadena } : {}) });
+    } catch {
+      // Nunca lanza.
+    }
+    try {
+      avisarCierre(descripcion, resultado, error);
     } catch {
       // Nunca lanza.
     }
