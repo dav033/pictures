@@ -1,0 +1,373 @@
+{
+ "sala": {
+  "anchoCm": 900,
+  "fondoCm": 1050,
+  "altoCm": 450,
+  "tonos": {
+   "piso": "#d8cbbb",
+   "paredes": "#f1ece6",
+   "techo": "#fbfaf8"
+  },
+  "mostrar": {
+   "piso": true,
+   "fondo": true,
+   "laterales": true,
+   "techo": true
+  }
+ },
+ "nodos": [
+  {
+   "id": "arco",
+   "nombre": "Arco orgánico",
+   "pieza": {
+    "tipo": "arco_organico",
+    "arco": {
+     "anchoCm": 300,
+     "altoCm": 240,
+     "radioBaseCm": 38,
+     "radioPuntaCm": 26,
+     "semilla": 7,
+     "densidad": 1,
+     "colores": [
+      {
+       "codigo": "609",
+       "peso": 45
+      },
+      {
+       "codigo": "005",
+       "peso": 25,
+       "formatos": [
+        "R-5",
+        "R-9",
+        "R-12",
+        "R-18"
+       ]
+      },
+      {
+       "codigo": "010",
+       "peso": 15
+      },
+      {
+       "codigo": "570",
+       "peso": 15,
+       "formatos": [
+        "R-5",
+        "R-9",
+        "R-12"
+       ]
+      }
+     ],
+     "flores": null,
+     "huecosFlores": 0
+    }
+   },
+   "colocacion": {
+    "en": "piso",
+    "xCm": 0,
+    "zCm": -425,
+    "giroGrados": 0
+   }
+  },
+  {
+   "id": "columna-izq",
+   "nombre": "Columna izquierda",
+   "pieza": {
+    "tipo": "columna",
+    "formatoId": "R-12",
+    "infladoCm": 25,
+    "alturaCm": 180,
+    "patron": "espiral",
+    "colores": [
+     "609",
+     "005",
+     "570",
+     "010"
+    ]
+   },
+   "colocacion": {
+    "en": "piso",
+    "xCm": -225,
+    "zCm": -425,
+    "giroGrados": 0
+   }
+  },
+  {
+   "id": "columna-der",
+   "nombre": "Columna derecha",
+   "pieza": {
+    "tipo": "columna",
+    "formatoId": "R-12",
+    "infladoCm": 25,
+    "alturaCm": 180,
+    "patron": "espiral",
+    "colores": [
+     "609",
+     "005",
+     "570",
+     "010"
+    ]
+   },
+   "colocacion": {
+    "en": "piso",
+    "xCm": 225,
+    "zCm": -425,
+    "giroGrados": 0
+   }
+  },
+  {
+   "id": "guirnalda",
+   "nombre": "Guirnalda en festón",
+   "pieza": {
+    "tipo": "guirnalda",
+    "guirnalda": {
+     "formatoId": "R-9",
+     "infladoCm": 18,
+     "patron": "dos_colores",
+     "colores": [
+      "570",
+      "005"
+     ],
+     "anchoCm": 480,
+     "caidaCm": 35,
+     "recorrido": null
+    }
+   },
+   "colocacion": {
+    "en": "pared",
+    "pared": "fondo",
+    "aLoLargoCm": 0,
+    "alturaCm": 240
+   }
+  },
+  {
+   "id": "salon-fondo",
+   "nombre": "Fondo de fotos",
+   "pieza": {
+    "tipo": "escenografia",
+    "elementos": [],
+    "mueble": {
+     "id": "marco_tela",
+     "opciones": {
+      "anchoCm": 480,
+      "fondoCm": 34,
+      "altoCm": 300,
+      "colores": [
+       "#d6b25a",
+       "#f7f6f2"
+      ]
+     }
+    }
+   },
+   "colocacion": {
+    "en": "piso",
+    "xCm": 0,
+    "zCm": -495,
+    "giroGrados": 0
+   }
+  },
+  {
+   "id": "salon-postres",
+   "nombre": "Mesa de postres",
+   "pieza": {
+    "tipo": "escenografia",
+    "elementos": [],
+    "mueble": {
+     "id": "mesa_postres_mantel",
+     "opciones": {
+      "anchoCm": 194,
+      "fondoCm": 47,
+      "altoCm": 90,
+      "colores": [
+       "#f7f6f2"
+      ]
+     }
+    }
+   },
+   "colocacion": {
+    "en": "piso",
+    "xCm": -386,
+    "zCm": -127,
+    "giroGrados": 90
+   }
+  },
+  {
+   "id": "salon-mesa-01",
+   "nombre": "Mesa 1",
+   "pieza": {
+    "tipo": "escenografia",
+    "elementos": [],
+    "mueble": {
+     "id": "mesa_redonda_sillas",
+     "opciones": {
+      "anchoCm": 270,
+      "fondoCm": 270,
+      "altoCm": 90,
+      "colores": [
+       "#f7f6f2",
+       "#d6b25a",
+       "#f4efe4"
+      ]
+     }
+    }
+   },
+   "colocacion": {
+    "en": "piso",
+    "xCm": -137,
+    "zCm": -109,
+    "giroGrados": 0
+   }
+  },
+  {
+   "id": "salon-mesa-02",
+   "nombre": "Mesa 2",
+   "pieza": {
+    "tipo": "escenografia",
+    "elementos": [],
+    "mueble": {
+     "id": "mesa_redonda_sillas",
+     "opciones": {
+      "anchoCm": 270,
+      "fondoCm": 270,
+      "altoCm": 90,
+      "colores": [
+       "#f7f6f2",
+       "#d6b25a",
+       "#f4efe4"
+      ]
+     }
+    }
+   },
+   "colocacion": {
+    "en": "piso",
+    "xCm": 224,
+    "zCm": -109,
+    "giroGrados": 0
+   }
+  },
+  {
+   "id": "salon-mesa-03",
+   "nombre": "Mesa 3",
+   "pieza": {
+    "tipo": "escenografia",
+    "elementos": [],
+    "mueble": {
+     "id": "mesa_redonda_sillas",
+     "opciones": {
+      "anchoCm": 270,
+      "fondoCm": 270,
+      "altoCm": 90,
+      "colores": [
+       "#f7f6f2",
+       "#d6b25a",
+       "#f4efe4"
+      ]
+     }
+    }
+   },
+   "colocacion": {
+    "en": "piso",
+    "xCm": -180,
+    "zCm": 252,
+    "giroGrados": 0
+   }
+  },
+  {
+   "id": "salon-mesa-04",
+   "nombre": "Mesa 4",
+   "pieza": {
+    "tipo": "escenografia",
+    "elementos": [],
+    "mueble": {
+     "id": "mesa_redonda_sillas",
+     "opciones": {
+      "anchoCm": 270,
+      "fondoCm": 270,
+      "altoCm": 90,
+      "colores": [
+       "#f7f6f2",
+       "#d6b25a",
+       "#f4efe4"
+      ]
+     }
+    }
+   },
+   "colocacion": {
+    "en": "piso",
+    "xCm": 181,
+    "zCm": 252,
+    "giroGrados": 0
+   }
+  }
+ ],
+ "salon": {
+  "invitados": 30,
+  "mesa": "redonda8",
+  "profundidadFondoCm": 181,
+  "piezas": {
+   "salon-fondo": {
+    "zona": "fondo_fotos",
+    "rol": "ancla",
+    "pos": {
+     "x": 0,
+     "z": -495
+    }
+   },
+   "salon-postres": {
+    "zona": "mesa_postres",
+    "rol": "ancla",
+    "pos": {
+     "x": -386,
+     "z": -127
+    }
+   },
+   "salon-mesa-01": {
+    "zona": "mesas",
+    "rol": "mesa",
+    "ranura": 1,
+    "pos": {
+     "x": -137,
+     "z": -109
+    }
+   },
+   "salon-mesa-02": {
+    "zona": "mesas",
+    "rol": "mesa",
+    "ranura": 2,
+    "pos": {
+     "x": 224,
+     "z": -109
+    }
+   },
+   "salon-mesa-03": {
+    "zona": "mesas",
+    "rol": "mesa",
+    "ranura": 3,
+    "pos": {
+     "x": -180,
+     "z": 252
+    }
+   },
+   "salon-mesa-04": {
+    "zona": "mesas",
+    "rol": "mesa",
+    "ranura": 4,
+    "pos": {
+     "x": 181,
+     "z": 252
+    }
+   },
+   "arco": {
+    "zona": "fondo_fotos",
+    "rol": "adoptada"
+   },
+   "columna-izq": {
+    "zona": "fondo_fotos",
+    "rol": "adoptada"
+   },
+   "columna-der": {
+    "zona": "fondo_fotos",
+    "rol": "adoptada"
+   }
+  }
+ }
+}

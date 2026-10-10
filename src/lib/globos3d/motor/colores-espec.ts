@@ -51,7 +51,7 @@ const CODIGOS_POR_PALABRA: Readonly<Record<ColorPropuestaV2, readonly string[]>>
 };
 
 /** Palabras que el cliente dice y que la paleta no tiene: cada una es un tono propio de la lámina. */
-const CODIGOS_POR_PALABRA_EXTRA: Readonly<Record<string, readonly string[]>> = {
+export const CODIGOS_POR_PALABRA_EXTRA: Readonly<Record<string, readonly string[]>> = {
   "verde salvia": ["027"], // Fashion Eucalipto: «sage green» en la lámina
   salvia: ["027"],
   eucalipto: ["027"],
@@ -87,6 +87,16 @@ function resueltos(codigos: readonly string[], palabra: string): ColorResuelto[]
   });
 }
 
+/** La palabra de la paleta (o el tono claro) que dice el texto entero: la palabra misma o un alias de tono («azul pastel» es celeste). */
+export function claveDeTono(texto: string): ColorPropuestaV2 | null {
+  const plegado = plegarTexto(texto);
+  if (!plegado) return null;
+  return COLORES_PROPUESTA_V2.find((palabra) => plegarTexto(palabra) === plegado) ?? clasificarTonos(texto).values[0] ?? null;
+}
+
+/** La palabra de la paleta que el texto nombra en alguna parte («rojo vino», «un azul bonito»); no mira el acabado. */
+export const claveDePaleta = (texto: string): ColorPropuestaV2 | null => clasificarColores(texto).values[0] ?? null;
+
 /**
  * Una palabra de color del cliente → sus códigos (uno, o varios si es «multicolor»). `[]` si no la reconoce: el que
  * llama decide qué hacer, no se inventa un color.
@@ -96,13 +106,8 @@ export function coloresDePalabra(texto: string): ColorResuelto[] {
   if (!plegado) return [];
   const extra = CODIGOS_POR_PALABRA_EXTRA[plegado];
   if (extra) return resueltos(extra, texto.trim());
-  const exacta = COLORES_PROPUESTA_V2.find((palabra) => plegarTexto(palabra) === plegado);
-  if (exacta) return resueltos(CODIGOS_POR_PALABRA[exacta], texto.trim());
-  const tono = clasificarTonos(texto).values[0];
-  if (tono) return resueltos(CODIGOS_POR_PALABRA[tono], texto.trim());
-  const color = clasificarColores(texto).values[0];
-  if (color) return resueltos(CODIGOS_POR_PALABRA[color], texto.trim());
-  return [];
+  const clave = claveDeTono(texto) ?? claveDePaleta(texto);
+  return clave ? resueltos(CODIGOS_POR_PALABRA[clave], texto.trim()) : [];
 }
 
 export type MaterialDePlan = { titulo?: string | null; color?: string | null; acabado?: string | null };

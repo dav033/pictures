@@ -206,7 +206,7 @@ export function edicionDesdeCambio(espec: EspecClienteV1, cambio: CambioPanelV1)
     case "agregar-color":
       return bien([{ op: "agregar_color", color: cambio.color, ...(cambio.estructuraIds?.length ? { piezas: cambio.estructuraIds } : {}) }]);
     case "reemplazar-color":
-      return bien([{ op: "reemplazar_color", de: cambio.color, a: cambio.nuevo, ...(cambio.estructuraIds?.length ? { piezas: cambio.estructuraIds } : {}) }]);
+      return bien([{ op: "reemplazar_color", de: cambio.codigo ?? cambio.color, a: cambio.nuevo, ...(cambio.estructuraIds?.length ? { piezas: cambio.estructuraIds } : {}) }]);
     case "tamano-todo": {
       const piezas = espec.piezas.filter((item) => Object.keys(medidasEditables(item)).length > 0);
       return piezas.length ? bien(piezas.map((item): EdicionEspecV1 => ({ op: "tamano_pieza", pieza: item.id, direccion: cambio.direccion }))) : rechazo("no_aplicable", "sin_medidas", "ninguna de tus piezas se mide en metros.");

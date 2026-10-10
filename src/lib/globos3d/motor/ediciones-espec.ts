@@ -71,6 +71,7 @@ export function aplicarEdiciones(inicial: EspecClienteV1, ediciones: readonly Ed
     const resultado = aplicarEdicion(espec, edicion, contexto);
     salida.avisos.push(...resultado.avisos);
     if (resultado.noAplicado) { salida.noAplicadas.push(resultado.noAplicado); continue; }
+    salida.noAplicadas.push(...(resultado.sinHacer ?? []));
     espec = resultado.espec;
     salida.hechas.push(resultado.descripcion);
     salida.aplicadas += 1;

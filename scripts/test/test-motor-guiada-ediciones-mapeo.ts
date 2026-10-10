@@ -12,14 +12,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { aCambioPanel } from "../../src/components/guiado/ajuste/ejecutar-ajuste-3d";
-import type { CambioPlan } from "../../src/components/guiado/ajuste/ajuste-plan-guiado";
+import type { CambioPlan, PlanGuiado } from "../../src/components/guiado/ajuste/ajuste-plan-guiado";
 import { PlanActualGuiadoSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1";
 import { HERRAMIENTAS_EDICION, pedidoDesdeHerramienta, type HerramientaEdicion, type PedidoEdicionPlan } from "../../src/lib/ia/guiado/edicion-plan-chat";
 import {
-  aplicarEdiciones, armarDesdeEspec, CambioPanelV1Schema, edicionDesdeCambio, edicionDesdePedido, especDesdePropuesta, planActualDesdeEspec,
-  TIPOS_CAMBIO_PANEL, type CambioPanelV1, type EdicionEspecV1, type EspecClienteV1,
+  aplicarEdiciones, armarDesdeEspec, CambioPanelV1Schema, cotizarBom, crosswalkIncluido, edicionDesdeCambio, edicionDesdePedido, especDesdePropuesta,
+  planActualDesdeEspec, sobreDelMotor, TIPOS_CAMBIO_PANEL, type CambioPanelV1, type EdicionEspecV1, type EspecClienteV1,
 } from "../../src/lib/globos3d/motor/v1";
 import { todosLosCasos } from "../lib/casos-motor-guiada";
+import { pythonDoble } from "../lib/python-doble-precio";
 
 const BASE: EspecClienteV1 = especDesdePropuesta({ frase: "x", colores: ["azul", "dorado"], piezas: [{ estructura: "arco", cantidad: 1 }, { estructura: "columna", cantidad: 2 }] }).espec;
 const [ARCO, IZQ, DER] = ["EST_01_ARCO", "EST_02_COLUMNA", "EST_03_COLUMNA"];
@@ -178,6 +179,35 @@ test("cada tipo de CambioPlan del panel llega a sus operaciones, y el esquema de
       aplicables(BASE, fila.esperado);
     }
   }
+});
+
+/** El plan del 3D tal como lo recibe el navegador: armado, cotizado con el doble de Python y firmado. */
+async function planDelMotor(espec: EspecClienteV1): Promise<PlanGuiado> {
+  const cruce = crosswalkIncluido();
+  const resultado = armarDesdeEspec(espec);
+  const cotizacion = await cotizarBom(resultado.bom, { crosswalk: async () => cruce, cotizarLista: pythonDoble(cruce).cotizarLista });
+  assert.ok(cotizacion.ok, "el plan de prueba se cotiza");
+  const sobre = sobreDelMotor({ espec, resultado, cotizacion, concepto: { titulo: "Plan de prueba", descripcion: "Plan de prueba" }, requestId: "11111111-1111-4111-8111-111111111111" });
+  assert.ok(sobre.ok, sobre.ok ? "" : sobre.motivo);
+  return sobre.plan;
+}
+
+test("«Cambiar» del panel manda el código del renglón: con dos colores que la tarjeta llama igual, cambia el que se tocó (A2)", async () => {
+  // La columna izquierda lleva un azul rey que su tarjeta llama «azul», como el azul del arco: el nombre no basta.
+  const espec: EspecClienteV1 = { ...BASE, piezas: BASE.piezas.map((p) => (p.id === IZQ ? { ...p, colores: [{ ...p.colores[0]!, codigo: "041" }, p.colores[1]!] } : p)) };
+  const plan = await planDelMotor(espec);
+  const renglon = plan.plan.estructuras.find((e) => e.estructura_id === IZQ)!.materiales[0]!;
+  const cambio: CambioPlan = { tipo: "reemplazar-color", color: renglon.color!, productIdAnterior: renglon.product_id, globo: GLOBO_ROJO };
+  const enviado = aCambioPanel(cambio, plan);
+  assert.ok(enviado.tipo === "reemplazar-color" && enviado.codigo === "041", `el panel manda el código del renglón: ${JSON.stringify(enviado)}`);
+  const conCodigo = edicionDesdeCambio(espec, enviado);
+  assert.ok(conCodigo.ok);
+  const hecho = aplicarEdiciones(espec, conCodigo.ediciones).espec;
+  assert.deepEqual(hecho.piezas.map((p) => p.colores[0]!.codigo), ["040", "015", "040"], "solo el azul rey de la columna izquierda");
+  // Por el nombre solo, «azul» son los dos: por eso el renglón manda su código.
+  const porNombre = edicionDesdeCambio(espec, aCambioPanel(cambio));
+  assert.ok(porNombre.ok);
+  assert.deepEqual(aplicarEdiciones(espec, porNombre.ediciones).espec.piezas.map((p) => p.colores[0]!.codigo), ["015", "015", "015"]);
 });
 
 test("el panel: una pieza o un color que no existen, un solo color y la última pieza se dicen con «No pude: …»", () => {

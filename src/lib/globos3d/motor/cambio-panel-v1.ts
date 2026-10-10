@@ -11,6 +11,7 @@ const IdPieza = z.string().regex(/^EST_\d{2}_[A-Z_]+$/);
 const Direccion = z.union([z.literal(1), z.literal(-1)]);
 const Pareja = z.boolean().optional();
 const ColorDicho = z.string().trim().min(1).max(80);
+const CodigoSempertex = z.string().regex(/^\d{3}$/);
 const Medida = z.number().positive().max(100);
 
 export const CambioPanelV1Schema = z.discriminatedUnion("tipo", [
@@ -20,7 +21,8 @@ export const CambioPanelV1Schema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("medidas"), estructuraId: IdPieza, medidas: z.object({ ancho_m: Medida.optional(), alto_m: Medida.optional(), largo_m: Medida.optional() }).strict(), pareja: Pareja }).strict(),
   z.object({ tipo: z.literal("quitar-color"), estructuraId: IdPieza, indice: z.number().int().min(0).max(5), pareja: Pareja }).strict(),
   z.object({ tipo: z.literal("agregar-color"), color: ColorDicho, estructuraIds: z.array(IdPieza).max(MAX_PIEZAS_PLAN).optional() }).strict(),
-  z.object({ tipo: z.literal("reemplazar-color"), color: ColorDicho, nuevo: ColorDicho, estructuraIds: z.array(IdPieza).max(MAX_PIEZAS_PLAN).optional() }).strict(),
+  // `codigo`: el código Sempertex del renglón que se tocó; con él el servidor cambia ese color y no lo que la palabra podría ser.
+  z.object({ tipo: z.literal("reemplazar-color"), color: ColorDicho, codigo: CodigoSempertex.optional(), nuevo: ColorDicho, estructuraIds: z.array(IdPieza).max(MAX_PIEZAS_PLAN).optional() }).strict(),
   z.object({ tipo: z.literal("tamano-todo"), direccion: Direccion }).strict(),
   z.object({ tipo: z.literal("quitar-pieza"), estructuraId: IdPieza }).strict(),
   z.object({ tipo: z.literal("tamano-globos"), estructuraId: IdPieza, direccion: Direccion, pareja: Pareja }).strict(),

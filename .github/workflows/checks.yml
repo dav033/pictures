@@ -78,7 +78,13 @@ jobs:
       - if: ${{ !cancelled() }}
         run: npm run test-motor-guiada-precio
       - if: ${{ !cancelled() }}
+        run: npm run propiedades:test
+        env:
+          PROPIEDADES_CASOS: "12"
+      - if: ${{ !cancelled() }}
         run: npm run test-motor-guiada-integracion
+      - if: ${{ !cancelled() }}
+        run: npm run test-motor-guiada-color-dicho
       - if: ${{ !cancelled() }}
         run: npm run test-motor-guiada-tarjeta-total
       - if: ${{ !cancelled() }}

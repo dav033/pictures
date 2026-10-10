@@ -2,8 +2,9 @@ import { PREFIJO_NO_PUDE } from "@/lib/prefijo-no-pude";
 import { ErrorHerramienta, resolverColorFlexible, resolverColorOrganico } from "../herramientas-escena-colores";
 import { FEMENINAS } from "@/lib/plan/piezas-individuales";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
-import { clasificarColores, plegarTexto } from "@/lib/rag/taxonomy/v2";
-import { coloresDePalabra, nombreClienteDeReferencia, normalizarPesos, type ColorResuelto } from "./colores-espec";
+import { plegarTexto } from "@/lib/rag/taxonomy/v2";
+import { interpretarColor } from "./color-dicho";
+import { nombreClienteDeReferencia, normalizarPesos, type ColorResuelto } from "./colores-espec";
 import type { ColorEspec, EspecClienteV1, PiezaEspec } from "./espec-cliente-v1";
 
 /**
@@ -21,6 +22,8 @@ export type ResultadoEdicion = {
   tocadas: string[];
   /** «No pude: …», en palabras de cliente: la operación no cambió nada y dice por qué (D-023). */
   noAplicado?: string;
+  /** Los «No pude: …» de lo que la operación dejó sin hacer aunque cambió otras piezas (una pieza donde se pregunta cuál color). */
+  sinHacer?: string[];
 };
 
 
@@ -69,15 +72,8 @@ export const MOTIVO_PIEZA_AUSENTE = "no encontré esa pieza en tu plan.";
 
 // --- Colores ----------------------------------------------------------------------------------------------------
 
-/** Un color como lo dice el cliente: el código Sempertex de tres cifras o una palabra del catálogo de colores. */
-export function resolverColorDicho(texto: string): ColorResuelto[] {
-  const limpio = texto.trim();
-  if (/^\d{3}$/.test(limpio)) {
-    const referencia = referenciaPorCodigo(limpio);
-    return referencia ? [{ codigo: referencia.codigo, nombre: nombreClienteDeReferencia(referencia) }] : [];
-  }
-  return coloresDePalabra(limpio);
-}
+/** Un color como lo dice el cliente (el código Sempertex de tres cifras, un nombre de la lámina o una palabra): el que se pone. */
+export const resolverColorDicho = (texto: string): ColorResuelto[] => interpretarColor(texto).compra;
 
 export const nombreDeCodigo = (codigo: string): string => {
   const referencia = referenciaPorCodigo(codigo);
@@ -87,23 +83,8 @@ export const nombreDeCodigo = (codigo: string): string => {
 const minuscula = (texto: string): string => texto.toLocaleLowerCase("es");
 export const nombreColor = (color: Pick<ColorEspec, "nombre">): string => minuscula(color.nombre);
 
-const familiaDe = (texto: string): string | null => clasificarColores(texto).values[0] ?? null;
-
-/**
- * Los lugares donde una pieza lleva el color que dice `ref` (código o palabra): primero el mismo código o el mismo nombre;
- * si la pieza no lo lleva así, los de su misma familia («azul» sirve para un «Fashion Azul Rey»). Vacío si no lo lleva.
- */
-export function indicesDeColor(pieza: Pick<PiezaEspec, "colores">, ref: string): number[] {
-  const limpio = ref.trim();
-  const plegado = plegar(limpio);
-  const exactos = pieza.colores.flatMap((color, indice) => (color.codigo === limpio || plegar(color.nombre) === plegado ? [indice] : []));
-  if (exactos.length) return exactos;
-  const delPedido = resolverColorDicho(limpio).map((color) => color.codigo);
-  const porCodigo = pieza.colores.flatMap((color, indice) => (delPedido.includes(color.codigo) ? [indice] : []));
-  if (porCodigo.length) return porCodigo;
-  const familia = familiaDe(limpio);
-  return familia === null ? [] : pieza.colores.flatMap((color, indice) => (familiaDe(color.nombre) === familia ? [indice] : []));
-}
+/** Un color como se le dice al cliente: el código («040», del panel) por su nombre; lo demás, como lo dijo. */
+export const colorEnPalabras = (dicho: string): string => minuscula(/^\d{3}$/.test(dicho.trim()) ? nombreDeCodigo(dicho.trim()) : dicho.trim());
 
 const TRENZA = new Set(["arco", "columna", "guirnalda"]);
 
