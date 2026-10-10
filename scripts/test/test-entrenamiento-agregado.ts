@@ -104,4 +104,15 @@ prueba("la clasificación nombra cada etapa rota una sola vez y en orden", () =>
   assert.deepEqual(clasificarFallos({ ...HECHOS_SIN_FALLOS, capturaFallida: true, sinDeteccion: true, piezasOtro: 2, errorLectura: true, erroresAgente: 1 }), ["lectura", "medida", "capacidad_faltante", "visor", "agente"]);
 });
 
+prueba("la medida con todos los globos y la de solo los visibles no se promedian entre sí", () => {
+  assert.notEqual(claveComparable(base({ metrica: "visibles" })), claveComparable(base({ metrica: "todos" })));
+  assert.equal(claveComparable(base({})), claveComparable(base({ metrica: "todos" })), "un registro sin etiqueta es de la medida de antes");
+  const filas = agregarPorFoto([
+    base({ iniciadaEn: "2026-10-10T10:00:00.000Z", puntajes: { proporciones: 0.4, colores: null, zonas: null, iou: null } }),
+    base({ iniciadaEn: "2026-10-11T10:00:00.000Z", metrica: "visibles", puntajes: { proporciones: 0.8, colores: null, zonas: null, iou: null } }),
+  ]);
+  assert.equal(filas[0]!.corridas, 1);
+  assert.equal(filas[0]!.puntajes.proporciones, 0.8, "la fila es solo de las corridas de la medida de la última");
+});
+
 console.log(`\n${pruebas} pruebas del agregado del arnés: OK`);

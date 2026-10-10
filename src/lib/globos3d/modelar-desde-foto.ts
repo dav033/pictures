@@ -1,6 +1,7 @@
 import { decidir } from "@/lib/registro/servidor";
 import { compilarLectura } from "./compilar-lectura";
 import { detectarGlobos, type Deteccion } from "./detectar-globos-ia";
+import type { DecisionEscala } from "./escala-por-muebles";
 import { medirConDetecciones } from "./medir-con-detecciones";
 import { idNuevo, type Escena, type NodoEscena } from "./escena";
 import type { LecturaFoto, PiezaLeida } from "./lectura-foto";
@@ -55,8 +56,8 @@ export async function modelarDesdeFoto(foto: FotoLectura, deps: DependenciasMode
     ? detectar(foto).catch((error: unknown): null => { avisos.push(`No se pudieron detectar los globos uno por uno (la lectura va sin medir): ${error instanceof Error ? error.message : String(error)}`); return null; })
     : Promise.resolve(null);
   const [leida, plantillas, deteccion] = await Promise.all([(deps.leer ?? leerFotoConIA)(foto, deps.opciones ?? {}), buscar, detectando]);
-  const medida = deteccion ? medirConDetecciones(leida.lectura, deteccion.globos, deteccion.fondos) : { lectura: leida.lectura, notas: [] };
-  if (deteccion) decidir("regla:foto_medida_con_detecciones", "la lectura de la foto medida con los globos y fondos detectados", { globos: deteccion.globos.length, fondos: deteccion.fondos.length, racimos: deteccion.racimos, notas: medida.notas.length, escalaLeidaCm: leida.lectura.escala.altoImagenCm, escalaMedidaCm: medida.lectura.escala.altoImagenCm });
+  const medida = deteccion ? medirConDetecciones(leida.lectura, deteccion.globos, deteccion.fondos) : { lectura: leida.lectura, notas: [] as string[], escala: undefined };
+  if (deteccion) decidir("regla:foto_medida_con_detecciones", "la lectura de la foto medida con los globos y fondos detectados", datosDeLaMedida(leida.lectura, medida, deteccion));
   const compilada = compilarLectura(medida.lectura);
   if (compilada.decoracionesOmitidas.length) decidir("regla:foto_decoracion_omitida", "decoraciones de la lectura que no se pudieron armar y se omitieron (la pieza se armó sin ellas)", { decoraciones: compilada.decoracionesOmitidas });
   return {
@@ -137,6 +138,14 @@ export function lineaDePiezaLeida(p: PiezaLeida, i: number, altoImagenCm: number
  * El resumen que lee el modelo del agente: qué dice la lectura, qué se armó, qué no, y las plantillas de la biblioteca
  * más parecidas (con su id, para `insertar_de_biblioteca`). `estado` dice si la escena ya se armó o falta llamar la herramienta.
  */
+/** Lo que queda en la auditoría de la medida con las detecciones, con la escala elegida, de dónde sale y si los globos quedaron limitados. */
+export function datosDeLaMedida(leida: LecturaFoto, medida: { lectura: LecturaFoto; notas: string[]; escala?: DecisionEscala }, deteccion: Pick<Deteccion, "globos" | "fondos" | "racimos">) {
+  return {
+    globos: deteccion.globos.length, fondos: deteccion.fondos.length, racimos: deteccion.racimos, notas: medida.notas.length, escalaLeidaCm: leida.escala.altoImagenCm, escalaMedidaCm: medida.lectura.escala.altoImagenCm,
+    escalaFuente: medida.escala?.fuente ?? null, escalaGlobosCm: medida.escala?.globos ?? null, escalaMueblesCm: medida.escala?.muebles ?? null, escalaAcotada: medida.escala?.acotada ?? null,
+  };
+}
+
 export function resumenParaAgente(m: Modelado, estado: string): string {
   const l = m.lectura;
   const lineas = [

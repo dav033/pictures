@@ -1,10 +1,10 @@
 import { LecturaFotoSchema, type AnclaLeida, type ColorLeido, type LecturaFoto, type PiezaLeida } from "./lectura-foto";
 import { coloresConLaEscena, coloresDe, coloresPorEscalonDe, dominantesPorTramo, indiceDeDetectado, repartoDeColores } from "./medir-colores";
 import { ejeMedido, globosDe, largosDelEje, mediana, normalEnPunto, percentil, proyectar, r3, type CajaDetectada, type Globo, type P } from "./medir-geometria";
-import { medirTamanos, repartoDe } from "./medir-tamanos";
+import { formatosPorEscala, medirTamanos, repartoDe } from "./medir-tamanos";
 import type { Escalon } from "./mezcla-lectura";
 import { FONDOS_CON_SUPERFICIE } from "./fondos-familias";
-import { escalaPorMesas, escalaReconciliada } from "./escala-por-muebles";
+import { decidirEscala, escalaPorMuebles, escalasCorroboradas, intervaloPorReferenciasBlandas, type DecisionEscala, type IntervaloEscala } from "./escala-por-muebles";
 import { medirFondos, type FondoDetectado } from "./medir-fondos";
 
 export type { FondoDetectado } from "./medir-fondos";
@@ -247,7 +247,7 @@ function esDeUnFondo(g: Globo, p: PiezaLeida, aspecto: number): boolean {
  * La lectura con sus guirnaldas orgánicas y montones de piso medidos por los globos detectados, la escala de la foto sacada
  * de ellos (si hay con qué) y los fondos en su caja detectada. Pura: misma lectura y mismas detecciones, misma salida.
  */
-export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDetectado[], fondos: readonly FondoDetectado[] = []): { lectura: LecturaFoto; notas: string[] } {
+export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDetectado[], fondos: readonly FondoDetectado[] = []): { lectura: LecturaFoto; notas: string[]; escala?: DecisionEscala } {
   const conFondos = medirFondos(l.piezas, fondos, l.aspecto, l.pisoY);
   const notas = [...conFondos.notas];
   const piezas = [...conFondos.piezas];
@@ -255,6 +255,7 @@ export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDe
   const guirnaldas = l.piezas.map((p, i) => ({ p, i })).filter((x): x is { p: Guirnalda; i: number } => x.p.tipo === "guirnalda_organica");
   const montones = l.piezas.map((p, i) => ({ p, i })).filter((x): x is { p: Monton; i: number } => x.p.tipo === "racimo_piso");
   let escala = l.escala;
+  let decision: DecisionEscala | undefined;
   if ((guirnaldas.length || montones.length) && globos.length) {
     // 1. De quién es cada globo.
     const ejes = guirnaldas.map(({ p }) => ({ eje: p.puntos.map((q) => ({ x: q.x * l.aspecto, y: q.y })) as P[], alcance: Math.max(...p.puntos.map((q) => q.grosor)) * ALCANCE_GUIRNALDA }));
@@ -286,24 +287,44 @@ export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDe
       piezas[i] = m.pieza;
       notas.push(...m.notas);
     });
-    escala = escalaCorregida(l, escalas, notas, escalaPorMesas(fondos, l.piezas, l.aspecto)) ?? l.escala;
+    decision = decidirLaEscala(l, escalas, escalaPorMuebles(fondos, l.piezas, l.aspecto), intervaloPorReferenciasBlandas(fondos, l.piezas, l.aspecto));
+    escala = escalaCorregida(l, decision, notas) ?? l.escala;
+    // Los formatos de cada escalón se pusieron con la escala de los globos: si la política tomó otra, se rehacen con la final (diámetro × escala).
+    // Si la fuente son los globos, la escala final es la suya o, dentro de la banda muerta (`DESVIO_ESCALA`), la leída: los formatos no se tocan (nada se movió de verdad).
+    if (decision && decision.fuente !== "globos" && escala.altoImagenCm !== decision.globos) {
+      guirnaldas.forEach(({ p, i }) => {
+        const pieza = piezas[i] as Guirnalda;
+        if (p.mezcla) piezas[i] = { ...pieza, mezcla: formatosPorEscala(pieza.mezcla ?? p.mezcla, escala.altoImagenCm) as typeof p.mezcla };
+      });
+    }
   }
   const valida = LecturaFotoSchema.safeParse({ ...l, escala, piezas });
   if (!valida.success) {
     const motivos = valida.error.issues.slice(0, 3).map((x) => `${x.path.join(".")}: ${x.message}`).join("; ");
     return { lectura: l, notas: [`La medida con los globos detectados no cumple el esquema de la lectura (${motivos}): la lectura queda como la escribió el lector.`] };
   }
-  return { lectura: valida.data, notas };
+  return { lectura: valida.data, notas, ...(decision ? { escala: decision } : {}) };
 }
 
-/** La escala de la foto que dan las guirnaldas (la mediana), si se aparta más del `DESVIO_ESCALA` de la leída. */
-function escalaCorregida(l: LecturaFoto, escalas: readonly number[], notas: string[], mesas: number | null): LecturaFoto["escala"] | undefined {
+/** La decisión de escala (`decidirEscala`) con la mediana de las guirnaldas y la escala de las piezas de medida conocida, o `undefined` si ninguna guirnalda midió. */
+function decidirLaEscala(l: LecturaFoto, escalas: readonly number[], muebles: number | null, blanda: IntervaloEscala | null): DecisionEscala | undefined {
   if (!escalas.length) return undefined;
-  const deGlobos = Math.round(mediana(escalas));
-  const cm = Math.min(ESCALA_MAXIMA_CM, Math.max(ESCALA_MINIMA_CM, Math.round(escalaReconciliada(deGlobos, mesas, l.escala.altoImagenCm))));
-  if (mesas !== null) notas.push(`Escala: ${deGlobos} cm por los globos y ${Math.round(mesas)} cm por la mesa detectada (de medida conocida): ${cm} cm.`);
-  if (Math.abs(cm - l.escala.altoImagenCm) / l.escala.altoImagenCm <= DESVIO_ESCALA) return undefined;
-  notas.push(`Escala por los globos detectados: ${cm} cm de alto de foto (la leída era ${l.escala.altoImagenCm}).`);
-  return { altoImagenCm: cm, referencia: `${l.escala.referencia} · medida con los globos`.slice(0, 80) };
+  const d = decidirEscala(Math.round(mediana(escalas)), muebles, l.escala.altoImagenCm, escalasCorroboradas(escalas), blanda);
+  return { ...d, cm: Math.min(ESCALA_MAXIMA_CM, Math.max(ESCALA_MINIMA_CM, Math.round(d.cm))) };
 }
 
+const FUENTE_EN_PALABRAS: Readonly<Record<DecisionEscala["fuente"], string>> = {
+  "globos+muebles": "los globos y las piezas de medida conocida", muebles: "las piezas de medida conocida", lectura: "la escala leída", globos: "los globos",
+  globos_acotados: "los globos, limitados a la escala leída", referencia_blanda: "los globos, limitados por pedestales o panel de medida aproximada",
+};
+
+/** La escala de la foto que decidió la política, si se aparta más del `DESVIO_ESCALA` de la leída; las notas dicen de dónde sale y las tres escalas. */
+function escalaCorregida(l: LecturaFoto, d: DecisionEscala | undefined, notas: string[]): LecturaFoto["escala"] | undefined {
+  if (!d) return undefined;
+  const origen = FUENTE_EN_PALABRAS[d.fuente];
+  notas.push(`Escala: ${d.cm} cm de alto de la foto, tomada de ${origen} (globos ${d.globos} cm, piezas de medida conocida ${d.muebles === null ? "ninguna" : `${Math.round(d.muebles)} cm`}, leída ${d.leida} cm).`);
+  if (Math.abs(d.cm - l.escala.altoImagenCm) / l.escala.altoImagenCm <= DESVIO_ESCALA) return undefined;
+  if (d.acotada) notas.push(`Los globos sugerían ${d.globos} cm de alto de la foto, pero ninguna pieza de medida conocida lo confirma${d.fuente === "referencia_blanda" || d.corroborada ? "" : " ni coinciden varias guirnaldas"}: se limitó a ${d.cm} cm (la leída era ${l.escala.altoImagenCm}). Es un límite prudente, no una medida.`);
+  else notas.push(`Escala por los globos detectados: ${d.cm} cm de alto de la foto (la leída era ${l.escala.altoImagenCm}).`);
+  return { altoImagenCm: d.cm, referencia: `${l.escala.referencia} · medida con ${origen}`.slice(0, 80) };
+}

@@ -113,6 +113,25 @@ export type MedidaTamanos = {
 };
 
 /**
+ * Rehace los formatos de cada escalón de una mezcla ya medida con otra escala de la foto: el diámetro medido (fracción del alto de la foto)
+ * por la escala (cm de alto de foto) da los cm reales. Cuando la política de escala (`escala-por-muebles.ts`) no toma la escala de los globos,
+ * los formatos que `medirTamanos` puso con ella (diámetro × escala de los globos) ya no cuadran; el nombrado se respeta si cae en la misma
+ * tolerancia que allí y, si no, se toma el formato de catálogo más cercano a los cm nuevos. Pura.
+ */
+export function formatosPorEscala(mezcla: MezclaLeida, escalaCm: number): MezclaLeida {
+  const salida: MezclaLeida = { ...mezcla };
+  for (const e of ESCALONES) {
+    const d = mezcla[CAMPOS[e].diametro];
+    if (typeof d !== "number" || !(d > 0)) continue;
+    const cm = d * escalaCm;
+    const nombrado = mezcla[CAMPOS[e].formato] as string | undefined;
+    const real = nombrado ? diametroOrganicoCm(nombrado) : null;
+    (salida as Record<string, unknown>)[CAMPOS[e].formato] = real && Math.abs(cm - real) <= Math.max(real * TOLERANCIA_FORMATO_NOMBRADO, HOLGURA_CAJA_CM) ? nombrado : formatoOrganicoPorDiametro(cm);
+  }
+  return salida;
+}
+
+/**
  * Agrupa los globos de una pieza en los escalones que leyó el lector y mide cada uno. Con `renombrar` escribe en la mezcla el
  * diámetro y el formato de cada escalón y saca la escala de la foto (las guirnaldas); sin él solo el reparto (un montón de piso
  * se ve más cerca de la cámara: su tamaño no dice la escala de la foto).

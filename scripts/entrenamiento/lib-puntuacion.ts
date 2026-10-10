@@ -11,18 +11,22 @@ import type { Escena } from "@/lib/globos3d/escena";
 import type { LecturaFoto } from "@/lib/globos3d/lectura-foto";
 import { globosDe } from "@/lib/globos3d/medir-geometria";
 import { armadoDeEscenaEnLaFoto, cajaDeDeteccion } from "../exp/medir-proporciones";
-import { discosDeLaFoto, medirProporciones } from "../exp/lib-proporciones";
+import { discosDeLaFoto, medirProporciones, type Disco } from "../exp/lib-proporciones";
 import { TOLERANCIA_TRAMO } from "../exp/lib-zonas";
 import type { Puntajes } from "./lib-agregado";
 
 export type PuntuacionEscena = {
+  /** Con solo los globos armados que se ven desde la cámara de la foto (`lib-visibilidad.ts`): la medida honesta. */
   puntajes: Puntajes;
-  piezas: { globosFoto: number; globosArmados: number };
+  /** Con TODOS los globos del volumen armado, ocultos incluidos: la medida de antes, para comparar. */
+  puntajesTodos: Puntajes;
+  piezas: { globosFoto: number; globosArmados: number; globosArmadosVisibles: number };
   /** La escena no tiene globos armados: proporciones 0 y clase «escena_vacia». */
   escenaVacia: boolean;
 };
 
 const acotar = (n: number) => Math.min(1, Math.max(0, n));
+const PUNTAJES_CERO: Puntajes = { proporciones: 0, colores: null, zonas: null, iou: 0 };
 
 /** Lanza solo si la foto no tiene globos detectados (no hay verdad contra la que medir). */
 export function puntuarEscena(entrada: { lectura: LecturaFoto; escena: Escena; deteccion: Deteccion }): PuntuacionEscena {
@@ -32,21 +36,17 @@ export function puntuarEscena(entrada: { lectura: LecturaFoto; escena: Escena; d
   const verdad = discosDeLaFoto(globosDe(deteccion.globos, aspecto), fondosFoto);
   if (!verdad.length) throw new Error("La foto no tiene globos detectados: no hay con qué medir las proporciones.");
   const armado = armadoDeEscenaEnLaFoto(escena, lectura);
-  const piezas = { globosFoto: verdad.length, globosArmados: armado.discos.length };
-  if (!armado.discos.length) {
-    return { puntajes: { proporciones: 0, colores: null, zonas: null, iou: 0 }, piezas, escenaVacia: true };
-  }
-  const medida = medirProporciones({
-    foto: verdad, armado: armado.discos, aspecto, fondosFoto, fondosArmados: armado.fondos, mismoFondo: mismaFamiliaDeFondo, esTelon,
-  });
-  return {
-    puntajes: {
+  const piezas = { globosFoto: verdad.length, globosArmados: armado.discos.length, globosArmadosVisibles: armado.visibles.length };
+  if (!armado.discos.length) return { puntajes: PUNTAJES_CERO, puntajesTodos: PUNTAJES_CERO, piezas, escenaVacia: true };
+  const puntajesDe = (discos: readonly Disco[]): Puntajes => {
+    if (!discos.length) return PUNTAJES_CERO;
+    const medida = medirProporciones({ foto: verdad, armado: discos, aspecto, fondosFoto, fondosArmados: armado.fondos, mismoFondo: mismaFamiliaDeFondo, esTelon });
+    return {
       proporciones: medida.puntaje,
       colores: medida.zonasColor === null ? null : 1 - medida.zonasColor,
       zonas: medida.tramo ? 1 - acotar(medida.tramo.error / TOLERANCIA_TRAMO) : null,
       iou: medida.iou,
-    },
-    piezas,
-    escenaVacia: false,
+    };
   };
+  return { puntajes: puntajesDe(armado.visibles), puntajesTodos: puntajesDe(armado.discos), piezas, escenaVacia: false };
 }

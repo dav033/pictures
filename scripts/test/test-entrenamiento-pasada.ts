@@ -88,6 +88,31 @@ await prueba("una pasada completa en seco por el camino del Taller: escena, vuel
   }
 });
 
+await prueba("con 3 vueltas de tope el refino guarda el puntaje de cada vuelta, la mejor escena y la medida de visibles", async () => {
+  red.ajustar({});
+  const contador = new ContadorLlamadas(new CupoGasto(1), 400, "seco");
+  contador.activar();
+  try {
+    const r = await pasadaDeFoto({ ...opciones("images (26).jpg", contador, path.join(tmp, "cache-turnos")), turnos: 3 });
+    const { registro } = r;
+    assert.equal(registro.error, null);
+    assert.equal(registro.metrica, "visibles");
+    assert.equal(registro.turnosMax, 3);
+    assert.ok(registro.turnos >= 1 && registro.turnos <= 3);
+    const turnos = registro.puntajePorTurno ?? [];
+    assert.deepEqual(turnos.map((p) => p.turno), Array.from({ length: registro.turnos + 1 }, (_, k) => k), "el turno 0 (antes de refinar) y cada vuelta");
+    assert.ok(registro.puntajesTodos, "la medida de antes sigue en el registro");
+    assert.ok(typeof registro.turnoConservado === "number" && registro.turnoConservado <= registro.turnos);
+    const conservado = turnos.find((p) => p.turno === registro.turnoConservado)!;
+    assert.equal(registro.puntajes.proporciones, conservado.puntajes.proporciones, "se puntúa la escena de la mejor vuelta");
+    assert.ok(turnos.every((p) => (p.puntajes.proporciones ?? 0) <= (conservado.puntajes.proporciones ?? 0) + 1e-9), "ninguna vuelta puntúa más que la conservada");
+    if (registro.turnos < 3) assert.notEqual(registro.motivoParada, null, "paró antes del tope por un motivo");
+    if (registro.motivoParada === "solo_consulta" || registro.motivoParada === "regresion") assert.equal(registro.convergio, false);
+  } finally {
+    contador.desactivar();
+  }
+});
+
 await prueba("en real la detección se cachea por foto; una detección grabada del seco (clave de antes) no se usa como verdad", async () => {
   red.ajustar({});
   const dir = path.join(tmp, "cache-real");

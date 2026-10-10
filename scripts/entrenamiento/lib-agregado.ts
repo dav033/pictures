@@ -17,6 +17,15 @@ export type Puntajes = {
   iou: number | null;
 };
 
+/** La puntuación de la escena al terminar un turno del asistente (turno 0: la escena que sale de la lectura, antes de refinar). */
+export type PuntajeDeTurno = {
+  turno: number;
+  puntajes: Puntajes;
+  puntajesTodos: Puntajes;
+  /** El turno solo consultó (`ver_escena`…) y no cambió nada; `null` en el turno 0. */
+  soloConsulta: boolean | null;
+};
+
 export type ModoPasada = "seco" | "real";
 export type TransporteArnes = "api" | "cli" | "seco";
 
@@ -37,14 +46,28 @@ export type RegistroPasada = {
   /** Llamadas a la IA hechas por la pasada de esta foto (todas: foto, detección y asistente). */
   llamadas: number;
   deteccionCacheada: boolean;
+  /** Un turno con ediciones que no mejoró la proporción (meseta), o un asistente sin acciones: convergió. Un turno que solo consulta o una regresión no cuentan. */
   convergio: boolean;
+  /** Por qué paró el refino antes del tope (`null`: llegó al tope de vueltas o no hubo refino). Registros viejos: ausente. */
+  motivoParada?: "sin_acciones" | "regresion" | "sin_mejora" | "solo_consulta" | null;
+  /** La vuelta del asistente cuya escena se conserva y se puntúa (0: la de la lectura, antes de refinar). Registros viejos: ausente. */
+  turnoConservado?: number;
+  /** Con qué globos armados se midió el puntaje: `visibles` (los que se ven desde la cámara de la foto) o `todos` (el volumen entero, como antes). Registros viejos: ausente = `todos`. */
+  metrica?: "visibles" | "todos";
+  /** Puntaje final con solo los globos armados que se ven desde la cámara de la foto. */
   puntajes: Puntajes;
-  piezas: { leidas: number; armadas: number; omitidas: number; globosFoto: number; globosArmados: number };
+  /** Puntaje final contando todos los globos del volumen armado (la medida anterior). Registros viejos: ausente. */
+  puntajesTodos?: Puntajes;
+  /** Puntaje de la escena antes de refinar (turno 0) y tras cada vuelta. Registros viejos: ausente. */
+  puntajePorTurno?: PuntajeDeTurno[];
+  piezas: { leidas: number; armadas: number; omitidas: number; globosFoto: number; globosArmados: number; /** Registros viejos: ausente. */ globosArmadosVisibles?: number };
   fallos: ClaseFallo[];
   captura: "pendiente" | "hecha";
   costeUsd: number;
   abortada: string | null;
   error: string | null;
+  /** Cosas que no pararon la pasada pero hay que saber (una escena que no se pudo puntuar y por qué). */
+  avisos?: string[];
 };
 
 export type FilaFoto = {
@@ -96,7 +119,7 @@ export function esCorridaValida(registro: RegistroPasada): boolean {
  * dos corridas del mismo hash.
  */
 export function claveComparable(registro: RegistroPasada): string {
-  const partes = [registro.modo, registro.modelo, registro.transporte, registro.esfuerzo, String(registro.pensamiento), String(registro.turnosMax), registro.commit];
+  const partes = [registro.metrica ?? "todos", registro.modo, registro.modelo, registro.transporte, registro.esfuerzo, String(registro.pensamiento), String(registro.turnosMax), registro.commit];
   if (registro.commit.endsWith(SUFIJO_COMMIT_SUCIO)) partes.push(registro.iniciadaEn);
   return partes.join("|");
 }

@@ -68,8 +68,12 @@ export function leerDeteccionCacheada(directorio: string, clave: string, modo: M
   }
 }
 
-export function guardarDeteccionCacheada(directorio: string, clave: string, deteccion: Deteccion, modo: ModoPasada): void {
+/** Una detección guardada: la de `detectarGlobos` y, desde que se anota, la foto de la que salió (para volver a puntuar sin adivinar a cuál pertenece). */
+export type DeteccionGuardada = Deteccion & { foto?: string };
+
+export function guardarDeteccionCacheada(directorio: string, clave: string, deteccion: Deteccion, modo: ModoPasada, foto?: string): void {
   if (modo !== "real" || deteccion.fallidos > 0 || deteccion.racimos.fallo !== undefined) return;
   mkdirSync(directorio, { recursive: true });
-  writeFileSync(path.join(directorio, `${clave}.json`), JSON.stringify(deteccion));
+  const guardada: DeteccionGuardada = foto ? { ...deteccion, foto } : deteccion;
+  writeFileSync(path.join(directorio, `${clave}.json`), JSON.stringify(guardada));
 }

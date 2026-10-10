@@ -19,7 +19,8 @@ import { clasificarFallos, HECHOS_SIN_FALLOS, type HechosPasada } from "./lib-fa
 import type { ModoPasada, Puntajes, RegistroPasada, TransporteArnes } from "./lib-agregado";
 import type { ContadorLlamadas } from "./lib-contador";
 import { claveDeteccion, guardarDeteccionCacheada, leerDeteccionCacheada } from "./lib-cache-deteccion";
-import { puntuarEscena } from "./lib-puntuacion";
+import { puntuarEscena, type PuntuacionEscena } from "./lib-puntuacion";
+import { refinarEscena, type ResultadoRefino, type RespuestaTurno } from "./lib-refino";
 
 export const MENSAJE_REFINO = "Compara la escena armada con la lectura de la foto y corrige lo que no coincide (tamaños, colores, piezas que faltan o sobran). Si ya coincide, dilo sin cambiar nada.";
 
@@ -44,8 +45,6 @@ export type OpcionesPasada = {
 
 export type ResultadoPasada = { registro: RegistroPasada; escena: Escena | null; topeAlcanzado: boolean };
 
-type RespuestaAsistente = { escena: Escena; respuesta: string; acciones: Array<{ consulta: boolean }> };
-
 const mensajeDe = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export function idConversacionDePasada(corrida: string, nombre: string): string {
@@ -67,7 +66,9 @@ async function ejecutarPasada(o: OpcionesPasada): Promise<ResultadoPasada> {
   const hechos: HechosPasada = { ...HECHOS_SIN_FALLOS };
   const capturado: { modelado?: Modelado; deteccion?: Deteccion } = {};
   let error: string | null = null;
-  let turnosHechos = 0, convergio = false, escena: Escena | null = null;
+  const avisos: string[] = [];
+  let escena: Escena | null = null;
+  let refino: ResultadoRefino | null = null;
   const clave = claveDeteccion({ bytes: o.bytes, modo: o.modo, transporte: o.transporte, modelo: o.modelo, esfuerzo: o.esfuerzo, pensamiento: o.pensamiento, ladoLectura: LADO_MAXIMO_LECTURA });
   const cacheada = leerDeteccionCacheada(o.dirCacheDeteccion, clave, o.modo);
   const detectar = async (foto: Parameters<typeof detectarGlobos>[0]): Promise<Deteccion> => {
@@ -76,7 +77,7 @@ async function ejecutarPasada(o: OpcionesPasada): Promise<ResultadoPasada> {
     // Los fondos y la revisión de racimos tragan sus fallos y devuelven una detección «sin fallidos»: si algo falló o se
     // cortó mientras se detectaba, la detección puede estar incompleta y no se guarda como verdad.
     const limpia = !controlador.signal.aborted && o.contador.paro === null && o.contador.errores === erroresAntes;
-    if (!cacheada && limpia) guardarDeteccionCacheada(o.dirCacheDeteccion, clave, deteccion, o.modo);
+    if (!cacheada && limpia) guardarDeteccionCacheada(o.dirCacheDeteccion, clave, deteccion, o.modo, o.nombre);
     capturado.deteccion = deteccion;
     return deteccion;
   };
@@ -116,40 +117,39 @@ async function ejecutarPasada(o: OpcionesPasada): Promise<ResultadoPasada> {
     error = null;
   }
 
-  let conversacion: Array<{ rol: "usuario" | "asistente"; texto: string }> = modelado
-    ? [{ rol: "usuario", texto: resumenParaAgente(modelado, "foto armada, falta el ajuste del asistente").slice(0, 1500) }]
-    : [];
-  for (let t = 1; modelado && escena && t <= o.turnos; t += 1) {
-    if (!o.contador.margen()) break;
-    try {
-      const cuerpo = { escena, mensaje: MENSAJE_REFINO, historial: conversacion.slice(-8), seleccion: null };
-      const respuesta = await escenaIA(new Request("http://local/api/escena-ia", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(cuerpo), signal: controlador.signal }));
-      if (!respuesta.ok) {
-        hechos.erroresAgente += 1;
-        error = `El asistente respondió HTTP ${respuesta.status} en la vuelta ${t}.`;
-        break;
-      }
-      // La escena del turno pagado se conserva aunque el contador pare justo después (el coste ya está contado).
-      const dato = (await respuesta.json()) as RespuestaAsistente;
-      escena = dato.escena;
-      turnosHechos += 1;
-      conversacion = [...conversacion, { rol: "usuario", texto: MENSAJE_REFINO }, { rol: "asistente", texto: dato.respuesta.slice(0, 1500) }];
-      if (dato.acciones.every((a) => a.consulta)) { convergio = true; break; }
-    } catch (e) {
-      hechos.erroresAgente += 1;
-      error = mensajeDe(e);
-      break;
-    }
+  /** La puntuación de una escena con la detección de la pasada; `null` si no hay detección o no se pudo medir (no para la pasada). */
+  const puntuar = (e: Escena): PuntuacionEscena | null => {
+    if (!modelado || !deteccion) return null;
+    try { return puntuarEscena({ lectura: modelado.lectura, escena: e, deteccion }); } catch (fallo) { avisos.push(`No se pudo puntuar una escena: ${mensajeDe(fallo)}`); return null; }
+  };
+  if (modelado && escena) {
+    refino = await refinarEscena({
+      escena, turnos: o.turnos, mensaje: MENSAJE_REFINO, margen: () => o.contador.margen(), puntuar,
+      historialInicial: [{ rol: "usuario", texto: resumenParaAgente(modelado, "foto armada, falta el ajuste del asistente").slice(0, 1500) }],
+      atender: async (actual, historial): Promise<RespuestaTurno> => {
+        const cuerpo = { escena: actual, mensaje: MENSAJE_REFINO, historial: historial.slice(-8), seleccion: null };
+        const respuesta = await escenaIA(new Request("http://local/api/escena-ia", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(cuerpo), signal: controlador.signal }));
+        if (!respuesta.ok) throw new Error(`El asistente respondió HTTP ${respuesta.status}.`);
+        // La escena del turno pagado se conserva aunque el contador pare justo después (el coste ya está contado).
+        return (await respuesta.json()) as RespuestaTurno;
+      },
+    });
+    escena = refino.escena;
+    hechos.erroresAgente += refino.erroresAgente;
+    error = refino.error ?? error;
   }
 
   let puntajes = PUNTAJES_VACIOS;
-  let globosFoto = 0, globosArmados = 0;
+  let puntajesTodos: Puntajes = PUNTAJES_VACIOS;
+  let globosFoto = 0, globosArmados = 0, globosArmadosVisibles = 0;
   if (modelado && escena) {
     hechos.escenaVacia = escena.nodos.length === 0;
     if (deteccion) {
       try {
         const p = puntuarEscena({ lectura: modelado.lectura, escena, deteccion });
         puntajes = p.puntajes;
+        puntajesTodos = p.puntajesTodos;
+        globosArmadosVisibles = p.piezas.globosArmadosVisibles;
         globosFoto = p.piezas.globosFoto;
         globosArmados = p.piezas.globosArmados;
         if (p.escenaVacia) hechos.escenaVacia = true;
@@ -164,12 +164,12 @@ async function ejecutarPasada(o: OpcionesPasada): Promise<ResultadoPasada> {
   const paro = o.contador.paro;
   const registro: RegistroPasada = {
     foto: o.nombre, modo: o.modo, transporte: o.transporte, modelo: o.modelo, esfuerzo: o.esfuerzo, pensamiento: o.pensamiento, commit: o.commit, iniciadaEn,
-    turnos: turnosHechos, turnosMax: o.turnos, llamadas: o.contador.llamadas - llamadasAntes, deteccionCacheada: cacheada !== null, convergio,
-    puntajes,
-    piezas: { leidas: modelado?.lectura.piezas.length ?? 0, armadas: escena?.nodos.length ?? 0, omitidas: modelado?.omitidas.length ?? 0, globosFoto, globosArmados },
+    turnos: refino?.turnosHechos ?? 0, turnosMax: o.turnos, llamadas: o.contador.llamadas - llamadasAntes, deteccionCacheada: cacheada !== null, convergio: refino?.convergio ?? false,
+    metrica: "visibles", puntajes, puntajesTodos, puntajePorTurno: refino?.puntajePorTurno ?? [], motivoParada: refino?.motivoParada ?? null, turnoConservado: refino?.turnoConservado ?? 0,
+    piezas: { leidas: modelado?.lectura.piezas.length ?? 0, armadas: escena?.nodos.length ?? 0, omitidas: modelado?.omitidas.length ?? 0, globosFoto, globosArmados, globosArmadosVisibles },
     fallos: clasificarFallos(hechos), captura: "pendiente",
     costeUsd: Math.round((o.contador.gastado - gastoAntes) * 1e6) / 1e6,
-    abortada: paro, error,
+    abortada: paro, error, ...(avisos.length ? { avisos } : {}),
   };
   return { registro, escena, topeAlcanzado: paro !== null };
 }

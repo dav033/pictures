@@ -21,6 +21,7 @@ import { HEX_DE_COLOR_DETECTADO } from "../../src/lib/globos3d/medir-colores";
 import { referenciaPorCodigo } from "../../src/lib/plan/referencia-sempertex";
 import { medirConDetecciones, type FondoDetectado, type GloboDetectado } from "../../src/lib/globos3d/medir-con-detecciones";
 import { discosDeLaFoto, medirProporciones, type Caja, type Disco, type FondoMedido } from "./lib-proporciones";
+import { discosVisibles, type DiscoConProfundidad } from "./lib-visibilidad";
 import { camaraNumerica, largoEnPantalla, proyectar } from "../../src/lib/globos3d/proyeccion-foto";
 
 
@@ -31,20 +32,25 @@ const palabraDeCodigo = (codigo: string): string | undefined => {
   return Object.entries(HEX_DE_COLOR_DETECTADO).reduce<{ palabra: string; d: number } | null>((m, [palabra, h]) => { const d = distanciaLab(hex, h); return !m || d < m.d ? { palabra, d } : m; }, null)?.palabra;
 };
 
-/** Lo armado, en unidades de alto de la foto: sus globos como discos y los fondos como cajas. */
-export function armadoEnLaFoto(lectura: LecturaFoto): { discos: Disco[]; fondos: FondoMedido[] } {
+/** Lo armado, en unidades de alto de la foto: sus globos como discos (todos, y `visibles`: los que se ven desde la cámara de la foto) y los fondos como cajas. */
+export type ArmadoEnLaFoto = { discos: Disco[]; visibles: Disco[]; fondos: FondoMedido[] };
+
+export function armadoEnLaFoto(lectura: LecturaFoto): ArmadoEnLaFoto {
   return armadoDeEscenaEnLaFoto(compilarLectura(lectura).escena, lectura);
 }
 
 /** Lo armado de una escena ya hecha (la del asistente, tras sus vueltas), proyectada con la cámara de la foto de la lectura. */
-export function armadoDeEscenaEnLaFoto(escena: Escena, lectura: LecturaFoto): { discos: Disco[]; fondos: FondoMedido[] } {
+export function armadoDeEscenaEnLaFoto(escena: Escena, lectura: LecturaFoto): ArmadoEnLaFoto {
   const camara = camaraNumerica(encuadreDeLectura(lectura), escena.sala);
   const aImagen = (p: { x: number; y: number }) => ({ x: (p.x + camara.aspecto) / 2, y: (1 - p.y) / 2 });
   const armada = armarEscena(escena);
-  const discos = armada.globos.flatMap((g) => {
+  const conProfundidad = armada.globos.flatMap((g): DiscoConProfundidad[] => {
     const p = proyectar(camara, centroDe(g));
-    return p ? [{ ...aImagen(p), r: largoEnPantalla(camara, g.infladoCm / 2, p.prof) / 2, color: palabraDeCodigo(g.codigo) }] : [];
+    return p ? [{ ...aImagen(p), r: largoEnPantalla(camara, g.infladoCm / 2, p.prof) / 2, color: palabraDeCodigo(g.codigo), prof: p.prof, diametroCm: g.infladoCm }] : [];
   });
+  const sinProfundidad = ({ x, y, r, color }: DiscoConProfundidad): Disco => ({ x, y, r, color });
+  const discos = conProfundidad.map(sinProfundidad);
+  const visibles = discosVisibles(conProfundidad).map(sinProfundidad);
   const fondos = armada.porNodo.flatMap((n): FondoMedido[] => {
     const pieza = escena.nodos.find((o) => o.id === n.id)?.pieza;
     if (!pieza || pieza.tipo !== "escenografia" || !pieza.mueble || !Number.isFinite(n.caja.min.x)) return [];
@@ -53,7 +59,7 @@ export function armadoDeEscenaEnLaFoto(escena: Escena, lectura: LecturaFoto): { 
     if (!esquinas.length) return [];
     return [{ id: pieza.mueble.id, caja: { x0: Math.min(...esquinas.map((e) => e.x)), x1: Math.max(...esquinas.map((e) => e.x)), y0: Math.min(...esquinas.map((e) => e.y)), y1: Math.max(...esquinas.map((e) => e.y)) } }];
   });
-  return { discos, fondos };
+  return { discos, visibles, fondos };
 }
 
 export const cajaDeDeteccion = (f: FondoDetectado, aspecto: number): FondoMedido => {
