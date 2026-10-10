@@ -23,6 +23,7 @@ import { mesaConMantel, paredLentejuelas, tapete } from "./escenografia";
 import { conTextoPieza, piezaDeEntrada } from "./mobiliario-pieza";
 import { resolverOtro, type PistaOtro } from "./lectura-otro";
 import { colocarOtro } from "./lectura-otro-colocar";
+import { colocarFiguras, type FiguraPorColocar } from "./figuras-lectura";
 import { acabadoRotuloLeido, avisoDeTexto, limpiarTexto } from "./rotulos";
 import { mesaLeida, mobiliarioLeido, tintaLeida, type MedidaLeida, type MesaLeida } from "./compilar-mobiliario";
 import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
@@ -46,7 +47,8 @@ export { codigoDeColor } from "./colores-lectura";
  *   Sempertex; si el nombre no se encuentra, el más parecido por el hex medido. El confeti va en Cristal (390).
  * - Profundidad (z): los fondos pegados a la pared, las guirnaldas en la pared, las columnas un poco delante y lo de
  *   piso (mesa, pedestales, globos sueltos) más adelante.
- * Lo que no es del taller (`otro`) no se arma: queda en `omitidas`.
+ * Lo que no es del taller (`otro`) no se arma y queda en `omitidas`, salvo lo que el taller tiene con otro nombre (un mueble del catálogo,
+ * `lectura-otro.ts`) o arma como figura (calabazas, rizos, flores de globos, un número relleno de globos: `figuras-lectura.ts`).
  */
 export type EscenaCompilada = {
   escena: Escena; notas: string[]; omitidas: string[];
@@ -152,6 +154,8 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
   const sobreMesa: SobreMesaPendiente[] = [];
   // Las piezas del catálogo que la foto escribió como «otro» esperan a que esté todo lo demás: así caen en un hueco, no delante de la estructura.
   const otrosPorColocar: Array<{ indice: number; descripcion: string; entrada: FondoCatalogo; pista: PistaOtro }> = [];
+  const figurasPorColocar: FiguraPorColocar[] = [];
+  const otrosPuestos = new Set<string>();
   const montones: string[] = [];
   const montonDePieza = new Map<number, string>();
   const corazones: Array<{ pieza: CorazonLeido; indice: number }> = [];
@@ -368,6 +372,7 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         // Un nombre del catálogo se arma con su pieza (más abajo, `colocarOtros`); el fondo sin pieza no cuenta; lo demás queda pendiente.
         const r = resolverOtro(p.descripcion);
         if (r.tipo === "escenografia") { notas.push(`Pieza ${i + 1} (otro): «${p.descripcion}» es fondo de la foto, sin pieza del taller.`); return; }
+        if (r.tipo === "figura") { figurasPorColocar.push({ indice: i, descripcion: p.descripcion, figuras: r.figuras, lugar: { lado: r.lado, profundidad: r.profundidad } }); return; }
         const entrada = r.tipo === "catalogo" ? entradaDeCatalogo(r.id) : undefined;
         if (r.tipo !== "catalogo" || !entrada) { omitidas.push(p.descripcion); return; }
         if (leidosComoFondo.has(entrada.id)) { notas.push(`Pieza ${i + 1} (otro): «${p.descripcion}» ya está leída como ${entrada.nombre}: no se añade otra.`); return; }
@@ -382,15 +387,14 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
     // Si la foto trae un pastel y ninguna mesa, la primera mesa leída como «otro» es la que lo sostiene: va bajo el pastel, donde la foto lo pone.
     const hayMesaLeida = l.piezas.some((q) => q.tipo === "fondo" && entradaDeCatalogo(q.id)?.grupo === "mesa");
     let pastelSinMesa = sobreMesa.length > 0 && !hayMesaLeida ? sobreMesa[0]!.medida.xCm : undefined;
-    const puestos = new Set<string>();
     for (const { indice, descripcion, entrada, pista } of otrosPorColocar) {
       try {
         const pieza = piezaDeEntrada(entrada);
         const esMesa = entrada.grupo === "mesa" && !(entrada.clase === "mueble" && entrada.asientos);
         const xFotoCm = esMesa ? pastelSinMesa : undefined;
-        const sitio = colocarOtro(escena, entrada, medidasDePieza(pieza), { ...pista, ...(xFotoCm !== undefined ? { xFotoCm } : {}) }, puestos);
+        const sitio = colocarOtro(escena, entrada, medidasDePieza(pieza), { ...pista, ...(xFotoCm !== undefined ? { xFotoCm } : {}) }, otrosPuestos);
         escena = sitio.escena;
-        puestos.add(poner(entrada.id.replace(/_/g, "-"), entrada.nombre, pieza, sitio.colocacion));
+        otrosPuestos.add(poner(entrada.id.replace(/_/g, "-"), entrada.nombre, pieza, sitio.colocacion));
         if (xFotoCm !== undefined) pastelSinMesa = undefined;
         const lado = LADO_DICHO[pista.lado];
         notas.push(`Pieza ${indice + 1} (otro): «${descripcion}» es ${entrada.nombre} del catálogo: su color y su medida son los del catálogo, no los de la foto${xFotoCm !== undefined ? "; va bajo el pastel de la foto" : lado ? `; va ${lado}` : ""}${pista.cantidad > 1 ? `; la foto dice ${pista.cantidad} y se armó una` : ""}. Ajústala.`);
@@ -402,6 +406,7 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
   }
 
   colocarOtros();
+  escena = colocarFiguras(escena, figurasPorColocar, otrosPuestos, notas, omitidas);
   escena = ponerSobreMesas(escena, sobreMesa, notas, omitidas);
   escena = montonesDentroDeLaSala(escena, montones, notas);
   // Los corazones: en el montón de piso que los tiene debajo (por su x), delante de su centro, y si no, a la profundidad de siempre.

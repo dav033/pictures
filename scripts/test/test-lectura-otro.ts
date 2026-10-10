@@ -2,7 +2,8 @@
  * Piezas leídas como `otro` (`lectura-otro.ts`): lo que el taller tiene con otro nombre se arma con su pieza del catálogo SOLO si el
  * sustantivo principal lo dice con exactitud (una mesa de postres, una mesa alta, unos pedestales, un marco de tela); un estante, unos
  * cupcakes, unos dulces o unas cajas de regalo no son una mesa ni un carrito. El fondo de la foto sin pieza (ventanales, césped, deck)
- * no cuenta; lo que el taller no sabe armar (mariposas, muñecos, globos sueltos) sigue pendiente. Las descripciones son las 61 que
+ * no cuenta; lo que el taller arma como figura (calabazas, un número relleno de globos: `test-figuras-lectura.ts`) o es un arreglo de pampas en el
+ * piso (el jarrón del catálogo) se arma; lo que no sabe armar (mariposas, muñecos, globos sueltos) sigue pendiente. Las descripciones son las 61 que
  * devolvió el lector en las 30 fotos de las corridas 2026-10-10T09-30-37 y T09-56-24 (sin llamadas de pago).
  * - la clasificación de cada una, y las reglas que la reseña pidió (falsos positivos, superficies, «:» como separador);
  * - una lectura con esas piezas compila: las del catálogo salen como nodos (con un aviso de que su color y su medida son los del
@@ -38,17 +39,17 @@ const CASOS: ReadonlyArray<readonly [string, ResolucionOtro["tipo"], string?]> =
   ["mesa alta dorada de tapa redonda con bandeja de dulces y cupcakes sobre base blanca", "catalogo", "mesa_coctel"],
   ["dos cajas blancas de regalo con moños de borlas sobre la mesa", "pendiente"],
   ["arcoíris de cañas o madera con borlas de macramé colgado de la pared a la izquierda", "pendiente"],
-  ["número 1 gigante tipo mosaico (caja blanca) lleno de globos rosa, malva y verde con flores y cintas rosas", "pendiente"],
-  ["número 6 gigante tipo mosaico (caja blanca) lleno de globos verde menta, rosa y blancos con flores", "pendiente"],
+  ["número 1 gigante tipo mosaico (caja blanca) lleno de globos rosa, malva y verde con flores y cintas rosas", "figura"],
+  ["número 6 gigante tipo mosaico (caja blanca) lleno de globos verde menta, rosa y blancos con flores", "figura"],
   ["cortina blanca drapeada al fondo", "pendiente"],
   ["caballete de madera tipo escalera que sostiene el letrero", "pendiente"],
   ["mesa redonda de alambre dorado con tapa blanca", "catalogo", "mesa_hexagonal"],
   ["florero rosado con flores y ramas a la izquierda", "escenografia"],
   ["pequeños dulces o cupcakes rosados sobre el pedestal bajo", "pendiente"],
-  ["pampas beige y crema con rosas blancas en el piso, al pie del aro", "pendiente"],
+  ["pampas beige y crema con rosas blancas en el piso, al pie del aro", "catalogo", "jarron_pampas"],
   ["dos columnas de acrílico transparente con globos blancos, blush y nude dentro, a la izquierda", "pendiente"],
   ["jarrón de piedra con pampas, flores blancas y rosas, arriba a la izquierda", "catalogo", "jarron_pampas"],
-  ["arreglo de flores rosas, pampas y ramas secas apoyado en el piso al pie de la guirnalda", "pendiente"],
+  ["arreglo de flores rosas, pampas y ramas secas apoyado en el piso al pie de la guirnalda", "catalogo", "jarron_pampas"],
   ["esferas doradas colgantes y ramas secas oscuras en el techo", "pendiente"],
   ["puertas-ventanal blancas de vidrio al fondo, con persianas a los lados", "escenografia"],
   ["plantas verdes y arbustos al fondo del patio, y hierbas altas a la derecha", "escenografia"],
@@ -75,7 +76,7 @@ const CASOS: ReadonlyArray<readonly [string, ResolucionOtro["tipo"], string?]> =
   ["murciélago negro de foil arriba a la izquierda", "pendiente"],
   ["gato negro de foil arriba a la derecha", "pendiente"],
   ["figura negra de foil con cara (gato o calabaza) al centro, abajo, y figura crema de foil cerca", "pendiente"],
-  ["dos calabazas de Halloween (jack-o-lantern) en el piso, a la izquierda", "pendiente"],
+  ["dos calabazas de Halloween (jack-o-lantern) en el piso, a la izquierda", "figura"],
   ["letras doradas «...thday» en la pared a la izquierda, cortadas por el borde de la foto", "pendiente"],
   ["distintivo negro con logo pequeño sobre la columna, a la izquierda", "pendiente"],
   ["muro denso de globos blancos, grises, negros, dorados y plateados cromados, sin estructura visible", "pendiente"],
@@ -86,7 +87,7 @@ for (const [descripcion, tipo, id] of CASOS) {
   assert.equal(r.tipo, tipo, `«${descripcion}»: ${JSON.stringify(r)}`);
   if (r.tipo === "catalogo") assert.equal(r.id, id, `«${descripcion}» → ${r.id}`);
 }
-console.log(`  ✓ ${CASOS.length} descripciones de las 30 lecturas se clasifican como debe (${CASOS.filter((c) => c[1] === "catalogo").length} del catálogo, ${CASOS.filter((c) => c[1] === "escenografia").length} de fondo)`);
+console.log(`  ✓ ${CASOS.length} descripciones de las 30 lecturas se clasifican como debe (${CASOS.filter((c) => c[1] === "catalogo").length} del catálogo, ${CASOS.filter((c) => c[1] === "figura").length} figuras, ${CASOS.filter((c) => c[1] === "escenografia").length} de fondo)`);
 
 // Falsos positivos de la reseña: el sustantivo principal decide, no lo que sale después ni lo que hay encima.
 const NO_COMO: ReadonlyArray<readonly [string, ResolucionOtro["tipo"], string]> = [

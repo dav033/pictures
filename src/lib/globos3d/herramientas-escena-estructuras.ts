@@ -9,8 +9,9 @@ import {
 } from "./organico";
 import { INFLADOS_ORGANICOS, opcionesArcoRectangular, opcionesAroOrganico } from "./estructuras-organicas";
 import { COLUMNA_QUINCE_AZUL } from "./organico-presets";
-import { CONTORNOS_PREDEFINIDOS, type ColoresForma, type ContornoPredefinido, type OpcionesForma } from "./formas";
-import type { OpcionesLetras, TecnicaLetras } from "./letras";
+import { CONTORNOS_PREDEFINIDOS, type ColoresForma, type ContornoForma, type ContornoPredefinido, type OpcionesForma } from "./formas";
+import { normalizarTexto, type OpcionesLetras, type TecnicaLetras } from "./letras";
+import { contornoDeTexto } from "./contorno-texto";
 import { CARACTERES_METALIZADO, COLORES_METALIZADO, PULGADAS_METALIZADO, type ColorMetalizado, type FormaMetalizado } from "./metalizados";
 import { MURALES_PREDEFINIDOS } from "./murales";
 import { TECHOS_PREDEFINIDOS } from "./techo";
@@ -26,7 +27,7 @@ import { recolorearConPaleta } from "./herramientas-escena-recolor";
  * **Estructuras que la IA del taller 3D puede crear de cero con parámetros** (además de columna, arco, arco
  * orgánico, guirnalda, pared de malla y decoración, que están en `herramientas-escena.ts`): columna orgánica (recta o
  * inclinada), guirnalda orgánica, semiarco orgánico, aro orgánico, marco orgánico (arco rectangular), pared de
- * trenzas, formas de globos (corazón, estrella, nube… rellenas; esfera; cono), letras y números de globos,
+ * trenzas, formas de globos (corazón, estrella, nube… rellenas, o un número o una letra relleno de globos; esfera; cono), letras y números de globos,
  * metalizados (foil), murales, decoraciones de techo, palmeras/árboles y el globo suelto. Cada una con sus medidas
  * validadas contra `RANGOS_ESTRUCTURA`, colores oficiales (código o nombre, con acabado) y, en las orgánicas, pesos
  * por color y tamaños de globo. También: escalar y ajustar una pieza orgánica que ya existe (la que viene de la
@@ -339,12 +340,14 @@ function coloresForma(codigos: readonly string[], pesos: readonly number[] | und
 const inflado = (formatoId: string) => (formatoPorId(formatoId) ?? fallar(`El formato «${formatoId}» no existe.`)).infladoDecoracionCm;
 
 function crearForma(p: PedidoEstructura, notas: string[]): { pieza: Pieza; nombre: string; lugar: LugarPieza } {
+  // Con texto y sin figura, la forma es ese número o esa letra rellenos de globos (de pie en el piso).
+  const deTexto = p.texto !== undefined && p.figura === undefined;
   const figura = (p.figura ?? "corazon") as (typeof FIGURAS)[number];
   if (!(FIGURAS as readonly string[]).includes(figura)) fallar(`La figura «${p.figura}» no existe: ${FIGURAS.join(", ")}.`);
   const pedidos = pedidosCon(p) ?? ["rojo"];
   const resolver = (formatos: string[]) => [...new Set(pedidos.map((c) => resolverColorFlexible(c, formatos, notas)))];
   let forma: OpcionesForma;
-  let lugar: LugarPieza = "pared";
+  let lugar: LugarPieza = deTexto ? "piso" : "pared";
   if (figura === "esfera") {
     const formatoId = p.formato ?? "R-12";
     forma = { clase: "esfera", diametroCm: enRango(p.ancho_cm ?? p.alto_cm ?? 70, RANGOS_ESTRUCTURA.esfera.diametro_cm, "diámetro (ancho_cm)"), globo: { formatoId, infladoCm: inflado(formatoId) }, colores: coloresForma(resolver([formatoId]), p.pesos) };
@@ -355,7 +358,9 @@ function crearForma(p: PedidoEstructura, notas: string[]): { pieza: Pieza; nombr
     forma = { clase: "cono", altoCm: enRango(p.alto_cm ?? 120, RANGOS_ESTRUCTURA.cono.alto_cm, "alto_cm"), tecnica: "anillos", formatoId, infladoBaseCm: infl, infladoPuntaCm: r0(infl * 0.68), globosBase: 6, globosPunta: 4, colores: coloresForma(resolver([formatoId]), p.pesos) };
     lugar = "piso";
   } else {
-    const contorno = { tipo: "predefinido" as const, id: figura, anchoCm: enRango(p.ancho_cm ?? 120, RANGOS_ESTRUCTURA.forma.ancho_cm, "ancho_cm"), altoCm: enRango(p.alto_cm ?? p.ancho_cm ?? 110, RANGOS_ESTRUCTURA.forma.alto_cm, "alto_cm") };
+    const contorno: ContornoForma = deTexto
+      ? contornoDeTexto(p.texto!, enRango(p.alto_cm ?? 120, RANGOS_ESTRUCTURA.forma.alto_cm, "alto_cm"), RANGOS_ESTRUCTURA.forma.ancho_cm[1])
+      : { tipo: "predefinido", id: figura, anchoCm: enRango(p.ancho_cm ?? 120, RANGOS_ESTRUCTURA.forma.ancho_cm, "ancho_cm"), altoCm: enRango(p.alto_cm ?? p.ancho_cm ?? 110, RANGOS_ESTRUCTURA.forma.alto_cm, "alto_cm") };
     const tecnica = p.tecnica ?? "celdas";
     if (tecnica === "malla") {
       const formatoId = p.formato ?? "LOL-12";
@@ -363,13 +368,13 @@ function crearForma(p: PedidoEstructura, notas: string[]): { pieza: Pieza; nombr
       forma = { clase: "rellena", contorno, tecnica: { tipo: "malla", formatoId, infladoCm: inflado(formatoId), union: { infladoCm: 10, codigo: "005" } }, colores: coloresForma(resolver([formatoId]), p.pesos) };
     } else if (tecnica === "organico") {
       const codigos = coloresOrganicosPedidos(pedidos, p.pesos, notas);
-      forma = { clase: "rellena", contorno, tecnica: { tipo: "organico", radioCm: 16, mezcla: { "R-12": 1, "R-5": 2 }, semilla: 9 }, colores: { codigos: codigos.map((c) => c.codigo), patron: codigos.length > 1 ? "mezcla" : "un_color", ...(codigos.length > 1 ? { pesos: codigos.map((c) => c.peso), semilla: 9 } : {}) } };
+      forma = { clase: "rellena", contorno, tecnica: { tipo: "organico", radioCm: contorno.tipo === "texto" ? contorno.grosorCm / 2 : 16, mezcla: { "R-12": 1, "R-5": 2 }, semilla: 9 }, colores: { codigos: codigos.map((c) => c.codigo), patron: codigos.length > 1 ? "mezcla" : "un_color", ...(codigos.length > 1 ? { pesos: codigos.map((c) => c.peso), semilla: 9 } : {}) } };
     } else if (tecnica === "celdas") {
       const formatoId = p.formato ?? "R-9";
       forma = { clase: "rellena", contorno, tecnica: { tipo: "celdas", formatoId, infladoCm: inflado(formatoId), celda: "tresbolillo" }, colores: coloresForma(resolver([formatoId]), p.pesos) };
     } else return fallar(`Una forma se rellena con celdas, malla u organico (no «${tecnica}»).`);
   }
-  const nombre = figura === "esfera" ? "Esfera de globos" : figura === "cono" ? "Cono de globos" : `${CONTORNOS_PREDEFINIDOS.find((c) => c.id === figura)?.nombre ?? "Forma"} de globos`;
+  const nombre = figura === "esfera" ? "Esfera de globos" : figura === "cono" ? "Cono de globos" : deTexto ? `«${normalizarTexto(p.texto!.trim())}» de globos` : `${CONTORNOS_PREDEFINIDOS.find((c) => c.id === figura)?.nombre ?? "Forma"} de globos`;
   return { pieza: { tipo: "forma", forma }, nombre, lugar };
 }
 

@@ -15,9 +15,20 @@ export function resumirPiezas(piezas: readonly unknown[]): PiezaResumida[] {
   });
 }
 
-/** Los nodos de la escena con el id del mueble o fondo del catálogo con que se armó cada uno (`pieza.mueble.id`), si lo tiene. */
-export function resumirNodos(escena: { nodos: ReadonlyArray<{ id: string; pieza: { tipo: string; mueble?: { id?: string } } }> }): NodoResumido[] {
-  return escena.nodos.map((nodo) => ({ id: nodo.id, tipo: nodo.pieza.tipo, ...(typeof nodo.pieza.mueble?.id === "string" ? { muebleId: nodo.pieza.mueble.id } : {}) }));
+/** ¿La forma (la de una pieza `forma`; en un arco `forma` es otra cosa) rellena el contorno de un texto, un número o una letra? */
+function dibujaTexto(forma: unknown): boolean {
+  if (typeof forma !== "object" || forma === null || !("contorno" in forma)) return false;
+  const { contorno } = forma;
+  return typeof contorno === "object" && contorno !== null && "tipo" in contorno && contorno.tipo === "texto";
+}
+
+/** Los nodos de la escena con el id del mueble o fondo del catálogo con que se armó cada uno (`pieza.mueble.id`), si lo tiene, y si es una forma que dibuja un número o una letra. */
+export function resumirNodos(escena: { nodos: ReadonlyArray<{ id: string; pieza: { tipo: string; mueble?: { id?: string }; forma?: unknown } }> }): NodoResumido[] {
+  return escena.nodos.map((nodo) => ({
+    id: nodo.id, tipo: nodo.pieza.tipo,
+    ...(typeof nodo.pieza.mueble?.id === "string" ? { muebleId: nodo.pieza.mueble.id } : {}),
+    ...(nodo.pieza.tipo === "forma" && dibujaTexto(nodo.pieza.forma) ? { contorno: "texto" as const } : {}),
+  }));
 }
 
 export function evidenciaDePasada(entrada: { piezas: readonly unknown[]; escena: Parameters<typeof resumirNodos>[0]; omitidas: readonly string[]; erroresHerramientas: readonly string[] }): EvidenciaCapacidad {

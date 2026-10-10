@@ -12,15 +12,23 @@
  *   «piso con tapete»), y un «muro de globos» o una «pared de flores» no son fondo. Un florero es fondo con sus flores y sus ramas, no
  *   con globos. Si después del fondo nombra una pieza del catálogo («pared blanca, mesa de postres a la izquierda», «ventanales, césped y
  *   una mesa de regalos»), es esa pieza.
- * - `pendiente`: el taller no la sabe armar (mariposas, flores de papel, muñecos, globos sueltos…): capacidad que falta.
+ * - `figura`: un adorno que el taller arma con piezas que ya tiene (`lectura-otro-figura.ts`): calabazas, espirales y rizos, flores de
+ *   globos, un número o una letra rellenos de globos. Solo si TODO lo que dice la descripción se reconoce.
+ * - `pendiente`: el taller no la sabe armar (mariposas, globos de foil con forma, flores de papel, muñecos, plantas…): capacidad que falta.
  * El sustantivo principal es la primera palabra del tramo antes de la primera coma, dos puntos o preposición («cupcakes» en «cupcakes
  * sobre el pedestal»). Una descripción que EMPIEZA con una preposición («sobre el pedestal, un pastel») no nombra la pieza.
  * Además de qué es, devuelve el lado y la profundidad que nombra («a la izquierda», «al fondo») y cuántas dice («dos mesas»).
  */
 
+import { DETERMINANTES, NUMEROS, figurasDeOtro, type FiguraOtro } from "./lectura-otro-figura";
+
 export type LadoOtro = -1 | 0 | 1;
 export type PistaOtro = { lado: LadoOtro; profundidad: "fondo" | "delante" | null; cantidad: number };
-export type ResolucionOtro = ({ tipo: "catalogo"; id: string } & PistaOtro) | { tipo: "escenografia" } | { tipo: "pendiente" };
+export type ResolucionOtro =
+  | ({ tipo: "catalogo"; id: string } & PistaOtro)
+  | ({ tipo: "figura"; figuras: readonly FiguraOtro[] } & Pick<PistaOtro, "lado" | "profundidad">)
+  | { tipo: "escenografia" }
+  | { tipo: "pendiente" };
 type Clase = { tipo: "catalogo"; id: string } | { tipo: "escenografia" } | { tipo: "pendiente" };
 
 const PENDIENTE: Clase = { tipo: "pendiente" };
@@ -29,10 +37,8 @@ const ESCENOGRAFIA: Clase = { tipo: "escenografia" };
 /** Sin acentos ni mayúsculas, para comparar. */
 const normal = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
-const NUMEROS: Readonly<Record<string, number>> = { un: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6 };
 /** Lo que ya es un juego (tres pedestales, tres mesas nido): «tres» no son tres juegos. */
 const JUEGOS = new Set(["pedestales", "mesas_nido_hexagonales"]);
-const DETERMINANTES = /^(?:(?:el|la|los|las|un|una|unos|unas|dos|tres|cuatro|cinco|seis|\d+)\s+)+/;
 const ADJETIVO_ANTES = /^(?:peque[nñ][oa]s?|gran|grandes?)\s+/;
 const PREPOSICION_INICIAL = /^(?:sobre|encima|en|dentro|detras|tras|bajo|delante|cerca|al|a|por|junto|entre|hacia|con|sin|de|del)\b/;
 /** Donde acaba el nombre: coma, dos puntos, punto y coma o paréntesis. */
@@ -45,6 +51,10 @@ const FIN_DE_NOMBRE = new RegExp(`\\s(?:con|${LUGARES})\\b`);
 /** Lo que un fondo de foto puede ser (la primera palabra) y las palabras que lo acompañan sin dejar de ser fondo. */
 const FONDO = /^(?:ventanal(?:es)?|ventanas?|puertas?|persianas?|cesped|pasto|deck|cercas?|casas?|cielo|fachada|jardin|patio|plantas?|arbustos?|hierbas?|floreros?|pared(?:es)?|muros?|piso|suelo|iluminacion)$/;
 const ACOMPANA_FONDO = /^(?:y|e|o|u|de|del|la|el|los|las|fondo|madera|vidrio|cristal|ladrillos?|piedra|concreto|cemento|yeso|listones|tablones|(?:blanc|negr|gris|verd|dorad|platead|rosad|morad|amarill|naranj|roj|clar|oscur|alt|baj|grand|larg|anch|pequen)[oa]s?|verdes?|grandes?|azul(?:es)?|cafe|marron|beige|crema|lila|rosa|natural(?:es)?)$/;
+/** Pampas con globos, o sobre, entre o en la guirnalda (un arreglo de globos con pampas): follaje o globos de la estructura, no el jarrón del piso, que no lleva globos. */
+const PAMPAS_CON_GLOBOS = /\bglobos?\b|\b(?:sobre|entre|dentro de|de|en)\s+(?:la |las |los |el )?guirnaldas?\b/;
+/** «Al pie de la guirnalda» o «al pie de los globos» dice dónde está el arreglo (en el piso), no que lleve globos. */
+const AL_PIE_DE_LA_ESTRUCTURA = /\bal pie de\s+(?:la |las |los |el )?(?:guirnaldas?|globos?)\b/g;
 /** Una superficie: lo que importa es lo que lleva («pared de lentejuelas», «piso con tapete»). */
 const SUPERFICIE = /^(?:pared(?:es)?|muros?|piso|suelo)$/;
 /** Lo que un florero lleva sin dejar de ser fondo (el arreglo entero). */
@@ -90,6 +100,8 @@ function idDelCatalogo({ cabeza, util, clausula }: { cabeza: string; util: strin
     case "alfombra": case "alfombras": return dice(/\bredond[oa]s?\b/) && !CON_LETRAS.test(completa) ? "alfombra_redonda" : null;
     case "silla": case "sillas": return dice(/\btapiz/) ? "silla_moderna" : null;
     case "jarron": case "jarrones": case "florero": case "floreros": return /\bpampas?\b/.test(completa) ? "jarron_pampas" : null;
+    // Un arreglo de pampas en el piso («pampas con flores al pie del arco») es el jarrón de pampas del catálogo; entre los globos o en la guirnalda son follaje.
+    case "pampas": case "pampa": case "arreglo": case "arreglos": return /\bpampas?\b/.test(completa) && /\b(?:en el (?:piso|suelo)|al pie)\b/.test(completa) && !PAMPAS_CON_GLOBOS.test(completa.replace(AL_PIE_DE_LA_ESTRUCTURA, " ")) ? "jarron_pampas" : null;
     case "panel": case "paneles": return dice(/\bde lentejuelas\b/) ? "lentejuelas" : null;
     case "lentejuelas": return dice(/\b(?:pared(?:es)?|panel(?:es)?|muros?|telon(?:es)?)\b/, util) || /^(?:pared(?:es)?|muros?)\b/.test(completa) || /\b(?:en|de) (?:la )?pared\b|\b(?:de|como) fondo\b/.test(clausula) ? "lentejuelas" : null;
     case "tapete": case "tapetes":
@@ -173,5 +185,9 @@ function pistaDe(completa: string, id: string): PistaOtro {
 export function resolverOtro(descripcion: string): ResolucionOtro {
   const texto = normal(descripcion);
   const r = clasificarDescripcion(texto);
-  return r.tipo === "catalogo" ? { ...r, ...pistaDe(texto, r.id) } : r;
+  if (r.tipo === "catalogo") return { ...r, ...pistaDe(texto, r.id) };
+  const figuras = r.tipo === "pendiente" ? figurasDeOtro(texto) : null;
+  if (!figuras) return r;
+  const { lado, profundidad } = pistaDe(texto, "");
+  return { tipo: "figura", figuras, lado, profundidad };
 }

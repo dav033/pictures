@@ -5,14 +5,15 @@
  * la pone, y la familia de la clave dice qué clase de estructura falta. Comparar por clave y no por familia entera evita que sobre de
  * una cosa (las palabras de un metalizado son varios nodos) y tape lo que falta de otra.
  */
+import type { FiguraOtro } from "@/lib/globos3d/lectura-otro-figura";
 
 export const FAMILIAS = ["arco", "columna", "guirnalda", "pared", "figura", "mueble_fondo"] as const;
 export type FamiliaEstructura = (typeof FAMILIAS)[number];
 
 /** Una pieza de la lectura reducida a lo que la comparación necesita (`tipo` y, según el tipo, `id` de fondo o `descripcion` de un «otro»). */
 export type PiezaResumida = { tipo: string; id?: string; descripcion?: string };
-/** Un nodo de la escena: su id, el tipo de su pieza y, si es un mueble o un fondo del catálogo, el id con que se armó. */
-export type NodoResumido = { id: string; tipo: string; muebleId?: string };
+/** Un nodo de la escena: su id, el tipo de su pieza y, si es un mueble o un fondo del catálogo, el id con que se armó; y `contorno: "texto"` si es una forma rellena que dibuja un número o una letra. */
+export type NodoResumido = { id: string; tipo: string; muebleId?: string; contorno?: "texto" };
 
 export const FONDOS_DE_ARCO: ReadonlySet<string> = new Set(["arcos_chiara", "aro_metalico", "aro_hexagonal", "arco_metalico"]);
 export const FONDOS_DE_COLUMNA: ReadonlySet<string> = new Set(["columna_griega"]);
@@ -45,12 +46,16 @@ export function clavePedida(pieza: PiezaResumida): string | null {
   }
 }
 
+/** Lo que una figura que la lectura escribió como «otro» le pide a la escena: la decoración de la biblioteca con que se arma, o una forma rellena (el número o la letra). */
+export const clavePedidaDeFigura = (figura: FiguraOtro): string => (figura.clase === "decoracion" ? `decoracion:${figura.id}` : "forma:texto");
+
 /** Lo que un nodo de la escena pone. Una guirnalda se puede rearmar como arco orgánico: ambos son la forma orgánica que la lectura llama guirnalda. */
-export function clavePuesta({ id, tipo, muebleId }: NodoResumido): string | null {
+export function clavePuesta({ id, tipo, muebleId, contorno }: NodoResumido): string | null {
   switch (tipo) {
     case "guirnalda": case "arco_organico": return "guirnalda";
     case "columna": return "columna";
     case "metalizado": return "metalizado";
+    case "forma": return contorno === "texto" ? "forma:texto" : "forma";
     case "decoracion": return `decoracion:${baseDeId(id)}`;
     case "escenografia": return `fondo:${muebleId ?? baseDeId(id)}`;
     case "organico": {

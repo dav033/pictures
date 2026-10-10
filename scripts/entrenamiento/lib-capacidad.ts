@@ -6,7 +6,7 @@
  * viejas, que no traen detalle, se siguen agrupando bajo ella. Puro: recibe la evidencia ya reunida.
  */
 import { resolverOtro } from "@/lib/globos3d/lectura-otro";
-import { clavePedida, clavePuesta, familiaDeClave, familiaDeOtro, type NodoResumido, type PiezaResumida } from "./lib-familias";
+import { clavePedida, clavePedidaDeFigura, clavePuesta, familiaDeClave, familiaDeOtro, type NodoResumido, type PiezaResumida } from "./lib-familias";
 
 export const CLASES_CAPACIDAD = [
   "falta_arco", "falta_columna", "falta_guirnalda", "falta_pared", "falta_figura", "falta_mueble_fondo",
@@ -73,6 +73,8 @@ function aConteo(mapa: ReadonlyMap<ClaseCapacidad, number>): ConteoCapacidad {
 /**
  * Las causas concretas de que la escena no iguale a la foto, con su cuenta.
  * - Una pieza `otro` que el taller no sabe armar cuenta como `falta_<familia>` por lo que dice su nombre, o `otro_pendiente` si no dice ninguna.
+ * - Una figura que el taller arma con otro nombre («calabazas», «número 5 lleno de globos»: `resolverOtro` la da como `figura`) pide la
+ *   pieza con que se arma: `decoracion:<id>` o `forma:texto` (una por figura, como una pieza del catálogo: «dos calabazas» es una causa).
  * - Una pieza que sí es del taller (o un «otro» con nombre del catálogo, si no estaba ya leído como fondo) pide una clave a la escena
  *   (`clavePedida`); si la escena final tiene menos nodos de esa clave (`clavePuesta`), falta, y cuenta como `falta_<familia de la clave>`:
  *   la compilación la omitió o el asistente la quitó.
@@ -93,6 +95,10 @@ export function clasificarCapacidad(evidencia: EvidenciaCapacidad): ConteoCapaci
     if (resolucion.tipo === "escenografia") continue;
     if (resolucion.tipo === "catalogo") {
       if (!fondosLeidos.has(resolucion.id)) sumarA(pedidas, `fondo:${resolucion.id}`);
+      continue;
+    }
+    if (resolucion.tipo === "figura") {
+      for (const figura of resolucion.figuras) sumarA(pedidas, clavePedidaDeFigura(figura));
       continue;
     }
     const familia = familiaDeOtro(pieza.descripcion ?? "");

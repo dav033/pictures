@@ -113,18 +113,35 @@ prueba("la clase madre `capacidad_faltante` se marca con cualquier causa concret
   assert.equal(hayCapacidadFaltante(undefined), false);
 });
 
-prueba("reclasificada la pasada 2 entera: las mismas 27 fotos con `capacidad_faltante` que marcó el arnés, ahora con su causa", () => {
+prueba("reclasificada la pasada 2 entera: las 27 fotos con `capacidad_faltante` que marcó el arnés, menos la 40 (su arreglo de pampas ya estaba leído como el jarrón del catálogo), ahora con su causa", () => {
   const conteos = Object.entries(pasada2.fotos).map(([nombre, evidencia]) => ({ nombre, conteo: clasificarCapacidad(evidencia) }));
   const marcadas = conteos.filter((c) => hayCapacidadFaltante(c.conteo)).map((c) => c.nombre);
-  assert.equal(marcadas.length, 27);
-  assert.deepEqual(marcadas, Object.entries(pasada2.fotos).filter(([, e]) => e.marcadaAntes).map(([n]) => n), "las mismas fotos que marcó el arnés al correr");
-  assert.deepEqual(Object.keys(pasada2.fotos).filter((n) => !marcadas.includes(n)), ["images (26)", "images (30)", "images (38)"], "las tres que no tenían fallo");
+  assert.equal(marcadas.length, 26);
+  assert.deepEqual(marcadas, Object.entries(pasada2.fotos).filter(([n, e]) => e.marcadaAntes && n !== "images (40)").map(([n]) => n), "las que marcó el arnés al correr, salvo la 40");
+  assert.deepEqual(Object.keys(pasada2.fotos).filter((n) => !marcadas.includes(n)), ["images (26)", "images (30)", "images (38)", "images (40)"], "las tres que no tenían fallo y la 40");
   const todos = conteos.map((c) => c.conteo);
-  assert.deepEqual(pasadasPorClase(todos), { falta_arco: 2, falta_pared: 7, falta_figura: 18, falta_mueble_fondo: 14, fondo_fijo: 1, tamano_fuera_de_rango: 3, color_no_disponible: 1 }, "fotos en que se vio cada causa");
-  assert.deepEqual(sumarConteos(todos), { falta_arco: 2, falta_pared: 7, falta_figura: 25, falta_mueble_fondo: 22, fondo_fijo: 2, tamano_fuera_de_rango: 3, color_no_disponible: 1 }, "causas distintas");
+  // Sobre las escenas finales de la pasada (sin las figuras de `figuras-lectura.ts`, que no existían): las pampas en el piso son el jarrón del
+  // catálogo (la 39 lo echa en falta como mueble, ya no como figura) y un «otro» con dos figuras (rizos y flores de la 44) son dos causas.
+  assert.deepEqual(pasadasPorClase(todos), { falta_arco: 2, falta_pared: 7, falta_figura: 16, falta_mueble_fondo: 15, fondo_fijo: 1, tamano_fuera_de_rango: 3, color_no_disponible: 1 }, "fotos en que se vio cada causa");
+  assert.deepEqual(sumarConteos(todos), { falta_arco: 2, falta_pared: 7, falta_figura: 24, falta_mueble_fondo: 23, fondo_fijo: 2, tamano_fuera_de_rango: 3, color_no_disponible: 1 }, "causas distintas");
   const dominantes: Record<string, number> = {};
   for (const c of todos) { const d = claseDominanteDeCapacidad([c]); if (d) dominantes[d] = (dominantes[d] ?? 0) + 1; }
-  assert.deepEqual(dominantes, { falta_figura: 12, falta_mueble_fondo: 10, falta_pared: 3, falta_arco: 1, fondo_fijo: 1 });
+  assert.deepEqual(dominantes, { falta_mueble_fondo: 11, falta_figura: 10, falta_pared: 3, falta_arco: 1, fondo_fijo: 1 });
+});
+
+prueba("una figura que el taller arma (calabazas, rizos, flores de globos, un número relleno de globos) pide su pieza a la escena: si ya está no falta, y es una causa por figura", () => {
+  const calabazas = { tipo: "otro", descripcion: "dos calabazas de Halloween (jack-o-lantern) en el piso, a la izquierda" };
+  const numero = { tipo: "otro", descripcion: "número 5 de caja tipo mosaico, lleno de globos verde menta, durazno y rosa con flores de tela" };
+  const espirales = { tipo: "otro", descripcion: "espirales de foil dorado tipo cinta rizada y flores doradas de globos R-5 pegadas al muro" };
+  const nodo = (id: string, tipo: string, contorno?: "texto") => ({ id, tipo, ...(contorno ? { contorno } : {}) });
+  assert.deepEqual(clasificarCapacidad(vacia({ piezasLeidas: [calabazas, numero, espirales] })), { falta_figura: 4 }, "calabazas, el número y las dos figuras de la 44 (rizos y flores)");
+  assert.deepEqual(clasificarCapacidad(vacia({ piezasLeidas: [calabazas, numero, espirales], nodosFinales: [nodo("calabaza-grande", "decoracion"), nodo("calabaza-grande-2", "decoracion"), nodo("numero-globos", "forma", "texto"), nodo("rizo-voluta", "decoracion"), nodo("flor5", "decoracion")] })), {}, "con sus piezas en la escena no falta nada");
+  assert.deepEqual(clasificarCapacidad(vacia({ piezasLeidas: [calabazas, espirales], nodosFinales: [nodo("flor5", "decoracion"), nodo("flor5-2", "decoracion")] })), { falta_figura: 2 }, "las flores no cubren las calabazas ni los rizos: se compara por pieza");
+  assert.deepEqual(clasificarCapacidad(vacia({ piezasLeidas: [{ tipo: "otro", descripcion: "murciélago negro de foil arriba a la izquierda" }] })), { falta_figura: 1 }, "un globo de foil con forma de murciélago sigue siendo capacidad que falta");
+  assert.equal(clavePuesta({ id: "forma", tipo: "forma", contorno: "texto" }), "forma:texto", "un número que puso la IA de escena (id «forma») es el número que pedía la lectura");
+  assert.equal(clavePuesta({ id: "corazon", tipo: "forma" }), "forma", "un corazón relleno no cubre un número");
+  assert.deepEqual(clasificarCapacidad(vacia({ piezasLeidas: [numero], nodosFinales: [nodo("forma", "forma")] })), { falta_figura: 1 }, "una forma que no es un número no cubre el número que falta");
+  assert.equal(familiaDeClave("forma"), "figura");
 });
 
 prueba("la clase dominante: la que más se repite entre las pasadas; en empate, la primera del orden; ninguna sin causas", () => {
@@ -226,8 +243,8 @@ prueba("la auditoría de una pasada: lectura cruda, detección anotada y errores
   assert.deepEqual(eventosDeConversacion(path.join(tmp, "registro"), "entrenamiento-x-images-25"), { eventos, lineasRotas: 0 });
   assert.equal(archivoDeAuditoria(path.join(tmp, "registro"), "no-existe"), null);
   assert.deepEqual(eventosDeConversacion(path.join(tmp, "sin-registro"), "x"), { eventos: [], lineasRotas: 0 });
-  const nodos = resumirNodos({ nodos: [{ id: "pedestal", pieza: { tipo: "escenografia", mueble: { id: "pedestales" } } }, { id: "globo-r-12", pieza: { tipo: "globo" } }] });
-  assert.deepEqual(nodos, [{ id: "pedestal", tipo: "escenografia", muebleId: "pedestales" }, { id: "globo-r-12", tipo: "globo" }]);
+  const nodos = resumirNodos({ nodos: [{ id: "pedestal", pieza: { tipo: "escenografia", mueble: { id: "pedestales" } } }, { id: "globo-r-12", pieza: { tipo: "globo" } }, { id: "forma", pieza: { tipo: "forma", forma: { contorno: { tipo: "texto" } } } }, { id: "forma-2", pieza: { tipo: "forma", forma: { contorno: { tipo: "predefinido" } } } }] });
+  assert.deepEqual(nodos, [{ id: "pedestal", tipo: "escenografia", muebleId: "pedestales" }, { id: "globo-r-12", tipo: "globo" }, { id: "forma", tipo: "forma", contorno: "texto" }, { id: "forma-2", tipo: "forma" }], "una forma que dibuja un número lo dice; las demás no");
   assert.deepEqual(evidenciaDePasada({ piezas: [{ tipo: "fondo", id: "pastel" }], escena: { nodos: [] }, omitidas: ["x"], erroresHerramientas: ["y"] }), { piezasLeidas: [{ tipo: "fondo", id: "pastel" }], nodosFinales: [], omitidas: ["x"], erroresHerramientas: ["y"] });
 });
 

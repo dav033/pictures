@@ -5,9 +5,11 @@
  * (`medirConDetecciones` y `compilarLectura`, el camino de `modelarDesdeFoto`), y los errores de las herramientas salen de la auditoría. Esa
  * reconstrucción es exacta con el código con que corrió la pasada; con otro, la lectura se mide y compila con el de ahora.
  *
- *   npx tsx --conditions=react-server scripts/entrenamiento/reclasificar-corrida.ts <carpeta-de-la-corrida> [--json] [--evidencia <archivo>]
+ *   npx tsx --conditions=react-server scripts/entrenamiento/reclasificar-corrida.ts <carpeta-de-la-corrida> [--json] [--evidencia <archivo>] [--compilada]
  *
  * `--evidencia` escribe la evidencia de cada foto (lo que `clasificarCapacidad` recibe) para armar los casos de prueba.
+ * `--compilada` cuenta la escena que arma el compilador de AHORA con la lectura medida de la pasada (sin refino del asistente, y sin sus errores
+ * de herramientas) en vez de la escena final guardada: mide lo que una capacidad nueva de la compilación resuelve por sí sola. Hace falta la auditoría.
  */
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -24,21 +26,23 @@ import { directorioDeCorridas } from "./lib-rutas";
 type Guardado = { registro: { foto: string; fallos: string[] }; escena: Parameters<typeof evidenciaDePasada>[0]["escena"] | null; evidencia?: EvidenciaCapacidad };
 type Fila = { foto: string; marcadaAntes: boolean; conteo: ConteoCapacidad; evidencia: EvidenciaCapacidad };
 
-function reconstruirEvidencia(raiz: string, corrida: string, foto: string, escena: NonNullable<Guardado["escena"]>, cache: readonly DeteccionGuardada[]): EvidenciaCapacidad {
+/** `escena`: la final guardada de la foto; `null`: la que arma el compilador con la lectura medida (sin refino). */
+function reconstruirEvidencia(raiz: string, corrida: string, foto: string, escena: NonNullable<Guardado["escena"]> | null, cache: readonly DeteccionGuardada[]): EvidenciaCapacidad {
   const { eventos } = eventosDeConversacion(path.join(raiz, "registro"), idConversacionDePasada(corrida, foto));
   if (!eventos.length) throw new Error(`Sin auditoría para ${foto}`);
   const anotada = deteccionAnotada(eventos);
   if (!anotada) throw new Error(`La auditoría de ${foto} no anota su detección`);
   const deteccion = elegirDeteccion(cache, foto, anotada);
   const medida = medirConDetecciones(LecturaFotoSchema.parse(lecturaCrudaDeAuditoria(eventos)), deteccion.globos, deteccion.fondos);
-  return evidenciaDePasada({ piezas: medida.lectura.piezas, escena, omitidas: compilarLectura(medida.lectura).omitidas, erroresHerramientas: erroresDeHerramientas(eventos) });
+  const compilado = compilarLectura(medida.lectura);
+  return evidenciaDePasada({ piezas: medida.lectura.piezas, escena: escena ?? compilado.escena, omitidas: compilado.omitidas, erroresHerramientas: escena ? erroresDeHerramientas(eventos) : [] });
 }
 
-function reclasificar(raiz: string, corrida: string, archivo: string, cache: readonly DeteccionGuardada[]): Fila {
+function reclasificar(raiz: string, corrida: string, archivo: string, cache: readonly DeteccionGuardada[], compilada: boolean): Fila {
   const guardado = JSON.parse(readFileSync(path.join(raiz, corrida, archivo), "utf8")) as Guardado;
   const foto = guardado.registro.foto;
   if (!guardado.escena) throw new Error(`${foto} no guardó su escena final`);
-  const evidencia = guardado.evidencia ?? reconstruirEvidencia(raiz, corrida, foto, guardado.escena, cache);
+  const evidencia = compilada ? reconstruirEvidencia(raiz, corrida, foto, null, cache) : guardado.evidencia ?? reconstruirEvidencia(raiz, corrida, foto, guardado.escena, cache);
   return { foto, marcadaAntes: guardado.registro.fallos.includes("capacidad_faltante"), conteo: clasificarCapacidad(evidencia), evidencia };
 }
 
@@ -65,7 +69,7 @@ function main(): void {
   const archivos = readdirSync(path.join(raiz, corrida)).filter((f) => /^images \(\d+\)\.json$/.test(f)).sort((a, b) => Number(/\d+/.exec(a)![0]) - Number(/\d+/.exec(b)![0]));
   const dirCache = path.join(raiz, "cache-deteccion");
   const cache = readdirSync(dirCache).map((f) => JSON.parse(readFileSync(path.join(dirCache, f), "utf8")) as DeteccionGuardada);
-  const { filas, errores } = rescorearTodas(archivos, (archivo) => reclasificar(raiz, corrida, archivo, cache));
+  const { filas, errores } = rescorearTodas(archivos, (archivo) => reclasificar(raiz, corrida, archivo, cache, process.argv.includes("--compilada")));
   for (const e of errores) console.error(`${e.archivo}: ${e.error}`);
   const indiceEvidencia = process.argv.indexOf("--evidencia");
   if (indiceEvidencia >= 0) {

@@ -10,6 +10,7 @@ import {
   COLORES_FOIL, FIGURAS, FORMAS_METALIZADO, MODELOS, NOMBRE_TIPO, RANGOS_ESTRUCTURA, TECNICAS, TIPOS_ESTRUCTURA,
   ajustarOrganico, coloresOrganicosPedidos, crearEstructura, type LugarPieza,
 } from "./herramientas-escena-estructuras";
+import { contornoDeTexto } from "./contorno-texto";
 import { comprobarCambioDeCuerpo, cuerpoDeOrganico } from "./presupuesto-cuerpo";
 import { coloresDePieza, recolorearConPaleta, recolorearConPedidos } from "./herramientas-escena-recolor";
 import { IDS_SILUETA, TIPOS_FOLLAJE } from "./herramientas-escena-trazo";
@@ -132,7 +133,7 @@ const QUE_ES_TIPO: Readonly<Record<TipoNuevo, string>> = {
   arco_organico: "arco orgánico de dos patas (globos de varios tamaños)",
   guirnalda: "guirnalda CLÁSICA (trenza de cuartetos) en festón o recta",
   pared_malla: "pared/mural de Link-O-Loon",
-  decoracion: "flor/moño/estrella de globos (decoracion_id)",
+  decoracion: "decoración suelta de la biblioteca (decoracion_id): flores, moños, estrellas, racimos, rizos, calabazas, figuras de globos",
   columna_organica: "columna ORGÁNICA (globos de varios tamaños, gruesa abajo; inclinacion_cm la inclina)",
   guirnalda_organica: "guirnalda ORGÁNICA (racimo de varios tamaños) en festón; va en pared",
   semiarco_organico: "semiarco orgánico (sube del piso y se curva hacia un lado)",
@@ -140,7 +141,7 @@ const QUE_ES_TIPO: Readonly<Record<TipoNuevo, string>> = {
   marco_organico: "marco orgánico rectangular (arco cuadrado de patas rectas)",
   trazo_organico: "guirnalda ORGÁNICA de silueta libre en la pared (la de Pinterest): por «silueta» (feston, arco_pared, esquina_derecha, esquina_izquierda, semiarco_izquierdo, semiarco_derecho, arco_asimetrico, diagonal) con ancho_cm, alto_cm y grosor_cm, o por «puntos» exactos; más gruesa donde carga. TAMBIÉN las columnas orgánicas por tipo: «columna irregular» = silueta columna_recta (la silueta de una columna normal, empacada orgánica); «columna de forma libre / rara» = columna_racimos (racimos apilados que se corren a los lados), columna_s (en S) o columna_inclinada; van de pie en el piso",
   pared_trenzas: "pared de trenzas de cuartetos",
-  forma: "forma de globos: figura corazon/estrella/circulo/aro/ancla/cruz/nube/castillo rellena (tecnica celdas, malla u organico), o esfera, o cono",
+  forma: "forma de globos: figura corazon/estrella/circulo/aro/ancla/cruz/nube/castillo rellena (tecnica celdas, malla u organico), o un número o letra relleno (texto), o esfera, o cono",
   letras: "letras o números de globos (texto; tecnica cuartetos, hilera o tubito)",
   metalizado: "globo metalizado de foil (forma_metalizado, texto, pulgadas, color_metalizado)",
   mural: "mural pixelado (modelo)",
@@ -182,7 +183,7 @@ const PropiedadesSchema = z.object({
   inclinacion_cm: z.number().optional().describe("columna_organica: cuánto se corre la punta a la derecha (− a la izquierda), −120 a 120; 0 = recta"),
   tamanos: z.array(z.string()).max(5).optional().describe("orgánicas: SOLO estos tamaños de globo (reemplaza toda la mezcla), de R-24, R-18, R-12, R-9, R-5 (p. ej. [\"R-18\",\"R-12\",\"R-5\"]); si falta, los que caben en el grosor. Para «más/menos R-24», «un 40 % de R-18» o «R-24 solo abajo» en una pieza que ya existe usa ajustar_tamanos"),
   acabado: z.string().max(20).optional().describe("acabado para los colores que no traen uno: pastel, fashion, metal, reflex, satin, silk, neon, cristal"),
-  texto: z.string().max(24).optional().describe("letras: lo que dicen («FELIZ», «ANA»); metalizado: número o letras («5», «15», «HBD»); mobiliario: el neón o el nombre de acrílico, o el nombre en cursiva de un panel, arco, letrero o marco con tela (texto vacío lo quita)"),
+  texto: z.string().max(24).optional().describe("letras: lo que dicen («FELIZ», «ANA»); forma sin figura: el número o la letra que se rellena de globos («15»); metalizado: número o letras («5», «15», «HBD»); mobiliario: el neón o el nombre de acrílico, o el nombre en cursiva de un panel, arco, letrero o marco con tela (texto vacío lo quita)"),
   color_texto: z.string().max(40).optional().describe("mobiliario con nombre en cursiva (panel, arco, letrero, marco con tela): color de las letras, nombre común o #rrggbb"),
   acabado_texto: z.enum(ACABADOS_ROTULO).optional().describe("mobiliario con nombre en cursiva: vinilo, acrilico_espejo o acrilico_mate"),
   alto_texto_cm: z.number().optional().describe("mobiliario con nombre en cursiva: alto de todo el texto (se achica si no cabe a lo ancho)"),
@@ -640,16 +641,15 @@ function coloresDeForma(f: OpcionesForma, pedidos: readonly string[], pesos: rea
   return { ...f, colores: cambiar(f.colores) };
 }
 
-/** Las medidas de una forma: contorno predefinido (ancho y alto), esfera (diámetro) o cono (alto). */
+/** Las medidas de una forma: contorno predefinido (ancho y alto), número o letra (alto), esfera (diámetro) o cono (alto). */
 function medidasDeForma(f: OpcionesForma, props: Propiedades): OpcionesForma {
   if (props.alto_cm === undefined && props.ancho_cm === undefined) return f;
   const R = RANGOS_ESTRUCTURA;
-  if (f.clase === "rellena" && f.contorno.tipo === "predefinido") {
-    return { ...f, contorno: { ...f.contorno, ...(props.ancho_cm !== undefined ? { anchoCm: enRango(props.ancho_cm, R.forma.ancho_cm, "ancho_cm") } : {}), ...(props.alto_cm !== undefined ? { altoCm: enRango(props.alto_cm, R.forma.alto_cm, "alto_cm") } : {}) } };
-  }
+  if (f.clase === "rellena" && f.contorno.tipo === "predefinido") return { ...f, contorno: { ...f.contorno, ...(props.ancho_cm !== undefined ? { anchoCm: enRango(props.ancho_cm, R.forma.ancho_cm, "ancho_cm") } : {}), ...(props.alto_cm !== undefined ? { altoCm: enRango(props.alto_cm, R.forma.alto_cm, "alto_cm") } : {}) } };
+  if (f.clase === "rellena" && f.contorno.tipo === "texto") return { ...f, contorno: contornoDeTexto(f.contorno.texto, enRango(props.alto_cm ?? fallar("El ancho de un número o una letra sale de su alto: cambia alto_cm."), R.forma.alto_cm, "alto_cm"), R.forma.ancho_cm[1]) };
   if (f.clase === "esfera") return { ...f, diametroCm: enRango(props.ancho_cm ?? props.alto_cm ?? f.diametroCm, R.esfera.diametro_cm, "diámetro (ancho_cm)") };
   if (f.clase === "cono" && props.alto_cm !== undefined) return { ...f, altoCm: enRango(props.alto_cm, R.cono.alto_cm, "alto_cm") };
-  return fallar("Esta forma no cambia de medida aquí (solo las figuras predefinidas, la esfera y el cono): reemplázala con reemplazar_pieza.");
+  return fallar("Esta forma no cambia de medida aquí (solo las figuras predefinidas, los números y las letras, la esfera y el cono): reemplázala con reemplazar_pieza.");
 }
 
 /** El texto de un metalizado (si es de número o letras). */
