@@ -84,7 +84,8 @@ export function segundosParaTamano(formatoId: string, cm: number, calibracion: C
   return ref * (cm / formato.infladoDecoracionCm) ** 3;
 }
 
-export type FilaBomba = { formatoId: string; nombre: string; /** «globo» o «tubito» (el tubito se infla entero, no por burbuja). */ unidad: "globo" | "tubito"; cantidad: number; cmInflado: number; segundosPorGlobo: number; segundosTotal: number };
+/** Una fila por formato: `cmMin`–`cmMax` es el rango de tamaños inflados (redondeados al cm) y `segundosPorGlobo` el promedio. */
+export type FilaBomba = { formatoId: string; nombre: string; /** «globo» o «tubito» (el tubito se infla entero, no por burbuja). */ unidad: "globo" | "tubito"; cantidad: number; cmMin: number; cmMax: number; segundosPorGlobo: number; segundosTotal: number; /** Sin redondear: el total de bomba se suma desde aquí. */ segundosSinRedondear: number };
 
 export type InflableBomba = { formatoId: string; infladoCm: number; parte?: string; helio?: true };
 
@@ -104,57 +105,72 @@ export function inflablesDeEscena(armada: { globos: ReadonlyArray<InflableBomba>
 }
 
 /**
- * Las filas de bomba de una escena: por formato y tamaño inflado redondeado al cm (no al decimal: así una escena de cientos
- * de globos da decenas de filas, no cientos). Cada fila lleva los segundos por globo a ese tamaño y el total de sus globos,
- * sumado globo a globo. Los globos de helio no pasan por la bomba (van con el tanque). Para una escena armada, `inflablesDeEscena`.
+ * Las filas de bomba de una escena: una por formato (R-5, R-9, T-160…), con el rango de tamaños inflados redondeado al cm.
+ * El tiempo de cada fila es la suma globo a globo (cada uno a su tamaño); el promedio por globo es esa suma entre la cantidad.
+ * Los globos de helio no pasan por la bomba (van con el tanque). Para una escena armada, `inflablesDeEscena`.
  */
 export function filasBomba(globos: ReadonlyArray<InflableBomba>, calibracion: CalibracionBomba = {}): FilaBomba[] {
-  const grupos = new Map<string, { formatoId: string; cmInflado: number; cantidad: number; segundos: number }>();
+  const grupos = new Map<string, { formatoId: string; cmMin: number; cmMax: number; cantidad: number; segundos: number }>();
   for (const g of globos) {
     if (esGloboDeHelio(g)) continue;
     const exactos = segundosParaTamano(g.formatoId, g.infladoCm, calibracion);
     if (exactos === undefined) continue;
-    const cmInflado = Math.round(g.infladoCm);
-    const clave = `${g.formatoId}|${cmInflado}`;
-    const previo = grupos.get(clave);
-    if (previo) { previo.cantidad += 1; previo.segundos += exactos; }
-    else grupos.set(clave, { formatoId: g.formatoId, cmInflado, cantidad: 1, segundos: exactos });
+    const cm = Math.round(g.infladoCm);
+    const previo = grupos.get(g.formatoId);
+    if (previo) {
+      previo.cantidad += 1;
+      previo.segundos += exactos;
+      previo.cmMin = Math.min(previo.cmMin, cm);
+      previo.cmMax = Math.max(previo.cmMax, cm);
+    } else grupos.set(g.formatoId, { formatoId: g.formatoId, cmMin: cm, cmMax: cm, cantidad: 1, segundos: exactos });
   }
   const orden = new Map(FORMATOS_GLOBO.map((f, i) => [f.id, i] as const));
   return [...grupos.values()]
-    .sort((a, b) => (orden.get(a.formatoId) ?? 0) - (orden.get(b.formatoId) ?? 0) || a.cmInflado - b.cmInflado)
+    .sort((a, b) => (orden.get(a.formatoId) ?? 0) - (orden.get(b.formatoId) ?? 0))
     .map((g) => ({
       formatoId: g.formatoId,
       nombre: formatoPorId(g.formatoId)?.nombre ?? g.formatoId,
       unidad: formatoPorId(g.formatoId)?.tipo === "tubito" ? "tubito" : "globo",
       cantidad: g.cantidad,
-      cmInflado: g.cmInflado,
-      segundosPorGlobo: redondearSegundos(segundosParaTamano(g.formatoId, g.cmInflado, calibracion)!),
+      cmMin: g.cmMin,
+      cmMax: g.cmMax,
+      segundosPorGlobo: redondearSegundos(g.segundos / g.cantidad),
       segundosTotal: redondearSegundos(g.segundos),
+      segundosSinRedondear: g.segundos,
     }));
 }
 
 /** El tiempo total de bomba de las filas, en segundos a 0,1. */
-export const tiempoTotalBomba = (filas: readonly FilaBomba[]): number => redondearSegundos(filas.reduce((suma, f) => suma + f.segundosTotal, 0));
+export const tiempoTotalBomba = (filas: readonly FilaBomba[]): number => redondearSegundos(filas.reduce((suma, f) => suma + f.segundosSinRedondear, 0));
 
-/** «45,3 s» o «2 min 5,3 s» (coma decimal, como en el resto de la lista). */
+/** Número en español con coma decimal y hasta un decimal: el único formato de tiempos de la bomba. */
+export const nf = (n: number): string => n.toLocaleString("es-CO", { maximumFractionDigits: 1 });
+
+/** «45,3 s», «2 min 5,3 s», «4 min 12 s» o «1 h 1 min 2 s» (coma decimal, como en el resto de la lista). */
 export function textoTiempo(segundos: number): string {
-  const nf = (n: number) => n.toLocaleString("es-CO", { maximumFractionDigits: 1 });
   if (segundos < 60) return `${nf(segundos)} s`;
-  const minutos = Math.floor(segundos / 60);
-  return `${minutos} min ${nf(redondearSegundos(segundos - minutos * 60))} s`;
+  if (segundos < 3600) {
+    const minutos = Math.floor(segundos / 60);
+    return `${minutos} min ${nf(redondearSegundos(segundos - minutos * 60))} s`;
+  }
+  const horas = Math.floor(segundos / 3600);
+  const resto = segundos - horas * 3600;
+  const minutos = Math.floor(resto / 60);
+  return `${horas} h ${minutos} min ${nf(redondearSegundos(resto - minutos * 60))} s`;
+}
+
+/** Una fila en texto: «23 × R-5 · 8–12 cm · ~0,6 s c/u · 13,8 s»; el tubito no lleva tamaño: «8 × T-260 · ~0,7 s c/u · 5,6 s». */
+export function textoFilaBomba(f: FilaBomba): string {
+  const total = `${nf(f.segundosTotal)} s`;
+  if (f.unidad === "tubito") return `${f.cantidad} × ${f.formatoId} · ~${nf(f.segundosPorGlobo)} s c/u · ${total}`;
+  const rango = f.cmMin === f.cmMax ? `${f.cmMin} cm` : `${f.cmMin}–${f.cmMax} cm`;
+  return `${f.cantidad} × ${f.formatoId} · ${rango} · ~${nf(f.segundosPorGlobo)} s c/u · ${total}`;
 }
 
 /** Las líneas de bomba para el texto copiado, con su aviso de estimación (vacío si no hay globos que inflar con bomba). */
 export function lineasBomba(filas: readonly FilaBomba[]): string[] {
   if (!filas.length) return [];
-  const nf = (n: number) => n.toLocaleString("es-CO", { maximumFractionDigits: 1 });
-  return [
-    "",
-    "BOMBA (estimación; el taller puede calibrarla)",
-    ...filas.map((f) => `${f.cantidad} × ${f.formatoId} a ${f.cmInflado} cm: ${nf(f.segundosPorGlobo)} s por ${f.unidad}, ${nf(f.segundosTotal)} s en total`),
-    `Tiempo total de bomba: ${textoTiempo(tiempoTotalBomba(filas))}`,
-  ];
+  return ["", "BOMBA (estimación; el taller puede calibrarla)", ...filas.map(textoFilaBomba), `Tiempo total de bomba: ${textoTiempo(tiempoTotalBomba(filas))}`];
 }
 
 /** El `localStorage` del navegador, o `undefined` si no hay o el navegador lo bloquea (nunca lanza). */

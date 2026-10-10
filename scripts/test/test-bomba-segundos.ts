@@ -11,7 +11,7 @@
  */
 import assert from "node:assert/strict";
 import { BIBLIOTECA_FABRICA, escenaDeItem } from "../../src/lib/globos3d/biblioteca";
-import { CLAVE_CALIBRACION_BOMBA, SEGUNDOS_BOMBA_DEFECTO, almacenDelNavegador, filasBomba, guardarCalibracionBomba, inflablesDeEscena, leerCalibracionBomba, lineasBomba, normalizarCalibracion, parsearSegundos, redondearSegundos, segundosParaTamano, textoTiempo, tiempoTotalBomba } from "../../src/lib/globos3d/bomba-segundos";
+import { CLAVE_CALIBRACION_BOMBA, SEGUNDOS_BOMBA_DEFECTO, almacenDelNavegador, filasBomba, guardarCalibracionBomba, inflablesDeEscena, leerCalibracionBomba, lineasBomba, normalizarCalibracion, parsearSegundos, redondearSegundos, segundosParaTamano, textoFilaBomba, textoTiempo, tiempoTotalBomba } from "../../src/lib/globos3d/bomba-segundos";
 import { FORMATOS_GLOBO } from "../../src/lib/globos3d/formatos";
 import { armarEscena } from "../../src/lib/globos3d/escena";
 import { esGloboDeHelio } from "../../src/lib/globos3d/helio-cinta";
@@ -91,6 +91,27 @@ prueba("un tamaño de 25,4 y otro de 25,2 caen en la misma fila de 25 cm (no una
   assert.equal(filas.length, 1);
   assert.equal(filas[0]!.cantidad, 2);
 });
+prueba("una fila por formato: los globos R-5 de 8 a 12 cm suman una fila con su rango, el total y el promedio por globo", () => {
+  const filas = filasBomba([{ formatoId: "R-5", infladoCm: 8 }, { formatoId: "R-5", infladoCm: 12 }]);
+  assert.equal(filas.length, 1);
+  assert.deepEqual([filas[0]!.cantidad, filas[0]!.cmMin, filas[0]!.cmMax], [2, 8, 12]);
+  assert.equal(filas[0]!.segundosTotal, 1.3);
+  assert.equal(filas[0]!.segundosPorGlobo, 0.6);
+});
+prueba("el texto de cada fila: rango de cm, promedio por globo y total; un solo tamaño sin rango; el tubito sin cm", () => {
+  const [rango] = filasBomba([{ formatoId: "R-5", infladoCm: 8 }, { formatoId: "R-5", infladoCm: 12 }]);
+  assert.equal(textoFilaBomba(rango!), "2 × R-5 · 8–12 cm · ~0,6 s c/u · 1,3 s");
+  const [unico] = filasBomba([{ formatoId: "R-12", infladoCm: 25 }, { formatoId: "R-12", infladoCm: 25 }]);
+  assert.equal(textoFilaBomba(unico!), "2 × R-12 · 25 cm · ~2 s c/u · 4 s");
+  const [tubito] = filasBomba([{ formatoId: "T-160", infladoCm: 2.5, parte: "globo" }, { formatoId: "T-160", infladoCm: 2.5, parte: "globo" }]);
+  assert.equal(textoFilaBomba(tubito!), "2 × T-160 · ~0,5 s c/u · 1 s");
+});
+prueba("la escena de 641 globos tiene una fila por formato presente, no por tamaño", () => {
+  const item = BIBLIOTECA_FABRICA.find((i) => i.id === "idea:ocasiones-especiales-paleta-neutral")!;
+  const globos = armarEscena(escenaDeItem(item) as never).globos.filter((g) => !esGloboDeHelio(g));
+  const formatos = new Set(globos.map((g) => g.formatoId));
+  assert.equal(filasBomba(globos).length, formatos.size);
+});
 prueba("la escena de 641 globos (ocasiones-especiales-paleta-neutral) da pocas filas y cuenta cada globo de bomba una vez", () => {
   const item = BIBLIOTECA_FABRICA.find((i) => i.id === "idea:ocasiones-especiales-paleta-neutral");
   assert.ok(item);
@@ -109,11 +130,11 @@ prueba("los tubitos pasan por la bomba: el ramo de flores en Reflex (148 tramos,
   assert.equal(armada.tubos.length, 148);
   const filas = filasBomba(inflablesDeEscena(armada));
   assert.equal(filas.length, 1);
-  assert.deepEqual([filas[0]!.formatoId, filas[0]!.unidad, filas[0]!.cantidad, filas[0]!.cmInflado], ["T-260", "tubito", 67, 5]);
+  assert.deepEqual([filas[0]!.formatoId, filas[0]!.unidad, filas[0]!.cantidad, filas[0]!.cmMin, filas[0]!.cmMax], ["T-260", "tubito", 67, 5, 5]);
   assert.equal(filas[0]!.segundosPorGlobo, 0.7);
   assert.equal(filas[0]!.segundosTotal, 46.9);
   assert.equal(tiempoTotalBomba(filas), 46.9);
-  assert.ok(lineasBomba(filas).some((l) => l.startsWith("67 × T-260 a 5 cm: 0,7 s por tubito, 46,9 s en total")));
+  assert.ok(lineasBomba(filas).some((l) => l === "67 × T-260 · ~0,7 s c/u · 46,9 s"));
 });
 prueba("la columna rellena (10 globos y 168 tramos de tubito) suma 8 tubitos a sus globos; los globos siguen igual", () => {
   const armada = armarEscena(escenaDeItem(BIBLIOTECA_FABRICA.find((x) => x.id === "idea:columna-rellena")!));
@@ -137,12 +158,22 @@ prueba("el tiempo total es la suma de los globos, no de las filas redondeadas (3
   assert.equal(filas[0]!.segundosTotal, 0.6);
   assert.equal(tiempoTotalBomba(filas), 0.6);
 });
+prueba("el total de bomba se suma sin redondear las filas: R-12 a 12,5 cm y LOL-12 a 12,5 cm dan 0,25 s cada uno (filas de 0,3) y el total es 0,5", () => {
+  const filas = filasBomba([{ formatoId: "R-12", infladoCm: 12.5 }, { formatoId: "LOL-12", infladoCm: 12.5 }]);
+  assert.deepEqual(filas.map((f) => f.segundosTotal), [0.3, 0.3]);
+  assert.equal(tiempoTotalBomba(filas), 0.5);
+  assert.equal(tiempoTotalBomba(filasBomba([{ formatoId: "R-12", infladoCm: 12.5 }])), 0.3);
+});
 prueba("el texto da el tiempo total en minutos y segundos, y el aviso de estimación", () => {
   assert.equal(textoTiempo(45.3), "45,3 s");
   assert.equal(textoTiempo(125.3), "2 min 5,3 s");
+  assert.equal(textoTiempo(252), "4 min 12 s");
+  assert.equal(textoTiempo(60), "1 min 0 s");
+  assert.equal(textoTiempo(3662), "1 h 1 min 2 s");
+  assert.equal(textoTiempo(3600), "1 h 0 min 0 s");
   const lineas = lineasBomba(filasBomba([{ formatoId: "R-12", infladoCm: 25 }, { formatoId: "R-12", infladoCm: 25 }]));
   assert.equal(lineas[1], "BOMBA (estimación; el taller puede calibrarla)");
-  assert.equal(lineas[2], "2 × R-12 a 25 cm: 2 s por globo, 4 s en total");
+  assert.equal(lineas[2], "2 × R-12 · 25 cm · ~2 s c/u · 4 s");
   assert.equal(lineas.at(-1), "Tiempo total de bomba: 4 s");
 });
 
