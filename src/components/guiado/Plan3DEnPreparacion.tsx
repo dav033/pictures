@@ -14,8 +14,11 @@ export const TEXTO_NOTA_PLAN_3D = "Puedes mirar tu decoración, cambiar sus colo
 /** Lo que se le dice al cliente cuando pide la imagen de un plan 3D guardado sin su espec firmada (no hay de dónde armarla). */
 export const TEXTO_IMAGEN_PLAN_3D = "No puedo dibujar este plan como imagen: se guardó antes de que pudiera. Mientras tanto puedes ver sus globos, su precio y dónde comprarlo, o pedirme un plan nuevo.";
 
-/** Lo que se le dice al cliente cuando su plan del 3D se rehízo entero con el motor de siempre (marcha atrás o un 3D que no pudo). */
-export const TEXTO_REHECHO_EN_PYTHON = "Rehice tu plan completo con el motor de siempre, así que algunas cantidades pueden cambiar un poco.";
+/**
+ * Lo que se le dice al cliente cuando su plan del 3D se rehízo entero con Python (el corte del 3D, ya avisado, o un 3D que no
+ * pudo): el precio puede moverse bastante, así que se dice sin quitarle importancia (D-023).
+ */
+export const TEXTO_REHECHO_EN_PYTHON = "Rehice tu plan completo con el método de siempre, así que las cantidades y el precio pueden cambiar respecto al anterior.";
 
 /** El marcador de la vista del plan: una sola vez por tarjeta, bajo las piezas. */
 export function VistaPlanEnPreparacion() {

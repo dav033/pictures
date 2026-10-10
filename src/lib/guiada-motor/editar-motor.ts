@@ -11,7 +11,8 @@ import { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { PedidoEdicionPlanSchema } from "@/lib/ia/guiado/edicion-plan-chat";
 import type { PlanIdeaGuardado } from "@/lib/plan/plan-de-idea";
 import type { CodigoFalloEditar, RespuestaEditarMotor } from "./editar-contrato";
-import { noPudeDeMotivos, unirNoPude } from "./mensajes-cliente";
+import { noPudeDeMotivos, TEXTO_EDICION_RECALCULO, unirNoPude } from "./mensajes-cliente";
+import { planDel3dVencido } from "./continuidad";
 import { huellaDeNavegador } from "./plan-motor";
 import type { RespuestaMotor } from "./tipos";
 import { verificarPlanConConcepto } from "./verificar-plan";
@@ -24,8 +25,12 @@ import { verificarPlanConConcepto } from "./verificar-plan";
  * auditoría se inyectan para probarla sin red ni base.
  *
  * Reglas:
- * - la bandera manda SIEMPRE, como en el plan: con `python` responde 409 (`fallback.razon` = `bandera_python`), la vista lo
- *   muestra como `FalloMotor3dApagado` y el plan queda como estaba; no verifica la base;
+ * - la bandera NO manda aquí: decide el motor de los planes nuevos, y este plan ya es del 3D, así que se sigue cambiando y
+ *   cotizando en el 3D hasta el final de la conversación aunque la bandera vuelva a `python` (marcha atrás ordenada, P-045);
+ * - el corte del 3D (`fuente: "corte"`) sí: responde 409 (`fallback.razon` = `motor_3d_cortado`) sin verificar el plan ni
+ *   cotizar, con la frase que avisa al cliente de que habría que recalcularlo y que el precio puede cambiar; la vista lo
+ *   muestra como `FalloMotor3dApagado` y el plan queda como estaba. Igual con `plan_3d_vencido`: con la bandera en `python`,
+ *   una línea del 3D que empezó hace más de 24 h (`continuidad.ts`) ya no se cambia en el 3D;
  * - un navegador tiene un cupo por hora de cambios (429, `LIMITE_EDICIONES`), para que uno solo no arme sin fin;
  * - el plan se verifica como en todas las rutas del 3D (`verificar-plan.ts`): token, que sea `globos3d`, de este navegador
  *   y con la espec que el token firmó;
@@ -121,15 +126,19 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
     return error(codigo, mensaje, estado, extra);
   };
 
-  // La bandera manda siempre: con `python` ni se verifica el plan; la vista muestra que el armado 3D está apagado.
-  if (bandera.motor !== "3d") {
-    deps.auditar("regla:motor_guiada", "edición del plan 3D: la bandera dice python y el plan no se edita con el motor 3D", { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "python", razon: "bandera_python" }, { entrada, motivo: "Este plan se arma con el motor de siempre." });
-    return error("MOTOR_PYTHON", "Este plan se arma con el motor de siempre.", 409, { fallback: { razon: "bandera_python" } });
+  if (bandera.fuente === "corte") {
+    deps.auditar("regla:motor_guiada", "edición del plan 3D: el motor 3D está cortado; el plan no cambia y el cliente lee que habría que recalcularlo", { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "ninguno", razon: "motor_3d_cortado" }, { entrada, motivo: TEXTO_EDICION_RECALCULO });
+    return error("MOTOR_3D_CORTADO", TEXTO_EDICION_RECALCULO, 409, { fallback: { razon: "motor_3d_cortado" } });
   }
   const cupo = deps.tomarEdicion(navegador);
   if (!cupo.ok) return rechazar("LIMITE_EDICIONES", "No pude: hiciste demasiados cambios en una hora. Espera un rato y vuelve a intentarlo; tu plan sigue como estaba.", 429, "tope_por_navegador", { tope: cupo.tope });
   const base = verificarPlanConConcepto(cuerpo.plan, navegador);
-  if ("codigo" in base) return rechazar(base.codigo, base.mensaje, base.estado, base.motivo);
+  if ("codigo" in base) {
+    // Una aprobación que ya no sirve (vencida tras 24 h sin cambios, de otro navegador): en palabras de cliente, con el recálculo.
+    if (base.codigo === "APROBACION_INVALIDA") return rechazar(base.codigo, TEXTO_EDICION_RECALCULO, base.estado, base.motivo, { fallback: { razon: "aprobacion_invalida" } });
+    return rechazar(base.codigo, base.mensaje, base.estado, base.motivo);
+  }
+  if (planDel3dVencido(bandera, base.origenEn, Date.now())) return rechazar("PLAN_3D_VENCIDO", TEXTO_EDICION_RECALCULO, 409, "plan_3d_vencido", { fallback: { razon: "plan_3d_vencido" } }, { origen_en: base.origenEn });
 
   try {
     const mapeo = aEdiciones(cuerpo, base.espec);
@@ -155,7 +164,7 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
       return rechazar("PRECIO_FALLIDO", "No pude: no logré calcular el precio de ese cambio. Tu plan sigue como estaba.", 422, cotizada.razon, { noAplicadas: ["No pude: no logré calcular el precio de ese cambio."] });
     }
     const concepto: ConceptoPlan = base.concepto;
-    const sobre = sobreDelMotor({ espec: hecho.espec, resultado: armado, cotizacion: cotizada, concepto, requestId, navegador });
+    const sobre = sobreDelMotor({ espec: hecho.espec, resultado: armado, cotizacion: cotizada, concepto, requestId, navegador, origenEn: base.origenEn });
     if (!sobre.ok) return rechazar("ERROR_DEL_MOTOR", "No pude: ese cambio no cabe en el plan. Tu plan sigue como estaba.", 422, sobre.motivo);
 
     const descripcion = acotarDescripcion(hecho.hechas);

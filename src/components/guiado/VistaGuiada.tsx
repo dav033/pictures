@@ -73,7 +73,9 @@ import { abrirConversacionGuiada, registrarAccionGuiada, registrarFalloGuiado, v
 import { AVISO_VERSION_NUEVA, CABECERA_VERSION_APP, RespuestaIncompatibleError, camposInvalidos, clasificarIncompatible, hayVersionNueva, idParaReintento, turnoSinRespuesta } from "./version-pagina";
 import { borrarEstadoGuiado } from "./empezar-de-nuevo";
 import { useMotorGuiada } from "./usarMotorGuiada";
-import { TEXTO_IMAGEN_PLAN_3D, TEXTO_REHECHO_EN_PYTHON } from "./Plan3DEnPreparacion";
+import { TEXTO_IMAGEN_PLAN_3D } from "./Plan3DEnPreparacion";
+import { falloDelPlan } from "./fallo-plan";
+import { NotasPlan } from "./NotasPlan";
 import { pedirImagenPlan3D } from "./imagen-plan-3d";
 import { mensajeErrorImagen } from "./mensaje-error-imagen";
 import { firmaDePlan } from "./motor3d/firma-plan";
@@ -632,7 +634,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       ...(usoEnvio ? { uso: usoEnvio } : {}),
       ...(opciones.alcance ? { alcancePropuesta: opciones.alcance } : {}),
       ...(opciones.alcance === "individual" && opciones.pieza ? { piezaPedida: opciones.pieza } : {}),
-      ...(planActual ? { planActual } : {}),
+      ...(planActual ? { planActual, ...(planVigente?.widget.motor === "3d" ? { motorPlan: "3d" as const } : {}) } : {}),
       ...(ideasMostradas.length ? { ideasMostradas } : {}),
     };
     const elegida = seleccionada && !planVigente ? seleccionada : null;
@@ -888,11 +890,11 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
 
   /**
    * REQ-007: con la bandera en `3d` la propuesta se arma con el motor 3D (`/api/guiada/motor/plan`). La bandera manda
-   * siempre, también sobre un plan que ya era del 3D: con `python`, o si el 3D no la arma (pieza sin constructor, precio
+   * solo en un plan nuevo: rehacer un plan sigue en su motor (si deja el 3D, antes avisa: `usarMotorGuiada.ts`). Si el 3D no la arma (pieza sin constructor, precio
    * que falla, base rechazada, red), el plan se rehace ENTERO con Python y el motivo queda en el registro; el cliente nunca
    * se queda sin plan. Un plan de foto va siempre por Python. «Detener» durante la lectura de la bandera no arma ningún plan.
    */
-  async function ejecutarPlanConMotor(mensajeId: string, entrada: { propuesta: Propuesta; anterior3d: PlanGuiado | null; deFoto: boolean }, python: () => ReturnType<typeof ejecutarPlan>): Promise<Awaited<ReturnType<typeof ejecutarPlan>> & { motor: MotorGuiada; rehechoEnPython?: true }> {
+  async function ejecutarPlanConMotor(mensajeId: string, entrada: { propuesta: Propuesta; anterior3d: PlanGuiado | null; deFoto: boolean; anteriorPython: boolean }, python: () => ReturnType<typeof ejecutarPlan>): Promise<Awaited<ReturnType<typeof ejecutarPlan>> & { motor: MotorGuiada; rehechoEnPython?: true; aviso?: string }> {
     const turno = ++turnoRef.current;
     const control = new AbortController();
     controlRef.current = control;
@@ -900,14 +902,14 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     fijarEtapa(mensajeId, "preparando");
     const intento = await planDePropuestaMotor({
       ...entrada, ...(brief ? { brief } : {}), signal: control.signal,
-      alFallback: (fallo) => registrarFallo("plan.motor_3d_fallback", fallo.detalle, { razon: fallo.razon, estado: fallo.estado, accion: entrada.anterior3d ? "el plan era del 3D: se rehace entero con Python" : "se arma con Python" }, "warn"),
+      alFallback: (fallo) => registrarFallo("plan.motor_3d_fallback", fallo.detalle, { razon: fallo.razon, estado: fallo.estado, accion: fallo.aviso ? "el plan deja el 3D: se avisa al cliente y su plan queda como estaba" : entrada.anterior3d ? "el plan era del 3D: se rehace entero con Python" : "se arma con Python" }, "warn"),
     });
     if (turno !== turnoRef.current) return { turno, estado: "obsoleto", motor: "3d" };
     // «Detener» durante la lectura de la bandera: ni plan del 3D ni plan de Python (que usa el modelo y se paga).
     if (control.signal.aborted || (intento !== null && !intento.ok && intento.detenido)) return { turno, estado: "detenido", motor: "3d" };
     if (intento === null) return { ...(await python()), motor: "python", ...(entrada.anterior3d ? { rehechoEnPython: true as const } : {}) };
     if (intento.ok) return { turno, estado: "ok", plan: intento.plan, cotizacion: intento.cotizacion, motor: "3d" };
-    return { turno, estado: "fallo", motor: "3d" };
+    return { turno, estado: "fallo", motor: "3d", ...(intento.aviso ? { aviso: intento.aviso } : {}) };
   }
 
   function terminarPlan(turno: number, mensajeId: string): void {
@@ -1088,23 +1090,19 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const armar = (reintento: boolean, faltantes?: readonly ColorFotoFaltante[]) => cuerpoPlanGuiado(propuesta, { reintento, ...(planAnterior ? { planAnterior } : {}), foto, ...(faltantes?.length ? { faltantes } : {}), cliente });
     // Con foto, de sus colores solo se exigen los que siguen en la propuesta: «Otros colores» los cambió el cliente.
     const anterior3d = planAnterior && planVigente?.widget.motor === "3d" ? planVigente.widget.plan : null;
-    const resultado = await ejecutarPlanConMotor(mensajeId, { propuesta, anterior3d, deFoto: Boolean(foto) }, () => ejecutarPlan(mensajeId, armar, Boolean(opciones.reintento), propuesta.colores));
+    const resultado = await ejecutarPlanConMotor(mensajeId, { propuesta, anterior3d, deFoto: Boolean(foto), anteriorPython: Boolean(planAnterior) && planVigente?.widget.motor === "python" }, () => ejecutarPlan(mensajeId, armar, Boolean(opciones.reintento), propuesta.colores));
     if (resultado.estado === "obsoleto") return "obsoleto";
     if (resultado.estado === "ok") {
       if (foto?.imagen) fotosRef.current.set(mensajeId, foto.imagen);
       colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, Boolean(foto), idea, foto?.referenciaId, resultado.motor);
       // Un plan del 3D que se rehízo con Python se dice, sin tecnicismos.
-      if (resultado.rehechoEnPython) actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: `${mensaje.content} ${TEXTO_REHECHO_EN_PYTHON}` }));
+      if (resultado.rehechoEnPython) actualizarWidget(mensajeId, "plan", (widget) => ({ ...widget, recalculado: true }));
     } else {
-      actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, widgets: [{ tipo: "propuesta", propuesta, estado: "fallo" }] }));
+      actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, widgets: [{ tipo: "propuesta", propuesta, estado: resultado.aviso ? "en_espera" : "fallo" }] }));
       const accion: AccionFallo = { tipo: "plan", propuesta, mensajeId, ...(planAnterior ? { planAnterior } : {}), ...(idea ? { idea } : {}) };
-      // Al sumar una idea, el plan de antes sigue intacto (vigente): se dice, y solo se ofrece reintentar.
-      setFallo(resultado.estado === "detenido"
-        ? { titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion, mensajeId }
-        : idea
-          ? { titulo: idea.sumada ? `No pude agregar «${idea.titulo}» a tu plan` : `No pude armar tu plan con «${idea.titulo}»`, detalle: idea.sumada ? "Tu plan sigue como estaba. Inténtalo otra vez." : "Tu conversación sigue guardada. Inténtalo otra vez.", accion, mensajeId }
-          : { titulo: "No pude terminar tu plan", detalle: "Tu conversación sigue guardada.", accion, alternativas: ["otros-colores", "otra-pieza"], mensajeId });
-      setAnuncio(idea?.sumada ? "No pude agregar la idea; tu plan sigue como estaba" : "No pude terminar tu plan");
+      const dicho = falloDelPlan({ estado: resultado.estado, ...(resultado.aviso ? { aviso: resultado.aviso } : {}), ...(idea ? { idea } : {}), accion, mensajeId });
+      setFallo(dicho.fallo);
+      setAnuncio(dicho.anuncio);
     }
     terminarPlan(resultado.turno, mensajeId);
     return resultado.estado;
@@ -1728,7 +1726,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
         return <ComprarMateriales key={clave} decoracion={widget.decoracion} onDistribuidor={() => preguntarCiudad("ciudad-distribuidor", "Quiero comprar con un distribuidor cerca")} />;
       case "propuesta": {
         // Una propuesta «resolviendo» sin nada en curso (p. ej. tras recargar) es un plan que no llegó.
-        const estado = widget.estado === "fallo" || !cargando ? "fallo" : "resolviendo";
+        const estado = widget.estado === "en_espera" ? "en_espera" : widget.estado === "fallo" || !cargando ? "fallo" : "resolviendo";
         return <TarjetaPropuesta key={clave} frase={widget.propuesta.frase} piezas={widget.propuesta.piezas} colores={widget.propuesta.colores} estado={estado} {...(etapaPlan[mensajeId] ? { etapa: etapaPlan[mensajeId] } : {})} />;
       }
       case "plan": {
@@ -1748,12 +1746,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
               <span>{textoIdeaAgregada(widget.agregada.titulo, widget.agregada.total, widget.totalAnterior !== undefined)}</span>
             </motion.p>
           )}
-          {/* El plan de la idea no salió con sus cantidades exactas: por qué, en una línea discreta (verificador 127). */}
-          {widget.agregada?.avisos?.length ? (
-            <p className={`mt-1 px-3.5 text-xs text-texto-suave ${vigente ? "" : "opacity-70"}`} data-testid="idea-no-exacta">
-              {widget.agregada.avisos.join(" ")}
-            </p>
-          ) : null}
+          <NotasPlan widget={widget} vigente={vigente} />
           <TarjetaPlan
             plan={widget.plan}
             {...(widget.cotizacion ? { cotizacion: widget.cotizacion } : {})}

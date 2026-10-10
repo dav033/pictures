@@ -2,7 +2,7 @@
  * El cambio que pide el modelo del chat sobre un plan del motor 3D (REQ-007, fase 5), con el modelo simulado: la herramienta
  * del modelo se valida en `pedidoDesdeHerramienta`, el chat lo manda al servidor del 3D con el id del turno y nunca toca
  * `/api/plan-editar`. Además: la espec que sale de una edición se vuelve a armar igual (ida y vuelta por JSON), y la red
- * de la edición lleva la bandera apagada (409) y los «No pude: …» (422) a la vista sin cambiar el plan.
+ * de la edición lleva el corte del 3D (409, P-045) y los «No pude: …» (422) a la vista sin cambiar el plan.
  * Sin red ni modelo reales.
  *
  * Run: npx tsx --conditions=react-server scripts/test/test-motor-guiada-edicion-modelo.ts
@@ -12,7 +12,10 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { PlanGuiado } from "../../src/components/guiado/ajuste/ajuste-plan-guiado";
 import { ejecutarEdicionChat3d } from "../../src/components/guiado/ajuste/edicion-chat-3d";
+import { mensajeAjuste } from "../../src/components/guiado/ajuste/ejecutar-ajuste";
+import { crearAvisosRecalculo } from "../../src/components/guiado/aviso-recalculo";
 import { avisosDelCambio, crearDependenciasEdicion3d, FalloMotor3dApagado, type DependenciasEdicion3d } from "../../src/components/guiado/edicion-motor3d";
+import { TEXTO_EDICION_RECALCULO } from "../../src/lib/guiada-motor/mensajes-cliente";
 import type { EdicionDelCliente, RespuestaEditarMotor } from "../../src/lib/guiada-motor/editar-contrato";
 import { EspecClienteV1Schema } from "../../src/lib/globos3d/motor/espec-cliente-v1";
 import { aplicarEdicion, armarDesdeEspec, especDesdePropuesta, planActualDesdeEspec, type EspecClienteV1 } from "../../src/lib/globos3d/motor/v1";
@@ -65,11 +68,25 @@ test("el pedido del modelo llega al servidor del 3D con el id del turno, como pe
   assert.ok(hecha.avisos?.some((aviso) => /no se fabrica/.test(aviso)), "el aviso del servidor llega al cliente");
 });
 
-test("el servidor responde 409 con la bandera en python: el cliente recibe FalloMotor3dApagado y el plan no cambia", async () => {
-  const red = (async () => new Response(JSON.stringify({ error: "Este plan se arma con el motor de siempre.", codigo: "MOTOR_PYTHON", fallback: { razon: "bandera_python" } }), { status: 409, headers: { "Content-Type": "application/json" } })) as typeof fetch;
-  const dependencias = crearDependenciasEdicion3d({ red });
+for (const [razon, codigo] of [["motor_3d_cortado", "MOTOR_3D_CORTADO"], ["plan_3d_vencido", "PLAN_3D_VENCIDO"], ["aprobacion_invalida", "APROBACION_INVALIDA"]] as const) {
+  test(`${razon}: el servidor responde 409 y el cliente recibe FalloMotor3dApagado con la frase del recálculo, tal cual, y el plan queda avisado`, async () => {
+    const red = (async () => new Response(JSON.stringify({ error: TEXTO_EDICION_RECALCULO, codigo, fallback: { razon } }), { status: 409, headers: { "Content-Type": "application/json" } })) as typeof fetch;
+    const avisos = crearAvisosRecalculo();
+    const dependencias = crearDependenciasEdicion3d({ red, avisos });
+    const pedido = pedidoDelModelo("agregar_color_plan", { color: "rosado" }, "agrega rosado");
+    let fallo: unknown;
+    await assert.rejects(() => dependencias.editar(plan, { tipo: "pedido", pedido }), (error: unknown) => { fallo = error; return error instanceof FalloMotor3dApagado && error.razon === razon; });
+    assert.equal(mensajeAjuste(fallo), TEXTO_EDICION_RECALCULO, "el chat y el panel la dicen tal cual (sin jerga que la tape)");
+    assert.equal(avisos.yaAvisado(plan.plan_hash), true, "ya leyó que su plan se recalcula: rehacerlo después no vuelve a preguntar");
+  });
+}
+
+test("un 422 no deja el plan avisado: solo el corte avisa del recálculo", async () => {
+  const red = (async () => new Response(JSON.stringify({ error: "No pude: esa medida no se puede armar; prueba con otra.", codigo: "EDICION_NO_APLICADA" }), { status: 422, headers: { "Content-Type": "application/json" } })) as typeof fetch;
+  const avisos = crearAvisosRecalculo();
   const pedido = pedidoDelModelo("agregar_color_plan", { color: "rosado" }, "agrega rosado");
-  await assert.rejects(() => dependencias.editar(plan, { tipo: "pedido", pedido }), (error: unknown) => error instanceof FalloMotor3dApagado);
+  await assert.rejects(() => crearDependenciasEdicion3d({ red, avisos }).editar(plan, { tipo: "pedido", pedido }), FalloPlanEditar);
+  assert.equal(avisos.yaAvisado(plan.plan_hash), false);
 });
 
 test("el servidor responde 422 con «No pude: …»: el cliente lee esa frase y el plan se queda como estaba", async () => {

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { CambioPanelV1, EdicionEspecV1 } from "@/lib/globos3d/motor/v1";
 import { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { RAZONES_RECALCULO } from "./plan-contrato";
 import type { PedidoEdicionPlan } from "@/lib/ia/guiado/edicion-plan-chat";
 
 /**
@@ -26,7 +27,7 @@ export type CuerpoEditarMotor = {
 
 /** Lo que el servidor no hizo y por qué: la `razon` es estable, el `error` es la frase para el cliente («No pude: …»). */
 export const CODIGOS_FALLO_EDITAR = [
-  "SESION_REQUERIDA", "CUERPO_INVALIDO", "MOTOR_PYTHON", "APROBACION_INVALIDA", "PLAN_NO_ES_DEL_MOTOR_3D", "ESPEC_INVALIDA", "PLAN_ALTERADO",
+  "SESION_REQUERIDA", "CUERPO_INVALIDO", "MOTOR_3D_CORTADO", "PLAN_3D_VENCIDO", "APROBACION_INVALIDA", "PLAN_NO_ES_DEL_MOTOR_3D", "ESPEC_INVALIDA", "PLAN_ALTERADO",
   "EDICION_NO_SOPORTADA", "EDICION_NO_APLICADA", "EDICION_NO_ARMABLE", "SIN_COBERTURA", "PRECIO_FALLIDO", "ERROR_DEL_MOTOR", "LIMITE_EDICIONES",
 ] as const;
 export type CodigoFalloEditar = (typeof CODIGOS_FALLO_EDITAR)[number];
@@ -34,8 +35,11 @@ export type CodigoFalloEditar = (typeof CODIGOS_FALLO_EDITAR)[number];
 export const FalloEditarMotorSchema = z.object({
   error: z.string(),
   codigo: z.string(),
-  /** Con la bandera en `python`: el plan del 3D ya no se edita aquí; la vista lo muestra como `FalloMotor3dApagado`. */
-  fallback: z.object({ razon: z.literal("bandera_python") }).strict().optional(),
+  /**
+   * Con el corte del 3D o una línea del 3D que pasó su límite con la bandera en `python` (P-045): el plan no se cambia aquí;
+   * la vista lo muestra como `FalloMotor3dApagado`, que avisa de que habría que recalcularlo. La bandera en `python` NO llega aquí: un plan del 3D abierto se sigue cambiando en el 3D.
+   */
+  fallback: z.object({ razon: z.enum(RAZONES_RECALCULO) }).strict().optional(),
   noAplicadas: z.array(z.string()).optional(),
   avisos: z.array(z.string()).optional(),
 }).passthrough();

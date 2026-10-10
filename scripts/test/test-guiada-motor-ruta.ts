@@ -18,11 +18,12 @@ const COOKIE_ADMIN = cookieDeAdministrador(CLAVE_ADMIN).split(";")[0]!;
 
 let anterior: Record<string, string | undefined> = {};
 beforeEach(() => {
-  anterior = { APP_PASSWORD: process.env.APP_PASSWORD, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD, DATABASE_URL: process.env.DATABASE_URL, GUIADA_MOTOR: process.env.GUIADA_MOTOR };
+  anterior = { APP_PASSWORD: process.env.APP_PASSWORD, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD, DATABASE_URL: process.env.DATABASE_URL, GUIADA_MOTOR: process.env.GUIADA_MOTOR, GUIADA_MOTOR_CORTE: process.env.GUIADA_MOTOR_CORTE };
   process.env.APP_PASSWORD = CLAVE_APP;
   process.env.ADMIN_PASSWORD = CLAVE_ADMIN;
   delete process.env.DATABASE_URL;
   delete process.env.GUIADA_MOTOR;
+  delete process.env.GUIADA_MOTOR_CORTE;
 });
 afterEach(() => {
   for (const [clave, valor] of Object.entries(anterior)) {
@@ -118,6 +119,11 @@ test("la ruta real: GET responde python por defecto y con la variable de entorno
   assert.deepEqual(await respuesta.json(), { motor: "python", fuente: "cookie" });
   respuesta = await GET(get("/api/guiada/motor", [SESION, "guiada_motor=python"]));
   assert.deepEqual(await respuesta.json(), { motor: "3d", fuente: "env" }, "la cookie de un cliente no cuenta");
+  // El corte del 3D (P-045) se comprueba con la misma lectura: el paso «Verificar» de la marcha atrás de emergencia.
+  process.env.GUIADA_MOTOR_CORTE = "activo";
+  respuesta = await GET(get());
+  assert.deepEqual(await respuesta.json(), { motor: "python", fuente: "corte" });
+  delete process.env.GUIADA_MOTOR_CORTE;
   assert.equal((await POST(post({ motor: "3d" }, [SESION]))).status, 401);
   assert.equal((await POST(post({ motor: "3d" }))).status, 200);
 });
@@ -166,4 +172,14 @@ test("los demás widgets guardados no ganan campo motor", () => {
   const propuesta = WidgetGuiadoSchema.safeParse({ tipo: "pregunta-propuesta", alcance: "tipo" });
   assert.ok(propuesta.success);
   assert.equal("motor" in propuesta.data, false);
+});
+
+test("GET ?para=plan_python (P-045): rehacer un plan de Python deja en la auditoría que conserva Python, diga lo que diga la bandera", async () => {
+  const { deps, auditorias } = dependencias("3d", "ajuste");
+  const respuesta = await atenderLecturaMotor(get("/api/guiada/motor?para=plan_python"), deps);
+  assert.deepEqual(await respuesta.json(), { motor: "3d", fuente: "ajuste" }, "la respuesta no cambia: la bandera sigue diciendo lo suyo");
+  assert.equal(auditorias.length, 1);
+  assert.equal(auditorias[0]!.quien, "regla:motor_guiada");
+  assert.deepEqual(auditorias[0]!.resultado, { bandera: "3d", fuente: "ajuste", efectivo: "python", conserva_motor: "plan_python_abierto" });
+  assert.deepEqual(auditorias[0]!.entrada, { para: "plan_python" });
 });

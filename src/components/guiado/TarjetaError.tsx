@@ -17,8 +17,8 @@ type Props = {
   /** Otras salidas, como chips: «Ver otras ideas», «Escribir otra cosa»… */
   alternativas?: ReadonlyArray<{ etiqueta: string; onElegir: () => void }>;
   /**
-   * «actualizar»: no es un error del cliente ni de la red, sino una página nueva («Hay una versión nueva… Recargar»):
-   * va en el color de acento, sin la sacudida ni la nube tachada.
+   * «actualizar»: no es un error del cliente ni de la red sino un aviso que pide un paso («Hay una versión nueva… Recargar»,
+   * o «Recalcular mi plan» antes de recalcular su plan, P-045): va en el color de acento, sin la sacudida ni la nube tachada.
    */
   variante?: "error" | "actualizar";
 };

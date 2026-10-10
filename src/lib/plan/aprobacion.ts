@@ -54,6 +54,12 @@ export type ContextoPlan = {
    * atarlo al navegador que lo pidió hace que un token copiado a otro no sirva (REQ-007). `null` si no lo trae.
    */
   navegador: string | null;
+  /**
+   * Cuándo se emitió el PRIMER plan de esta línea (un plan y los que salen de él al cambiarlo, sumarle una idea o rehacerlo;
+   * solo el motor 3D lo escribe, P-045): cada token nuevo dura 24 h, pero esta hora se hereda, así que encadenar cambios no
+   * alarga la vida de la línea. Un token sin el campo cuenta desde su propia emisión (`expiresAt` − 24 h).
+   */
+  origenEn: number;
 };
 
 const TTL_POR_DEFECTO_MS = 24 * 60 * 60 * 1000;
@@ -86,6 +92,8 @@ const PayloadV2Schema = z.object({
   medidasDelCliente: z.literal(true).optional(),
   // Solo en los planes del motor 3D (REQ-007): huella del navegador que los pidió.
   navegador: z.string().regex(/^[0-9a-f]{64}$/).optional(),
+  // Solo en los planes del motor 3D (P-045): la hora del primer plan de la línea, heredada al volver a firmar.
+  origenEn: z.number().int().positive().optional(),
 }).strict();
 
 const PayloadSchema = z.union([PayloadV2Schema, PayloadV1Schema]);
@@ -150,6 +158,7 @@ function contextoDesdePayload(payload: Payload): ContextoPlan {
       creatividad: payload.creatividad ?? null,
       medidasDelCliente: payload.medidasDelCliente === true,
       navegador: payload.navegador ?? null,
+      origenEn: payload.origenEn ?? payload.expiresAt - TTL_POR_DEFECTO_MS,
     };
   }
   // A v1 token predates signed provenance: it can only be re-resolved by the
@@ -164,6 +173,7 @@ function contextoDesdePayload(payload: Payload): ContextoPlan {
     creatividad: null,
     medidasDelCliente: false,
     navegador: null,
+    origenEn: payload.expiresAt - TTL_POR_DEFECTO_MS,
   };
 }
 
@@ -186,6 +196,8 @@ export function crearTokenPlan(
     medidasDelCliente?: boolean;
     /** Huella del navegador (solo planes del motor 3D). */
     navegador?: string;
+    /** La hora del primer plan de la línea (solo planes del motor 3D): la de su plan base, o ahora si es nuevo. */
+    origenEn?: number;
   },
   ttlMs = TTL_POR_DEFECTO_MS,
 ): string {
@@ -200,6 +212,7 @@ export function crearTokenPlan(
     ...(input.creatividad === undefined ? {} : { creatividad: input.creatividad }),
     ...(input.medidasDelCliente === true ? { medidasDelCliente: true as const } : {}),
     ...(input.navegador ? { navegador: input.navegador } : {}),
+    ...(input.origenEn === undefined ? {} : { origenEn: input.origenEn }),
   });
 }
 

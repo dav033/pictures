@@ -1,7 +1,8 @@
 /**
  * `POST /api/guiada/motor/editar` (REQ-007, fase 5): los cambios del cliente a un plan del motor 3D. Sin coste: la bandera,
  * Python y la auditoría son dobles; no hay red, base ni IA.
- * - sesión (401), mismo origen (403) y cuerpo (400); la bandera `python` responde `bandera_python` (409) sin mirar el plan;
+ * - sesión (401), mismo origen (403) y cuerpo (400); la bandera no manda sobre un plan del 3D (P-045): con `python` se edita
+ *   igual; el corte del 3D responde `motor_3d_cortado` (409) sin mirar el plan;
  * - el plan se verifica como en toda ruta del 3D: token, backend, navegador y espec firmada (409);
  * - un cambio por pedido del chat, por cambio del panel o por operaciones: plan nuevo, hash nuevo, token nuevo atado al mismo
  *   navegador, lo demás igual, solo se rearma lo que cambió y el turno trae la espec de antes y de después;
@@ -19,7 +20,7 @@ import { planGuardadoDeIdea } from "../../src/lib/plan/planes-ideas-guardados";
 import { atenderPlanMotor, huellaDeNavegador, type DependenciasPlanMotor } from "../../src/lib/guiada-motor/plan-motor";
 import { atenderEditarMotor, type DependenciasEditarMotor } from "../../src/lib/guiada-motor/editar-motor";
 import { crearTopePorNavegador } from "../../src/lib/guiada-motor/tope-imagenes-navegador";
-import { unirNoPude } from "../../src/lib/guiada-motor/mensajes-cliente";
+import { TEXTO_EDICION_RECALCULO, unirNoPude } from "../../src/lib/guiada-motor/mensajes-cliente";
 import { FalloEditarMotorSchema, RespuestaEditarMotorSchema, type CuerpoEditarMotor } from "../../src/lib/guiada-motor/editar-contrato";
 import { armarDesdeEspec, cotizarBom, crearCachePiezas, crosswalkIncluido, especHashDe, EspecClienteV1Schema, type EspecClienteV1, type ResultadoCotizacionBom } from "../../src/lib/globos3d/motor/v1";
 import { pythonDoble } from "../lib/python-doble-precio";
@@ -40,7 +41,7 @@ beforeEach(() => {
 afterEach(() => { for (const [clave, valor] of Object.entries(anterior)) { if (valor === undefined) delete process.env[clave]; else process.env[clave] = valor; } });
 
 type Auditoria = { quien: string; que: string; resultado: Record<string, unknown>; entrada: unknown };
-type Opciones = { motor?: "3d" | "python"; cotizar?: DependenciasEditarMotor["cotizar"]; armar?: DependenciasEditarMotor["armar"]; tope?: number };
+type Opciones = { motor?: "3d" | "python"; corte?: boolean; cotizar?: DependenciasEditarMotor["cotizar"]; armar?: DependenciasEditarMotor["armar"]; tope?: number };
 
 function entorno(opciones: Opciones = {}) {
   const auditorias: Auditoria[] = [];
@@ -49,7 +50,7 @@ function entorno(opciones: Opciones = {}) {
   const doble = pythonDoble(cruce);
   const cotizarPorDefecto: DependenciasEditarMotor["cotizar"] = (bom) => cotizarBom({ total: bom.total, porPieza: bom.porPieza }, { crosswalk: async () => cruce, cotizarLista: doble.cotizarLista });
   const deps: DependenciasEditarMotor = {
-    leerBandera: async () => ({ motor: opciones.motor ?? "3d", fuente: "cookie" }),
+    leerBandera: async () => (opciones.corte ? { motor: "python", fuente: "corte" } : { motor: opciones.motor ?? "3d", fuente: "cookie" }),
     auditar: (quien, que, resultado, extra) => { auditorias.push({ quien, que, resultado: resultado as Record<string, unknown>, entrada: extra?.entrada }); },
     armar: opciones.armar ?? ((espec) => armarDesdeEspec(espec, { cachePiezas })),
     planGuardado: planGuardadoDeIdea,
@@ -122,18 +123,31 @@ test("cuerpo inválido: 400 tipado, también con una operación inventada o un c
   }
 });
 
-test("la bandera manda siempre: con python responde bandera_python (409) sin mirar el plan y deja el motivo", async () => {
+test("la bandera no manda sobre un plan del 3d (P-045): con python el cambio se hace igual y con el mismo precio", async () => {
   const plan = await planDe();
-  const e = entorno({ motor: "python" });
+  const con3d = await editar(entorno(), plan, pedidoColor);
+  const python = entorno({ motor: "python" });
+  const conPython = await editar(python, plan, pedidoColor);
+  assert.deepEqual([con3d.respuesta.status, conPython.respuesta.status], [200, 200], JSON.stringify(conPython.cuerpo).slice(0, 300));
+  const [a, b] = [RespuestaEditarMotorSchema.parse(con3d.cuerpo), RespuestaEditarMotorSchema.parse(conPython.cuerpo)];
+  assert.equal(b.plan.plan_hash, a.plan.plan_hash);
+  assert.equal((b.cotizacion as { total: number }).total, (a.cotizacion as { total: number }).total);
+  assert.deepEqual({ bandera: python.auditorias.at(-1)!.resultado.bandera, efectivo: python.auditorias.at(-1)!.resultado.efectivo }, { bandera: "python", efectivo: "3d" });
+});
+
+test("el corte del 3d sí frena el cambio: 409 MOTOR_3D_CORTADO sin mirar el plan, con la frase que avisa del recálculo, y deja el motivo", async () => {
+  const plan = await planDe();
+  const e = entorno({ corte: true });
   for (const cuerpo of [{ plan, edicion: pedidoColor }, { plan: { ...plan, approval_token: "basura" }, edicion: pedidoColor }]) {
     const respuesta = await atenderEditarMotor(pedir(cuerpo), e.deps);
     assert.equal(respuesta.status, 409);
     const dicho = FalloEditarMotorSchema.parse(await respuesta.json());
-    assert.equal(dicho.codigo, "MOTOR_PYTHON");
-    assert.deepEqual(dicho.fallback, { razon: "bandera_python" });
+    assert.equal(dicho.codigo, "MOTOR_3D_CORTADO");
+    assert.deepEqual(dicho.fallback, { razon: "motor_3d_cortado" });
+    assert.equal(dicho.error, TEXTO_EDICION_RECALCULO);
   }
   assert.equal(e.auditorias.length, 2);
-  assert.ok(e.auditorias.every((a) => a.quien === "regla:motor_guiada" && a.resultado.razon === "bandera_python" && a.resultado.efectivo === "python"));
+  assert.ok(e.auditorias.every((a) => a.quien === "regla:motor_guiada" && a.resultado.razon === "motor_3d_cortado" && a.resultado.fuente === "corte"));
 });
 
 test("el plan se verifica: token basura, de Python, de otro navegador, hash ajeno, espec alterada o ausente", async () => {

@@ -14,7 +14,8 @@ import { planGuardadoDeIdea } from "../../src/lib/plan/planes-ideas-guardados";
 import { atenderPlanMotor, type DependenciasPlanMotor } from "../../src/lib/guiada-motor/plan-motor";
 import { atenderEditarMotor, type DependenciasEditarMotor } from "../../src/lib/guiada-motor/editar-motor";
 import { crearTopePorNavegador } from "../../src/lib/guiada-motor/tope-imagenes-navegador";
-import { TEXTO_MOTOR_3D_APAGADO, avisosDelCambio, crearDependenciasEdicion3d, type DependenciasEdicion3d } from "../../src/components/guiado/edicion-motor3d";
+import { avisosDelCambio, crearDependenciasEdicion3d, type DependenciasEdicion3d } from "../../src/components/guiado/edicion-motor3d";
+import { TEXTO_EDICION_RECALCULO } from "../../src/lib/guiada-motor/mensajes-cliente";
 import { mensajeAjuste } from "../../src/components/guiado/ajuste/ejecutar-ajuste";
 import { RUTA_EDITAR_MOTOR, type EdicionDelCliente } from "../../src/lib/guiada-motor/editar-contrato";
 import { armarDesdeEspec, cotizarBom, crearCachePiezas, crosswalkIncluido, type EspecClienteV1, type ResultadoCotizacionBom, type ResultadoMotorV1 } from "../../src/lib/globos3d/motor/v1";
@@ -42,7 +43,7 @@ afterEach(() => { for (const [clave, valor] of Object.entries(anterior)) { if (v
 
 // ---------- Cliente guiado: la ruta real, el cliente real y el texto que ve la persona ----------
 
-type Opciones = { motor?: "3d" | "python"; cotizar?: DependenciasEditarMotor["cotizar"]; armar?: DependenciasEditarMotor["armar"]; tope?: number };
+type Opciones = { motor?: "3d" | "python"; corte?: boolean; cotizar?: DependenciasEditarMotor["cotizar"]; armar?: DependenciasEditarMotor["armar"]; tope?: number };
 type Plan = ReturnType<typeof PlanGuiadoSchema.parse> & { espec: EspecClienteV1 };
 
 function entorno(opciones: Opciones = {}) {
@@ -50,7 +51,7 @@ function entorno(opciones: Opciones = {}) {
   let ids = 0;
   const doble = pythonDoble(cruce);
   const deps: DependenciasEditarMotor = {
-    leerBandera: async () => ({ motor: opciones.motor ?? "3d", fuente: "cookie" }),
+    leerBandera: async () => (opciones.corte ? { motor: "python", fuente: "corte" } : { motor: opciones.motor ?? "3d", fuente: "cookie" }),
     auditar: () => undefined,
     armar: opciones.armar ?? ((espec) => armarDesdeEspec(espec, { cachePiezas })),
     planGuardado: planGuardadoDeIdea,
@@ -195,13 +196,14 @@ test("G-10 el motor se rompe a mitad del cambio: 500 técnico, el cliente lee «
   assert.equal(r.cuerpo.plan, undefined);
 });
 
-test("G-11 la bandera apaga el armado 3D: el cliente lee que el cambio no está disponible y su plan sigue", async () => {
+test("G-11 el corte del 3D apaga el armado (P-045): el cliente lee que su plan habría que recalcularlo y su plan sigue", async () => {
   const plan = await planDe([{ estructura: "arco", cantidad: 1 }]);
-  const e = entorno({ motor: "python" });
-  const r = await clienteEdita(e, plan, pedido({ tipo: "reemplazar_color", color: "azul", colorNuevo: "rojo", piezas: [] }));
+  const r = await clienteEdita(entorno({ corte: true }), plan, pedido({ tipo: "reemplazar_color", color: "azul", colorNuevo: "rojo", piezas: [] }));
   assert.equal(r.hecho, false);
-  assert.equal(r.texto, TEXTO_MOTOR_3D_APAGADO);
+  assert.equal(r.texto, TEXTO_EDICION_RECALCULO);
   asertaNoPude(r.texto);
+  // La bandera en python sola ya no apaga el cambio de un plan del 3D abierto: se hace (marcha atrás ordenada).
+  assert.equal((await clienteEdita(entorno({ motor: "python" }), plan, pedido({ tipo: "reemplazar_color", color: "azul", colorNuevo: "rojo", piezas: [] }))).hecho, true);
 });
 
 test("G-12 una pieza que no está en el plan: se dice que no se encontró y no se inventa un cambio", async () => {

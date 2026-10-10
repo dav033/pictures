@@ -1,7 +1,8 @@
 /**
  * `POST /api/guiada/motor/plan` (REQ-007, fase 2): el plan de la vista guiada armado por el motor 3D. Sin coste: la
  * bandera, Python y la auditoría son dobles; no hay red, base ni IA.
- * - sesión (401) y cuerpo (400); la bandera `python` manda los planes nuevos a Python (409 tipado);
+ * - sesión (401) y cuerpo (400); la bandera `python` manda los planes nuevos a Python (409 tipado), no los del 3D abiertos;
+ *   el corte del 3D (P-045) frena los dos (409 `motor_3d_cortado`);
  * - propuesta e idea con la bandera en `3d`: sobre válido, hash de la espec, token `globos3d`, auditoría con el motor real;
  * - cada fallo es TIPADO (`fallback.razon`): pieza sin constructor, hueco en la tienda, precio que falla, idea sin plan;
  * - sumar una idea a un plan del 3D: las piezas del plan quedan intactas, sigue en el 3D aunque la bandera cambie,
@@ -44,12 +45,12 @@ beforeEach(() => {
 afterEach(() => { for (const [clave, valor] of Object.entries(anterior)) { if (valor === undefined) delete process.env[clave]; else process.env[clave] = valor; } });
 
 type Auditoria = { quien: string; que: string; resultado: Record<string, unknown>; entrada: unknown };
-function entorno(motor: "3d" | "python" = "3d", opciones: { cotizar?: DependenciasPlanMotor["cotizar"]; planGuardado?: DependenciasPlanMotor["planGuardado"] } = {}) {
+function entorno(motor: "3d" | "python" = "3d", opciones: { cotizar?: DependenciasPlanMotor["cotizar"]; planGuardado?: DependenciasPlanMotor["planGuardado"]; corte?: boolean } = {}) {
   const auditorias: Auditoria[] = [];
   const doble: PythonDoble = pythonDoble(cruce);
   let ids = 0;
   const deps: DependenciasPlanMotor = {
-    leerBandera: async () => ({ motor, fuente: motor === "3d" ? "cookie" : "defecto" }),
+    leerBandera: async () => (opciones.corte ? { motor: "python", fuente: "corte" } : { motor, fuente: motor === "3d" ? "cookie" : "defecto" }),
     auditar: (quien, que, resultado, extra) => { auditorias.push({ quien, que, resultado: resultado as Record<string, unknown>, entrada: extra?.entrada }); },
     planGuardado: opciones.planGuardado ?? planGuardadoDeIdea,
     cotizar: opciones.cotizar ?? ((bom) => cotizarBom({ total: bom.total, porPieza: bom.porPieza }, { crosswalk: async () => cruce, cotizarLista: doble.cotizarLista })),
@@ -221,18 +222,31 @@ test("sumar una idea a un plan del 3d: las piezas del plan quedan intactas, las 
   assert.equal(e.auditorias[0]!.resultado.efectivo, "3d");
 });
 
-test("marcha atrás inmediata: con la bandera en python, un plan 3d en pantalla se rehace con Python (409 tipado) en una propuesta y al sumar una idea", async () => {
+test("marcha atrás ordenada (P-045): con la bandera en python, un plan 3d en pantalla sigue en el 3d al rehacer la propuesta y al sumar una idea", async () => {
   const base = await planBase();
   for (const cuerpo of [propuesta({ base }), { desde: "idea", idea_id: "deco-real-09-images-24", base }]) {
+    const e = entorno("python");
+    const respuesta = await atenderPlanMotor(pedir(cuerpo), e.deps);
+    assert.equal(respuesta.status, 200, JSON.stringify(await respuesta.clone().json()).slice(0, 300));
+    const plan = PlanGuiadoSchema.parse(RespuestaPlanMotorSchema.parse(await respuesta.json()).plan);
+    assert.equal(abrirContextoPlan(plan.approval_token)?.backend, "globos3d", "sale del 3d, con su token");
+    const { bandera, fuente, efectivo, conserva_motor } = e.auditorias[0]!.resultado;
+    assert.deepEqual({ bandera, fuente, efectivo, conserva_motor }, { bandera: "python", fuente: "defecto", efectivo: "3d", conserva_motor: "plan_3d_abierto" });
+  }
+});
+
+test("el corte del 3d frena todo plan, nuevo o abierto, sin verificar la base ni cotizar (409 MOTOR_3D_CORTADO, tipado y auditado)", async () => {
+  const base = await planBase();
+  for (const cuerpo of [propuesta(), propuesta({ base }), { desde: "idea", idea_id: "deco-real-09-images-24", base }, { desde: "idea", idea_id: "deco-real-09-images-24", base: { ...base, approval_token: "basura" } }]) {
     let cotizaciones = 0;
-    const e = entorno("python", { cotizar: async () => { cotizaciones += 1; return { ok: false, razon: "precio_fallido", detalle: "no debía llamarse" }; } });
+    const e = entorno("3d", { corte: true, cotizar: async () => { cotizaciones += 1; return { ok: false, razon: "precio_fallido", detalle: "no debía llamarse" }; } });
     const respuesta = await atenderPlanMotor(pedir(cuerpo), e.deps);
     assert.equal(respuesta.status, 409);
     const salida = FalloPlanMotorSchema.parse(await respuesta.json());
-    assert.equal(salida.codigo, "MOTOR_PYTHON");
-    assert.equal(salida.fallback?.razon, "bandera_python");
+    assert.equal(salida.codigo, "MOTOR_3D_CORTADO");
+    assert.equal(salida.fallback?.razon, "motor_3d_cortado");
     assert.equal(cotizaciones, 0);
-    assert.deepEqual(e.auditorias[0]!.resultado, { bandera: "python", fuente: "defecto", efectivo: "python", razon: "bandera_python" });
+    assert.deepEqual(e.auditorias[0]!.resultado, { bandera: "python", fuente: "corte", efectivo: "python", razon: "motor_3d_cortado" });
   }
 });
 

@@ -36,6 +36,8 @@ export type EntradaSobre = {
   requestId: string;
   /** Huella del navegador que pidió el plan: el token queda atado a él (un token copiado a otro navegador no sirve). */
   navegador?: string;
+  /** La hora del primer plan de esta línea (la del plan base al cambiarlo o sumarle algo; ahora si es nuevo): va al token. */
+  origenEn?: number;
 };
 
 export type SobreDelMotor = { ok: true; plan: PlanGuiadoMotor; cotizacion: CotizacionDelMotor["cotizacion"] } | { ok: false; motivo: string };
@@ -156,6 +158,7 @@ export function sobreDelMotor(entrada: EntradaSobre): SobreDelMotor {
     catalogSnapshotId: cotizacion.snapshot,
     allowlist: allowlistDesdeMapa(variantesPorProducto(cotizacion.compras)),
     ...(entrada.navegador ? { navegador: entrada.navegador } : {}),
+    ...(entrada.origenEn === undefined ? {} : { origenEn: entrada.origenEn }),
   });
 
   const sobre = {

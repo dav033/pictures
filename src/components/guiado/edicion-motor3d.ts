@@ -5,8 +5,10 @@ import {
   FalloEditarMotorSchema, RespuestaEditarMotorSchema, RUTA_EDITAR_MOTOR,
   type CuerpoEditarMotor, type EdicionDelCliente, type RespuestaEditarMotor,
 } from "@/lib/guiada-motor/editar-contrato";
-import { unirNoPude } from "@/lib/guiada-motor/mensajes-cliente";
+import type { RazonRecalculo } from "@/lib/guiada-motor/plan-contrato";
+import { TEXTO_EDICION_RECALCULO, unirNoPude } from "@/lib/guiada-motor/mensajes-cliente";
 import { esCancelacion, FalloPlanEditar, MENSAJE_EDICION_LENTA, PLAZO_EDICION_MS } from "@/lib/plan/peticion-plan-editar";
+import { avisosRecalculo, type AvisosRecalculo } from "./aviso-recalculo";
 
 type PlanGuiado = z.infer<typeof PlanGuiadoSchema>;
 type Red = typeof fetch;
@@ -21,16 +23,18 @@ export type DependenciasEdicion3d = {
   editar: (base: PlanGuiado, edicion: EdicionDelCliente, opciones?: { turnoId?: string }) => Promise<RespuestaEditarMotor>;
 };
 
-/** El motor 3D está apagado ahora (la bandera dice `python`): el plan en pantalla ya no se edita con él. */
+/**
+ * El plan en pantalla ya no se cambia con el 3D (P-045): el corte del motor, o su línea pasó el límite con la bandera en
+ * `python`. El cliente lee que habría que recalcularlo y que el precio puede cambiar, y su plan queda como estaba. La
+ * bandera en `python` sola no llega aquí: un plan del 3D abierto se sigue cambiando en el 3D.
+ */
 export class FalloMotor3dApagado extends FalloPlanEditar {
-  readonly razon = "bandera_python" as const;
-  constructor(options?: { cause?: unknown }) {
-    super(TEXTO_MOTOR_3D_APAGADO, options);
+  constructor(readonly razon: RazonRecalculo, options?: { cause?: unknown }) {
+    super(TEXTO_EDICION_RECALCULO, options);
     this.name = "FalloMotor3dApagado";
   }
 }
 
-export const TEXTO_MOTOR_3D_APAGADO = "No pude: por ahora no puedo cambiar este plan porque la vista 3D no está disponible. Tu plan sigue como estaba; si quieres, pídeme armarlo de nuevo.";
 const RESPALDO = "No pude: no logré hacer ese cambio. Tu plan sigue como estaba.";
 
 /** El color que el servidor no pudo leer: un 400 de validación cuya ruta apunta a un campo de color, con el nombre que escribió el cliente. */
@@ -42,7 +46,8 @@ function colorQueNoSeLee(datos: unknown, edicion: EdicionDelCliente): string | n
   return typeof valor === "string" && valor.trim() ? valor.trim() : null;
 }
 
-export function crearDependenciasEdicion3d(opciones: { signal?: AbortSignal; red?: Red; plazoMs?: number } = {}): DependenciasEdicion3d {
+/** `avisos`: dónde queda que el cliente ya leyó que su plan se recalcula; por defecto, el de la página (`aviso-recalculo.ts`). */
+export function crearDependenciasEdicion3d(opciones: { signal?: AbortSignal; red?: Red; plazoMs?: number; avisos?: AvisosRecalculo } = {}): DependenciasEdicion3d {
   return {
     async editar(base, edicion, extra = {}) {
       const red = opciones.red ?? ((...argumentos: Parameters<Red>) => fetch(...argumentos));
@@ -68,7 +73,12 @@ export function crearDependenciasEdicion3d(opciones: { signal?: AbortSignal; red
       }
       if (!respuesta.ok) {
         const fallo = FalloEditarMotorSchema.safeParse(datos);
-        if (fallo.success && fallo.data.fallback?.razon === "bandera_python") throw new FalloMotor3dApagado();
+        const razon = fallo.success ? fallo.data.fallback?.razon : undefined;
+        if (razon) {
+          // Ya lo leyó aquí: si después pide rehacer el plan, se recalcula sin volver a preguntar.
+          (opciones.avisos ?? avisosRecalculo).marcar(base.plan_hash);
+          throw new FalloMotor3dApagado(razon);
+        }
         const colorNoLeido = colorQueNoSeLee(datos, edicion);
         if (respuesta.status === 400 && colorNoLeido) throw new FalloPlanEditar(`No pude: no reconozco el color «${colorNoLeido}». Tu plan sigue como estaba.`);
         // 409, 422 y 429 traen frases pensadas para el cliente; lo demás (400, 401, 500) es técnico y se dice con el respaldo.

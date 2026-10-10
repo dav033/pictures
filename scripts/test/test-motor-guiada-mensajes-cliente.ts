@@ -3,7 +3,8 @@
  * - el motivo técnico del motor se dice en palabras de cliente (sin códigos de formato, «paleta» ni «armado»);
  * - una tanda de razones se une entera;
  * - la vista no muestra jerga aunque le llegue un «No pude: …» con ella;
- * - con `python` el aviso del chat es byte a byte el de siempre; con el motor 3D no se nombra a Python.
+ * - con `python` el aviso del chat es byte a byte el de siempre; con el motor 3D no se nombra a Python;
+ * - el aviso sigue al motor del PLAN abierto que manda la vista (`estadoGuiado.motorPlan`, P-045), no a la bandera.
  *
  * Run: npx tsx --conditions=react-server scripts/test/test-motor-guiada-mensajes-cliente.ts
  */
@@ -12,7 +13,8 @@ import test from "node:test";
 import { mensajeAjuste } from "../../src/components/guiado/ajuste/ejecutar-ajuste";
 import { FalloPlanEditar } from "../../src/lib/plan/peticion-plan-editar";
 import { motivoParaCliente, noPudeDeMotivos, unirNoPude } from "../../src/lib/guiada-motor/mensajes-cliente";
-import { avisoEdicionPlan } from "../../src/lib/ia/guiado/aviso-edicion-plan";
+import { avisoEdicionDelPlanAbierto, avisoEdicionPlan } from "../../src/lib/ia/guiado/aviso-edicion-plan";
+import { AsistenteGuiadoRequestSchema, ASISTENTE_GUIADO_VERSION } from "../../src/lib/ia/contracts/asistente-guiado-v1";
 
 const JERGA = /R-\d|\(\d{3}\)|armad|motor|paleta|fabric|tope|token/i;
 
@@ -60,4 +62,14 @@ test("el aviso del chat con el motor 3D no nombra a Python ni promete el recuent
   assert.doesNotMatch(aviso, /Python/);
   assert.match(aviso, /si no se puede hacer, se le dice al cliente/);
   assert.notEqual(aviso, avisoEdicionPlan("python"));
+});
+
+test("el aviso del cambio por chat sigue al motor del plan abierto que manda la vista, no a la bandera (P-045)", () => {
+  const pedido = (estadoGuiado?: Record<string, unknown>) => AsistenteGuiadoRequestSchema.parse({
+    schema_version: ASISTENTE_GUIADO_VERSION, messages: [{ role: "user", content: "cambia el azul por rojo" }], brief: {}, ...(estadoGuiado ? { estadoGuiado } : {}),
+  }).estadoGuiado;
+  assert.equal(avisoEdicionDelPlanAbierto(pedido({ motorPlan: "3d" })), avisoEdicionPlan("3d"), "plan del 3D abierto: el aviso del 3D, diga lo que diga la bandera");
+  assert.equal(avisoEdicionDelPlanAbierto(pedido({})), avisoEdicionPlan("python"), "sin el campo (planes de Python, clientes de antes): el de siempre");
+  assert.equal(avisoEdicionDelPlanAbierto(pedido()), avisoEdicionPlan("python"));
+  assert.equal(avisoEdicionDelPlanAbierto(pedido({ motorPlan: "cuatro-d" })), avisoEdicionPlan("python"), "un valor raro no tumba el turno: cae al de siempre");
 });

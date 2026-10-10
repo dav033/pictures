@@ -6,7 +6,8 @@
  *   pintan los mismos globos, tamaños, paquetes y total que el motor contó y Python cotizó;
  * - en un plan 3D: su vista, sin dibujo de Python, sin «Ajustar», «Modificar» ni «Cambiar algo» (nota honesta), y «Ver cómo
  *   quedaría» encendido solo si el plan trae su espec firmada (fase 4); el plan de Python se pinta como siempre;
- * - el cliente: la bandera se lee al crear el plan; un plan de foto va por Python; un plan 3D nunca cae a Python;
+ * - el cliente: la bandera se lee al crear un plan nuevo; un plan de foto va por Python; un plan 3D abierto sigue en el 3D
+ *   (P-045; el corte del 3D, en test-ui-motor3d-marcha-atras.ts);
  * - `VistaGuiada` no manda a Python la imagen ni los cambios de un plan 3D.
  *
  * Run: npx tsx scripts/test/test-ui-plan-motor3d.ts
@@ -25,7 +26,8 @@ import { ComprarMateriales } from "@/components/guiado/ComprarMateriales";
 import { CotizacionPersonalGuiada } from "@/components/guiado/CotizacionPersonalGuiada";
 import { decoracionDePlan } from "@/components/guiado/plan-compra";
 import { piezasVistaDePlan, tablaGlobos, titulosDelPlan } from "@/components/guiado/piezas-vista";
-import { TEXTO_NOTA_PLAN_3D, TEXTO_VISTA_EN_PREPARACION } from "@/components/guiado/Plan3DEnPreparacion";
+import { TEXTO_NOTA_PLAN_3D, TEXTO_REHECHO_EN_PYTHON, TEXTO_VISTA_EN_PREPARACION } from "@/components/guiado/Plan3DEnPreparacion";
+import { NotasPlan } from "@/components/guiado/NotasPlan";
 import { cuerpoDeIdea, cuerpoDePropuesta, pedirPlanAlMotor3d } from "@/components/guiado/plan-motor3d";
 import { TIMEOUT_BANDERA_MS, pedirMotorGuiada, useMotorGuiada } from "@/components/guiado/usarMotorGuiada";
 
@@ -250,14 +252,14 @@ async function main(): Promise<void> {
     }
   });
 
-  await caso("marcha atrás inmediata con un plan 3D en pantalla: la bandera en python rehace el plan con Python, sin llamar al 3D", async () => {
+  await caso("marcha atrás ordenada (P-045) con un plan 3D en pantalla: con la bandera en python la propuesta y la idea siguen en el 3D, sin leer la bandera", async () => {
     await conRed("python", { motor: planOk, planIdea: planPythonIdea }, async (llamadas) => {
-      assert.equal(await hook().planDePropuesta({ propuesta, anterior3d: plan3d, deFoto: false, signal: senal, alFallback: sinAccion }), null, "propuesta → Python");
-      const motivos: string[] = [];
-      const r = await hook().planDeIdea({ ideaId: "deco-real-07", base: { plan: plan3d, motor: "3d" }, signal: senal, alFallback: (f) => motivos.push(f.razon) });
-      assert.deepEqual({ ok: r.ok, motor: r.motor }, { ok: false, motor: "3d" }, "sumar una idea: no se arma en el 3d; quien llama rehace el plan completo desde la propuesta");
-      assert.deepEqual(motivos, ["bandera_python"], "el motivo queda dicho");
-      assert.equal(llamadas.some((l) => l.url === "/api/guiada/motor/plan" || l.url.startsWith("/api/plan-idea")), false, "ni el 3d ni el plan-idea de Python con un plan del 3d");
+      const intento = await hook().planDePropuesta({ propuesta, anterior3d: plan3d, deFoto: false, signal: senal, alFallback: sinAccion });
+      assert.equal(intento?.ok, true, "propuesta → 3D");
+      const r = await hook().planDeIdea({ ideaId: "deco-real-07", base: { plan: plan3d, motor: "3d" }, signal: senal, alFallback: sinAccion });
+      assert.deepEqual({ ok: r.ok, motor: r.motor }, { ok: true, motor: "3d" }, "sumar una idea → 3D");
+      assert.deepEqual(llamadas.map((l) => `${l.metodo} ${l.url}`), ["POST /api/guiada/motor/plan", "POST /api/guiada/motor/plan"], "ni la bandera ni el plan-idea de Python");
+      assert.ok(llamadas.every((l) => (l.cuerpo as { base?: { plan_hash?: string } }).base?.plan_hash === plan3d.plan_hash), "con el plan vigente como base");
     });
   });
 
@@ -335,12 +337,12 @@ async function main(): Promise<void> {
       assert.equal(r.motor, "python");
       assert.deepEqual(llamadas.map((l) => l.url), ["/api/plan-idea"], "ni lee la bandera");
     });
-    // Sumar a un plan del 3d: el 3d si la bandera dice 3d, con el plan vigente como base; si el 3d no puede, quien llama rehace el plan completo.
+    // Sumar a un plan del 3d: el 3d con el plan vigente como base, sin leer la bandera (el plan conserva su motor); si el 3d no puede, quien llama rehace el plan completo.
     await conRed("3d", { motor: planOk }, async (llamadas) => {
       const r = await hook().planDeIdea({ ideaId: "deco-real-07", base: { plan: plan3d, motor: "3d" }, signal: senal, alFallback: sinAccion });
       assert.equal(r.ok && r.motor, "3d");
-      assert.deepEqual(llamadas.map((l) => l.url), ["/api/guiada/motor?para=plan_nuevo", "/api/guiada/motor/plan"]);
-      assert.equal((llamadas[1]!.cuerpo as { base?: { plan_hash?: string } }).base?.plan_hash, plan3d.plan_hash);
+      assert.deepEqual(llamadas.map((l) => l.url), ["/api/guiada/motor/plan"]);
+      assert.equal((llamadas[0]!.cuerpo as { base?: { plan_hash?: string } }).base?.plan_hash, plan3d.plan_hash);
     });
     await conRed("3d", { motor: sinConstructor, planIdea: planPythonIdea }, async (llamadas) => {
       const r = await hook().planDeIdea({ ideaId: "deco-real-21", base: { plan: plan3d, motor: "3d" }, signal: senal, alFallback: sinAccion });
@@ -362,7 +364,8 @@ async function main(): Promise<void> {
     assert.match(hookFuente, /if \(deFoto\) return null;/);
     assert.match(fuente, /control\.signal\.aborted \|\| \(intento !== null && !intento\.ok && intento\.detenido\)\) return \{ turno, estado: "detenido"/, "Detener durante la lectura de la bandera no sigue con Python");
     assert.match(fuente, /rehechoEnPython: true as const/, "el plan 3D que se rehace con Python lo dice");
-    assert.match(fuente, /TEXTO_REHECHO_EN_PYTHON/);
+    // Lo dice en lo que se ve: el texto del mensaje queda tapado por la tarjeta del plan (P-045, revisión A1).
+    assert.ok(texto(renderToStaticMarkup(createElement(NotasPlan, { widget: { recalculado: true }, vigente: true }))).includes(TEXTO_REHECHO_EN_PYTHON));
   });
 
   console.log(`test-ui-plan-motor3d: ok (${casos} pruebas, ${sobres.length} sobres)`);

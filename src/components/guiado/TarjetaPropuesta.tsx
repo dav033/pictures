@@ -12,8 +12,11 @@ type Props = {
   frase: string;
   piezas: ReadonlyArray<{ estructura: EstructuraOficialId; cantidad: number; nombre?: string }>;
   colores: readonly string[];
-  /** «resolviendo»: el plan se está preparando (esqueleto con etapas). «fallo»: no se pudo; el reintento lo pone la vista. */
-  estado: "resolviendo" | "fallo";
+  /**
+   * «resolviendo»: el plan se está preparando (esqueleto con etapas). «fallo»: no se pudo; el reintento lo pone la vista.
+   * «en_espera» (P-045): no es un fallo; hacerlo exige recalcular el plan del cliente y la vista le pregunta antes (su aviso).
+   */
+  estado: "resolviendo" | "fallo" | "en_espera";
   etapa?: EtapaPlan;
 };
 

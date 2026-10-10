@@ -23,7 +23,8 @@ export const WidgetGuiadoSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("pasos-plan"), pasos: z.array(PasoPlanSchema).min(1), guias: z.array(z.object({ estructura_id: z.string(), nombre: z.string(), medidas: z.object({ ancho_m: z.number().optional(), alto_m: z.number().optional(), largo_m: z.number().optional() }).passthrough(), globos: z.array(z.object({ color: z.string(), tamano: z.string(), cantidad: z.number().int().nonnegative() }).strict()), guia: GuiaArmadoSchema }).strict()) }).strict(),
   z.object({ tipo: z.literal("proveedores"), proveedores: z.array(ProveedorSempertexSchema), solicitadoId: z.string().optional(), ciudad: z.string().optional(), ciudadesDisponibles: z.array(z.string()).optional() }).strict(),
   z.object({ tipo: z.literal("comprar"), decoracion: DecoracionSempertexSchema }).strict(),
-  z.object({ tipo: z.literal("propuesta"), propuesta: PropuestaComposicionSchema, estado: z.enum(["resolviendo", "fallo"]).optional() }).strict(),
+  /** `en_espera` (P-045): el plan pide recalcular el del cliente y espera su «Recalcular mi plan»; al recargar pasa a `fallo`. */
+  z.object({ tipo: z.literal("propuesta"), propuesta: PropuestaComposicionSchema, estado: z.enum(["resolviendo", "fallo", "en_espera"]).optional() }).strict(),
   z.object({
     tipo: z.literal("plan"), plan: PlanGuiadoSchema,
     /** Qué motor armó este plan (REQ-007): se decide al crearlo y sus ediciones e imágenes siguen con él. Los guardados antes de la bandera no lo traen: son de Python. */
@@ -40,6 +41,8 @@ export const WidgetGuiadoSchema = z.discriminatedUnion("tipo", [
      */
     avisoImagen: z.string().min(1).max(300).optional(),
     usoCosteo: UsoSchema.optional(), reemplazado: z.boolean().optional(), totalAnterior: z.number().int().nonnegative().optional(), hechas: z.array(AccionPlanGuiadaSchema).optional(),
+    /** Un plan del 3D rehecho entero con Python (P-045): la tarjeta dice que las cantidades y el precio pueden cambiar (`NotasPlan`). */
+    recalculado: z.literal(true).optional(),
     /** Ajustes hechos con «Ajustar mi plan» sobre esta tarjeta («más rosado en el semiarco orgánico»), los últimos primero al final. */
     ajustes: z.array(z.string().min(1).max(160)).max(8).optional(),
     /** Ideas de la biblioteca que el cliente sumó a este plan con «Agregar al plan» (la idea dice «Está en tu plan»). */

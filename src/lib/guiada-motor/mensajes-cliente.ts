@@ -10,6 +10,21 @@ export { PREFIJO_NO_PUDE };
 
 const mayuscula = (texto: string): string => texto.charAt(0).toLocaleUpperCase("es") + texto.slice(1);
 
+/**
+ * Un plan del 3D ya abierto que deja el 3D (el corte del motor, o una línea que pasó su límite con la bandera en python;
+ * P-045) solo puede cambiar recalculándolo entero con Python, y eso puede moverle las cantidades y el precio. El cliente lo
+ * lee ANTES de que pase (D-023) y su plan queda como estaba; solo se recalcula si lo pide. Sin jerga: pasan el filtro de
+ * `mensajeAjuste` tal cual.
+ */
+const RECALCULO = "tengo que volver a calcular tu plan completo con el método de siempre, y las cantidades y el precio pueden cambiar. Tu plan sigue como estaba";
+/** El botón del aviso: tocarlo es pedir el recálculo. */
+export const ETIQUETA_RECALCULAR = "Recalcular mi plan";
+export const TITULO_AVISO_RECALCULO = "Antes de cambiar tu plan";
+/** Al rehacer el plan (otra propuesta o una idea sumada): el detalle de la tarjeta de aviso, con su botón. */
+export const TEXTO_AVISO_RECALCULO = `Para hacer ese cambio ${RECALCULO}. Si quieres que lo recalcule, toca «${ETIQUETA_RECALCULAR}» o vuelve a pedírmelo.`;
+/** Al cambiarlo (chat o «Ajustar mi plan»): la respuesta de `/api/guiada/motor/editar`. */
+export const TEXTO_EDICION_RECALCULO = `${PREFIJO_NO_PUDE}por ahora no puedo cambiar este plan tal como está: para hacerlo ${RECALCULO}; si quieres que lo recalcule, pídeme que lo arme de nuevo.`;
+
 /** Une las razones de un cambio que no se hizo (cada una ya dicha por el servidor) en una sola frase para el cliente. */
 export function unirNoPude(frases: readonly string[]): string {
   return frases.map((frase, indice) => (indice === 0 ? frase : mayuscula(frase.replace(PREFIJO_NO_PUDE, "")))).join(" ");

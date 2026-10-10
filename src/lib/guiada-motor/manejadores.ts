@@ -3,7 +3,7 @@ import { z } from "zod";
 import { isAuthenticatedRequest } from "@/lib/auth/request";
 import { exigirAdministradorMismoOrigen } from "@/lib/feedback-ia/acceso";
 import { COOKIE_MOTOR } from "./bandera";
-import { MotorGuiadaSchema, PARA_PLAN_NUEVO, type RespuestaMotor } from "./tipos";
+import { MotorGuiadaSchema, PARA_PLAN_NUEVO, PARA_PLAN_PYTHON, type RespuestaMotor } from "./tipos";
 
 /** Lógica de `/api/guiada/motor`, con la bandera y la auditoría inyectadas para probarla sin Neon ni registro. */
 export type DependenciasMotor = {
@@ -22,12 +22,16 @@ function error(codigo: string, mensaje: string, estado: number): Response {
 
 /**
  * GET: el motor con el que se crea un plan nuevo. Nunca se cachea (la página /asistente está prerenderizada y no lo
- * puede leer). Con `?para=plan_nuevo` la lectura queda en la auditoría de la conversación (`regla:motor_guiada`).
+ * puede leer). Con `?para=plan_nuevo` la lectura queda en la auditoría de la conversación (`regla:motor_guiada`); con
+ * `?para=plan_python`, la decisión de rehacer un plan de Python con Python (P-045), diga lo que diga la bandera.
  */
 export async function atenderLecturaMotor(request: Request, deps: DependenciasMotor): Promise<Response> {
   if (!isAuthenticatedRequest(request)) return error("SESION_REQUERIDA", "Sesión requerida.", 401);
   const lectura = await deps.leer(request);
-  if (new URL(request.url).searchParams.get("para") === PARA_PLAN_NUEVO) {
+  const para = new URL(request.url).searchParams.get("para");
+  if (para === PARA_PLAN_PYTHON) {
+    deps.auditar("regla:motor_guiada", "plan de la guiada rehecho sobre un plan de Python: conserva Python diga lo que diga la bandera (P-045)", { bandera: lectura.motor, fuente: lectura.fuente, efectivo: "python", conserva_motor: "plan_python_abierto" }, { entrada: { para: PARA_PLAN_PYTHON } });
+  } else if (para === PARA_PLAN_NUEVO) {
     // `efectivo` es el motor con el que se INTENTA armar el plan: el que la bandera diga. Si ese plan cae a Python por un
     // motivo (pieza que el 3D no arma, precio que falla), `/api/guiada/motor/plan` deja su propia decisión con el motor real.
     deps.auditar("regla:motor_guiada", "bandera de motor leída al crear un plan de la guiada y motor con el que se intentará armar", { bandera: lectura.motor, fuente: lectura.fuente, efectivo: lectura.motor }, { entrada: { para: PARA_PLAN_NUEVO } });

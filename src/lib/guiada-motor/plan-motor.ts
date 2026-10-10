@@ -7,6 +7,7 @@ import {
   type ConceptoPlan, type EspecClienteV1, type ResultadoCotizacionBom, type ResultadoMotorV1,
 } from "@/lib/globos3d/motor/v1";
 import type { PlanIdeaGuardado } from "@/lib/plan/plan-de-idea";
+import { planDel3dVencido } from "./continuidad";
 import { verificarPlanConConcepto } from "./verificar-plan";
 import { CuerpoPlanMotorSchema, type CuerpoPlanMotor, type RazonFallback } from "./plan-contrato";
 import type { RespuestaMotor } from "./tipos";
@@ -17,8 +18,13 @@ import type { RespuestaMotor } from "./tipos";
  * y colores, y el motor cuenta. La bandera, la cotización y la auditoría se inyectan para probarla sin red ni base.
  *
  * Reglas:
- * - la bandera manda SIEMPRE (marcha atrás inmediata): con `python`, cualquier petición (un plan nuevo, rehacer uno o sumar
- *   una idea a un plan del 3D) responde `bandera_python` y la vista rehace el plan completo con Python;
+ * - la bandera decide solo los planes NUEVOS (sin `base`): con `python` responden `bandera_python` y la vista los arma con
+ *   Python. Rehacer un plan del 3D o sumarle una idea sigue en el 3D aunque la bandera diga `python`: el plan conserva su
+ *   motor y su forma de cotizar hasta el final de la conversación (marcha atrás ordenada, P-045), con un límite: con
+ *   `python`, una línea que empezó hace más de 24 h responde `plan_3d_vencido` (`continuidad.ts`; el token nuevo hereda la
+ *   hora del primer plan, así que encadenar cambios no lo alarga);
+ * - el corte del 3D (`fuente: "corte"`) frena todo, también lo que tiene `base`: responde `motor_3d_cortado` sin verificar
+ *   ni cotizar, y la vista avisa al cliente antes de recalcular su plan con Python;
  * - un token de Python (`backend: python`) se rechaza: cada plan tiene un solo dueño de sus cantidades;
  * - el token del 3D va atado al navegador que pidió el plan (cookie `feedback_usuario`): copiado a otro, no sirve;
  * - todo lo que impida el plan 3D es un fallo TIPADO (`fallback.razon`) y la vista resuelve por Python.
@@ -44,6 +50,9 @@ class FalloDelPlan extends Error {
 
 const FRASE_POR_RAZON: Readonly<Record<RazonFallback, string>> = {
   bandera_python: "Este plan se arma con el motor de siempre.",
+  motor_3d_cortado: "El motor 3D está cortado: el plan se arma con el motor de siempre (si ya era del 3D, avisando antes al cliente).",
+  plan_3d_vencido: "La bandera dice python y este plan del 3D pasó su límite: se recalcula con el motor de siempre, avisando antes al cliente.",
+  aprobacion_invalida: "La aprobación del plan del 3D ya no sirve: se recalcula con el motor de siempre, avisando antes al cliente.",
   no_representable: "Alguna pieza de este plan todavía no la arma el motor 3D.",
   sin_cobertura: "La tienda no vende algún globo de este plan en esa talla o color.",
   precio_fallido: "No pude cotizar los materiales de este plan.",
@@ -52,7 +61,15 @@ const FRASE_POR_RAZON: Readonly<Record<RazonFallback, string>> = {
   sobre_invalido: "No pude armar el plan con el motor 3D.",
 };
 
-type BaseVerificada = { espec: EspecClienteV1; concepto: ConceptoPlan };
+/** Los fallos que no son del armado sino de la bandera o del corte: 409 con su código; el resto, 422. */
+const RESPUESTA_POR_RAZON: Partial<Record<RazonFallback, { codigo: string; estado: number }>> = {
+  bandera_python: { codigo: "MOTOR_PYTHON", estado: 409 },
+  motor_3d_cortado: { codigo: "MOTOR_3D_CORTADO", estado: 409 },
+  plan_3d_vencido: { codigo: "PLAN_3D_VENCIDO", estado: 409 },
+};
+const RESPUESTA_NO_ARMABLE = { codigo: "PLAN_NO_ARMABLE_EN_3D", estado: 422 };
+
+type BaseVerificada = { espec: EspecClienteV1; concepto: ConceptoPlan; origenEn: number };
 
 /** Huella (no reversible) del navegador al que se le dio el plan. */
 export const huellaDeNavegador = (usuarioId: string): string => createHash("sha256").update(`globos3d-navegador:${usuarioId}`).digest("hex");
@@ -113,18 +130,23 @@ async function atender(request: Request, deps: DependenciasPlanMotor, navegador:
     deps.auditar("regla:motor_guiada", "plan de la guiada: el motor 3D no lo arma y se resuelve con Python", {
       bandera: bandera.motor, fuente: bandera.fuente, efectivo: "python", razon, ...(detalle ? { detalle } : {}), ...(piezas ? { piezas } : {}),
     }, { entrada, motivo: FRASE_POR_RAZON[razon] });
-    return error(razon === "bandera_python" ? "MOTOR_PYTHON" : "PLAN_NO_ARMABLE_EN_3D", FRASE_POR_RAZON[razon], razon === "bandera_python" ? 409 : 422, { fallback: { razon, ...(detalle ? { detalle } : {}), ...(piezas ? { piezas } : {}) } });
+    const { codigo, estado } = RESPUESTA_POR_RAZON[razon] ?? RESPUESTA_NO_ARMABLE;
+    return error(codigo, FRASE_POR_RAZON[razon], estado, { fallback: { razon, ...(detalle ? { detalle } : {}), ...(piezas ? { piezas } : {}) } });
   };
 
-  // La bandera manda siempre: con `python` ni se verifica la base. Un plan del 3D que estaba en pantalla se rehace con Python.
-  if (bandera.motor !== "3d") return fallo("bandera_python");
+  // El corte frena todo y antes de nada (ni se verifica la base). La bandera, solo lo nuevo: un plan del 3D abierto sigue aquí.
+  if (bandera.fuente === "corte") return fallo("motor_3d_cortado");
+  if (!cuerpo.base && bandera.motor !== "3d") return fallo("bandera_python");
   let base: BaseVerificada | null = null;
   if (cuerpo.base) {
     const verificada = verificarPlanConConcepto(cuerpo.base, navegador);
     if ("codigo" in verificada) {
       deps.auditar("regla:motor_guiada", "plan de la guiada: la base que mandó el navegador no se acepta", { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "python", razon: verificada.codigo, motivo: verificada.motivo }, { entrada, motivo: verificada.mensaje });
-      return error(verificada.codigo, verificada.mensaje, verificada.estado);
+      // Una aprobación que ya no sirve (vencida, de otro navegador, de otro plan) no deja seguir en el 3D: la vista avisa antes de recalcular.
+      return error(verificada.codigo, verificada.mensaje, verificada.estado, verificada.codigo === "APROBACION_INVALIDA" ? { fallback: { razon: "aprobacion_invalida" } } : {});
     }
+    // La bandera no frena un plan del 3D abierto… salvo que su línea pase el límite de continuidad.
+    if (planDel3dVencido(bandera, verificada.origenEn, Date.now())) return fallo("plan_3d_vencido");
     base = verificada;
   }
 
@@ -139,10 +161,10 @@ async function atender(request: Request, deps: DependenciasPlanMotor, navegador:
       if (cotizada.razon === "sin_cobertura") return fallo("sin_cobertura", cotizada.faltantes.map((f) => `${f.formatoId} ${f.codigo}: ${f.motivo}`).join("; "));
       return fallo(cotizada.razon === "material_no_disponible" ? "sin_cobertura" : "precio_fallido", cotizada.detalle);
     }
-    const sobre = sobreDelMotor({ espec, resultado: { ...resultado, avisos }, cotizacion: cotizada, concepto, requestId, navegador });
+    const sobre = sobreDelMotor({ espec, resultado: { ...resultado, avisos }, cotizacion: cotizada, concepto, requestId, navegador, origenEn: base?.origenEn ?? Date.now() });
     if (!sobre.ok) return fallo("sobre_invalido", sobre.motivo);
     deps.auditar("regla:motor_guiada", "plan de la guiada armado por el motor 3D y cotizado con Python", {
-      bandera: bandera.motor, fuente: bandera.fuente, efectivo: "3d", plan_hash: resultado.especHash, motor: resultado.motor,
+      bandera: bandera.motor, fuente: bandera.fuente, efectivo: "3d", ...(base && bandera.motor !== "3d" ? { conserva_motor: "plan_3d_abierto" } : {}), plan_hash: resultado.especHash, motor: resultado.motor,
       piezas: espec.piezas.map((p) => ({ id: p.id, oficial: p.oficial })), globos: resultado.bom.total.reduce((suma, l) => suma + l.cantidad, 0),
       lineas: cotizada.compras.length, total_cop: cotizada.total, snapshot_precios: cotizada.snapshot, snapshot_cruce: cotizada.snapshotCruce,
       politica_paquetes: cotizada.politica, reserva: cotizada.reserva, avisos, ms: Date.now() - inicio,

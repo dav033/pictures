@@ -3,6 +3,7 @@ import { COLORES_PROPUESTA_V2, PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
 import { BasePlanSchema } from "@/lib/plan/edicion-esquemas";
 import { MAX_PIEZAS_PLAN } from "@/lib/plan/piezas-individuales";
+import { MotorGuiadaSchema } from "@/lib/guiada-motor/tipos";
 
 export const ASISTENTE_GUIADO_VERSION = "asistente-guiado.v1" as const;
 /**
@@ -74,6 +75,11 @@ const EstadoGuiadoSchema = z.object({
   alcancePropuesta: z.enum(["completa", "individual"]).optional(),
   piezaPedida: z.enum(ESTRUCTURAS_OFICIALES_IDS).optional(),
   planActual: PlanActualGuiadoSchema.optional(),
+  /**
+   * El motor del plan vigente (P-045): el aviso de un cambio por chat sigue al PLAN, no a la bandera (un plan del 3D abierto
+   * se cambia en el 3D aunque la bandera diga python). La vista solo lo manda con `3d`; sin él, el plan es de Python.
+   */
+  motorPlan: MotorGuiadaSchema.optional().catch(undefined),
   /** Las ideas del último carrusel, en orden: `elegir_idea` elige entre ellas (edicion-plan-chat.ts). */
   ideasMostradas: z.array(IdeaVisibleGuiadaSchema).max(12).optional(),
 });
