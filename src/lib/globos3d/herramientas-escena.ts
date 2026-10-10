@@ -12,7 +12,7 @@ import {
 } from "./herramientas-escena-estructuras";
 import { coloresDePieza, recolorearConPaleta, recolorearConPedidos } from "./herramientas-escena-recolor";
 import { IDS_SILUETA, TIPOS_FOLLAJE } from "./herramientas-escena-trazo";
-import { ACCIONES_TAMANO, FORMATOS_AJUSTABLES, ajustarTamanos, esPiezaOrganica, textoConteo } from "./herramientas-escena-tamanos";
+import { ACCIONES_TAMANO, FORMATO_AJUSTABLE, ajustarTamanos, esPiezaOrganica, textoConteo } from "./herramientas-escena-tamanos";
 import { DESCRIPCION_EDITAR_GLOBOS, ESQUEMA_EDITAR_GLOBOS, editarGlobos } from "./herramientas-escena-editar";
 import { ZONAS_ORGANICAS } from "./zonas-organicas";
 import { SILUETAS_TRAZO, cajaTrazo } from "./trazo-organico";
@@ -295,7 +295,7 @@ const ESQUEMAS = {
   ajustar_tamanos: z.object({
     id: IdSchema.describe("id de la pieza orgánica (arco orgánico, columna/guirnalda/semiarco/aro/marco orgánicos, trazo orgánico, orgánicos de la biblioteca)"),
     cambios: z.array(z.object({
-      formato: z.enum(FORMATOS_AJUSTABLES).describe("tamaño de globo"),
+      formato: FORMATO_AJUSTABLE.describe("tamaño de globo"),
       accion: z.enum(ACCIONES_TAMANO).describe("mas: clara subida (al menos +60 % de lo que había al empezar, o hasta cantidad/porcentaje; si el cuerpo no da más, lo engruesa y lo dice); menos: la mitad (o hasta cantidad/porcentaje); quitar: ninguno (en la zona); poner: exactamente cantidad o porcentaje"),
       cantidad: z.number().int().min(0).max(3000).optional().describe("cuántos globos de ese tamaño deben quedar al final en la zona (no cuántos sumar)"),
       porcentaje: z.number().min(0).max(95).optional().describe("qué parte (0–95 %) de los globos de estructura de la zona (sin el relleno) es de ese tamaño al final"),
@@ -303,7 +303,7 @@ const ESQUEMAS = {
       solo_ahi: z.boolean().optional().describe("con donde: ese tamaño se quita del resto de la pieza («R-24 solo abajo»)"),
     })).max(6).optional().describe("cambios de tamaños, en orden"),
     colores_por_tamano: z.array(z.object({
-      formatos: z.array(z.enum(FORMATOS_AJUSTABLES)).min(1).max(6).describe("los tamaños que toman estos colores"),
+      formatos: z.array(FORMATO_AJUSTABLE).min(1).max(6).describe("los tamaños que toman estos colores"),
       colores: ColoresSchema.describe("colores de esos tamaños (nombre o código; con acabado)"),
       pesos: z.array(z.number()).max(6).optional().describe("proporción de cada color entre esos tamaños"),
       exclusivo: z.boolean().optional().describe("true: esos colores salen de los demás tamaños («el azul solo en los R-24»)"),

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { armarOrganico, type ColorOrganico, type GloboOrganico, type OpcionesOrganico, type ResultadoOrganico } from "./organico";
 import { enZona, puntoEnRecorrido, rangoAltura, type ZonaOrganica } from "./zonas-organicas";
 import { alturaDePieza } from "./altura-pieza";
@@ -24,6 +25,10 @@ export { esPiezaOrganica, type PiezaOrganica } from "./organico-ajustes";
  */
 
 export const FORMATOS_AJUSTABLES = ["R-36", "R-24", "R-18", "R-12", "R-9", "R-5"] as const;
+/** El tamaño que pide la herramienta: el modelo y la validación ven la misma lista, y un formato ajeno dice cuáles valen. */
+export const FORMATO_AJUSTABLE = z.enum(FORMATOS_AJUSTABLES, {
+  error: (issue) => `«${String(issue.input)}» no es un tamaño de lo orgánico: usa ${FORMATOS_AJUSTABLES.join(", ")}`,
+});
 export const ACCIONES_TAMANO = ["mas", "menos", "quitar", "poner"] as const;
 
 export type CambioTamano = { formato: string; accion: (typeof ACCIONES_TAMANO)[number]; cantidad?: number; porcentaje?: number; donde?: ZonaOrganica; solo_ahi?: boolean };
