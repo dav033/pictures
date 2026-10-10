@@ -93,7 +93,9 @@ export function recetaDeIdea(entrada: EntradaReceta): RecetaIdea {
     else piezas.push({ nombre, cantidad: 1 });
   }
 
-  const tecnicas = [...new Set(entrada.piezas.map((p) => TECNICA_PIEZA[p.tipo]).filter((t): t is string => Boolean(t)))];
+  // Las columnas de un arco o de un arco orgánico son sus patas: el arco dice el armazón, no una columna recta.
+  const conArco = entrada.piezas.some((p) => p.tipo === "arco" || p.tipo === "arco_organico");
+  const tecnicas = [...new Set(entrada.piezas.filter((p) => !(conArco && p.tipo === "columna")).map((p) => TECNICA_PIEZA[p.tipo]).filter((t): t is string => Boolean(t)))];
   if (entrada.piezas.some((p) => p.helio)) tecnicas.push("Helio");
   if (productos.tienda.some((t) => t.seccion === "impresos")) tecnicas.push("Impresos");
   if (productos.tienda.some((t) => t.seccion === "metalizados") && !tecnicas.includes("Metalizado (foil)")) tecnicas.push("Metalizado (foil)");

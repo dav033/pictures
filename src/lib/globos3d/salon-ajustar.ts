@@ -2,7 +2,7 @@ import { avisar } from "./avisos-usuario";
 import type { Escena, NodoEscena } from "./escena";
 import { fallar } from "./herramientas-escena-colores";
 import { MAX_NODOS, SALA_MAXIMA_CM } from "./limites-escena";
-import { ALTO_SALON_CM, falloDeCapacidad, metros, rangoSala, type ResultadoSalon } from "./salon-armar";
+import { ALTO_SALON_CM, falloDeCapacidad, metros, rangoSala, resumenCapacidad, type ResultadoSalon } from "./salon-armar";
 import {
   distribuirSalon, MAX_INVITADOS_SALON, aforoDeMesas, falloDeMesas, falloDeSillas, mesasNecesarias, medidasDeMesa, MESAS_SALON, rectDeElemento, type Celda, type DistribucionSalon, type ElementoSalon, type ParamsSalon, type TipoMesaSalon,
 } from "./salon-evento";
@@ -142,5 +142,5 @@ export function ajustarSalon(entrada: Escena, p: PedidoAjuste, notas: string[]):
   if (quitar.length) avisar(notas, `Quité ${quitar.length} mesa(s) del final${quitadas ? ` y ${quitadas} pieza(s) que estaban sobre ellas` : ""}.`, "quité", "quitó", "quitaron");
   if (movidas.length) notas.push(`${movidas.length} mesa(s) que moviste a mano se quedaron donde las pusiste.`);
   for (const z of d.sinLugar) if (!presentes.includes(z)) avisar(notas, `La zona ${z} no cabe en la sala: no se armó.`, "no cabe", "no se armó", z);
-  return { escena: e, resumen: `${resumenDeSalon(e)} (${invitados} invitados, caben ${(d.celdas.length + movidas.length) * medidasDeMesa(mesa, sillas).puestos}; sala ${metros(e.sala.anchoCm)} × ${metros(e.sala.fondoCm)}).` };
+  return { escena: e, resumen: `${resumenDeSalon(e)} (${resumenCapacidad(invitados, mesasVivas(e).length, d.celdas.length + movidas.length, mesa, sillas)}; sala ${metros(e.sala.anchoCm)} × ${metros(e.sala.fondoCm)}).` };
 }

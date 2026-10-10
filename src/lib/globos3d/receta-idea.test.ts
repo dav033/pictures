@@ -51,6 +51,25 @@ test("un arco se dice «Armazón en arco», no «Armazón recto»", () => {
   assert.ok(!r.tecnicas.includes("Armazón recto"));
 });
 
+test("las columnas de un arco son sus patas: el arco dice su armazón y no sale «Armazón recto»", () => {
+  const columna = { tipo: "columna", formatoId: "R-12", infladoCm: 25, alturaCm: 200, patron: "un_color", colores: ["005"] } as unknown as Pieza;
+  const r = recetaDeIdea(entrada({ piezas: [arco(), columna, columna] }));
+  assert.ok(r.tecnicas.includes("Armazón en arco"));
+  assert.ok(!r.tecnicas.includes("Armazón recto"));
+  const solas = recetaDeIdea(entrada({ piezas: [columna] }));
+  assert.ok(solas.tecnicas.includes("Armazón recto"));
+});
+
+test("un arco orgánico con columnas no dice «Armazón recto» y no tiene chip de armazón propio", () => {
+  const columna = { tipo: "columna", formatoId: "R-12", infladoCm: 25, alturaCm: 200, patron: "un_color", colores: ["005"] } as unknown as Pieza;
+  const organico = { tipo: "arco_organico", arco: {} } as unknown as Pieza;
+  const con = recetaDeIdea(entrada({ piezas: [organico, columna] }));
+  assert.ok(!con.tecnicas.includes("Armazón recto"));
+  assert.ok(!con.tecnicas.some((t) => t.startsWith("Armazón")));
+  const sola = recetaDeIdea(entrada({ piezas: [organico] }));
+  assert.ok(!sola.tecnicas.some((t) => t.startsWith("Armazón")));
+});
+
 test("la técnica dice si lleva impresos de la tienda", () => {
   const tienda: ProductosDeItem["tienda"] = [{ seccion: "impresos", nombre: "Impreso", url: "u", cantidad: 3, detalle: "", piezas: [] }];
   const r = recetaDeIdea(entrada({ piezas: [globoSuelto()], productos: productos([], tienda) }));

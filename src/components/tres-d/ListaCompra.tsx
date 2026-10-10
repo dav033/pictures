@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { ClipboardCopy } from "lucide-react";
+import { ChevronRight, ClipboardCopy } from "lucide-react";
 import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import type { MaterialDecoracion } from "@/lib/globos3d/figuras";
 import { corazonesSinCobertura } from "@/lib/globos3d/formatos";
@@ -12,6 +12,7 @@ import { SeccionHelio } from "./SeccionHelio";
 import { SeccionBomba } from "./SeccionBomba";
 import { almacenDelNavegador, filasBomba, guardarCalibracionBomba, inflablesDeEscena, leerCalibracionBomba, lineasBomba, type CalibracionBomba } from "@/lib/globos3d/bomba-segundos";
 import { avisoMetalizados, contarMetalizados, gruposDeHelio, lineasHelio, resumenHelio } from "@/lib/globos3d/helio-cinta";
+import { agruparPiezas, filasPorPieza, textoPorPieza, type FilaPorPieza } from "@/lib/globos3d/piezas-agrupadas";
 
 const m = (cm: number) => (cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 });
 
@@ -30,12 +31,34 @@ function ListaMateriales({ materiales }: { materiales: ReadonlyArray<MaterialDec
   );
 }
 
+function PorPieza({ filas }: { filas: FilaPorPieza[] }) {
+  return (
+    <ul className="text-sm">
+      {filas.map((f, i) => (
+        <li key={i} className="border-b border-taller-linea">
+          {f.expandible ? (
+            <details className="group">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-1 [&::-webkit-details-marker]:hidden">
+                <span className="flex min-w-0 items-center gap-2"><ChevronRight className="size-4 shrink-0 transition-transform group-open:rotate-90" aria-hidden /><span className="min-w-0 truncate" title={f.etiqueta}>{f.etiqueta}</span></span>
+                <span className="shrink-0 font-mono text-taller-suave">{f.cuenta}</span>
+              </summary>
+              <ul className="pb-1 pl-6 text-taller-suave">{f.piezas.map((p, k) => <li key={k} className="flex justify-between gap-3"><span className="min-w-0 truncate" title={p.nombre}>{p.nombre}</span><span className="shrink-0 font-mono">{p.cuenta}</span></li>)}</ul>
+            </details>
+          ) : (
+            <div className="flex min-h-11 items-center justify-between gap-3 py-1"><span className="min-w-0 truncate" title={f.etiqueta}>{f.etiqueta}</span><span className="shrink-0 font-mono text-taller-suave">{f.cuenta}</span></div>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function enTexto(nombre: string, escena: Escena, armada: EscenaArmada, calibracion: CalibracionBomba): string {
   const lineas = [`${nombre} — lista de compra`, `${escena.nodos.length} piezas · ${armada.globos.length} globos`, "", "GLOBOS"];
   for (const x of [...armada.materiales].sort((a, b) => b.cantidad - a.cantidad)) lineas.push(`${x.cantidad} × ${x.formatoId} ${referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} ${x.codigo}`);
   for (const x of corazonesSinCobertura(armada.materiales)) lineas.push(`SIN COBERTURA: la tienda no vende el Corazón 12 en ${referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} ${x.codigo} (${x.cantidad}).`);
   lineas.push("", "POR PIEZA");
-  for (const n of armada.porNodo) lineas.push(`${n.nombre}: ${n.globos.length} globos${n.copias > 1 ? ` en ${n.copias} copias` : ""}`);
+  lineas.push(...textoPorPieza(filasPorPieza(agruparPiezas(armada.porNodo))));
   const metalizados = contarMetalizados(escena.nodos, armada.porNodo);
   lineas.push(...lineasHelio(resumenHelio(gruposDeHelio(escena.nodos, armada.porNodo))), ...(metalizados ? ["", avisoMetalizados(metalizados)] : []), ...lineasBomba(filasBomba(inflablesDeEscena(armada), calibracion)));
   return lineas.join("\n");
@@ -78,9 +101,7 @@ export function ListaCompra({ nombre, escena, armada, productosExactos }: { nomb
       <SeccionBomba globos={inflablesDeEscena(armada)} calibracion={calibracion} onCambiar={cambiarCalibracion} />
       <section aria-label="Por pieza">
         <h3 className="taller-rotulo mb-2">Por pieza</h3>
-        <ul className="text-sm">
-          {armada.porNodo.map((n) => <li key={n.id} className="flex justify-between gap-3 border-b border-taller-linea py-1"><span className="min-w-0 truncate">{n.nombre}</span><span className="shrink-0 font-mono text-taller-suave">{n.globos.length} globos{n.copias > 1 ? ` · ${n.copias} copias` : ""}</span></li>)}
-        </ul>
+        <PorPieza filas={filasPorPieza(agruparPiezas(armada.porNodo))} />
       </section>
       <section aria-label="Productos de fiesta" className="[&_.detalle-ficha]:mt-0"><ProductosFiesta escena={escena} armada={armada} /></section>
       {armada.avisos.length > 0 && <section aria-label="Avisos"><h3 className="taller-rotulo mb-2">Avisos</h3><p className="text-sm">{armada.avisos.join(" ")}</p></section>}

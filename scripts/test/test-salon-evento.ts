@@ -268,6 +268,20 @@ prueba("ajustar_salon agranda la sala si las mesas no caben, y con una sala más
   assert.match(falla(mas.escena, "ajustar_salon", { ancho_cm: 800, fondo_cm: 900 }), /caben/);
 });
 
+prueba("armar_salon informa las mesas colocadas, no la cuadrícula entera", () => {
+  const armada = herramienta(vacia(), "armar_salon", { invitados: 40, ancho_cm: 1200, fondo_cm: 1800 });
+  assert.equal(mesas(armada.escena).length, 5);
+  assert.match(armada.resumen, /\(40 invitados: 40 puestos en 5 mesas \(la sala admite hasta \d+\)\)/);
+  assert.ok(!/caben/.test(armada.resumen));
+});
+
+prueba("ajustar_salon informa lo que cabe de verdad: las mesas colocadas × sillas, no la cuadrícula entera", () => {
+  const base = herramienta(vacia(), "armar_salon", { invitados: 40 }).escena;
+  const ajustada = herramienta(base, "ajustar_salon", { invitados: 40, ancho_cm: 1200, fondo_cm: 1800 });
+  assert.equal(mesas(ajustada.escena).length, 5);
+  assert.match(ajustada.resumen, /\(40 invitados: 40 puestos en 5 mesas \(la sala admite hasta \d+\); sala/);
+});
+
 prueba("ajustar_salon agrega una zona que falta; mover_zona y quitar_zona sin rehacer nada", () => {
   const completo = herramienta(vacia(), "armar_salon", { invitados: 100 }).escena;
   const sinPista = herramienta(completo, "quitar_zona", { zona: "pista" });

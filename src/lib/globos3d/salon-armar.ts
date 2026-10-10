@@ -6,7 +6,7 @@ import {
   aforoDeMesas, distribuirSalon, falloDeMesas, falloDeSillas, FRENTE_PANEL_CM, MAX_INVITADOS_SALON, medidasDeMesa, MESAS_SALON, PROFUNDIDAD_FONDO_CM, type DistribucionSalon, type ParamsSalon, type TipoMesaSalon,
 } from "./salon-evento";
 import { desplazarNodo, ponerElemento, quitarConLoSuyo, type PaletaSalon } from "./salon-nodos";
-import { registroVivo } from "./salon-registro";
+import { mesasVivas, registroVivo } from "./salon-registro";
 import { resumenDeSalon } from "./salon-resumen";
 import { piezasDeUsuarioEnElPiso } from "./salon-usuario";
 import { unir, ZONAS_SALON, type ZonaSalon } from "./salon-zonas";
@@ -29,6 +29,12 @@ export type PedidoSalon = {
 };
 
 export type ResultadoSalon = { escena: Escena; resumen: string };
+
+/** «40 invitados: 40 puestos en 5 mesas (la sala admite hasta 88)»: lo colocado y, aparte, lo que la sala admitiría. */
+export function resumenCapacidad(invitados: number, colocadas: number, cupoMesas: number, mesa: TipoMesaSalon, sillas?: number): string {
+  const { puestos } = medidasDeMesa(mesa, sillas);
+  return `${invitados} invitados: ${colocadas * puestos} puestos en ${colocadas} mesas (la sala admite hasta ${cupoMesas * puestos})`;
+}
 
 export const rangoSala = (v: number | undefined, max: number, que: string): number | undefined => {
   if (v === undefined) return undefined;
@@ -114,5 +120,5 @@ export function armarSalon(escena: Escena, p: PedidoSalon, notas: string[]): Res
     notas.push(`Tu decoración (${propias.length} pieza${propias.length > 1 ? "s" : ""}) se conservó y quedó en el fondo de fotos, delante del panel.`);
   }
   for (const z of d.sinLugar) avisar(notas, `La zona ${z} no cabe en una sala de ${metros(sala.anchoCm)} × ${metros(sala.fondoCm)}: no se armó.`, "no cabe", "no se armó", z);
-  return { escena: resultado, resumen: `${resumenDeSalon(resultado)} (${invitados} invitados, caben ${d.capacidad * medidasDeMesa(mesa, sillas).puestos}).` };
+  return { escena: resultado, resumen: `${resumenDeSalon(resultado)} (${resumenCapacidad(invitados, mesasVivas(resultado).length, d.capacidad, mesa, sillas)}).` };
 }

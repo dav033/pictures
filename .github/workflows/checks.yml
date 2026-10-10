@@ -80,6 +80,8 @@ jobs:
       - if: ${{ !cancelled() }}
         run: npm run test-motor-guiada-integracion
       - if: ${{ !cancelled() }}
+        run: npm run test-motor-guiada-tarjeta-total
+      - if: ${{ !cancelled() }}
         run: npm run catalogo:test
       - if: ${{ !cancelled() }}
         run: npm run kontext:test
