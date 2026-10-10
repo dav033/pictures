@@ -18,8 +18,8 @@ const LARGO_MAX_CONVERSACION = 64;
 
 /**
  * El `plan_hash` del cuerpo, solo para etiquetar la auditoría de un rechazo. No valida nada: el cuerpo no se usa para decidir.
- * Lee una copia (`clone`) y solo sus primeros bytes: cancela la lectura al llegar al tope, así que ni un cuerpo enorme ni uno sin
- * `Content-Length` se bajan enteros y la petición original no cambia.
+ * Lee una copia (`clone`) y solo sus primeros bytes: cancela la lectura al llegar al tope, así que la copia no baja el cuerpo
+ * entero. La petición original sigue sin leer: quien responde el rechazo la drena con `drenarCuerpo`.
  */
 export async function planHashDeLaPeticion(request: Request): Promise<string | undefined> {
   let lector: ReadableStreamDefaultReader<Uint8Array> | undefined;
@@ -42,6 +42,14 @@ export async function planHashDeLaPeticion(request: Request): Promise<string | u
     // Sin `await`: el `cancel` de una rama de `clone()` no se resuelve hasta que la otra rama (la original) también se cancela.
     void lector?.cancel().catch(() => undefined);
   }
+}
+
+/**
+ * Consume el cuerpo original de un rechazo del corte. Con el registro apagado nadie más lo lee, y una conexión keep-alive puede
+ * quedarse esperando a que se vacíe. Sin `await`, y no lanza: si el cuerpo ya se leyó (el registro de Next), no hace nada.
+ */
+export function drenarCuerpo(request: Request): void {
+  void request.body?.pipeTo(new WritableStream({ write() {} })).catch(() => undefined);
 }
 
 /** Qué identifica a un rechazo en la auditoría: la conversación que lo pidió y el plan que quería dibujar. */

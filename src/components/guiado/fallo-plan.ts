@@ -14,12 +14,13 @@ export type FalloDelPlan<A> = {
  * tarjeta (el texto del mensaje del plan no se ve, la tarjeta del plan lo tapa), con un título que no dice «No pude», el
  * estilo informativo y un único botón, «Recalcular mi plan», que es el consentimiento: sin él no se recalcula ni cambia el
  * precio. Sin otras salidas: «Usar otros colores» también recalcularía.
+ * `titulo` cambia el título del aviso cuando el cliente no pidió el cambio (el corte del 3D al cargar o al pedir una vista).
  */
-export function falloDelPlan<A>(entrada: { estado: "fallo" | "detenido"; aviso?: string; idea?: IdeaDelFallo; accion: A; mensajeId: string }): { fallo: FalloDelPlan<A>; anuncio: string } {
-  const { estado, aviso, idea, accion, mensajeId } = entrada;
+export function falloDelPlan<A>(entrada: { estado: "fallo" | "detenido"; aviso?: string; titulo?: string; idea?: IdeaDelFallo; accion: A; mensajeId: string }): { fallo: FalloDelPlan<A>; anuncio: string } {
+  const { estado, aviso, titulo = TITULO_AVISO_RECALCULO, idea, accion, mensajeId } = entrada;
   const anuncio = idea?.sumada ? "No pude agregar la idea; tu plan sigue como estaba" : "No pude terminar tu plan";
   if (estado === "detenido") return { fallo: { titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion, mensajeId }, anuncio };
-  if (aviso) return { fallo: { titulo: TITULO_AVISO_RECALCULO, detalle: aviso, etiqueta: ETIQUETA_RECALCULAR, accion, mensajeId, variante: "actualizar" }, anuncio: `${TITULO_AVISO_RECALCULO}. ${aviso}` };
+  if (aviso) return { fallo: { titulo, detalle: aviso, etiqueta: ETIQUETA_RECALCULAR, accion, mensajeId, variante: "actualizar" }, anuncio: `${titulo}. ${aviso}` };
   // Al sumar una idea, el plan de antes sigue intacto (vigente): se dice, y solo se ofrece reintentar.
   if (idea) {
     return {

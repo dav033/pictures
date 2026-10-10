@@ -140,11 +140,32 @@ test("con el corte del 3D la armada responde 409 MOTOR_3D_CORTADO con el aviso d
   assert.ok(e.auditorias.some((a) => a.quien === "regla:motor_guiada" && a.resultado.razon === "motor_3d_cortado" && a.resultado.fuente === "corte"));
 });
 
-test("con el corte, el 409 llega antes de leer el cuerpo: un cuerpo roto también recibe el aviso", async () => {
+test("con el corte, el 409 llega antes de validar el cuerpo: un cuerpo roto también recibe el aviso", async () => {
   const e = entorno(48, { motor: "python", fuente: "corte" });
   const r = await atenderArmadaMotor(pedir("{no es json"), e.deps);
   assert.equal(r.status, 409);
   assert.equal((await r.json() as { codigo: string }).codigo, "MOTOR_3D_CORTADO");
+});
+
+test("con el corte, el 409 consume el cuerpo original (el registro apagado no lo lee): la conexión no queda esperando", async () => {
+  const e = entorno(48, { motor: "python", fuente: "corte" });
+  const TROZOS = 64;
+  let pedidos = 0;
+  const cuerpo = new ReadableStream<Uint8Array>({
+    pull(controlador) {
+      pedidos += 1;
+      if (pedidos <= TROZOS) controlador.enqueue(new TextEncoder().encode("x".repeat(1024)));
+      else controlador.close();
+    },
+  }, { highWaterMark: 0 });
+  const peticion = new Request("https://app.test/api/guiada/motor/armada", {
+    method: "POST", headers: { "content-type": "application/json", cookie: [SESION, NAVEGADOR].join("; ") }, body: cuerpo, duplex: "half",
+  } as RequestInit);
+  const r = await atenderArmadaMotor(peticion, e.deps);
+  assert.equal(r.status, 409);
+  await new Promise((resolver) => setTimeout(resolver, 50));
+  assert.equal(pedidos, TROZOS + 1, "el cuerpo se leyó hasta el cierre, no solo la cabeza de la copia");
+  assert.equal(e.armados(), 0);
 });
 
 test("la cookie de administrador (fuente cookie) no se corta: la armada sigue dando el plan con el corte puesto", async () => {

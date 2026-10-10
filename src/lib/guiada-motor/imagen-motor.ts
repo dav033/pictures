@@ -7,7 +7,7 @@ import { especHashDe, svgDeArmada, VERSION_MOTOR, type DescripcionImagen, type E
 import type { TomaDeFoto } from "@/lib/globos3d/tope-fotos-hora";
 import { capturaDesdeSvg, esRechazo, prepararCaptura, type CapturaPreparada } from "./captura-imagen";
 import { CuerpoImagenSchema, MAX_CARACTERES_CUERPO_IMAGEN } from "./imagen-contrato";
-import { CODIGO_MOTOR_3D_CORTADO, crearAuditoriaDeCortes, etiquetaDelCorte } from "./corte-motor3d";
+import { CODIGO_MOTOR_3D_CORTADO, crearAuditoriaDeCortes, drenarCuerpo, etiquetaDelCorte } from "./corte-motor3d";
 import { TEXTO_DIBUJO_RECALCULO } from "./mensajes-cliente";
 import { huellaDeNavegador } from "./plan-motor";
 import { promptImagenGuiada } from "./render-ia-guiada";
@@ -77,7 +77,7 @@ export async function atenderImagenMotor(request: Request, deps: DependenciasIma
   if (!isAuthenticatedRequest(request)) return error("SESION_REQUERIDA", "Sesión requerida.", 401);
   const acceso = exigirEscritura(request);
   if ("respuesta" in acceso) return acceso.respuesta;
-  // El corte se decide con la cookie y la bandera, antes de leer o validar el cuerpo. Es intencional que también frene las
+  // El corte se decide con la cookie y la bandera, antes de validar el cuerpo. Es intencional que también frene las
   // peticiones de retomar una imagen ya pagada en fal (token de solicitud previa): el corte manda sobre la retoma, la imagen en
   // curso se pierde para este navegador y el cliente recibe el aviso de recálculo en lugar de otra imagen.
   const bandera = await deps.leerBandera(request);
@@ -90,6 +90,7 @@ async function rechazoCortado(request: Request, deps: DependenciasImagen, bander
   if (!deps.auditoriaCortes || deps.auditoriaCortes.primeraVez(etiqueta)) {
     deps.auditar("regla:imagen_guiada_3d", "imagen del plan 3D: el motor 3D está cortado; no se dibuja ni se paga la imagen", { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "ninguno", razon: "motor_3d_cortado" }, { entrada: { plan_hash: etiqueta.planHash }, motivo: TEXTO_DIBUJO_RECALCULO });
   }
+  drenarCuerpo(request);
   return error(CODIGO_MOTOR_3D_CORTADO, TEXTO_DIBUJO_RECALCULO, 409);
 }
 

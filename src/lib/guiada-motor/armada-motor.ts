@@ -3,7 +3,7 @@ import { isAuthenticatedRequest } from "@/lib/auth/request";
 import { exigirEscritura } from "@/lib/feedback-ia/acceso";
 import { svgDeArmada, type ArmadaCompactaV1, type EspecClienteV1, type ResultadoMotorV1 } from "@/lib/globos3d/motor/v1";
 import { CuerpoArmadaSchema } from "./armada-contrato";
-import { CODIGO_MOTOR_3D_CORTADO, crearAuditoriaDeCortes, etiquetaDelCorte } from "./corte-motor3d";
+import { CODIGO_MOTOR_3D_CORTADO, crearAuditoriaDeCortes, drenarCuerpo, etiquetaDelCorte } from "./corte-motor3d";
 import { TEXTO_DIBUJO_RECALCULO } from "./mensajes-cliente";
 import { huellaDeNavegador } from "./plan-motor";
 import type { RespuestaMotor } from "./tipos";
@@ -69,7 +69,7 @@ export async function atenderArmadaMotor(request: Request, deps: DependenciasArm
   if (!isAuthenticatedRequest(request)) return error("SESION_REQUERIDA", "Sesión requerida.", 401);
   const acceso = exigirEscritura(request);
   if ("respuesta" in acceso) return acceso.respuesta;
-  // El corte se decide con la cookie y la bandera, antes de leer o validar el cuerpo: un plan cortado no pasa de aquí.
+  // El corte se decide con la cookie y la bandera, antes de validar el cuerpo: un plan cortado no pasa de aquí.
   const bandera = await deps.leerBandera(request);
   if (bandera.fuente === "corte") return rechazoCortado(request, deps, bandera);
   return acceso.conCookie(await atender(request, deps, huellaDeNavegador(acceso.usuarioId)));
@@ -80,6 +80,7 @@ async function rechazoCortado(request: Request, deps: DependenciasArmada, bander
   if (!deps.auditoriaCortes || deps.auditoriaCortes.primeraVez(etiqueta)) {
     deps.auditar("regla:motor_guiada", "armada de la vista 3D: el motor 3D está cortado; el plan no se dibuja con el 3D", { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "ninguno", razon: "motor_3d_cortado" }, { entrada: { plan_hash: etiqueta.planHash }, motivo: TEXTO_DIBUJO_RECALCULO });
   }
+  drenarCuerpo(request);
   return error(CODIGO_MOTOR_3D_CORTADO, TEXTO_DIBUJO_RECALCULO, 409);
 }
 

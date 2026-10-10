@@ -74,13 +74,14 @@ import { abrirConversacionGuiada, registrarAccionGuiada, registrarFalloGuiado, v
 import { AVISO_VERSION_NUEVA, CABECERA_VERSION_APP, RespuestaIncompatibleError, camposInvalidos, clasificarIncompatible, hayVersionNueva, idParaReintento, turnoSinRespuesta } from "./version-pagina";
 import { borrarEstadoGuiado } from "./empezar-de-nuevo";
 import { useMotorGuiada } from "./usarMotorGuiada";
-import { avisarSiEsCorteDeLaImagen, crearEscuchaCorte3d, sinAvisoDeCorte, suscribirCorte3d, TIPO_ACCION_RECALCULAR_3D, type EscuchaCorte3d } from "./aviso-corte-3d";
+import { useCorte3d } from "./useCorte3d";
+import { avisarSiEsCorteDeLaImagen, sinAvisoDeCorte, TIPO_ACCION_RECALCULAR_3D } from "./aviso-corte-3d";
 import { avisarAlCargarPlan } from "./avisar-corte-3d-al-cargar";
-import { avisosRecalculo } from "./aviso-recalculo";
-import { prepararRecalculo3d, propuestaParaGuardar, TEXTO_RECALCULO_NO_POSIBLE } from "./recalculo-3d";
-import { TEXTO_AVISO_DIBUJO_RECALCULO } from "@/lib/guiada-motor/mensajes-cliente";
+import { propuestaParaGuardar } from "./recalculo-3d";
+
 import { TEXTO_IMAGEN_PLAN_3D } from "./Plan3DEnPreparacion";
 import { falloDelPlan } from "./fallo-plan";
+import { TEXTO_AVISO_DIBUJO_RECALCULO } from "@/lib/guiada-motor/mensajes-cliente";
 import { NotasPlan } from "./NotasPlan";
 import { pedirImagenPlan3D } from "./imagen-plan-3d";
 import { mensajeErrorImagen } from "./mensaje-error-imagen";
@@ -468,22 +469,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   }
   function registrarAccion(evento: string, datos: Record<string, unknown> = {}): void { registrarAccionGuiada(evento, datos, estadoRegistro()); }
   function registrarFallo(evento: string, causa: unknown, datos: Record<string, unknown> = {}, nivel: "warn" | "error" = "error"): void { registrarFalloGuiado(evento, causa, datos, estadoRegistro(), nivel); }
-  // El corte del 3D (P-049): el plan de la pantalla dejó el 3D, así que el aviso va arriba, como el de rehacer (D-023). La
-  // escucha se rehace en cada pintado (lee el plan, la tarjeta de fallo y la petición del momento) y se suscribe una sola vez.
-  // Mostrarlo lo marca como avisado, como la edición: el siguiente cambio que pida el cliente ya recalcula con Python.
-  const alCorte3dRef = useRef<EscuchaCorte3d>(() => undefined);
-  useEffect(() => {
-    alCorte3dRef.current = crearEscuchaCorte3d({
-      avisos: avisosRecalculo,
-      estado: () => ({ planVigenteHash: planVigente?.widget.plan.plan_hash ?? null, cargando: cargandoRef.current, hayFallo: fallo !== null }),
-      mostrar: (planHash, origen) => {
-        const mensajeId = planVigente?.mensajeId ?? "";
-        registrarAccion("plan.aviso_corte_3d", { mensajeId, plan_hash: planHash, origen });
-        setFallo(falloDelPlan<AccionFallo>({ estado: "fallo", aviso: TEXTO_AVISO_DIBUJO_RECALCULO, accion: { tipo: TIPO_ACCION_RECALCULAR_3D, planHash, mensajeId }, mensajeId }).fallo);
-      },
-    });
-  });
-  useEffect(() => suscribirCorte3d((planHash, origen) => alCorte3dRef.current(planHash, origen)), []);
+  // El corte del 3D (P-049) vive en `useCorte3d`: el aviso al verlo y «Recalcular mi plan».
+  const { recalcularPlan3d } = useCorte3d({ planVigente, cargandoRef, hayFallo: fallo !== null, setFallo, agregar, pedirFinal, registrarAccion, aceptarPropuesta });
 
   // ── «Empezar de nuevo» (menú «Más opciones»): se confirma dentro de la página y deja la vista como una pestaña nueva ──
   function pedirEmpezarDeNuevo(): void {
@@ -1454,36 +1441,6 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     } finally {
       setAgregandoId(null);
     }
-  }
-
-  /**
-   * «Recalcular mi plan» del aviso de corte (P-049): repite el plan con su propuesta por el mismo camino que «Intentar de nuevo»
-   * (`aceptarPropuesta` con su plan anterior). El aviso ya dio el consentimiento (`avisosRecalculo`), así que con el 3D cortado
-   * el plan se arma con Python. No hay mensaje ni foto del cliente de por medio, pero sí el modelo: `aceptarPropuesta` →
-   * `ejecutarPlan` → /api/chat, donde `confirmar_plan_decoracion` resuelve el plan (por eso cuesta y puede tardar).
-   */
-  function recalcularPlan3d(planHash: string): void {
-    const vigente = planVigente;
-    if (cargandoRef.current || vigente?.widget.plan.plan_hash !== planHash) return;
-    const preparado = prepararRecalculo3d({
-      guardada: vigente.widget.propuesta,
-      planActual: planActualDelPlan(vigente.widget.plan, vigente.widget.motor),
-      piezasDelPlan: vigente.widget.plan.plan.estructuras,
-    });
-    avisosRecalculo.marcar(planHash);
-    setFallo(null);
-    if (!preparado) {
-      // No se adivina cómo rehacerlo ni se reducen sus piezas sin decirlo: se le dice qué hacer, sin mandar nada.
-      agregar([{ id: nuevoId(), role: "assistant", content: TEXTO_RECALCULO_NO_POSIBLE }]);
-      pedirFinal();
-      registrarAccion("plan.recalcular_3d_sin_propuesta", { mensajeId: vigente.mensajeId, plan_hash: planHash });
-      return;
-    }
-    const idRecalculo = nuevoId();
-    agregar([{ id: idRecalculo, role: "assistant", content: "" }]);
-    pedirFinal();
-    registrarAccion("plan.recalcular_3d", { mensajeId: vigente.mensajeId, plan_hash: planHash, propuestaGuardada: Boolean(vigente.widget.propuesta) });
-    void aceptarPropuesta(preparado.propuesta, { mensajeId: idRecalculo, planAnterior: preparado.planAnterior });
   }
 
   /** «Reintentar» de un plan que no llegó; si traía una idea, su botón vuelve a decir «Agregando a tu plan…». */

@@ -20,7 +20,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { PlanGuiadoSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { WidgetGuiadoSchema } from "@/lib/ia/guiado/widgets";
-import { ETIQUETA_RECALCULAR, TEXTO_AVISO_RECALCULO, TITULO_AVISO_RECALCULO } from "@/lib/guiada-motor/mensajes-cliente";
+import { ETIQUETA_RECALCULAR, TEXTO_AVISO_RECALCULO, TITULO_AVISO_RECALCULO, TITULO_AVISO_SIN_CAMBIO } from "@/lib/guiada-motor/mensajes-cliente";
 import { crearAvisosRecalculo, type AvisosRecalculo } from "@/components/guiado/aviso-recalculo";
 import { crearDependenciasEdicion3d, FalloMotor3dApagado } from "@/components/guiado/edicion-motor3d";
 import { falloDelPlan } from "@/components/guiado/fallo-plan";
@@ -125,6 +125,18 @@ test("python → 3d a mitad de la conversación: rehacer un plan de Python sigue
     assert.equal(idea.motor, "python");
     assert.deepEqual(rutas(llamadas), ["GET /api/guiada/motor?para=plan_python", "POST /api/plan-idea"], "la lectura que audita «conserva Python» y el plan-idea de la idea sumada");
   });
+});
+
+test("el aviso sin cambio pedido (carga, dibujo o toque) lleva un título neutro; el de una edición conserva «Antes de cambiar tu plan»", () => {
+  const sinCambio = falloDelPlan({ estado: "fallo", aviso: TEXTO_AVISO_DIBUJO_RECALCULO, titulo: TITULO_AVISO_SIN_CAMBIO, accion: { tipo: TIPO_ACCION_RECALCULAR_3D }, mensajeId: "m1" });
+  assert.equal(sinCambio.fallo.titulo, TITULO_AVISO_SIN_CAMBIO);
+  assert.equal(sinCambio.fallo.titulo, "Tu plan necesita recalcularse");
+  assert.equal(sinCambio.anuncio, `Tu plan necesita recalcularse. ${TEXTO_AVISO_DIBUJO_RECALCULO}`);
+  assert.equal(sinCambio.fallo.etiqueta, ETIQUETA_RECALCULAR);
+  assert.equal(sinCambio.fallo.variante, "actualizar");
+  const deEdicion = falloDelPlan({ estado: "fallo", aviso: TEXTO_AVISO_RECALCULO, accion: { tipo: "plan" }, mensajeId: "m1" });
+  assert.equal(deEdicion.fallo.titulo, TITULO_AVISO_RECALCULO);
+  assert.equal(deEdicion.anuncio, `${TITULO_AVISO_RECALCULO}. ${TEXTO_AVISO_RECALCULO}`);
 });
 
 for (const razon of ["motor_3d_cortado", "plan_3d_vencido", "aprobacion_invalida"] as const) {

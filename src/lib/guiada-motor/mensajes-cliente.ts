@@ -20,6 +20,8 @@ const RECALCULO = "tengo que volver a calcular tu plan completo con el método d
 /** El botón del aviso: tocarlo es pedir el recálculo. */
 export const ETIQUETA_RECALCULAR = "Recalcular mi plan";
 export const TITULO_AVISO_RECALCULO = "Antes de cambiar tu plan";
+/** El título del mismo aviso cuando el cliente no pidió ningún cambio (al cargar, al pedir una vista o al tocar «Ver cómo quedaría»). */
+export const TITULO_AVISO_SIN_CAMBIO = "Tu plan necesita recalcularse";
 /** Al rehacer el plan (otra propuesta o una idea sumada): el detalle de la tarjeta de aviso, con su botón. */
 export const TEXTO_AVISO_RECALCULO = `Para hacer ese cambio ${RECALCULO}. Si quieres que lo recalcule, toca «${ETIQUETA_RECALCULAR}» o vuelve a pedírmelo.`;
 /** Al cambiarlo (chat o «Ajustar mi plan»): la respuesta de `/api/guiada/motor/editar`. */
