@@ -81,11 +81,24 @@ export function contenidoDeEntrada(mensajes: readonly MensajeAnthropic[], marca:
   return juntarTextos(bloques);
 }
 
-function seccionHerramientas(herramientas: readonly HerramientaAnthropic[]): string {
+/**
+ * Las herramientas no son nativas de Claude Code (`--tools ""`: su lista solo trae `StructuredOutput`), así que un modelo que mira esa
+ * lista concluye que «ver_escena no está disponible en esta sesión» y no hace nada (se vio en las pasadas del arnés W4 aunque la
+ * herramienta estaba declarada). Por eso el sistema dice los nombres exactos que existen en este turno y que se piden solo en `llamadas`.
+ */
+function listaExactaDeHerramientas(permitidas: readonly string[]): string {
+  return [
+    `Herramientas disponibles, exactamente ${permitidas.length === 1 ? "esta" : `estas ${permitidas.length}`}: ${permitidas.join(", ")}.`,
+    "Todas están disponibles en esta sesión aunque tu lista de herramientas nativas solo muestre `StructuredOutput`: no son nativas, se piden SOLO en `llamadas`. No las llames como herramienta nativa ni digas que una de ellas «no está disponible»; si una falla, el mensaje siguiente trae su error.",
+  ].join(" ");
+}
+
+function seccionHerramientas(herramientas: readonly HerramientaAnthropic[], permitidas: readonly string[]): string {
   const lista = herramientas.map((h) => `## ${h.name}\n${h.description}\nArgumentos (JSON Schema): ${JSON.stringify(h.input_schema)}`);
   return [
     "# Herramientas",
     "No ejecutas nada por tu cuenta: para usar una herramienta, pídela en `llamadas` de tu respuesta. El sistema la ejecuta y te devuelve su resultado en el mensaje siguiente («Resultado de la herramienta …»).",
+    listaExactaDeHerramientas(permitidas),
     ...lista,
   ].join("\n\n");
 }
@@ -122,11 +135,11 @@ export function esquemaDeRespuesta(herramientas: readonly HerramientaAnthropic[]
 export function peticionCli(cuerpo: CuerpoMensajes, marca: string = nuevaMarca()): PeticionCli {
   const herramientas = cuerpo.tools ?? [];
   const sistemaOriginal = (cuerpo.system ?? []).map((bloque) => bloque.text).join("\n\n");
+  const permitidas = cuerpo.tool_choice?.type === "tool" ? [cuerpo.tool_choice.name] : herramientas.map((h) => h.name);
   const sistema = herramientas.length
-    ? [sistemaOriginal, seccionHerramientas(herramientas), seccionRespuesta(cuerpo.tool_choice)].filter((parte) => parte.trim()).join("\n\n")
+    ? [sistemaOriginal, seccionHerramientas(herramientas, permitidas), seccionRespuesta(cuerpo.tool_choice)].filter((parte) => parte.trim()).join("\n\n")
     : sistemaOriginal;
   const mensaje = { type: "user", message: { role: "user", content: contenidoDeEntrada(cuerpo.messages, marca) }, parent_tool_use_id: null, session_id: "" };
-  const permitidas = cuerpo.tool_choice?.type === "tool" ? [cuerpo.tool_choice.name] : herramientas.map((h) => h.name);
   return {
     sistema,
     lineaEntrada: JSON.stringify(mensaje),

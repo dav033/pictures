@@ -1,0 +1,215 @@
+{
+  "fuente": "2026-10-10T17-07-01-532Z",
+  "fotos": {
+    "images (25)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"racimo_piso"},{"tipo":"racimo_piso"},{"tipo":"fondo","id":"lentejuelas"},{"tipo":"fondo","id":"media_luna"},{"tipo":"fondo","id":"neon_cursiva"},{"tipo":"fondo","id":"tapete_redondo"},{"tipo":"otro","descripcion":"pedestales acrílicos transparentes con platos de cake stand metálicos"},{"tipo":"otro","descripcion":"maceta blanca con planta verde de hojas esféricas"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"racimo-piso","tipo":"organico"},{"id":"racimo-piso-2","tipo":"organico"},{"id":"lentejuelas","tipo":"escenografia","muebleId":"lentejuelas"},{"id":"media-luna","tipo":"escenografia","muebleId":"media_luna"},{"id":"neon-cursiva","tipo":"escenografia","muebleId":"neon_cursiva"},{"id":"tapete-redondo","tipo":"escenografia","muebleId":"tapete_redondo"},{"id":"pedestales","tipo":"escenografia","muebleId":"pedestales"}],
+      "omitidas": ["maceta blanca con planta verde de hojas esféricas"],
+      "erroresHerramientas": []
+    },
+    "images (26)": {
+      "marcadaAntes": false,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"fondo","id":"marco_tela"},{"tipo":"otro","descripcion":"dos pedestales dorados de alambre en forma de jaula, junto al panel"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"globo-r-18","tipo":"globo"},{"id":"globo-r-18-2","tipo":"globo"},{"id":"marco-tela","tipo":"escenografia","muebleId":"marco_tela"},{"id":"pedestales","tipo":"escenografia","muebleId":"pedestales"}],
+      "omitidas": [],
+      "erroresHerramientas": []
+    },
+    "images (27)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"fondo","id":"panel_redondo"},{"tipo":"fondo","id":"pedestales"},{"tipo":"otro","descripcion":"mariposas rosas metálicas pegadas en la pared"},{"tipo":"otro","descripcion":"cortinas de tul rosa pálido a la izquierda"},{"tipo":"otro","descripcion":"postre o pastel pequeño de dos pisos sobre soporte blanco en la esquina inferior derecha"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"panel-redondo","tipo":"escenografia","muebleId":"panel_redondo"},{"id":"pedestal","tipo":"escenografia","muebleId":"pedestales"}],
+      "omitidas": ["mariposas rosas metálicas pegadas en la pared","cortinas de tul rosa pálido a la izquierda","postre o pastel pequeño de dos pisos sobre soporte blanco en la esquina inferior derecha"],
+      "erroresHerramientas": []
+    },
+    "images (28)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"otro","descripcion":"mariposas de foil lila metalizado sobre la parte alta del arco (2 visibles, una más pequeña)"},{"tipo":"fondo","id":"panel_redondo"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"panel-redondo","tipo":"escenografia","muebleId":"panel_redondo"}],
+      "omitidas": ["mariposas de foil lila metalizado sobre la parte alta del arco (2 visibles, una más pequeña)"],
+      "erroresHerramientas": []
+    },
+    "images (29)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"otro","descripcion":"telón de castillo rosado con ventanas blancas y copos de nieve blancos"},{"tipo":"otro","descripcion":"copos de nieve blancos de papel sobre la guirnalda y en la pared"},{"tipo":"otro","descripcion":"árbol de navidad plateado pequeño sobre el piso"},{"tipo":"otro","descripcion":"muñeco de nieve con gorro rosado y regalos rosados con moños"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"globo-r-12","tipo":"globo"},{"id":"globo-r-9","tipo":"globo"}],
+      "omitidas": ["telón de castillo rosado con ventanas blancas y copos de nieve blancos","copos de nieve blancos de papel sobre la guirnalda y en la pared","árbol de navidad plateado pequeño sobre el piso","muñeco de nieve con gorro rosado y regalos rosados con moños"],
+      "erroresHerramientas": []
+    },
+    "images (30)": {
+      "marcadaAntes": false,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"fondo","id":"panel_redondo"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"panel-redondo","tipo":"escenografia","muebleId":"panel_redondo"}],
+      "omitidas": [],
+      "erroresHerramientas": []
+    },
+    "images (31)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"guirnalda_organica"},{"tipo":"fondo","id":"arcos_chiara"},{"tipo":"fondo","id":"pedestales"},{"tipo":"fondo","id":"pastel"},{"tipo":"otro","descripcion":"bandeja dorada con mini tortas y postres sobre pedestal dorado"},{"tipo":"otro","descripcion":"flor de cartón naranja en la parte superior izquierda"},{"tipo":"globo"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"guirnalda-organica-2","tipo":"organico"},{"id":"arcos-chiara","tipo":"escenografia","muebleId":"arcos_chiara"},{"id":"pedestal","tipo":"escenografia","muebleId":"pedestales"},{"id":"globo-r-24","tipo":"globo"},{"id":"pastel","tipo":"escenografia","muebleId":"pastel"}],
+      "omitidas": ["bandeja dorada con mini tortas y postres sobre pedestal dorado","flor de cartón naranja en la parte superior izquierda"],
+      "erroresHerramientas": ["«arcos chiara» es un fondo fijo del catálogo: no cambia de medida, y su color solo cambia en el panel redondo, la media luna, las lentejuelas, el tapete, la cortina y el letrero (colores). Quítalo con quitar_pieza y agrega otro con agregar_mobiliario (los muebles sí se cambian).","«Pedestal 1» es un fondo fijo del catálogo: no cambia de medida, y su color solo cambia en el panel redondo, la media luna, las lentejuelas, el tapete, la cortina y el letrero (colores). Quítalo con quitar_pieza y agrega otro con agregar_mobiliario (los muebles sí se cambian)."]
+    },
+    "images (32)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"fondo","id":"panel_redondo"},{"tipo":"otro","descripcion":"cerca de listones de madera y casa al fondo"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"panel-redondo","tipo":"escenografia","muebleId":"panel_redondo"}],
+      "omitidas": ["cerca de listones de madera y casa al fondo"],
+      "erroresHerramientas": []
+    },
+    "images (33)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"fondo","id":"panel_redondo"},{"tipo":"fondo","id":"pastel"},{"tipo":"otro","descripcion":"mesa alta dorada con plato de torta y cupcakes, sobre la que está el pastel"},{"tipo":"otro","descripcion":"cilindro blanco liso con plato de cupcakes y tubos de dulces encima"},{"tipo":"otro","descripcion":"«base_pastel» detectado en x 0.451 sin una mesa debajo donde apoyarlo: no se arma"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"panel-redondo","tipo":"escenografia","muebleId":"panel_redondo"},{"id":"mesa-coctel","tipo":"escenografia","muebleId":"mesa_coctel"},{"id":"pastel","tipo":"escenografia","muebleId":"pastel"}],
+      "omitidas": ["cilindro blanco liso con plato de cupcakes y tubos de dulces encima","«base_pastel» detectado en x 0.451 sin una mesa debajo donde apoyarlo: no se arma"],
+      "erroresHerramientas": []
+    },
+    "images (34)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"otro","descripcion":"arcoíris de madera o ratán en tonos terracota, crema y rosa, con flecos colgando de la base"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"fondo","id":"pastel"},{"tipo":"otro","descripcion":"dos cajas blancas de regalo con moño de ratán sobre la mesa"},{"tipo":"otro","descripcion":"mesa rústica de madera con patas en A y travesaño metálico negro"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"globo-r-9","tipo":"globo"},{"id":"globo-r-9-2","tipo":"globo"},{"id":"globo-r-9-3","tipo":"globo"}],
+      "omitidas": ["arcoíris de madera o ratán en tonos terracota, crema y rosa, con flecos colgando de la base","dos cajas blancas de regalo con moño de ratán sobre la mesa","mesa rústica de madera con patas en A y travesaño metálico negro","Pieza 6 (pastel): no hay una mesa debajo donde apoyarlo."],
+      "erroresHerramientas": ["No encontré el color «rosa polvo» en la tabla Sempertex. Usa listar_colores con el formato R-12 para ver los que hay."]
+    },
+    "images (35)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"otro","descripcion":"número 1 de caja tipo mosaico, lleno de globos rosa, malva y verde y flores de tela"},{"tipo":"otro","descripcion":"número 5 de caja tipo mosaico, lleno de globos verde salvia, durazno y rosa con flores de tela y moños"},{"tipo":"otro","descripcion":"cortina blanca drapeada al fondo"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"}],
+      "omitidas": ["número 1 de caja tipo mosaico, lleno de globos rosa, malva y verde y flores de tela","número 5 de caja tipo mosaico, lleno de globos verde salvia, durazno y rosa con flores de tela y moños","cortina blanca drapeada al fondo"],
+      "erroresHerramientas": []
+    },
+    "images (36)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"racimo_piso"},{"tipo":"racimo_piso"},{"tipo":"fondo","id":"panel_redondo"},{"tipo":"decoracion","id":"racimo_uvas_dorado"},{"tipo":"decoracion","id":"racimo_uvas_dorado"},{"tipo":"decoracion","id":"racimo_uvas_dorado"},{"tipo":"otro","descripcion":"caballete de madera clara que sostiene el cartel redondo"},{"tipo":"otro","descripcion":"escalera de madera y pared de ladrillo visto al fondo, con ramas de eucalipto blanco arriba a la derecha"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"racimo-piso","tipo":"organico"},{"id":"racimo-piso-2","tipo":"organico"},{"id":"panel-redondo","tipo":"escenografia","muebleId":"panel_redondo"},{"id":"racimo-uvas-dorado","tipo":"decoracion"},{"id":"racimo-uvas-dorado-2","tipo":"decoracion"},{"id":"racimo-uvas-dorado-3","tipo":"decoracion"}],
+      "omitidas": ["Pieza 3 (racimo_piso): Grosor de 161 cm fuera de rango (12 a 160 cm).","caballete de madera clara que sostiene el cartel redondo","escalera de madera y pared de ladrillo visto al fondo, con ramas de eucalipto blanco arriba a la derecha"],
+      "erroresHerramientas": []
+    },
+    "images (37)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"fondo","id":"panel_redondo"},{"tipo":"fondo","id":"letrero"},{"tipo":"fondo","id":"pedestales"},{"tipo":"fondo","id":"mesa_hexagonal"},{"tipo":"fondo","id":"pastel"},{"tipo":"racimo_piso"},{"tipo":"otro","descripcion":"florero rosa con rosas blancas y rosadas y ramas de flores al pie, a la izquierda"},{"tipo":"otro","descripcion":"bolas blancas y rosadas sobre la mesa de la torta y globos dorados en el piso a la derecha"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"panel-redondo","tipo":"escenografia","muebleId":"panel_redondo"},{"id":"letrero","tipo":"escenografia","muebleId":"letrero"},{"id":"pedestal","tipo":"escenografia","muebleId":"pedestales"},{"id":"mesa-hexagonal","tipo":"escenografia","muebleId":"mesa_hexagonal"},{"id":"racimo-piso","tipo":"organico"},{"id":"pastel","tipo":"escenografia","muebleId":"pastel"}],
+      "omitidas": ["florero rosa con rosas blancas y rosadas y ramas de flores al pie, a la izquierda","bolas blancas y rosadas sobre la mesa de la torta y globos dorados en el piso a la derecha"],
+      "erroresHerramientas": ["ancho_cm = 48 cm está fuera de rango: va de 80 a 900 cm."]
+    },
+    "images (38)": {
+      "marcadaAntes": false,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"columna_organica"},{"tipo":"racimo_piso"},{"tipo":"fondo","id":"lentejuelas"},{"tipo":"fondo","id":"neon_cursiva"},{"tipo":"fondo","id":"mesa_coctel"},{"tipo":"fondo","id":"mesa_coctel"},{"tipo":"fondo","id":"mesa_coctel"},{"tipo":"fondo","id":"pastel"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"columna-organica","tipo":"organico"},{"id":"racimo-piso","tipo":"organico"},{"id":"lentejuelas","tipo":"escenografia","muebleId":"lentejuelas"},{"id":"neon-cursiva","tipo":"escenografia","muebleId":"neon_cursiva"},{"id":"mesa-coctel","tipo":"escenografia","muebleId":"mesa_coctel"},{"id":"mesa-coctel-2","tipo":"escenografia","muebleId":"mesa_coctel"},{"id":"mesa-coctel-3","tipo":"escenografia","muebleId":"mesa_coctel"},{"id":"pastel","tipo":"escenografia","muebleId":"pastel"}],
+      "omitidas": [],
+      "erroresHerramientas": []
+    },
+    "images (39)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"fondo","id":"neon_cursiva"},{"tipo":"otro","descripcion":"pampas crema y dorados con flores blancas al pie del arco, en el piso"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"neon-cursiva","tipo":"escenografia","muebleId":"neon_cursiva"}],
+      "omitidas": ["pampas crema y dorados con flores blancas al pie del arco, en el piso"],
+      "erroresHerramientas": []
+    },
+    "images (40)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"columna_organica"},{"tipo":"fondo","id":"aro_metalico"},{"tipo":"fondo","id":"pedestales"},{"tipo":"fondo","id":"jarron_pampas"},{"tipo":"otro","descripcion":"arreglo de flores rosas, pampas y ramas secas al pie de la columna, en el piso"}],
+      "nodosFinales": [{"id":"columna-organica","tipo":"organico"},{"id":"aro-metalico","tipo":"escenografia","muebleId":"aro_metalico"},{"id":"pedestales","tipo":"escenografia","muebleId":"pedestales"},{"id":"jarron-pampas","tipo":"escenografia","muebleId":"jarron_pampas"}],
+      "omitidas": ["arreglo de flores rosas, pampas y ramas secas al pie de la columna, en el piso"],
+      "erroresHerramientas": []
+    },
+    "images (41)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"otro","descripcion":"esferas doradas y follaje oscuro colgando del techo"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"}],
+      "omitidas": ["esferas doradas y follaje oscuro colgando del techo"],
+      "erroresHerramientas": []
+    },
+    "images (42)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"decoracion","id":"racimo_bola_r5"},{"tipo":"decoracion","id":"racimo_bola_r5"},{"tipo":"fondo","id":"letrero"},{"tipo":"otro","descripcion":"dos varillas doradas bajas delante del letrero"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"racimo-bola-r5","tipo":"decoracion"},{"id":"racimo-bola-r5-2","tipo":"decoracion"},{"id":"letrero","tipo":"escenografia","muebleId":"letrero"}],
+      "omitidas": ["dos varillas doradas bajas delante del letrero"],
+      "erroresHerramientas": ["«Letrero \"wedding\"» todavía no tiene texto: pásame también el texto para ponerle un nombre (color_texto, acabado_texto)."]
+    },
+    "images (43)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"racimo_piso"},{"tipo":"racimo_piso"},{"tipo":"fondo","id":"marco_tela"},{"tipo":"otro","descripcion":"letras gigantes blancas ONE con mesa de dulces: frascos dorados, cajitas, torta dorada, jaulas con velas"},{"tipo":"otro","descripcion":"letra gigante blanca O a la derecha, detrás de la guirnalda"},{"tipo":"otro","descripcion":"cortinas blancas de tul al fondo"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"racimo-piso","tipo":"organico"},{"id":"racimo-piso-2","tipo":"organico"},{"id":"marco-tela","tipo":"escenografia","muebleId":"marco_tela"}],
+      "omitidas": ["letras gigantes blancas ONE con mesa de dulces: frascos dorados, cajitas, torta dorada, jaulas con velas","letra gigante blanca O a la derecha, detrás de la guirnalda","cortinas blancas de tul al fondo"],
+      "erroresHerramientas": []
+    },
+    "images (44)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"columna_organica"},{"tipo":"metalizado"},{"tipo":"metalizado"},{"tipo":"otro","descripcion":"espirales de foil dorado tipo cinta rizada y flores doradas de globos R-5 pegadas al muro"}],
+      "nodosFinales": [{"id":"columna-organica","tipo":"organico"},{"id":"metalizado","tipo":"metalizado"},{"id":"metalizado-2","tipo":"metalizado"}],
+      "omitidas": ["espirales de foil dorado tipo cinta rizada y flores doradas de globos R-5 pegadas al muro"],
+      "erroresHerramientas": []
+    },
+    "images (45)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"fondo","id":"pedestales"},{"tipo":"fondo","id":"pastel"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"otro","descripcion":"oso de peluche blanco con lazo rosa, sentado a la izquierda"},{"tipo":"otro","descripcion":"mesa auxiliar pequeña dorada con macarons rosados en pie de cristal"},{"tipo":"otro","descripcion":"«base_pastel» detectado en x 0.347 sin una mesa debajo donde apoyarlo: no se arma"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"pedestal","tipo":"escenografia","muebleId":"pedestales"},{"id":"globo-r-12","tipo":"globo"},{"id":"globo-r-12-2","tipo":"globo"},{"id":"pastel","tipo":"escenografia","muebleId":"pastel"}],
+      "omitidas": ["oso de peluche blanco con lazo rosa, sentado a la izquierda","mesa auxiliar pequeña dorada con macarons rosados en pie de cristal","«base_pastel» detectado en x 0.347 sin una mesa debajo donde apoyarlo: no se arma"],
+      "erroresHerramientas": []
+    },
+    "images (46)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"fondo","id":"arcos_chiara"},{"tipo":"fondo","id":"tapete_redondo"},{"tipo":"otro","descripcion":"caja o bocina negra a la derecha, en el borde de la foto"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"arcos-chiara","tipo":"escenografia","muebleId":"arcos_chiara"},{"id":"tapete-redondo","tipo":"escenografia","muebleId":"tapete_redondo"}],
+      "omitidas": ["caja o bocina negra a la derecha, en el borde de la foto"],
+      "erroresHerramientas": []
+    },
+    "images (47)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"racimo_piso"},{"tipo":"fondo","id":"arcos_chiara"},{"tipo":"fondo","id":"neon_cursiva"},{"tipo":"fondo","id":"neon_cursiva"},{"tipo":"metalizado"},{"tipo":"fondo","id":"lentejuelas"},{"tipo":"fondo","id":"mesas_nido_hexagonales"},{"tipo":"fondo","id":"pastel"},{"tipo":"fondo","id":"tapete_redondo"},{"tipo":"otro","descripcion":"plato y adornos dorados sobre la mesa izquierda"},{"tipo":"otro","descripcion":"pedestal dorado con dulces y adornos a la derecha"},{"tipo":"otro","descripcion":"dos arbustos de boj en macetas doradas a los lados del piso"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"racimo-piso","tipo":"organico"},{"id":"arcos-chiara","tipo":"escenografia","muebleId":"arcos_chiara"},{"id":"neon-cursiva","tipo":"escenografia","muebleId":"neon_cursiva"},{"id":"neon-cursiva-2","tipo":"escenografia","muebleId":"neon_cursiva"},{"id":"metalizado","tipo":"metalizado"},{"id":"lentejuelas","tipo":"escenografia","muebleId":"lentejuelas"},{"id":"mesas-nido-hexagonales","tipo":"escenografia","muebleId":"mesas_nido_hexagonales"},{"id":"tapete-redondo","tipo":"escenografia","muebleId":"tapete_redondo"}],
+      "omitidas": ["plato y adornos dorados sobre la mesa izquierda","pedestal dorado con dulces y adornos a la derecha","dos arbustos de boj en macetas doradas a los lados del piso","Pieza 9 (pastel): no hay una mesa debajo donde apoyarlo."],
+      "erroresHerramientas": []
+    },
+    "images (48)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"racimo_piso"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"otro","descripcion":"panel decorativo de ramas oscuras en la pared, sobre el arco"},{"tipo":"otro","descripcion":"estantería metálica negra a la derecha"},{"tipo":"otro","descripcion":"sillón de cuero marrón en el borde derecho inferior"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"racimo-piso","tipo":"organico"},{"id":"globo-r-18","tipo":"globo"},{"id":"globo-r-12","tipo":"globo"},{"id":"globo-r-12-2","tipo":"globo"},{"id":"globo-r-18-2","tipo":"globo"},{"id":"globo-r-18-3","tipo":"globo"}],
+      "omitidas": ["panel decorativo de ramas oscuras en la pared, sobre el arco","estantería metálica negra a la derecha","sillón de cuero marrón en el borde derecho inferior"],
+      "erroresHerramientas": []
+    },
+    "images (49)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"guirnalda_organica"},{"tipo":"guirnalda_organica"},{"tipo":"racimo_piso"},{"tipo":"racimo_piso"},{"tipo":"racimo_piso"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"fondo","id":"neon_cursiva"},{"tipo":"fondo","id":"letrero"},{"tipo":"fondo","id":"lentejuelas"},{"tipo":"fondo","id":"tapete_redondo"},{"tipo":"otro","descripcion":"arco de medio punto negro mate detrás de los globos y el neón"},{"tipo":"otro","descripcion":"pedestal acrílico transparente con plato dorado y copa, con pampas doradas"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"guirnalda-organica-2","tipo":"organico"},{"id":"guirnalda-organica-3","tipo":"organico"},{"id":"racimo-piso","tipo":"organico"},{"id":"racimo-piso-2","tipo":"organico"},{"id":"racimo-piso-3","tipo":"organico"},{"id":"globo-r-24","tipo":"globo"},{"id":"globo-r-18","tipo":"globo"},{"id":"neon-cursiva","tipo":"escenografia","muebleId":"neon_cursiva"},{"id":"letrero","tipo":"escenografia","muebleId":"letrero"},{"id":"lentejuelas","tipo":"escenografia","muebleId":"lentejuelas"},{"id":"tapete-redondo","tipo":"escenografia","muebleId":"tapete_redondo"},{"id":"arco-metalico","tipo":"escenografia","muebleId":"arco_metalico"},{"id":"base-hexagonal","tipo":"escenografia","muebleId":"base_hexagonal"}],
+      "omitidas": ["arco de medio punto negro mate detrás de los globos y el neón","pedestal acrílico transparente con plato dorado y copa, con pampas doradas"],
+      "erroresHerramientas": []
+    },
+    "images (50)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"racimo_piso"},{"tipo":"racimo_piso"},{"tipo":"racimo_piso"},{"tipo":"racimo_piso"},{"tipo":"fondo","id":"neon_cursiva"},{"tipo":"fondo","id":"pedestales"},{"tipo":"otro","descripcion":"bandeja de dulces sobre pedestal dorado (izquierda)"},{"tipo":"otro","descripcion":"base blanca texturada con torta o dulces sobre pedestal dorado (derecha)"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"racimo-piso","tipo":"organico"},{"id":"racimo-piso-2","tipo":"organico"},{"id":"racimo-piso-3","tipo":"organico"},{"id":"racimo-piso-4","tipo":"organico"},{"id":"neon-cursiva","tipo":"escenografia","muebleId":"neon_cursiva"},{"id":"pedestal","tipo":"escenografia","muebleId":"pedestales"}],
+      "omitidas": ["bandeja de dulces sobre pedestal dorado (izquierda)","base blanca texturada con torta o dulces sobre pedestal dorado (derecha)"],
+      "erroresHerramientas": ["ancho_cm = 60 cm está fuera de rango: va de 80 a 900 cm.","ancho_cm = 60 cm está fuera de rango: va de 80 a 900 cm.","ancho_cm = 36 cm está fuera de rango: va de 80 a 900 cm.","ancho_cm = 36 cm está fuera de rango: va de 80 a 900 cm."]
+    },
+    "images (51)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"fondo","id":"rotulo_acrilico"},{"tipo":"otro","descripcion":"dos mesas auxiliares de metal dorado con tapa de madera o vidrio, con bandeja y detalles encima"},{"tipo":"otro","descripcion":"cortina de tela blanca arrugada de fondo"},{"tipo":"otro","descripcion":"arreglo de flores secas blancas y azules en jarrón a la izquierda"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"},{"id":"rotulo-acrilico","tipo":"escenografia","muebleId":"rotulo_acrilico"},{"id":"mesa-hexagonal","tipo":"escenografia","muebleId":"mesa_hexagonal"},{"id":"mesa-hexagonal-2","tipo":"escenografia","muebleId":"mesa_hexagonal"}],
+      "omitidas": ["cortina de tela blanca arrugada de fondo","arreglo de flores secas blancas y azules en jarrón a la izquierda"],
+      "erroresHerramientas": []
+    },
+    "images (52)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"otro","descripcion":"globo de foil de murciélago negro arriba a la izquierda"},{"tipo":"otro","descripcion":"globo de foil de cabeza de gato negro arriba a la derecha"},{"tipo":"otro","descripcion":"globo de foil de gato negro al centro-abajo, con cara de calabaza"},{"tipo":"otro","descripcion":"calabazas inflables de Halloween de piso a ambos lados"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"}],
+      "omitidas": ["globo de foil de murciélago negro arriba a la izquierda","globo de foil de cabeza de gato negro arriba a la derecha","globo de foil de gato negro al centro-abajo, con cara de calabaza","calabazas inflables de Halloween de piso a ambos lados"],
+      "erroresHerramientas": []
+    },
+    "images (53)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"guirnalda_organica"},{"tipo":"otro","descripcion":"letras doradas en la pared (…ithday, cortadas por el borde izquierdo)"}],
+      "nodosFinales": [{"id":"guirnalda-organica","tipo":"organico"}],
+      "omitidas": ["letras doradas en la pared (…ithday, cortadas por el borde izquierdo)"],
+      "erroresHerramientas": []
+    },
+    "images (54)": {
+      "marcadaAntes": true,
+      "piezasLeidas": [{"tipo":"globo"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"globo"},{"tipo":"otro","descripcion":"muro denso de globos de látex mezclados con cromados plata y dorado, sin estructura visible"}],
+      "nodosFinales": [{"id":"globo-r-18","tipo":"globo"},{"id":"globo-r-18-2","tipo":"globo"},{"id":"globo-r-18-3","tipo":"globo"},{"id":"globo-r-18-4","tipo":"globo"},{"id":"globo-r-18-5","tipo":"globo"}],
+      "omitidas": ["muro denso de globos de látex mezclados con cromados plata y dorado, sin estructura visible"],
+      "erroresHerramientas": []
+    }
+  }
+}

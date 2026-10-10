@@ -31,7 +31,7 @@ export function renderizarLeaderboard(filas: readonly FilaFoto[], modo: ModoPasa
     "",
     `Generado: ${generadoEn}. Fuente: la carpeta de corridas del arnés (ENTRENAMIENTO_CORRIDAS). Orden: la última corrida primero.`,
     "Cada fila es la última corrida terminada de la foto y las corridas comparables con ella (mismo modelo, transporte, esfuerzo y razonamiento, tope de vueltas y commit; un commit `+dirty`, con cambios sin confirmar, no se agrupa).",
-    `Omitidas: ${omitidas} corridas abortadas (tope de gasto o de llamadas) o con un error del arnés sin clasificar; sus registros siguen en la carpeta de la corrida. Los fallos del pipeline (lectura, medida, asistente) sí cuentan y salen en «Fallo dominante».`,
+    `Omitidas: ${omitidas} corridas abortadas (tope de gasto o de llamadas) o con un error del arnés sin clasificar; sus registros siguen en la carpeta de la corrida. Los fallos del pipeline (lectura, medida, asistente) sí cuentan y salen en «Fallo dominante»; \`capacidad_faltante\` lleva detrás su causa más repetida (\`capacidad_faltante/falta_figura\`, \`…/color_no_disponible\`…; las corridas viejas, sin detalle, solo la clase madre).`,
     ...(modo === "seco" ? ["**Dry-run `--seco`: los valores son marcadores de prueba, no medidas de la IA.** Las respuestas del modelo son grabadas y el coste es simulado."] : []),
     "Captura del visor: pendiente en todas las filas (TODO: `lib-captura-sin-cabeza` necesita el servidor de desarrollo; el refinado va por texto sin captura).",
     "",
@@ -40,7 +40,7 @@ export function renderizarLeaderboard(filas: readonly FilaFoto[], modo: ModoPasa
   ];
   const cuerpo = ordenarPorUltimaCorrida(filas).map((f, i) => {
     const u = f.ultimaCorrida;
-    return `| ${i + 1} | ${f.foto} | ${f.corridas} | ${numero(f.puntajes.proporciones)} | ${numero(f.puntajes.colores)} | ${numero(f.puntajes.zonas)} | ${numero(f.puntajes.iou)} | ${f.fallo} | ${u.iniciadaEn} | ${u.modelo} | ${u.esfuerzo}${u.pensamiento ? "" : " sin razonamiento"} | ${u.transporte} | ${u.turnos}/${u.turnosMax} | ${u.commit} | ${f.costeUsd.toFixed(4)} |`;
+    return `| ${i + 1} | ${f.foto} | ${f.corridas} | ${numero(f.puntajes.proporciones)} | ${numero(f.puntajes.colores)} | ${numero(f.puntajes.zonas)} | ${numero(f.puntajes.iou)} | ${f.fallo}${f.falloEspecifico ? `/${f.falloEspecifico}` : ""} | ${u.iniciadaEn} | ${u.modelo} | ${u.esfuerzo}${u.pensamiento ? "" : " sin razonamiento"} | ${u.transporte} | ${u.turnos}/${u.turnosMax} | ${u.commit} | ${f.costeUsd.toFixed(4)} |`;
   });
   return [...cabecera, ...cuerpo, ""].join("\n");
 }

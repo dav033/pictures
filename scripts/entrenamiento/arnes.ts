@@ -20,14 +20,19 @@
  * ENTRENAMIENTO_FOTOS) · --leaderboard <ruta> (por defecto, la bitácora: solo en real; el de seco se escribe al lado de la ruta, o en
  * la carpeta de corridas si no se da, como LEADERBOARD-seco.md).
  * Recomendado con un tope de 1 USD: correr por tramos con --limite o --fotos, porque las 30 fotos pueden pasar el tope.
+ *
+ * Sobre una corrida guardada, sin llamadas de pago: `rescorear-corrida.ts` (vuelve a puntuar), `reclasificar-corrida.ts` (las causas
+ * concretas de capacidad_faltante) y `congelar-deteccion.ts` (deja la detección de esa corrida como la verdad de las siguientes: la
+ * caché solo se llena con la primera corrida que usa la clave de ahora).
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { costeClaudeUsd } from "@/lib/ia/claude/precios";
 import { CupoGasto, topeDesde } from "./lib-cupo-gasto";
 import { commitDeTrabajo, ejecutarGitEn } from "./lib-commit";
+import type { EvidenciaCapacidad } from "./lib-capacidad";
 import { ContadorLlamadas } from "./lib-contador";
-import { listarFotos } from "./lib-fotos";
+import { FOTOS_POR_DEFECTO, listarFotos } from "./lib-fotos";
 import { construirLeaderboard, rutaDelLeaderboard } from "./lib-leaderboard";
 import { instalarGuardaProcesos } from "./lib-procesos-cli";
 import { instalarGuardaRed } from "./lib-red";
@@ -45,7 +50,6 @@ const seco = args.includes("--seco");
 
 const RAIZ = directorioDeCorridas();
 const REPO = path.resolve(__dirname, "..", "..");
-const FOTOS_POR_DEFECTO = "C:/Users/davidt/Downloads/iaiaaaaa";
 const LEADERBOARD_POR_DEFECTO = "C:/Users/davidt/bitacora/pictures/research/entrenamiento/LEADERBOARD.md";
 const MAX_LLAMADAS_POR_DEFECTO = 400;
 
@@ -133,14 +137,16 @@ async function main(): Promise<void> {
       const bytes = new Uint8Array(readFileSync(path.join(dirFotos, nombre)));
       let registro: RegistroPasada;
       let escena: unknown = null;
+      let evidencia: EvidenciaCapacidad | undefined;
       try {
         const r = await pasadaDeFoto({ corrida: corridaId, nombre, bytes, turnos, contador, modo, transporte, modelo, esfuerzo, pensamiento, commit, dirCacheDeteccion: path.join(RAIZ, "cache-deteccion") });
         registro = r.registro;
         escena = r.escena;
+        evidencia = r.evidencia;
       } catch (error) {
         registro = registroDeError(nombre, { modo, transporte, modelo, esfuerzo, pensamiento, commit, turnos: 0, turnosMax: turnos, llamadas: 0, deteccionCacheada: false, convergio: false, puntajes: { proporciones: null, colores: null, zonas: null, iou: null }, piezas: { leidas: 0, armadas: 0, omitidas: 0, globosFoto: 0, globosArmados: 0 }, captura: "pendiente", costeUsd: 0 }, error);
       }
-      writeFileSync(path.join(dirCorrida, `${nombre.replace(/\.jpg$/, "")}.json`), JSON.stringify({ registro, escena }, null, 2));
+      writeFileSync(path.join(dirCorrida, `${nombre.replace(/\.jpg$/, "")}.json`), JSON.stringify({ registro, escena, evidencia }, null, 2));
       registros.push(registro);
       ejecutadas.push(nombre);
       const estado = registro.error ? `error: ${registro.error.slice(0, 120)}` : registro.fallos.join(",") || "sin fallos";

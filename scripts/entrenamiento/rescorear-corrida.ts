@@ -7,29 +7,16 @@
  *
  *   npx tsx --conditions=react-server scripts/entrenamiento/rescorear-corrida.ts <carpeta-de-la-corrida> [--json]
  */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { Escena } from "@/lib/globos3d/escena";
 import { LecturaFotoSchema } from "@/lib/globos3d/lectura-foto";
 import { medirConDetecciones } from "@/lib/globos3d/medir-con-detecciones";
+import { deteccionAnotada, eventosDeConversacion, idConversacionDePasada, lecturaCrudaDeAuditoria } from "./lib-auditoria";
 import type { DeteccionGuardada } from "./lib-cache-deteccion";
 import { elegirDeteccion, rescorearTodas } from "./lib-rescorear";
 import { directorioDeCorridas } from "./lib-rutas";
 import { puntuarEscena } from "./lib-puntuacion";
-
-type EventoAuditoria = { tipo: string; datos: { proposito?: string; llamadasHerramientas?: Array<{ nombre: string; argumentos: unknown }>; quien?: string; resultado?: Record<string, unknown> } };
-
-const lineas = (archivo: string): EventoAuditoria[] => readFileSync(archivo, "utf8").trim().split("\n").map((l) => JSON.parse(l) as EventoAuditoria);
-
-/** El archivo de auditoría de la conversación de una pasada, en cualquier carpeta de fecha. */
-function auditoriaDe(raiz: string, corrida: string, nombre: string): string | null {
-  const base = path.join(raiz, "registro", "conversaciones");
-  for (const dia of readdirSync(base)) {
-    const archivo = path.join(base, dia, `entrenamiento-${corrida}-${nombre.replace(/\.jpg$/, "").replace(/[ ()]/g, (c) => (c === " " ? "-" : ""))}.jsonl`);
-    if (existsSync(archivo)) return archivo;
-  }
-  return null;
-}
 
 /** Las detecciones de la caché, leídas una vez. */
 const leerCache = (raiz: string): DeteccionGuardada[] => {
@@ -42,13 +29,10 @@ type Fila = { foto: string; globosFoto: number; globosArmados: number; globosVis
 function rescorear(raiz: string, corrida: string, archivo: string, cache: readonly DeteccionGuardada[]): Fila {
   const guardado = JSON.parse(readFileSync(path.join(raiz, corrida, archivo), "utf8")) as { registro: { foto: string; puntajes: { proporciones: number | null } }; escena: Escena };
   const foto = guardado.registro.foto;
-  const auditoria = auditoriaDe(raiz, corrida, foto.replace(/\.jpg$/, ""));
-  if (!auditoria) throw new Error(`Sin auditoría para ${foto}`);
-  const eventos = lineas(auditoria);
-  const lecturas = eventos.filter((e) => e.tipo === "respuesta_ia" && e.datos.proposito === "lectura_foto_escena");
-  const cruda = lecturas[lecturas.length - 1]?.datos.llamadasHerramientas?.find((h) => h.nombre === "responder_json")?.argumentos;
-  const lectura = LecturaFotoSchema.parse(cruda);
-  const detectado = eventos.find((e) => e.datos.quien === "modelo:deteccion_globos" && Array.isArray(e.datos.resultado?.fondos))?.datos.resultado as { globos: number; fondos: string[] } | undefined;
+  const { eventos } = eventosDeConversacion(path.join(raiz, "registro"), idConversacionDePasada(corrida, foto));
+  if (!eventos.length) throw new Error(`Sin auditoría para ${foto}`);
+  const lectura = LecturaFotoSchema.parse(lecturaCrudaDeAuditoria(eventos));
+  const detectado = deteccionAnotada(eventos);
   const medido = eventos.find((e) => e.datos.quien === "regla:foto_medida_con_detecciones")?.datos.resultado as { escalaMedidaCm: number } | undefined;
   if (!detectado || !medido) throw new Error(`La auditoría de ${foto} no trae la detección o la medida`);
   const deteccion = elegirDeteccion(cache, foto, detectado);

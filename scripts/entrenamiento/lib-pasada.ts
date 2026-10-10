@@ -15,9 +15,12 @@ import { modelarFotoReal } from "@/lib/taller/modelar-foto-real";
 import { normalizarFotoA } from "@/lib/taller/normalizar-foto";
 import { atenderEscenaDesdeFoto, LADO_MAXIMO_LECTURA } from "@/lib/taller/escena-desde-foto";
 import { POST as escenaIA } from "@/app/api/escena-ia/route";
-import { conContexto, sanearIdConversacion } from "@/lib/registro/contexto";
+import { conContexto } from "@/lib/registro/contexto";
 import { clasificarFallos, HECHOS_SIN_FALLOS, type HechosPasada } from "./lib-fallos";
 import type { ModoPasada, Puntajes, RegistroPasada, TransporteArnes } from "./lib-agregado";
+import { idConversacionDePasada } from "./lib-auditoria";
+import { capacidadDeLaPasada } from "./lib-capacidad-pasada";
+import type { EvidenciaCapacidad } from "./lib-capacidad";
 import type { ContadorLlamadas } from "./lib-contador";
 import { claveDeteccion, guardarDeteccionCacheada, leerDeteccionCacheada } from "./lib-cache-deteccion";
 import { puntuarEscena, type PuntuacionEscena } from "./lib-puntuacion";
@@ -44,13 +47,12 @@ export type OpcionesPasada = {
   dirCacheDeteccion: string;
 };
 
-export type ResultadoPasada = { registro: RegistroPasada; escena: Escena | null; topeAlcanzado: boolean };
+/** `evidencia`: con qué se clasificó la capacidad que falta; el arnés la guarda con la escena para volver a clasificar sin repetir la pasada. */
+export type ResultadoPasada = { registro: RegistroPasada; escena: Escena | null; topeAlcanzado: boolean; evidencia?: EvidenciaCapacidad };
 
 const mensajeDe = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-export function idConversacionDePasada(corrida: string, nombre: string): string {
-  return sanearIdConversacion(`entrenamiento-${corrida}-${nombre.replace(/\.jpg$/, "")}`) ?? "entrenamiento";
-}
+export { idConversacionDePasada };
 
 export function pasadaDeFoto(o: OpcionesPasada): Promise<ResultadoPasada> {
   return conContexto({ conversacion: idConversacionDePasada(o.corrida, o.nombre) }, () => ejecutarPasada(o));
@@ -162,6 +164,9 @@ async function ejecutarPasada(o: OpcionesPasada): Promise<ResultadoPasada> {
     }
   }
 
+  const capacidad = modelado && escena ? await capacidadDeLaPasada({ modelado, escena, idConversacion: idConversacionDePasada(o.corrida, o.nombre) }, avisos) : undefined;
+  if (capacidad) hechos.capacidades = capacidad.conteo;
+
   o.contador.vigilar(null);
   const paro = o.contador.paro;
   const registro: RegistroPasada = {
@@ -169,9 +174,9 @@ async function ejecutarPasada(o: OpcionesPasada): Promise<ResultadoPasada> {
     turnos: refino?.turnosHechos ?? 0, turnosMax: o.turnos, llamadas: o.contador.llamadas - llamadasAntes, deteccionCacheada: cacheada !== null, convergio: refino?.convergio ?? false,
     metrica: "visibles", puntajes, puntajesTodos, puntajePorTurno: refino?.puntajePorTurno ?? [], motivoParada: refino?.motivoParada ?? null, turnoConservado: refino?.turnoConservado ?? 0,
     piezas: { leidas: modelado?.lectura.piezas.length ?? 0, armadas: escena?.nodos.length ?? 0, omitidas: modelado?.omitidas.length ?? 0, globosFoto, globosArmados, globosArmadosVisibles },
-    fallos: clasificarFallos(hechos), captura: "pendiente",
+    fallos: clasificarFallos(hechos), ...(capacidad ? { capacidades: capacidad.conteo } : {}), captura: "pendiente",
     costeUsd: Math.round((o.contador.gastado - gastoAntes) * 1e6) / 1e6,
     abortada: paro, error, ...(avisos.length ? { avisos } : {}),
   };
-  return { registro, escena, topeAlcanzado: paro !== null };
+  return { registro, escena, topeAlcanzado: paro !== null, ...(capacidad ? { evidencia: capacidad.evidencia } : {}) };
 }

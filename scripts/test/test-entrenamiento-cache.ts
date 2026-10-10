@@ -1,15 +1,16 @@
 /**
- * Arnés de entrenamiento (W4): la caché de la detección de globos por foto. La verdad de una corrida real nunca puede
- * salir de una detección grabada del modo seco ni de otro modelo o versión del detector:
+ * Arnés de entrenamiento (W4): la caché de la detección de globos por foto. La clave es determinista (bytes de la foto más la
+ * configuración del detector) y la verdad de una corrida real nunca puede salir de una detección grabada del modo seco ni de
+ * otro modelo, esfuerzo o versión del detector:
  *   NODE_OPTIONS=--use-system-ca npx tsx --conditions=react-server scripts/test/test-entrenamiento-cache.ts
  */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { Deteccion } from "@/lib/globos3d/detectar-globos-ia";
-import { claveDeteccion, type EntradaClaveDeteccion, FUENTES_DEL_DETECTOR, guardarDeteccionCacheada, leerDeteccionCacheada, versionDetector } from "../entrenamiento/lib-cache-deteccion";
+import { claveDeteccion, type EntradaClaveDeteccion, guardarDeteccionCacheada, leerDeteccionCacheada, VERSION_DEL_DETECTOR } from "../entrenamiento/lib-cache-deteccion";
 
 const tmp = mkdtempSync(path.join(tmpdir(), "entrenamiento-cache-"));
 let pruebas = 0;
@@ -27,9 +28,22 @@ const entrada = (cambios: Partial<EntradaClaveDeteccion> = {}): EntradaClaveDete
   bytes: foto, modo: "real", transporte: "api", modelo: "claude-haiku-5-5", esfuerzo: "medium", pensamiento: true, ladoLectura: 1536, ...cambios,
 });
 
+prueba("dos entradas idénticas dan la misma clave: copias de los bytes y otro orden de las propiedades", () => {
+  const base = claveDeteccion(entrada());
+  assert.match(base, /^[0-9a-f]{32}$/);
+  assert.equal(claveDeteccion(entrada()), base, "estable");
+  assert.equal(claveDeteccion(entrada({ bytes: new Uint8Array(foto) })), base, "otra copia de los mismos bytes");
+  assert.equal(claveDeteccion(entrada({ bytes: Buffer.from(foto) })), base, "un Buffer con los mismos bytes");
+  const otroOrden: EntradaClaveDeteccion = { ladoLectura: 1536, pensamiento: true, esfuerzo: "medium", modelo: "claude-haiku-5-5", transporte: "api", modo: "real", bytes: foto };
+  assert.equal(claveDeteccion(otroOrden), base, "el orden en que se arma la entrada no cuenta");
+});
+
+prueba("la clave de una entrada fija no cambia nunca (si cambia, la caché entera queda sin uso)", () => {
+  assert.equal(claveDeteccion(entrada(), "v1"), "b74a3765a4355258175f6eb9034e48aa");
+});
+
 prueba("la clave depende de los bytes, el modo, el transporte, el modelo, el esfuerzo, el razonamiento, el lado de lectura y la versión del detector", () => {
   const base = claveDeteccion(entrada(), "v1");
-  assert.equal(claveDeteccion(entrada(), "v1"), base, "estable");
   const distintas = [
     claveDeteccion(entrada({ modo: "seco" }), "v1"),
     claveDeteccion(entrada({ transporte: "cli" }), "v1"),
@@ -41,36 +55,34 @@ prueba("la clave depende de los bytes, el modo, el transporte, el modelo, el esf
     claveDeteccion(entrada(), "v2"),
   ];
   assert.equal(new Set([base, ...distintas]).size, distintas.length + 1, "cada ingrediente cambia la clave");
+  assert.ok(VERSION_DEL_DETECTOR.length > 0);
+  assert.equal(claveDeteccion(entrada()), claveDeteccion(entrada(), VERSION_DEL_DETECTOR), "sin versión explícita vale la del detector");
   const antigua = createHash("sha256").update(foto).update("|claude-haiku-5-5").digest("hex").slice(0, 32);
   assert.notEqual(base, antigua, "la clave de antes (bytes y modelo) ya no coincide con ninguna entrada nueva");
 });
 
-prueba("la versión del detector cambia con cualquier fuente que decide la petición o la foto leída, y falla si falta una", () => {
-  const raiz = path.join(tmp, "detector");
+/** El código que decide qué pide el detector al modelo y cómo normaliza la foto y une lo que responde. */
+const FUENTES_DEL_DETECTOR = [
+  "src/lib/globos3d/detectar-globos-ia.ts", "src/lib/globos3d/mosaico-deteccion.ts", "src/lib/globos3d/racimos-detectados.ts",
+  "src/lib/globos3d/fondos-escenografia.ts", "src/lib/globos3d/medir-colores.ts",
+  "src/lib/ia/claude/como-gemini.ts", "src/lib/ia/claude/cuerpo.ts", "src/lib/ia/claude/esquemas.ts", "src/lib/ia/claude/herramientas.ts", "src/lib/ia/claude/respuesta.ts",
+  "src/lib/ia/claude/cli/peticion.ts", "src/lib/ia/claude/cli/salida.ts",
+  "src/lib/taller/normalizar-foto.ts",
+];
+const HUELLA_CONOCIDA = "117257c13d1a92cf";
+
+prueba("el código que decide qué detecta el detector no cambia sin decidir si sube VERSION_DEL_DETECTOR", () => {
+  const huella = createHash("sha256");
   for (const archivo of FUENTES_DEL_DETECTOR) {
-    mkdirSync(path.dirname(path.join(raiz, archivo)), { recursive: true });
-    writeFileSync(path.join(raiz, archivo), `// ${archivo}`);
+    // Con los saltos de línea normalizados: la huella no depende de la configuración de git de quien la calcula.
+    huella.update(archivo).update(readFileSync(path.resolve(__dirname, "..", "..", archivo), "utf8").replace(/\r\n/g, "\n"));
   }
-  const antes = versionDetector(raiz);
-  assert.equal(versionDetector(raiz), antes);
-  for (const necesaria of ["src/lib/globos3d/fondos-escenografia.ts", "src/lib/globos3d/medir-colores.ts", "src/lib/taller/normalizar-foto.ts", "src/lib/ia/claude/cli/peticion.ts"]) {
-    assert.ok(FUENTES_DEL_DETECTOR.includes(necesaria), necesaria);
-  }
-  for (const [indice, archivo] of FUENTES_DEL_DETECTOR.entries()) {
-    const distinta = path.join(tmp, `detector-${indice}`);
-    for (const f of FUENTES_DEL_DETECTOR) {
-      mkdirSync(path.dirname(path.join(distinta, f)), { recursive: true });
-      writeFileSync(path.join(distinta, f), f === archivo ? "// otro contenido" : `// ${f}`);
-    }
-    assert.notEqual(versionDetector(distinta), antes, `cambiar ${archivo} cambia la versión`);
-  }
-  const sinUna = path.join(tmp, "detector-sin-una");
-  for (const f of FUENTES_DEL_DETECTOR.slice(1)) {
-    mkdirSync(path.dirname(path.join(sinUna, f)), { recursive: true });
-    writeFileSync(path.join(sinUna, f), "x");
-  }
-  assert.throws(() => versionDetector(sinUna));
-  assert.match(versionDetector(), /^[0-9a-f]{16}$/, "la versión del detector del repo");
+  const actual = huella.digest("hex").slice(0, 16);
+  assert.equal(actual, HUELLA_CONOCIDA, [
+    `Cambió el código del detector (huella ${actual}). Si cambia lo que se detecta (el pedido, el esquema, los trozos, el catálogo de fondos que se le muestra,`,
+    "el sistema del transporte), sube VERSION_DEL_DETECTOR en lib-cache-deteccion.ts: las detecciones guardadas dejan de valer y se vuelve a detectar.",
+    "Si no cambia lo que se detecta, deja la versión y pon esta huella en HUELLA_CONOCIDA: la caché sigue valiendo.",
+  ].join(" "));
 });
 
 prueba("en seco no se escribe ni se lee la caché, aunque exista un archivo con esa clave", () => {

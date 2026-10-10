@@ -36,7 +36,7 @@ const { CupoGasto } = await import("../entrenamiento/lib-cupo-gasto");
 const { idConversacionDePasada, pasadaDeFoto } = await import("../entrenamiento/lib-pasada");
 const { claveDeteccion } = await import("../entrenamiento/lib-cache-deteccion");
 const { observarLlamadasIa } = await import("../../src/lib/registro/observadores-llamadas");
-const { esperarRegistros } = await import("../../src/lib/registro/escritor");
+const { esperarRegistros, fechaUtc } = await import("../../src/lib/registro/escritor");
 
 const deteccionSeca = { globos: CAJAS_DETECCION_SECO.map((c) => ({ box_2d: [...c.box_2d], color: c.color })), fondos: [], uso: { entrada: 0, salida: 0, pensamiento: 0 }, costeEstimadoUsd: 0, trozos: 1, fallidos: 0, racimos: { revisadas: 0, quitadas: 0 } };
 const lecturaSeca = LecturaFotoSchema.parse(LECTURA_SECO);
@@ -80,6 +80,8 @@ await prueba("una pasada completa en seco por el camino del Taller: escena, vuel
     assert.equal(r.registro.transporte, "seco");
     assert.ok(r.registro.costeUsd > 0, "el coste simulado se cuenta por llamada");
     assert.deepEqual(r.registro.fallos, []);
+    assert.deepEqual(r.registro.capacidades, {}, "se clasificó la capacidad que falta y no hay ninguna causa");
+    assert.equal(r.registro.avisos, undefined, "con la auditoría activa no falta nada de la evidencia");
     assert.equal(existsSync(dir), false, "el modo seco nunca escribe la caché de la detección");
     const segunda = await pasadaDeFoto(opciones("images (25).jpg", new ContadorLlamadas(new CupoGasto(1), 400, "seco"), dir));
     assert.equal(segunda.registro.deteccionCacheada, false, "ni la lee: cada pasada en seco detecta de nuevo");
@@ -180,6 +182,27 @@ await prueba("todos los eventos de IA de una pasada caen en su propia conversaci
     assert.ok(llamadas.find(({ f }) => f === `${idEsperado}.jsonl`)!.n >= 3, "lectura, detección y la vuelta del asistente");
   } finally {
     contador.desactivar();
+  }
+});
+
+await prueba("la capacidad que falta de la pasada cuenta los errores de las herramientas que quedaron en su auditoría", async () => {
+  red.ajustar({});
+  const opts = opciones("images (29).jpg", new ContadorLlamadas(new CupoGasto(1), 400, "seco"), path.join(tmp, "cache-capacidad"));
+  const dia = path.join(tmp, "registro", "conversaciones", fechaUtc());
+  mkdirSync(dia, { recursive: true });
+  const error = (mensaje: string) => JSON.stringify({ tipo: "decision", datos: { quien: "herramienta:escena_ia", resultado: { ok: false, error: mensaje } } });
+  const lineas = [error("No encontré el color «rosa polvo» en la tabla Sempertex."), error("ancho_cm = 48 cm está fuera de rango: va de 80 a 900 cm."), '{"tipo":"decision","datos":{"quien":"herram'];
+  writeFileSync(path.join(dia, `${idConversacionDePasada(opts.corrida, opts.nombre)}.jsonl`), `${lineas.join("\n")}\n`);
+  opts.contador.activar();
+  try {
+    const r = await pasadaDeFoto({ ...opts, turnos: 0 });
+    assert.deepEqual(r.registro.capacidades, { tamano_fuera_de_rango: 1, color_no_disponible: 1 });
+    assert.deepEqual(r.registro.fallos, ["capacidad_faltante"], "la clase madre se marca por cualquiera de ellas");
+    assert.ok(r.registro.avisos?.some((a) => /1 línea\(s\) de la auditoría.*no se pudieron leer/.test(a)), `la línea rota se avisa: ${JSON.stringify(r.registro.avisos)}`);
+    assert.deepEqual(r.evidencia?.erroresHerramientas, ["No encontré el color «rosa polvo» en la tabla Sempertex.", "ancho_cm = 48 cm está fuera de rango: va de 80 a 900 cm."], "la evidencia queda para volver a clasificar sin repetir la pasada");
+    assert.ok(r.evidencia && r.evidencia.piezasLeidas.length > 0 && r.evidencia.nodosFinales.length > 0);
+  } finally {
+    opts.contador.desactivar();
   }
 });
 

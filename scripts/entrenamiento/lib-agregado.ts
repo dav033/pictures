@@ -5,6 +5,7 @@
  * modelo, transporte, esfuerzo, razonamiento, tope de vueltas y commit).
  * Puro: sin disco ni red.
  */
+import { claseDominanteDeCapacidad, PADRE_DE_CAPACIDAD, type ClaseCapacidad, type ConteoCapacidad } from "./lib-capacidad";
 import { CLASES_FALLO, type ClaseFallo } from "./lib-fallos";
 
 export type Puntajes = {
@@ -62,6 +63,8 @@ export type RegistroPasada = {
   puntajePorTurno?: PuntajeDeTurno[];
   piezas: { leidas: number; armadas: number; omitidas: number; globosFoto: number; globosArmados: number; /** Registros viejos: ausente. */ globosArmadosVisibles?: number };
   fallos: ClaseFallo[];
+  /** Las causas concretas de `capacidad_faltante` (`lib-capacidad.ts`) y cuántas veces se vio cada una. Ausente en los registros viejos; `{}` si se clasificó y no hubo ninguna. */
+  capacidades?: ConteoCapacidad;
   captura: "pendiente" | "hecha";
   costeUsd: number;
   abortada: string | null;
@@ -75,6 +78,8 @@ export type FilaFoto = {
   corridas: number;
   puntajes: Puntajes;
   fallo: ClaseFallo | "ninguno";
+  /** La causa concreta que más se repite, si el fallo dominante es `capacidad_faltante` y las corridas la traen (las viejas no). */
+  falloEspecifico: ClaseCapacidad | null;
   ultimaCorrida: { iniciadaEn: string; modo: ModoPasada; transporte: TransporteArnes; modelo: string; esfuerzo: string; pensamiento: boolean; commit: string; turnos: number; turnosMax: number };
   costeUsd: number;
 };
@@ -141,11 +146,13 @@ export function agregarPorFoto(registros: readonly RegistroPasada[]): FilaFoto[]
     const ultima = ordenadas[ordenadas.length - 1]!;
     const comparables = ordenadas.filter((r) => claveComparable(r) === claveComparable(ultima));
     const media = (clave: keyof Puntajes) => puntuacionMedia(comparables.map((r) => r.puntajes[clave] ?? PUNTAJES_VACIOS[clave]));
+    const fallo = claseDominante(comparables.flatMap((r) => r.fallos));
     return {
       foto,
       corridas: comparables.length,
       puntajes: { proporciones: media("proporciones"), colores: media("colores"), zonas: media("zonas"), iou: media("iou") },
-      fallo: claseDominante(comparables.flatMap((r) => r.fallos)),
+      fallo,
+      falloEspecifico: fallo === PADRE_DE_CAPACIDAD ? claseDominanteDeCapacidad(comparables.map((r) => r.capacidades)) : null,
       ultimaCorrida: { iniciadaEn: ultima.iniciadaEn, modo: ultima.modo, transporte: ultima.transporte, modelo: ultima.modelo, esfuerzo: ultima.esfuerzo, pensamiento: ultima.pensamiento, commit: ultima.commit, turnos: ultima.turnos, turnosMax: ultima.turnosMax },
       costeUsd: Math.round(comparables.reduce((suma, r) => suma + r.costeUsd, 0) * 1e6) / 1e6,
     };

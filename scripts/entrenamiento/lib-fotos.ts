@@ -3,6 +3,9 @@ import { readdirSync } from "node:fs";
 
 export const FOTOS_DEL_DUENO = { desde: 25, hasta: 54 } as const;
 
+/** Dónde están en este equipo (se puede mover con ENTRENAMIENTO_FOTOS o `--fotos`). */
+export const FOTOS_POR_DEFECTO = "C:/Users/davidt/Downloads/iaiaaaaa";
+
 /** Los nombres que caen en el rango, en orden numérico; ignora lo demás del directorio. */
 export function nombresDeFotos(entradas: readonly string[]): string[] {
   const rango = /^images \((\d+)\)\.jpg$/;

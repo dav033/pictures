@@ -85,6 +85,25 @@ prueba("la fila muestra el esfuerzo y avisa cuando el modelo corrió sin razonam
   assert.match(md, /\| Modelo \| Esfuerzo \| Transporte \|/);
 });
 
+prueba("la fila de capacidad_faltante muestra detrás su causa más repetida; las corridas viejas, sin detalle, solo la clase madre", () => {
+  const conCausa = (iniciadaEn: string, capacidades?: NonNullable<RegistroPasada["capacidades"]>) => registro({ iniciadaEn, fallos: ["capacidad_faltante"], ...(capacidades ? { capacidades } : {}) });
+  const [nueva] = agregarPorFoto([conCausa("2026-10-10T10:00:00.000Z", { falta_figura: 3, fondo_fijo: 1 })]);
+  assert.equal(nueva!.fallo, "capacidad_faltante");
+  assert.equal(nueva!.falloEspecifico, "falta_figura");
+  const [varias] = agregarPorFoto([conCausa("2026-10-10T10:00:00.000Z", { falta_figura: 1 }), conCausa("2026-10-10T10:01:00.000Z", { falta_pared: 2 }), conCausa("2026-10-10T10:02:00.000Z")]);
+  assert.equal(varias!.falloEspecifico, "falta_pared", "se suman las comparables; la que no trae detalle no cuenta");
+  const [vieja] = agregarPorFoto([conCausa("2026-10-10T10:00:00.000Z")]);
+  assert.equal(vieja!.fallo, "capacidad_faltante");
+  assert.equal(vieja!.falloEspecifico, null);
+  const [otra] = agregarPorFoto([registro({ fallos: ["compilacion"], capacidades: { falta_figura: 1 } })]);
+  assert.equal(otra!.falloEspecifico, null, "solo si la clase dominante es la madre de las causas");
+  const md = renderizarLeaderboard([...agregarPorFoto([conCausa("2026-10-10T10:00:00.000Z", { color_no_disponible: 1 })]), ...agregarPorFoto([registro({ foto: "images (26).jpg", fallos: ["capacidad_faltante"] })])], "real", "2026-10-12T00:00:00.000Z", 0);
+  const filas = filasDe(md);
+  assert.match(filas.find((f) => f.includes("images (25).jpg"))!, / \| capacidad_faltante\/color_no_disponible \| /);
+  assert.match(filas.find((f) => f.includes("images (26).jpg"))!, / \| capacidad_faltante \| /);
+  assert.match(md, /capacidad_faltante\/falta_figura/, "la cabecera explica el formato");
+});
+
 prueba("el leaderboard real va a la bitácora por defecto; el de seco nunca", () => {
   const porDefecto = "C:/bitacora/pictures/research/entrenamiento/LEADERBOARD.md";
   const raizCorridas = path.join("repo", "corridas");

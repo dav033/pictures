@@ -139,6 +139,34 @@ async function main() {
     assert.equal(esquema.properties.llamadas.minItems, 1);
     assert.ok(valorDe(argumentos, "--json-schema")!.length < 2_000, "el esquema de la línea de órdenes es corto");
   });
+  await prueba("el sistema dice la lista exacta de herramientas y que se piden solo en `llamadas` (no son las nativas de Claude Code)", async () => {
+    const { lanzar, llamadas } = lanzadorFalso(() => ({ lineas: estructurada("", []) }));
+    await crearClienteClaudeCli(opciones(lanzar)).messages.create(cuerpo({ tools: HERRAMIENTAS }));
+    const { sistema } = llamadas[0]!;
+    assert.ok(sistema.includes("Herramientas disponibles, exactamente estas 2: agregar_pieza, ver_escena."));
+    assert.ok(sistema.includes("aunque tu lista de herramientas nativas solo muestre `StructuredOutput`: no son nativas, se piden SOLO en `llamadas`"));
+    assert.ok(sistema.includes("ni digas que una de ellas «no está disponible»"));
+    assert.ok(sistema.indexOf("exactamente estas 2") < sistema.indexOf("## agregar_pieza"), "la lista va antes de los esquemas");
+    assert.equal(sistema.split("\n## ").length - 1, 2, "la lista no agrega secciones de herramienta");
+  });
+  await prueba("con una herramienta forzada, la lista exacta trae solo esa (las otras no se pueden pedir en este turno)", async () => {
+    const { lanzar, llamadas } = lanzadorFalso(() => ({ lineas: estructurada("", [{ nombre: "ver_escena", argumentos: {} }]) }));
+    await crearClienteClaudeCli(opciones(lanzar)).messages.create(cuerpo({ tools: HERRAMIENTAS, tool_choice: { type: "tool", name: "ver_escena" } }));
+    const { sistema } = llamadas[0]!;
+    assert.ok(sistema.includes("Herramientas disponibles, exactamente esta: ver_escena."));
+    assert.ok(!sistema.includes("exactamente estas"));
+  });
+  await prueba("con las declaraciones de la escena que usa el arnés (sin modelar_desde_foto), ver_escena y las demás figuran en la lista exacta, en orden", async () => {
+    const declaraciones = DECLARACIONES_ESCENA.filter((d) => d.name !== "modelar_desde_foto");
+    assert.ok(declaraciones.some((d) => d.name === "ver_escena"), "la ruta de la escena declara ver_escena");
+    const { lanzar, llamadas } = lanzadorFalso(() => ({ lineas: estructurada("Listo.", []) }));
+    const modelo = crearModeloEscenaClaude(crearClienteClaudeCli(opciones(lanzar)), CONFIG_CLI, { registrar: () => undefined });
+    await modelo.iniciar({ sistema: "Arma la escena.", declaraciones, historial: [], partesUsuario: [{ text: "compara" }], signal: new AbortController().signal }).pedir();
+    const lista = /Herramientas disponibles, exactamente estas (\d+): ([^.]+)\./.exec(llamadas[0]!.sistema);
+    assert.ok(lista, "el sistema trae la lista exacta");
+    assert.equal(Number(lista[1]), declaraciones.length);
+    assert.deepEqual(lista[2]!.split(", "), declaraciones.map((d) => d.name));
+  });
   await prueba("la entrada: un mensaje de usuario en stream-json con la imagen en base64 en su lugar", async () => {
     const { lanzar, llamadas } = lanzadorFalso(() => ({ lineas: [INIT, resultado({ result: "Veo un arco." })] }));
     await crearClienteClaudeCli(opciones(lanzar)).messages.create(cuerpo({ messages: [{ role: "user", content: [{ type: "text", text: "[IMAGEN_ID=A]" }, { type: "image", source: { type: "base64", media_type: "image/jpeg", data: IMAGEN } }, { type: "text", text: "¿Qué ves?" }] }] }));
