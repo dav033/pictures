@@ -3,13 +3,14 @@ import { idsTelemetria, resultadoTelemetria, type ContextoTelemetriaIA } from "@
 import { bytesDeBase64, registrarLlamadaIA } from "@sempertex/agente-core";
 import { FLUX_GENERATION_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { isPythonAdapterError, llamarPythonFluxGenerate } from "@/lib/ia/nucleo/python-adapter";
-import { auditarGeneracionImagen, crearFetchAuditado, type DescripcionImagen } from "@/lib/registro/servidor";
+import { auditarGeneracionImagen, type DescripcionImagen } from "@/lib/registro/servidor";
+import { falResponseError, fetchFalAllowed, isAllowedFalImageUrl, isAllowedFalQueueUrl, parseFalResponse, parseQueueStatus, parseQueueSubmission, ProveedorImagenNoDisponibleError, readBoundedImage, sleep } from "./fal-cola";
+
+export { ProveedorImagenNoDisponibleError };
 
 const TEXT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora";
 const EDIT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/edit";
 const EDIT_ENDPOINT_WITH_ADAPTERS = "https://queue.fal.run/fal-ai/flux-2/lora/edit";
-const FAL_QUEUE_HOSTS = new Set(["queue.fal.run", "rest.alpha.fal.ai"]);
-const MAX_FAL_IMAGE_BYTES = 16_000_000;
 const MAX_EDIT_IMAGES = 4;
 /** `promptVersion` de la telemetría cuando el `/edit` lleva la guía de estructura (ADR-0033). */
 export const PROMPT_VERSION_GUIA = "guia-estructura.v1";
@@ -65,172 +66,6 @@ export type FluxApplication = {
   trigger: string;
   scale: number;
 };
-
-type FalImage = { url?: string; content_type?: string };
-type FalResponse = { images?: FalImage[] };
-type FalQueueSubmission = {
-  request_id: string;
-  response_url: string;
-  status_url: string;
-};
-type FalQueueStatus = {
-  status?: "IN_QUEUE" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "CANCELLED";
-  error?: string;
-};
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * fal.ai refused the account, not the request: 402/403 without balance ("User is
- * locked. Reason: Exhausted balance") or 401/403 with an invalid key. Retrying
- * cannot fix it, so the UI maps it to a non-retryable message
- * (`VISTA_PREVIA_NO_DISPONIBLE`) while the approved proposal stays saved.
- */
-export class ProveedorImagenNoDisponibleError extends Error {
-  readonly causa: "saldo_agotado" | "acceso_denegado";
-  readonly status: number;
-
-  constructor(status: number, causa: "saldo_agotado" | "acceso_denegado", detalle: string) {
-    super(`IMAGEN_PROVEEDOR_NO_DISPONIBLE: fal.ai rechazó la cuenta (${status}, ${causa})${detalle ? `: ${detalle}` : ""}`);
-    this.name = "ProveedorImagenNoDisponibleError";
-    this.causa = causa;
-    this.status = status;
-  }
-}
-
-const ESTADOS_CUENTA_RECHAZADA = new Set([401, 402, 403]);
-const SIN_SALDO = /balance|billing|locked|top up|payment|credit|quota exceeded/i;
-
-async function falResponseError(response: Response, fallback: string): Promise<Error> {
-  let detail = "";
-  try {
-    const body = await response.json() as unknown;
-    if (body && typeof body === "object") {
-      const payload = body as { detail?: unknown; error?: unknown };
-      if (typeof payload.error === "string") detail = payload.error;
-      else if (typeof payload.detail === "string") detail = payload.detail;
-      else if (Array.isArray(payload.detail)) detail = payload.detail.map((item) => typeof item === "string" ? item : JSON.stringify(item)).join(" ");
-    }
-  } catch {
-    // Un proxy puede devolver HTML en lugar de JSON.
-  }
-  if (ESTADOS_CUENTA_RECHAZADA.has(response.status)) {
-    const causa = response.status === 402 || SIN_SALDO.test(detail) ? "saldo_agotado" : "acceso_denegado";
-    return new ProveedorImagenNoDisponibleError(response.status, causa, detail.slice(0, 300));
-  }
-  return new Error(`${fallback} (${response.status})${detail ? `: ${detail.slice(0, 300)}` : ""}`);
-}
-
-function stringField(value: unknown): string | undefined {
-  return typeof value === "string" && value.length > 0 ? value : undefined;
-}
-
-function recordValue(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
-}
-
-function parseQueueSubmission(value: unknown): FalQueueSubmission | null {
-  const record = recordValue(value);
-  const requestId = stringField(record?.request_id);
-  const statusUrl = stringField(record?.status_url);
-  const responseUrl = stringField(record?.response_url);
-  return requestId && statusUrl && responseUrl
-    ? { request_id: requestId, status_url: statusUrl, response_url: responseUrl }
-    : null;
-}
-
-function parseQueueStatus(value: unknown): FalQueueStatus | null {
-  const record = recordValue(value);
-  const status = record?.status;
-  if (status !== "IN_QUEUE" && status !== "IN_PROGRESS" && status !== "COMPLETED" && status !== "FAILED" && status !== "CANCELLED") return null;
-  return { status, error: typeof record?.error === "string" ? record.error : undefined };
-}
-
-function parseFalResponse(value: unknown): FalResponse | null {
-  const record = recordValue(value);
-  if (!Array.isArray(record?.images)) return null;
-  const images = record.images.map((image): FalImage | null => {
-    const item = recordValue(image);
-    const url = stringField(item?.url);
-    if (!url) return null;
-    return { url, content_type: typeof item?.content_type === "string" ? item.content_type : undefined };
-  });
-  return images.every((image): image is FalImage => image !== null) ? { images } : null;
-}
-
-function isAllowedFalQueueUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && !url.username && !url.password && !url.port && FAL_QUEUE_HOSTS.has(url.hostname);
-  } catch {
-    return false;
-  }
-}
-
-function isAllowedFalImageUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && !url.username && !url.password && !url.port && (url.hostname === "fal.media" || url.hostname.endsWith(".fal.media"));
-  } catch {
-    return false;
-  }
-}
-
-/**
- * `fetch` auditado hacia fal (src/lib/registro): envío a la cola (prompt, parámetros, referencias como hash),
- * resultado (URL de la imagen) y descarga, con estado y ms. Los sondeos de estado de la cola no se auditan
- * (serían decenas de líneas iguales por imagen). Llama al `fetch` global del momento (las pruebas lo sustituyen).
- */
-const fetchFalAuditado = crearFetchAuditado((entrada, init) => fetch(entrada, init), {
-  tipo: "http",
-  proveedor: "fal",
-  omitir: (url, metodo) => metodo === "GET" && /\/status\/?$/.test(url.split("?")[0] ?? ""),
-});
-
-async function fetchFalAllowed(
-  url: string,
-  init: RequestInit,
-  isAllowedUrl: (value: string) => boolean,
-): Promise<Response> {
-  let currentUrl = url;
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const response = await fetchFalAuditado(currentUrl, { ...init, redirect: "manual" });
-    if (response.status < 300 || response.status >= 400) return response;
-    const location = response.headers.get("location");
-    if (!location) throw new Error("fal.ai devolvió un redirect sin destino.");
-    const nextUrl = new URL(location, currentUrl).toString();
-    if (!isAllowedUrl(nextUrl)) throw new Error("fal.ai devolvió un redirect a un host no permitido.");
-    currentUrl = nextUrl;
-  }
-  throw new Error("fal.ai excedió el máximo de redirects permitidos.");
-}
-
-async function readBoundedImage(response: Response): Promise<Buffer> {
-  const contentLength = Number(response.headers.get("content-length"));
-  if (Number.isFinite(contentLength) && contentLength > MAX_FAL_IMAGE_BYTES) {
-    throw new Error("fal.ai devolvió una imagen demasiado grande.");
-  }
-  if (!response.body) throw new Error("fal.ai devolvió una respuesta de imagen sin cuerpo.");
-
-  const reader = response.body.getReader();
-  const chunks: Buffer[] = [];
-  let total = 0;
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > MAX_FAL_IMAGE_BYTES) {
-        await reader.cancel();
-        throw new Error("fal.ai devolvió una imagen demasiado grande.");
-      }
-      chunks.push(Buffer.from(value));
-    }
-  } finally {
-    reader.releaseLock();
-  }
-  return Buffer.concat(chunks, total);
-}
 
 /** Tamaño de salida de fal para cada aspecto; la guía de estructura (ADR-0033) usa el mismo encuadre. */
 export const imageSizeFor = (aspecto: PeticionImagen["aspecto"]) => {
@@ -832,7 +667,7 @@ export async function generarConFluxFiel(prompt: string, opciones: OpcionesFluxF
   return auditarGeneracionImagen(descripcion, () => generarConFluxFielSinAuditar(prompt, opciones, endpoint, modelo, coste), (imagen) => ({ base64: imagen.base64, mime: imagen.mime }));
 }
 
-async function generarConFluxFielSinAuditar(prompt: string, opciones: OpcionesFluxFiel, endpoint: string, modelo: string, coste: number, cuerpo: Record<string, unknown> = cuerpoFluxFiel(prompt, opciones)): Promise<Imagen> {
+async function generarConFluxFielSinAuditar(prompt: string, opciones: OpcionesFluxFiel, endpoint: string, modelo: string, coste: number): Promise<Imagen> {
   const key = process.env.FAL_KEY;
   if (!key) throw new Error("FLUX no está conectado todavía: falta FAL_KEY en .env.local.");
   const inicio = Date.now();
@@ -863,7 +698,7 @@ async function generarConFluxFielSinAuditar(prompt: string, opciones: OpcionesFl
     const response = await fetchFalAllowed(endpoint, {
       method: "POST",
       headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify(cuerpo),
+      body: JSON.stringify(cuerpoFluxFiel(prompt, opciones)),
       signal: signalFor(30_000),
     }, isAllowedFalQueueUrl);
     if (!response.ok) throw await falResponseError(response, "fal.ai rechazó la solicitud FLUX.1");
@@ -899,49 +734,3 @@ async function generarConFluxFielSinAuditar(prompt: string, opciones: OpcionesFl
   }
 }
 
-
-// ----------------------------------------------------------------------------------------------------------
-// FLUX.1 Kontext (pro / max): edita una imagen con una instrucción y conserva su composición; es un modelo base de FLUX (sin LoRA).
-// ----------------------------------------------------------------------------------------------------------
-
-const KONTEXT = {
-  pro: { endpoint: "https://queue.fal.run/fal-ai/flux-pro/kontext", modelo: "flux-1/kontext-pro", usd: 0.04 },
-  max: { endpoint: "https://queue.fal.run/fal-ai/flux-pro/kontext/max", modelo: "flux-1/kontext-max", usd: 0.08 },
-} as const;
-export type VarianteKontext = keyof typeof KONTEXT;
-export const costeKontext = (variante: VarianteKontext): number => KONTEXT[variante].usd;
-
-export type OpcionesKontext = {
-  /** La captura del visor (tal cual: la salida sale de su proporción). */
-  imagen: { base64: string; mime: string; ancho: number; alto: number };
-  variante: VarianteKontext;
-  seed?: number;
-  guidanceScale?: number;
-  /** Proporción pedida (`3:2`, `16:9`…); sin ella, la de la imagen. */
-  aspecto?: string;
-  signal?: AbortSignal;
-  telemetria?: ContextoTelemetriaIA;
-};
-
-/** FLUX.1 Kontext en fal con el mismo registro que los demás caminos de imagen (evento `imagen`, coste, telemetría). */
-export async function generarConFluxKontext(prompt: string, opciones: OpcionesKontext): Promise<Imagen> {
-  const k = KONTEXT[opciones.variante];
-  const cuerpo = {
-    prompt,
-    image_url: `data:${opciones.imagen.mime};base64,${opciones.imagen.base64}`,
-    guidance_scale: opciones.guidanceScale ?? 3.5,
-    num_images: 1,
-    output_format: "png",
-    safety_tolerance: "2",
-    ...(Number.isInteger(opciones.seed) ? { seed: opciones.seed } : {}),
-    ...(opciones.aspecto ? { aspect_ratio: opciones.aspecto } : {}),
-  };
-  const descripcion: DescripcionImagen = {
-    proveedor: "fal", endpoint: k.endpoint, modelo: k.modelo, prompt,
-    referencias: [{ base64: opciones.imagen.base64, mime: opciones.imagen.mime, rol: "captura_3d" }],
-    parametros: { guidanceScale: cuerpo.guidance_scale, ancho: opciones.imagen.ancho, alto: opciones.imagen.alto, ...(Number.isInteger(opciones.seed) ? { seed: opciones.seed } : {}), ...(opciones.aspecto ? { aspecto: opciones.aspecto } : {}) },
-    costeEstimadoUsd: k.usd,
-  };
-  const comoFiel: OpcionesFluxFiel = { imagen: opciones.imagen, strength: 1, signal: opciones.signal, telemetria: opciones.telemetria };
-  return auditarGeneracionImagen(descripcion, () => generarConFluxFielSinAuditar(prompt, comoFiel, k.endpoint, k.modelo, k.usd, cuerpo), (imagen) => ({ base64: imagen.base64, mime: imagen.mime }));
-}

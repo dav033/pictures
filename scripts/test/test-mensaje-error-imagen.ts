@@ -17,6 +17,13 @@ test("se reintenta solo lo que puede pasar solo: red, tiempo, 502, respuesta cor
   assert.match(mensajeErrorImagen(rechazo(429, "TOPE_DE_IMAGENES")).texto, /límite de imágenes por hora del servicio/);
 });
 
+test("una imagen en camino que ya no se puede retomar (token vencido o ajeno) sí se ofrece reintentar, con su propio mensaje", () => {
+  const m = mensajeErrorImagen(rechazo(409, "SOLICITUD_KONTEXT_INVALIDA"));
+  assert.equal(m.reintentable, true);
+  assert.match(m.texto, /retomar la imagen que estaba en camino/);
+  assert.match(m.texto, /Reintentar imagen/);
+});
+
 test("lo que repetir no arregla NO ofrece reintentar y dice la verdad de cada código", () => {
   const casos: Array<[ErrorImagen, RegExp]> = [
     [rechazo(409, "PLAN_ALTERADO"), /cambió|versión anterior/],

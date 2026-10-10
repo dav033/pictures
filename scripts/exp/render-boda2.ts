@@ -38,7 +38,8 @@ async function main() {
   const tam = valor("--tam")?.split("x").map(Number);
   const aspectoPedido = valor("--aspecto");
   const { decidir, conContexto } = await import("../../src/lib/registro/servidor");
-  const { generarConSempertexFlux, generarConFluxKontext, costeKontext } = await import("../../src/lib/ia/kagutsuchi/flux");
+  const { generarConSempertexFlux } = await import("../../src/lib/ia/kagutsuchi/flux");
+  const { generarConFluxKontext, costeKontext } = await import("../../src/lib/ia/kagutsuchi/kontext");
   const { promptFotoDeLayout } = await import("../../src/lib/globos3d/render-ia");
 
   const captura = readFileSync(join(CARPETA, "captura-3d-escena.jpg"));

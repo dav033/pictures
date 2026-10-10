@@ -22,8 +22,12 @@ export const LADO_CAPTURA_IMAGEN = 1024;
 export const AMBIENTE_IMAGEN_PLAN_3D = "igual_visor" as const;
 /** Lo más que se espera al visor compartido: con la hoja que gira abierta tiene los pedidos en pausa, y sin tope la imagen no saldría nunca. */
 export const ESPERA_CAPTURA_MS = 10_000;
-/** Cada intento paga una imagen en el servidor (FLUX tiene hasta 105 s): el cliente espera más que él, o pagaría una imagen que tira. */
-export const LIMITE_INTENTO_3D_MS = 115_000;
+/**
+ * Cada petición paga una imagen en el servidor: Kontext espera hasta 100 s a fal y baja el resultado con otros 15 s de margen (115 s, bajo el
+ * `maxDuration` de 120 s de la ruta) y, si sigue en curso, responde «en curso» para retomarla. El cliente espera más que el servidor, o
+ * pagaría una imagen que tira. El proxy del VPS debe leer al menos 120 s por petición.
+ */
+export const LIMITE_INTENTO_3D_MS = 125_000;
 
 export type GestorCaptura = Pick<GestorVista, "modo" | "imagen">;
 const gestorDeLaPagina = async (): Promise<GestorCaptura> => (await import("./motor3d/gestor-vista")).gestorDeLaPagina();

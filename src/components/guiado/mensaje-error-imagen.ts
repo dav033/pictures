@@ -1,9 +1,11 @@
 import { ErrorImagen } from "@/lib/generacion/pedir-imagen";
+import { CODIGO_SOLICITUD_KONTEXT_INVALIDA } from "@/lib/generacion/solicitud-kontext-contrato";
 
 /**
  * Qué le dice la guiada al cliente cuando «Ver cómo quedaría» falla, según POR QUÉ falló. Un rechazo del servidor (plan
  * alterado, plan con piezas que no se dibujan, tope del navegador…) no se arregla repitiendo la petición, así que ahí no se
- * ofrece reintentar; solo se reintenta lo que puede pasar solo: la red, el tiempo, un 5xx (502) y el tope global de la hora.
+ * ofrece reintentar; solo se reintenta lo que puede pasar solo: la red, el tiempo, un 5xx (502), el tope global de la hora y una imagen en
+ * camino que ya no se puede retomar (el token venció: pedirla de nuevo sí sirve).
  * Los códigos son los de `imagen-motor.ts` (`CodigoImagenMotor`) y `feedback-ia/acceso.ts`.
  */
 export type MensajeErrorImagen = { texto: string; reintentable: boolean };
@@ -24,6 +26,7 @@ const POR_CODIGO: Readonly<Record<string, string>> = {
   TOPE_DE_IMAGENES_NAVEGADOR: "Ya pediste varias imágenes en esta hora. Podrás pedir otra más tarde; tu plan sigue guardado.",
 };
 const SIN_REPETIR_NO_SE_PUDO = "No pude preparar la imagen de este plan y repetirlo daría lo mismo. Tu plan sigue guardado: prueba cambiando alguna pieza.";
+const RETOMA_INVALIDA = "No pude retomar la imagen que estaba en camino. Tu plan sigue guardado: toca «Reintentar imagen» para pedirla de nuevo.";
 const TOPE_GLOBAL = "Se alcanzó el límite de imágenes por hora del servicio. Tu plan sigue guardado: puedes reintentar en un rato con «Reintentar imagen».";
 const SIN_CODIGO = "No se pudo dibujar la imagen de este plan. Tu plan sigue guardado.";
 
@@ -33,6 +36,7 @@ export function mensajeErrorImagen(causa: unknown): MensajeErrorImagen {
   const { codigo, clase, status } = causa;
   // El tope global de la hora y el 502 del proveedor pasan solos: son lo único del servidor que se ofrece reintentar.
   if (codigo === "TOPE_DE_IMAGENES") return { texto: TOPE_GLOBAL, reintentable: true };
+  if (codigo === CODIGO_SOLICITUD_KONTEXT_INVALIDA) return { texto: RETOMA_INVALIDA, reintentable: true };
   if (codigo === "NO_SE_PUDO_DIBUJAR") return status === 502 ? { texto: SE_PUEDE_REINTENTAR, reintentable: true } : { texto: SIN_REPETIR_NO_SE_PUDO, reintentable: false };
   const propio = codigo ? POR_CODIGO[codigo] : undefined;
   if (propio) return { texto: propio, reintentable: false };

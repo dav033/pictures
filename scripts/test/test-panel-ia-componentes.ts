@@ -178,7 +178,7 @@ prueba("sin pieza elegida, «Escena entera» ya está elegida (y no es un interr
 prueba("la foto realista va DEBAJO del pedido y sin competir con «Enviar» (botón secundario)", () => {
   const h = html(createElement(PanelIA, propsPanel(iaFalsa([turno(1)]))));
   assert.ok(h.indexOf("Foto realista de lo que ves") > h.indexOf('aria-label="Enviar a la IA"'));
-  assert.match(h, /FLUX · 15–40 s · ≈US\$0,08 por foto \(tope de 30 por hora\)/);
+  assert.match(h, /FLUX · 20–40 s; en casos raros, hasta unos 5 min · ≈US\$0,08 por foto \(tope de 30 por hora\)/);
   assert.match(botonCon(h, "Generar"), /border-taller-borde/);
   assert.doesNotMatch(botonCon(h, "Generar"), /bg-taller-primario/);
 });

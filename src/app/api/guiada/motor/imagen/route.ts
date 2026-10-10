@@ -18,7 +18,7 @@ export const maxDuration = 120;
 const dependencias: DependenciasImagen = {
   describir: descripcionImagenDeEspec,
   armar: armarDesdeEspec,
-  generar: (prompt, base, senal) => generarImagenGuiada3d(prompt, base, senal),
+  generar: (prompt, base, senal, solicitudPrevia) => generarImagenGuiada3d(prompt, base, senal, undefined, solicitudPrevia),
   aligerar: aligerarImagenGenerada,
   tomarFoto: () => tomarFotoDeLaHora(),
   tomarFotoDeNavegador: (navegador) => tomarImagenDeNavegador(navegador),

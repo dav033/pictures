@@ -11,6 +11,9 @@ import { huellaDeNavegador } from "./plan-motor";
 import { promptImagenGuiada } from "./render-ia-guiada";
 import { devolverImagenDeNavegador, tomarImagenDeNavegador } from "./tope-imagenes-navegador";
 import { verificarPlanFirmado, type RechazoPlan } from "./verificar-plan";
+import { KontextEnCursoError, SolicitudKontextInvalidaError } from "@/lib/ia/kagutsuchi/kontext";
+import { ambitoDeKontext, respuestaKontextEnCurso, solicitudPreviaDe } from "@/lib/ia/kagutsuchi/solicitud-kontext";
+import { CODIGO_SOLICITUD_KONTEXT_INVALIDA } from "@/lib/generacion/solicitud-kontext-contrato";
 
 /**
  * Lógica de `POST /api/guiada/motor/imagen` (REQ-007, fase 4): «Ver cómo quedaría» de un plan armado por el motor 3D. Es la
@@ -33,14 +36,17 @@ import { verificarPlanFirmado, type RechazoPlan } from "./verificar-plan";
  */
 export const ALMACENAR_IMAGEN_EN_SERVIDOR: boolean = false;
 
-export type CodigoImagenMotor = RechazoPlan["codigo"] | "CUERPO_INVALIDO" | "SESION_REQUERIDA" | "CAPTURA_INVALIDA" | "PLAN_NO_REPRESENTABLE" | "TOPE_DE_IMAGENES" | "TOPE_DE_IMAGENES_NAVEGADOR" | "NO_SE_PUDO_DIBUJAR";
+export type CodigoImagenMotor = RechazoPlan["codigo"] | "CUERPO_INVALIDO" | "SESION_REQUERIDA" | "CAPTURA_INVALIDA" | "PLAN_NO_REPRESENTABLE" | "TOPE_DE_IMAGENES" | "TOPE_DE_IMAGENES_NAVEGADOR" | "NO_SE_PUDO_DIBUJAR" | typeof CODIGO_SOLICITUD_KONTEXT_INVALIDA;
 
 export type DependenciasImagen = {
   describir: (espec: EspecClienteV1) => DescripcionImagen;
   /** Solo para la imagen base sin captura: la armada que se proyecta a SVG. */
   armar: (espec: EspecClienteV1) => Pick<ResultadoMotorV1, "armada">;
-  /** FLUX.1 Kontext max con la imagen base y el texto; la señal corta la llamada si el navegador se va. */
-  generar: (prompt: string, base: CapturaPreparada, senal: AbortSignal) => Promise<ImagenBase64>;
+  /**
+   * FLUX.1 Kontext max con la imagen base y el texto; la señal corta la llamada si el navegador se va. Con `solicitudPrevia` retoma la
+   * solicitud que ya está en curso en fal en vez de enviar otra. Si el plazo se acaba con la imagen ya pagada lanza `KontextEnCursoError`.
+   */
+  generar: (prompt: string, base: CapturaPreparada, senal: AbortSignal, solicitudPrevia?: string) => Promise<ImagenBase64>;
   aligerar: (imagen: ImagenBase64) => Promise<ImagenAligerada>;
   /** El cupo por hora compartido con el Taller y el estudio de módulos. */
   tomarFoto: () => TomaDeFoto;
@@ -113,21 +119,33 @@ async function atender(request: Request, deps: DependenciasImagen, navegador: st
     return error("NO_SE_PUDO_DIBUJAR", "No pude preparar la imagen del plan.", 422);
   }
 
-  const delNavegador = deps.tomarFotoDeNavegador(navegador);
-  if (!delNavegador.ok) {
-    deps.auditar("regla:render_3d_tope", "tope de imágenes por hora de un navegador (imagen del plan 3D de la guiada)", { usadas: delNavegador.usadas, tope: delNavegador.tope }, { entrada });
-    return error("TOPE_DE_IMAGENES_NAVEGADOR", "Ya generaste varias imágenes en esta hora. Inténtalo de nuevo más tarde.", 429);
+  const prompt = promptImagenGuiada(descripcion.descripcion, cuerpo.ambiente);
+  // Retomar una imagen que sigue en curso no es otra imagen: no gasta cupo. Un token que no sirve se rechaza, nunca se envía otra solicitud en silencio (sería pagar dos veces).
+  // El token queda atado a este navegador, a este texto y a esta vista (la captura o la cámara): ni otro plan, ni otro navegador, ni una vista
+  // distinta pueden recibir la imagen de una solicitud ajena.
+  const ambito = ambitoDeKontext(navegador, prompt, cuerpo.vista, cuerpo.captura);
+  const previa = solicitudPreviaDe(request.headers, ambito);
+  if (previa.tipo === "invalida") {
+    deps.auditar("regla:imagen_guiada_3d", "imagen del plan 3D: el token para retomar la solicitud en curso no sirve", { razon: "token_invalido_o_vencido" }, { entrada });
+    return error(CODIGO_SOLICITUD_KONTEXT_INVALIDA, "No pude retomar la imagen en curso. Vuelve a pedirla.", 409);
   }
-  const toma = deps.tomarFoto();
-  if (!toma.ok) {
-    deps.devolverFotoDeNavegador(navegador);
-    deps.auditar("regla:render_3d_tope", "tope de imágenes por hora (imagen del plan 3D de la guiada)", { usadas: toma.usadas, tope: toma.tope }, { entrada });
-    return error("TOPE_DE_IMAGENES", "Se alcanzó el límite de imágenes por hora. Inténtalo más tarde.", 429);
+  if (previa.tipo === "ninguna") {
+    const delNavegador = deps.tomarFotoDeNavegador(navegador);
+    if (!delNavegador.ok) {
+      deps.auditar("regla:render_3d_tope", "tope de imágenes por hora de un navegador (imagen del plan 3D de la guiada)", { usadas: delNavegador.usadas, tope: delNavegador.tope }, { entrada });
+      return error("TOPE_DE_IMAGENES_NAVEGADOR", "Ya generaste varias imágenes en esta hora. Inténtalo de nuevo más tarde.", 429);
+    }
+    const toma = deps.tomarFoto();
+    if (!toma.ok) {
+      deps.devolverFotoDeNavegador(navegador);
+      deps.auditar("regla:render_3d_tope", "tope de imágenes por hora (imagen del plan 3D de la guiada)", { usadas: toma.usadas, tope: toma.tope }, { entrada });
+      return error("TOPE_DE_IMAGENES", "Se alcanzó el límite de imágenes por hora. Inténtalo más tarde.", 429);
+    }
   }
 
-  const prompt = promptImagenGuiada(descripcion.descripcion, cuerpo.ambiente);
   deps.auditar("regla:imagen_guiada_3d_prompt", "texto e imagen base que van a FLUX desde la guiada (plan 3D)", {
     prompt, largo: prompt.length, ambiente: cuerpo.ambiente, camino: "flux1_kontext_max", origenBase: cuerpo.captura ? "captura_del_navegador" : "svg_del_servidor", bytesBase: base.bytes, ancho: base.ancho, alto: base.alto,
+    ...(previa.tipo === "retomar" ? { retoma: previa.requestId } : {}),
   }, { entrada });
 
   const solicitudId = solicitudImagenDe(request.headers);
@@ -135,7 +153,7 @@ async function atender(request: Request, deps: DependenciasImagen, navegador: st
   const guardar = db && solicitudId ? { db, solicitudId, planHash: cuerpo.plan_hash } : null;
   const enCurso = guardar ? marcarImagenEnCurso(guardar.db, guardar) : null;
   try {
-    const hecha = await deps.generar(prompt, base, request.signal);
+    const hecha = await deps.generar(prompt, base, request.signal, previa.tipo === "retomar" ? previa.requestId : undefined);
     const liviana = await deps.aligerar(hecha);
     if (guardar) {
       await enCurso?.catch(() => undefined);
@@ -144,6 +162,16 @@ async function atender(request: Request, deps: DependenciasImagen, navegador: st
     }
     return Response.json({ imagen: `data:${liviana.mime};base64,${liviana.base64}`, motorImagen: "flux-kontext-max" }, { headers: SIN_CACHE });
   } catch (causa) {
+    if (causa instanceof KontextEnCursoError) {
+      // La solicitud sigue viva y pagada en fal: no es un fallo (la fila de la recuperación queda «en_curso»); el navegador la retoma con el token.
+      deps.auditar("regla:imagen_guiada_3d_en_curso", "fal sigue generando la imagen del plan 3D: el navegador la retoma por su id, sin enviar otra", { solicitud: causa.requestId }, { entrada });
+      return respuestaKontextEnCurso(causa, ambito);
+    }
+    if (causa instanceof SolicitudKontextInvalidaError) {
+      // fal ya no tiene la solicitud (FAILED, vencida o perdida): el token no sirve y el navegador pide una imagen nueva.
+      deps.auditar("regla:imagen_guiada_3d", "imagen del plan 3D: fal ya no tiene la solicitud que se quería retomar", { solicitud: causa.requestId, motivo: causa.message.slice(0, 200) }, { entrada });
+      return error(CODIGO_SOLICITUD_KONTEXT_INVALIDA, "No pude retomar la imagen en curso. Vuelve a pedirla.", 409);
+    }
     const mensaje = causa instanceof Error ? causa.message : String(causa);
     deps.auditar("regla:render_3d_error", "FLUX no devolvió la imagen del plan 3D", { mensaje: mensaje.slice(0, 300) }, { entrada });
     if (guardar) {

@@ -12,7 +12,10 @@
  * - el cupo por hora se respeta (429 sin llamar a FLUX) y es el compartido con el Taller;
  * - la telemetría de la llamada de pago lleva la superficie `guiada-3d` y la variante max;
  * - recuperación: con almacén, la solicitud queda en curso y la imagen guardada con el hash del plan; si FLUX falla, «fallida»;
- *   sin almacén no se escribe nada.
+ *   sin almacén no se escribe nada;
+ * - Kontext retomable (P-038): si fal sigue generando al acabarse el plazo, 202 con token (no es un fallo); con el token la ruta
+ *   retoma la misma solicitud sin gastar cupo, y un token que no sirve (de otro plan, navegador o VISTA) es 409 sin llamar a FLUX;
+ *   si fal ya no tiene la solicitud (FAILED, 404), también 409: el navegador suelta el token y pide una imagen nueva.
  *
  * Run: NODE_OPTIONS=--use-system-ca npx tsx --conditions=react-server scripts/test/test-motor3d-imagen-ruta.ts
  */
@@ -33,6 +36,8 @@ import { reiniciarFotosPorHora, tomarFotoDeLaHora } from "../../src/lib/globos3d
 import { devolverImagenDeNavegador, reiniciarImagenesPorNavegador, TOPE_IMAGENES_POR_NAVEGADOR_HORA, tomarImagenDeNavegador } from "../../src/lib/guiada-motor/tope-imagenes-navegador";
 import { TOPE_FOTOS_POR_HORA } from "../../src/lib/globos3d/foto-realista";
 import { todosLosCasos } from "../lib/casos-motor-guiada";
+import { KontextEnCursoError, SolicitudKontextInvalidaError } from "../../src/lib/ia/kagutsuchi/kontext";
+import { CABECERA_SOLICITUD_KONTEXT } from "../../src/lib/generacion/solicitud-kontext-contrato";
 
 const CLAVE_APP = "clave-app-de-prueba";
 const SESION = `${SESSION_COOKIE}=${sessionToken(CLAVE_APP)}`;
@@ -41,6 +46,7 @@ const NAVEGADOR = `feedback_usuario=${IDENTIDAD}`;
 const OTRO_NAVEGADOR = `feedback_usuario=${"b2".repeat(16)}`;
 const HUELLA = huellaDeNavegador(`nav-${IDENTIDAD}`);
 const SOLICITUD = "0b1b3c8e-5f4a-4a53-9c0e-2d6f6f3a9d11";
+const ID_FAL = "01a1230e-ef48-7f13-a66d-429b391007a3";
 
 const casos = todosLosCasos().filter((caso) => armarDesdeEspec(caso.espec).noRepresentable.length === 0);
 const IDEA_07 = casos.find((c) => c.id.startsWith("idea-deco-real-07-"))!.espec;
@@ -69,26 +75,31 @@ const IMAGEN_FLUX = { base64: Buffer.from("flux-simulado").toString("base64"), m
 type Auditoria = { quien: string; que: string; resultado: unknown };
 type Llamada = { prompt: string; ancho: number; alto: number; mime: string; bytes: number };
 /** Con `topeNavegador` por defecto muy alto: las pruebas del cupo global necesitan que un solo navegador llegue a las 30. */
-function entorno(opciones: { falla?: boolean; almacen?: ConsultorPg | null; tomarFoto?: DependenciasImagen["tomarFoto"]; topeNavegador?: number } = {}) {
+function entorno(opciones: { falla?: boolean; enCurso?: boolean; perdida?: boolean; almacen?: ConsultorPg | null; tomarFoto?: DependenciasImagen["tomarFoto"]; topeNavegador?: number } = {}) {
   const auditorias: Auditoria[] = [];
   const llamadas: Llamada[] = [];
+  const previas: Array<string | undefined> = [];
+  let tomas = 0;
   let armados = 0;
   const deps: DependenciasImagen = {
     describir: descripcionImagenDeEspec,
     armar: (espec) => { armados += 1; return armarDesdeEspec(espec); },
-    generar: async (prompt, base) => {
+    generar: async (prompt, base, _senal, solicitudPrevia) => {
       llamadas.push({ prompt, ancho: base.ancho, alto: base.alto, mime: base.mime, bytes: base.bytes });
+      previas.push(solicitudPrevia);
       if (opciones.falla) throw new Error("fal.ai rechazó la solicitud");
+      if (opciones.enCurso && !solicitudPrevia) throw new KontextEnCursoError(ID_FAL, 100_000);
+      if (opciones.perdida && solicitudPrevia) throw new SolicitudKontextInvalidaError(solicitudPrevia, "fal dio la solicitud por FAILED");
       return IMAGEN_FLUX;
     },
     aligerar: async (imagen) => ({ ...imagen, bytes: Buffer.from(imagen.base64, "base64"), bytesAntes: 1, bytesDespues: 1, ancho: null, alto: null, resultado: "ya_liviana" }),
-    tomarFoto: opciones.tomarFoto ?? (() => tomarFotoDeLaHora()),
+    tomarFoto: () => { tomas += 1; return (opciones.tomarFoto ?? (() => tomarFotoDeLaHora()))(); },
     tomarFotoDeNavegador: (navegador) => tomarImagenDeNavegador(navegador, Date.now(), opciones.topeNavegador ?? 1_000),
     devolverFotoDeNavegador: devolverImagenDeNavegador,
     almacen: opciones.almacen ? () => opciones.almacen! : null,
     auditar: (quien, que, resultado) => { auditorias.push({ quien, que, resultado }); },
   };
-  return { deps, auditorias, llamadas, armados: () => armados };
+  return { deps, auditorias, llamadas, previas, tomas: () => tomas, armados: () => armados };
 }
 
 /** Lo que el navegador tiene de un plan 3D: token (atado a su navegador), hash, motor y espec. */
@@ -386,6 +397,59 @@ test("FLUX falla: 502 con un mensaje honesto, sin filtrar el error del proveedor
   const texto = JSON.stringify(await r.json());
   assert.ok(!texto.includes("fal.ai"), "el mensaje al cliente no trae el error del proveedor");
   assert.ok(e.auditorias.some((a) => a.quien === "regla:render_3d_error" && JSON.stringify(a.resultado).includes("fal.ai rechazó")));
+});
+
+test("Kontext sigue en curso al acabarse el plazo: 202 con token (no es un fallo); con el token retoma la misma solicitud sin gastar cupo", async () => {
+  const e = entorno({ enCurso: true });
+  const cuerpo = { ...plan(IDEA_07), captura: await captura("png") };
+  const primera = await atenderImagenMotor(pedir(cuerpo), e.deps);
+  assert.equal(primera.status, 202);
+  const enCurso = await primera.json() as { estado: string; codigo: string; solicitud_kontext: string };
+  assert.deepEqual([enCurso.estado, enCurso.codigo], ["en_curso", "KONTEXT_EN_CURSO"]);
+  assert.ok(enCurso.solicitud_kontext.startsWith(`${ID_FAL}.`));
+  assert.ok(e.auditorias.some((a) => a.quien === "regla:imagen_guiada_3d_en_curso"), "queda en la auditoría como «en curso», no como error");
+  assert.ok(!e.auditorias.some((a) => a.quien === "regla:render_3d_error"));
+  assert.equal(e.tomas(), 1);
+
+  const segunda = await atenderImagenMotor(pedir(cuerpo, [SESION, NAVEGADOR], { [CABECERA_SOLICITUD_KONTEXT]: enCurso.solicitud_kontext }), e.deps);
+  assert.equal(segunda.status, 200, await segunda.clone().text());
+  assert.match((await segunda.json() as { imagen: string }).imagen, /^data:image\//);
+  assert.deepEqual(e.previas, [undefined, ID_FAL], "la segunda llamada retoma el id de fal en vez de enviar otra solicitud");
+  assert.equal(e.tomas(), 1, "retomar no gasta cupo global");
+  assert.equal(tomarImagenDeNavegador(HUELLA, Date.now(), 1_000).usadas, 2, "ni el del navegador: 1 de la primera petición + esta consulta");
+});
+
+test("un token para retomar que no sirve (de otro plan, alterado o inventado) es 409 sin llamar a FLUX ni gastar cupo", async () => {
+  const e = entorno({ enCurso: true });
+  const cuerpo = { ...plan(IDEA_07), captura: await captura("png") };
+  const { solicitud_kontext } = await (await atenderImagenMotor(pedir(cuerpo), e.deps)).json() as { solicitud_kontext: string };
+  const otroPlan = { ...plan(COLUMNA), captura: await captura("png") };
+  const deOtroNavegador = { ...plan(IDEA_07, { navegador: huellaDeNavegador(`nav-${"b2".repeat(16)}`) }), captura: await captura("png") };
+  for (const [nombre, peticion, cookies, token] of [
+    ["de otro plan", otroPlan, [SESION, NAVEGADOR], solicitud_kontext],
+    ["de otro navegador (mismo plan)", deOtroNavegador, [SESION, OTRO_NAVEGADOR], solicitud_kontext],
+    ["de otra vista (mismo plan, otra captura)", { ...plan(IDEA_07), captura: await captura("jpeg", 512) }, [SESION, NAVEGADOR], solicitud_kontext],
+    ["de otra cámara (mismo plan, sin captura)", { ...plan(IDEA_07), vista: "frente" }, [SESION, NAVEGADOR], solicitud_kontext],
+    ["alterado", cuerpo, [SESION, NAVEGADOR], `${solicitud_kontext}x`],
+    ["inventado", cuerpo, [SESION, NAVEGADOR], "no-es-un-token"],
+  ] as const) {
+    const antes = { llamadas: e.llamadas.length, tomas: e.tomas() };
+    const r = await atenderImagenMotor(pedir(peticion, [...cookies], { [CABECERA_SOLICITUD_KONTEXT]: token }), e.deps);
+    assert.equal(r.status, 409, nombre);
+    assert.equal(await codigoDe(r), "SOLICITUD_KONTEXT_INVALIDA", nombre);
+    assert.deepEqual({ llamadas: e.llamadas.length, tomas: e.tomas() }, antes, `${nombre}: no llama a FLUX ni gasta cupo`);
+  }
+});
+
+test("si fal ya no tiene la solicitud que se retoma (FAILED, 404, 422): 409 SOLICITUD_KONTEXT_INVALIDA, no un 502 que deje vivo un token muerto", async () => {
+  const e = entorno({ enCurso: true, perdida: true });
+  const cuerpo = { ...plan(IDEA_07), captura: await captura("png") };
+  const { solicitud_kontext } = await (await atenderImagenMotor(pedir(cuerpo), e.deps)).json() as { solicitud_kontext: string };
+  const r = await atenderImagenMotor(pedir(cuerpo, [SESION, NAVEGADOR], { [CABECERA_SOLICITUD_KONTEXT]: solicitud_kontext }), e.deps);
+  assert.equal(r.status, 409);
+  assert.equal(await codigoDe(r), "SOLICITUD_KONTEXT_INVALIDA");
+  assert.equal(e.tomas(), 1, "retomar no gastó cupo");
+  assert.ok(!e.auditorias.some((a) => a.quien === "regla:render_3d_error"), "no es un error del proveedor");
 });
 
 /** Un `pg.Pool` falso que anota cada consulta y responde vacío. */

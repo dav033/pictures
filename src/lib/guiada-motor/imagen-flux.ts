@@ -1,5 +1,5 @@
 import "server-only";
-import { generarConFluxKontext } from "@/lib/ia/kagutsuchi/flux";
+import { generarConFluxKontext } from "@/lib/ia/kagutsuchi/kontext";
 import type { CapturaPreparada } from "./captura-imagen";
 
 /**
@@ -12,11 +12,13 @@ export const SUPERFICIE_IMAGEN_GUIADA_3D = "guiada-3d";
 
 type GeneradorKontext = typeof generarConFluxKontext;
 
-export function generarImagenGuiada3d(prompt: string, base: CapturaPreparada, senal: AbortSignal, generador: GeneradorKontext = generarConFluxKontext) {
+/** Con `solicitudPrevia` no se envía otra solicitud: se retoma la que ya está pagada y en curso en fal (`KontextEnCursoError`). */
+export function generarImagenGuiada3d(prompt: string, base: CapturaPreparada, senal: AbortSignal, generador: GeneradorKontext = generarConFluxKontext, solicitudPrevia?: string) {
   return generador(prompt, {
     imagen: { base64: base.base64, mime: base.mime, ancho: base.ancho, alto: base.alto },
     variante: "max",
     signal: senal,
     telemetria: { superficie: SUPERFICIE_IMAGEN_GUIADA_3D },
+    ...(solicitudPrevia ? { solicitudPrevia } : {}),
   });
 }

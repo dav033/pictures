@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import { Sparkles, LoaderCircle, Trash2 } from "lucide-react";
 import { AMBIENTES_RENDER, AMBIENTE_POR_DEFECTO, type AmbienteRender } from "@/lib/globos3d/render-ia";
 import { TIEMPO_FOTO, resumenFotoRealista } from "@/lib/globos3d/foto-realista";
+import { postReanudable } from "@/lib/generacion/post-reanudable";
 import type { AspectoCaptura } from "./escena-globos";
 import { MAXIMO, borrarImagen, guardarImagen, leerImagenes, type ImagenGuardada } from "./imagenes-guardadas";
 import { VisorFoto } from "./VisorFoto";
 
 const fecha = new Intl.DateTimeFormat("es", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+const MENSAJE_SIN_RED = "No se pudo conectar para generar la foto. Revisa tu conexión y vuelve a intentarlo: si la foto ya estaba en camino, se retoma.";
 
 /** «Mi escena · Igual al visor · 8 oct, 12:40». */
 const tituloDe = (g: ImagenGuardada) => `${g.escena ? `${g.escena} · ` : ""}${AMBIENTES_RENDER.find((a) => a.id === g.ambiente)?.nombre ?? ""} · ${fecha.format(new Date(g.creada))}`;
@@ -41,14 +44,15 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
       // Capturar puede esperar la letra de los nombres y lanza si no carga: ese error se le muestra a la persona, sin llamar a la IA.
       const captura = await capturar();
       if (!captura) throw new Error("El visor 3D todavía no está listo.");
-      const respuesta = await fetch("/api/render-3d-imagen", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ render: captura.datos, descripcion, ambiente, aspecto: captura.aspecto }) });
+      const respuesta = await postReanudable("/api/render-3d-imagen", JSON.stringify({ render: captura.datos, descripcion, ambiente, aspecto: captura.aspecto }));
       const datos = (await respuesta.json().catch(() => ({}))) as { imagen?: string; error?: string };
       if (!respuesta.ok || !datos.imagen) throw new Error(datos.error ?? "No pude generar la foto.");
       const nueva: ImagenGuardada = { id: Date.now(), imagen: datos.imagen, ambiente, escena, creada: new Date().toISOString() };
       setGeneradas((actuales) => [nueva, ...actuales].slice(0, MAXIMO));
       if (!(await guardarImagen(nueva))) setAviso("Este navegador no dejó guardar la foto: descárgala para no perderla.");
     } catch (causa) {
-      setError(causa instanceof Error ? causa.message : "No pude generar la foto.");
+      // Un corte de red llega como TypeError («Failed to fetch», «NetworkError when attempting to fetch resource»): eso no se le muestra a nadie.
+      setError(causa instanceof TypeError ? MENSAJE_SIN_RED : causa instanceof Error ? causa.message : "No pude generar la foto.");
     } finally {
       setCargando(false);
     }

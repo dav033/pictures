@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { claveDeRetoma, guardarTokenDeRetoma, MAX_REINTENTOS_DE_RETOMA, PAUSA_ENTRE_RETOMAS_MS, soltarTokenDeRetoma, tokenDeRetoma } from "./retoma-kontext";
+import { CABECERA_SOLICITUD_KONTEXT, CODIGO_SOLICITUD_KONTEXT_INVALIDA, KontextEnCursoSchema, MAX_REANUDACIONES_KONTEXT } from "./solicitud-kontext-contrato";
 
 /**
  * Pide la imagen a /api/generate y, si la respuesta se corta, la recupera antes de volver a pagarla. Del navegador
@@ -13,6 +15,12 @@ import { z } from "zod";
  *  3. solo si de verdad no existe, UN reintento silencioso (otro id) antes de dar el error. Un tiempo agotado no se
  *     reintenta solo (ya fueron 90 s de espera): el cliente decide con «Reintentar imagen».
  *  Un rechazo del servidor (4xx: plan sin aprobar, payload inválido…) no se recupera ni se reintenta: daría igual.
+ *
+ * Kontext (2026-10-09): si fal sigue generando al acabarse el plazo de la petición (100 s), la ruta responde 202 con un token y esta
+ * función repite LA MISMA petición con `x-solicitud-kontext` (hasta `MAX_REANUDACIONES_KONTEXT` veces): la ruta retoma la solicitud
+ * ya pagada, no envía otra ni gasta otro cupo. Cada petición tiene su propio `limiteIntentoMs`. Si una retoma falla por la red o por un 5xx se
+ * repite con el mismo token (tras una pausa) y, si no sale, el token se conserva: el siguiente «Reintentar» retoma en vez de pagar otra
+ * imagen (`retoma-kontext.ts`).
  */
 
 export const CABECERA_SOLICITUD_IMAGEN = "x-solicitud-imagen";
@@ -84,7 +92,7 @@ export type OpcionesPedirImagen = {
   planHash: string;
   /** Cancelación de fuera (empezar de nuevo, otra conversación): corta todo sin recuperar ni reintentar. */
   senal: AbortSignal;
-  /** Tope de cada intento de /api/generate. */
+  /** Tope de cada petición a la ruta (retomar una imagen en curso es otra petición, con su propio tope). */
   limiteIntentoMs: number;
   /** Cada paso (corte, consulta, recuperación, reintento) para la auditoría de la vista. */
   alEvento?: (evento: string, datos: Record<string, unknown>) => void;
@@ -152,39 +160,80 @@ export async function pedirImagenConRecuperacion(opciones: OpcionesPedirImagen):
   const ruta = opciones.ruta ?? RUTA_GENERAR_IMAGEN;
 
   async function pedirUna(solicitudId: string): Promise<{ imagen: string; avisoNoCotizado?: string }> {
-    const tope = senalConTope(opciones.senal, opciones.limiteIntentoMs);
-    const clasificar = (causa: unknown): ErrorImagen => {
-      if (causa instanceof ErrorImagen) return causa;
-      if (opciones.senal.aborted) return new ErrorImagen("cancelada", "Se canceló la imagen.");
-      if (tope.vencida()) return new ErrorImagen("tiempo", `La imagen no llegó en ${Math.round(opciones.limiteIntentoMs / 1000)} s.`);
-      // TypeError «NetworkError when attempting to fetch resource» / «Failed to fetch», o un cuerpo cortado a medias.
-      return new ErrorImagen("red", textoCausa(causa));
-    };
-    try {
-      const respuesta = await dep.fetch(ruta, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", [CABECERA_SOLICITUD_IMAGEN]: solicitudId },
-        body: cuerpo,
-        signal: tope.senal,
-      });
-      if (!respuesta.ok) {
-        const codigo = await codigoDeLaRespuesta(respuesta);
-        const pasajero = statusPasajero(respuesta.status) && !(codigo && CODIGOS_DEFINITIVOS.has(codigo));
-        throw new ErrorImagen(pasajero ? "servidor" : "rechazo", `${ruta} respondió con estado ${respuesta.status}.`, respuesta.status, codigo);
-      }
-      let datos: unknown;
+    const clave = claveDeRetoma(ruta, cuerpo);
+    // Una imagen que quedó en curso en un intento anterior, y cuya retoma falló, se retoma en vez de pagar otra.
+    let retomar = tokenDeRetoma(clave);
+    if (retomar) avisar("imagen.retomar_kontext_pendiente", { solicitudId });
+    let reanudaciones = 0;
+    let reintentos = 0;
+    const pausa = () => dep.esperar(PAUSA_ENTRE_RETOMAS_MS, opciones.senal).catch((causa: unknown) => {
+      throw opciones.senal.aborted ? new ErrorImagen("cancelada", "Se canceló la imagen.") : causa;
+    });
+    for (;;) {
+      const tope = senalConTope(opciones.senal, opciones.limiteIntentoMs);
+      const clasificar = (causa: unknown): ErrorImagen => {
+        if (causa instanceof ErrorImagen) return causa;
+        if (opciones.senal.aborted) return new ErrorImagen("cancelada", "Se canceló la imagen.");
+        if (tope.vencida()) return new ErrorImagen("tiempo", `La imagen no llegó en ${Math.round(opciones.limiteIntentoMs / 1000)} s.`);
+        // TypeError «NetworkError when attempting to fetch resource» / «Failed to fetch», o un cuerpo cortado a medias.
+        return new ErrorImagen("red", textoCausa(causa));
+      };
       try {
-        datos = await respuesta.json() as unknown;
+        const respuesta = await dep.fetch(ruta, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", [CABECERA_SOLICITUD_IMAGEN]: solicitudId, ...(retomar ? { [CABECERA_SOLICITUD_KONTEXT]: retomar } : {}) },
+          body: cuerpo,
+          signal: tope.senal,
+        });
+        if (respuesta.status === 202) {
+          const enCurso = KontextEnCursoSchema.safeParse(await respuesta.json().catch(() => null));
+          if (!enCurso.success) throw new ErrorImagen("respuesta_invalida", `La respuesta de ${ruta} no trae una imagen válida.`, respuesta.status);
+          retomar = enCurso.data.solicitud_kontext;
+          guardarTokenDeRetoma(clave, retomar);
+          if (reanudaciones >= MAX_REANUDACIONES_KONTEXT) throw new ErrorImagen("tiempo", `La imagen sigue en curso tras ${reanudaciones + 1} peticiones.`, respuesta.status, enCurso.data.codigo);
+          reanudaciones += 1;
+          reintentos = 0;
+          avisar("imagen.retomar_kontext", { solicitudId, reanudacion: reanudaciones });
+          await pausa();
+          continue;
+        }
+        if (!respuesta.ok) {
+          const codigo = await codigoDeLaRespuesta(respuesta);
+          if (retomar && codigo === CODIGO_SOLICITUD_KONTEXT_INVALIDA) {
+            // El token venció o no es de esta petición: la solicitud ya no se puede retomar; se pide una imagen nueva (la misma que el cliente quiere).
+            soltarTokenDeRetoma(clave);
+            retomar = undefined;
+            avisar("imagen.token_de_retoma_invalido", { solicitudId });
+            continue;
+          }
+          const pasajero = statusPasajero(respuesta.status) && !(codigo && CODIGOS_DEFINITIVOS.has(codigo));
+          throw new ErrorImagen(pasajero ? "servidor" : "rechazo", `${ruta} respondió con estado ${respuesta.status}.`, respuesta.status, codigo);
+        }
+        let datos: unknown;
+        try {
+          datos = await respuesta.json() as unknown;
+        } catch (causa) {
+          throw clasificar(causa);
+        }
+        const salida = ImagenGeneradaSchema.safeParse(datos);
+        if (!salida.success) throw new ErrorImagen("respuesta_invalida", `La respuesta de ${ruta} no trae una imagen válida.`, respuesta.status);
+        soltarTokenDeRetoma(clave);
+        return { imagen: salida.data.imagen, ...(salida.data.avisoNoCotizado ? { avisoNoCotizado: salida.data.avisoNoCotizado } : {}) };
       } catch (causa) {
-        throw clasificar(causa);
+        const error = clasificar(causa);
+        // Una retoma que falla por la red o por un 5xx no pierde la solicitud ya pagada: se repite con el mismo token tras una pausa y, si no
+        // sale, el token se conserva para el próximo «Reintentar». (Un 202 que agotó las retomas no se repite: ya esperó lo que había que esperar.)
+        const repetible = error.clase === "red" || error.clase === "servidor" || (error.clase === "tiempo" && error.status !== 202);
+        if (retomar && repetible && reintentos < MAX_REINTENTOS_DE_RETOMA) {
+          reintentos += 1;
+          avisar("imagen.reintento_de_retoma", { solicitudId, reintento: reintentos, clase: error.clase });
+          await pausa();
+          continue;
+        }
+        throw error;
+      } finally {
+        tope.soltar();
       }
-      const salida = ImagenGeneradaSchema.safeParse(datos);
-      if (!salida.success) throw new ErrorImagen("respuesta_invalida", `La respuesta de ${ruta} no trae una imagen válida.`, respuesta.status);
-      return { imagen: salida.data.imagen, ...(salida.data.avisoNoCotizado ? { avisoNoCotizado: salida.data.avisoNoCotizado } : {}) };
-    } catch (causa) {
-      throw clasificar(causa);
-    } finally {
-      tope.soltar();
     }
   }
 

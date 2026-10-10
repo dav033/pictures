@@ -151,7 +151,7 @@ prueba("la respuesta buena se lee; las raras no rompen y dan un mensaje", () => 
   assert.equal(mensajeDeError(null), "No pude hablar con la IA ahora.");
 });
 prueba("la foto realista dice solo lo que el código sabe", () => {
-  assert.match(resumenFotoRealista(), /FLUX · 15–40 s · ≈US\$0,08 por foto \(tope de 30 por hora\)/);
+  assert.match(resumenFotoRealista(), /FLUX · 20–40 s; en casos raros, hasta unos 5 min · ≈US\$0,08 por foto \(tope de 30 por hora\)/);
 });
 
 console.log(`\n${pruebas} pruebas OK`);

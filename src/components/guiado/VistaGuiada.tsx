@@ -570,7 +570,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       setEntrada("");
       const idPlan = planVigente.mensajeId;
       const yaEnCurso = imagenEnCursoRef.current === idPlan;
-      const respuesta = yaEnCurso ? "Ya estoy dibujando la imagen de tu plan: aparece en su tarjeta." : "Listo, dibujo la imagen de tu plan: aparece en su tarjeta en unos 20 a 30 segundos.";
+      const respuesta = yaEnCurso ? "Ya estoy dibujando la imagen de tu plan: aparece en su tarjeta." : "Listo, dibujo la imagen de tu plan: aparece en su tarjeta en unos 20 a 30 segundos (en casos raros, hasta unos 5 minutos).";
       agregar([
         { id: nuevoId(), role: "user", content: limpio.slice(0, 6000) },
         { id: nuevoId(), role: "assistant", content: respuesta },

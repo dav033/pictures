@@ -30,7 +30,7 @@ globalThis.fetch = (async (entrada: RequestInfo | URL, init?: RequestInit) => {
 }) as typeof fetch;
 
 async function main() {
-  const { generarConFluxKontext, costeKontext } = await import("../../src/lib/ia/kagutsuchi/flux");
+  const { generarConFluxKontext, costeKontext } = await import("../../src/lib/ia/kagutsuchi/kontext");
   const imagen = { base64: PNG.toString("base64"), mime: "image/jpeg", ancho: 1536, alto: 1024 };
 
   const max = await generarConFluxKontext("Turn this 3D layout render into a real photograph.", { imagen, variante: "max", seed: 11 });

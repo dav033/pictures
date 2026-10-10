@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { conRegistro, decidir } from "@/lib/registro/servidor";
 import sharp from "sharp";
-import { generarConFluxKontext, generarConSempertexFlux } from "@/lib/ia/kagutsuchi/flux";
+import { generarConSempertexFlux } from "@/lib/ia/kagutsuchi/flux";
+import { generarConFluxKontext, KontextEnCursoError, SolicitudKontextInvalidaError } from "@/lib/ia/kagutsuchi/kontext";
+import { ambitoDeKontext, respuestaKontextEnCurso, solicitudPreviaDe } from "@/lib/ia/kagutsuchi/solicitud-kontext";
+import { CODIGO_SOLICITUD_KONTEXT_INVALIDA } from "@/lib/generacion/solicitud-kontext-contrato";
 import { aligerarImagenGenerada } from "@/lib/generacion/imagen-liviana";
 import { AMBIENTE_POR_DEFECTO, MAX_DESCRIPCION, promptFotoDeLayout, promptRender3d, usaCaminoFiel, type AmbienteRender } from "@/lib/globos3d/render-ia";
 import { tomarFotoDeLaHora } from "@/lib/globos3d/tope-fotos-hora";
@@ -20,6 +23,9 @@ const CuerpoSchema = z.object({
   aspecto: z.enum(["3:2", "1:1", "2:3", "16:9"]).default("3:2"),
 }).strict();
 
+/** Con el plazo de 100 s de Kontext (`PLAZO_KONTEXT_MS`) quedan 20 s para aligerar la imagen y responder; la prueba de la ruta lo comprueba. */
+export const maxDuration = 120;
+
 export const POST = conRegistro("/api/render-3d-imagen", atenderPOST, { vista: "3d" });
 
 async function atenderPOST(request: Request) {
@@ -29,17 +35,27 @@ async function atenderPOST(request: Request) {
   if (!validado.success) return Response.json({ error: "La captura o la descripción no cumplen el formato." }, { status: 400 });
   const { render, descripcion, ambiente, aspecto } = validado.data;
 
-  const toma = tomarFotoDeLaHora();
-  if (!toma.ok) {
-    decidir("regla:render_3d_tope", "tope de imágenes por hora del taller 3D", { usadas: toma.usadas, tope: toma.tope });
-    return Response.json({ error: "Se alcanzó el límite de imágenes por hora. Inténtalo más tarde." }, { status: 429 });
-  }
-
   const partes = render.match(/^data:(image\/(?:png|jpeg));base64,([\s\S]*)$/);
   if (!partes) return Response.json({ error: "La captura no tiene formato válido." }, { status: 400 });
   const fiel = usaCaminoFiel(ambiente as AmbienteRender);
   const prompt = fiel ? promptFotoDeLayout(descripcion, ambiente as AmbienteRender) : promptRender3d(descripcion, ambiente as AmbienteRender);
-  decidir("regla:render_3d_prompt", "texto e imagen base que van a FLUX desde el taller 3D", { prompt, largo: prompt.length, ambiente, aspecto, camino: fiel ? "flux1_kontext_max" : "flux2_edit", bytesCaptura: Math.round((partes[2]!.length * 3) / 4) });
+
+  // Retomar una imagen de Kontext que sigue en curso no es otra imagen: no gasta cupo. Un token que no sirve se rechaza, nunca se envía otra solicitud en silencio.
+  // El token queda atado al texto, al aspecto y a la captura: una vista distinta nunca recibe la imagen de la anterior.
+  const ambito = ambitoDeKontext(prompt, aspecto, render);
+  const previa = fiel ? solicitudPreviaDe(request.headers, ambito) : { tipo: "ninguna" as const };
+  if (previa.tipo === "invalida") {
+    decidir("regla:render_3d_error", "el token para retomar la foto en curso del taller 3D no sirve", { razon: "token_invalido_o_vencido" });
+    return Response.json({ error: "No pude retomar la foto en curso. Vuelve a generarla.", codigo: CODIGO_SOLICITUD_KONTEXT_INVALIDA }, { status: 409 });
+  }
+  if (previa.tipo === "ninguna") {
+    const toma = tomarFotoDeLaHora();
+    if (!toma.ok) {
+      decidir("regla:render_3d_tope", "tope de imágenes por hora del taller 3D", { usadas: toma.usadas, tope: toma.tope });
+      return Response.json({ error: "Se alcanzó el límite de imágenes por hora. Inténtalo más tarde." }, { status: 429 });
+    }
+  }
+  decidir("regla:render_3d_prompt", "texto e imagen base que van a FLUX desde el taller 3D", { prompt, largo: prompt.length, ambiente, aspecto, camino: fiel ? "flux1_kontext_max" : "flux2_edit", bytesCaptura: Math.round((partes[2]!.length * 3) / 4), ...(previa.tipo === "retomar" ? { retoma: previa.requestId } : {}) });
 
   try {
     if (fiel) {
@@ -47,6 +63,7 @@ async function atenderPOST(request: Request) {
       const hecha = await generarConFluxKontext(prompt, {
         imagen: { base64: partes[2]!, mime: partes[1]!, ancho: medidas.width ?? 1536, alto: medidas.height ?? 1024 }, variante: "max",
         signal: request.signal, telemetria: { superficie: "taller-3d" },
+        ...(previa.tipo === "retomar" ? { solicitudPrevia: previa.requestId } : {}),
       });
       const liviana = await aligerarImagenGenerada(hecha);
       return Response.json({ imagen: `data:${liviana.mime};base64,${liviana.base64}`, prompt });
@@ -64,6 +81,14 @@ async function atenderPOST(request: Request) {
     const liviana = await aligerarImagenGenerada(imagen);
     return Response.json({ imagen: `data:${liviana.mime};base64,${liviana.base64}`, prompt });
   } catch (error) {
+    if (error instanceof KontextEnCursoError) {
+      decidir("regla:render_3d_en_curso", "fal sigue generando la foto del taller 3D: el navegador la retoma por su id, sin enviar otra", { solicitud: error.requestId });
+      return respuestaKontextEnCurso(error, ambito);
+    }
+    if (error instanceof SolicitudKontextInvalidaError) {
+      decidir("regla:render_3d_error", "fal ya no tiene la solicitud de la foto del taller 3D que se quería retomar", { solicitud: error.requestId, mensaje: error.message.slice(0, 200) });
+      return Response.json({ error: "No pude retomar la foto en curso. Vuelve a generarla.", codigo: CODIGO_SOLICITUD_KONTEXT_INVALIDA }, { status: 409 });
+    }
     const mensaje = error instanceof Error ? error.message : String(error);
     decidir("regla:render_3d_error", "FLUX no devolvió la foto del taller 3D", { mensaje: mensaje.slice(0, 300) });
     return Response.json({ error: "No pude generar la foto ahora. Vuelve a intentarlo en un momento." }, { status: 502 });

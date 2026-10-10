@@ -92,7 +92,7 @@ const PayloadSchema = z.union([PayloadV2Schema, PayloadV1Schema]);
 
 type Payload = z.infer<typeof PayloadSchema>;
 
-function secret(): string {
+export function secretoDeFirmas(): string {
   const value = process.env.PLAN_APPROVAL_SECRET ?? process.env.NEXTAUTH_SECRET;
   if (value?.trim()) return value;
   if (process.env.NODE_ENV === "production") throw new Error("PLAN_APPROVAL_SECRET is required in production.");
@@ -104,7 +104,7 @@ function encode(value: string): string {
 }
 
 function signature(payload: string): string {
-  return createHmac("sha256", secret()).update(payload).digest("base64url");
+  return createHmac("sha256", secretoDeFirmas()).update(payload).digest("base64url");
 }
 
 function firmar(payload: Payload): string {
