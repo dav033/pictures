@@ -2,13 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SOLO_GUIADA } from "@/lib/solo-guiada";
 
 export function ConmutadorVista() {
   const pathname = usePathname();
   const guiada = pathname === "/asistente";
-  // Producción solo con la guiada: no hay vista clásica a la que cambiar.
-  if (SOLO_GUIADA) return null;
   return (
     <div className="hidden items-center gap-1 rounded-full border border-borde-suave bg-superficie p-1 sm:inline-flex" data-testid="conmutador-vista" aria-label="Vista">
       <span className="sr-only">Vista</span>

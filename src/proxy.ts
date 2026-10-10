@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE, loginOmitidoEnDesarrollo, sessionToken } from "@/lib/auth/session";
-import { RUTA_GUIADA, SOLO_GUIADA, paginaBloqueadaSoloGuiada } from "@/lib/solo-guiada";
 
 export function proxy(request: NextRequest) {
-  // Producción solo con la guiada: la clásica, el catálogo y las páginas internas llevan a /asistente.
-  if (SOLO_GUIADA && paginaBloqueadaSoloGuiada(request.nextUrl.pathname)) {
-    return NextResponse.redirect(new URL(RUTA_GUIADA, request.url));
-  }
   if (loginOmitidoEnDesarrollo()) return NextResponse.next();
   const expected = process.env.APP_PASSWORD;
   if (!expected) {

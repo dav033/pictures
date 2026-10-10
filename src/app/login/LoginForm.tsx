@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { DESTINO_POR_DEFECTO } from "@/lib/auth/destino-por-defecto";
 
 export function LoginForm() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export function LoginForm() {
       return;
     }
 
-    router.replace(searchParams.get("from") || "/");
+    router.replace(searchParams.get("from") || DESTINO_POR_DEFECTO);
     router.refresh();
   }
 
@@ -44,7 +45,7 @@ export function LoginForm() {
       className="ui-card w-full max-w-sm space-y-4 p-6"
     >
       <h1 className="text-lg font-semibold text-texto">Iniciar sesión</h1>
-      <input type="hidden" name="from" value={searchParams.get("from") || "/"} />
+      <input type="hidden" name="from" value={searchParams.get("from") || DESTINO_POR_DEFECTO} />
       <label htmlFor="login-password" className="sr-only">
         Contraseña
       </label>

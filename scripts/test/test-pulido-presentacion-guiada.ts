@@ -2,8 +2,8 @@
  * Pulido de la vista guiada para la presentación (2026-10-07). Sin red, sin modelo, sin coste.
  * Run: npx tsx scripts/test/test-pulido-presentacion-guiada.ts
  *
- * 1. Galería de fotos de ejemplo en la guiada: el MISMO componente de la clásica (DialogoEjemplos → GaleriaEjemplos),
- *    discreto y a 390 px; la foto elegida es el mismo `File` que subir ese JPEG a mano (bytes, nombre y tipo), pasa por
+ * 1. Galería de fotos en la guiada: SIEMPRE la biblioteca real de Sempertex (DialogoBiblioteca, en todos los entornos),
+ *    discreta y a 390 px; la foto elegida es el mismo `File` que subir ese JPEG a mano (bytes, nombre y tipo), pasa por
  *    el mismo `elegirFoto` (misma validación y registro) y el servidor la reconoce con la misma lectura revisada.
  * 2. El botón «Arco orgánico» da el arco completo (`arco`) con mezcla de tamaños, como el texto «arco orgánico».
  * 3. «Ajustar mi precio» (EncabezadoPrecio) cabe a 390 px: la fila se envuelve y el botón no se corta.
@@ -16,6 +16,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import sharp from "sharp";
 import { FotosEjemploGuiada, TEXTO_FOTOS_EJEMPLO } from "@/components/guiado/FotosEjemploGuiada";
 import { GaleriaEjemplos } from "@/components/ui/shell/GaleriaEjemplos";
+import { DESTINO_POR_DEFECTO } from "@/lib/auth/destino-por-defecto";
 import { fotoSubidaValida } from "@/components/guiado/foto-subida";
 import { PIEZAS_INDIVIDUALES } from "@/components/guiado/PreguntaPropuesta";
 import { EncabezadoPrecio } from "@/components/cotizacion/EncabezadoPrecio";
@@ -53,12 +54,13 @@ async function run(): Promise<void> {
     assert.match(deshabilitado, /disabled=""/, "antes de hidratar no se puede tocar");
   });
 
-  await caso("1: es la galería de la clásica, sin copia: las 10 fotos del manifiesto, en 2 columnas a 390 px", () => {
+  await caso("1: la galería de la guiada es SIEMPRE la biblioteca real (D-039); la de la clásica sigue con sus 10 fotos, en 2 columnas a 390 px", () => {
     const fuente = leer("src/components/guiado/FotosEjemploGuiada.tsx");
-    assert.match(fuente, /import \{ DialogoEjemplos \} from "@\/components\/ui\/shell\/GaleriaEjemplos";/);
-    // En desarrollo, la galería de la clásica; en producción (SOLO_GUIADA), las fotos reales de la biblioteca (pedido del dueño, 2026-10-07).
-    assert.match(fuente, /SOLO_GUIADA \? \(/, "elige la galería según el entorno");
-    assert.match(fuente, /FOTOS_BIBLIOTECA\.map/, "en producción muestra las fotos de la biblioteca");
+    // Pedido del dueño (2026-10-07) y D-039: la misma galería en local, vista previa, Vercel y VPS; sin bandera por entorno.
+    assert.match(fuente, /<DialogoBiblioteca\s/, "la guiada abre la biblioteca de Sempertex");
+    assert.match(fuente, /FOTOS_BIBLIOTECA\.map/, "muestra las fotos de la biblioteca");
+    assert.doesNotMatch(fuente, /<DialogoEjemplos|from "@\/components\/ui\/shell\/GaleriaEjemplos"/, "ya no usa las 10 fotos de ejemplo de la clásica");
+    assert.doesNotMatch(fuente, /SOLO_GUIADA|process\.env/, "no elige la galería según el entorno");
     const html = renderToStaticMarkup(createElement(GaleriaEjemplos, { onElegir: () => undefined, titulo: "Fotos de decoraciones con globos" }));
     assert.equal(MANIFIESTO_REFERENCIAS_EJEMPLO.fotos.length, 10);
     for (const foto of MANIFIESTO_REFERENCIAS_EJEMPLO.fotos) assert.match(html, new RegExp(`data-testid="ejemplo-${foto.id}"`), foto.id);
@@ -75,8 +77,8 @@ async function run(): Promise<void> {
     assert.match(vista, /const valida = fotoSubidaValida\(archivo\);\s*registrarAccion\("foto\.elegir", \{ tipo: archivo\.type, bytes: archivo\.size, valida \}\);/);
     assert.match(vista, /registrarFallo\("foto\.ejemplo\.cargar"/);
     const fuente = leer("src/components/guiado/FotosEjemploGuiada.tsx");
-    for (const evento of ["foto.ejemplos.abrir", "foto.ejemplo.elegir", "foto.ejemplos.cerrar"]) assert.ok(fuente.includes(`"${evento}"`), `registra ${evento}`);
-    assert.match(fuente, /const \[archivo\] = await Promise\.all\(\[archivoDeFotoEjemplo\(foto\), focoDevuelto\(botonRef\.current\)\]\);\s*setElegida\(\{ id: foto\.id, archivo \}\);\s*onFoto\(archivo\);/, "la foto entra cuando el diálogo ya devolvió el foco: `elegirFoto` lo lleva a la caja de texto");
+    for (const evento of ["foto.ejemplos.abrir", "foto.biblioteca.elegir", "foto.ejemplos.cerrar"]) assert.ok(fuente.includes(`"${evento}"`), `registra ${evento}`);
+    assert.match(fuente, /const \[archivo\] = await Promise\.all\(\[archivoDeFotoBiblioteca\(foto\), focoDevuelto\(botonRef\.current\)\]\);\s*setElegida\(\{ id: foto\.id, archivo \}\);\s*onFoto\(archivo\);/, "la foto entra cuando el diálogo ya devolvió el foco: `elegirFoto` lo lleva a la caja de texto");
   });
 
   await caso("1: la foto de ejemplo es el mismo File que subir ese JPEG y el servidor le da la misma lectura revisada", async () => {
@@ -169,6 +171,24 @@ async function run(): Promise<void> {
     const boton = /<button type="button" aria-expanded="false" aria-controls="p" class="([^"]*)">Ajustar mi precio/.exec(html)?.[1] ?? "";
     for (const clase of ["whitespace-nowrap", "max-w-full", "shrink-0", "h-11"]) assert.ok(boton.split(" ").includes(clase), `${clase} en ${boton}`);
     assert.match(html, /data-precio-total="true" class="block min-w-0 /);
+  });
+
+  await caso("4: sin bandera por entorno (D-039): proxy, cabecera, conmutador y login iguales en local, vista previa, Vercel y VPS", () => {
+    const sinBandera = [
+      "src/proxy.ts",
+      "src/components/ui/shell/CabeceraApp.tsx",
+      "src/components/guiado/ConmutadorVista.tsx",
+      "src/components/guiado/FotosEjemploGuiada.tsx",
+    ];
+    for (const archivo of sinBandera) assert.doesNotMatch(leer(archivo), /SOLO_GUIADA|solo-guiada|paginaBloqueada/, `${archivo}: sin bandera`);
+    assert.doesNotMatch(leer("src/proxy.ts"), /redirect\(new URL\(RUTA_GUIADA/, "el proxy no manda la clásica ni el catálogo a /asistente");
+    assert.doesNotMatch(leer("src/components/guiado/ConmutadorVista.tsx"), /return null/, "el conmutador se pinta siempre");
+    const cabecera = leer("src/components/ui/shell/CabeceraApp.tsx");
+    for (const id of ["catalogo", "vista-clasica", "vista-guiada"]) assert.ok(cabecera.includes(`id: "${id}"`), `la cabecera ofrece ${id}`);
+    assert.match(cabecera, /\.\.\.\(esDev\r?\n/, "los enlaces internos salen solo con el modo dev");
+    assert.equal(DESTINO_POR_DEFECTO, "/asistente", "tras el login sin origen se llega a la guiada");
+    assert.match(leer("src/app/api/login/route.ts"), /let from: string = DESTINO_POR_DEFECTO;/);
+    assert.doesNotMatch(leer("src/app/login/LoginForm.tsx"), /\|\| "\/"/, "el formulario no cae en la clásica");
   });
 
   console.log(`\n${casos} casos OK`);

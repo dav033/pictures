@@ -9,7 +9,6 @@ import { useTema } from "@/lib/tema/use-tema";
 import type { NivelCreatividad } from "@/lib/ia/escena/creatividad";
 import type { ModoVista } from "@/lib/estado/modo-vista";
 import { ConmutadorVista } from "@/components/guiado/ConmutadorVista";
-import { SOLO_GUIADA } from "@/lib/solo-guiada";
 import { SwitchModoVista } from "@/components/modo/SwitchModoVista";
 import { InterruptorTema } from "@/components/ui/interruptor-tema";
 import { MenuApp, type ItemMenu } from "./MenuApp";
@@ -60,24 +59,21 @@ export function CabeceraApp({ contexto, creatividad, onCreatividad, modoVista, o
   const { preferencia: preferenciaTema, cambiar: cambiarTema } = useTema();
   const ICONO_TEMA = { light: <Sun className="size-4" />, dark: <Moon className="size-4" />, sistema: <Monitor className="size-4" /> } as const;
   const items: ItemMenu[] = [
-    // Producción solo con la guiada (`SOLO_GUIADA`): sin catálogo, sin vista clásica y sin páginas internas.
-    ...(SOLO_GUIADA ? [] : [{ tipo: "enlace" as const, id: "catalogo", etiqueta: "Explorar catálogo", href: "/catalogo", icono: <LayoutGrid className="size-4" /> }]),
+    { tipo: "enlace", id: "catalogo", etiqueta: "Explorar catálogo", href: "/catalogo", icono: <LayoutGrid className="size-4" /> },
     ...(onAbrirSeleccion
       ? [{ tipo: "accion" as const, id: "seleccion", etiqueta: totalSeleccion > 0 ? `Tu selección (${totalSeleccion})` : "Tu selección", onSeleccionar: onAbrirSeleccion, icono: <ListChecks className="size-4" /> }]
       : []),
     { tipo: "accion", id: "limpiar", etiqueta: etiquetaLimpiar, onSeleccionar: onLimpiar, deshabilitado: limpiarDeshabilitado, icono: iconoLimpiar ?? <Trash2 className="size-4" /> },
-    ...(SOLO_GUIADA
-      ? []
-      : [pathname === "/asistente"
-          ? { tipo: "enlace" as const, id: "vista-clasica", etiqueta: "Vista clásica", href: "/" }
-          : { tipo: "enlace" as const, id: "vista-guiada", etiqueta: "Asistente guiado", href: "/asistente" }]),
+    pathname === "/asistente"
+      ? { tipo: "enlace", id: "vista-clasica", etiqueta: "Vista clásica", href: "/" }
+      : { tipo: "enlace", id: "vista-guiada", etiqueta: "Asistente guiado", href: "/asistente" },
     // El taller 3D de globos, en producción y en local.
     { tipo: "enlace", id: "taller-3d", etiqueta: "Globos en 3D", href: "/3d", icono: <Box className="size-4" /> },
     // D10: the header switch flips light/dark quickly; here the customer can also go back to "Sistema".
     { tipo: "separador", id: "sep-tema" },
     { tipo: "titulo", id: "titulo-tema", etiqueta: "Tema" },
     ...OPCIONES_TEMA.map((opcion): ItemMenu => ({ tipo: "opcion", id: `tema-${opcion.valor}`, etiqueta: opcion.etiqueta, marcado: preferenciaTema === opcion.valor, onSeleccionar: () => cambiarTema(opcion.valor), icono: ICONO_TEMA[opcion.valor] })),
-    ...(esDev && !SOLO_GUIADA
+    ...(esDev
       ? ([
           { tipo: "separador", id: "sep-dev" },
           { tipo: "enlace", id: "estadisticas", etiqueta: "Estadísticas", href: "/estadisticas", icono: <ChartColumn className="size-4" /> },

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { DESTINO_POR_DEFECTO } from "@/lib/auth/destino-por-defecto";
 import { SESSION_COOKIE, SESSION_MAX_AGE, sessionToken } from "@/lib/auth/session";
 import { compararEnTiempoConstante } from "@/lib/seguridad/comparar-constante";
 
@@ -20,7 +21,7 @@ function redireccionRelativa(destino: string): NextResponse {
 export async function POST(request: Request) {
   const isJsonRequest = request.headers.get("content-type")?.includes("application/json") ?? false;
   let password: string | undefined;
-  let from = "/";
+  let from: string = DESTINO_POR_DEFECTO;
 
   if (isJsonRequest) {
     const body = (await request.json()) as { password?: string };
@@ -30,11 +31,11 @@ export async function POST(request: Request) {
     const passwordValue = formData.get("password");
     const fromValue = formData.get("from");
     password = typeof passwordValue === "string" ? passwordValue : undefined;
-    from = typeof fromValue === "string" ? fromValue : "/";
+    from = typeof fromValue === "string" ? fromValue : DESTINO_POR_DEFECTO;
   }
 
   const expected = process.env.APP_PASSWORD;
-  const safeFrom = from.startsWith("/") && !from.startsWith("//") ? from : "/";
+  const safeFrom = from.startsWith("/") && !from.startsWith("//") ? from : DESTINO_POR_DEFECTO;
 
   if (!expected || !password || !compararEnTiempoConstante(password, expected)) {
     if (!isJsonRequest) {

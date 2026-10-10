@@ -4,10 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useRef, useState } from "react";
 import { Check, Images, X } from "lucide-react";
 import { useFocoDeRetorno } from "@/components/ui/foco-retorno";
-import { DialogoEjemplos } from "@/components/ui/shell/GaleriaEjemplos";
-import { SOLO_GUIADA } from "@/lib/solo-guiada";
 import { FOTOS_BIBLIOTECA, type FotoBiblioteca } from "./fotos-biblioteca";
-import { archivoDeFotoEjemplo, type FotoEjemplo } from "@/lib/referencias-ejemplo/manifiesto";
 
 export const TEXTO_FOTOS_EJEMPLO = "o prueba con una de nuestras fotos";
 
@@ -44,8 +41,8 @@ type Props = {
 };
 
 /**
- * «o prueba con una de nuestras fotos» junto al chip de subir una foto de la guiada: abre la galería de la clásica
- * (`DialogoEjemplos` → `GaleriaEjemplos`, las 10 fotos del manifiesto), sin copiarla. Discreto: un enlace bajo los chips.
+ * «o prueba con una de nuestras fotos» junto al chip de subir una foto de la guiada: abre la biblioteca real de
+ * Sempertex (`DialogoBiblioteca`) en todos los entornos. Discreto: un enlace bajo los chips.
  */
 export function FotosEjemploGuiada({ deshabilitado, fotoActual, onFoto, onRegistrar, onFallo }: Props) {
   const [abierto, setAbierto] = useState(false);
@@ -53,25 +50,10 @@ export function FotosEjemploGuiada({ deshabilitado, fotoActual, onFoto, onRegist
   const [elegida, setElegida] = useState<{ id: string; archivo: File } | null>(null);
   const botonRef = useRef<HTMLButtonElement>(null);
 
-  async function elegir(foto: FotoEjemplo): Promise<void> {
-    if (cargando) return;
-    onRegistrar("foto.ejemplo.elegir", { id: foto.id, titulo: foto.titulo, archivo: foto.archivo });
-    // Se cierra antes de cargar y la foto entra cuando el foco ya volvió aquí: así `elegirFoto` lo lleva a la caja de
-    // texto, como al subir una foto.
-    setAbierto(false);
-    setCargando(true);
-    try {
-      const [archivo] = await Promise.all([archivoDeFotoEjemplo(foto), focoDevuelto(botonRef.current)]);
-      setElegida({ id: foto.id, archivo });
-      onFoto(archivo);
-    } catch (causa) {
-      onFallo(foto, causa);
-    } finally {
-      setCargando(false);
-    }
-  }
-
-  /** Producción: una foto real de la biblioteca entra igual que una subida (mismo `File`, misma validación y lectura). */
+  /**
+   * Una foto real de la biblioteca entra igual que una subida (mismo `File`, misma validación y lectura). Se cierra
+   * antes de cargar y la foto entra cuando el foco ya volvió aquí: así `elegirFoto` lo lleva a la caja de texto.
+   */
   async function elegirBiblioteca(foto: FotoBiblioteca): Promise<void> {
     if (cargando) return;
     onRegistrar("foto.biblioteca.elegir", { id: foto.id, titulo: foto.titulo });
@@ -104,23 +86,13 @@ export function FotosEjemploGuiada({ deshabilitado, fotoActual, onFoto, onRegist
         <Images className="size-4 shrink-0" aria-hidden />
         <span className="min-w-0">{cargando ? "Cargando la foto…" : TEXTO_FOTOS_EJEMPLO}</span>
       </button>
-      {SOLO_GUIADA ? (
-        <DialogoBiblioteca
-          abierto={abierto}
-          onCerrar={() => { onRegistrar("foto.ejemplos.cerrar"); setAbierto(false); }}
-          onElegir={(foto) => void elegirBiblioteca(foto)}
-          elegidaId={elegida && elegida.archivo === fotoActual ? elegida.id : null}
-          deshabilitado={deshabilitado || cargando}
-        />
-      ) : (
-      <DialogoEjemplos
+      <DialogoBiblioteca
         abierto={abierto}
         onCerrar={() => { onRegistrar("foto.ejemplos.cerrar"); setAbierto(false); }}
-        onElegir={(foto) => void elegir(foto)}
+        onElegir={(foto) => void elegirBiblioteca(foto)}
         elegidaId={elegida && elegida.archivo === fotoActual ? elegida.id : null}
         deshabilitado={deshabilitado || cargando}
       />
-      )}
     </>
   );
 }
@@ -134,8 +106,8 @@ async function archivoDeFotoBiblioteca(foto: FotoBiblioteca): Promise<File> {
 }
 
 /**
- * Producción (`SOLO_GUIADA`): las fotos reales de la biblioteca Sempertex en lugar de las 10 de ejemplo de la clásica
- * (pedido del dueño, 2026-10-07). Mismo aspecto que `DialogoEjemplos`.
+ * Las fotos reales de la biblioteca Sempertex, y no las 10 de ejemplo de la clásica (pedido del dueño, 2026-10-07),
+ * en todos los entornos (D-039). Mismo aspecto que `DialogoEjemplos`.
  */
 function DialogoBiblioteca({ abierto, onCerrar, onElegir, elegidaId, deshabilitado }: { abierto: boolean; onCerrar: () => void; onElegir: (foto: FotoBiblioteca) => void; elegidaId: string | null; deshabilitado: boolean }) {
   const focoRetorno = useFocoDeRetorno();
