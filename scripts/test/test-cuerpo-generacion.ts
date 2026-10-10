@@ -20,8 +20,10 @@ import { contextoDeGeneracion } from "../../src/lib/estado/generacion-adjuntos";
 import { CREATIVIDAD_POR_DEFECTO } from "../../src/lib/ia/escena/creatividad";
 import { MENSAJE_SOLO_REFERENCIAS } from "../../src/lib/estado/mensaje-foto-referencia";
 import { contextoClienteGuiado, entradaImagenGuiada } from "../../src/lib/ia/guiado/contexto-cliente";
+import { pedirImagenConRecuperacion, type DependenciasImagen } from "../../src/lib/generacion/pedir-imagen";
 
 let fallos = 0;
+const pendientes: Array<Promise<void>> = [];
 function caso(nombre: string, prueba: () => void): void {
   try {
     prueba();
@@ -30,6 +32,15 @@ function caso(nombre: string, prueba: () => void): void {
     fallos += 1;
     console.error(`FALLA ${nombre}\n${error instanceof Error ? error.message : String(error)}`);
   }
+}
+function casoAsync(nombre: string, prueba: () => Promise<void>): void {
+  pendientes.push(prueba().then(
+    () => console.log(`ok   ${nombre}`),
+    (error: unknown) => {
+      fallos += 1;
+      console.error(`FALLA ${nombre}\n${error instanceof Error ? error.message : String(error)}`);
+    },
+  ));
 }
 
 // ── Datos: un plan aprobado de dos columnas que salió de una foto ────────────────────────────────────────────────
@@ -243,12 +254,7 @@ caso("las dos vistas llaman a /api/generate con el constructor compartido", () =
   // La guiada manda ese mismo cuerpo por `pedirImagenConRecuperacion` (recuperación ante cortes, 2026-10-07), que lo
   // serializa tal cual: el id de cada intento viaja en una cabecera, nunca en el cuerpo (test-espera-imagen, 3a).
   assert.match(guiada, /pedirImagenConRecuperacion\(\{\s*cuerpo,/);
-  const pedir = readFileSync(path.join(process.cwd(), "src/lib/generacion/pedir-imagen.ts"), "utf8");
-  assert.match(pedir, /const cuerpo = JSON\.stringify\(opciones\.cuerpo\);/);
-  // La ruta es /api/generate salvo que el llamador pase otra (el plan del motor 3D, fase 4): el cuerpo se serializa igual.
-  assert.match(pedir, /RUTA_GENERAR_IMAGEN = "\/api\/generate"/);
-  assert.match(pedir, /const ruta = opciones\.ruta \?\? RUTA_GENERAR_IMAGEN;/);
-  assert.match(pedir, /dep\.fetch\(ruta, \{[\s\S]{0,200}body: cuerpo,/);
+  // Que el cuerpo llega a /api/generate tal cual lo comprueba «pedir-imagen manda el cuerpo…» (con fetch doble, sin red).
   assert.match(guiada, /registrarAccion\("imagen\.pedir", \{ mensajeId, cuerpo: resumenCuerpoGeneracion\(cuerpo\) \}\)/);
 });
 
@@ -264,8 +270,35 @@ caso("el plan con foto de la guiada parte del mismo texto que la clásica", () =
   assert.match(guiada, /creatividad: CREATIVIDAD_POR_DEFECTO,\s+\.\.\.\(imagen \? \{ imagenesReferencia: \[imagen\] \} : \{\}\),\s+referenceBlueprint: (?:piezaNueva \? piezaNueva\.lectura\.blueprint : )?(?:referencia\.)?blueprint,/);
 });
 
-if (fallos > 0) {
-  console.error(`\n${fallos} caso(s) fallaron.`);
-  process.exit(1);
-}
-console.log("\nCuerpo de generación: guiada = clásica.");
+casoAsync("pedir-imagen manda el cuerpo tal cual a /api/generate, con el id del intento en una cabecera", async () => {
+  const llamadas: Array<{ entrada: string; init: RequestInit | undefined }> = [];
+  const dependencias: Partial<DependenciasImagen> = {
+    fetch: async (entrada, init) => {
+      llamadas.push({ entrada, init });
+      return new Response(JSON.stringify({ imagen: "data:image/png;base64,AAAA" }), { status: 200, headers: { "Content-Type": "application/json" } });
+    },
+    nuevoId: () => "SOLICITUD-1",
+    esperar: async () => {},
+    ahora: () => 0,
+  };
+  const cuerpo = cuerpoGuiada();
+  const senal = new AbortController().signal;
+  await pedirImagenConRecuperacion({ cuerpo, planHash: plan.plan_hash, senal, limiteIntentoMs: 5_000, dependencias });
+  assert.equal(llamadas.length, 1, "una sola petición, sin red extra");
+  assert.equal(llamadas[0]?.entrada, "/api/generate");
+  assert.equal(llamadas[0]?.init?.method, "POST");
+  assert.equal(llamadas[0]?.init?.body, JSON.stringify(cuerpo), "el cuerpo llega a la ruta serializado tal cual");
+  assert.equal(new Headers(llamadas[0]?.init?.headers).get("x-solicitud-imagen"), "SOLICITUD-1");
+  // La ruta es /api/generate salvo que el llamador pase otra (el plan del motor 3D): el cuerpo se serializa igual.
+  await pedirImagenConRecuperacion({ cuerpo, planHash: plan.plan_hash, senal, limiteIntentoMs: 5_000, ruta: "/api/otra-ruta", dependencias });
+  assert.equal(llamadas[1]?.entrada, "/api/otra-ruta");
+  assert.equal(llamadas[1]?.init?.body, JSON.stringify(cuerpo));
+});
+
+void Promise.all(pendientes).then(() => {
+  if (fallos > 0) {
+    console.error(`\n${fallos} caso(s) fallaron.`);
+    process.exit(1);
+  }
+  console.log("\nCuerpo de generación: guiada = clásica.");
+});
