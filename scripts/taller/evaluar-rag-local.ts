@@ -1,6 +1,6 @@
 /**
  * Evalúa el RAG de la biblioteca sin base remota (REQ-002, paso 7): levanta PGlite (Postgres en memoria con pgvector,
- * pg_trgm y unaccent), aplica la migración 028, indexa data/taller/fichas.jsonl con los vectores de
+ * pg_trgm y unaccent), aplica las migraciones 028 y 034 (partición por repositorio, REQ-013), indexa data/taller/fichas.jsonl con los vectores de
  * data/taller/embeddings y compara con el oro: búsqueda de hoy, RAG léxico, RAG híbrido y fotos del dueño → vistas 3D.
  * Dos oros por separado: el de desarrollo (40 consultas, con el que se afina) y el de reserva (15, que no se mira al
  * afinar y sirve para detectar sobreajuste). Los embeddings de las consultas se cachean en
@@ -14,10 +14,10 @@
  * `--consulta="texto"` muestra el top 15 de una consulta con los rangos por rama y los refuerzos (para depurar).
  * `--afinado` prueba otros pesos o bonos (ver `Afinado` en buscar-sql.ts); `--grilla` prueba varios en una corrida y
  * imprime una línea por configuración (desarrollo, reserva y peor categoría contra la búsqueda de hoy).
+ * `--salida=<archivo.json>` guarda el resumen (promedios de hoy y del RAG híbrido por oro, y de las fotos) para compararlo luego.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { pathToFileURL } from "node:url";
+import { abrirPglite, leerMigracion, prepararEsquemaTaller } from "./pglite-taller";
 import { construirUpsertItem, construirBorrarPartes, construirInsertPartes, construirUpsertEmbedding, leerFichasJsonl, MODELO_EMBEDDING_TALLER } from "../../src/lib/taller/indice";
 import { buscarEnTaller } from "../../src/lib/taller/buscar";
 import type { Afinado } from "../../src/lib/taller/buscar-sql";
@@ -35,20 +35,21 @@ const DETALLE = process.argv.includes("--detalle");
 const AFINADO: Partial<Afinado> = JSON.parse(argumento("afinado") ?? "{}");
 const GRILLA = argumento("grilla");
 const CONSULTA = argumento("consulta");
+const SALIDA = argumento("salida");
 if (!DIR_PGLITE) { console.error("Falta --pglite=<carpeta con node_modules/@electric-sql/pglite>"); process.exit(2); }
-const req = createRequire(DIR_PGLITE.replace(/[\\/]$/, "") + "/package.json");
 const CACHE_Q = "data/taller/eval-vectores-consulta.json";
 const leerOroArchivo = (ruta: string): OroBusqueda => leerOro(JSON.parse(readFileSync(ruta, "utf8")));
 
 type Db = { query: (t: string, v?: unknown[]) => Promise<{ rows: unknown[] }>; exec: (t: string) => Promise<unknown> };
 
+/**
+ * Con estadísticas, como Neon (autovacuum): sin ellas el planificador estima mal el tamaño de `filtrados` y elige para la rama
+ * vectorial el HNSW aproximado (~40 candidatos, `ef_search`) o el orden exacto según esa estimación, no según los datos.
+ */
+const ANALIZAR = "ANALYZE taller_items; ANALYZE taller_items_embeddings;";
+
 async function abrirBase(): Promise<{ db: Db; fotosDueno: Map<string, number[]> }> {
-  const { PGlite } = await import(pathToFileURL(req.resolve("@electric-sql/pglite")).href);
-  const { vector } = await import(pathToFileURL(req.resolve("@electric-sql/pglite-pgvector")).href);
-  const { pg_trgm } = await import(pathToFileURL(req.resolve("@electric-sql/pglite/contrib/pg_trgm")).href);
-  const { unaccent } = await import(pathToFileURL(req.resolve("@electric-sql/pglite/contrib/unaccent")).href);
-  const opciones = { extensions: { vector, pg_trgm, unaccent } };
-  const db: Db = DIR_BASE ? await PGlite.create(DIR_BASE, opciones) : await PGlite.create(opciones);
+  const db: Db = await abrirPglite(DIR_PGLITE!, DIR_BASE);
   const { registros } = leerFichasJsonl(readFileSync("data/taller/fichas.jsonl", "utf8"));
   const fichaPorId = new Map(registros.map((r) => [r.id, r]));
   const vecs = leerVectoresCacheados("data/taller/embeddings");
@@ -56,10 +57,15 @@ async function abrirBase(): Promise<{ db: Db; fotosDueno: Map<string, number[]> 
   for (const v of vecs) if (v.modalidad === "imagen_foto") fotosDueno.set(v.id, Array.from(v.vector));
 
   const yaIndexada = DIR_BASE ? await db.query("SELECT count(*)::int AS n FROM taller_items").then((r) => Number((r.rows[0] as { n: number }).n) === registros.length, () => false) : false;
-  if (yaIndexada) { console.log("base reutilizada de", DIR_BASE, "items", registros.length); return { db, fotosDueno }; }
+  if (yaIndexada) {
+    // Una base guardada antes de REQ-013 no tiene la columna `repositorio`: 034 es idempotente y la deja como en Neon.
+    await db.exec(leerMigracion("034_catalogo_repositorios.sql"));
+    await db.exec(ANALIZAR);
+    console.log("base reutilizada de", DIR_BASE, "items", registros.length);
+    return { db, fotosDueno };
+  }
 
-  await db.exec("CREATE EXTENSION IF NOT EXISTS unaccent; CREATE TEXT SEARCH CONFIGURATION spanish_unaccent (COPY = spanish); ALTER TEXT SEARCH CONFIGURATION spanish_unaccent ALTER MAPPING FOR hword, hword_part, word WITH unaccent, spanish_stem;");
-  await db.exec(readFileSync("scripts/migrations/028_taller_biblioteca.sql", "utf8"));
+  await prepararEsquemaTaller(db);
   for (const r of registros) {
     const u = construirUpsertItem(r); await db.query(u.texto, u.valores);
     for (const q of [construirBorrarPartes(r.id), ...construirInsertPartes(r)]) await db.query(q.texto, q.valores);
@@ -70,6 +76,7 @@ async function abrirBase(): Promise<{ db: Db; fotosDueno: Map<string, number[]> 
     const e = construirUpsertEmbedding({ itemId: v.id, modalidad: v.modalidad, modelo: MODELO_EMBEDDING_TALLER, vector: Array.from(v.vector), hashEntrada: v.hashEntrada });
     await db.query(e.texto, e.valores); if (v.modalidad === "texto") nt++; else nr++;
   }
+  await db.exec(ANALIZAR);
   console.log("items", registros.length, "vectores texto", nt, "render", nr, "fotos dueño", fotosDueno.size);
   return { db, fotosDueno };
 }
@@ -156,5 +163,10 @@ async function main() {
   const d = resultados.Desarrollo!, r = resultados.Reserva!;
   const par = (x: { actual: ResultadoSistema; hibrido: ResultadoSistema }) => `nDCG ${x.actual.promedio.ndcg10.toFixed(3)} → ${x.hibrido.promedio.ndcg10.toFixed(3)}, MRR ${x.actual.promedio.mrr.toFixed(3)} → ${x.hibrido.promedio.mrr.toFixed(3)}, recall@10 ${(x.actual.promedio.recall10 * 100).toFixed(1)}% → ${(x.hibrido.promedio.recall10 * 100).toFixed(1)}%`;
   console.log(`\nRESUMEN (hoy → RAG híbrido)\n  desarrollo: ${par(d)}\n  reserva:    ${par(r)}\n  fotos acierto@5: ${(fotos.promedio.acierto5 * 100).toFixed(0)}%`);
+  if (SALIDA) {
+    const promedios = (x: { actual: ResultadoSistema; hibrido: ResultadoSistema }) => ({ actual: x.actual.promedio, hibrido: x.hibrido.promedio });
+    writeFileSync(SALIDA, JSON.stringify({ fecha: new Date().toISOString(), desarrollo: promedios(d), reserva: promedios(r), fotos: fotos.promedio }, null, 2));
+    console.log("resumen guardado en", SALIDA);
+  }
 }
 main().then(() => process.exit(0), (e) => { console.error("FALLO:", e?.stack ?? e); process.exit(1); });

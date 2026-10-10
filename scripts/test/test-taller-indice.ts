@@ -1,5 +1,6 @@
 /**
  * REQ-002: constructores de SQL del índice de la biblioteca del taller. Sin base de datos ni red.
+ * REQ-013 fase 2: cada fila lleva su repositorio y lo que el indexador lee o desactiva se acota al repositorio que indexa.
  * Run: npx tsx scripts/test/test-taller-indice.ts
  */
 import assert from "node:assert/strict";
@@ -8,12 +9,17 @@ import {
   clasificarCambios,
   construirBorrarPartes,
   construirConsultaEmbeddingsDeTexto,
+  construirConsultaHashes,
   construirDesactivarAusentes,
   construirInsertPartes,
   construirUpsertEmbedding,
   construirUpsertEmbeddingsLote,
   VECTORES_POR_INSERT,
   construirUpsertItem,
+  construirConsultaDeOtroRepositorio,
+  erroresDeCorrida,
+  erroresDeOcupacion,
+  faltaColumnaRepositorio,
   hashEntradaTexto,
   itemsSinEmbeddingVigente,
   leerFichasJsonl,
@@ -39,6 +45,7 @@ function marcadoresCuadran(c: ConsultaSql): void {
 function registro(extra: Partial<RegistroParaIndice> = {}): RegistroParaIndice {
   return {
     id: "idea:columna-uvas",
+    repositorio: "sempertex",
     tipo: "estructura",
     nombre: "Columna con uvas",
     descripcion: "Columna orgánica",
@@ -67,7 +74,7 @@ function registro(extra: Partial<RegistroParaIndice> = {}): RegistroParaIndice {
 // --- upsert del item -----------------------------------------------------------------------------------------
 {
   const c = construirUpsertItem(registro());
-  assert.equal(c.valores.length, 24);
+  assert.equal(c.valores.length, 25);
   marcadoresCuadran(c);
   assert.equal(c.valores[0], "idea:columna-uvas");
   assert.equal(c.valores[1], "estructura");
@@ -81,10 +88,14 @@ function registro(extra: Partial<RegistroParaIndice> = {}): RegistroParaIndice {
   assert.equal(c.valores[19], 35);
   assert.equal(c.valores[22], "abc123", "hash");
   assert.equal(c.valores[23], null, "de fábrica = propietario NULL");
-  ok("upsert del item: 24 parámetros en orden, arreglos sin repetidos, propietario NULL");
+  assert.equal(c.valores[24], "sempertex", "repositorio (REQ-013)");
+  assert.match(c.texto, /, propietario, repositorio\)\nVALUES/);
+  ok("upsert del item: 25 parámetros en orden, arreglos sin repetidos, propietario NULL, repositorio al final");
 
   assert.match(c.texto, /ON CONFLICT \(id\) DO UPDATE/);
-  assert.match(c.texto, /WHERE taller_items\.hash IS DISTINCT FROM EXCLUDED\.hash OR NOT taller_items\.activo/, "salta lo que no cambió");
+  assert.match(c.texto, /WHERE taller_items\.repositorio = EXCLUDED\.repositorio AND \(taller_items\.hash IS DISTINCT FROM EXCLUDED\.hash OR NOT taller_items\.activo\)/, "salta lo que no cambió y nunca toca una fila de otro repositorio");
+  const asignaciones = c.texto.slice(c.texto.indexOf("DO UPDATE SET"), c.texto.indexOf("\nWHERE"));
+  assert.ok(!asignaciones.includes("repositorio"), "el upsert nunca cambia el repositorio de una fila");
   assert.match(c.texto, /RETURNING id, \(xmax = 0\) AS insertado/);
   assert.match(c.texto, /\$9::text\[\]/, "los arreglos llevan cast");
   assert.ok(!/SET id =/.test(c.texto), "no reasigna la clave");
@@ -150,11 +161,19 @@ function registro(extra: Partial<RegistroParaIndice> = {}): RegistroParaIndice {
   assert.deepEqual(r.ausentes, ["z"], "solo los activos que ya no están se desactivan");
   ok("clasificación: sin cambio / cambiado / nuevo / reactivado / ausente");
 
-  const des = construirDesactivarAusentes(["a", "b"]);
-  assert.deepEqual(des.valores, [["a", "b"]]);
-  assert.match(des.texto, /propietario IS NULL AND activo AND id <> ALL\(\$1::text\[\]\)/);
+  const des = construirDesactivarAusentes(["a", "b"], "sempertex");
+  assert.deepEqual(des.valores, [["a", "b"], "sempertex"]);
+  assert.match(des.texto, /propietario IS NULL AND repositorio = \$2 AND activo AND id <> ALL\(\$1::text\[\]\)/);
   marcadoresCuadran(des);
-  ok("desactivar ausentes solo toca lo de fábrica");
+  const desMobiliario = construirDesactivarAusentes(["mesa_imperial"], "mobiliario");
+  assert.deepEqual(desMobiliario.valores, [["mesa_imperial"], "mobiliario"], "indexar mobiliario nunca desactiva Sempertex");
+  ok("desactivar ausentes solo toca lo de fábrica del repositorio que se indexa");
+
+  const hashes = construirConsultaHashes("escenografia");
+  assert.deepEqual(hashes.valores, ["escenografia"]);
+  assert.match(hashes.texto, /WHERE propietario IS NULL AND repositorio = \$1$/);
+  marcadoresCuadran(hashes);
+  ok("los hashes existentes se leen solo del repositorio que se indexa");
 }
 
 // --- embeddings -----------------------------------------------------------------------------------------------
@@ -175,8 +194,9 @@ function registro(extra: Partial<RegistroParaIndice> = {}): RegistroParaIndice {
   assert.throws(() => construirUpsertEmbedding({ itemId: "a", modalidad: "texto", modelo: "m", vector: vector.map((n, i) => (i === 5 ? Number.NaN : n)), hashEntrada: "h" }), /no finitos/);
   ok("rechaza vectores de otro tamaño o con NaN");
 
-  const q = construirConsultaEmbeddingsDeTexto();
-  assert.deepEqual(q.valores, ["gemini-embedding-2"]);
+  const q = construirConsultaEmbeddingsDeTexto("sempertex");
+  assert.deepEqual(q.valores, ["gemini-embedding-2", "sempertex"]);
+  assert.match(q.texto, /t\.repositorio = \$2/);
   marcadoresCuadran(q);
 
   const a = registro({ id: "a", ficha: "ficha a" });
@@ -201,7 +221,47 @@ function registro(extra: Partial<RegistroParaIndice> = {}): RegistroParaIndice {
   assert.ok(errores.some((e) => /JSON inválido/.test(e)) && errores.some((e) => /sin hash/.test(e)) && errores.some((e) => /id repetido/.test(e)));
   assert.deepEqual(registros[0]!.lineasPartes, [{ parte: "p", formatoId: "R-5", codigo: "", cantidad: 0 }]);
   assert.deepEqual(registros[1]!.formatos, [], "campos que faltan quedan vacíos");
+  assert.deepEqual(registros.map((r) => r.repositorio), ["sempertex", "sempertex"], "un JSONL de antes de REQ-013 es todo de Sempertex");
   ok("JSONL: descarta JSON roto, sin hash y repetidos; completa lo que falta");
+
+  const conRepo = leerFichasJsonl([
+    JSON.stringify({ id: "mesa_imperial", repositorio: "mobiliario", tipo: "mueble", nombre: "Mesa", hash: "h" }),
+    JSON.stringify({ id: "x", repositorio: "muebles", tipo: "mueble", nombre: "X", hash: "h" }),
+    JSON.stringify({ id: "y", repositorio: 7, tipo: "mueble", nombre: "Y", hash: "h" }),
+  ].join("\n"));
+  assert.deepEqual(conRepo.registros.map((r) => [r.id, r.repositorio]), [["mesa_imperial", "mobiliario"]]);
+  assert.equal(conRepo.errores.filter((e) => /repositorio inválido/.test(e)).length, 2, conRepo.errores.join("; "));
+  ok("JSONL: el repositorio se lee; uno inválido descarta la línea (nunca se adivina)");
+}
+
+// --- corrida por repositorio (REQ-013, riesgo R-1) ------------------------------------------------------------------
+{
+  const corrida = (registros: RegistroParaIndice[], repositorio: RegistroParaIndice["repositorio"], permitirOtros = false, erroresLectura: string[] = []) =>
+    erroresDeCorrida({ registros, erroresLectura, repositorio, permitirOtros }).join("\n");
+  const sempertex = [registro({ id: "a" }), registro({ id: "b" })];
+  assert.equal(corrida(sempertex, "sempertex"), "", "Sempertex se indexa como siempre");
+  const mobiliario = [registro({ id: "silla_tiffany", repositorio: "mobiliario" })];
+  assert.match(corrida(mobiliario, "mobiliario"), /--permitir-otros-repos/, "otro repositorio necesita permiso explícito");
+  assert.equal(corrida(mobiliario, "mobiliario", true), "");
+  assert.match(corrida([...sempertex, ...mobiliario], "sempertex"), /1 fichas no son de «sempertex» \(p\. ej\. silla_tiffany, de «mobiliario»\)/, "un archivo mezclado se rechaza");
+  // Una línea ilegible (p. ej. repositorio inválido) deja su item fuera de las fichas: desactivar ausentes lo apagaría.
+  const { errores } = leerFichasJsonl([JSON.stringify({ id: "a", tipo: "t", nombre: "A", hash: "h" }), JSON.stringify({ id: "b", repositorio: "muebles", tipo: "t", nombre: "B", hash: "h" })].join("\n"));
+  assert.match(corrida(sempertex, "sempertex", false, errores), /1 líneas inválidas en el archivo \(p\. ej\. línea 2: b: repositorio inválido\): corrígelas; no se indexa ni se desactiva nada/);
+  ok("corrida: una línea inválida es fatal; otro repositorio solo con permiso; nunca un archivo mezclado");
+
+  const ocupados = construirConsultaDeOtroRepositorio(["silla_tiffany", "mesa_imperial"], "mobiliario");
+  assert.deepEqual(ocupados.valores, [["silla_tiffany", "mesa_imperial"], "mobiliario"]);
+  assert.match(ocupados.texto, /WHERE id = ANY\(\$1::text\[\]\) AND repositorio <> \$2$/);
+  marcadoresCuadran(ocupados);
+  assert.deepEqual(erroresDeOcupacion([], "mobiliario"), []);
+  assert.match(erroresDeOcupacion([{ id: "silla_tiffany", repositorio: "sempertex" }], "mobiliario").join(), /1 ids de «mobiliario» ya existen en otro repositorio \(p\. ej\. silla_tiffany, de «sempertex»\)/);
+  ok("ocupación: un id que ya es de otro repositorio detiene la corrida (nadie se apropia de filas ajenas)");
+
+  assert.equal(faltaColumnaRepositorio(Object.assign(new Error('column "repositorio" does not exist'), { code: "42703" })), true);
+  assert.equal(faltaColumnaRepositorio(Object.assign(new Error('column "otra" does not exist'), { code: "42703" })), false);
+  assert.equal(faltaColumnaRepositorio(Object.assign(new Error("repositorio: connection refused"), { code: "ECONNREFUSED" })), false);
+  assert.equal(faltaColumnaRepositorio("42703"), false);
+  ok("42703 sobre repositorio = migración 034 sin aplicar; cualquier otro error no");
 }
 
 {

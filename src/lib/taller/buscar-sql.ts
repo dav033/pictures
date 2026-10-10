@@ -1,3 +1,4 @@
+import type { IdRepositorio } from "@/lib/catalogo/tipos";
 import { RRF_K } from "@/lib/rag/retrieval/rrf";
 import { MODELO_EMBEDDING_TALLER, vectorComoLiteral, type ConsultaSql } from "./indice";
 
@@ -7,7 +8,8 @@ import { MODELO_EMBEDDING_TALLER, vectorComoLiteral, type ConsultaSql } from "./
  *
  * Estructura:
  *  1. `filtrados`: los filtros DUROS se aplican una vez aquí (CTE MATERIALIZED) y TODAS las ramas se unen a ella, así
- *     ninguna rama puede devolver algo que el filtro excluye.
+ *     ninguna rama puede devolver algo que el filtro excluye. Entre ellos, siempre, la partición por repositorio (REQ-013,
+ *     migración 034): `ParticionRepositorios` es obligatoria, no hay consulta a `taller_items` sin ella.
  *  2. Ramas: `fts` (tsvector español sin acentos, OR de palabras), `trigram` (nombre, sin acentos), `vector_texto`
  *     (modalidad texto) y `vector_imagen` (fotos y renders: mismo espacio que el texto en gemini-embedding-2).
  *     Solo existen las ramas pedidas; sin texto ni vectores hay una rama `filtro` (explorar por filtros).
@@ -42,7 +44,17 @@ export type FiltrosTaller = {
   propietario?: string | null;
   /** Solo lo del dueño (necesita `propietario`). */
   soloPropios?: boolean;
+  /** Los repositorios pedidos (REQ-013): se cruzan con los visibles, nunca los amplían. Vacío o ausente = los visibles. */
+  repositorios?: readonly string[];
 };
+
+/**
+ * Qué repositorios puede devolver la consulta (REQ-013): los visibles para el RAG ya cruzados con los pedidos, así que una lista
+ * vacía es «ninguna fila», nunca «todas». `conColumna: false` solo mientras la migración 034 no esté aplicada (la búsqueda lo
+ * detecta y reintenta): sin la columna toda fila es de Sempertex (regla R2), así que se busca como antes de REQ-013 si Sempertex
+ * es visible, y nada si no.
+ */
+export type ParticionRepositorios = { repositorios: readonly IdRepositorio[]; conColumna: boolean };
 
 export type EntradaBusqueda = {
   texto?: string;
@@ -160,7 +172,12 @@ export function patronLike(formato: string): string {
   return formato.replace(/[\\%_]/g, (c) => `\\${c}`).replace(/\*/g, "%");
 }
 
-function condicionesDuras(f: FiltrosTaller, p: Parametros): string[] {
+function condicionRepositorio({ repositorios, conColumna }: ParticionRepositorios, p: Parametros): string | null {
+  if (conColumna) return `t.repositorio = ANY(${p.agregar([...repositorios], "text[]")})`;
+  return repositorios.includes("sempertex") ? null : "FALSE";
+}
+
+function condicionesDuras(f: FiltrosTaller, particion: ParticionRepositorios, p: Parametros): string[] {
   const c = ["t.activo"];
   if (f.soloPropios) {
     if (!f.propietario) throw new Error("soloPropios necesita propietario.");
@@ -191,6 +208,8 @@ function condicionesDuras(f: FiltrosTaller, p: Parametros): string[] {
   rango("t.alto_cm", "<=", f.altoMax);
   rango("t.ancho_cm", ">=", f.anchoMin);
   rango("t.ancho_cm", "<=", f.anchoMax);
+  const repositorio = condicionRepositorio(particion, p);
+  if (repositorio) c.push(repositorio);
   return c;
 }
 
@@ -205,7 +224,12 @@ function cercaniaMedida(columna: "t.alto_cm" | "t.ancho_cm", cm: number, p: Para
   return `COALESCE(GREATEST(0, 1 - ABS(${columna} - ${pedido}) / ${tolerancia}), 0)`;
 }
 
-export function construirConsultaBusqueda(entrada: EntradaBusqueda, refuerzos: RefuerzosSuaves = SIN_REFUERZOS, ajuste: Partial<Afinado> = {}): ConsultaBusqueda {
+export function construirConsultaBusqueda(
+  entrada: EntradaBusqueda,
+  particion: ParticionRepositorios,
+  refuerzos: RefuerzosSuaves = SIN_REFUERZOS,
+  ajuste: Partial<Afinado> = {},
+): ConsultaBusqueda {
   const afinado = fusionarAfinado(ajuste);
   const p = new Parametros();
   const limite = limiteSeguro(entrada.limite);
@@ -214,7 +238,7 @@ export function construirConsultaBusqueda(entrada: EntradaBusqueda, refuerzos: R
   const ctes: string[] = [];
   const ramas: RamaId[] = [];
 
-  ctes.push(`filtrados AS MATERIALIZED (\n  SELECT t.id FROM taller_items t\n  WHERE ${condicionesDuras(filtros, p).join("\n    AND ")}\n)`);
+  ctes.push(`filtrados AS MATERIALIZED (\n  SELECT t.id FROM taller_items t\n  WHERE ${condicionesDuras(filtros, particion, p).join("\n    AND ")}\n)`);
 
   const porRama = p.agregar(Math.min(CANDIDATOS_MAXIMO, Math.max(afinado.candidatos, limite * 3)), "integer");
 
@@ -352,7 +376,7 @@ FROM (
       SELECT t.id, t.tipo, t.nombre, t.descripcion, t.fuente_tipo, t.fuente_titulo, t.fuente_url, t.foto_url,
         t.ocasiones, t.celebraciones, t.tematicas, t.tipos_pieza, t.formatos, t.colores, t.partes, t.productos,
         t.alto_cm::float8 AS alto_cm, t.ancho_cm::float8 AS ancho_cm, t.fondo_cm::float8 AS fondo_cm,
-        t.globos, t.tubos, t.propietario,
+        t.globos, t.tubos, t.propietario, ${particion.conColumna ? "t.repositorio" : "'sempertex'::text AS repositorio"},
         (position('~' in t.id) > 0 AND t.tipo <> 'utileria') AS es_fragmento,
         ${puntajeBase} AS puntaje_base, fu.rrf,
         ${[...columnasRamas, ...refuerzo].join(",\n        ")}

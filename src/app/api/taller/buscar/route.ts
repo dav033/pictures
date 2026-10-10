@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
+import { esIdRepositorio } from "@/lib/catalogo/ids";
 import { conRegistro } from "@/lib/registro/servidor";
-import { buscarEnTaller } from "@/lib/taller/buscar";
+import { buscarVisible } from "@/lib/taller/buscar-visible";
 import { DIMENSIONES_VECTOR_TALLER } from "@/lib/taller/indice";
 
 /**
@@ -32,6 +33,8 @@ const CuerpoSchema = z.object({
     fuente: Lista,
     propietario: z.string().trim().min(1).max(120).nullable().optional(),
     soloPropios: z.boolean().optional(),
+    // REQ-013: acota a estos repositorios; nunca abre uno que el RAG no vea (`reposVisibles("rag")`).
+    repositorios: z.array(z.string().trim().refine(esIdRepositorio, { message: "repositorio desconocido" })).max(10).optional(),
   }).strict().default({}),
   limite: z.number().int().min(1).max(50).default(12),
   vectorTexto: Vector,
@@ -52,5 +55,5 @@ async function atenderPOST(request: Request) {
   if (!parseado.success) {
     return Response.json({ error: "Búsqueda inválida.", detalle: parseado.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).slice(0, 5) }, { status: 400 });
   }
-  return Response.json(await buscarEnTaller(parseado.data));
+  return Response.json(await buscarVisible(parseado.data));
 }

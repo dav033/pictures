@@ -19,8 +19,11 @@ import {
   fusionarAfinado,
   limiteSeguro,
   patronLike,
+  type Afinado,
   type ConsultaBusqueda,
   type EntradaBusqueda,
+  type ParticionRepositorios,
+  type RefuerzosSuaves,
 } from "../../src/lib/taller/buscar-sql";
 import { buscarEnTaller, refuerzosDeConsulta, refuerzosDeInterpretacion, type DependenciasBuscar } from "../../src/lib/taller/buscar";
 import { PALABRAS_DE_FUENTE, entenderConsulta } from "../../src/lib/taller/entender-consulta";
@@ -35,6 +38,11 @@ function ok(nombre: string): void {
 }
 
 const vector = (valor = 0.01) => Array.from({ length: 768 }, () => valor);
+
+/** La partición de hoy (REQ-013): solo Sempertex, con la columna de la migración 034. */
+const SOLO_SEMPERTEX: ParticionRepositorios = { repositorios: ["sempertex"], conColumna: true };
+const consultaDe = (entrada: EntradaBusqueda, refuerzos?: RefuerzosSuaves, ajuste?: Partial<Afinado>): ConsultaBusqueda =>
+  construirConsultaBusqueda(entrada, SOLO_SEMPERTEX, refuerzos, ajuste);
 
 /** Revisiones estructurales del SQL (sin analizador): marcadores, paréntesis y cadenas balanceados, sin basura de plantilla. */
 function sqlSano(c: ConsultaBusqueda): void {
@@ -71,24 +79,24 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
 
 // --- ramas según la entrada -----------------------------------------------------------------------------------
 {
-  const vacia = construirConsultaBusqueda({});
+  const vacia = consultaDe({});
   sqlSano(vacia);
   assert.deepEqual(vacia.ramas, ["filtro"]);
-  assert.deepEqual(vacia.valores, [AFINADO_POR_DEFECTO.candidatos, 12], "porRama (candidatos afinados) y limite (12)");
+  assert.deepEqual(vacia.valores, [["sempertex"], AFINADO_POR_DEFECTO.candidatos, 12], "repositorios visibles, porRama (candidatos afinados) y limite (12)");
   assert.match(vacia.texto, /t\.propietario IS NULL/, "sin propietario: solo lo de fábrica");
   assert.ok(!/to_tsquery|<=>|similarity/.test(vacia.texto));
   ok("sin texto ni vectores: rama filtro, solo fábrica, límite por defecto");
 
-  const texto = construirConsultaBusqueda({ texto: "columna dorada con uvas" });
+  const texto = consultaDe({ texto: "columna dorada con uvas" });
   sqlSano(texto);
   assert.deepEqual(texto.ramas, ["fts", "trigram"]);
-  assert.equal(texto.valores[1], "columna | dorada | con | uvas", "OR de palabras para to_tsquery");
-  assert.equal(texto.valores[2], "columna dorada con uvas");
-  assert.match(texto.texto, /to_tsquery\('spanish_unaccent', \$2::text\)/);
+  assert.equal(texto.valores[2], "columna | dorada | con | uvas", "OR de palabras para to_tsquery");
+  assert.equal(texto.valores[3], "columna dorada con uvas");
+  assert.match(texto.texto, /to_tsquery\('spanish_unaccent', \$3::text\)/);
   assert.match(texto.texto, /word_similarity/);
   ok("solo texto: ramas fts + trigram");
 
-  const vt = construirConsultaBusqueda({ texto: "arco", vectorTexto: vector() });
+  const vt = consultaDe({ texto: "arco", vectorTexto: vector() });
   sqlSano(vt);
   assert.deepEqual(vt.ramas, ["fts", "trigram", "vector_texto"]);
   const v = vt.valores.find((x) => typeof x === "string" && x.startsWith("[0.01,"));
@@ -98,20 +106,20 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
   assert.ok(vt.valores.includes("gemini-embedding-2"));
   ok("texto + vector de texto: rama vector_texto con modalidad texto");
 
-  const vi = construirConsultaBusqueda({ vectorImagen: vector(0.02) });
+  const vi = consultaDe({ vectorImagen: vector(0.02) });
   sqlSano(vi);
   assert.deepEqual(vi.ramas, ["vector_imagen"], "solo foto: ni fts ni trigram ni filtro");
   assert.match(vi.texto, /e\.modalidad <> 'texto'/, "calza con el HNSW parcial de imágenes");
   assert.match(vi.texto, /MAX\(puntaje\) AS puntaje/, "foto y render del mismo item: gana la mejor");
   ok("solo foto: rama vector_imagen");
 
-  const todo = construirConsultaBusqueda({ texto: "x yy", vectorTexto: vector(), vectorImagen: vector(0.5) });
+  const todo = consultaDe({ texto: "x yy", vectorTexto: vector(), vectorImagen: vector(0.5) });
   sqlSano(todo);
   assert.deepEqual(todo.ramas, ["fts", "trigram", "vector_texto", "vector_imagen"]);
   assert.equal(todo.valores.filter((x) => x === "gemini-embedding-2").length, 1, "el modelo es un solo parámetro compartido");
   ok("las cuatro ramas: el modelo se parametriza una vez");
 
-  const sinPalabras = construirConsultaBusqueda({ texto: "! ? a" });
+  const sinPalabras = consultaDe({ texto: "! ? a" });
   sqlSano(sinPalabras);
   assert.deepEqual(sinPalabras.ramas, ["trigram"], "sin palabras útiles para to_tsquery, queda el trigram");
   assert.equal(consultaTsOr("¡Cumpleaños de Niño! a 15"), "cumpleaños | de | niño | 15", "solo letras y números, minúsculas");
@@ -120,7 +128,7 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
 
 // --- fusión RRF -----------------------------------------------------------------------------------------------
 {
-  const c = construirConsultaBusqueda({ texto: "arco", vectorTexto: vector() });
+  const c = consultaDe({ texto: "arco", vectorTexto: vector() });
   assert.ok(c.texto.includes(`SUM(peso / (${RRF_K} + rango))`), "misma fórmula y k que rrf.ts");
   assert.ok(c.texto.includes(`${PESOS_RAMA.fts}::float8 AS peso FROM fts`));
   assert.ok(c.texto.includes(`${PESOS_RAMA.trigram}::float8 AS peso FROM trigram`));
@@ -143,7 +151,7 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
       fuente: ["idea-sempertex"], propietario: "dueno-1",
     },
   };
-  const c = construirConsultaBusqueda(entrada);
+  const c = consultaDe(entrada);
   sqlSano(c);
   const { filtrados, ramas } = partes(c);
   for (const fragmento of [
@@ -160,12 +168,12 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
   assert.ok(c.valores.includes(300) && c.valores.includes(50));
   ok("todos los filtros duros: una vez en filtrados y todas las ramas se unen a ella");
 
-  const propios = construirConsultaBusqueda({ filtros: { propietario: "dueno-1", soloPropios: true } });
+  const propios = consultaDe({ filtros: { propietario: "dueno-1", soloPropios: true } });
   sqlSano(propios);
   assert.match(propios.texto, /t\.propietario = \$1::text/);
   assert.ok(!propios.texto.includes("t.propietario IS NULL"));
-  assert.throws(() => construirConsultaBusqueda({ filtros: { soloPropios: true } }), /propietario/);
-  const vacios = construirConsultaBusqueda({ filtros: { tipos: [], formatos: ["  ", ""], celebraciones: ["a", "a"] } });
+  assert.throws(() => consultaDe({ filtros: { soloPropios: true } }), /propietario/);
+  const vacios = consultaDe({ filtros: { tipos: [], formatos: ["  ", ""], celebraciones: ["a", "a"] } });
   sqlSano(vacios);
   assert.deepEqual(vacios.valores.slice(0, 1), [["a"]], "listas vacías no filtran; repetidos se unifican");
   ok("propietario: fábrica + dueño, solo propios, y listas vacías ignoradas");
@@ -178,12 +186,12 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
   assert.equal(limiteSeguro(0), 1);
   assert.equal(limiteSeguro(500), LIMITE_MAXIMO);
   assert.equal(limiteSeguro(7.9), 7);
-  const c = construirConsultaBusqueda({ limite: 500 });
+  const c = consultaDe({ limite: 500 });
   assert.equal(c.limite, 50);
-  assert.deepEqual(c.valores, [Math.min(CANDIDATOS_MAXIMO, Math.max(AFINADO_POR_DEFECTO.candidatos, 150)), 50], "candidatos por rama: al menos los afinados, 3 × límite y como mucho el tope");
-  assert.deepEqual(construirConsultaBusqueda({ limite: 500 }, undefined, { candidatos: 1000 }).valores, [CANDIDATOS_MAXIMO, 50], "el tope de candidatos no se pasa");
-  assert.throws(() => construirConsultaBusqueda({ vectorTexto: [1, 2, 3] }), /768/);
-  assert.throws(() => construirConsultaBusqueda({ vectorImagen: vector().map((n, i) => (i === 0 ? Infinity : n)) }), /no finitos/);
+  assert.deepEqual(c.valores, [["sempertex"], Math.min(CANDIDATOS_MAXIMO, Math.max(AFINADO_POR_DEFECTO.candidatos, 150)), 50], "candidatos por rama: al menos los afinados, 3 × límite y como mucho el tope");
+  assert.deepEqual(consultaDe({ limite: 500 }, undefined, { candidatos: 1000 }).valores, [["sempertex"], CANDIDATOS_MAXIMO, 50], "el tope de candidatos no se pasa");
+  assert.throws(() => consultaDe({ vectorTexto: [1, 2, 3] }), /768/);
+  assert.throws(() => consultaDe({ vectorImagen: vector().map((n, i) => (i === 0 ? Infinity : n)) }), /no finitos/);
   ok("límite acotado a 1…50 y vectores validados");
 }
 
@@ -195,7 +203,7 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
   assert.ok(refuerzos.partes.includes("ramas"));
   assert.ok(refuerzos.tiposPieza.includes("columna"));
   assert.ok(refuerzos.colores.includes("570"));
-  const c = construirConsultaBusqueda({ texto: "columna link-o-loon dorada con ramas" }, refuerzos);
+  const c = consultaDe({ texto: "columna link-o-loon dorada con ramas" }, refuerzos);
   sqlSano(c);
   assert.ok(c.valores.some((x) => Array.isArray(x) && x.length === 1 && x[0] === "LOL-%"), "la familia va como patrón LIKE");
   assert.match(c.texto, /x\.f LIKE ANY\(\$\d+::text\[\]\)/);
@@ -204,7 +212,7 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
   assert.ok(c.texto.includes(`THEN ${BONO_REFUERZO} ELSE 0`), "bono fijo");
   assert.ok(!/t\.formatos &&/.test(c.texto), "los refuerzos NO son filtros duros");
   assert.match(c.texto, /fu\.rrf \+ CASE WHEN/);
-  const sin = construirConsultaBusqueda({ texto: "hola" });
+  const sin = consultaDe({ texto: "hola" });
   assert.ok(!sin.texto.includes("refuerzo_"), "sin refuerzos, ninguna columna extra");
   assert.equal(patronLike("LOL-*"), "LOL-%");
   assert.equal(patronLike("R_5%"), "R\\_5\\%");
@@ -222,7 +230,7 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
   assert.ok(refuerzos.nombresPieza?.includes("columna"), "la pieza pedida se compara con el nombre");
   assert.ok(refuerzos.palabrasExtra?.includes("graduacion"), "las palabras de la taxonomía se suman al texto");
 
-  const c = construirConsultaBusqueda({ texto: "columna de 2 metros para grado" }, refuerzos);
+  const c = consultaDe({ texto: "columna de 2 metros para grado" }, refuerzos);
   sqlSano(c);
   for (const columna of ["refuerzo_celebraciones", "refuerzo_fuentes", "refuerzo_medida", "refuerzo_nombre_pieza"]) assert.ok(c.texto.includes(`AS ${columna}`), columna);
   assert.match(c.texto, /t\.celebraciones && \$\d+::text\[\]/);
@@ -237,19 +245,19 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
 
   assert.match(c.texto, /WHERE m\.cercania > 0 ORDER BY m\.cercania DESC, m\.id LIMIT 40/, "los más cercanos a la medida entran aunque el texto no los traiga");
   assert.match(c.texto, /lower\(unaccent\(t\.nombre\)\) ~ ANY\(\$\d+::text\[\]\) OR t\.tipos_pieza && \$\d+::text\[\]/, "pero solo de la pieza pedida");
-  const sinInyeccion = construirConsultaBusqueda({ texto: "columna" }, refuerzos, { candidatosMedida: 0, promocionPadre: 0 });
+  const sinInyeccion = consultaDe({ texto: "columna" }, refuerzos, { candidatosMedida: 0, promocionPadre: 0 });
   assert.ok(!sinInyeccion.texto.includes("candidatos AS"), "sin promoción ni inyección de medida no hay candidatos extra");
 
   assert.ok(!refuerzos.nombresResto?.some((p) => PALABRAS_DE_FUENTE.has(p)), "«revista» y «Celebra» nombran la fuente, no la pieza");
   const comunion = refuerzosDeConsulta(interpretarTerminos("primera comunión con cruz"), entenderConsulta("primera comunión con cruz"));
   assert.ok(comunion.nombresResto?.includes("cruz"), "lo que el glosario no reconoce («cruz») es lo distintivo: se busca en el nombre");
-  const conResto = construirConsultaBusqueda({ texto: "primera comunión con cruz" }, comunion);
+  const conResto = consultaDe({ texto: "primera comunión con cruz" }, comunion);
   sqlSano(conResto);
   assert.match(conResto.texto, /AS refuerzo_nombre_resto/);
   assert.ok(conResto.valores.some((x) => Array.isArray(x) && x.includes("\\ycruz")));
-  assert.ok(!construirConsultaBusqueda({ texto: "arco" }, SIN_REFUERZOS).texto.includes("refuerzo_nombre"), "sin palabras distintivas, sin refuerzo");
+  assert.ok(!consultaDe({ texto: "arco" }, SIN_REFUERZOS).texto.includes("refuerzo_nombre"), "sin palabras distintivas, sin refuerzo");
 
-  const ancho = construirConsultaBusqueda({ texto: "arco" }, { ...SIN_REFUERZOS, anchoCm: 400 });
+  const ancho = consultaDe({ texto: "arco" }, { ...SIN_REFUERZOS, anchoCm: 400 });
   assert.match(ancho.texto, /t\.ancho_cm - /);
   assert.ok(ancho.valores.includes(60), "400 cm de ancho → tolerancia de 60 cm");
   assert.equal(consultaTsOr("arco dorado", ["quince", "arco"]), "arco | dorado | quince", "las palabras extra se suman sin repetir");
@@ -259,7 +267,7 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
 
 // --- fragmentos: agrupar bajo su escena --------------------------------------------------------------------------------
 {
-  const c = construirConsultaBusqueda({ texto: "topiario", vectorTexto: vector() });
+  const c = consultaDe({ texto: "topiario", vectorTexto: vector() });
   sqlSano(c);
   assert.match(c.texto, /\ncandidatos AS \(/, "la escena entera entra aunque ninguna rama la traiga");
   assert.match(c.texto, /split_part\(x\.id, '~', 1\)/);
@@ -270,13 +278,13 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
   assert.match(c.texto, /GREATEST\(h\.puntaje_base, 0\.8::float8 \* COALESCE\(h\.mejor_fragmento, 0\)\)/, "la escena hereda del mejor fragmento");
   assert.match(c.texto, /FROM candidatos fu\n/);
 
-  const sinAgrupar = construirConsultaBusqueda({ texto: "topiario" }, undefined, { promocionPadre: 0, factorHermano: 1 });
+  const sinAgrupar = consultaDe({ texto: "topiario" }, undefined, { promocionPadre: 0, factorHermano: 1 });
   sqlSano(sinAgrupar);
   assert.ok(!sinAgrupar.texto.includes("candidatos AS"), "sin promoción no hay escenas agregadas");
   assert.match(sinAgrupar.texto, /FROM fusion fu\n/);
   assert.match(sinAgrupar.texto, /power\(1::float8, h\.puesto\)/, "con factor 1 los fragmentos no pierden nada");
 
-  const filtro = construirConsultaBusqueda({ filtros: { celebraciones: ["halloween"] } });
+  const filtro = consultaDe({ filtros: { celebraciones: ["halloween"] } });
   sqlSano(filtro);
   assert.deepEqual(filtro.ramas, ["filtro"]);
   assert.match(filtro.texto, /FROM candidatos fu/, "también al explorar solo por filtros");
@@ -290,7 +298,7 @@ const cuenta = (texto: string, parte: string) => texto.split(parte).length - 1;
   assert.equal(mezcla.pesos.fts, AFINADO_POR_DEFECTO.pesos.fts, "lo que no se pasa queda como estaba");
   assert.equal(mezcla.bonos.medida, 9);
   assert.equal(mezcla.bonos.fuentes, AFINADO_POR_DEFECTO.bonos.fuentes);
-  const c = construirConsultaBusqueda({ texto: "arco", vectorTexto: vector() }, undefined, { pesos: { vector_texto: 3 } as typeof AFINADO_POR_DEFECTO.pesos });
+  const c = consultaDe({ texto: "arco", vectorTexto: vector() }, undefined, { pesos: { vector_texto: 3 } as typeof AFINADO_POR_DEFECTO.pesos });
   assert.ok(c.texto.includes("3::float8 AS peso FROM vector_texto"), "el peso de la rama sale del afinado");
   assert.equal(AFINADO_POR_DEFECTO.pesos.vector_texto > AFINADO_POR_DEFECTO.pesos.trigram, true, "el vector pesa más que el trigram");
   assert.ok(AFINADO_POR_DEFECTO.factorHermano > 0 && AFINADO_POR_DEFECTO.factorHermano <= 1);

@@ -1,4 +1,6 @@
 import type { Pool } from "pg";
+import { esIdRepositorio, repositorioPorPrefijo } from "@/lib/catalogo/ids";
+import type { IdRepositorio } from "@/lib/catalogo/tipos";
 import { TALLER_RAG_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { interpretarTerminos, type Interpretacion } from "@/lib/globos3d/glosario-taller";
 import { buscarEnBiblioteca, type FiltroIA } from "@/lib/globos3d/herramientas-escena-biblioteca";
@@ -10,17 +12,23 @@ import {
   construirConsultaBusqueda,
   limiteSeguro,
   type Afinado,
+  type ConsultaBusqueda,
   type EntradaBusqueda,
   type FiltrosTaller,
+  type ParticionRepositorios,
   type RamaId,
   type RefuerzosSuaves,
 } from "./buscar-sql";
 import { PALABRAS_DE_FUENTE, entenderConsulta, type EntendidoConsulta } from "./entender-consulta";
+import { faltaColumnaRepositorio } from "./indice";
 
 /**
  * Búsqueda de la biblioteca del taller 3D (REQ-002): Postgres (híbrida: palabras + nombre + vectores, ver
  * `buscar-sql.ts`) con la bandera `TALLER_RAG_ENABLED`, y la búsqueda en memoria de siempre (`buscarEnBiblioteca`)
  * cuando está apagada o la base falla. Las dos devuelven la MISMA forma; `fuente` dice cuál respondió.
+ * Las dos filtran siempre por repositorio de catálogo (REQ-013): los visibles para el RAG cruzados con los que pida
+ * `filtros.repositorios`. Los visibles los resuelve quien conoce la política del catálogo (`buscar-visible.ts`, desde las rutas);
+ * este módulo lo alcanza el motor y no la conoce: sin ellos, solo `REPOSITORIOS_SIN_POLITICA`.
  */
 
 export type { EntradaBusqueda, FiltrosTaller, RamaId } from "./buscar-sql";
@@ -46,6 +54,8 @@ export type ResultadoTaller = {
   globos: number;
   tubos: number;
   propietario: string | null;
+  /** El repositorio de catálogo del item (REQ-013). */
+  repositorio: IdRepositorio;
   puntaje: number;
   ramas: Record<Exclude<RamaId, "filtro">, PuntajeRama | null>;
   razones: string[];
@@ -74,7 +84,15 @@ export type DependenciasBuscar = {
   afinado?: Partial<Afinado>;
   /** Embedding de la consulta (por defecto `embeddingOpcional` del RAG, 2,5 s; si falla, la búsqueda sigue solo léxica). */
   embeberConsulta?: (texto: string) => Promise<number[] | undefined>;
+  /** Los repositorios que el RAG puede ver; las rutas pasan `reposVisibles("rag")` (`buscar-visible.ts`). Por defecto `REPOSITORIOS_SIN_POLITICA`. */
+  repositoriosVisibles?: () => readonly IdRepositorio[];
 };
+
+/**
+ * Lo que ve una búsqueda a la que nadie le pasó la visibilidad: solo lo que existía antes de REQ-013 (todo Sempertex, R2). Falla
+ * cerrado: un repositorio nuevo solo aparece si una ruta lo hace visible.
+ */
+export const REPOSITORIOS_SIN_POLITICA: readonly IdRepositorio[] = ["sempertex"];
 
 type Fila = Record<string, unknown>;
 
@@ -175,6 +193,8 @@ export function resultadoDeFila(fila: Fila, refuerzos: RefuerzosSuaves, filtros:
     globos: numeroONulo(fila.globos) ?? 0,
     tubos: numeroONulo(fila.tubos) ?? 0,
     propietario: textoONulo(fila.propietario),
+    // La columna tiene CHECK (034); una fila sin ella es de antes de REQ-013, cuando todo era de Sempertex (R2).
+    repositorio: esIdRepositorio(String(fila.repositorio)) ? (fila.repositorio as IdRepositorio) : "sempertex",
     puntaje: Number(fila.puntaje) || 0,
     ramas,
     razones: razonesDe(fila, ramas, refuerzos, filtros),
@@ -187,7 +207,7 @@ export function resultadoDeFila(fila: Fila, refuerzos: RefuerzosSuaves, filtros:
 
 const SIN_RAMAS: ResultadoTaller["ramas"] = { fts: null, trigram: null, vector_texto: null, vector_imagen: null };
 
-function resultadoDeItemMemoria(item: ItemBiblioteca, posicion: number): ResultadoTaller {
+function resultadoDeItemMemoria(item: ItemBiblioteca, repositorio: IdRepositorio, posicion: number): ResultadoTaller {
   return {
     id: item.id,
     tipo: item.tipo,
@@ -206,13 +226,18 @@ function resultadoDeItemMemoria(item: ItemBiblioteca, posicion: number): Resulta
     globos: 0,
     tubos: 0,
     propietario: item.propio ? "navegador" : null,
+    repositorio,
     puntaje: 1 / (RRF_K + posicion + 1),
     ramas: SIN_RAMAS,
     razones: ["Búsqueda por palabras en memoria del servidor (sin base de datos)"],
   };
 }
 
-function buscarEnMemoria(entrada: EntradaBusqueda, memoria: (f: FiltroIA) => ItemBiblioteca[], motivo: string | null): RespuestaBusquedaTaller {
+/**
+ * La memoria es la biblioteca de fábrica y sus derivados: todo lo reclama Sempertex por prefijo (`repositorioPorPrefijo`). Un item
+ * sin repositorio conocido no sale (nunca se adivina).
+ */
+function buscarEnMemoria(entrada: EntradaBusqueda, memoria: (f: FiltroIA) => ItemBiblioteca[], motivo: string | null, repositorios: readonly IdRepositorio[]): RespuestaBusquedaTaller {
   const filtros = entrada.filtros ?? {};
   const limite = limiteSeguro(entrada.limite);
   const avisos: string[] = [];
@@ -243,8 +268,14 @@ function buscarEnMemoria(entrada: EntradaBusqueda, memoria: (f: FiltroIA) => Ite
     }
   }
   const fuentes = filtros.fuente?.length ? new Set(filtros.fuente) : null;
-  const items = [...vistos.values()].filter((i) => !fuentes || (i.fuente && fuentes.has(i.fuente.tipo))).slice(0, limite);
-  const resultados = items.map(resultadoDeItemMemoria);
+  const items = [...vistos.values()]
+    .filter((i) => !fuentes || (i.fuente && fuentes.has(i.fuente.tipo)))
+    .flatMap((item) => {
+      const repositorio = repositorioPorPrefijo(item.id);
+      return repositorio && repositorios.includes(repositorio) ? [{ item, repositorio }] : [];
+    })
+    .slice(0, limite);
+  const resultados = items.map(({ item, repositorio }, posicion) => resultadoDeItemMemoria(item, repositorio, posicion));
   return { fuente: "memoria", resultados, ids: resultados.map((r) => r.id), ramas: [], interpretacion: null, avisos };
 }
 
@@ -265,9 +296,35 @@ async function poolPorDefecto(): Promise<Pick<Pool, "query">> {
   return getRagPool();
 }
 
+/** Los visibles cruzados con los pedidos: pedir un repositorio invisible no lo abre, y un cruce vacío es «ninguno», no «todos». */
+export function repositoriosDeBusqueda(visibles: readonly IdRepositorio[], pedidos: readonly string[] | undefined): IdRepositorio[] {
+  return pedidos?.length ? visibles.filter((r) => pedidos.includes(r)) : [...visibles];
+}
+
+/** El aviso de la columna faltante sale una vez por proceso: mientras falte, cada búsqueda lo encontraría. */
+let avisoColumnaDado = false;
+
+/**
+ * Corre la consulta; si la base aún no tiene la columna `repositorio` (034 sin aplicar), avisa y la repite sin la partición:
+ * la búsqueda sigue como antes de REQ-013 en vez de caer a memoria en silencio. Cualquier otro error sube.
+ */
+async function filasConParticion(pool: Pick<Pool, "query">, consulta: ConsultaBusqueda, sinColumna: () => ConsultaBusqueda): Promise<Fila[]> {
+  try {
+    return (await pool.query(consulta.texto, consulta.valores)).rows as Fila[];
+  } catch (error) {
+    if (!faltaColumnaRepositorio(error)) throw error;
+    if (!avisoColumnaDado) console.warn("[taller-rag] falta la columna taller_items.repositorio (migración 034 sin aplicar): se busca sin la partición por repositorio, como antes de REQ-013. Aplica scripts/migrations/034_catalogo_repositorios.sql. (Este aviso sale una vez por proceso.)");
+    avisoColumnaDado = true;
+    const legado = sinColumna();
+    return (await pool.query(legado.texto, legado.valores)).rows as Fila[];
+  }
+}
+
 export async function buscarEnTaller(entrada: EntradaBusqueda, dependencias: DependenciasBuscar = {}): Promise<RespuestaBusquedaTaller> {
   const memoria = dependencias.memoria ?? buscarEnBiblioteca;
-  if (!(dependencias.habilitado ?? TALLER_RAG_ENABLED)) return buscarEnMemoria(entrada, memoria, null);
+  const visibles = dependencias.repositoriosVisibles?.() ?? REPOSITORIOS_SIN_POLITICA;
+  const repositorios = repositoriosDeBusqueda(visibles, entrada.filtros?.repositorios);
+  if (!(dependencias.habilitado ?? TALLER_RAG_ENABLED)) return buscarEnMemoria(entrada, memoria, null, repositorios);
 
   const texto = (entrada.texto ?? "").trim();
   const interpretacion = texto ? (dependencias.interpretar ?? interpretarTerminos)(texto) : null;
@@ -277,11 +334,12 @@ export async function buscarEnTaller(entrada: EntradaBusqueda, dependencias: Dep
   const vectorTexto = entrada.vectorTexto ?? (texto ? await (dependencias.embeberConsulta ?? embeberPorDefecto)(texto).catch(() => undefined) : undefined);
   const conVector: EntradaBusqueda = vectorTexto ? { ...entrada, vectorTexto } : entrada;
   // Fuera del try: una entrada inválida (vector de otro tamaño) es error de quien llama, no motivo para caer a memoria.
-  const consulta = construirConsultaBusqueda(conVector, refuerzos, dependencias.afinado);
+  const particion: ParticionRepositorios = { repositorios, conColumna: true };
+  const consulta = construirConsultaBusqueda(conVector, particion, refuerzos, dependencias.afinado);
   try {
     const pool = await (dependencias.obtenerPool ?? poolPorDefecto)();
-    const { rows } = await pool.query(consulta.texto, consulta.valores);
-    const resultados = (rows as Fila[]).map((fila) => resultadoDeFila(fila, refuerzos, entrada.filtros ?? {}));
+    const sinColumna = () => construirConsultaBusqueda(conVector, { ...particion, conColumna: false }, refuerzos, dependencias.afinado);
+    const resultados = (await filasConParticion(pool, consulta, sinColumna)).map((fila) => resultadoDeFila(fila, refuerzos, entrada.filtros ?? {}));
     return {
       fuente: "rag",
       resultados,
@@ -292,6 +350,6 @@ export async function buscarEnTaller(entrada: EntradaBusqueda, dependencias: Dep
     };
   } catch (error) {
     console.warn("[taller-rag] la base falló; se busca en memoria", { mensaje: error instanceof Error ? error.message : String(error) });
-    return buscarEnMemoria(entrada, memoria, "La base de datos de la biblioteca no respondió; se buscó en memoria.");
+    return buscarEnMemoria(entrada, memoria, "La base de datos de la biblioteca no respondió; se buscó en memoria.", repositorios);
   }
 }

@@ -1,3 +1,4 @@
+import type { IdRepositorio } from "@/lib/catalogo/tipos";
 import type { FuenteItem, TipoItem } from "@/lib/globos3d/biblioteca";
 
 /** Lo que otro agente decide para cada item (taxonomía de celebraciones y temáticas): aquí solo se aceptan ids o nombres. */
@@ -25,6 +26,8 @@ export type MedidasRegistro = { altoCm: number; anchoCm: number; fondoCm: number
 /** El registro buscable de un item de la biblioteca: sus facetas, su contenido resumido y la ficha que se embebe. */
 export type RegistroTaller = {
   id: string;
+  /** El repositorio de catálogo (REQ-013, R2): una etiqueta del índice, fuera de la huella (no obliga a volver a embeber). */
+  repositorio: IdRepositorio;
   tipo: TipoItem;
   nombre: string;
   descripcion: string;

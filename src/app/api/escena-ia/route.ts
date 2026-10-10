@@ -21,6 +21,7 @@ import { MAX_PASOS_REFINAR, RefinarCuerpoSchema, REPORTAR_COMPARACION, aplicarRe
 import { decidirRonda, type ReporteComparacion } from "@/lib/globos3d/refinado/ronda";
 import { encuadreDeLectura } from "@/lib/globos3d/encuadre-foto";
 import { modelarFotoReal } from "@/lib/taller/modelar-foto-real";
+import { buscarVisible } from "@/lib/taller/buscar-visible";
 import { normalizarFotoA } from "@/lib/taller/normalizar-foto";
 import { TIPO_NDJSON, responderEnFlujo, type EventoFlujo } from "@/lib/globos3d/flujo-escena-ia";
 
@@ -214,7 +215,7 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
             ? { resultado: aplicarModeladoDeFoto(escena, adjunta, llamada.args, MAX_NODOS), busqueda: null }
             : nombre === REPORTAR_COMPARACION && refinar
               ? { resultado: aplicarReporte(escena, llamada.args, reportes), busqueda: null }
-              : await aplicarHerramientaAsincrona(escena, nombre, llamada.args ?? {});
+              : await aplicarHerramientaAsincrona(escena, nombre, llamada.args ?? {}, { buscar: (entrada) => buscarVisible(entrada) });
         decidir("herramienta:escena_ia", `aplicar ${nombre} a la escena del taller 3D`, hecho.ok ? { ok: true, resumen: hecho.resumen, piezas: hecho.escena.nodos.length, ...(busqueda ? { busqueda: { fuente: busqueda.fuente, ids: busqueda.ids, motivo: busqueda.motivo ?? null } } : {}) } : { ok: false, error: hecho.error }, { entrada: { herramienta: nombre, argumentos: llamada.args ?? {}, paso: pasos, ...(busqueda?.entrada ? { busqueda: busqueda.entrada } : {}) } });
         intentos.push({ herramienta: nombre, ok: hecho.ok, objetivo: objetivoDe(llamada.args, nombre), ...(hecho.ok ? {} : { error: hecho.error }) });
         avisar?.({ tipo: "paso", n: llamadas, herramienta: nombre, resumen: corto((hecho.ok ? hecho.resumen : hecho.error).split("\n")[0] ?? "", 140), consulta: hecho.ok && hecho.consulta, ok: hecho.ok });

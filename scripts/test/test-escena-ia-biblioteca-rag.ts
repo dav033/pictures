@@ -25,7 +25,7 @@ function resultado(id: string, extra: Partial<ResultadoTaller> = {}): ResultadoT
   return {
     id, tipo: "conjunto", nombre: `Item ${id}`, descripcion: "", origen: { tipo: null, titulo: null, url: null, foto: null },
     ocasiones: [], celebraciones: ["cumpleanos"], tematicas: ["unicornio"], tiposPieza: [], formatos: [], colores: [], partes: [], productos: [],
-    medidas: { altoCm: 240, anchoCm: 180, fondoCm: null }, globos: 0, tubos: 0, propietario: null, puntaje: 0.03,
+    medidas: { altoCm: 240, anchoCm: 180, fondoCm: null }, globos: 0, tubos: 0, propietario: null, repositorio: "sempertex", puntaje: 0.03,
     ramas: { fts: null, trigram: null, vector_texto: null, vector_imagen: null },
     razones: ["Las palabras de la consulta están en su nombre, celebración o ficha (puesto 1 por texto)"],
     ...extra,
@@ -190,7 +190,8 @@ const consultaOk = (h: Awaited<ReturnType<typeof aplicarHerramientaAsincrona>>) 
     const ruta = readFileSync(new URL("../../src/app/api/escena-ia/route.ts", import.meta.url), "utf8");
     for (const re of [
       /import \{ aplicarHerramientaAsincrona \} from "@\/lib\/globos3d\/escena-ia-biblioteca"/,
-      /await aplicarHerramientaAsincrona\(escena, nombre, llamada\.args \?\? \{\}\)/,
+      // REQ-013: la ruta le pasa a la búsqueda la visibilidad del catálogo para el RAG (`buscarVisible`).
+      /await aplicarHerramientaAsincrona\(escena, nombre, llamada\.args \?\? \{\}, \{ buscar: \(entrada\) => buscarVisible\(entrada\) \}\)/,
       /busqueda: \{ fuente: busqueda\.fuente, ids: busqueda\.ids/,
       /celebracion, tematica, formato \(R-24…\), parte, alto_cm\/ancho_cm aproximados y fuente \(referencias_dueno, ideas_sempertex, revista_celebra, bases_organicas\)/,
     ]) assert.match(ruta, re);

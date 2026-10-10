@@ -1,6 +1,7 @@
 import { embeberImagen } from "@/lib/rag/embeddings";
 import type { FotoLectura } from "@/lib/globos3d/leer-foto-ia";
 import { modelarDesdeFoto, type Modelado } from "@/lib/globos3d/modelar-desde-foto";
+import { buscarVisible } from "./buscar-visible";
 import { plantillasParecidas } from "./plantillas-foto";
 import { normalizarFoto } from "./normalizar-foto";
 
@@ -11,7 +12,7 @@ import { normalizarFoto } from "./normalizar-foto";
  */
 export function modelarFotoReal(foto: FotoLectura, signal?: AbortSignal): Promise<Modelado> {
   return modelarDesdeFoto(foto, {
-    plantillas: async (f) => plantillasParecidas(await normalizarFoto(f.bytes), { embeber: embeberImagen }),
+    plantillas: async (f) => plantillasParecidas(await normalizarFoto(f.bytes), { embeber: embeberImagen, buscar: (entrada) => buscarVisible(entrada) }),
     opciones: { signal },
   });
 }

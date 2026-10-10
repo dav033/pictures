@@ -5,8 +5,11 @@ import {
   FRASE_TIPO_ITEM, descripcionDeParte, esTubito, frasesFuente, nombreComercialFormato, ocasionLegible, ordenFormato, siluetasDe,
 } from "./fichas-vocabulario";
 
-/** Lo que alimenta la ficha: el registro sin ella ni su huella. */
-export type DatosFicha = Omit<RegistroTaller, "ficha" | "hash">;
+/**
+ * Lo que alimenta la ficha: el registro sin ella ni su huella, y sin el repositorio (REQ-013): el texto que se embebe no
+ * depende de él, así asignarlo no obliga a volver a embeber.
+ */
+export type DatosFicha = Omit<RegistroTaller, "ficha" | "hash" | "repositorio">;
 
 export const PALABRAS_MIN_FICHA = 80;
 export const PALABRAS_MAX_FICHA = 250;

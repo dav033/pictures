@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { esIdRepositorio } from "@/lib/catalogo/ids";
+import type { IdRepositorio } from "@/lib/catalogo/tipos";
 
 /**
  * Constructores PUROS del SQL que mantiene el índice de la biblioteca del taller (REQ-002, migración 028): no abren
@@ -8,10 +10,16 @@ import { createHash } from "node:crypto";
  *
  * `RegistroParaIndice` es estructural: lo que el extractor de fichas (`fichas.ts`, `RegistroTaller`) entrega. Los
  * campos opcionales son los que pueden faltar en el JSONL.
+ *
+ * Partición por repositorio de catálogo (REQ-013, migración 034): cada fila lleva su `repositorio`, y lo que el indexador lee o
+ * desactiva de fábrica se acota al repositorio que indexa, así indexar `mobiliario` nunca toca a `sempertex`. El repositorio NO
+ * entra en el `hash` de la ficha: asignarlo no obliga a volver a embeber.
  */
 
 export type RegistroParaIndice = {
   id: string;
+  /** Un JSONL de antes de REQ-013 no lo trae: todo lo que había era de Sempertex (regla R2). */
+  repositorio: IdRepositorio;
   tipo: string;
   nombre: string;
   descripcion: string;
@@ -76,7 +84,7 @@ export function lineasDePartes(registro: RegistroParaIndice): Array<{ parte: str
 const COLUMNAS_ITEM = [
   "id", "tipo", "nombre", "descripcion", "fuente_tipo", "fuente_titulo", "fuente_url", "foto_url",
   "ocasiones", "celebraciones", "tematicas", "tipos_pieza", "formatos", "colores", "partes", "productos",
-  "alto_cm", "ancho_cm", "fondo_cm", "globos", "tubos", "ficha", "hash", "propietario",
+  "alto_cm", "ancho_cm", "fondo_cm", "globos", "tubos", "ficha", "hash", "propietario", "repositorio",
 ] as const;
 
 /** Tipo de cada parámetro para el cast explícito (los arreglos vacíos de `pg` llegan sin tipo). */
@@ -112,21 +120,23 @@ export function valoresDeItem(registro: RegistroParaIndice, opciones: OpcionesIn
     registro.ficha ?? "",
     registro.hash,
     opciones.propietario ?? null,
+    registro.repositorio,
   ];
 }
 
 /**
  * Upsert del item por hash: si la fila existe con el mismo hash (y activa) el `WHERE` del `DO UPDATE` no la toca y no
  * devuelve nada, que es la señal de «sin cambios». Devuelve `insertado` (xmax = 0) para contar nuevos y cambiados.
+ * Una fila de otro repositorio nunca se toca (REQ-013): el indexador ya se niega antes (`erroresDeOcupacion`) y esto es la red.
  */
 export function construirUpsertItem(registro: RegistroParaIndice, opciones: OpcionesIndice = {}): ConsultaSql {
   const valores = valoresDeItem(registro, opciones);
   const marcadores = COLUMNAS_ITEM.map((columna, i) => `$${i + 1}${CAST_COLUMNA[columna] ? `::${CAST_COLUMNA[columna]}` : ""}`);
-  const asignaciones = COLUMNAS_ITEM.filter((c) => c !== "id").map((c) => `${c} = EXCLUDED.${c}`);
+  const asignaciones = COLUMNAS_ITEM.filter((c) => c !== "id" && c !== "repositorio").map((c) => `${c} = EXCLUDED.${c}`);
   const texto = `INSERT INTO taller_items (${COLUMNAS_ITEM.join(", ")})
 VALUES (${marcadores.join(", ")})
 ON CONFLICT (id) DO UPDATE SET ${asignaciones.join(", ")}, activo = TRUE, actualizado = now()
-WHERE taller_items.hash IS DISTINCT FROM EXCLUDED.hash OR NOT taller_items.activo
+WHERE taller_items.repositorio = EXCLUDED.repositorio AND (taller_items.hash IS DISTINCT FROM EXCLUDED.hash OR NOT taller_items.activo)
 RETURNING id, (xmax = 0) AS insertado`;
   return { texto, valores };
 }
@@ -153,17 +163,65 @@ export function construirInsertPartes(registro: RegistroParaIndice): ConsultaSql
   return consultas;
 }
 
-/** Hashes ya guardados de los items de fábrica (para decidir qué insertar, cambiar u omitir). */
-export function construirConsultaHashes(): ConsultaSql {
-  return { texto: "SELECT id, hash, activo FROM taller_items WHERE propietario IS NULL", valores: [] };
+/** Hashes ya guardados de los items de fábrica del repositorio (para decidir qué insertar, cambiar u omitir). */
+export function construirConsultaHashes(repositorio: IdRepositorio): ConsultaSql {
+  return { texto: "SELECT id, hash, activo FROM taller_items WHERE propietario IS NULL AND repositorio = $1", valores: [repositorio] };
 }
 
-/** Los items de fábrica que ya no están en las fichas se desactivan (no se borran: conservan sus embeddings). */
-export function construirDesactivarAusentes(idsVigentes: readonly string[]): ConsultaSql {
+/**
+ * Los items de fábrica del repositorio que ya no están en sus fichas se desactivan (no se borran: conservan sus embeddings).
+ * Los de otro repositorio no se tocan: no están en estas fichas porque son de otras.
+ */
+export function construirDesactivarAusentes(idsVigentes: readonly string[], repositorio: IdRepositorio): ConsultaSql {
   return {
-    texto: "UPDATE taller_items SET activo = FALSE, actualizado = now() WHERE propietario IS NULL AND activo AND id <> ALL($1::text[]) RETURNING id",
-    valores: [[...idsVigentes]],
+    texto: "UPDATE taller_items SET activo = FALSE, actualizado = now() WHERE propietario IS NULL AND repositorio = $2 AND activo AND id <> ALL($1::text[]) RETURNING id",
+    valores: [[...idsVigentes], repositorio],
   };
+}
+
+/** Postgres 42703 (columna inexistente) sobre `repositorio`: la migración 034 no está aplicada en esa base. */
+export function faltaColumnaRepositorio(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const { code, message } = error as { code?: unknown; message?: unknown };
+  return code === "42703" && typeof message === "string" && message.includes("repositorio");
+}
+
+export type Corrida = {
+  registros: readonly RegistroParaIndice[];
+  /** Las líneas del JSONL que no se pudieron leer (`leerFichasJsonl`). */
+  erroresLectura: readonly string[];
+  repositorio: IdRepositorio;
+  permitirOtros: boolean;
+};
+
+/**
+ * Lo que impide indexar una corrida (REQ-013, riesgo R-1), antes de tocar la base. Vacío = se puede.
+ * - Una línea ilegible (también un repositorio inválido) es fatal: su item faltaría en las fichas y desactivar ausentes lo
+ *   apagaría.
+ * - Otro repositorio que Sempertex solo con `permitirOtros` (fase 3, cuando la búsqueda desplegada ya filtra por repositorio).
+ * - Nunca un archivo con fichas de otro repositorio: desactivar ausentes las borraría del suyo.
+ */
+export function erroresDeCorrida({ registros, erroresLectura, repositorio, permitirOtros }: Corrida): string[] {
+  const errores: string[] = [];
+  if (erroresLectura.length) errores.push(`${erroresLectura.length} líneas inválidas en el archivo (p. ej. ${erroresLectura[0]}): corrígelas; no se indexa ni se desactiva nada.`);
+  if (repositorio !== "sempertex" && !permitirOtros) {
+    errores.push(`Indexar «${repositorio}» necesita --permitir-otros-repos: solo cuando la búsqueda desplegada ya filtra por repositorio (migración 034 y fase 2 en producción).`);
+  }
+  const ajenas = registros.filter((r) => r.repositorio !== repositorio);
+  if (ajenas.length) errores.push(`${ajenas.length} fichas no son de «${repositorio}» (p. ej. ${ajenas[0]!.id}, de «${ajenas[0]!.repositorio}»): un archivo por repositorio.`);
+  return errores;
+}
+
+/** Los ids de la corrida que ya existen en la base con otro repositorio (o de un dueño en otro): no se los apropia nadie. */
+export function construirConsultaDeOtroRepositorio(ids: readonly string[], repositorio: IdRepositorio): ConsultaSql {
+  return { texto: "SELECT id, repositorio FROM taller_items WHERE id = ANY($1::text[]) AND repositorio <> $2", valores: [[...ids], repositorio] };
+}
+
+/** Un id de la corrida que ya es de otro repositorio es fatal: un repositorio nunca toma las filas de otro. */
+export function erroresDeOcupacion(filas: ReadonlyArray<{ id: string; repositorio: string }>, repositorio: IdRepositorio): string[] {
+  if (!filas.length) return [];
+  const [primera] = filas;
+  return [`${filas.length} ids de «${repositorio}» ya existen en otro repositorio (p. ej. ${primera!.id}, de «${primera!.repositorio}»): un repositorio no se apropia de las filas de otro.`];
 }
 
 export type ClasificacionCambios = {
@@ -260,14 +318,14 @@ RETURNING item_id`,
   return consultas;
 }
 
-/** Por cada item activo, el hash con el que se embebió su texto (NULL si no tiene vector de texto de ese modelo). */
-export function construirConsultaEmbeddingsDeTexto(modelo: string = MODELO_EMBEDDING_TALLER): ConsultaSql {
+/** Por cada item activo de fábrica del repositorio, el hash con el que se embebió su texto (NULL si no tiene vector de ese modelo). */
+export function construirConsultaEmbeddingsDeTexto(repositorio: IdRepositorio, modelo: string = MODELO_EMBEDDING_TALLER): ConsultaSql {
   return {
     texto: `SELECT t.id, e.hash_entrada
 FROM taller_items t
 LEFT JOIN taller_items_embeddings e ON e.item_id = t.id AND e.modalidad = 'texto' AND e.modelo = $1
-WHERE t.activo AND t.propietario IS NULL`,
-    valores: [modelo],
+WHERE t.activo AND t.propietario IS NULL AND t.repositorio = $2`,
+    valores: [modelo, repositorio],
   };
 }
 
@@ -298,12 +356,14 @@ export function normalizarRegistro(crudo: unknown): { registro: RegistroParaIndi
   if (!esTexto(r.nombre) || r.nombre === "") return { error: `${r.id}: sin nombre` };
   if (!esTexto(r.tipo) || r.tipo === "") return { error: `${r.id}: sin tipo` };
   if (!esTexto(r.hash) || r.hash === "") return { error: `${r.id}: sin hash` };
+  if (r.repositorio !== undefined && !(esTexto(r.repositorio) && esIdRepositorio(r.repositorio))) return { error: `${r.id}: repositorio inválido` };
   const fuente = (typeof r.fuente === "object" && r.fuente !== null ? r.fuente : {}) as Record<string, unknown>;
   const medidas = (typeof r.medidas === "object" && r.medidas !== null ? r.medidas : {}) as Record<string, unknown>;
   const clasificacion = typeof r.clasificacion === "object" && r.clasificacion !== null ? (r.clasificacion as Record<string, unknown>) : null;
   const lineas = Array.isArray(r.lineasPartes) ? r.lineasPartes : [];
   const registro: RegistroParaIndice = {
     id: r.id,
+    repositorio: esTexto(r.repositorio) && esIdRepositorio(r.repositorio) ? r.repositorio : "sempertex",
     tipo: r.tipo,
     nombre: r.nombre,
     descripcion: esTexto(r.descripcion) ? r.descripcion : "",

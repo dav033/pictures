@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
+import { repositorioDeItem } from "@/lib/catalogo/indice";
 import { armarEscena, type EscenaArmada } from "@/lib/globos3d/escena";
 import { claveContenido, escenaDeItem, productosDe, type ItemBiblioteca, type ProductosDeItem } from "@/lib/globos3d/biblioteca";
 import { inventarioDe } from "@/lib/globos3d/partes-globos";
 import type { PiezaArmada } from "@/lib/globos3d/piezas";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
-import { redactarFicha } from "./ficha-texto";
+import { redactarFicha, type DatosFicha } from "./ficha-texto";
 import type { ClasificacionTaller, ColorRegistro, FuenteRegistro, MedidasRegistro, ProductoRegistro, RegistroTaller } from "./fichas-tipos";
 import { esTubito, ordenFormato } from "./fichas-vocabulario";
 
@@ -70,7 +71,7 @@ export function fichaDeItem(item: ItemBiblioteca, opciones: OpcionesFicha = {}):
   const puestos = new Set(armada.porNodo.filter((n) => n.copias > 0).map((n) => n.id));
   const fuente: FuenteRegistro | null = item.fuente ? { tipo: item.fuente.tipo, titulo: item.fuente.titulo, url: item.fuente.url ?? null, foto: item.fuente.fotoUrl ?? null } : null;
 
-  const datos: Omit<RegistroTaller, "ficha" | "hash"> = {
+  const datos: DatosFicha = {
     id: item.id, tipo: item.tipo, nombre: item.nombre, descripcion: item.descripcion, fuente, ocasiones: [...item.ocasiones],
     tiposPieza: [...new Set(escena.nodos.filter((n) => puestos.has(n.id)).map((n) => n.pieza.tipo))],
     formatos: [...new Set(lineas.map((l) => l.formatoId))].sort((a, b) => ordenFormato(a) - ordenFormato(b)),
@@ -83,5 +84,5 @@ export function fichaDeItem(item: ItemBiblioteca, opciones: OpcionesFicha = {}):
     tubos: lineas.filter((l) => esTubito(l.formatoId)).reduce((s, l) => s + l.cantidad, 0),
     clasificacion: clasificacion && { celebraciones: [...clasificacion.celebraciones], tematicas: [...clasificacion.tematicas] },
   };
-  return { ...datos, hash: huellaDe(item, clasificacion), ficha: redactarFicha(datos) };
+  return { ...datos, repositorio: repositorioDeItem(item), hash: huellaDe(item, clasificacion), ficha: redactarFicha(datos) };
 }

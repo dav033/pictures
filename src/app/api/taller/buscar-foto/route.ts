@@ -2,6 +2,7 @@ import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request"
 import { conRegistro } from "@/lib/registro/servidor";
 import { embeberImagen } from "@/lib/rag/embeddings";
 import { atenderBusquedaFoto } from "@/lib/taller/buscar-foto";
+import { buscarVisible } from "@/lib/taller/buscar-visible";
 import { normalizarFoto } from "@/lib/taller/normalizar-foto";
 
 /**
@@ -17,5 +18,6 @@ function atenderPOST(request: Request) {
     mismoOrigen: isSameOriginRequest,
     embeber: embeberImagen,
     normalizar: normalizarFoto,
+    buscar: (entrada) => buscarVisible(entrada),
   });
 }
