@@ -3,6 +3,7 @@
 import { obtenerIdConversacion } from "@/lib/registro/cliente";
 import { CalificacionIA } from "./CalificacionIA";
 import type { EscenasTurno } from "./cliente-feedback";
+import { esProducido } from "./producidos";
 
 type Props = {
   /** La vista de la conversación del cliente: de ella sale el id de conversación. */
@@ -29,6 +30,7 @@ export function CalificacionCliente({ vista, sangria = false, turnoId, pedido, r
       <CalificacionIA
         tema="cliente"
         deshecho={corregido}
+        producido={esProducido(turnoId)}
         resumida={!ultima}
         conImagen={conImagen}
         config={{

@@ -106,6 +106,8 @@ type Props = {
   config: ConfigCalificacion;
   /** La persona deshizo o corrigió este turno (`undefined`: no se sabe, el turno es de otra escena): se registra y se abre el «por qué». */
   deshecho?: boolean | undefined;
+  /** El turno se produjo en esta página (se registra al terminar); lo restaurado solo consulta su calificación guardada. */
+  producido?: boolean;
   compacta?: boolean;
   resumida?: boolean;
   conImagen?: boolean;
@@ -115,7 +117,7 @@ type Props = {
  * La calificación 1 a 10 de un turno de la IA (REQ-010), la misma en el Taller y en los chats del cliente: una fila compacta,
  * siempre visible y que nunca interrumpe, con «Contar por qué» (motivos y comentario) que se abre sola al deshacer o corregir.
  */
-export function CalificacionIA({ tema, config, deshecho, compacta = false, resumida = false, conImagen = false }: Props) {
-  const { estado, ...gestos } = useCalificacionIA(config, { deshecho });
+export function CalificacionIA({ tema, config, deshecho, producido = false, compacta = false, resumida = false, conImagen = false }: Props) {
+  const { estado, ...gestos } = useCalificacionIA(config, { deshecho, producido });
   return <VistaCalificacion tema={tema} compacta={compacta} resumida={resumida} conImagen={conImagen} estado={estado} gestos={gestos} />;
 }

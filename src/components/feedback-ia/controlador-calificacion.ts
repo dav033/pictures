@@ -11,12 +11,15 @@ import {
   type DatosTurno,
   type EscenasTurno,
 } from "./cliente-feedback";
-import { desmarcarRegistrado, encolarRegistro, marcarRegistrado, yaRegistrado } from "./registro-turnos";
+import { pedirCalificacionGuardada, recordarCalificacion } from "./carga-calificaciones";
+import { desmarcarRegistrado, marcarRegistrado, yaRegistrado } from "./registro-turnos";
 
 /**
  * La lógica de la calificación de UN turno de la IA, sin React (`useCalificacionIA` la conecta): qué se manda, cuándo y cuántas
  * veces. Reglas del contrato (REQ-010):
- *  - cada turno se registra al terminar (POST sin nota ni escenas, una vez);
+ *  - un turno PRODUCIDO en esta página se registra una vez al terminar (`registrarTerminado`, POST con sus datos y pasos); un turno
+ *    RESTAURADO al cargar no se registra nunca: su calificación guardada se pide (GET agrupado, `cargarGuardada`) y se muestra;
+ *  - cada POST exitoso recuerda la calificación (`recordarCalificacion`) para que al volver a montar se vea la última;
  *  - las escenas viajan en la MISMA petición que califica, deshace o comenta; una vez por turno y, si la escena de «después» cambió
  *    desde entonces (el plan del cliente llega después del texto), UNA vez más;
  *  - las capturas se piden y suben solo entonces, una vez por turno, sin bloquear la nota;
@@ -61,8 +64,10 @@ export type ControladorCalificacion = {
   /** `true`: la persona deshizo o corrigió el turno (abre el «por qué»). `false`: lo rehizo. */
   fijarDeshecho: (deshecho: boolean) => void;
   reintentar: () => void;
-  /** Registra el turno (POST sin nota ni escenas) si aún no se hizo en esta pestaña. */
-  registrar: () => Promise<void>;
+  /** Pide la calificación que ya se guardó para este turno y, si la persona no ha hecho nada aún, la muestra. */
+  cargarGuardada: () => Promise<void>;
+  /** Registra el turno producido en esta página (POST sin nota), una sola vez por página. */
+  registrarTerminado: () => Promise<void>;
   /** Pone la configuración más reciente (los datos del turno se leen al enviar, no al crear). */
   usar: (config: ConfigCalificacion) => void;
   /** Resuelve cuando no hay nada en vuelo (las pruebas esperan a que termine lo pendiente). */
@@ -148,7 +153,6 @@ export function crearControlador(configInicial: ConfigCalificacion): Controlador
       poner({ fase: resultado.codigo === "TURNO_AJENO" ? "ajeno" : "error" });
       return;
     }
-    marcarRegistrado(clave());
     if (tieneEscenas(entrada)) {
       if (escenasEnviadas) reenvios += 1;
       escenasEnviadas = true;
@@ -156,6 +160,7 @@ export function crearControlador(configInicial: ConfigCalificacion): Controlador
     }
     const guardoOpinion = entrada.calificacion !== undefined || porQueTocado;
     poner({ fase: "enviado", gracias: estado.gracias || guardoOpinion });
+    recordarCalificacion(config.producto, { turnoId: config.turnoId, calificacion: estado.nota, motivos: [...estado.motivos], comentario: estado.comentario, deshecho: estado.deshecho });
     subida = subirCapturas();
   }
 
@@ -171,6 +176,16 @@ export function crearControlador(configInicial: ConfigCalificacion): Controlador
         enVuelo = null;
       }
     })();
+  }
+
+  async function cargarGuardada(): Promise<void> {
+    const guardada = await pedirCalificacionGuardada(config.producto, config.turnoId, config.buscar);
+    // Lo que la persona ya hizo (o está enviando) manda sobre lo guardado.
+    if (!guardada || estado.nota !== null || estado.fase !== "libre" || porQueTocado || huboDeshecho) return;
+    const { calificacion, motivos, comentario, deshecho } = guardada;
+    // Un turno deshecho guardado cuenta como deshecho: si luego lo rehace, ese «rehizo» sí se manda.
+    if (deshecho) huboDeshecho = true;
+    poner({ nota: calificacion, motivos, comentario, deshecho, gracias: calificacion !== null || motivos.length > 0 || comentario !== "" });
   }
 
   return {
@@ -207,18 +222,20 @@ export function crearControlador(configInicial: ConfigCalificacion): Controlador
       vaciar();
     },
     reintentar: vaciar,
-    registrar() {
-      if (yaRegistrado(clave())) return registro;
+    cargarGuardada,
+    registrarTerminado() {
+      // Ya registrado en esta página (remontaje): solo se muestra lo que ya se guardó, sin volver a registrar.
+      if (yaRegistrado(clave())) return cargarGuardada();
       marcarRegistrado(clave());
       const entrada = armarEntrada({ producto: config.producto, turnoId: config.turnoId, conversacionId: config.conversacionId?.(), datos: config.datos() });
       if (!entrada) return registro;
-      registro = encolarRegistro(async () => {
+      registro = (async () => {
         const resultado = await enviarFeedback(entrada, config.buscar);
         if (resultado.ok) return;
-        // Un fallo de red o de base se vuelve a intentar con la próxima vez que se monte el turno; uno ajeno se deja.
+        // Un fallo de red o de base se vuelve a intentar con el próximo montaje; un turno ajeno se deja.
         if (resultado.codigo === "TURNO_AJENO") poner({ fase: "ajeno" });
         else desmarcarRegistrado(clave());
-      });
+      })();
       return registro;
     },
     usar(nueva) { config = nueva; },

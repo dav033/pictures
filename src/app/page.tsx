@@ -67,6 +67,7 @@ import { coloresCliente } from "@/lib/plan/presentacion-cliente";
 import { DialogoEjemplos, GaleriaEjemplos } from "@/components/ui/shell/GaleriaEjemplos";
 import { HojaSeleccion } from "@/components/ui/shell/HojaSeleccion";
 import { volarFoto } from "@/components/ui/shell/vuelo-foto";
+import { marcarProducido } from "@/components/feedback-ia/producidos";
 import { BotonVoz } from "@/components/voz/BotonVoz";
 
 type ProveedorId = "gemini";
@@ -705,10 +706,12 @@ export default function Page() {
     } catch {
       // El cambio sigue aplicando por el override en cada request aunque falle la cookie.
     }
+    const idCambio = crypto.randomUUID();
+    marcarProducido(idCambio);
     setMensajes((previos) => [
       ...previos,
       {
-        id: crypto.randomUUID(),
+        id: idCambio,
         role: "assistant",
         content: `Cambiado a ${NOMBRE_PROVEEDOR[nuevo]}. Sigo con el mismo contexto.`,
       },
@@ -817,10 +820,12 @@ export default function Page() {
       }
       const productos: Producto[] = data.productos ?? [];
       registrarConocidos(productos);
+      const idCategoria = crypto.randomUUID();
+      marcarProducido(idCategoria);
       setMensajes((previos) => [
         ...previos,
         {
-          id: crypto.randomUUID(),
+          id: idCategoria,
           role: "assistant",
           content: `${categoria.etiqueta}: ${data.total} disponible${data.total === 1 ? "" : "s"}.`,
           productos: productos.length ? productos : undefined,
@@ -871,7 +876,9 @@ export default function Page() {
     const nuevos: Mensaje[] = [...(historialBase ?? mensajes), { id: crypto.randomUUID(), role: "user", content: limpio, adjuntos: adjuntosUsuario }];
     // Burbuja vacía del asistente desde ya: ahí se va llenando el texto que
     // llega en streaming, en vez de esperar la respuesta completa.
-    setMensajes([...nuevos, { id: crypto.randomUUID(), role: "assistant", content: "" }]);
+    const idRespuesta = crypto.randomUUID();
+    setMensajes([...nuevos, { id: idRespuesta, role: "assistant", content: "" }]);
+    marcarProducido(idRespuesta);
     setEntrada("");
     setCargandoChat(true);
     setError(null);

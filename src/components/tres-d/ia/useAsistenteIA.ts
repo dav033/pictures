@@ -16,6 +16,7 @@ import { datosDeRefinado, leerRespuestaIA, mensajeDeError } from "@/lib/globos3d
 import { esDeEstaEscena, historialParaModelo, siguienteNumero, tiempoTipico, type AmbitoTurno, type PasoTurno, type TurnoPanel } from "@/lib/globos3d/turnos-ia";
 import { RONDAS_AUTOMATICAS, useRefinadoFoto } from "../useRefinadoFoto";
 import { crearRegistroFeedback, pasosDelFlujo } from "./registro-feedback";
+import { marcarProducido } from "@/components/feedback-ia/producidos";
 
 /** Cuánto se queda marcado en el visor lo que acaba de cambiar la IA. */
 const DESTELLO_MS = 5000;
@@ -91,6 +92,7 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
       destacar(idsParaResaltar(aplicada.diff));
       const idRonda = idDeRonda(r.ronda);
       registroFeedback.guardar(idRonda, { pasos: [], escenaAntes: r.antes, escenaDespues: aplicada.escena });
+      marcarProducido(idRonda);
       setTurnos((t) => [...t, {
         id: idRonda, numero: siguienteNumero(t), pedido: `Ronda ${r.ronda} con la foto`, contexto: "comparando con la foto", ambito: u.ambito, clave: u.clave, foto: true,
         respuesta: r.respuesta.slice(0, 1400), pasos: r.cambios.map(pasoDe), diff: aplicada.diff, pregunta: null, costeUsd: null, ms: 0, estado: "aplicado", nota: textoAplicarTurno(aplicada.conservadas),
@@ -164,6 +166,7 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
         }
       }
       registroFeedback.guardar(base.id, { ...(solicitudId ? { solicitudId } : {}), pasos: pasosDelFlujo(pasosFlujo), escenaAntes: antes, escenaDespues: despues });
+      marcarProducido(base.id);
       agregar({
         ...base, respuesta: r.respuesta, pasos: r.acciones.map(pasoDe), diff, pregunta: r.pregunta, costeUsd: r.costeEstimadoUsd, ms: Date.now() - inicio,
         estado: diff ? "aplicado" : "sin_cambios", nota,

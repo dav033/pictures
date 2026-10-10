@@ -62,6 +62,7 @@ export function dependenciasFalsas(db: BaseDatos, extra: Partial<DependenciasRut
     resumir: async () => null,
     resumenAutomaticoActivo: () => false,
     limitadorRegistro: crearLimitador(1000),
+    limitadorConsulta: crearLimitador(1000),
     limitadorCaptura: crearLimitador(1000),
     limitadorCapturaDiario: crearLimitador(1000),
     limitadorResumenGemini: crearLimitador(1000),

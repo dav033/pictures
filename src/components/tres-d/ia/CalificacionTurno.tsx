@@ -6,6 +6,7 @@ import type { TurnoPanel } from "@/lib/globos3d/turnos-ia";
 import { CalificacionIA } from "../../feedback-ia/CalificacionIA";
 import type { ConfigCalificacion } from "../../feedback-ia/controlador-calificacion";
 import { useSostenido } from "../../feedback-ia/useSostenido";
+import { esProducido } from "../../feedback-ia/producidos";
 import { capturarTurnoFeedback } from "./captura-feedback";
 import type { RegistroTurnoIA } from "./registro-feedback";
 
@@ -67,5 +68,7 @@ export function CalificacionTurno({ turno, estado, deshechoConBoton, datos, comp
     },
     capturas: () => capturarTurnoFeedback(datos(turno.id)),
   };
-  return <CalificacionIA tema="taller" config={config} deshecho={turnoDeshechoParaCalificar(estado, deshechoConBoton, sostenido)} compacta={compacta} />;
+  // Lo produjo el envío de esta página (su registro en memoria trae pasos, solicitud y escenas); uno restaurado no.
+  const producido = esProducido(turno.id);
+  return <CalificacionIA tema="taller" config={config} deshecho={turnoDeshechoParaCalificar(estado, deshechoConBoton, sostenido)} producido={producido} compacta={compacta} />;
 }

@@ -7,11 +7,16 @@ Calificación 1 a 10 de cada turno de la IA (Taller 3D y chat del cliente) con e
 
 | Momento | Llamada |
 |---|---|
-| La IA termina un turno | `POST /api/feedback-ia` con `turnoId`, `producto`, `solicitudId` (cabecera `x-request-id` de la respuesta del turno), `conversacionId`, `pedido`, `respuesta`, `modelo`, `costeUsd`, `latenciaMs` y `pasos` (ver abajo). Sin `calificacion`, sin escenas. |
+| Un turno **producido en la página** termina (una vez) | `POST /api/feedback-ia` con `turnoId`, `producto`, `solicitudId` (cabecera `x-request-id` de la respuesta del turno), `conversacionId`, `pedido`, `respuesta`, `modelo`, `costeUsd`, `latenciaMs` y `pasos` (ver abajo). Sin `calificacion`, sin escenas. |
+| Un turno **restaurado** al cargar la página | Nada: no se registra nunca. Solo se consulta su calificación guardada (fila siguiente). |
+| Al cargar la página | `GET /api/feedback-ia?producto=taller\|cliente&turnos=id1,id2` (lote de hasta 100 ids; 240 lecturas por minuto y IP; `Cache-Control: private, no-store`). Devuelve `calificaciones` del navegador; los fallos se recuerdan 30 s. |
 | Capturas | `POST /api/feedback-ia/capturas`, `multipart/form-data`: `turnoId`, `producto`, `momento` (`antes` \| `despues`), `conversacionId` (recomendado), `imagen` (JPEG ≤ 600 KB, ~1280 px). Una llamada por captura. |
 | La persona califica | `POST /api/feedback-ia` con el mismo `turnoId`/`producto` + `calificacion` (+ `motivos`, `comentario`) **y, en esa misma petición, `escenaAntes` y `escenaDespues`**. |
 | Deshace o corrige a la IA | `POST /api/feedback-ia` con `deshecho: true` **y las dos escenas**; abrir el panel del «por qué». |
 
+- **Registro perezoso:** montar un turno no manda nada. El turno se registra con la primera calificación, deshacer o comentario.
+  Al cargar, `GET /api/feedback-ia?producto=taller|cliente&turnos=id1,id2` (hasta 100 ids, una petición por lote) devuelve la
+  calificación guardada de este navegador para mostrarla seleccionada.
 - **Mezcla atómica en SQL:** lo que una petición no envía se conserva; dos peticiones concurrentes sobre el mismo turno no se
   pisan. `201` la primera vez (`creado: true`), `200` después. La respuesta trae la `calificacion` guardada.
 - **Dueño del turno:** el servidor pone en el navegador una cookie aleatoria `feedback_usuario` (httpOnly, SameSite=Lax) la

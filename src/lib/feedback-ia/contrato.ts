@@ -1,17 +1,20 @@
 import { z } from "zod";
-import { MOTIVO_IDS } from "./motivos";
+import { MOTIVO_IDS, type MotivoId } from "./motivos";
 
 /**
  * Contrato HTTP de la calificación de la IA (REQ-010). Lo importan las rutas /api/feedback-ia/*, el panel de
  * administración y la UI de calificación (Taller 3D y chat del cliente); no depende de servidor.
  *
  * Flujo de la UI:
- *  1. Al terminar el turno de la IA: POST /api/feedback-ia con turnoId, producto, solicitudId (cabecera `x-request-id` de la
- *     respuesta del turno), conversacionId, pedido, respuesta, escenas y métricas. Sin `calificacion`: el turno queda registrado.
+ *  1. Un turno producido en la página se registra una vez al terminar (POST /api/feedback-ia con turnoId, producto, solicitudId
+ *     —cabecera `x-request-id` de la respuesta del turno—, conversacionId, pedido, respuesta, pasos y métricas, sin calificación).
+ *     Un turno restaurado al cargar la página no se registra nunca.
  *  2. Las capturas antes/después: POST /api/feedback-ia/capturas (multipart), una por momento.
  *  3. Cuando la persona califica: POST /api/feedback-ia con el mismo turnoId + calificacion (+ motivos, comentario). Es idempotente
  *     por (producto, turnoId): repetir el pedido no duplica nada y los campos que no se mandan se conservan.
  *  4. Si la persona deshace el turno o corrige a la IA: POST con `deshecho: true`.
+ *  5. Al cargar la página: GET /api/feedback-ia?producto=…&turnos=id1,id2 devuelve la calificación guardada de esos turnos (sin escenas)
+ *     para mostrarla seleccionada. Nunca se cachea (`Cache-Control: private, no-store`).
  */
 
 export const PRODUCTOS_FEEDBACK = ["taller", "cliente"] as const;
@@ -31,7 +34,7 @@ export const LIMITE_EXPORTACION_COMPLETA = 50;
 export const TOPE_ESCENAS_CONVERSACION_BYTES = 6_000_000;
 export const TOPE_TURNOS_CONVERSACION = 200;
 
-const IdSeguro = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, "Solo letras, números, guion y guion bajo (máx. 64).");
+export const IdSeguro = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, "Solo letras, números, guion y guion bajo (máx. 64).");
 
 /** El tamaño (`TOPE_ESCENA_BYTES`) se mide en el manejador para responder 413 y no un 400 genérico. */
 const Escena = z.record(z.string(), z.unknown());
@@ -259,3 +262,16 @@ export const PedidoAnalisisSchema = z.object({
   dias: z.number().int().min(1).max(365).default(7),
   conResumen: z.boolean().default(false),
 }).strict();
+
+export const MAX_TURNOS_CONSULTA = 100;
+
+/** Una calificación guardada, tal como la muestra la UI al recargar (GET /api/feedback-ia). */
+export type CalificacionGuardada = {
+  turnoId: string;
+  calificacion: number | null;
+  motivos: MotivoId[];
+  comentario: string;
+  deshecho: boolean;
+};
+
+export type RespuestaConsultaFeedback = { ok: true; calificaciones: CalificacionGuardada[] };

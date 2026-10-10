@@ -1,5 +1,7 @@
 import type { QueryResult, QueryResultRow } from "pg";
+import type { MotivoId } from "./motivos";
 import type {
+  CalificacionGuardada,
   DiferenciaEscena,
   FiltrosAdmin,
   LlamadaIaFeedback,
@@ -221,6 +223,16 @@ export async function guardar(db: BaseDatos, p: ParcheFeedback): Promise<Resulta
   );
   const fila = rows[0];
   return fila ? { id: Number(fila.id), creado: fila.creado, calificacion: fila.calificacion, actualizadoEn: fila.actualizado_en.toISOString() } : null;
+}
+
+/** Las calificaciones guardadas de estos turnos de un navegador (las que la UI muestra seleccionadas al recargar). */
+export async function calificacionesDeTurnos(db: BaseDatos, usuarioId: string, producto: ProductoFeedback, turnoIds: readonly string[]): Promise<CalificacionGuardada[]> {
+  const { rows } = await db.query<{ turno_id: string; calificacion: number | null; motivos: MotivoId[]; comentario: string | null; deshecho: boolean }>(
+    `SELECT turno_id, calificacion, motivos, comentario, deshecho FROM ai_feedback
+     WHERE usuario_id = $1::text AND producto = $2::text AND turno_id = ANY($3::text[])`,
+    [usuarioId, producto, [...turnoIds]],
+  );
+  return rows.map((fila) => ({ turnoId: fila.turno_id, calificacion: fila.calificacion, motivos: fila.motivos, comentario: fila.comentario ?? "", deshecho: fila.deshecho }));
 }
 
 /** Guarda la clave de la captura; crea el turno vacío si la captura llega antes que el registro. `false` si el turno es de otro navegador. */

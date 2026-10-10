@@ -4,15 +4,15 @@
  * - qué mensajes del cliente cuentan como «corrección» («no, eso no») y cuáles no;
  * - el cuerpo que se arma: topes del contrato, ids inválidos, escenas demasiado grandes, pasos;
  * - el controlador: escenas y capturas una sola vez y solo al calificar/deshacer/comentar, sin almacén se sigue, 413 se reintenta
- *   sin escenas, error y reintento, dos acciones seguidas no se pisan;
- * - el flujo del taller trae la solicitud; el registro de turnos en memoria; el encuadre de las capturas.
+ *   sin escenas, error y reintento, dos acciones seguidas no se pisan; un turno que se monta sin acción no manda nada (el registro
+ *   de los producidos y la consulta de los restaurados están en test-feedback-ia-carga);
+ * - el flujo del taller trae la solicitud; el encuadre de las capturas.
  */
 import assert from "node:assert/strict";
 import { acotarPorPartes, armarEntrada, enviarCaptura, enviarFeedback, escenaAcotada, esIdSeguro } from "../../src/components/feedback-ia/cliente-feedback";
 import { crearControlador, type ConfigCalificacion } from "../../src/components/feedback-ia/controlador-calificacion";
 import { esCorreccion } from "../../src/components/feedback-ia/correccion";
 import { corrigeLaRespuesta, estadoPrevio, pedidoDelTurno, type MensajeChat } from "../../src/components/feedback-ia/turnos-cliente";
-import { reiniciarRegistros, yaRegistrado } from "../../src/components/feedback-ia/registro-turnos";
 import { cambioDeDeshecho } from "../../src/components/feedback-ia/useCalificacionIA";
 import { turnoDeshechoParaCalificar } from "../../src/components/tres-d/ia/CalificacionTurno";
 import { estadoDeTurno } from "../../src/lib/globos3d/deshacer-turno";
@@ -25,7 +25,7 @@ import { escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
 import { TIPO_NDJSON, lineaNdjson, pedirEscenaIA } from "../../src/lib/globos3d/flujo-escena-ia";
 
 let pruebas = 0;
-const prueba = async (nombre: string, fn: () => void | Promise<void>) => { reiniciarRegistros(0); await fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
+const prueba = async (nombre: string, fn: () => void | Promise<void>) => { await fn(); pruebas += 1; console.log(`  ✓ ${nombre}`); };
 
 type Llamada = { ruta: string; cuerpo: Record<string, unknown> | null; campos: Record<string, string> | null };
 const OK = { ok: true, turnoId: "t1", producto: "taller", calificacion: null, creado: true, escenasGuardadas: true, actualizadoEn: "x" };
@@ -400,40 +400,21 @@ async function main() {
     assert.equal(srv.posts().length, 1);
     assert.equal(c.leer().gracias, false);
   });
-  await prueba("registrar: cada turno se registra UNA vez, sin nota, sin escenas y sin capturas", async () => {
+  await prueba("sin acción no hay registro: montar no manda nada; la primera calificación lleva los datos del turno", async () => {
     const srv = servidorFalso();
     const cfg = config(srv.buscar);
     const c = crearControlador(cfg);
-    await c.registrar();
-    await c.registrar();
-    await crearControlador(cfg).registrar();
+    await c.esperar();
+    assert.equal(srv.llamadas.length, 0, "montar no pide ni registra nada");
+    c.calificar(4);
+    await c.esperar();
     assert.equal(srv.posts().length, 1);
     const cuerpo = srv.posts()[0]?.cuerpo ?? {};
     assert.equal(cuerpo.turnoId, "t1");
     assert.equal(cuerpo.pedido, "hazla más alta");
-    for (const clave of ["calificacion", "escenaAntes", "escenaDespues", "deshecho", "motivos"]) assert.equal(clave in cuerpo, false, clave);
-    assert.equal(srv.capturas().length, 0);
-    assert.equal(cfg.vistas.capturas, 0);
-    assert.equal(yaRegistrado("taller:t1"), true);
-    assert.equal(c.leer().fase, "libre", "registrar no toca la fila");
-    c.calificar(4);
-    await c.esperar();
-    assert.ok(srv.posts()[1]?.cuerpo?.escenaAntes, "las escenas siguen yendo con la calificación");
-  });
-  await prueba("registrar: un fallo se reintenta al volver a montar; calificar también cuenta como registrado", async () => {
-    let fallar = true;
-    const srv = servidorFalso(() => (fallar ? Response.json({ error: "x", codigo: "BASE_NO_DISPONIBLE" }, { status: 503 }) : Response.json(OK)));
-    const c = crearControlador(config(srv.buscar));
-    await c.registrar();
-    assert.equal(yaRegistrado("taller:t1"), false);
-    fallar = false;
-    await crearControlador(config(srv.buscar)).registrar();
-    assert.equal(srv.posts().length, 2);
-    assert.equal(yaRegistrado("taller:t1"), true);
-    const calificado = crearControlador(config(servidorFalso().buscar, { turnoId: "t9" }));
-    calificado.calificar(5);
-    await calificado.esperar();
-    assert.equal(yaRegistrado("taller:t9"), true);
+    assert.equal(cuerpo.calificacion, 4);
+    assert.ok(cuerpo.escenaAntes, "las escenas van con la primera calificación");
+    assert.equal(c.leer().gracias, true);
   });
   await prueba("acotar por partes: lo que cabe va entero; si no, se sueltan primero las partes más grandes y se dice cuáles", () => {
     assert.deepEqual(acotarPorPartes({ plan: { a: 1 }, cotizacion: { total: 5 } }), { plan: { a: 1 }, cotizacion: { total: 5 } });

@@ -82,6 +82,7 @@ import { planActualDelPlan } from "./plan-actual";
 import type { MotorGuiada } from "@/lib/guiada-motor/tipos";
 import { ConfirmarEmpezarDeNuevo } from "./ConfirmarEmpezarDeNuevo";
 import { borrarImagenesNavegador, guardarImagenNavegador, leerImagenesNavegador } from "./imagenes-navegador";
+import { marcarProducido } from "@/components/feedback-ia/producidos";
 
 /**
  * Vista guiada (/asistente). Cada pieza (ideas, plan, proveedores…) va PEGADA al mensaje que la trajo; solo las del
@@ -415,7 +416,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   function actualizarWidget<T extends Widget["tipo"]>(id: string, tipo: T, cambio: (widget: Extract<Widget, { tipo: T }>) => Extract<Widget, { tipo: T }>): void {
     actualizarMensaje(id, (mensaje) => ({ ...mensaje, widgets: mensaje.widgets?.map((widget): Widget => (widget.tipo === tipo ? cambio(widget as Extract<Widget, { tipo: T }>) : widget)) }));
   }
-  function agregar(nuevos: Mensaje[]): void { setMensajes((actuales) => [...actuales, ...nuevos]); }
+  function agregar(nuevos: Mensaje[]): void { for (const mensaje of nuevos) if (mensaje.role === "assistant") marcarProducido(mensaje.id); setMensajes((actuales) => [...actuales, ...nuevos]); }
   function fijarEtapa(id: string, etapa: EtapaPlan): void { setEtapaPlan((actuales) => ({ ...actuales, [id]: etapa })); }
   function avanzarEtapa(id: string, etapa: EtapaPlan): void {
     setEtapaPlan((actuales) => {
@@ -641,6 +642,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       { id: idUsuario, role: "user", content: contenido, ...(Object.keys(envio).length ? { envio } : {}) },
       { id: idAsistente, role: "assistant", content: "" },
     ]);
+    marcarProducido(idAsistente);
     setEntrada("");
     marcarCargando(true);
     setTransmitiendoId(idAsistente);

@@ -11,7 +11,7 @@ import { guardar, volumenDeConversacion, type BaseDatos, type ParcheFeedback } f
 
 /**
  * Registro idempotente del feedback de un turno de la IA. El mismo turno (producto + turnoId) puede llegar varias
- * veces —al terminar la IA, al calificar, al deshacer—: cada pedido solo cambia los campos que trae (la mezcla es SQL,
+ * veces —al terminar la IA (solo los turnos producidos en la página), al calificar, al deshacer—: cada pedido solo cambia los campos que trae (la mezcla es SQL,
  * atómica) y conserva el resto. Las escenas pesan: solo se guardan cuando la persona califica, deshace o comenta, y con
  * tope por conversación.
  */

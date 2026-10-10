@@ -3,16 +3,20 @@ import { errorFeedback, exigirEscritura, ipDe } from "./acceso";
 import {
   CamposCapturaSchema,
   EntradaFeedbackSchema,
+  IdSeguro,
+  MAX_TURNOS_CONSULTA,
+  PRODUCTOS_FEEDBACK,
   TOPE_CAPTURA_BYTES,
   TOPE_CUERPO_FEEDBACK_BYTES,
   TOPE_ESCENA_BYTES,
   TOPE_TURNOS_CONVERSACION,
   type EntradaFeedback,
   type RespuestaCaptura,
+  type RespuestaConsultaFeedback,
 } from "./contrato";
 import type { DependenciasRutas } from "./dependencias";
 import { leerJsonValidado, validar } from "./entrada-http";
-import { fijarImagen, usuarioDelTurno, volumenDeConversacion } from "./repositorio";
+import { calificacionesDeTurnos, fijarImagen, usuarioDelTurno, volumenDeConversacion } from "./repositorio";
 import { registrarFeedback } from "./servicio";
 
 /**
@@ -71,6 +75,34 @@ export async function atenderRegistro(request: Request, deps: DependenciasRutas)
     deps.registrarFallo("feedback_ia.registro", error);
     if (esViolacionDeCheck(error)) return acceso.conCookie(errorFeedback("CUERPO_DEMASIADO_GRANDE", "Algún campo supera el tamaño permitido.", 413));
     return acceso.conCookie(errorFeedback("BASE_NO_DISPONIBLE", "No se pudo guardar la calificación; vuelve a intentarlo.", 503));
+  }
+}
+
+/**
+ * GET /api/feedback-ia?producto=…&turnos=id1,id2: la calificación guardada de esos turnos del navegador, para mostrarla seleccionada
+ * al recargar. Solo devuelve lo que escribió este navegador (el mismo dueño que la escritura). Nunca se cachea: es de la persona.
+ */
+export async function atenderConsulta(request: Request, deps: DependenciasRutas): Promise<Response> {
+  const respuesta = await resolverConsulta(request, deps);
+  respuesta.headers.set("Cache-Control", "private, no-store");
+  return respuesta;
+}
+
+async function resolverConsulta(request: Request, deps: DependenciasRutas): Promise<Response> {
+  const acceso = exigirEscritura(request);
+  if ("respuesta" in acceso) return acceso.respuesta;
+  if (!deps.limitadorConsulta(ipDe(request))) return acceso.conCookie(errorFeedback("DEMASIADAS_PETICIONES", "Demasiadas consultas seguidas; espera un momento.", 429));
+  const url = new URL(request.url);
+  const producto = PRODUCTOS_FEEDBACK.find((valor) => valor === url.searchParams.get("producto"));
+  const turnos = (url.searchParams.get("turnos") ?? "").split(",").filter((turno) => turno !== "");
+  const validos = turnos.length > 0 && turnos.length <= MAX_TURNOS_CONSULTA && turnos.every((turno) => IdSeguro.safeParse(turno).success);
+  if (!producto || !validos) return acceso.conCookie(errorFeedback("CUERPO_INVALIDO", "Pide un producto y de 1 a 100 turnos válidos.", 400));
+  try {
+    const calificaciones = await calificacionesDeTurnos(deps.db(), acceso.usuarioId, producto, turnos);
+    return acceso.conCookie(Response.json({ ok: true, calificaciones } satisfies RespuestaConsultaFeedback));
+  } catch (error) {
+    deps.registrarFallo("feedback_ia.consulta", error);
+    return acceso.conCookie(errorFeedback("BASE_NO_DISPONIBLE", "No se pudo leer la calificación guardada.", 503));
   }
 }
 

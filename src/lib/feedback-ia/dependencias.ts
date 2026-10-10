@@ -18,6 +18,8 @@ export type DependenciasRutas = {
   resumir: (resultado: ResultadoAgregacion, dias: number) => Promise<ResumenGemini | null>;
   resumenAutomaticoActivo: () => boolean;
   limitadorRegistro: Limitador;
+  /** Lecturas (GET de calificaciones guardadas) por IP: la página las pide al cargar, pero no sin tope. */
+  limitadorConsulta: Limitador;
   limitadorCaptura: Limitador;
   /** Tope diario de capturas por IP: el tope por minuto solo no frena el goteo sostenido. */
   limitadorCapturaDiario: Limitador;
@@ -29,11 +31,13 @@ export type DependenciasRutas = {
 };
 
 const POR_MINUTO_REGISTRO = 120;
+const POR_MINUTO_CONSULTA = 240;
 const POR_MINUTO_CAPTURA = 30;
 const CAPTURAS_POR_DIA = 300;
 const RESUMENES_POR_HORA = 5;
 
 const limitadorRegistro = crearLimitador(POR_MINUTO_REGISTRO);
+const limitadorConsulta = crearLimitador(POR_MINUTO_CONSULTA);
 const limitadorCaptura = crearLimitador(POR_MINUTO_CAPTURA);
 const limitadorCapturaDiario = crearLimitador(CAPTURAS_POR_DIA, 24 * 60 * 60 * 1000);
 const limitadorResumenGemini = crearLimitador(RESUMENES_POR_HORA, 60 * 60 * 1000);
@@ -49,6 +53,7 @@ export function dependenciasReales(): DependenciasRutas {
     resumir: async (resultado, dias) => (await import("./resumen-gemini")).resumirConGemini(resultado, dias),
     resumenAutomaticoActivo: () => process.env.FEEDBACK_IA_RESUMEN_GEMINI === "1",
     limitadorRegistro,
+    limitadorConsulta,
     limitadorCaptura,
     limitadorCapturaDiario,
     limitadorResumenGemini,
