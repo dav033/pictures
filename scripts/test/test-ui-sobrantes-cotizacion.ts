@@ -68,9 +68,15 @@ caso("la tarjeta del cliente nombra cada fila por color y tamaño, y lo que sobr
   // «Sempertex Reflex Dorado de 5" Usas 6 globos · compras 1 paquete de 20 · te sobran 14»: el nombre trae el color y la medida.
   const dorado5 = cotizacion.lineas.find((l) => l.color === "dorado" && l.diamPulg === 5)!;
   assert.ok(new RegExp(`Dorado de 5" Usas ${dorado5.cantidadNecesaria} globos · compras ${dorado5.paquetes} paquete de ${dorado5.unidadesPaquete} · te sobran ${dorado5.sobrante}`).test(t), "dorado de 5″");
-  const lila12 = cotizacion.lineas.find((l) => l.color === "lila" && l.diamPulg === 12)!;
-  assert.equal(lila12.sobrante, 0);
-  assert.ok(new RegExp(`Lila de 12" Usas ${lila12.cantidadNecesaria} globos · compras ${lila12.paquetes} paquete de ${lila12.unidadesPaquete} \\$`).test(t), "sin sobrante, la fila no dice «te sobran»");
+  // Una fila sin sobrante, buscada en la muestra: con los repuestos por globo (D-038) cuál es cambia con la compra.
+  const sinSobrante = sobres
+    .map((x) => ({ x, c: CotizacionPlanGuiadoSchema.parse(x.cotizacion) }))
+    .flatMap(({ x, c }) => c.lineas.filter((l) => l.sobrante === 0).map((l) => ({ x, c, l })))[0];
+  assert.ok(sinSobrante, "alguna fila de la muestra no tiene sobrante");
+  const t0 = texto(renderToStaticMarkup(createElement(CotizacionPersonalGuiada, { cotizacion: sinSobrante.c as never, titulos: titulosDelPlan(PlanGuiadoSchema.parse(sinSobrante.x.plan)) })));
+  const l0 = sinSobrante.l;
+  const paquete = l0.paquetes === 1 ? "paquete" : "paquetes";
+  assert.ok(new RegExp(`Usas ${l0.cantidadNecesaria} globos · compras ${l0.paquetes} ${paquete} de ${l0.unidadesPaquete} \\$`).test(t0), "sin sobrante, la fila no dice «te sobran»");
 });
 
 /** Lo que devuelve Python para los globos a granel de una variante (`cotizacion_profesional.py`: sobra la capacidad de los paquetes menos los globos del plan); el doble de la prueba. */
