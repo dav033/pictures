@@ -119,7 +119,7 @@ export const ListaMaterialesResultadoSchema = z.object({
 export const CotizacionGuiadaSchema = z.object({
   lineas: z.array(z.object({ id: z.string(), tamano: z.string(), color: z.enum(PALETA_COLORES_V2).optional(), cantidadNecesaria: z.number().int().positive(), disponible: z.boolean(), varianteId: z.string(), nombre: z.string(), precioPaquete: z.number().int().positive(), unidadesPaquete: z.number().int().positive(), paquetes: z.number().int().positive(), subtotal: z.number().int().positive(), sobrante: z.number().int().nonnegative() }).strict()).min(1),
   total: z.number().int().positive(),
-  // 0 en la lista curada de una idea (cantidades exactas, sin reserva); 8 con el motor 3D (merma sobre su conteo, REQ-007).
+  // 8 en el plan del 3D y en la lista curada de una idea sin plan (D-038: repuestos por globo sobre su conteo); 0 si el precio no los lleva.
   mermaPorcentaje: z.number().min(0).max(100), incluyeIva: z.literal(true), complementosSoportados: z.literal(false),
 }).strict();
 

@@ -26,6 +26,7 @@ import { optimizarCobertura, TOPE_RESERVA_COP, TOPE_RESERVA_PARTES, type CompraP
 import { cotizarIdeaConMotor } from "../../src/lib/guiada-motor/cotizar-idea";
 import { cotizarIdeaConPython, DEADLINE_COTIZAR_IDEA_MS, type DependenciasCotizacionPython, type PedidoPython } from "../../src/lib/guiada-motor/cotizar-idea-python";
 import { costearDecoracion, type DependenciasCosteo } from "../../src/lib/guiada-motor/costear-idea";
+import { cotizarListaCurada } from "../../src/lib/guiada-motor/cotizar-curada";
 import { atenderPlanMotor } from "../../src/lib/guiada-motor/plan-motor";
 import { olvidarResoluciones } from "../../src/lib/plan/cache-resoluciones";
 import { pedidoDeIdeaSola } from "../../src/lib/plan/plan-de-idea";
@@ -70,7 +71,7 @@ const depsCosteo = (cruce: Crosswalk, motor: "3d" | "python", resolver: Dependen
   tienePlanGuardado: async (id) => planGuardadoDeIdea(id) !== null,
   cotizarConMotor: (id) => cotizarIdeaConMotor(id, { planGuardado: planGuardadoDeIdea, crosswalk: async () => cruce, cotizarLista: pythonDoble(cruce).cotizarLista }),
   cotizarConPython: (id) => cotizarIdeaConPython(id, { planGuardado: planGuardadoDeIdea, resolver }),
-  cotizarLista: pythonDoble(cruce).cotizarLista,
+  cotizarCurada: (materiales) => cotizarListaCurada(materiales, { crosswalk: async () => cruce, cotizarLista: pythonDoble(cruce).cotizarLista }),
   auditar: nada,
 });
 const sinPython = async (): Promise<never> => { throw new Error("con la bandera en 3d y el motor armando la idea no se llama a Python"); };

@@ -22,6 +22,7 @@ import type { Locator, Page } from "playwright";
 import type { RespuestaRepositorios } from "../../src/lib/catalogo/repositorios-api-tipos";
 import { BIBLIOTECA_FABRICA, itemDeEscena, validarItem } from "../../src/lib/globos3d/biblioteca";
 import { SALA_INICIAL } from "../../src/lib/globos3d/escena";
+import { IDEAS_ASISTENTE } from "../../src/lib/globos3d/ideas-asistente";
 import { entradaDeCatalogo } from "../../src/lib/globos3d/fondos-escenografia";
 import { piezaDeEntrada } from "../../src/lib/globos3d/mobiliario-pieza";
 import { abrir, capturar, cerrarContextos, cerrarNavegador, contador, cuentas, elegir, escena, esperadasPor, iniciarNavegador, lectura, opcion, pestanas, selector, tarjetasDe } from "./fixtures/anadir-repositorios-ui/navegador";
@@ -316,6 +317,46 @@ test("una escena guardada que solo trae muebles sigue en Sempertex → Ideas; no
   await elegir(page, "Mobiliario");
   await page.getByText("Nada de Mobiliario en tu biblioteca coincide con la búsqueda.").waitFor();
   assert.equal(await page.getByText("Mi salón de muebles").count(), 0);
+  assert.deepEqual(errores, []);
+  await cerrar();
+});
+
+/**
+ * D-038/D-039: las ideas del carrusel de la vista guiada que el motor 3D arma son un grupo propio de Sempertex → Ideas, «Ideas del
+ * asistente», con el nombre de su tarjeta; `De la biblioteca` trae el resto, sin ellas. La búsqueda las filtra y sin ninguna el grupo no sale.
+ */
+test("Sempertex → Ideas: «Ideas del asistente» es un grupo con las ideas del carrusel y «De la biblioteca» trae las demás", async () => {
+  const nombres = IDEAS_ASISTENTE.map((idea) => idea.nombre);
+  const { page, errores, cerrar } = await abrir();
+  await elegir(page, "Sempertex");
+  assert.equal(await page.getByRole("region", { name: "Ideas del asistente" }).count(), 0, "solo en la pestaña Ideas");
+  await pestanas(page).nth(3).click();
+  const grupo = page.getByRole("region", { name: "Ideas del asistente" });
+  await grupo.waitFor();
+  // Las dos grillas (el grupo y «De la biblioteca») dibujan sus miniaturas con UN solo visor: un solo lienzo oculto, no uno por grilla.
+  assert.equal(await page.locator("#anadir-contenido canvas").count(), 1, "un solo lienzo de miniaturas");
+  const ultima = grupo.locator(`li[data-item-id="${IDEAS_ASISTENTE.at(-1)!.id}"]`);
+  assert.equal(await ultima.count(), 0, "la última idea está en la segunda página del grupo (cada tarjeta lleva su id en data-item-id)");
+  const titulos = (seccion: Locator) => seccion.locator("li > button span.line-clamp-2").allInnerTexts();
+  assert.deepEqual(await titulos(grupo), nombres.slice(0, 24), "la primera página del grupo, en su orden");
+  // «Mostrar más» se activa solo al llegar a la vista (IntersectionObserver): llegar a él trae las otras 2.
+  await grupo.getByRole("button", { name: /^Mostrar más/ }).scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => document.querySelectorAll("[aria-label='Ideas del asistente'] li > button span.line-clamp-2").length === 26);
+  assert.equal(await ultima.count(), 1, "y al llegar a «Mostrar más» aparece, para el paso de paridad de precio del humo e2e");
+  assert.deepEqual(await titulos(grupo), nombres, "las 26 ideas, cada una con el nombre de su tarjeta");
+  assert.match(await grupo.locator("h3").innerText(), /ideas del asistente\s*26/i);
+  const biblioteca = page.getByRole("region", { name: "De la biblioteca" });
+  assert.deepEqual((await titulos(biblioteca)).filter((nombre) => nombres.includes(nombre)), [], "las demás ideas no repiten las del asistente");
+  assert.ok((await titulos(biblioteca)).length > 0, "y siguen ahí");
+  await capturar(page, "10-ideas-del-asistente");
+  await page.locator("#anadir-buscar").fill("fútbol");
+  await page.waitForFunction(() => document.querySelectorAll("[aria-label='Ideas del asistente'] li > button span.line-clamp-2").length === 2);
+  assert.deepEqual((await titulos(grupo)).sort(), nombres.filter((nombre) => /fútbol/i.test(nombre)).sort(), "la búsqueda filtra el grupo");
+  // El nombre completo de la última idea (fuera de la primera página de 24) la trae al grupo: así la busca el paso de paridad de precio del humo e2e.
+  await page.locator("#anadir-buscar").fill(nombres.at(-1)!);
+  await page.waitForFunction((nombre) => [...document.querySelectorAll("[aria-label='Ideas del asistente'] li > button span.line-clamp-2")].some((el) => el.textContent?.trim() === nombre), nombres.at(-1)!);
+  await page.locator("#anadir-buscar").fill("zzzz");
+  await page.waitForFunction(() => document.querySelector("[aria-label='Ideas del asistente']") === null);
   assert.deepEqual(errores, []);
   await cerrar();
 });

@@ -27,6 +27,7 @@ export const ESTADOS_AUDITORIA_3D = [
   "PLAN_3D_EDICION_RECHAZADA",
   "COTIZACION_IDEA_3D",
   "COTIZACION_IDEA_PYTHON",
+  "COTIZACION_IDEA_CURADA",
   "COTIZACION_IDEA_FALLBACK",
   "COTIZACION_IDEA_SIN_PRECIO",
 ] as const;
@@ -186,9 +187,10 @@ const deLaCotizacion = (cotizacion: CotizacionAuditada | null) => (cotizacion
 /**
  * La fila de cada «¿cuánto cuesta?» de una idea del carrusel (D-038), con lo que decidió el costeo: el plan del motor 3D
  * (`COTIZACION_IDEA_3D`), el plan de Python de la idea guardada con la bandera en `python` (`COTIZACION_IDEA_PYTHON`) o
- * porque el 3D no la arma (`COTIZACION_IDEA_FALLBACK`, con la razón), la lista curada de lo que no tiene plan guardado
- * (`COTIZACION_IDEA_FALLBACK`, `sin_plan_guardado`) o ningún precio (`COTIZACION_IDEA_SIN_PRECIO`). Solo códigos, el
- * total, las variantes y el hash del plan: nunca el texto de un aviso ni el detalle de un error.
+ * porque el 3D no la arma (`COTIZACION_IDEA_FALLBACK`, con la razón), la lista curada de lo que no tiene plan guardado con el
+ * cotizador único (`COTIZACION_IDEA_CURADA`, sin error: es un precio; con las variantes que quedaron fuera de él), la lista
+ * curada sin materiales (`COTIZACION_IDEA_FALLBACK`, `sin_plan_guardado`) o ningún precio (`COTIZACION_IDEA_SIN_PRECIO`). Solo
+ * códigos, el total, las variantes y el hash del plan: nunca el texto de un aviso ni el detalle de un error.
  */
 export function filaDeCotizacionDeIdea(decision: DecisionCosteo, ideaId: string, requestId: string, superficie: string): FilaAuditoriaPlan3d {
   const pedido = { idea_id: codigoSeguro(ideaId) };
@@ -216,15 +218,23 @@ export function filaDeCotizacionDeIdea(decision: DecisionCosteo, ideaId: string,
     };
   }
   if (decision.usar === "curada") {
+    // Sin materiales no hay lista que cotizar: el fallback de siempre.
+    if (!decision.cotizacion) {
+      return { ...base, estado: "COTIZACION_IDEA_FALLBACK", resultado: { accion: "cotizacion_idea", motor: "python", razon: decision.motivo }, motor: { bandera: null, efectivo: "python" }, error: decision.motivo };
+    }
+    // El precio sale del cotizador único (`cotizar-curada.ts`), no de un plan de ningún motor: no es un error, y la fila dice qué variantes y cuántos globos quedaron fuera.
     return {
-      ...base, estado: "COTIZACION_IDEA_FALLBACK",
-      resultado: { accion: "cotizacion_idea", motor: "python", razon: decision.motivo },
-      motor: { bandera: null, efectivo: "python" }, ...deLaCotizacion(decision.cotizacion), error: decision.motivo,
+      ...base, estado: "COTIZACION_IDEA_CURADA",
+      resultado: {
+        accion: "cotizacion_idea", motor: "ninguno", origen: "curada", precio: "cotizador_unico", globos: decision.globos ?? 0, lineas: decision.cotizacion.lineas.length,
+        fuera_del_precio: (decision.fuera ?? []).map((fuera) => ({ variant_id: codigoSeguro(fuera.variantId), cantidad: fuera.cantidad, motivo: fuera.motivo })),
+      },
+      motor: { bandera: null, efectivo: "ninguno" }, ...deLaCotizacion(decision.cotizacion),
     };
   }
   return {
     ...base, estado: "COTIZACION_IDEA_SIN_PRECIO",
-    resultado: { accion: "cotizacion_idea", motor: "ninguno", razon: codigoSeguro(decision.motivo) },
+    resultado: { accion: "cotizacion_idea", motor: "ninguno", razon: codigoSeguro(decision.motivo), ...(decision.origen ? { origen: decision.origen } : {}) },
     motor: { efectivo: "ninguno" }, error: codigoSeguro(decision.motivo),
   };
 }

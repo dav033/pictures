@@ -1,5 +1,5 @@
 import "server-only";
-import { armarEscena } from "../escena";
+import { armarEscena, type Escena } from "../escena";
 import { armadaCompacta } from "./armada-compacta";
 import { bomDeEscena } from "./bom";
 import { escenaDesdeEspec } from "./espec-a-escena";
@@ -30,9 +30,12 @@ export { especHashDe } from "./hash-espec";
 export type { ResultadoEspec } from "./espec-desde-propuesta";
 // Precio (fase 2): la merma, el cruce con la tienda, la cotización de la lista y el sobre del plan para la vista guiada.
 export { MERMA, MERMA_PORCENTAJE, cantidadConMerma } from "./merma";
-export { crosswalkEnVivo, crosswalkIncluido, snapshotPublicado } from "./crosswalk-vigente";
+export { crosswalkEnVivo, crosswalkIncluido, presentacionesDeVariantes, snapshotPublicado } from "./crosswalk-vigente";
+export { extenderCruce, productosDePresentaciones, type ProductoDePresentaciones } from "./crosswalk-presentaciones";
+export type { FilaDePresentaciones } from "./crosswalk-consulta";
+export type { Crosswalk } from "./crosswalk-variantes";
 export { POLITICA_PAQUETES, POLITICAS_PAQUETES, planearCompra, type PoliticaPaquetes, type ReservaPlan } from "./plan-de-compra";
-export { cotizarBom, type CompraMotor, type CotizacionDelMotor, type DependenciasCotizacion, type FalloCotizacion, type ResultadoCotizacionBom } from "./cotizar-bom";
+export { cotizarBom, cotizarLoQueSeVende, type CompraMotor, type CotizacionDelMotor, type DependenciasCotizacion, type FaltanteConCantidad, type FalloCotizacion, type ResultadoCotizacionBom } from "./cotizar-bom";
 // La lista de materiales sumada por formato y código, para quien cotiza una lista que no armó el motor (el Taller, D-038).
 export { sumarLineas } from "./bom";
 export { sobreDelMotor, SobreMotorSchema, type EntradaSobre, type PlanGuiadoMotor, type SobreDelMotor } from "./plan-guiado-desde-motor";
@@ -65,4 +68,14 @@ export function armarDesdeEspec(entrada: EspecClienteV1, opciones: OpcionesArmad
     avisos: [...new Set([...avisos, ...armada.avisos])],
     noRepresentable: noRepresentables,
   };
+}
+
+/**
+ * La escena del Taller 3D de una espec: las mismas piezas, medidas y colocaciones que arma `armarDesdeEspec` para el cliente, sin la
+ * armada compacta ni la lista de materiales, para quien abre la idea en el Taller (D-038). Lo que ningún constructor arma queda en
+ * `noRepresentable`, como en `armarDesdeEspec`; lo que el motor solo declara (sin dibujarlo) no está en la escena.
+ */
+export function escenaDeEspec(entrada: EspecClienteV1): { escena: Escena; noRepresentable: ResultadoMotorV1["noRepresentable"]; avisos: string[] } {
+  const { escena, noRepresentables, avisos } = escenaDesdeEspec(EspecClienteV1Schema.parse(entrada));
+  return { escena, noRepresentable: noRepresentables, avisos };
 }

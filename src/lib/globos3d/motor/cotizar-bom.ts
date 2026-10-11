@@ -150,6 +150,25 @@ async function cotizarConCruce(bom: BomPorPieza, crosswalk: Crosswalk, snapshotP
   return { ok: true, snapshot: snapshotPrecios, snapshotCruce: crosswalk.snapshot, politica, compras, reserva: plan.reserva, porPieza, total: totalCotizado, cotizacion: cotizacionDe(compras, totalCotizado, porPieza) };
 }
 
+export type FaltanteConCantidad = FaltanteCruce & { cantidad: number };
+
+/**
+ * Cotiza la lista; si la tienda no vende algún globo, cotiza el resto y devuelve lo que no vende, con su cantidad (D-038): la regla del
+ * Taller y de la tarjeta de la vista guiada para lo que el cruce no cubre. `ninguno`: la tienda no vende ningún globo de la lista (si el
+ * segundo intento también falla con otros huecos, sí vendía algunos).
+ */
+export async function cotizarLoQueSeVende(total: readonly BomLinea[], cotizar: (bom: BomPorPieza) => Promise<ResultadoCotizacionBom>): Promise<{ cotizada: ResultadoCotizacionBom; faltantes: FaltanteConCantidad[]; ninguno: boolean }> {
+  const cotizada = await cotizar({ total, porPieza: {} });
+  if (cotizada.ok || cotizada.razon !== "sin_cobertura") return { cotizada, faltantes: [], ninguno: false };
+  const faltantesDe = (resultado: Extract<ResultadoCotizacionBom, { razon: "sin_cobertura" }>) => resultado.faltantes.map((f) => ({ ...f, cantidad: total.find((l) => l.formatoId === f.formatoId && l.codigo === f.codigo)?.cantidad ?? 0 }));
+  const sinTienda = new Set(cotizada.faltantes.map((f) => `${f.formatoId}|${f.codigo}`));
+  const vendibles = total.filter((l) => !sinTienda.has(`${l.formatoId}|${l.codigo}`));
+  if (!vendibles.length) return { cotizada, faltantes: faltantesDe(cotizada), ninguno: true };
+  const resto = await cotizar({ total: vendibles, porPieza: {} });
+  const faltantesResto = !resto.ok && resto.razon === "sin_cobertura" ? faltantesDe(resto) : [];
+  return { cotizada: resto, faltantes: [...faltantesDe(cotizada), ...faltantesResto], ninguno: false };
+}
+
 /** Aplica la política de paquetes, cruza con la tienda y cotiza. Nunca lanza: todo fallo es un `FalloCotizacion` para que el plan caiga a Python. */
 export async function cotizarBom(bom: BomPorPieza, deps: DependenciasCotizacion): Promise<ResultadoCotizacionBom> {
   let cruce = await deps.crosswalk();

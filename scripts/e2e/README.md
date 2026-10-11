@@ -17,6 +17,13 @@ del Taller abría detrás de un modal nativo y no respondía) solo lo ve un nave
    apagada (fila `catalogo_ui_repositorios` o variable `CATALOGO_UI_REPOSITORIOS`); falla si la ruta dice `ui: true` y el
    selector no sale.
 
+5. Paridad de precio (D-038): toma la idea que el asistente costeó en el paso 2 (tema fútbol: su columna y su arco, con plan
+   guardado, van primero) y su «Cuánto cuesta», abre esa misma idea desde «Añadir → Ideas → Ideas del asistente» en `/3d` y
+   compara con su «Precio en la tienda» (Lista de compra): tiene que ser el mismo total. No gasta turnos de chat propios.
+   **Se omite** (`SKIPPED`, con el motivo) si el asistente no dio un total, si el despliegue no trae el grupo «Ideas del
+   asistente» (es anterior a esa función) o si la idea costeada no está en él (una idea sin plan guardado, cuyo precio sale de
+   su lista curada); falla si los dos totales difieren.
+
 Cada paso sale como `PASS`, `FAIL` o `SKIPPED` con su duración. Un `FAIL` guarda una captura; el informe JSON y las
 capturas quedan en `%TEMP%/e2e-humo/<fecha>/` (la ruta se imprime al final). Sale con código 1 si algún paso falla.
 

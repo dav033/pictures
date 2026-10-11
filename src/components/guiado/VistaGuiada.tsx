@@ -75,6 +75,7 @@ import { AVISO_VERSION_NUEVA, CABECERA_VERSION_APP, RespuestaIncompatibleError, 
 import { borrarEstadoGuiado } from "./empezar-de-nuevo";
 import { useMotorGuiada } from "./usarMotorGuiada";
 import { useCorte3d } from "./useCorte3d";
+import { claveDeWidget, useNoIncluidos } from "./useNoIncluidos";
 import { avisarSiEsCorteDeLaImagen, sinAvisoDeCorte, TIPO_ACCION_RECALCULAR_3D } from "./aviso-corte-3d";
 import { avisarAlCargarPlan } from "./avisar-corte-3d-al-cargar";
 import { propuestaParaGuardar } from "./recalculo-3d";
@@ -88,6 +89,7 @@ import { mensajeErrorImagen } from "./mensaje-error-imagen";
 import { firmaDePlan } from "./motor3d/firma-plan";
 import { crearDependenciasEdicion3d } from "./edicion-motor3d";
 import { planActualDelPlan } from "./plan-actual";
+import { NoIncluidosSchema } from "@/lib/guiada-motor/no-incluidos";
 import type { MotorGuiada } from "@/lib/guiada-motor/tipos";
 import { ConfirmarEmpezarDeNuevo } from "./ConfirmarEmpezarDeNuevo";
 import { borrarImagenesNavegador, guardarImagenNavegador, leerImagenesNavegador } from "./imagenes-navegador";
@@ -133,6 +135,7 @@ const ResultadoSchema = z.object({
   opciones: z.array(z.enum(["contratar", "costear", "comprar", "aprender"])).optional(),
   preguntaUso: z.boolean().optional(),
   cotizacion: z.unknown().optional(),
+  noIncluidos: NoIncluidosSchema,
   uso: z.enum(["negocio", "personal"]).optional(),
   pasos: z.array(z.object({ orden: z.number().int().positive(), texto: z.string().min(1) }).strict()).optional(),
   proveedores: z.array(ProveedorSempertexSchema).optional(),
@@ -218,6 +221,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     });
   }, []);
   const [etapaPlan, setEtapaPlan] = useState<Readonly<Record<string, EtapaPlan>>>({});
+  const { noIncluidos, registrarNoIncluidos } = useNoIncluidos();
   const [foto, setFoto] = useState<File | null>(null);
   const [analizandoFoto, setAnalizandoFoto] = useState(false);
   const [transmitiendoId, setTransmitiendoId] = useState<string | null>(null);
@@ -697,6 +701,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
           const valida = datos.cotizacion == null ? null : CotizacionGuiadaSchema.safeParse(datos.cotizacion);
           if (valida && !valida.success) throw new RespuestaIncompatibleError("contrato", "La cotización recibida no cumple el contrato.", versionServidor, { campos: camposInvalidos(valida.error).map((campo) => `cotizacion.${campo}`) });
           widgets.push({ tipo: "cotizacion", cotizacion: valida ? valida.data : null, uso: usoCotizado, decoracion: elegida });
+          registrarNoIncluidos(claveDeWidget(idAsistente, widgets.length - 1), datos.noIncluidos);
         }
         if (datos.pasos && elegida) widgets.push({ tipo: "pasos", decoracion: elegida });
         // Sin ciudad no hay directorio vacío: el modelo pregunta la ciudad.
@@ -1693,7 +1698,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       case "uso":
         return <PreguntaUso key={clave} activo={activo && !widget.elegido} elegido={widget.elegido ?? null} deshabilitado={cargando} onElegir={(valor) => elegirUso(valor, mensajeId)} />;
       case "cotizacion":
-        return <CostosMateriales key={clave} cotizacion={widget.cotizacion} decoracion={widget.decoracion} uso={widget.uso} clave={`guiado-${widget.decoracion.id}`} mensajePendiente="Todavía no tengo el precio de estos materiales. Puedo buscarte un proveedor cerca." onProveedores={() => preguntarCiudad("ciudad-decorador", "Quiero cotizar con un proveedor cerca")} />;
+        return <CostosMateriales key={clave} cotizacion={widget.cotizacion} noIncluidos={noIncluidos[clave]} decoracion={widget.decoracion} uso={widget.uso} clave={`guiado-${widget.decoracion.id}`} mensajePendiente="Todavía no tengo el precio de estos materiales. Puedo buscarte un proveedor cerca." onProveedores={() => preguntarCiudad("ciudad-decorador", "Quiero cotizar con un proveedor cerca")} />;
       case "pasos":
         return <PasoAPaso key={clave} decoracion={widget.decoracion} />;
       case "pasos-plan":
@@ -1798,7 +1803,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
         />
       )}
       {etapaPlan[mensaje.id] && !mensaje.widgets?.some((widget) => widget.tipo === "propuesta" || widget.tipo === "plan") && <EsqueletoPlan etapa={etapaPlan[mensaje.id]!} />}
-      {mensaje.widgets?.map((widget, posicion) => renderWidget(widget, activo, `${mensaje.id}-${posicion}`, mensaje, indice))}
+      {mensaje.widgets?.map((widget, posicion) => renderWidget(widget, activo, claveDeWidget(mensaje.id, posicion), mensaje, indice))}
       {falloPropio && tarjetaFallo(falloPropio)}
     </>;
   }

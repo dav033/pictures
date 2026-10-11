@@ -1,0 +1,261 @@
+{
+ "mensajes": [
+  {
+   "id": "m1",
+   "role": "user",
+   "content": "Quiero una decoración para un bautizo, es para uso personal"
+  },
+  {
+   "id": "m2",
+   "role": "assistant",
+   "content": "¡Buena elección! Esto es lo que lleva.",
+   "widgets": [
+    {
+     "tipo": "seleccion",
+     "decoracion": {
+      "id": "ej-bautizo-comunion",
+      "titulo": "Día especial en blanco y celeste",
+      "tematica": "Bautizo o primera comunión en blanco y celeste",
+      "eventos": [
+       "bautizo",
+       "bautizo infantil",
+       "primera comunión",
+       "comunión"
+      ],
+      "edad": {
+       "min": 5,
+       "max": 14
+      },
+      "fotos": [
+       {
+        "url": "/biblioteca-sempertex/kits/e-decor-nino-bigotes.jpg",
+        "fuente": "Foto real del E-Decor Niño Bigotes, reutilizada por sus tonos azules y blancos; no muestra un bautizo ni una comunión. Copia local reducida de https://cdn.shopify.com/s/files/1/0825/6100/7911/products/Bouqet-con-base-organico-Bigotes_2239c13d-b125-4d73-9d52-860e84ac7c5f.jpg",
+        "licencia": "sempertex_propia"
+       }
+      ],
+      "video": null,
+      "piezas": [
+       {
+        "estructura": "semiarco",
+        "cantidad": 1
+       },
+       {
+        "estructura": "bouquet",
+        "cantidad": 2
+       }
+      ],
+      "materiales": [
+       {
+        "variantId": "46594221343015",
+        "sku": "B2B-20000723",
+        "cantidad": 40,
+        "nota": "Globo látex R-12 Blanco, paquete x50; cantidad sugerida de ejemplo."
+       },
+       {
+        "variantId": "46594232582439",
+        "sku": "B2B-20000761",
+        "cantidad": 20,
+        "nota": "Globo látex R-12 Azul Rey, paquete x50; cantidad sugerida de ejemplo."
+       },
+       {
+        "variantId": "46594207908135",
+        "sku": "B2B-20001402",
+        "cantidad": 20,
+        "nota": "Globo látex R-12 impreso para bautizo, paquete x50; cantidad sugerida de ejemplo."
+       }
+      ],
+      "pasos": [
+       {
+        "orden": 1,
+        "texto": "Infla blancos y celestes en tamaños distintos."
+       },
+       {
+        "orden": 2,
+        "texto": "Arma racimos de cuatro alternando los tonos."
+       },
+       {
+        "orden": 3,
+        "texto": "Monta el semiarco y ubica los bouquets a los lados."
+       },
+       {
+        "orden": 4,
+        "texto": "Rellena espacios con globos pequeños."
+       },
+       {
+        "orden": 5,
+        "texto": "Completa con detalles de la ceremonia por separado."
+       }
+      ],
+      "shopifyHandle": "b2b-e-decor-nino-bigotes",
+      "paleta": [
+       "#f6f3ee",
+       "#9cc9e8",
+       "#2f5dbf"
+      ],
+      "fotoRepresentativa": false,
+      "origen": "ejemplo",
+      "aviso": "DATO DE EJEMPLO — no es real"
+     }
+    }
+   ]
+  },
+  {
+   "id": "m3",
+   "role": "user",
+   "content": "¿Cuánto cuesta?"
+  },
+  {
+   "id": "m4",
+   "role": "assistant",
+   "content": "Los materiales suman $45.282",
+   "widgets": [
+    {
+     "tipo": "cotizacion",
+     "cotizacion": {
+      "lineas": [
+       {
+        "id": "46594221343015",
+        "tamano": "sin tamaño aplicable",
+        "nombre": "Globo de látex 12\" Blanco",
+        "color": "blanco",
+        "cantidadNecesaria": 40,
+        "disponible": true,
+        "varianteId": "46594221343015",
+        "precioPaquete": 13037,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13037,
+        "sobrante": 10
+       },
+       {
+        "id": "46594232582439",
+        "tamano": "sin tamaño aplicable",
+        "nombre": "Globo de látex 12\" Azul Rey",
+        "color": "azul",
+        "cantidadNecesaria": 20,
+        "disponible": true,
+        "varianteId": "46594232582439",
+        "precioPaquete": 13974,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 13974,
+        "sobrante": 30
+       },
+       {
+        "id": "46594207908135",
+        "tamano": "sin tamaño aplicable",
+        "nombre": "Globo de látex 12\" impreso para bautizo",
+        "cantidadNecesaria": 20,
+        "disponible": true,
+        "varianteId": "46594207908135",
+        "precioPaquete": 18271,
+        "unidadesPaquete": 50,
+        "paquetes": 1,
+        "subtotal": 18271,
+        "sobrante": 30
+       }
+      ],
+      "total": 45282,
+      "mermaPorcentaje": 0,
+      "incluyeIva": true,
+      "complementosSoportados": false
+     },
+     "uso": "personal",
+     "decoracion": {
+      "id": "ej-bautizo-comunion",
+      "titulo": "Día especial en blanco y celeste",
+      "tematica": "Bautizo o primera comunión en blanco y celeste",
+      "eventos": [
+       "bautizo",
+       "bautizo infantil",
+       "primera comunión",
+       "comunión"
+      ],
+      "edad": {
+       "min": 5,
+       "max": 14
+      },
+      "fotos": [
+       {
+        "url": "/biblioteca-sempertex/kits/e-decor-nino-bigotes.jpg",
+        "fuente": "Foto real del E-Decor Niño Bigotes, reutilizada por sus tonos azules y blancos; no muestra un bautizo ni una comunión. Copia local reducida de https://cdn.shopify.com/s/files/1/0825/6100/7911/products/Bouqet-con-base-organico-Bigotes_2239c13d-b125-4d73-9d52-860e84ac7c5f.jpg",
+        "licencia": "sempertex_propia"
+       }
+      ],
+      "video": null,
+      "piezas": [
+       {
+        "estructura": "semiarco",
+        "cantidad": 1
+       },
+       {
+        "estructura": "bouquet",
+        "cantidad": 2
+       }
+      ],
+      "materiales": [
+       {
+        "variantId": "46594221343015",
+        "sku": "B2B-20000723",
+        "cantidad": 40,
+        "nota": "Globo látex R-12 Blanco, paquete x50; cantidad sugerida de ejemplo."
+       },
+       {
+        "variantId": "46594232582439",
+        "sku": "B2B-20000761",
+        "cantidad": 20,
+        "nota": "Globo látex R-12 Azul Rey, paquete x50; cantidad sugerida de ejemplo."
+       },
+       {
+        "variantId": "46594207908135",
+        "sku": "B2B-20001402",
+        "cantidad": 20,
+        "nota": "Globo látex R-12 impreso para bautizo, paquete x50; cantidad sugerida de ejemplo."
+       }
+      ],
+      "pasos": [
+       {
+        "orden": 1,
+        "texto": "Infla blancos y celestes en tamaños distintos."
+       },
+       {
+        "orden": 2,
+        "texto": "Arma racimos de cuatro alternando los tonos."
+       },
+       {
+        "orden": 3,
+        "texto": "Monta el semiarco y ubica los bouquets a los lados."
+       },
+       {
+        "orden": 4,
+        "texto": "Rellena espacios con globos pequeños."
+       },
+       {
+        "orden": 5,
+        "texto": "Completa con detalles de la ceremonia por separado."
+       }
+      ],
+      "shopifyHandle": "b2b-e-decor-nino-bigotes",
+      "paleta": [
+       "#f6f3ee",
+       "#9cc9e8",
+       "#2f5dbf"
+      ],
+      "fotoRepresentativa": false,
+      "origen": "ejemplo",
+      "aviso": "DATO DE EJEMPLO — no es real"
+     }
+    },
+    {
+     "tipo": "opciones"
+    }
+   ]
+  }
+ ],
+ "brief": {
+  "evento": "Bautizo",
+  "uso": "personal"
+ },
+ "seleccionadaId": "ej-bautizo-comunion",
+ "uso": "personal"
+}

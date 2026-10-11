@@ -15,7 +15,7 @@ const PREFIJO_TERCEROS = "terceros/";
 export const PATRON_SLUG_TERCEROS = /^[a-z0-9][a-z0-9-]{1,23}$/;
 
 /** Los prefijos de los ids de la biblioteca de fábrica y de lo que se deriva de sus escenas (`<escena>~<nodo>`). */
-export const PREFIJOS_BIBLIOTECA = ["idea:", "celebra:", "decoracion:", "utileria:", "base-organica:", "referencia:", "escena:"] as const;
+export const PREFIJOS_BIBLIOTECA = ["idea:", "celebra:", "decoracion:", "utileria:", "base-organica:", "referencia:", "escena:", "asistente:"] as const;
 /**
  * Las demás clases de Sempertex no tenían id de catálogo (un formato es «R-12», un color «570», un plan de idea y su decoración
  * comparten la clave «deco-…»): su id local lleva el prefijo de su clase para que el índice de ids locales sea inyectivo.

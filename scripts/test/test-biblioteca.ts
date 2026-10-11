@@ -20,6 +20,7 @@ import { REFERENCIAS_DUENO } from "@/lib/globos3d/referencias-dueno";
 import { repartirEscenografia } from "../../src/lib/catalogo/lista-por-repositorio";
 import { armarEscena, type Escena, type EscenaArmada, type NodoEscena } from "../../src/lib/globos3d/escena";
 import { ESCENAS_PREDEFINIDAS, escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
+import { esIdeaDelAsistente, IDEAS_ASISTENTE } from "../../src/lib/globos3d/ideas-asistente";
 import { IDEAS_SEMPERTEX } from "../../src/lib/globos3d/ideas-sempertex";
 import { sumarMateriales } from "../../src/lib/globos3d/mezcla";
 import type { MaterialDecoracion } from "../../src/lib/globos3d/figuras";
@@ -156,11 +157,12 @@ console.log(`OK insertar: ${insertados} conjuntos en otra escena suman exactamen
 
 const biblioteca = bibliotecaCompleta();
 assert.equal(new Set(biblioteca.map((i) => i.id)).size, biblioteca.length, "ids sin duplicados");
-const claves = biblioteca.map((i) => claveContenido(i.contenido));
+// Salvo las ideas del asistente: cada idea del carrusel está en el Taller aunque dos armen la misma escena (no se juntan).
+const claves = biblioteca.filter((i) => i.derivado || !esIdeaDelAsistente(i.id)).map((i) => claveContenido(i.contenido));
 assert.equal(new Set(claves).size, claves.length, "contenidos sin duplicados");
 const porTipo = new Map<string, number>();
 for (const i of biblioteca) porTipo.set(i.tipo, (porTipo.get(i.tipo) ?? 0) + 1);
-assert.equal(porTipo.get("escena"), ESCENAS_PREDEFINIDAS.length + IDEAS_SEMPERTEX.filter((i) => i.contenido.tipo === "escena").length + REFERENCIAS_DUENO.length, "todas las escenas predefinidas, las de ideas de Sempertex y las referencias del dueño");
+assert.equal(porTipo.get("escena"), ESCENAS_PREDEFINIDAS.length + IDEAS_SEMPERTEX.filter((i) => i.contenido.tipo === "escena").length + REFERENCIAS_DUENO.length + IDEAS_ASISTENTE.length, "todas las escenas predefinidas, las de ideas de Sempertex, las referencias del dueño y las ideas del asistente");
 for (const t of ["conjunto", "estructura", "decoracion", "utileria"]) assert.ok((porTipo.get(t) ?? 0) > 0, `hay items de tipo ${t}`);
 for (const i of biblioteca) {
   assert.equal(i.tipo === "escena", i.contenido.tipo === "escena", `${i.id}: tipo y contenido casan`);
@@ -316,7 +318,7 @@ const conDorado = filtrarBiblioteca(biblioteca, resumenes, { producto: "R-5|970"
 assert.ok(conDorado.length > 0 && conDorado.every((i) => resumenes.get(i.id)!.productos.includes("R-5|970")), "filtro por producto: R-5 Reflex Dorado 970");
 assert.ok(conDorado.some((i) => i.id === "decoracion:racimo_dorado") && !conDorado.some((i) => i.id === "decoracion:flor_lazos_dorados"), "el racimo dorado sí; la flor de lazos dorados es de T-260");
 assert.deepEqual(filtrarBiblioteca(biblioteca, resumenes, { producto: "R-12|970" }).map((i) => i.id), biblioteca.filter((i) => resumenes.get(i.id)!.productos.includes("R-12|970")).map((i) => i.id), "R-12 Reflex Dorado 970: solo lo que lo usa");
-assert.ok(filtrarBiblioteca(biblioteca, resumenes, { tipo: "escena", ocasion: "halloween" }).filter((i) => i.fuente?.tipo !== "idea-sempertex").length === 5, "5 escenas de Halloween del taller (más las de ideas de Sempertex)");
+assert.ok(filtrarBiblioteca(biblioteca, resumenes, { tipo: "escena", ocasion: "halloween" }).filter((i) => i.fuente?.tipo !== "idea-sempertex" && !esIdeaDelAsistente(i.id)).length === 5, "5 escenas de Halloween del taller (más las de ideas de Sempertex y del asistente)");
 assert.deepEqual(filtrarBiblioteca(biblioteca, resumenes, { texto: "arana LAZOS" }).map((i) => i.id).sort(), biblioteca.filter((i) => /araña de lazos/i.test(i.nombre) || /araña de lazos/i.test(i.descripcion)).map((i) => i.id).sort(), "texto sin tildes ni mayúsculas");
 assert.ok(filtrarBiblioteca(biblioteca, resumenes, { color: "061" }).every((i) => resumenes.get(i.id)!.colores.includes("061")), "filtro por color");
 assert.ok(filtrarBiblioteca(biblioteca, resumenes, { texto: "reflex dorado" }).length >= conDorado.length, "el texto busca también en los colores");

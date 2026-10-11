@@ -5,8 +5,12 @@ import type { Crosswalk } from "../../src/lib/globos3d/motor/crosswalk-variantes
  * Python sin red para las pruebas del precio del motor 3D: cotiza con los paquetes del cruce, igual que
  * `cotizar_lista_materiales` (paquetes cerrados, IVA ya incluido, sobrante). No llama a ningún servicio.
  */
-export function pythonDoble(crosswalk: Crosswalk, opciones: { sinVariante?: ReadonlySet<string>; fallo?: unknown } = {}) {
-  const indice = new Map(Object.values(crosswalk.entradas).flatMap((entrada) => entrada.variantes.map((v) => [v.variantId, v] as const)));
+export function pythonDoble(crosswalk: Crosswalk, opciones: { sinVariante?: ReadonlySet<string>; fallo?: unknown; variantesExtra?: ReadonlyArray<{ variantId: string; titulo: string; unidadesPaq: number; precio: number }> } = {}) {
+  const indice = new Map([
+    ...Object.values(crosswalk.entradas).flatMap((entrada) => entrada.variantes.map((v) => [v.variantId, v] as const)),
+    // Productos que el cruce no conoce (los globos impresos) pero la tienda vende: Python también los cotiza.
+    ...(opciones.variantesExtra ?? []).map((v) => [v.variantId, v] as const),
+  ]);
   const llamadas: PythonListaMaterialesEntrada[] = [];
   const cotizarLista = async (entrada: PythonListaMaterialesEntrada): Promise<PythonListaMaterialesResultado> => {
     llamadas.push(entrada);

@@ -12,11 +12,10 @@ import { AsistenteGuiadoRequestSchema, PropuestaComposicionSchema } from "@/lib/
 import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { PROMPT_GUIADO } from "@/lib/ia/guiado/prompt-guiado";
 import { ChatSseEventV1Schema, CHAT_SSE_CONTRACT_VERSION } from "@/lib/ia/contracts/chat-v1";
-import { llamarPythonListaMateriales } from "@/lib/ia/nucleo/python-adapter";
-import { leerMotorGuiada } from "@/lib/guiada-motor/bandera";
 import { avisoEdicionDelPlanAbierto } from "@/lib/ia/guiado/aviso-edicion-plan";
 import { filaDeCotizacionDeIdea, registrarAuditoriaPlan3d } from "@/lib/guiada-motor/auditoria-plan";
 import { costearDecoracion } from "@/lib/guiada-motor/costear-idea";
+import { datosDelCosteo, dependenciasDeCosteo } from "@/lib/guiada-motor/dependencias-costeo";
 import { ErrorIA } from "@/lib/ia/nucleo/tipos";
 import type { ErrorCodeV1 } from "@/lib/ia/contracts/chat-v1";
 import { decoracionCotizableCoincide, normalizarCiudad, protegerHerramientas } from "@/lib/ia/guiado/utilidades";
@@ -363,33 +362,17 @@ async function turnoGuiado(request: Request) {
           datos.cotizacion = null;
           return { ok: false, motivo: "costeo_pendiente_datos_de_catalogo", aviso: "Esta decoración todavía no tiene productos asociados en el catálogo; no inventes un precio." };
         }
-        // D-038: el precio de la idea es el del plan que el cliente recibe al elegirla (motor 3D o Python, según la bandera).
-        // El motor, el cruce con la tienda (250 KB) y los planes guardados se cargan SOLO aquí, con `import()`: el resto de
-        // los turnos no los paga, y el motor solo con la bandera en 3d.
-        const costeo = await costearDecoracion(decoracion, usoConfirmado, {
-          leerMotor: async () => (await leerMotorGuiada(request)).motor,
-          tienePlanGuardado: async (ideaId) => (await import("@/lib/plan/planes-ideas-guardados")).planGuardadoDeIdea(ideaId) !== null,
-          cotizarConMotor: async (ideaId) => {
-            const [{ cotizarIdeaConMotor }, motor, { planGuardadoDeIdea }] = await Promise.all([import("@/lib/guiada-motor/cotizar-idea"), import("@/lib/globos3d/motor/v1"), import("@/lib/plan/planes-ideas-guardados")]);
-            return cotizarIdeaConMotor(ideaId, {
-              planGuardado: planGuardadoDeIdea, crosswalk: async () => motor.crosswalkIncluido(), crosswalkEnVivo: () => motor.crosswalkEnVivo(), snapshotPublicado: () => motor.snapshotPublicado(),
-              cotizarLista: (entrada) => llamarPythonListaMateriales({ entrada, requestId: crypto.randomUUID(), correlationId: requestId, parentSignal: deadline.signal }),
-            });
-          },
-          cotizarConPython: async (ideaId) => {
-            const [{ cotizarIdeaConPython, DEADLINE_COTIZAR_IDEA_MS }, { planGuardadoDeIdea }, { resolverIdeaSola }] = await Promise.all([import("@/lib/guiada-motor/cotizar-idea-python"), import("@/lib/plan/planes-ideas-guardados"), import("@/lib/plan/resolver-idea")]);
-            // Recordada por su pedido: «Crear mi plan con esta idea» la reutiliza (D-038).
-            return cotizarIdeaConPython(ideaId, { planGuardado: planGuardadoDeIdea, resolver: (pedido) => resolverIdeaSola(pedido, { requestId: crypto.randomUUID(), correlationId: requestId, signal: deadline.signal, deadlineMs: DEADLINE_COTIZAR_IDEA_MS }) });
-          },
-          cotizarLista: (entrada) => llamarPythonListaMateriales({ entrada, requestId: crypto.randomUUID(), correlationId: requestId, parentSignal: deadline.signal }),
-          auditar: decidir,
-        });
+        // D-038: el precio de la idea es el del plan que el cliente recibe al elegirla (motor 3D o Python, según la bandera);
+        // el de una idea sin plan, su lista curada con el mismo cotizador. El motor, el cruce con la tienda (250 KB) y los
+        // planes guardados se cargan SOLO aquí, con `import()`: el resto de los turnos no los paga, y el motor de un plan
+        // solo con la bandera en 3d.
+        const costeo = await costearDecoracion(decoracion, usoConfirmado, dependenciasDeCosteo({ request, requestId, signal: deadline.signal, auditar: decidir }));
         // Durable (plan_audit_log): `decidir` solo llega a stdout y a /tmp. Una fila por cada «¿cuánto cuesta?», con lo que
         // decidió el costeo (motor 3D, plan de Python, lista curada o sin precio), su motivo, el total y el hash del plan.
         const decision = costeo.decision;
         const filaAuditoria = filaDeCotizacionDeIdea(decision, decoracion.id, requestId, "/api/asistente-guiado");
         await registrarAuditoriaPlan3d(filaAuditoria);
-        datos.cotizacion = costeo.cotizacion;
+        datosDelCosteo(datos, costeo);
         return costeo.respuesta;
       },
       abrir_accion_plan: async (args: Record<string, unknown>) => {

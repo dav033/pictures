@@ -1,6 +1,7 @@
 import { elementosDeEscenografia } from "./mobiliario-pieza";
 import { unidadesDeEscenografia } from "./mobiliario-asientos-mesa";
 import { muebleDeNodo } from "./descripcion-mobiliario";
+import { esIdeaDelAsistente, itemsDeIdeasAsistente } from "./ideas-asistente";
 import { IDEAS_SEMPERTEX } from "./ideas-sempertex";
 import { urlDeIdea } from "./ideas-sempertex/tipos";
 import { perezoso } from "./perezoso";
@@ -831,9 +832,9 @@ export function unirBiblioteca(
 ): ItemBiblioteca[] {
   const salida: ItemBiblioteca[] = [];
   const porClave = new Map<string, ItemBiblioteca>();
-  /** Mete un item; si ya hay uno igual, ese suma sus escenas y ocasiones (gana el primero: el de mejor fuente). */
+  /** Mete un item; si ya hay uno igual, ese suma sus escenas y ocasiones (gana el primero: el de mejor fuente). Una idea del asistente nunca se junta con otra: cada idea del carrusel tiene que estar en el Taller, aunque dos armen la misma escena (lo derivado de ellas sí se junta). */
   const meter = (i: ItemBiblioteca) => {
-    const k = clave(i);
+    const k = esIdeaDelAsistente(i.id) && !i.derivado ? i.id : clave(i);
     const previo = porClave.get(k);
     if (!previo) {
       // Copia sin evaluar getters: el contenido de lo de fábrica sigue perezoso.
@@ -1048,6 +1049,8 @@ function construirFabrica(): ItemBiblioteca[] {
       return c.tipo === "escena" ? { tipo: "escena", escena: structuredClone(c.escena) } : contenidoDePieza(c.pieza, idea.nombre, c.sugerida);
     }));
   }
+  // Las ideas de la vista guiada que el motor 3D arma (D-038): la escena que arma para el cliente, con su mismo precio.
+  items.push(...itemsDeIdeasAsistente(itemPerezoso));
   // Bases orgánicas de fotos de internet: estructura sola o con lo que lleva (flores colgadas, remate, marco).
   for (const b of BASES_ORGANICAS) {
     const fuente: FuenteItem = { tipo: "referencia-web", titulo: tituloFuenteBase(b), url: b.fuente.urlPagina, ...(b.fuente.urlImagen ? { fotoUrl: b.fuente.urlImagen } : {}) };

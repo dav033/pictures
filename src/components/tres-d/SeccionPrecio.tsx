@@ -36,7 +36,7 @@ export function SeccionPrecio({ materiales }: { materiales: ReadonlyArray<Materi
             ))}
           </ul>
           {estado.cotizacion.faltantes.length > 0 && (
-            <p className="mt-1 text-xs text-red-600" role="note">Sin precio (la tienda no los vende en esa talla o color): {estado.cotizacion.faltantes.map((f) => `${f.cantidad} × ${f.formatoId} ${referenciaPorCodigo(f.codigo)?.nombreCompleto ?? f.codigo}`).join(", ")}.</p>
+            <p className="mt-1 text-xs text-red-600" role="note">No incluido en el precio (la tienda no los vende en esa talla o color): {estado.cotizacion.faltantes.map((f) => `${f.cantidad} × ${f.formatoId} ${referenciaPorCodigo(f.codigo)?.nombreCompleto ?? f.codigo}`).join(", ")}.</p>
           )}
           <p className="mt-1 text-xs text-taller-suave">Con IVA y con los paquetes que vende la tienda. Incluye repuestos de cada globo (el {estado.cotizacion.mermaPorcentaje} %, al menos uno) salvo cuando comprarlos encarece de más. No incluye helio ni montaje.</p>
         </div>

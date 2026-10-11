@@ -6,13 +6,16 @@ import { conteosPorRepositorio, eleccionVigente, itemsDelRepositorio, nombresDeR
 import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import { TIPOS_ITEM, type ItemBiblioteca, type TipoItem } from "@/lib/globos3d/biblioteca";
 import { miniaturaDecoracion } from "@/lib/globos3d/decoraciones-escena";
+import { separarIdeasDelAsistente } from "@/lib/globos3d/ideas-asistente";
 import { DecoracionesPequenas, MiniaturaDecoracion, contarDecoraciones } from "./DecoracionesPequenas";
 import { UtileriaFiesta, contarUtileria } from "./UtileriaFiesta";
 import { FondosYMuebles, contarFondosYMuebles } from "./FondosYMuebles";
 import { MuralesTechoArboles } from "./MuralesTechoArboles";
 import { FormasYLetras } from "./FormasYLetras";
-import { FILTRO_COMPACTO_VACIO, FiltrosCompactos, GrillaCompacta, useBibliotecaFiltrada, type FiltroCompacto } from "./Biblioteca";
+import { FILTRO_COMPACTO_VACIO, FiltrosCompactos, useBibliotecaFiltrada, useMiniaturas3d, type FiltroCompacto } from "./Biblioteca";
+import { GrillaCompacta, LienzoDeMiniaturas, usePaginaCompacta } from "./GrillaCompacta";
 import { FiltrosTaxonomia } from "./FiltrosTaxonomia";
+import { IdeasDelAsistente } from "./IdeasDelAsistente";
 import { BuscarPorFoto, useSoltarFoto } from "./BuscarPorFoto";
 import { useRefinarBiblioteca } from "./useRefinarBiblioteca";
 import { useRepositoriosCatalogo } from "./useRepositoriosCatalogo";
@@ -113,6 +116,13 @@ export const PanelAnadir = memo(function PanelAnadir({ escena, armada, onEscena,
   const soltar = useSoltarFoto(refinada.foto.buscar, vista.sempertex);
   const delRepositorio = useMemo(() => itemsDelRepositorio(vista.sempertex ? refinada.refinados : biblio.visibles, eleccion, visibles ?? undefined), [vista.sempertex, refinada.refinados, biblio.visibles, eleccion, visibles]);
   const conteos = useMemo(() => (visibles ? conteosPorRepositorio(biblio.items) : null), [visibles, biblio.items]);
+  // Las ideas del asistente van en su propio grupo de la pestaña Ideas; las demás, en «Ideas y escenas».
+  const { delAsistente, resto } = useMemo(() => (vista.sempertex && pestana === "ideas" ? separarIdeasDelAsistente(delRepositorio) : { delAsistente: [], resto: delRepositorio }), [vista.sempertex, pestana, delRepositorio]);
+  // Las dos grillas de la pestaña Ideas comparten UN visor de miniaturas, sobre lo que las dos muestran (el grupo del asistente primero).
+  const paginaDelAsistente = usePaginaCompacta(delAsistente);
+  const paginaDelResto = usePaginaCompacta(resto);
+  const aDibujar = useMemo(() => [...paginaDelAsistente.mostrados, ...paginaDelResto.mostrados], [paginaDelAsistente.mostrados, paginaDelResto.mostrados]);
+  const { lienzoRef, minis } = useMiniaturas3d(aDibujar, biblio.huellas);
   const [cuentaMurales, setCuentaMurales] = useState(0);
   const [cuentaFormas, setCuentaFormas] = useState(0);
   const decoracionesNuevas = useMemo(() => (pestana === "decoraciones" ? DECORACIONES_NUEVAS() : []), [pestana]);
@@ -214,16 +224,18 @@ export const PanelAnadir = memo(function PanelAnadir({ escena, armada, onEscena,
           <FondosYMuebles key={repositorio} escena={escena} onEscena={onEscena} onSeleccion={onSeleccion} filtro={texto} repositorio={repositorio} procedencias={procedencias} />
         ))}
 
+        <IdeasDelAsistente items={delAsistente} pagina={paginaDelAsistente} resumenes={biblio.resumenes} huellas={biblio.huellas} minis={minis} onAbrir={onFicha} etiquetaDe={refinada.etiquetaDe} />
         <section className="flex flex-col gap-2" aria-label="De la biblioteca">
           <h3 className="taller-rotulo flex items-baseline justify-between gap-2">
             <span>{!vista.sempertex ? "De tu biblioteca" : pestana === "ideas" ? "Ideas y escenas" : "De la biblioteca"}</span>
             <span className="font-normal normal-case tracking-normal">{biblio.contando ? "contando…" : !vista.sempertex ? `${delRepositorio.length}` : pestana === "estructuras" ? "con sus decoraciones" : pestana === "ideas" ? "con su enlace y foto" : `${delRepositorio.length}`}</span>
           </h3>
-          <GrillaCompacta visibles={delRepositorio} resumenes={biblio.resumenes} huellas={biblio.huellas} onAbrir={onFicha} etiquetaDe={refinada.etiquetaDe}
+          <GrillaCompacta pagina={paginaDelResto} resumenes={biblio.resumenes} huellas={biblio.huellas} minis={minis} onAbrir={onFicha} etiquetaDe={refinada.etiquetaDe}
             vacio={!vista.sempertex ? (texto ? `Nada de ${nombreDeLaVista} en tu biblioteca coincide con la búsqueda.` : `Todavía no guardas nada de ${nombreDeLaVista} en tu biblioteca.`)
-              : refinada.conFoto ? "Ningún parecido a tu foto en esta pestaña." : datos.vacio} />
+              : refinada.conFoto ? "Ningún parecido a tu foto en esta pestaña." : delAsistente.length > 0 ? "Ninguna otra idea coincide." : datos.vacio} />
         </section>
         <p className="text-xs leading-snug text-taller-suave">Arrastra una tarjeta al visor: se marca en verde dónde puede ir. O tócala y elige dónde.</p>
+        <LienzoDeMiniaturas lienzoRef={lienzoRef} />
       </div>
     </div>
   );

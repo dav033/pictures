@@ -24,6 +24,7 @@ import { PlanGuiadoSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1
 import { filaDeCotizacionDeIdea, registrarAuditoriaPlan3d, type FilaAuditoriaPlan3d } from "../../src/lib/guiada-motor/auditoria-plan";
 import { cotizarIdeaConMotor } from "../../src/lib/guiada-motor/cotizar-idea";
 import { costearDecoracion, type DependenciasCosteo } from "../../src/lib/guiada-motor/costear-idea";
+import { cotizarListaCurada } from "../../src/lib/guiada-motor/cotizar-curada";
 import { cotizarIdeaConPython } from "../../src/lib/guiada-motor/cotizar-idea-python";
 import { atenderEditarMotor, type DependenciasEditarMotor } from "../../src/lib/guiada-motor/editar-motor";
 import { atenderPlanMotor, type DependenciasPlanMotor } from "../../src/lib/guiada-motor/plan-motor";
@@ -441,7 +442,7 @@ function depsCosteo(motor: "3d" | "python" | "sin_bandera", extra: Partial<Depen
     tienePlanGuardado: async (id) => planGuardadoDeIdea(id) !== null,
     cotizarConMotor: cotizarIdea,
     cotizarConPython: (id) => cotizarIdeaConPython(id, { planGuardado: planGuardadoDeIdea, resolver: async () => ({ cotizacion: cotizacionPython }) }),
-    cotizarLista: doble.cotizarLista,
+    cotizarCurada: (materiales) => cotizarListaCurada(materiales, { crosswalk: async () => cruce, cotizarLista: doble.cotizarLista }),
     auditar: () => undefined,
     ...extra,
   };

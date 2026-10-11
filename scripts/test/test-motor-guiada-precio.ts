@@ -487,11 +487,11 @@ async function main(): Promise<void> {
     assert.deepEqual(nada, { usar: "sin_precio", motivo: "error_de_python", detalle: "python caído" });
     const sinPlanes = await decidirCotizacionDelCarrusel(IDEA, deps("python", { tienePlanGuardado: async () => { throw new Error("json roto"); } }));
     assert.deepEqual(sinPlanes, { usar: "sin_precio", motivo: "error_planes_guardados", detalle: "json roto" }, "sin leer los planes guardados no se cae a la lista curada");
-    // La ruta del asistente no importa el motor, el cruce ni los planes guardados de forma estática: solo con `import()`.
+    // La ruta del asistente no importa el motor, el cruce ni los planes guardados de forma estática: sus dependencias de costeo los cargan con `import()`.
     const ruta = readFileSync(path.join(RAIZ, "src", "app", "api", "asistente-guiado", "route.ts"), "utf8");
     const importesEstaticos = [...ruta.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]!);
     for (const prohibido of ["@/lib/globos3d/motor/v1", "@/lib/guiada-motor/cotizar-idea", "@/lib/guiada-motor/cotizar-idea-python", "@/lib/plan/planes-ideas-guardados"]) assert.ok(!importesEstaticos.includes(prohibido), `${prohibido} no debe importarse de forma estática en la ruta`);
-    assert.match(ruta, /import\("@\/lib\/globos3d\/motor\/v1"\)/);
+    assert.match(readFileSync(path.join(RAIZ, "src", "lib", "guiada-motor", "dependencias-costeo.ts"), "utf8"), /import\("@\/lib\/globos3d\/motor\/v1"\)/);
   });
 
   console.log(`test-motor-guiada-precio: ok (${casos} pruebas, ${ARMABLES.length} casos armables de ${todos.length})`);

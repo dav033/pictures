@@ -11,10 +11,14 @@ export const PASO_PRECIO = "asistente: cuánto cuesta";
 
 /**
  * Un solo mensaje con evento, edad, temática y uso: el asistente responde con las ideas en un turno, y «Cuánto cuesta» ya no
- * pregunta el uso. Con los chips (evento → edad → temática) serían tres turnos de IA antes de ver una idea.
+ * pregunta el uso. Con los chips (evento → edad → temática) serían tres turnos de IA antes de ver una idea. Fútbol: sus dos ideas
+ * con plan guardado (columna y arco) van primero y están en «Ideas del asistente» del Taller, para el paso de paridad de precio.
  */
-const MENSAJE_INICIAL = "Cumpleaños de 7 años, tema dinosaurios, es para uso personal";
+const MENSAJE_INICIAL = "Cumpleaños de 12 años, tema fútbol, es para uso personal";
 const FRASE_DE_COSTEO = "Quiero saber cuánto cuestan los materiales.";
+
+/** La idea que «Cuánto cuesta» costeó (su id de la biblioteca guiada y su nombre) y su total con IVA, para compararlo con el «Precio en la tienda» del Taller. */
+export type IdeaCotizada = { id: string; titulo: string; total: number };
 
 type PasosDelAsistente = {
   login: () => Promise<string>;
@@ -22,6 +26,8 @@ type PasosDelAsistente = {
   vistaGuiada: () => Promise<string>;
   ideas: () => Promise<string>;
   precio: () => Promise<string>;
+  /** Lo que costeó el paso `precio` (`null` si no llegó a dar un total). */
+  ideaCotizada: () => IdeaCotizada | null;
 };
 
 async function pythonResponde(url: string): Promise<boolean> {
@@ -116,10 +122,18 @@ function resumenDelPrecio(resto: string): string {
   return total ? `total $${total[1]}` : "hay un precio en pantalla";
 }
 
+/** El total de la tarjeta de precio que quedó en pantalla (`data-precio-total`), en pesos; `null` si no hay. */
+async function totalDeLaTarjeta(pagina: Page): Promise<number | null> {
+  const texto = await pagina.locator("[data-precio-total]").last().innerText({ timeout: 5_000 }).catch(() => null);
+  const pesos = Number((texto ?? "").replace(/\D/g, ""));
+  return pesos > 0 ? pesos : null;
+}
+
 export function crearPasosDelAsistente(entorno: Entorno): PasosDelAsistente {
   let paginaDeLogin: Page | null = null;
   let rutaTrasElLogin: string | null = null;
   let paginaDelAsistente: Page | null = null;
+  let ideaCotizada: IdeaCotizada | null = null;
 
   return {
     login: async () => {
@@ -164,11 +178,18 @@ export function crearPasosDelAsistente(entorno: Entorno): PasosDelAsistente {
       entorno.usar(pagina);
       const { esLocal, urlPython } = entorno.config;
       if (esLocal && !(await pythonResponde(urlPython))) throw new PasoOmitido(`Python (${urlPython}) no responde: sin él no hay precio que comprobar`);
-      await pagina.getByRole("button", { name: "Me gusta esta" }).first().click();
+      const tarjeta = pagina.locator("article[data-decoracion-id]").first();
+      const ideaId = await tarjeta.getAttribute("data-decoracion-id");
+      const titulo = (await tarjeta.locator("h3").innerText()).trim();
+      await tarjeta.getByRole("button", { name: "Me gusta esta" }).click();
       await pagina.getByRole("group", { name: "Qué quieres hacer" }).getByRole("button", { name: /Cuánto cuesta/ }).click();
       const { estado, resto } = await esperarCosteo(pagina);
       if (estado === "pregunta-uso") throw new Error("«Cuánto cuesta» volvió a preguntar el uso aunque el mensaje inicial ya lo decía");
-      return estado === "precio" ? resumenDelPrecio(resto) : "sin precio, con un «no pude» claro en pantalla";
+      if (estado !== "precio") return "sin precio, con un «no pude» claro en pantalla";
+      const total = await totalDeLaTarjeta(pagina);
+      if (ideaId && total) ideaCotizada = { id: ideaId, titulo, total };
+      return `«${titulo}»: ${resumenDelPrecio(resto)}`;
     },
+    ideaCotizada: () => ideaCotizada,
   };
 }

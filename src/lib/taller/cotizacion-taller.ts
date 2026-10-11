@@ -1,6 +1,6 @@
 import "server-only";
 import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
-import { sumarLineas, type BomLinea, type ResultadoCotizacionBom } from "@/lib/globos3d/motor/v1";
+import { cotizarLoQueSeVende, sumarLineas, type BomLinea, type ResultadoCotizacionBom } from "@/lib/globos3d/motor/v1";
 import { CotizacionTallerSchema, MAX_GLOBOS_LINEA_TALLER, PedidoCotizacionTallerSchema, type CotizacionTaller } from "./cotizacion-taller-tipos";
 
 /**
@@ -22,24 +22,6 @@ function error(codigo: string, mensaje: string, estado: number, extra: Record<st
   return Response.json({ error: mensaje, codigo, ...extra }, { status: estado, headers: SIN_CACHE });
 }
 
-type Faltante = CotizacionTaller["faltantes"][number];
-
-/**
- * Cotiza la lista; si la tienda no vende algún globo, cotiza el resto y lo devuelve como faltante. `ninguno`: la tienda no
- * vende ningún globo de la lista (si el segundo intento también falla con otros huecos, sí vendía algunos).
- */
-async function cotizarLoQueSeVende(total: readonly BomLinea[], deps: DependenciasCotizacionTaller, signal: AbortSignal): Promise<{ cotizada: ResultadoCotizacionBom; faltantes: Faltante[]; ninguno: boolean }> {
-  const cotizada = await deps.cotizar({ total, porPieza: {} }, signal);
-  if (cotizada.ok || cotizada.razon !== "sin_cobertura") return { cotizada, faltantes: [], ninguno: false };
-  const faltantesDe = (resultado: Extract<ResultadoCotizacionBom, { razon: "sin_cobertura" }>) => resultado.faltantes.map((f) => ({ ...f, cantidad: total.find((l) => l.formatoId === f.formatoId && l.codigo === f.codigo)?.cantidad ?? 0 }));
-  const sinTienda = new Set(cotizada.faltantes.map((f) => `${f.formatoId}|${f.codigo}`));
-  const vendibles = total.filter((l) => !sinTienda.has(`${l.formatoId}|${l.codigo}`));
-  if (!vendibles.length) return { cotizada, faltantes: faltantesDe(cotizada), ninguno: true };
-  const resto = await deps.cotizar({ total: vendibles, porPieza: {} }, signal);
-  const faltantesResto = !resto.ok && resto.razon === "sin_cobertura" ? faltantesDe(resto) : [];
-  return { cotizada: resto, faltantes: [...faltantesDe(cotizada), ...faltantesResto], ninguno: false };
-}
-
 export async function atenderCotizacionTaller(request: Request, deps: DependenciasCotizacionTaller): Promise<Response> {
   if (!isAuthenticatedRequest(request)) return error("SESION_REQUERIDA", "Sesión requerida.", 401);
   if (!isSameOriginRequest(request)) return error("ORIGEN_INVALIDO", "Origen no permitido.", 403);
@@ -54,7 +36,7 @@ export async function atenderCotizacionTaller(request: Request, deps: Dependenci
   // El tope por línea se mira después de sumar: dos líneas del mismo globo son una sola compra.
   if (total.some((l) => l.cantidad > MAX_GLOBOS_LINEA_TALLER)) return error("CUERPO_INVALIDO", `Como mucho ${MAX_GLOBOS_LINEA_TALLER} globos de un mismo color y talla.`, 400);
   const entrada = { lineas: total.length, globos: total.reduce((suma, l) => suma + l.cantidad, 0) };
-  const { cotizada, faltantes, ninguno } = await cotizarLoQueSeVende(total, deps, request.signal);
+  const { cotizada, faltantes, ninguno } = await cotizarLoQueSeVende(total, (bom) => deps.cotizar(bom, request.signal));
   if (!cotizada.ok) {
     deps.auditar("regla:cotizacion_taller", "lista de compra del taller sin precio", { razon: cotizada.razon, ...(cotizada.razon === "sin_cobertura" ? { faltantes: cotizada.faltantes } : { detalle: cotizada.detalle }) }, { entrada });
     if (cotizada.razon === "sin_cobertura") return error("SIN_COBERTURA", ninguno ? "La tienda no vende ninguno de los globos de la lista en esa talla o color." : "La tienda no vende algunos globos de la lista en esa talla o color, y no pude cotizar los demás.", 422, { faltantes });
