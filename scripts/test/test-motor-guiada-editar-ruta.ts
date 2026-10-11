@@ -56,6 +56,7 @@ function entorno(opciones: Opciones = {}) {
     planGuardado: planGuardadoDeIdea,
     cotizar: opciones.cotizar ?? cotizarPorDefecto,
     nuevoId: () => `00000000-0000-4000-8000-${String(++ids).padStart(12, "0")}`,
+    registrarPlan: async () => undefined,
     tomarEdicion: crearTopePorNavegador(opciones.tope ?? 1000).tomar,
     estadisticasCache: () => { const { aciertos, fallos } = cachePiezas.estadisticas(); return { aciertos, fallos }; },
   };
@@ -76,6 +77,7 @@ async function planDe(propuesta: unknown = PROPUESTA, cookies: string[] = [SESIO
     leerBandera: e.deps.leerBandera, auditar: e.deps.auditar, planGuardado: planGuardadoDeIdea,
     cotizar: (bom) => cotizarBom({ total: bom.total, porPieza: bom.porPieza }, { crosswalk: async () => cruce, cotizarLista: e.doble.cotizarLista }),
     nuevoId: e.deps.nuevoId,
+    registrarPlan: e.deps.registrarPlan,
   };
   const respuesta = await atenderPlanMotor(new Request("https://app.test/api/guiada/motor/plan", { method: "POST", headers: { "content-type": "application/json", cookie: cookies.join("; ") }, body: JSON.stringify({ desde: "propuesta", propuesta, brief: { evento: "boda", tematica: "boda azul y dorada" } }) }), deps);
   assert.equal(respuesta.status, 200);

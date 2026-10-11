@@ -5,6 +5,7 @@ import { BarraSeleccion } from "@/components/catalogo/BarraSeleccion";
 import { Facetas } from "@/components/catalogo/Facetas";
 import { GridCatalogo } from "@/components/catalogo/GridCatalogo";
 import { InterruptorTema } from "@/components/ui/interruptor-tema";
+import { asegurarCatalogo } from "@/lib/shopify/catalogo-vigente";
 import { explorarCatalogo, facetasCatalogo, type FiltrosCatalogo } from "@/lib/shopify/consultas";
 
 // Página de búsqueda: `searchParams` fuerza render dinámico por request. No
@@ -36,10 +37,9 @@ export default async function CatalogoPage({
     solo_disponibles: params.disponible !== "0",
   };
 
-  const [{ productos, total }, facetas] = await Promise.all([
-    explorarCatalogo(filtros, pagina, POR_PAGINA),
-    facetasCatalogo(),
-  ]);
+  await asegurarCatalogo();
+  const { productos, total } = explorarCatalogo(filtros, pagina, POR_PAGINA);
+  const facetas = facetasCatalogo();
 
   const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
 

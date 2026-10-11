@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { asegurarCatalogo } from "@/lib/shopify/catalogo-vigente";
 import { estadoSync } from "@/lib/shopify/consultas";
 import { sincronizarCatalogo } from "@/lib/shopify/sincronizar";
 
@@ -21,5 +22,6 @@ export async function POST() {
 
 export async function GET() {
   await connection();
+  await asegurarCatalogo();
   return Response.json(estadoSync());
 }

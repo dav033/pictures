@@ -1,4 +1,5 @@
 import { armarDesdeEspec, crearCachePiezas, crosswalkEnVivo, crosswalkIncluido, cotizarBom, snapshotPublicado } from "@/lib/globos3d/motor/v1";
+import { registrarAuditoriaPlan3d } from "@/lib/guiada-motor/auditoria-plan";
 import { leerMotorGuiada } from "@/lib/guiada-motor/bandera";
 import { atenderEditarMotor, TOPE_EDICIONES_POR_NAVEGADOR_HORA, type DependenciasEditarMotor } from "@/lib/guiada-motor/editar-motor";
 import { crearTopePorNavegador } from "@/lib/guiada-motor/tope-imagenes-navegador";
@@ -30,6 +31,7 @@ const dependencias: DependenciasEditarMotor = {
     cotizarLista: (entrada) => llamarPythonListaMateriales({ entrada, requestId: crypto.randomUUID(), correlationId: requestId, parentSignal: signal }),
   }),
   nuevoId: () => crypto.randomUUID(),
+  registrarPlan: registrarAuditoriaPlan3d,
   tomarEdicion: (navegador) => topeEdiciones.tomar(navegador),
   estadisticasCache: () => { const { aciertos, fallos } = cachePiezas.estadisticas(); return { aciertos, fallos }; },
 };

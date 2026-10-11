@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { FichaProducto } from "@/components/catalogo/FichaProducto";
 import { InterruptorTema } from "@/components/ui/interruptor-tema";
+import { asegurarCatalogo } from "@/lib/shopify/catalogo-vigente";
 import { productoPorHandle } from "@/lib/shopify/consultas";
 
 // `params` es una API de request-time; sin esto, Next intenta prerenderizar
@@ -16,6 +17,7 @@ export default async function ProductoPage({
   params: Promise<{ handle: string }>;
 }) {
   const { handle } = await params;
+  await asegurarCatalogo();
   const producto = productoPorHandle(handle);
   if (!producto) notFound();
 

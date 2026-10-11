@@ -57,6 +57,7 @@ function entorno(opciones: Opciones = {}) {
     planGuardado: planGuardadoDeIdea,
     cotizar: opciones.cotizar ?? ((bom) => cotizarBom({ total: bom.total, porPieza: bom.porPieza }, { crosswalk: async () => cruce, cotizarLista: doble.cotizarLista })),
     nuevoId: () => `00000000-0000-4000-8000-${String(++ids).padStart(12, "0")}`,
+    registrarPlan: async () => undefined,
     tomarEdicion: crearTopePorNavegador(opciones.tope ?? 1000).tomar,
   };
   return { deps };
@@ -68,6 +69,7 @@ async function planDe(piezas: { estructura: string; cantidad: number }[], colore
     leerBandera: e.deps.leerBandera, auditar: e.deps.auditar, planGuardado: planGuardadoDeIdea,
     cotizar: (bom) => cotizarBom({ total: bom.total, porPieza: bom.porPieza }, { crosswalk: async () => cruce, cotizarLista: pythonDoble(cruce).cotizarLista }),
     nuevoId: e.deps.nuevoId,
+    registrarPlan: e.deps.registrarPlan,
   };
   const propuesta = { frase: "Te propongo una decoración.", colores, piezas };
   const respuesta = await atenderPlanMotor(new Request("https://app.test/api/guiada/motor/plan", { method: "POST", headers: { "content-type": "application/json", cookie: [SESION, NAVEGADOR].join("; ") }, body: JSON.stringify({ desde: "propuesta", propuesta, brief: { evento: "boda", tematica: "boda azul y dorada" } }) }), deps);

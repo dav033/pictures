@@ -57,6 +57,7 @@ async function main(): Promise<void> {
     planGuardado: planGuardadoDeIdea,
     cotizar: (bom) => cotizarBom({ total: bom.total, porPieza: bom.porPieza }, { crosswalk: async () => cruce, cotizarLista: doble.cotizarLista }),
     nuevoId: () => `00000000-0000-4000-8000-${String(++ids).padStart(12, "0")}`,
+    registrarPlan: async () => undefined,
     tomarEdicion: crearTopePorNavegador(1000).tomar,
   });
   const cookies = `${SESSION_COOKIE}=${sessionToken(CLAVE_APP)}; feedback_usuario=${IDENTIDAD}`;

@@ -1,3 +1,4 @@
+import { asegurarCatalogo } from "@/lib/shopify/catalogo-vigente";
 import { aProducto, buscarCatalogoShopify, type FiltrosCatalogo } from "@/lib/shopify/consultas";
 import { z } from "zod";
 import { conRegistro } from "@/lib/registro/servidor";
@@ -33,6 +34,7 @@ async function atenderPOST(request: Request) {
   } catch {
     return Response.json({ error: "Filtros de catálogo inválidos." }, { status: 400 });
   }
+  await asegurarCatalogo();
   const { resultados, total } = buscarCatalogoShopify({ ...filtros, limite: filtros.limite ?? 20 });
   return Response.json({ productos: resultados.map(aProducto), total });
 }

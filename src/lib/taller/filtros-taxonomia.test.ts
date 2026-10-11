@@ -115,3 +115,16 @@ test("se combina con la búsqueda de texto del panel (filtrarBiblioteca) sin per
   // El conteo de las opciones sale de los items del tipo, no del texto: no depende del orden de los pasos.
   assert.equal(contarPorEje(lista, clasificar, "tematicas").get("dinosaurios"), 2);
 });
+
+test("un item sin id (el dato llegó sin él) no rompe la biblioteca: no está clasificado, no cuenta y no pasa un filtro activo", () => {
+  const base = "base-organica:arco-cromado-negro-oro-plata";
+  const sinId = { nombre: "sin id" } as unknown as { id: string };
+  const lista = [{ id: base }, sinId];
+  // El error de /3d: `TypeError: Cannot read properties of undefined (reading 'split')` en `clasificacionDe`.
+  assert.equal(clasificacionDe(undefined), null);
+  assert.equal(clasificacionDe(""), null);
+  assert.equal(etiquetaPrincipal(clasificacionDe(sinId.id)).celebracion, null);
+  assert.equal(contarPorEje(lista, clasificacionDe, "tematicas").get("metalico-cromado"), 1);
+  assert.deepEqual(filtrarPorTaxonomia(lista, clasificacionDe, { celebraciones: [], tematicas: ["metalico-cromado"] }), [{ id: base }]);
+  assert.equal(filtrarPorTaxonomia(lista, clasificacionDe, FILTRO_TAXONOMIA_VACIO), lista, "sin filtro la lista pasa entera, también el item sin id");
+});

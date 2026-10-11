@@ -10,7 +10,8 @@ import type { TomaDeFoto } from "@/lib/globos3d/tope-fotos-hora";
 import { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { PedidoEdicionPlanSchema } from "@/lib/ia/guiado/edicion-plan-chat";
 import type { PlanIdeaGuardado } from "@/lib/plan/plan-de-idea";
-import type { CodigoFalloEditar, RespuestaEditarMotor } from "./editar-contrato";
+import { codigoSeguro, hashSeguro, idsDePiezas, uuidSeguro, type FilaAuditoriaPlan3d } from "./auditoria-plan";
+import { RUTA_EDITAR_MOTOR, type CodigoFalloEditar, type RespuestaEditarMotor } from "./editar-contrato";
 import { noPudeDeMotivos, TEXTO_EDICION_RECALCULO, unirNoPude } from "./mensajes-cliente";
 import { planDel3dVencido } from "./continuidad";
 import { huellaDeNavegador } from "./plan-motor";
@@ -38,7 +39,10 @@ import { verificarPlanConConcepto } from "./verificar-plan";
  *   cliente (sin códigos de formato ni jerga del armado: el motivo técnico queda en la auditoría), y el plan que el cliente
  *   tiene no se toca;
  * - un cambio que deja una pieza que el motor no arma, o que la tienda no vende, se rechaza entero: aquí no hay Python al
- *   que caer.
+ *   que caer;
+ * - cada cambio hecho, y cada uno que no se hace, deja una fila durable en `plan_audit_log` (`auditoria-plan.ts`): `decidir`
+ *   solo llega a stdout y a /tmp, y en Vercel eso no dura. La fila lleva el tipo de cambio y sus operaciones, no el pedido
+ *   (un nombre de pieza lo escribe el cliente).
  */
 export type DependenciasEditarMotor = {
   leerBandera: (request: Request) => Promise<RespuestaMotor>;
@@ -47,6 +51,8 @@ export type DependenciasEditarMotor = {
   planGuardado: (ideaId: string) => PlanIdeaGuardado | null;
   cotizar: (bom: ResultadoMotorV1["bom"], solicitud: { requestId: string; signal: AbortSignal }) => Promise<ResultadoCotizacionBom>;
   nuevoId: () => string;
+  /** La fila durable de lo decidido (`registrarAuditoriaPlan3d`, que espera la escritura y nunca lanza). */
+  registrarPlan: (fila: FilaAuditoriaPlan3d) => Promise<void>;
   /** El cupo por hora de cambios de este navegador (`tope-imagenes-navegador.ts`, el mismo mecanismo que la imagen). */
   tomarEdicion: (navegador: string) => TomaDeFoto;
   /** Cuántas piezas armó y cuántas sacó de la caché el `armar` (para el registro); opcional. */
@@ -109,6 +115,9 @@ function aEdiciones(cuerpo: z.infer<typeof CuerpoSchema>, espec: EspecClienteV1)
 
 const resumenDe = (ediciones: readonly EdicionEspecV1[]): string[] => ediciones.map((e) => e.op);
 
+/** Lo técnico de un rechazo: al registro de la conversación entero; a la fila durable solo los ids de pieza, los códigos de la tienda y la hora (los motivos de una pieza que no se arma la nombran como la llamó el cliente). */
+type DetalleRechazo = { piezas?: ReadonlyArray<{ piezaId: string; motivo: string }>; faltantes?: string; origen_en?: number };
+
 async function atender(request: Request, deps: DependenciasEditarMotor, navegador: string): Promise<Response> {
   const texto = await request.text().catch(() => "");
   if (!texto || texto.length > MAX_CARACTERES_CUERPO) return error("CUERPO_INVALIDO", "Cuerpo inválido.", 400);
@@ -120,14 +129,24 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
   const inicio = Date.now();
   const bandera = await deps.leerBandera(request);
   const entrada = { via: cuerpo.edicion.tipo, plan_hash: cuerpo.plan.plan_hash, ...(cuerpo.edicion.tipo === "ops" ? { ops: resumenDe(cuerpo.edicion.ediciones) } : cuerpo.edicion.tipo === "pedido" ? { pedido: cuerpo.edicion.pedido } : { cambio: cuerpo.edicion.cambio }) };
+  // La fila durable lleva el tipo de cambio y sus operaciones, no el pedido: un nombre de pieza lo escribe el cliente.
+  const hashBase = hashSeguro(cuerpo.plan.plan_hash);
+  const pedido = { via: cuerpo.edicion.tipo, ...(hashBase ? { plan_hash_base: hashBase } : {}), ...(cuerpo.edicion.tipo === "ops" ? { ops: resumenDe(cuerpo.edicion.ediciones) } : { tipo: cuerpo.edicion.tipo === "pedido" ? cuerpo.edicion.pedido.tipo : cuerpo.edicion.cambio.tipo }) };
+  // El id de la petición nace al primer uso (el precio a Python y la fila de auditoría llevan el mismo): un rechazo temprano no gasta el del cambio.
+  let idPeticion: string | undefined;
+  const requestId = (): string => (idPeticion ??= deps.nuevoId());
+  const guardar = (fila: Omit<FilaAuditoriaPlan3d, "requestId" | "superficie" | "pedido">): Promise<void> => deps.registrarPlan({ requestId: requestId(), superficie: RUTA_EDITAR_MOTOR, pedido, ...fila });
   // `extra` va a la respuesta; `auditoria` solo al registro (los motivos técnicos del motor no llegan al cliente).
-  const rechazar = (codigo: CodigoFalloEditar, mensaje: string, estado: number, motivo: string, extra: Record<string, unknown> = {}, auditoria: Record<string, unknown> = {}): Response => {
+  const rechazar = async (codigo: CodigoFalloEditar, mensaje: string, estado: number, motivo: string, extra: Record<string, unknown> = {}, auditoria: DetalleRechazo = {}): Promise<Response> => {
     deps.auditar("regla:motor_guiada", "edición del plan 3D: no se aplica y el plan queda como estaba", { bandera: bandera.motor, fuente: bandera.fuente, codigo, motivo, ...extra, ...auditoria }, { entrada, motivo: mensaje });
+    // Pasarse del cupo por hora no es una decisión del motor: una fila por rechazo dejaría a un bucle llenar la tabla.
+    if (codigo !== "LIMITE_EDICIONES") await guardar({ estado: "PLAN_3D_EDICION_RECHAZADA", resultado: { accion: "edicion", codigo, motivo: codigoSeguro(motivo), ...(auditoria.piezas ? { piezas: idsDePiezas(auditoria.piezas) } : {}), ...(auditoria.faltantes ? { faltantes: auditoria.faltantes } : {}), ...(auditoria.origen_en !== undefined ? { origen_en: auditoria.origen_en } : {}) }, motor: { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "3d" }, error: codigo });
     return error(codigo, mensaje, estado, extra);
   };
 
   if (bandera.fuente === "corte") {
     deps.auditar("regla:motor_guiada", "edición del plan 3D: el motor 3D está cortado; el plan no cambia y el cliente lee que habría que recalcularlo", { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "ninguno", razon: "motor_3d_cortado" }, { entrada, motivo: TEXTO_EDICION_RECALCULO });
+    await guardar({ estado: "PLAN_3D_EDICION_RECHAZADA", resultado: { accion: "edicion", codigo: "MOTOR_3D_CORTADO", razon: "motor_3d_cortado" }, motor: { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "ninguno" }, error: "motor_3d_cortado" });
     return error("MOTOR_3D_CORTADO", TEXTO_EDICION_RECALCULO, 409, { fallback: { razon: "motor_3d_cortado" } });
   }
   const cupo = deps.tomarEdicion(navegador);
@@ -154,8 +173,7 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
       const frase = noPudeDeMotivos(armado.noRepresentable.map((pieza) => pieza.motivo));
       return rechazar("EDICION_NO_ARMABLE", frase, 422, "no_representable", { noAplicadas: [frase] }, { piezas: armado.noRepresentable });
     }
-    const requestId = deps.nuevoId();
-    const cotizada = await deps.cotizar(armado.bom, { requestId, signal: request.signal });
+    const cotizada = await deps.cotizar(armado.bom, { requestId: requestId(), signal: request.signal });
     if (!cotizada.ok) {
       if (cotizada.razon === "sin_cobertura" || cotizada.razon === "material_no_disponible") {
         const faltantes = cotizada.razon === "sin_cobertura" ? cotizada.faltantes.map((f) => `${f.formatoId} ${f.codigo}`).join(", ") : "";
@@ -164,7 +182,7 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
       return rechazar("PRECIO_FALLIDO", "No pude: no logré calcular el precio de ese cambio. Tu plan sigue como estaba.", 422, cotizada.razon, { noAplicadas: ["No pude: no logré calcular el precio de ese cambio."] });
     }
     const concepto: ConceptoPlan = base.concepto;
-    const sobre = sobreDelMotor({ espec: hecho.espec, resultado: armado, cotizacion: cotizada, concepto, requestId, navegador, origenEn: base.origenEn });
+    const sobre = sobreDelMotor({ espec: hecho.espec, resultado: armado, cotizacion: cotizada, concepto, requestId: requestId(), navegador, origenEn: base.origenEn });
     if (!sobre.ok) return rechazar("ERROR_DEL_MOTOR", "No pude: ese cambio no cabe en el plan. Tu plan sigue como estaba.", 422, sobre.motivo);
 
     const descripcion = acotarDescripcion(hecho.hechas);
@@ -177,7 +195,7 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
       noAplicadas: hecho.noAplicadas,
       tocadas: hecho.tocadas,
       turno: {
-        turnoId: cuerpo.turnoId ?? requestId,
+        turnoId: cuerpo.turnoId ?? requestId(),
         antes: { especHash: cuerpo.plan.plan_hash, espec: base.espec },
         despues: { especHash: armado.especHash, espec: hecho.espec },
       },
@@ -188,10 +206,21 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
       globos: armado.bom.total.reduce((suma, linea) => suma + linea.cantidad, 0), total_cop: cotizada.total, snapshot_precios: cotizada.snapshot,
       ...(deps.estadisticasCache ? { cache_piezas: deps.estadisticasCache() } : {}), ms: Date.now() - inicio,
     }, { entrada });
+    await guardar({
+      estado: "PLAN_3D_EDITADO", planHash: armado.especHash,
+      resultado: {
+        accion: "edicion", motor: armado.motor, ...(hashBase ? { plan_hash_base: hashBase } : {}), ...(uuidSeguro(respuesta.turno.turnoId) ? { turno_id: respuesta.turno.turnoId } : {}), hechas: hecho.hechas.length, no_aplicadas: hecho.noAplicadas.length, tocadas: hecho.tocadas.map(codigoSeguro),
+        globos: armado.bom.total.reduce((suma, linea) => suma + linea.cantidad, 0), lineas: cotizada.compras.length, reserva: cotizada.reserva, politica_paquetes: cotizada.politica,
+        snapshot_cruce: cotizada.snapshotCruce, avisos: respuesta.avisos.length, ...(deps.estadisticasCache ? { cache_piezas: deps.estadisticasCache() } : {}), ms: Date.now() - inicio,
+      },
+      motor: { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "3d" }, totalCop: cotizada.total, snapshotPrecios: cotizada.snapshot,
+      compras: cotizada.compras.map((compra) => ({ variantId: compra.variante.variantId, paquetes: compra.paquetes, subtotal: compra.subtotal })),
+    });
     return Response.json(respuesta, { headers: SIN_CACHE });
   } catch (causa) {
     console.warn("[guiada-motor] no se pudo editar el plan con el motor 3D", causa instanceof Error ? causa.message : causa);
     deps.auditar("regla:motor_guiada", "edición del plan 3D: error inesperado del motor", { bandera: bandera.motor, fuente: bandera.fuente, razon: "error_inesperado", detalle: causa instanceof Error ? causa.message : "error" }, { entrada });
+    await guardar({ estado: "PLAN_3D_EDICION_RECHAZADA", resultado: { accion: "edicion", codigo: "ERROR_DEL_MOTOR", razon: "error_inesperado", error_tipo: causa instanceof Error ? causa.name : "desconocido" }, motor: { bandera: bandera.motor, fuente: bandera.fuente, efectivo: "3d" }, error: "error_inesperado" });
     return error("ERROR_DEL_MOTOR", "No pude: tuve un problema técnico al hacer ese cambio. Tu plan sigue como estaba.", 500);
   }
 }

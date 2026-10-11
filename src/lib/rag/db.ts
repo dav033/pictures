@@ -1,6 +1,7 @@
 import "server-only";
 import { Pool } from "pg";
 import { instalarReintentoLectura } from "./db-reintento";
+import { urlConSslExplicito } from "./url-conexion";
 
 declare global {
   var __ragPool: Pool | undefined;
@@ -11,7 +12,7 @@ export function getRagPool(): Pool {
     const url = process.env.DATABASE_URL;
     if (!url) throw new Error("DATABASE_URL no está configurada (Postgres del pipeline RAG).");
     globalThis.__ragPool = new Pool({
-      connectionString: url,
+      connectionString: urlConSslExplicito(url),
       // Fase 3.7: robustez, no velocidad — el plan ya midió que subir `max`
       // a 50 no mejoró latencia (contención de pool descartada como causa),
       // así que este valor no busca throughput. `connectionTimeoutMillis`

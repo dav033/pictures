@@ -16,6 +16,7 @@ import { ListaMaterialesRequestSchema } from "@/lib/ia/contracts/asistente-guiad
 import { llamarPythonListaMateriales } from "@/lib/ia/nucleo/python-adapter";
 import { leerMotorGuiada } from "@/lib/guiada-motor/bandera";
 import { avisoEdicionDelPlanAbierto } from "@/lib/ia/guiado/aviso-edicion-plan";
+import { filaDeCotizacionDeIdea, registrarAuditoriaPlan3d } from "@/lib/guiada-motor/auditoria-plan";
 import { decidirCotizacionDelCarrusel } from "@/lib/guiada-motor/carrusel";
 import { ErrorIA } from "@/lib/ia/nucleo/tipos";
 import type { ErrorCodeV1 } from "@/lib/ia/contracts/chat-v1";
@@ -376,6 +377,9 @@ async function turnoGuiado(request: Request) {
             });
           },
         });
+        // Durable (plan_audit_log): `decidir` de abajo solo llega a stdout y a /tmp.
+        const filaAuditoria = filaDeCotizacionDeIdea(decision, decoracion.id, requestId, "/api/asistente-guiado");
+        if (filaAuditoria) await registrarAuditoriaPlan3d(filaAuditoria);
         if (decision.usar === "motor") {
           const delMotor = decision.resultado;
           datos.cotizacion = delMotor.cotizacion;

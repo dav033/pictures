@@ -64,8 +64,9 @@ function instancia() {
   const auditar: DependenciasPlanMotor["auditar"] = (quien, que, resultado) => { auditorias.push({ quien, que, resultado: resultado as Record<string, unknown> }); };
   const cotizar: DependenciasPlanMotor["cotizar"] = (bom) => { cotizaciones.total += 1; return cotizarBom({ total: bom.total, porPieza: bom.porPieza }, { crosswalk: async () => cruce, cotizarLista: doble.cotizarLista }); };
   const nuevoId = () => `00000000-0000-4000-8000-${String(++ids).padStart(12, "0")}`;
-  const plan: DependenciasPlanMotor = { leerBandera, auditar, planGuardado: planGuardadoDeIdea, cotizar, nuevoId };
-  const editar: DependenciasEditarMotor = { leerBandera, auditar, armar: (espec) => armarDesdeEspec(espec), planGuardado: planGuardadoDeIdea, cotizar, nuevoId, tomarEdicion: crearTopePorNavegador(1000).tomar };
+  const registrarPlan = async (): Promise<void> => undefined;
+  const plan: DependenciasPlanMotor = { leerBandera, auditar, planGuardado: planGuardadoDeIdea, cotizar, nuevoId, registrarPlan };
+  const editar: DependenciasEditarMotor = { leerBandera, auditar, armar: (espec) => armarDesdeEspec(espec), planGuardado: planGuardadoDeIdea, cotizar, nuevoId, registrarPlan, tomarEdicion: crearTopePorNavegador(1000).tomar };
   /** La fila cambia en Neon y el caché de la instancia vence: la próxima petición ya la ve. */
   const fijar = (cambio: Partial<typeof ajustes>, vencerCache = true) => { Object.assign(ajustes, cambio); if (vencerCache) reloj.ms += TTL_AJUSTE_MS; };
   return { deps: { plan, editar }, auditorias, cotizaciones, fijar };

@@ -55,6 +55,7 @@ function entorno(motor: "3d" | "python" = "3d", opciones: { cotizar?: Dependenci
     planGuardado: opciones.planGuardado ?? planGuardadoDeIdea,
     cotizar: opciones.cotizar ?? ((bom) => cotizarBom({ total: bom.total, porPieza: bom.porPieza }, { crosswalk: async () => cruce, cotizarLista: doble.cotizarLista })),
     nuevoId: () => `00000000-0000-4000-8000-${String(++ids).padStart(12, "0")}`,
+    registrarPlan: async () => undefined,
   };
   return { deps, auditorias, doble };
 }

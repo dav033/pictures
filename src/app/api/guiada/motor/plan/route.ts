@@ -1,4 +1,5 @@
 import { crosswalkEnVivo, crosswalkIncluido, cotizarBom, snapshotPublicado } from "@/lib/globos3d/motor/v1";
+import { registrarAuditoriaPlan3d } from "@/lib/guiada-motor/auditoria-plan";
 import { leerMotorGuiada } from "@/lib/guiada-motor/bandera";
 import { atenderPlanMotor, type DependenciasPlanMotor } from "@/lib/guiada-motor/plan-motor";
 import { llamarPythonListaMateriales } from "@/lib/ia/nucleo/python-adapter";
@@ -23,6 +24,7 @@ const dependencias: DependenciasPlanMotor = {
     cotizarLista: (entrada) => llamarPythonListaMateriales({ entrada, requestId: crypto.randomUUID(), correlationId: requestId, parentSignal: signal }),
   }),
   nuevoId: () => crypto.randomUUID(),
+  registrarPlan: registrarAuditoriaPlan3d,
 };
 
 export const POST = conRegistro("/api/guiada/motor/plan", (request: Request) => atenderPlanMotor(request, dependencias), { vista: "guiada" });

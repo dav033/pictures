@@ -174,7 +174,7 @@ export type HechosPeticionPlan = {
 };
 
 export async function registrarPlanAudit(
-  pool: Pool,
+  pool: Pick<Pool, "query">,
   datos: {
     requestId: string;
     planHash?: string;
@@ -198,7 +198,7 @@ export async function registrarPlanAudit(
     flagSnapshot?: unknown;
     hechos?: HechosPeticionPlan;
   },
-): Promise<void> {
+): Promise<boolean> {
   const hechos = datos.hechos ?? {};
   try {
     await pool.query(
@@ -243,7 +243,9 @@ export async function registrarPlanAudit(
          hechos.diagnosticoGeneracion != null ? JSON.stringify(metadataAuditable(hechos.diagnosticoGeneracion)) : null,
       ],
     );
+    return true;
   } catch (error) {
     console.error("[rag-log] no se pudo registrar auditoría de plan:", error);
+    return false;
   }
 }

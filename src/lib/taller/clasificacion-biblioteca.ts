@@ -18,8 +18,13 @@ const ITEMS: Record<string, Clasificado> = Object.fromEntries(
     .map(([id, v]) => [id, { c: etiquetas(v.c), t: etiquetas(v.t), general: v.general, motivo: v.motivo }]),
 );
 
-/** Etiquetas de un item (o de la escena de la que sale), las de mayor confianza primero; null si no está clasificado. */
-export function clasificacionDe(id: string): ClasificacionTaller | null {
+/**
+ * Etiquetas de un item (o de la escena de la que sale), las de mayor confianza primero; null si no está clasificado. Un item
+ * sin id (datos que no pasaron por el tipo, como lo que el navegador tenga guardado) tampoco lo está: antes rompía /3d con
+ * `Cannot read properties of undefined (reading 'split')`.
+ */
+export function clasificacionDe(id: string | undefined): ClasificacionTaller | null {
+  if (!id) return null;
   const propio = ITEMS[id] ?? ITEMS[id.split("~")[0]!];
   if (!propio) return null;
   const ids = (xs: Etiqueta[]) => [...xs].sort((a, b) => b[1] - a[1]).map(([x]) => x);
