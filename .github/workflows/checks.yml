@@ -100,6 +100,9 @@ jobs:
         run: npm run test-escenarios-matriz
       - if: ${{ !cancelled() }}
         run: npm run globos3d:test
+      # Escena del taller 3D (IA de escena, lectura de foto, armado dorado): sin red, sin secretos ni servidor.
+      - if: ${{ !cancelled() }}
+        run: npm run escena:test
       - if: ${{ !cancelled() }}
         run: npm run test-honestidad-forzada
       - if: ${{ !cancelled() }}
