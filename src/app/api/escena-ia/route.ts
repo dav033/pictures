@@ -15,7 +15,7 @@ import { verificarCambios } from "@/lib/globos3d/verificacion-escena";
 import type { AvisoUsuario } from "@/lib/globos3d/avisos-usuario";
 import { TEXTO_CUOTA_IA, TEXTO_IA_CAIDA, TEXTO_SIN_IA, conHonestidad, fallosPendientes, objetivoDe, textoTopeHora, type Intento } from "@/lib/globos3d/honestidad-respuesta";
 import { problemasNuevos } from "@/lib/globos3d/problemas-escena";
-import { tomarCupoEscenaIA, TOPE_POR_HORA } from "@/lib/globos3d/cupo-escena-ia";
+import { tomarCupoEscenaIADurable, TOPE_POR_HORA } from "@/lib/globos3d/cupo-escena-ia";
 import { FotoCuerpoSchema, REGLAS_FOTO, aplicarModeladoDeFoto, avisoDeOmitidas, prepararFotoAdjunta, type FotoPreparada } from "@/lib/globos3d/escena-ia-foto";
 import { MODELAR_DESDE_FOTO } from "@/lib/globos3d/herramientas-escena-foto";
 import { MAX_PASOS_REFINAR, RefinarCuerpoSchema, REPORTAR_COMPARACION, aplicarReporte, declaracionesDeRefinado, prepararRefinado, reglasDeRonda } from "@/lib/globos3d/refinado/ronda-servidor";
@@ -143,7 +143,7 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
 
   const modeloIA = modeloDeEscena();
   if (!modeloIA) return Response.json({ error: TEXTO_SIN_IA }, { status: 503 });
-  if (!tomarCupoEscenaIA()) {
+  if (!(await tomarCupoEscenaIADurable()).ok) {
     return Response.json({ error: textoTopeHora(TOPE_POR_HORA) }, { status: 429 });
   }
 

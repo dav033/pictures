@@ -7,14 +7,14 @@ import { ambitoDeKontext, respuestaKontextEnCurso, solicitudPreviaDe } from "@/l
 import { CODIGO_SOLICITUD_KONTEXT_INVALIDA } from "@/lib/generacion/solicitud-kontext-contrato";
 import { aligerarImagenGenerada } from "@/lib/generacion/imagen-liviana";
 import { AMBIENTE_POR_DEFECTO, MAX_DESCRIPCION, promptFotoDeLayout, promptRender3d, usaCaminoFiel, type AmbienteRender } from "@/lib/globos3d/render-ia";
-import { tomarFotoDeLaHora } from "@/lib/globos3d/tope-fotos-hora";
+import { tomarFotoDeLaHoraDurable } from "@/lib/globos3d/tope-fotos-hora";
 
 /**
  * Taller 3D → foto con IA. Recibe la captura del visor (JPEG o PNG) y una descripción corta de la decoración, y
  * devuelve una foto realista hecha con FLUX base (la captura es la base que se conserva): con el lugar del visor, por FLUX.1 Kontext max (convierte el
  * plano 3D en foto conservando cámara, mesas, sillas, centros, marco y rótulo; medido en scripts/exp/render-boda2.ts), y con otro lugar, por `/edit`. Nada se
- * guarda en el servidor: la imagen vuelve al navegador. Cada llamada cuesta ~US$0,05 en fal; tope por instancia
- * de imágenes por hora (compartido con el estudio de módulos, `tope-fotos-hora.ts`) para que un clic repetido no dispare el gasto.
+ * guarda en el servidor: la imagen vuelve al navegador. Cada llamada cuesta ~US$0,05 en fal; tope global
+ * de imágenes por hora (en Neon, para todas las instancias; compartido con el estudio de módulos, `tope-fotos-hora.ts`) para que un clic repetido no dispare el gasto.
  */
 const CuerpoSchema = z.object({
   render: z.string().regex(/^data:image\/(png|jpeg);base64,/).max(12_000_000),
@@ -49,7 +49,7 @@ async function atenderPOST(request: Request) {
     return Response.json({ error: "No pude retomar la foto en curso. Vuelve a generarla.", codigo: CODIGO_SOLICITUD_KONTEXT_INVALIDA }, { status: 409 });
   }
   if (previa.tipo === "ninguna") {
-    const toma = tomarFotoDeLaHora();
+    const toma = await tomarFotoDeLaHoraDurable();
     if (!toma.ok) {
       decidir("regla:render_3d_tope", "tope de imágenes por hora del taller 3D", { usadas: toma.usadas, tope: toma.tope });
       return Response.json({ error: "Se alcanzó el límite de imágenes por hora. Inténtalo más tarde." }, { status: 429 });

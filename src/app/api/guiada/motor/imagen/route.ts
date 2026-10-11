@@ -6,8 +6,8 @@ import { MAX_CARACTERES_CUERPO_IMAGEN } from "@/lib/guiada-motor/imagen-contrato
 import { generarImagenGuiada3d } from "@/lib/guiada-motor/imagen-flux";
 import { ALMACENAR_IMAGEN_EN_SERVIDOR, atenderImagenMotor, type DependenciasImagen } from "@/lib/guiada-motor/imagen-motor";
 import { armarDesdeEspec, descripcionImagenDeEspec } from "@/lib/globos3d/motor/v1";
-import { tomarFotoDeLaHora } from "@/lib/globos3d/tope-fotos-hora";
-import { devolverImagenDeNavegador, tomarImagenDeNavegador } from "@/lib/guiada-motor/tope-imagenes-navegador";
+import { tomarFotoDeLaHoraDurable } from "@/lib/globos3d/tope-fotos-hora";
+import { devolverImagenDeNavegadorDurable, tomarImagenDeNavegadorDurable } from "@/lib/guiada-motor/tope-imagenes-navegador";
 import { conRegistro, decidir } from "@/lib/registro";
 
 /**
@@ -24,9 +24,9 @@ const dependencias: DependenciasImagen = {
   armar: armarDesdeEspec,
   generar: (prompt, base, senal, solicitudPrevia) => generarImagenGuiada3d(prompt, base, senal, undefined, solicitudPrevia),
   aligerar: aligerarImagenGenerada,
-  tomarFoto: () => tomarFotoDeLaHora(),
-  tomarFotoDeNavegador: (navegador) => tomarImagenDeNavegador(navegador),
-  devolverFotoDeNavegador: devolverImagenDeNavegador,
+  tomarFoto: () => tomarFotoDeLaHoraDurable(),
+  tomarFotoDeNavegador: (navegador) => tomarImagenDeNavegadorDurable(navegador),
+  devolverFotoDeNavegador: devolverImagenDeNavegadorDurable,
   almacen: ALMACENAR_IMAGEN_EN_SERVIDOR ? getRagPool : null,
   auditar: decidir,
 };

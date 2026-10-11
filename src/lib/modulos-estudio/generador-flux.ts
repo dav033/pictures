@@ -1,7 +1,7 @@
 import { generarConSempertexFlux } from "@/lib/ia/kagutsuchi/flux";
 import { aligerarImagenGenerada } from "@/lib/generacion/imagen-liviana";
 import { COSTE_FOTO_USD } from "@/lib/globos3d/foto-realista";
-import { tomarFotoDeLaHora } from "@/lib/globos3d/tope-fotos-hora";
+import { tomarFotoDeLaHoraDurable } from "@/lib/globos3d/tope-fotos-hora";
 import { decidir } from "@/lib/registro/servidor";
 import { ASPECTO_RENDER, GUIDANCE_RENDER } from "./captura-estudio";
 import { promptModuloEstudio } from "./prompt-estudio";
@@ -20,7 +20,7 @@ export class TopeFotosError extends Error {
 }
 
 export const generarRenderFlux: GeneradorRender = async (config, captura, senal) => {
-  const toma = tomarFotoDeLaHora();
+  const toma = await tomarFotoDeLaHoraDurable();
   if (!toma.ok) {
     decidir("regla:render_modulo_tope", "tope de imágenes por hora: no se genera el render del módulo", { usadas: toma.usadas, tope: toma.tope });
     throw new TopeFotosError();

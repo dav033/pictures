@@ -47,7 +47,7 @@ export type DependenciasSimilitud = {
   autenticado: (request: Request) => boolean;
   mismoOrigen: (request: Request) => boolean;
   /** Toma una revisión del cupo por hora; `false` si ya se acabó. */
-  cupo: () => boolean;
+  cupo: () => boolean | Promise<boolean>;
   normalizar: (bytes: Uint8Array, lado: number) => Promise<Uint8Array>;
   embeber: (bytes: Uint8Array, mime: string, telemetria?: ContextoTelemetriaIA, flujo?: FlujoIA) => Promise<number[]>;
   /** Los ids de la petición para la telemetría: las tres llamadas de embedding quedan ligadas a ella. */
@@ -75,7 +75,7 @@ export async function atenderSimilitud(request: Request, deps: DependenciasSimil
   if (!leido.ok) return leido.respuesta;
   const cuerpo = SimilitudCuerpoSchema.safeParse(leido.json);
   if (!cuerpo.success) return json({ error: "Faltan la foto, las capturas, las escenas o la lectura, o no cumplen el formato." }, 400);
-  if (!deps.cupo()) return json({ error: "Se alcanzó el límite de revisiones por hora a la IA de la escena." }, 429);
+  if (!(await deps.cupo())) return json({ error: "Se alcanzó el límite de revisiones por hora a la IA de la escena." }, 429);
   const { foto, antes, despues, escenaAntes, escenaDespues, lectura, ronda } = cuerpo.data;
 
   const registrar = (decision: Decision, costeEstimadoUsd: number): Veredicto => {

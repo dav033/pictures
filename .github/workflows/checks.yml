@@ -103,6 +103,11 @@ jobs:
       # Escena del taller 3D (IA de escena, lectura de foto, armado dorado): sin red, sin secretos ni servidor.
       - if: ${{ !cancelled() }}
         run: npm run escena:test
+      # Topes de gasto por hora en Neon (migración 035). Con CI=true y el DATABASE_URL local de este job (el servicio pg16, ya migrado
+      # por rag:migrate arriba) corre el mismo conjunto de escenarios contra un pg.Pool de 8 conexiones: la sentencia SQL real, los
+      # bloqueos de fila entre conexiones y el adaptador de producción. Sin esa base (en local) cae al doble en memoria; PGlite, con PGLITE_DIR.
+      - if: ${{ !cancelled() }}
+        run: npm run topes:test
       - if: ${{ !cancelled() }}
         run: npm run test-honestidad-forzada
       - if: ${{ !cancelled() }}

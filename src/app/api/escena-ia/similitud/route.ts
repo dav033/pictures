@@ -1,6 +1,6 @@
 import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
 import { contextoActual, conRegistro, decidir } from "@/lib/registro/servidor";
-import { tomarCupoSimilitud } from "@/lib/globos3d/cupo-escena-ia";
+import { tomarCupoSimilitudDurable } from "@/lib/globos3d/cupo-escena-ia";
 import { atenderSimilitud } from "@/lib/globos3d/refinado/similitud-servidor";
 import { embeberImagen } from "@/lib/rag/embeddings";
 import { normalizarFotoA } from "@/lib/taller/normalizar-foto";
@@ -16,7 +16,7 @@ function atenderPOST(request: Request) {
   return atenderSimilitud(request, {
     autenticado: isAuthenticatedRequest,
     mismoOrigen: isSameOriginRequest,
-    cupo: tomarCupoSimilitud,
+    cupo: () => tomarCupoSimilitudDurable(),
     normalizar: normalizarFotoA,
     embeber: embeberImagen,
     contexto: () => {

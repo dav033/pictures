@@ -1,4 +1,4 @@
-import { devolverCupoEscenaIA, tomarCupoEscenaIA, TOPE_POR_HORA } from "@/lib/globos3d/cupo-escena-ia";
+import { devolverCupoEscenaIADurable, tomarCupoEscenaIADurable, TOPE_POR_HORA } from "@/lib/globos3d/cupo-escena-ia";
 import { ErrorLecturaFoto, type FotoLectura } from "@/lib/globos3d/leer-foto-ia";
 import type { Modelado } from "@/lib/globos3d/modelar-desde-foto";
 import { MIMES_FOTO, TOPE_BYTES_FOTO } from "./buscar-foto";
@@ -66,13 +66,14 @@ export async function atenderEscenaDesdeFoto(request: Request, deps: Dependencia
     return json({ error: "No se pudo leer la foto: el archivo no es una imagen válida." }, 400);
   }
 
-  if (!tomarCupoEscenaIA()) return json({ error: `Se alcanzó el límite de ${TOPE_POR_HORA} pedidos por hora a la IA de la escena. Inténtalo más tarde.` }, 429);
+  const cupo = await tomarCupoEscenaIADurable();
+  if (!cupo.ok) return json({ error: `Se alcanzó el límite de ${TOPE_POR_HORA} pedidos por hora a la IA de la escena. Inténtalo más tarde.` }, 429);
   try {
     const m = await deps.modelar({ bytes: normalizada, mime: "image/jpeg" }, request.signal);
     return json({ escena: m.escena, lectura: m.lectura, notas: m.notas, omitidas: m.omitidas, descartadas: m.descartadas, plantillas: m.plantillas, avisos: m.avisos, uso: m.uso });
   } catch (error) {
     const r = respuestaDeErrorLectura(error);
-    if (r.sinIA) devolverCupoEscenaIA();
+    if (r.sinIA) await devolverCupoEscenaIADurable(cupo);
     return json({ error: r.error }, r.status);
   }
 }
