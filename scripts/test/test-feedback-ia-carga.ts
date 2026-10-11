@@ -160,12 +160,48 @@ async function main() {
     assert.equal(srv.posts.length, 1, "una vez por página");
     assert.equal(srv.posts[0]?.pedido, "hazla más alta");
     assert.equal("calificacion" in (srv.posts[0] ?? {}), false, "el registro no lleva nota");
+    assert.equal(srv.gets.length, 0, "montar de nuevo un turno que esta página acaba de registrar no consulta nada: no tiene nada guardado");
     const restaurado = servidorFalso();
     const restauradoCtrl = crearControlador(config(restaurado.buscar, "t2"));
     await restauradoCtrl.cargarGuardada();
     await restauradoCtrl.esperar();
     assert.equal(restaurado.posts.length, 0, "restaurado: solo consulta");
     assert.equal(restaurado.gets.length, 1);
+  });
+  await prueba("un turno sin pedido ni respuesta no manda un POST vacío; la primera nota lo registra con sus datos", async () => {
+    const srv = servidorFalso({});
+    const c = crearControlador({ ...config(srv.buscar), datos: () => ({}) });
+    await c.registrarTerminado();
+    await c.esperar();
+    assert.equal(srv.posts.length, 0, "solo los ids no se registran");
+    assert.equal(srv.gets.length, 0);
+    c.calificar(6);
+    await c.esperar();
+    assert.equal(srv.posts.length, 1);
+    assert.equal(srv.posts[0]?.calificacion, 6);
+  });
+  await prueba("una nota dada mientras el registro sigue en vuelo no se pierde al terminar el registro", async () => {
+    const srv = servidorFalso({});
+    const c = crearControlador(config(srv.buscar));
+    const registro = c.registrarTerminado();
+    c.calificar(8);
+    await registro;
+    await c.esperar();
+    const remontada = crearControlador(config(srv.buscar));
+    await remontada.registrarTerminado();
+    await remontada.esperar();
+    assert.equal(remontada.leer().nota, 8, "lo recordado manda sobre «sin nada guardado»");
+    assert.equal(srv.gets.length, 0);
+  });
+  await prueba("la consulta llama a fetch suelto, no como método del lote (el del navegador lanza «Illegal invocation»)", async () => {
+    const llamadas: string[] = [];
+    const buscar = function (this: unknown, entrada: RequestInfo | URL): Promise<Response> {
+      if (this !== undefined) throw new TypeError("Illegal invocation");
+      llamadas.push(String(entrada));
+      return Promise.resolve(Response.json({ ok: true, calificaciones: [GUARDADA] }));
+    } as typeof fetch;
+    assert.equal((await pedirCalificacionGuardada("taller", "t1", buscar))?.calificacion, 7);
+    assert.equal(llamadas.length, 1);
   });
   await prueba("un fallo al registrar se vuelve a intentar con el próximo montaje", async () => {
     let fallar = true;

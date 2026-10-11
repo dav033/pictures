@@ -113,6 +113,25 @@ async function main(): Promise<void> {
     assert.equal(explicito.includes(TEXTO_NOTA_PLAN_3D), false);
   });
 
+  await caso("un plan de Python con una pieza que el 3D no dibuja dice por qué ve el dibujo de siempre (CUS-03); un plan 3D o sin esa pieza, no", () => {
+    const conPieza = (oficial: string, forma?: string) => ({
+      ...planPython,
+      plan: { ...planPython.plan, estructuras: planPython.plan.estructuras.map((e, i) => (i === 0 ? { ...e, estructura_oficial: oficial, ...(forma ? { forma } : {}) } : e)) },
+    }) as typeof planPython;
+    for (const [oficial, forma, nombre] of [["figura", undefined, "la figura con globos"], ["centro_mesa", undefined, "el centro de mesa con globos"], ["pared_organica", undefined, "la pared orgánica"], ["pared_no_densa", undefined, "la pared de globos no densa"], ["aro_circular", "parcial", "el aro circular parcial"]] as const) {
+      const html = renderToStaticMarkup(createElement(TarjetaPlan, propiedades(conPieza(oficial, forma), { motor: "python" })));
+      const t = texto(html);
+      assert.ok(t.includes(`La vista 3D todavía no dibuja ${nombre}: en este plan ves el dibujo de siempre.`), `${oficial}: falta la frase en la tarjeta`);
+      assert.ok(html.includes('data-testid="plan-avisos"'), `${oficial}: va en «Ajustes que hice»`);
+      const visible = html.split("<ul")[1]!.split("</li>").slice(0, 2).join("");
+      assert.ok(texto(visible).includes("La vista 3D todavía no dibuja"), `${oficial}: la frase va entre las dos líneas que se ven sin abrir la lista`);
+      assert.ok(!texto(renderToStaticMarkup(createElement(TarjetaPlan, propiedades(conPieza(oficial, forma), { motor: "3d" })))).includes("La vista 3D todavía no dibuja"), `${oficial}: un plan 3D no la lleva`);
+    }
+    for (const [oficial, forma] of [["columna", undefined], ["aro_circular", "circular"]] as const) {
+      assert.ok(!texto(renderToStaticMarkup(createElement(TarjetaPlan, propiedades(conPieza(oficial, forma), { motor: "python" })))).includes("La vista 3D todavía no dibuja"), `${oficial}: nada que decir`);
+    }
+  });
+
   await caso("«Ver detalle»: la tabla por pieza suma los globos del motor y las flores de globo se cuentan", () => {
     for (const id of ["idea-deco-real-07-eb12910e210c94b6184d025127acce95", "idea-deco-real-28-aro-blanco-dorado-y-nude", "oficial-guirnalda", "oficial-semiarco_asimetrico", "oficial-columna", "oficial-arco"]) {
       const s = sobreDe(id);

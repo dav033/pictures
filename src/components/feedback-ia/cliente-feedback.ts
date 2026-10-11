@@ -156,6 +156,11 @@ export function firmaEscena(valor: unknown): string {
   }
 }
 
+const CAMPOS_DE_IDENTIDAD: ReadonlySet<string> = new Set(["turnoId", "producto", "conversacionId"]);
+
+/** ¿La entrada solo identifica el turno (ni pedido, ni respuesta, ni nota, ni pasos...)? Mandarla no guardaría nada. */
+export const esEntradaVacia = (entrada: EntradaFeedback): boolean => Object.keys(entrada).every((campo) => CAMPOS_DE_IDENTIDAD.has(campo));
+
 export const tieneEscenas = (entrada: EntradaFeedback): boolean => entrada.escenaAntes !== undefined || entrada.escenaDespues !== undefined;
 
 export function sinEscenas(entrada: EntradaFeedback): EntradaFeedback {

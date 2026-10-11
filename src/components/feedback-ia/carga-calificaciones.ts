@@ -38,8 +38,11 @@ function leerCalificacion(valor: unknown): CalificacionGuardada | null {
 
 /** Las calificaciones de un lote, por id de turno; `undefined` si la petición falló. */
 async function leerLote(lote: Lote, turnos: string[]): Promise<Map<string, CalificacionGuardada> | undefined> {
+  // Suelto, no como `lote.buscar(...)`: el `fetch` del navegador lanza «Illegal invocation» si lo llama otro objeto, y la consulta
+  // nunca salía (la nota guardada no se veía al recargar).
+  const { buscar } = lote;
   try {
-    const r = await lote.buscar(`/api/feedback-ia?producto=${lote.producto}&turnos=${turnos.join(",")}`, { credentials: "same-origin" });
+    const r = await buscar(`/api/feedback-ia?producto=${lote.producto}&turnos=${turnos.join(",")}`, { credentials: "same-origin" });
     const cuerpo: unknown = await r.json().catch(() => null);
     if (!r.ok || typeof cuerpo !== "object" || cuerpo === null) return undefined;
     const lista = (cuerpo as { calificaciones?: unknown }).calificaciones;
@@ -103,6 +106,15 @@ export function recordarCalificacion(producto: ProductoFeedback, calificacion: C
   const clave = claveDe(producto, calificacion.turnoId);
   fallidasHasta.delete(clave);
   pedidas.set(clave, Promise.resolve(calificacion));
+}
+
+/**
+ * Un turno producido en esta página y registrado ahora no tiene nada guardado: se recuerda así para que volver a montarlo no
+ * consulte al servidor por él. No pisa lo que ya se sepa (una nota dada antes de que termine el registro).
+ */
+export function recordarTurnoNuevo(producto: ProductoFeedback, turnoId: string): void {
+  const clave = claveDe(producto, turnoId);
+  if (!pedidas.has(clave)) pedidas.set(clave, Promise.resolve(null));
 }
 
 /** Para las pruebas: olvida lo pedido, los fallos y lo pendiente. */

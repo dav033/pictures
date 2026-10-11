@@ -3,6 +3,7 @@ import type { MotivoId } from "@/lib/feedback-ia/motivos";
 import {
   armarEntrada,
   enviarCaptura,
+  esEntradaVacia,
   enviarFeedback,
   firmaEscena,
   sinEscenas,
@@ -11,7 +12,7 @@ import {
   type DatosTurno,
   type EscenasTurno,
 } from "./cliente-feedback";
-import { pedirCalificacionGuardada, recordarCalificacion } from "./carga-calificaciones";
+import { pedirCalificacionGuardada, recordarCalificacion, recordarTurnoNuevo } from "./carga-calificaciones";
 import { desmarcarRegistrado, marcarRegistrado, yaRegistrado } from "./registro-turnos";
 
 /**
@@ -136,7 +137,7 @@ export function crearControlador(configInicial: ConfigCalificacion): Controlador
       deshecho: actual.deshecho ? true : huboDeshecho ? false : undefined,
       escenas: conEscenas ? escenas : undefined,
     });
-    if (!entrada) {
+    if (!entrada || esEntradaVacia(entrada)) {
       poner({ fase: "libre" });
       return;
     }
@@ -227,8 +228,11 @@ export function crearControlador(configInicial: ConfigCalificacion): Controlador
       // Ya registrado en esta página (remontaje): solo se muestra lo que ya se guardó, sin volver a registrar.
       if (yaRegistrado(clave())) return cargarGuardada();
       marcarRegistrado(clave());
+      // Sea o no que haya algo que registrar, un turno nuevo no tiene nada guardado: volver a montarlo no lo consulta.
+      recordarTurnoNuevo(config.producto, config.turnoId);
       const entrada = armarEntrada({ producto: config.producto, turnoId: config.turnoId, conversacionId: config.conversacionId?.(), datos: config.datos() });
-      if (!entrada) return registro;
+      // Un turno sin pedido ni respuesta no tiene nada que registrar: la primera nota de la persona lo registra con sus datos.
+      if (!entrada || esEntradaVacia(entrada)) return registro;
       registro = (async () => {
         const resultado = await enviarFeedback(entrada, config.buscar);
         if (resultado.ok) return;

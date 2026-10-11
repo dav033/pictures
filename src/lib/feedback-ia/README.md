@@ -7,7 +7,7 @@ Calificación 1 a 10 de cada turno de la IA (Taller 3D y chat del cliente) con e
 
 | Momento | Llamada |
 |---|---|
-| Un turno **producido en la página** termina (una vez) | `POST /api/feedback-ia` con `turnoId`, `producto`, `solicitudId` (cabecera `x-request-id` de la respuesta del turno), `conversacionId`, `pedido`, `respuesta`, `modelo`, `costeUsd`, `latenciaMs` y `pasos` (ver abajo). Sin `calificacion`, sin escenas. |
+| Un turno **producido en la página** termina (una vez) | `POST /api/feedback-ia` con `turnoId`, `producto`, `solicitudId` (cabecera `x-request-id` de la respuesta del turno), `conversacionId`, `pedido`, `respuesta`, `modelo`, `costeUsd`, `latenciaMs` y `pasos` (ver abajo). Sin `calificacion`, sin escenas. Un turno sin pedido, respuesta ni pasos no se registra (solo llevaría ids): la primera nota lo registra con sus datos. |
 | Un turno **restaurado** al cargar la página | Nada: no se registra nunca. Solo se consulta su calificación guardada (fila siguiente). |
 | Al cargar la página | `GET /api/feedback-ia?producto=taller\|cliente&turnos=id1,id2` (lote de hasta 100 ids; 240 lecturas por minuto y IP; `Cache-Control: private, no-store`). Devuelve `calificaciones` del navegador; los fallos se recuerdan 30 s. |
 | Capturas | `POST /api/feedback-ia/capturas`, `multipart/form-data`: `turnoId`, `producto`, `momento` (`antes` \| `despues`), `conversacionId` (recomendado), `imagen` (JPEG ≤ 600 KB, ~1280 px). Una llamada por captura. |

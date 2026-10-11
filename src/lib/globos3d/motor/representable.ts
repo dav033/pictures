@@ -1,3 +1,4 @@
+import { esAroParcial, esSinVista3d, type EstructuraSinVista3d } from "@/lib/guiada-motor/sin-vista-3d";
 import type { PiezaEspec } from "./espec-cliente-v1";
 
 /**
@@ -16,7 +17,8 @@ export type Representacion = { estado: EstadoRepresentacion; motivo?: string };
 /** Los patrones de trenza clásica llevan hasta cuatro colores; con más se arman en bandas (`salvavidas`). */
 export const MAX_COLORES_TRENZA = 4;
 
-const SIN_CONSTRUCTOR: Readonly<Record<string, string>> = {
+/** Los motivos de las estructuras que la tarjeta del navegador también nombra (`sin-vista-3d.ts`): si la tabla de allá cambia, esta deja de compilar. */
+const SIN_CONSTRUCTOR: Readonly<Record<EstructuraSinVista3d, string>> = {
   figura: "No hay un constructor genérico de figuras: solo existen las digitalizadas una a una.",
   centro_mesa: "El constructor de centros de mesa todavía no está en el motor.",
   pared_organica: "No hay un constructor de pared orgánica con racimos irregulares.",
@@ -37,9 +39,8 @@ const CLASICAS_DE_TRENZA = new Set(["arco", "columna", "guirnalda"]);
 
 export function representacionDe(pieza: PiezaEspec): Representacion {
   if (pieza.declarada) return { estado: "declarada", motivo: pieza.declarada.motivo };
-  const sinConstructor = SIN_CONSTRUCTOR[pieza.oficial];
-  if (sinConstructor) return { estado: "fallback", motivo: sinConstructor };
-  if (pieza.oficial === "aro_circular" && pieza.forma === "parcial") return { estado: "fallback", motivo: "El aro parcial (media luna, diagonal) no existe: el motor solo arma el aro entero." };
+  if (esSinVista3d(pieza.oficial)) return { estado: "fallback", motivo: SIN_CONSTRUCTOR[pieza.oficial] };
+  if (esAroParcial(pieza.oficial, pieza.forma)) return { estado: "fallback", motivo: "El aro parcial (media luna, diagonal) no existe: el motor solo arma el aro entero." };
   if (LIGERAS.has(pieza.oficial)) return { estado: "aproximada", motivo: "No hay variante ligera de cuartetos: se arma orgánica con menos globos." };
   if (pieza.oficial === "bouquet") return { estado: "aproximada", motivo: "El bouquet se arma como un ramo de helio sin variantes de base ni de peso." };
   if (CLASICAS_DE_TRENZA.has(pieza.oficial) && pieza.tamanos === "clasica" && pieza.colores.length > MAX_COLORES_TRENZA) {

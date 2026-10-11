@@ -33,6 +33,7 @@ import { crearDependenciasEdicion3d } from "./edicion-motor3d";
 import { listaNatural } from "@/lib/ia/guiado/propuesta-composicion";
 import { avisoColoresFoto } from "@/lib/plan/colores-foto-plan";
 import { ajustesDePython } from "@/lib/ia/guiado/ajustes-python";
+import { avisosSinVista3d } from "@/lib/guiada-motor/sin-vista-3d";
 import { AjustesPropuesta } from "@/components/plan/AjustesPropuesta";
 
 export type AccionPlan = "ver" | "costear" | "comprar" | "aprender" | "contratar" | "cambiar";
@@ -178,10 +179,13 @@ export function TarjetaPlan(props: Props) {
   // «Ajustes que hice»: lo que Python sustituyó o supuso, en palabras de cliente, como en la clásica (comparador 100, I5).
   // Con lo que la foto muestra y el plan no compra (un acabado), dicho con discreción (probador 141).
   const avisosFoto = props.avisosFoto;
+  // Un plan de Python con una pieza que la vista 3D no dibuja (CUS-03) dice primero por qué ve el dibujo de siempre: la lista
+  // enseña solo dos líneas y esta explica todo el plan.
   const ajustesPython = useMemo(() => [
+    ...(es3d ? [] : avisosSinVista3d(plan).map((texto) => ({ tipo: "supuesto" as const, texto }))),
     ...ajustesDePython(plan, { sinColoresDeFoto: Boolean(avisoColores) }),
     ...(avisosFoto ?? []).map((texto) => ({ tipo: "color" as const, texto })),
-  ], [plan, avisoColores, avisosFoto]);
+  ], [plan, avisoColores, avisosFoto, es3d]);
 
   return (
     <motion.article
