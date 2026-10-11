@@ -7,6 +7,7 @@ services/ai-api/app/plan.py, que necesita dependencias que no se instalan para e
 `_consolidate` y sus ayudantes. La orquestación es la de `_reoptimize_presentations` y `_buy`.
 """
 
+import __future__
 import ast
 import json
 import math
@@ -36,7 +37,8 @@ arbol = ast.parse(FUENTE)
 for nodo in arbol.body:
     if isinstance(nodo, ast.FunctionDef) and nodo.name in NOMBRES:
         modulo = ast.Module(body=[nodo], type_ignores=[])
-        exec(compile(ast.fix_missing_locations(modulo), "plan.py", "exec"), espacio)
+        # Anotaciones diferidas: en Python < 3.14 las anotaciones de plan.py (p. ej. `Candidate`) se evaluarían al definir la función.
+        exec(compile(ast.fix_missing_locations(modulo), "plan.py", "exec", flags=__future__.annotations.compiler_flag, dont_inherit=True), espacio)
 faltan = NOMBRES - {n for n in espacio if n in NOMBRES}
 if faltan:
     sys.exit(f"faltan en plan.py: {sorted(faltan)}")
