@@ -142,6 +142,7 @@ prueba("repositorio de una pieza y de un item guardado por el usuario (R2)", () 
   assert.equal(repositorioDeItem(propio(mueble("silla_tiffany"))), "mobiliario");
   const globo = BIBLIOTECA_FABRICA.find((i) => i.id.startsWith("decoracion:"))!;
   assert.equal(repositorioDeItem({ ...propio(mueble("x")), contenido: globo.contenido }), "sempertex");
+  assert.equal(repositorioDeItem({ ...propio(mueble("silla_tiffany")), tipo: "escena" }), "sempertex", "una escena guardada es una idea de Sempertex aunque solo traiga muebles");
 });
 
 prueba("las comprobaciones muerden: esquema del manifiesto y carga de una clase", () => {

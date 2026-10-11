@@ -7,6 +7,7 @@ export const PASO_LISTA = "taller 3D: lista de compra";
 export const PASO_HOJA = "taller 3D: hoja de armado";
 export const PASO_IMPRIMIR = "taller 3D: imprimir";
 export const PASO_FOCO = "taller 3D: cerrar y devolver el foco";
+export const PASO_REPOSITORIOS = "taller 3D: «Añadir» por repositorio";
 
 type PasosDelTaller = {
   plantilla: () => Promise<string>;
@@ -14,11 +15,27 @@ type PasosDelTaller = {
   hoja: () => Promise<string>;
   imprimir: () => Promise<string>;
   foco: () => Promise<string>;
+  repositorios: () => Promise<string>;
 };
 
 type VentanaConImpresion = { __impresiones: number };
 
 type LecturaDeLaBandera = { activa: boolean; fuente?: string };
+
+type LecturaDeRepositorios = { ui: boolean; repositorios: Array<{ id: string; visible: boolean }> };
+
+/** `null` si la ruta no existe (un despliegue anterior a REQ-013 fase 5); falla con cualquier otro error HTTP. */
+async function leerRepositorios(pagina: Page, base: string): Promise<LecturaDeRepositorios | null> {
+  const respuesta = await pagina.request.get(`${base}/api/catalogo/repositorios`);
+  if (respuesta.status() === 404) return null;
+  if (!respuesta.ok()) throw new Error(`/api/catalogo/repositorios respondió HTTP ${respuesta.status()}`);
+  return (await respuesta.json()) as LecturaDeRepositorios;
+}
+
+/** Los repositorios que el panel «Añadir» sabe pintar, con el nombre de su opción en el selector. */
+const REPOSITORIOS_DEL_PANEL: ReadonlyArray<{ id: string; nombre: string }> = [
+  { id: "sempertex", nombre: "Sempertex" }, { id: "mobiliario", nombre: "Mobiliario" }, { id: "escenografia", nombre: "Escenografía" },
+];
 
 const BOTON_DE_LISTA = /Lista de compra\s*·\s*[1-9]\d*\s*globos/;
 
@@ -60,6 +77,8 @@ export function crearPasosDelTaller(entorno: Entorno): PasosDelTaller {
   const dialogoDeLista = (p: Page): Locator => p.locator("dialog[open]");
   const botonDeHoja = (p: Page): Locator => dialogoDeLista(p).getByRole("button", { name: "Hoja de armado" });
   const hoja = (p: Page): Locator => p.getByRole("dialog", { name: "Hoja de armado" });
+  const selectorDeRepositorio = (p: Page): Locator => p.getByRole("group", { name: "Repositorio" });
+  const opcionDeRepositorio = (p: Page, nombre: string): Locator => selectorDeRepositorio(p).getByRole("button", { name: new RegExp(`^${nombre}\\b`) });
 
   return {
     plantilla: async () => {
@@ -129,6 +148,50 @@ export function crearPasosDelTaller(entorno: Entorno): PasosDelTaller {
       await dialogoDeLista(p).waitFor({ state: "detached" });
       await p.waitForFunction(() => /^Lista de compra/.test(document.activeElement?.textContent?.trim() ?? ""));
       return "el foco vuelve al botón «Lista de compra»";
+    },
+    repositorios: async () => {
+      const p = paginaAbierta();
+      const lectura = await leerRepositorios(p, entorno.config.base);
+      if (!lectura) throw new PasoOmitido("el selector de repositorio no está en este despliegue: /api/catalogo/repositorios no existe (es anterior a REQ-013 fase 5)");
+      if (!lectura.ui) throw new PasoOmitido("el selector de repositorio no sale: la interfaz por repositorio está apagada (fila catalogo_ui_repositorios o variable CATALOGO_UI_REPOSITORIOS)");
+      const visibles = new Set(lectura.repositorios.filter((repositorio) => repositorio.visible).map((repositorio) => repositorio.id));
+      if (visibles.size < 2) throw new PasoOmitido("el Taller ve un solo repositorio (CATALOGO_REPOS_TALLER): no hay nada que elegir y el selector no sale");
+      // Una lista de compra que otro paso dejó abierta (un <dialog> modal) vuelve inerte todo lo demás.
+      if ((await dialogoDeLista(p).count()) > 0) { await p.keyboard.press("Escape"); await dialogoDeLista(p).waitFor({ state: "detached" }); }
+      const riel = p.getByRole("navigation", { name: "Paneles" }).getByRole("button", { name: "Añadir", exact: true });
+      if ((await riel.getAttribute("aria-pressed")) !== "true") await riel.click();
+      await p.locator("#anadir-buscar").waitFor();
+      const selector = selectorDeRepositorio(p);
+      await selector.waitFor().catch(() => { throw new Error("/api/catalogo/repositorios dice ui: true pero «Añadir» no muestra el selector de repositorio"); });
+      const nombres = await selector.getByRole("button").evaluateAll((botones) => botones.map((boton) => boton.querySelector("span")?.textContent ?? ""));
+      const esperados = ["Todos", ...REPOSITORIOS_DEL_PANEL.filter(({ id }) => visibles.has(id)).map(({ nombre }) => nombre)];
+      if (nombres.join("|") !== esperados.join("|")) throw new Error(`el selector de repositorio ofrece «${nombres.join(", ")}» y el Taller ve «${esperados.join(", ")}»`);
+
+      const hechos: string[] = [];
+      if (visibles.has("mobiliario")) {
+        await opcionDeRepositorio(p, "Mobiliario").click();
+        const mobiliario = p.getByRole("region", { name: "Mobiliario" });
+        await mobiliario.waitFor();
+        const muebles = await mobiliario.locator("button[title]").count();
+        if (muebles < 20) throw new Error(`Mobiliario muestra ${muebles} tarjetas (se esperaban unas 27)`);
+        await mobiliario.getByRole("button", { name: "Silla Tiffany" }).click();
+        await mobiliario.getByRole("status").filter({ hasText: "Listo: «Silla Tiffany»" }).waitFor();
+        hechos.push(`Mobiliario ${muebles} tarjetas (añadió «Silla Tiffany»)`);
+      }
+      if (visibles.has("escenografia")) {
+        await opcionDeRepositorio(p, "Escenografía").click();
+        const escenografia = p.getByRole("region", { name: "Escenografía" });
+        await escenografia.waitFor();
+        const fondos = await escenografia.locator("button[title]").count();
+        if (fondos < 20) throw new Error(`Escenografía muestra ${fondos} tarjetas (se esperaban unas 25)`);
+        hechos.push(`Escenografía ${fondos}`);
+      }
+      if (visibles.has("sempertex")) {
+        await opcionDeRepositorio(p, "Sempertex").click();
+        await p.getByRole("tablist", { name: "Qué añadir" }).waitFor();
+        hechos.push("Sempertex con sus pestañas");
+      }
+      return `selector «${nombres.join(", ")}»; ${hechos.join(", ")}`;
     },
   };
 }

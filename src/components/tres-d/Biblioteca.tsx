@@ -22,6 +22,9 @@ import type { EscenaGlobos } from "./escena-globos";
 import { armarEnMotor, useMotorBiblioteca, type Armado } from "./biblioteca-cliente";
 import { ArrastreDecoracionContexto, arrastreDeItem } from "./arrastre-decoracion";
 import { TarjetaReceta } from "./TarjetaReceta";
+import { escenografiaEnTexto, type EscenografiaPorRepositorio } from "@/lib/catalogo/lista-por-repositorio";
+import { ListaEscenografia, useEscenografiaPorRepositorio } from "./ListaEscenografia";
+import { ProcedenciaDeItem } from "./ProcedenciaDeItem";
 
 /**
  * Pestaña **Biblioteca** de /3d: todo lo reutilizable del taller, cada cosa por separado (escenas, estructuras con sus
@@ -266,7 +269,7 @@ export function Fuente({ item, corta = false }: { item: ItemBiblioteca; corta?: 
 }
 
 /** La lista de compra en texto (para copiarla y pegarla en un pedido). */
-function listaEnTexto(item: ItemBiblioteca, p: ProductosDeItem): string {
+function listaEnTexto(item: ItemBiblioteca, p: ProductosDeItem, partes: EscenografiaPorRepositorio | null): string {
   const lineas = [`${item.nombre} — productos`, "", "GLOBOS"];
   for (const g of p.globos) lineas.push(`${g.cantidad} × ${g.nombreOficial} — ${g.producto.nombre}${g.producto.estado === "verificado" ? ` — ${g.producto.url}` : " (sin verificar)"}${g.impresos ? ` (${g.impresos} de ellos impresos: ver abajo)` : ""}`);
   for (const [seccion, titulo] of [["impresos", "GLOBOS IMPRESOS"], ["metalizados", "METALIZADOS"]] as const) {
@@ -274,14 +277,15 @@ function listaEnTexto(item: ItemBiblioteca, p: ProductosDeItem): string {
     if (de.length) { lineas.push("", titulo); for (const t of de) lineas.push(`${t.cantidad} × ${t.nombre} (${t.detalle})${t.url ? ` — ${t.url}` : ""}`); }
   }
   if (p.utileria.length) { lineas.push("", "UTILERÍA"); for (const u of p.utileria) lineas.push(`${u.cantidad} × ${u.nombre}${u.variante ? ` (${u.variante})` : ""}${u.url ? ` — ${urlTienda(u.url)}` : ""}`); }
-  if (p.escenografia.length) { lineas.push("", "ESCENOGRAFÍA (no es producto de la tienda)"); for (const e of p.escenografia) lineas.push(`${e.cantidad} × ${e.nombre}`); }
+  lineas.push(...escenografiaEnTexto(p.escenografia, partes));
   return lineas.join("\n");
 }
 
 export function TablaProductos({ item, productos }: { item: ItemBiblioteca; productos: ProductosDeItem }) {
   const [copiado, setCopiado] = useState(false);
+  const partes = useEscenografiaPorRepositorio(item, productos);
   const copiar = async () => {
-    try { await navigator.clipboard.writeText(listaEnTexto(item, productos)); setCopiado(true); setTimeout(() => setCopiado(false), 2500); } catch { setCopiado(false); }
+    try { await navigator.clipboard.writeText(listaEnTexto(item, productos, partes)); setCopiado(true); setTimeout(() => setCopiado(false), 2500); } catch { setCopiado(false); }
   };
   const th = "px-2 py-1.5 text-left text-[0.7rem] font-semibold uppercase tracking-wide text-texto-suave";
   const td = "px-2 py-1.5 align-top";
@@ -381,16 +385,7 @@ export function TablaProductos({ item, productos }: { item: ItemBiblioteca; prod
         )}
       </div>
 
-      {productos.escenografia.length > 0 && (
-        <div>
-          <h4 className="text-sm font-semibold text-texto">Escenografía <span className="font-normal text-texto-suave">· no es producto de la tienda</span></h4>
-          <ul className="mt-1 text-sm text-texto">
-            {productos.escenografia.map((e) => (
-              <li key={`${e.clase}|${e.nombre}`}>{e.cantidad} × {e.nombre} <span className="text-[0.7rem] text-texto-suave">({e.clase === "papel" ? "papel" : e.clase === "follaje" ? "follaje artificial" : "escenografía"})</span></li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <ListaEscenografia productos={productos} partes={partes} />
     </section>
   );
 }
@@ -514,7 +509,7 @@ export function Ficha({ item, biblioteca, huellas, minis, onVer, onVolver, accio
           </header>
           <section className={`${TARJETA} flex flex-col gap-1 p-3`} aria-label="De dónde viene">
             <h3 className="text-sm font-semibold text-texto">De dónde viene</h3>
-            <Fuente item={item} />
+            <Fuente item={item} /><ProcedenciaDeItem item={item} />
             {escenas.length > 0 && (
               <p className="text-sm text-texto">Está en {escenas.map(({ origen, escena }, k) => (
                 <span key={origen.itemId}>{k > 0 ? ", " : ""}<button type="button" onClick={() => onVer(escena!)} className="underline decoration-dotted underline-offset-2 hover:text-acento">{origen.nombre}</button>{origen.nodoIds.length > 1 && item.tipo !== "conjunto" ? ` (${origen.nodoIds.length} veces)` : ""}</span>

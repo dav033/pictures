@@ -11,6 +11,11 @@ del Taller abría detrás de un modal nativo y no respondía) solo lo ve un nave
 3. `/` (chat clásico), `/catalogo` (lista productos) y `/3d/modulos`.
 4. `/3d`: plantilla → «Lista de compra» (Bomba o «Helio y cinta») → «Hoja de armado» (se omite con la bandera apagada)
    → «Imprimir» recibe el clic y al imprimir solo se ve la hoja → cerrar y el foco vuelve a «Lista de compra».
+   → «Añadir» por repositorio (REQ-013 fase 5): el selector Todos · Sempertex · Mobiliario · Escenografía, se añade una «Silla
+   Tiffany» de Mobiliario, Escenografía lista sus fondos y Sempertex vuelve a sus pestañas. **Se omite** (`SKIPPED`, con el motivo)
+   si el despliegue no trae la ruta `/api/catalogo/repositorios` (anterior a esa fase) o si la interfaz por repositorio está
+   apagada (fila `catalogo_ui_repositorios` o variable `CATALOGO_UI_REPOSITORIOS`); falla si la ruta dice `ui: true` y el
+   selector no sale.
 
 Cada paso sale como `PASS`, `FAIL` o `SKIPPED` con su duración. Un `FAIL` guarda una captura; el informe JSON y las
 capturas quedan en `%TEMP%/e2e-humo/<fecha>/` (la ruta se imprime al final). Sale con código 1 si algún paso falla.

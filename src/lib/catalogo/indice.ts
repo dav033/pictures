@@ -45,9 +45,11 @@ const piezasDe = (c: ContenidoItem): Pieza[] =>
 
 /**
  * El repositorio de un item de la biblioteca (R2): lo de fábrica y lo derivado, por su prefijo (Sempertex); lo guardado por el
- * usuario, por su contenido: con cualquier pieza de Sempertex es de Sempertex; si solo trae muebles o fondos, el del primero.
+ * usuario, por su contenido: con cualquier pieza de Sempertex es de Sempertex; si solo trae muebles o fondos, el del primero. Una
+ * escena guardada es una idea (la pestaña Ideas de Sempertex) aunque solo traiga muebles: es de Sempertex, que depende de los otros dos.
  */
 export function repositorioDeItem(item: ItemBiblioteca): IdRepositorio {
+  if (item.propio && item.tipo === "escena") return "sempertex";
   const porId = item.propio ? undefined : repositorioDeIdLocal(item.id);
   if (porId && porId !== "ambiguo") return porId;
   const repos = piezasDe(item.contenido).map(repositorioDePieza);

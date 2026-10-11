@@ -17,6 +17,7 @@
  */
 import assert from "node:assert/strict";
 import { REFERENCIAS_DUENO } from "@/lib/globos3d/referencias-dueno";
+import { repartirEscenografia } from "../../src/lib/catalogo/lista-por-repositorio";
 import { armarEscena, type Escena, type EscenaArmada, type NodoEscena } from "../../src/lib/globos3d/escena";
 import { ESCENAS_PREDEFINIDAS, escenaPredefinida } from "../../src/lib/globos3d/escenas-presets";
 import { IDEAS_SEMPERTEX } from "../../src/lib/globos3d/ideas-sempertex";
@@ -236,8 +237,16 @@ const dorado = productoDeGlobo("R-12", "970");
 assert.deepEqual([dorado.nombre, dorado.estado, dorado.tallaEnTienda], ["GLOBO LATEX REDONDO REFLEX DORADO", "verificado", true]);
 
 let lineas = 0;
+let ideasConMobiliario = 0;
 for (const item of biblioteca) {
   const productos = productosDe(item);
+  // REQ-013 T25: repartir las líneas de escenografía por repositorio no pierde ni repite ninguna, ni cambia su orden dentro de cada parte.
+  const partida = repartirEscenografia(escenaDeItem(item), productos.escenografia);
+  assert.deepEqual(productos.escenografia.filter((l) => partida.mobiliario.includes(l)), partida.mobiliario, `${item.id}: Mobiliario conserva el orden de siempre`);
+  assert.deepEqual(productos.escenografia.filter((l) => partida.escenografia.includes(l)), partida.escenografia, `${item.id}: Escenografía conserva el orden de siempre`);
+  assert.equal(partida.mobiliario.length + partida.escenografia.length, productos.escenografia.length, `${item.id}: el reparto por repositorio conserva todas las líneas, una vez cada una`);
+  assert.ok(partida.mobiliario.every((l) => l.clase === "escenografia") && partida.escenografia.filter((l) => l.clase !== "escenografia").length === productos.escenografia.filter((l) => l.clase !== "escenografia").length, `${item.id}: papel y follaje se quedan en Escenografía`);
+  if (partida.mobiliario.length) ideasConMobiliario++;
   for (const g of productos.globos) {
     assert.ok(g.cantidad > 0 && g.nombreOficial === `${g.formatoId} ${g.color} ${g.codigo}`, `${item.id}: ${g.nombreOficial}`);
     assert.ok(g.producto.nombre && g.producto.url.startsWith(TIENDA), `${item.id}: ${g.nombreOficial} con producto y url`);
@@ -291,6 +300,11 @@ console.log(`OK impresos y metalizados en productos: ${lineasImpresos} líneas d
 const marco = productosDe(biblioteca.find((i) => i.id === "escena:halloween_marco_mesas")!);
 assert.ok(marco.utileria.length >= 5 && marco.escenografia.some((e) => e.nombre.startsWith("Mesa cilíndrica")) && marco.escenografia.some((e) => e.clase === "papel"), "escena con utilería, escenografía y papel por separado");
 console.log(`OK productos: ${verificados} combinaciones formato-color con producto verificado, ${sinVerificar} sin verificar; ${lineas} líneas de globos con producto y url`);
+// Las mesas cilíndricas de la idea de Halloween las dibuja la idea (escenografía de Sempertex, sin `mueble` del catálogo): no son mobiliario.
+const partidaMarco = repartirEscenografia(escenaDeItem(biblioteca.find((i) => i.id === "escena:halloween_marco_mesas")!), marco.escenografia);
+assert.deepEqual(partidaMarco.mobiliario, [], "las mesas de una idea de Sempertex siguen en Escenografía");
+assert.deepEqual(partidaMarco.escenografia, marco.escenografia, "y la lista de siempre queda entera, en su orden");
+console.log(`OK lista por repositorio: ${ideasConMobiliario} ideas de la fábrica traen mobiliario del catálogo en su lista; el reparto conserva todas las líneas`);
 
 // ----------------------------------------------------------------------------------------------------------
 // 6. Filtros

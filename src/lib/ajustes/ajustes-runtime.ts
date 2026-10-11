@@ -4,7 +4,8 @@ import { getRagPool } from "@/lib/rag/db";
 /**
  * El lector de **ajustes de ejecución** (tabla `ajustes_runtime`, migración 032): una fila clave → valor que se cambia en
  * producción sin desplegar. Lo comparten la bandera del motor de la guiada (`guiada-motor/bandera.ts`), la de la hoja de armado
- * del Taller (`taller/hoja-armado-bandera.ts`) y la visibilidad de los repositorios del catálogo (`catalogo/visibilidad.ts`):
+ * del Taller (`taller/hoja-armado-bandera.ts`), la visibilidad de los repositorios del catálogo (`catalogo/visibilidad.ts`) y la
+ * interfaz «Añadir» por repositorio (`catalogo/ui-repositorios.ts`):
  * cada una decide qué hace con el valor; aquí solo se lee, con un caché de 30 s por instancia, y leer nunca tumba ni retrasa más de
  * `PLAZO_LECTURA_AJUSTE_MS` una petición.
  */

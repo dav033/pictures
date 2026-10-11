@@ -12,10 +12,25 @@ import type { EstadoFoto } from "./useBusquedaFoto";
 
 const ACEPTA = "image/jpeg,image/png,image/webp";
 
-/** Arrastrar una imagen sobre el panel o pegarla (Ctrl+V): llama a `onFoto` con el archivo. No toca el texto que se pega en un campo. */
-export function useSoltarFoto(onFoto: (f: File) => void) {
+/**
+ * Arrastrar una imagen sobre el panel o pegarla (Ctrl+V): llama a `onFoto` con el archivo. No toca el texto que se pega en un campo.
+ * Con `activa` en falso (las vistas de Mobiliario y Escenografía no buscan por foto) la imagen soltada se traga sin hacer nada: sin esto el
+ * navegador abriría el archivo y la persona perdería la escena.
+ */
+export function useSoltarFoto(onFoto: (f: File) => void, activa = true) {
   const [arrastrando, setArrastrando] = useState(false);
   const llevaImagen = (e: DragEvent) => [...e.dataTransfer.items].some((i) => i.kind === "file" && i.type.startsWith("image/"));
+  if (!activa) {
+    return {
+      arrastrando: false,
+      propiedades: {
+        onDragOver: (e: DragEvent) => { if (llevaImagen(e)) { e.preventDefault(); e.dataTransfer.dropEffect = "none"; } },
+        onDragLeave: () => {},
+        onDrop: (e: DragEvent) => { if ([...e.dataTransfer.files].some((f) => f.type.startsWith("image/"))) e.preventDefault(); },
+        onPaste: () => {},
+      },
+    };
+  }
   return {
     arrastrando,
     propiedades: {

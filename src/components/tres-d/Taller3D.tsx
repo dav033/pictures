@@ -57,7 +57,7 @@ import { leerGuardada, guardarEscena } from "./guardado-escena";
 import { conSalaNueva } from "@/lib/globos3d/salon-techos";
 import { claveNueva } from "./guardado-conversacion";
 import { useInsetTeclado } from "./useInsetTeclado";
-import type { PestanaAnadir } from "./PanelAnadir";
+import { useEstadoAnadir } from "./useEstadoAnadir";
 import type { PiezaParaAnadir } from "./nuevas-taller";
 import type { VistaSolitario } from "./ParametrosPieza";
 import { BTN, BTN_ICO, BTN_PRI, FLOTANTE, RIEL, RIEL_ON } from "./ui-taller";
@@ -198,7 +198,7 @@ export function Taller3D() {
       return nuevo;
     });
   }, []);
-  const [pestanaAnadir, setPestanaAnadir] = useState<PestanaAnadir>("estructuras");
+  const anadir = useEstadoAnadir();
   const [herramienta, setHerramienta] = useState<Herramienta>("mover");
   const [vistaFija, setVistaFija] = useState<VistaFija | null>("3d");
   const [dialogo, setDialogo] = useState<"lista" | "imagen" | "ayuda" | null>(null);
@@ -470,7 +470,7 @@ export function Taller3D() {
   /** «Colgar otra»: el panel Añadir en Decoraciones, con la pieza elegida (sus tarjetas ofrecen colgarla de ella). */
   function colgarEn(id: string) {
     setSeleccion(id);
-    setPestanaAnadir("decoraciones");
+    anadir.pedirDecoraciones();
     if (solitario.activo) { setColgarEnSolitario(true); return; }
     setPanel("anadir");
     setPestanaHoja("anadir");
@@ -633,7 +633,7 @@ export function Taller3D() {
   const anadirVisible = esAncho ? (panel === "anadir" && !solitario.activo) || (solitario.activo && colgarEnSolitario) : pestanaHoja === "anadir";
   const panelAnadir = armadaEscena ? (
     <PanelAnadir escena={escenaVista} armada={armadaEscena} onEscena={cambiarDesdePanel} seleccion={anadirVisible ? seleccion : null} onSeleccion={elegir}
-      pestana={pestanaAnadir} onPestana={setPestanaAnadir} onNueva={crearYEditarEstable} onFicha={setFicha} enHoja={!esAncho} />
+      pestana={anadir.pestana} onPestana={anadir.setPestana} eleccion={anadir.eleccion} onEleccion={anadir.setEleccion} onNueva={crearYEditarEstable} onFicha={setFicha} enHoja={!esAncho} />
   ) : <Cargando />;
 
   const abrirAnadir = useEstable(() => { setPanel("anadir"); setPestanaHoja("anadir"); });
@@ -828,7 +828,7 @@ export function Taller3D() {
       case "parametros": return <div className="taller-seccionado min-h-0 flex-1 overflow-y-auto">{parametros}{listaParte}</div>;
       case "partes": return armadaEscena && inicialSolitario && raizSolitario ? (
         <PartesSolitario escena={escenaVista} armada={armadaEscena} inicial={inicialSolitario} raizId={raizSolitario.id} seleccion={seleccion ?? raizSolitario.id}
-          onSeleccion={(id) => { setSeleccion(id); setPestanaHoja("parametros"); }} onColgar={() => { setPestanaAnadir("decoraciones"); setPestanaHoja("anadir"); }} />
+          onSeleccion={(id) => { setSeleccion(id); setPestanaHoja("parametros"); }} onColgar={() => { anadir.pedirDecoraciones(); setPestanaHoja("anadir"); }} />
       ) : null;
     }
   };
