@@ -1,8 +1,11 @@
 import type { CapaHoja } from "./hoja-armado-capas";
-import { anexosDeFila, marcasDeLinea, type FilaCompacta, type LineaContenido } from "./hoja-armado-compacta";
+import { anexosDeFila, dondeDeFila, marcasDeLinea, type FilaCompacta, type LineaContenido } from "./hoja-armado-compacta";
 import type { TramoHoja } from "./hoja-armado-tramos";
 import type { CuartetoHoja } from "./hoja-armado-trenza";
+import type { ResumenHelio } from "./helio-cinta";
 import { textoFlores } from "./hoja-armado-anexos";
+import { filasDeHelio, NOTA_ESTIMACION_HELIO, textoCierreDeEstructura, textoCierreDeTotal, textoDetalleEnLista } from "./hoja-armado-helio";
+import { NOTA_METALIZADOS, type LineaMetalizada } from "./hoja-armado-metalizados";
 import { textoNombres, textoSecuencia } from "./hoja-armado-texto";
 import type { EstructuraHoja, HojaArmado, LineaLista, PaginaHoja, TrozoHoja } from "./hoja-armado-tipos";
 
@@ -29,6 +32,10 @@ const ALTO_CONTINUA_MM = 14;
 const ALTO_ENCABEZADO_TABLA_MM = 9;
 const ALTO_TITULO_TABLA_MM = 21;
 const ALTO_CIERRE_MM = 10;
+/** El título con filete de una sección (como el de la lista de globos), con el espacio que lo separa de lo que sigue. */
+const ALTO_TITULO_BLOQUE_MM = 13;
+/** «Cómo armarlo.» en negrita, delante del texto de cada franja con su orden de armado. */
+const PREFIJO_COMO_ARMAR = 14;
 /** El `gap-5` entre los trozos de una página y el que la separa de «Página n de N». */
 const SEPARACION_MM = 5.3;
 /** La línea «Página n de N», al pie de cada página. */
@@ -48,7 +55,8 @@ const altoDeCapa = (c: CapaHoja): number =>
 
 /** Un tramo: una fila de la tabla; manda la más alta entre su título (en una columna de 38 mm), los colores con sus marcas y los tamaños. */
 const altoDeTramo = (t: TramoHoja): number =>
-  3.5 + Math.max(LINEA_MM * t.colores.length + LINEA_CHICA_MM * lineasDeMarcas(t.marcas, 30), LINEA_CHICA_MM * t.tamanos.length, LINEA_MM * lineas(t.etiqueta.length, 17) + LINEA_CHICA_MM);
+  3.5 + Math.max(LINEA_MM * t.colores.length + LINEA_CHICA_MM * lineasDeMarcas(t.marcas, 30), LINEA_CHICA_MM * t.tamanos.length, LINEA_MM * lineas(t.etiqueta.length, 17) + LINEA_CHICA_MM)
+  + (t.comoArmar ? LINEA_CHICA_MM * lineas(t.comoArmar.length + PREFIJO_COMO_ARMAR, 110) + 2.5 : 0);
 
 /** Un bloque de cuartetos: una fila de la tabla; el orden de color y sus marcas pueden partirse en varias líneas. */
 const altoDeCuarteto = (c: CuartetoHoja): number => 3 + LINEA_MM * lineas(textoSecuencia(c.secuencia).length, 38) + LINEA_CHICA_MM * lineasDeMarcas(c.marcas, 45);
@@ -61,11 +69,23 @@ const caracteresDeLinea = (l: LineaContenido) => 30 + l.nombreColor.length + mar
  * cada copia (con sus flores o relleno) en la ancha. Caracteres por línea medidos con Geist en A4, el papel más angosto.
  */
 const altoDeFila = (f: FilaCompacta): number => {
-  const contenido = LINEA_MM * f.contenido.reduce((s, l) => s + lineas(caracteresDeLinea(l), 42), 0) + LINEA_CHICA_MM * anexosDeFila(f).reduce((s, a) => s + lineas(a.length, 55), 0);
+  const contenido = LINEA_MM * f.contenido.reduce((s, l) => s + lineas(caracteresDeLinea(l), 42), 0) + LINEA_CHICA_MM * [...anexosDeFila(f), dondeDeFila(f) ?? ""].filter(Boolean).reduce((s, a) => s + lineas(a.length, 55), 0);
   return 3 + Math.max(LINEA_MM * lineas(textoNombres(f.nombres).length, 22), contenido);
 };
 
 const altoDeLinea = LINEA_MM + 1;
+
+/** El bloque de helio de una estructura (110 mm de ancho, ver `HojaArmadoHelioDePieza`): su título, una línea por tamaño (o la remisión a la lista) y el cierre. */
+const altoDeHelioDeEstructura = (r: ResumenHelio): number =>
+  LINEA_MM + LINEA_CHICA_MM * (filasDeHelio(r)?.length ?? lineas(textoDetalleEnLista(r).length, 62)) + LINEA_CHICA_MM * lineas(textoCierreDeEstructura(r).length, 62) + 2;
+
+/** El total de helio de la hoja: título con su filete, una línea por tamaño (o la remisión), el total y la nota de la estimación. */
+const altoDeHelioTotal = (r: ResumenHelio): number =>
+  ALTO_TITULO_BLOQUE_MM + LINEA_MM * (filasDeHelio(r)?.length ?? lineas(textoDetalleEnLista(r).length, 100)) + LINEA_MM * lineas(textoCierreDeTotal(r).length, 80) + LINEA_CHICA_MM * lineas(NOTA_ESTIMACION_HELIO.length, 110) + 4;
+
+/** Un metalizado: su nombre y producto (en una columna de letra normal) y, debajo, lo que se sabe de cómo se pone. */
+const altoDeMetalizado = (l: LineaMetalizada): number =>
+  LINEA_MM * lineas(l.nombre.length + (l.producto?.length ?? 70) + 20, 85) + LINEA_CHICA_MM * [...(l.tallas ? [`Talla: ${l.tallas}.`] : []), ...l.comoArmar].reduce((s, paso) => s + lineas(paso.length, 105), 0) + 2.5;
 
 type Elemento = { alto: number; capa?: CapaHoja; tramo?: TramoHoja; cuarteto?: CuartetoHoja };
 
@@ -84,17 +104,20 @@ function altoDelResumen(e: EstructuraHoja): number {
   if (e.patron) mm += LINEA_MM * lineas(e.patron.descripcion.length + 20, 95) + 2;
   if (e.sentido) mm += LINEA_MM * lineas(e.sentido.length, 90) + 2;
   if (e.nota) mm += LINEA_CHICA_MM * lineas(e.nota.length, 110) + 2;
-  if (e.aparte.length) mm += LINEA_MM + LINEA_CHICA_MM * e.aparte.length + 2;
+  if (e.comoArmar) mm += LINEA_MM + LINEA_CHICA_MM * e.comoArmar.reduce((suma, linea) => suma + lineas(linea.length, 105), 0) + 2;
+  if (e.aparte.length) mm += LINEA_MM + LINEA_CHICA_MM * e.aparte.reduce((suma, a) => suma + lineas(55 + a.nombreColor.length + (a.impreso?.length ?? 0), 105), 0) + 2;
   if (e.tubos.length) mm += LINEA_MM + LINEA_CHICA_MM * e.tubos.length + 2;
   if (e.flores.length) mm += LINEA_MM * lineas(textoFlores(e.flores).length + 60, 90) + 2;
   if (e.relleno) mm += LINEA_MM * lineas(e.relleno.length + 45, 90) + 2;
   if (e.avisos.length) mm += LINEA_CHICA_MM * lineas(e.avisos.join(" ").length, 110) + 2;
+  if (e.helio) mm += altoDeHelioDeEstructura(e.helio);
   return mm + conTabla(e);
 }
 
 const cabeceraDeEstructura = (e: EstructuraHoja, primero: boolean) => (primero ? altoDelResumen(e) : ALTO_CONTINUA_MM + conTabla(e));
 const cabeceraDeCompacta = (primero: boolean) => (primero ? ALTO_TITULO_TABLA_MM : ALTO_CONTINUA_MM) + ALTO_ENCABEZADO_TABLA_MM;
 const cabeceraDeLista = (primero: boolean) => (primero ? ALTO_TITULO_TABLA_MM : ALTO_CONTINUA_MM);
+const cabeceraDeMetalizados = (primero: boolean) => (primero ? ALTO_TITULO_BLOQUE_MM + LINEA_CHICA_MM * lineas(NOTA_METALIZADOS.length, 110) : ALTO_CONTINUA_MM);
 const altoDeOtras = (nombres: readonly string[]) => LINEA_MM * lineas(nombres.join(", ").length + 50, 100);
 
 /** Lo que ocupa un trozo (mm): su cabecera y todos sus elementos. */
@@ -102,8 +125,10 @@ export function altoDeTrozo(t: TrozoHoja): number {
   switch (t.tipo) {
     case "estructura": return cabeceraDeEstructura(t.estructura, t.primero) + t.capas.reduce((s, c) => s + altoDeCapa(c), 0) + t.tramos.reduce((s, x) => s + altoDeTramo(x), 0) + t.cuartetos.reduce((s, c) => s + altoDeCuarteto(c), 0);
     case "compacta": return cabeceraDeCompacta(t.primero) + t.filas.reduce((s, f) => s + altoDeFila(f), 0);
+    case "metalizados": return cabeceraDeMetalizados(t.primero) + t.lineas.reduce((s, l) => s + altoDeMetalizado(l), 0);
     case "otras": return altoDeOtras(t.nombres);
     case "lista": return cabeceraDeLista(t.primero) + t.lineas.length * altoDeLinea + (t.ultimo ? ALTO_CIERRE_MM : 0);
+    case "helio": return altoDeHelioTotal(t.resumen);
   }
 }
 
@@ -163,6 +188,10 @@ function ponerCompactas(filas: readonly FilaCompacta[], p: Paginador): void {
   repartir(filas.map((fila) => ({ alto: altoDeFila(fila), fila })), cabeceraDeCompacta, p, (primero, tomados) => ({ tipo: "compacta", primero, filas: tomados.map((x) => x.fila) }));
 }
 
+function ponerMetalizados(lineasDeFoil: readonly LineaMetalizada[], p: Paginador): void {
+  repartir(lineasDeFoil.map((linea) => ({ alto: altoDeMetalizado(linea), linea })), cabeceraDeMetalizados, p, (primero, tomados) => ({ tipo: "metalizados", primero, lineas: tomados.map((x) => x.linea) }));
+}
+
 /**
  * La lista de globos y tubitos va siempre en página nueva, partida cada vez que se llena. La línea de la bomba total va con
  * la última línea de la lista (nunca sola en una página); una lista vacía solo lleva esa línea.
@@ -181,16 +210,21 @@ function ponerLista(lineasLista: readonly LineaLista[], p: Paginador): void {
   });
 }
 
-/** Las páginas de la hoja, en orden: las estructuras, la tabla de piezas pequeñas, las piezas que solo se nombran y la lista de compra. */
+/** Las páginas de la hoja, en orden: las estructuras, la tabla de piezas pequeñas, los metalizados, las piezas que solo se nombran, la lista de compra y el total de helio. */
 export function paginasDeHoja(hoja: HojaArmado): PaginaHoja[] {
   const p = new Paginador();
   for (const e of hoja.estructuras) ponerEstructura(e, p);
   if (hoja.compactas.length) ponerCompactas(hoja.compactas, p);
+  if (hoja.metalizados.length) ponerMetalizados(hoja.metalizados, p);
   if (hoja.otrasPiezas.length) {
     const alto = altoDeOtras(hoja.otrasPiezas);
     if (alto + SEPARACION_MM > p.libre) p.nueva();
     p.poner({ tipo: "otras", nombres: hoja.otrasPiezas });
   }
   ponerLista(hoja.lista, p);
+  if (hoja.helio) {
+    if (altoDeHelioTotal(hoja.helio) + SEPARACION_MM > p.libre) p.nueva();
+    p.poner({ tipo: "helio", resumen: hoja.helio });
+  }
   return p.paginas.filter((trozos) => trozos.length > 0).map((trozos, i) => ({ numero: i + 1, trozos }));
 }

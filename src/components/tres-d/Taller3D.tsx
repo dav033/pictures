@@ -26,6 +26,7 @@ import { useEdicionEscena, useHistorialEscena, type PiezaEnVivo } from "./useEdi
 import { useLienzoDecoraciones, type CopiaElegida } from "./useLienzoDecoraciones";
 import { ArrastreDecoracionContexto } from "./arrastre-decoracion";
 import { follajeEnIngles } from "@/lib/globos3d/flores-artificiales";
+import { plural, textoGlobos } from "@/lib/globos3d/texto-cantidad";
 import { medirFuera } from "./medicion-visor";
 import { MenuContextual, type AccionMenu } from "./MenuContextual";
 import { useMenuContextual } from "./useMenuContextual";
@@ -713,7 +714,7 @@ export function Taller3D() {
       </div>
       <div className="flex-1" />
       <button type="button" onClick={() => setDialogo("imagen")} disabled={!listo} className={BTN}><Camera className="size-[18px]" aria-hidden />Foto realista</button>
-      <button type="button" onClick={() => setDialogo("lista")} disabled={!armadaEscena} className={BTN_PRI}><ShoppingCart className="size-[18px]" aria-hidden />Lista de compra · <span className="font-mono">{totalGlobos}</span> globos</button>
+      <button type="button" onClick={() => setDialogo("lista")} disabled={!armadaEscena} className={BTN_PRI}><ShoppingCart className="size-[18px]" aria-hidden />Lista de compra · <span className="font-mono">{totalGlobos}</span> {plural(totalGlobos, "globo", "globos")}</button>
     </header>
   );
 
@@ -859,7 +860,7 @@ export function Taller3D() {
             </button>
             <button type="button" onClick={deshacerVista} disabled={!puedeDeshacerVista} aria-label={rotuloDeshacer} className={`grid size-11 shrink-0 place-items-center rounded-xl disabled:opacity-45 ${FLOTANTE}`}><Undo2 className="size-5" aria-hidden /></button>
             {puedeRehacerVista && <button type="button" onClick={rehacerVista} aria-label="Rehacer" className={`grid size-11 shrink-0 place-items-center rounded-xl ${FLOTANTE}`}><Redo2 className="size-5" aria-hidden /></button>}
-            <button type="button" onClick={() => setDialogo("lista")} aria-label={`Lista de compra: ${totalGlobos} globos`} className="grid size-11 shrink-0 place-items-center rounded-xl border border-taller-primario bg-taller-primario text-taller-sobre-primario"><ShoppingCart className="size-5" aria-hidden /></button>
+            <button type="button" onClick={() => setDialogo("lista")} aria-label={`Lista de compra: ${textoGlobos(totalGlobos)}`} className="grid size-11 shrink-0 place-items-center rounded-xl border border-taller-primario bg-taller-primario text-taller-sobre-primario"><ShoppingCart className="size-5" aria-hidden /></button>
           </>
         )}
       </div>
@@ -967,7 +968,7 @@ export function Taller3D() {
         </div>
       </ArrastreDecoracionContexto.Provider>
 
-      <DialogoCompra abierto={dialogo === "lista"} onCerrar={() => setDialogo(null)} titulo={`Lista de compra · ${totalGlobos} globos`} nombre={nombreEscena} escena={escenaVista} armada={armadaEscena}
+      <DialogoCompra abierto={dialogo === "lista"} onCerrar={() => setDialogo(null)} titulo={`Lista de compra · ${textoGlobos(totalGlobos)}`} nombre={nombreEscena} escena={escenaVista} armada={armadaEscena}
         productosExactos={<ProductosEscena escena={escenaVista} nombre={nombreEscena} />} />
       <DialogoTaller abierto={dialogo === "imagen"} onCerrar={() => setDialogo(null)} titulo="Foto realista">
         <div className="p-4">

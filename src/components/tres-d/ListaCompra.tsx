@@ -13,6 +13,7 @@ import { SeccionBomba } from "./SeccionBomba";
 import { almacenDelNavegador, filasBomba, guardarCalibracionBomba, inflablesDeEscena, leerCalibracionBomba, lineasBomba, type CalibracionBomba } from "@/lib/globos3d/bomba-segundos";
 import { avisoMetalizados, contarMetalizados, gruposDeHelio, lineasHelio, resumenHelio } from "@/lib/globos3d/helio-cinta";
 import { agruparPiezas, filasPorPieza, textoPorPieza, type FilaPorPieza } from "@/lib/globos3d/piezas-agrupadas";
+import { plural, textoGlobos } from "@/lib/globos3d/texto-cantidad";
 
 const m = (cm: number) => (cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 2 });
 
@@ -54,7 +55,7 @@ function PorPieza({ filas }: { filas: FilaPorPieza[] }) {
 }
 
 function enTexto(nombre: string, escena: Escena, armada: EscenaArmada, calibracion: CalibracionBomba): string {
-  const lineas = [`${nombre} — lista de compra`, `${escena.nodos.length} piezas · ${armada.globos.length} globos`, "", "GLOBOS"];
+  const lineas = [`${nombre} — lista de compra`, `${escena.nodos.length} ${plural(escena.nodos.length, "pieza", "piezas")} · ${textoGlobos(armada.globos.length)}`, "", "GLOBOS"];
   for (const x of [...armada.materiales].sort((a, b) => b.cantidad - a.cantidad)) lineas.push(`${x.cantidad} × ${x.formatoId} ${referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} ${x.codigo}`);
   for (const x of corazonesSinCobertura(armada.materiales)) lineas.push(`SIN COBERTURA: la tienda no vende el Corazón 12 en ${referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} ${x.codigo} (${x.cantidad}).`);
   lineas.push("", "POR PIEZA");
@@ -85,7 +86,7 @@ export function ListaCompra({ nombre, escena, armada, productosExactos, onHojaDe
     <div className="flex flex-col gap-5 p-4">
       <section className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[15px] font-semibold">Escena · <span className="font-mono">{escena.nodos.length}</span> {escena.nodos.length === 1 ? "pieza" : "piezas"} · <span className="font-mono">{armada.globos.length}</span> globos{armada.flores.length ? ` · ${armada.flores.length} flores` : ""}</p>
+          <p className="text-[15px] font-semibold">Escena · <span className="font-mono">{escena.nodos.length}</span> {escena.nodos.length === 1 ? "pieza" : "piezas"} · <span className="font-mono">{armada.globos.length}</span> {plural(armada.globos.length, "globo", "globos")}{armada.flores.length ? ` · ${armada.flores.length} ${plural(armada.flores.length, "flor", "flores")}` : ""}</p>
           <p className="font-mono text-xs text-taller-suave">Sala {m(escena.sala.anchoCm)} × {m(escena.sala.fondoCm)} × {m(escena.sala.altoCm)} m</p>
         </div>
         <div className="flex flex-wrap gap-2">

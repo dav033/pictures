@@ -327,7 +327,7 @@ const estructuraFalsa = (id: string, capas: number, tramos = 0): EstructuraHoja 
   cuartetos: [], aparte: [], colores: [], tubos: [], flores: [], globosPorUnidad: 4, filasBomba: [], totalGlobos: 4, segundosPorUnidad: 0, segundosBomba: 0, firma: id,
 });
 
-const hojaFalsa = (estructuras: EstructuraHoja[]): HojaArmado => ({ nombre: "x", piezas: estructuras.length, globos: 0, estructuras, compactas: [], otrasPiezas: [], lista: [], segundosBomba: 0, avisos: [] });
+const hojaFalsa = (estructuras: EstructuraHoja[]): HojaArmado => ({ nombre: "x", piezas: estructuras.length, globos: 0, estructuras, compactas: [], metalizados: [], otrasPiezas: [], lista: [], segundosBomba: 0, avisos: [] });
 
 const trozosDe = (paginas: PaginaHoja[], id: string) => paginas.flatMap((p) => p.trozos).filter((t) => t.tipo === "estructura" && t.estructura.id === id);
 

@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { DialogoCompra } from "../../../../src/components/tres-d/DialogoCompra";
 import { armarEscena, type Escena } from "../../../../src/lib/globos3d/escena";
+import { textoGlobos } from "../../../../src/lib/globos3d/texto-cantidad";
 
 declare global {
   interface Window {
@@ -20,7 +21,7 @@ function Taller({ nombre, escena }: { nombre: string; escena: Escena }) {
   return (
     <div className="taller-3d min-h-dvh">
       <button type="button" onClick={() => setAbierto(true)}>Lista de compra</button>
-      <DialogoCompra abierto={abierto} onCerrar={() => setAbierto(false)} titulo={`Lista de compra · ${armada.globos.length} globos`} nombre={nombre} escena={escena} armada={armada}
+      <DialogoCompra abierto={abierto} onCerrar={() => setAbierto(false)} titulo={`Lista de compra · ${textoGlobos(armada.globos.length)}`} nombre={nombre} escena={escena} armada={armada}
         productosExactos={<p>Productos exactos de la tienda (no se calculan en la prueba).</p>} />
     </div>
   );

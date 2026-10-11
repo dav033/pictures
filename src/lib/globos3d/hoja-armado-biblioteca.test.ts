@@ -311,7 +311,12 @@ test("biblioteca: cuántas páginas sale una hoja (p50, p90 y máximo de las 405
   assert.ok(p(0.95) <= 9, `p95 ${p(0.95)}`);
   assert.ok(cuentas[cuentas.length - 1]! <= 16, `máximo ${cuentas[cuentas.length - 1]}`);
   for (const r of biblioteca()) {
-    assert.ok(r.paginas.length >= 1 && r.paginas[r.paginas.length - 1]!.trozos.every((t) => t.tipo === "lista"), `${r.id}: la última página es la lista`);
+    // La lista cierra la hoja; después de ella, solo el total de helio (si la escena lleva helio) y nada más.
+    const trozos = r.paginas.flatMap((pagina) => pagina.trozos);
+    const alFinal = r.hoja.helio ? ["helio"] : [];
+    assert.deepEqual(trozos.slice(trozos.length - alFinal.length).map((t) => t.tipo), alFinal, `${r.id}: el total de helio va al final, y solo si hay helio`);
+    assert.ok(r.paginas.length >= 1 && trozos.slice(0, trozos.length - alFinal.length).slice(-1)[0]?.tipo === "lista", `${r.id}: la lista cierra la hoja`);
+    assert.ok(r.paginas[r.paginas.length - 1]!.trozos.every((t) => t.tipo === "lista" || t.tipo === "helio"), `${r.id}: la última página es la lista`);
     r.paginas.forEach((pagina, i) => {
       assert.equal(pagina.numero, i + 1);
       assert.ok(pagina.trozos.length > 0, `${r.id}: página vacía`);
@@ -325,7 +330,7 @@ test("biblioteca: cuántas páginas sale una hoja (p50, p90 y máximo de las 405
  * de la app: mide cada página y cuenta las hojas de papel del PDF de cada escena (tienen que ser tantas como páginas).
  */
 test("biblioteca: el paginador no pasa de su presupuesto por página, salvo un elemento que solo ya es más grande", () => {
-  const elementos = (t: PaginaHoja["trozos"][number]) => (t.tipo === "estructura" ? t.capas.length + t.tramos.length + t.cuartetos.length : t.tipo === "compacta" ? t.filas.length : t.tipo === "lista" ? t.lineas.length + 1 : 1);
+  const elementos = (t: PaginaHoja["trozos"][number]) => (t.tipo === "estructura" ? t.capas.length + t.tramos.length + t.cuartetos.length : t.tipo === "compacta" ? t.filas.length : t.tipo === "metalizados" ? t.lineas.length : t.tipo === "lista" ? t.lineas.length + 1 : 1);
   for (const r of biblioteca()) {
     for (const pagina of r.paginas) {
       const sola = pagina.trozos.length === 1 && elementos(pagina.trozos[0]!) === 1;

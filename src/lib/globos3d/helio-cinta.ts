@@ -1,5 +1,6 @@
 import { formatoPorId } from "./formatos";
 import type { Pieza } from "./piezas";
+import { textoNumero } from "./texto-cantidad";
 
 /**
  * Helio y cinta para la lista de compra del taller. Son estimaciones de taller, no datos de Sempertex: los litros salen
@@ -129,8 +130,6 @@ export function resumenHelio(grupos: ReadonlyArray<GrupoHelio>): ResumenHelio | 
   return { filas, globos, litros, tanques: Math.ceil(litros / LITROS_POR_TANQUE), metrosCinta: redondear1(metros) };
 }
 
-const numero = (n: number) => n.toLocaleString("es-CO", { maximumFractionDigits: 1 });
-
 /** Cuántas piezas de globo metalizado (foil) lleva la escena, contando sus copias (una pieza repetida en varias anclas). */
 export function contarMetalizados(nodos: ReadonlyArray<{ id: string; pieza: Pieza }>, porNodo: ReadonlyArray<{ id: string; copias: number }>): number {
   return nodos.filter((n) => n.pieza.tipo === "metalizado").reduce((suma, n) => suma + (porNodo.find((x) => x.id === n.id)?.copias ?? 1), 0);
@@ -146,9 +145,9 @@ export function lineasHelio(resumen: ResumenHelio | null): string[] {
   return [
     "",
     "HELIO Y CINTA (estimación)",
-    ...resumen.filas.map((f) => `${f.cantidad} × ${f.formatoId} a ${numero(f.infladoCm)} cm: ${numero(f.litros)} L de helio con 7 % de pérdida`),
-    `Total: ${numero(resumen.litros)} L → ${resumen.tanques} ${resumen.tanques === 1 ? "tanque" : "tanques"} de ${numero(LITROS_POR_TANQUE)} L nominales (confirmar con el proveedor)`,
-    `Cinta: ${numero(resumen.metrosCinta)} m (la de la pieza; 1,2 m por globo si no la dice)`,
+    ...resumen.filas.map((f) => `${f.cantidad} × ${f.formatoId} a ${textoNumero(f.infladoCm)} cm: ${textoNumero(f.litros)} L de helio con 7 % de pérdida`),
+    `Total: ${textoNumero(resumen.litros)} L → ${resumen.tanques} ${resumen.tanques === 1 ? "tanque" : "tanques"} de ${textoNumero(LITROS_POR_TANQUE)} L nominales (confirmar con el proveedor)`,
+    `Cinta: ${textoNumero(resumen.metrosCinta)} m (la de la pieza; 1,2 m por globo si no la dice)`,
     AVISO_ALCANCE_HELIO,
   ];
 }

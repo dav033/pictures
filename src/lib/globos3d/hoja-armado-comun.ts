@@ -1,7 +1,7 @@
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import type { FilaBomba } from "./bomba-segundos";
 import { esGloboDeHelio } from "./helio-cinta";
-import { impresoDe, type ImpresoHoja } from "./hoja-armado-impresos";
+import { impresoDe, partesPropias, textoUbicacion, type ImpresoHoja, type LugarDeImpresos } from "./hoja-armado-impresos";
 import type { CentroLocal } from "./hoja-armado-local";
 
 /** Lo que comparten los modos de la hoja de armado: el globo tal como se imprime, sus cuentas por color y tamaño. */
@@ -29,19 +29,25 @@ type RasgosDeGlobo = Pick<GloboHoja, "formatoId" | "codigo" | "infladoCm" | "hel
 /** Lo que distingue a un globo en la hoja: formato, color, tamaño, helio, lo impreso y el confeti de dentro. */
 export const claveDeGlobo = (g: RasgosDeGlobo): string => [g.formatoId, g.codigo, g.infladoCm, g.helio ? "h" : "", g.impreso?.clave ?? "", g.confeti ? "c" : ""].join("|");
 
-/** Lo que tienen de especial los globos de una capa, un tramo o un cuarteto: cuántos son de helio, impresos o con confeti. */
-export function marcasDe(globos: readonly Pick<GloboHoja, "helio" | "impreso" | "confeti">[]): string[] {
+/**
+ * Lo que tienen de especial los globos de una capa, un tramo o un cuarteto: cuántos son de helio, impresos (y dónde van, según
+ * `lugar`) o con confeti. `globos` va en el orden del grupo; sin `numero` propio, el número de un globo es su lugar en la lista.
+ */
+export function marcasDe(globos: readonly (Pick<GloboHoja, "helio" | "impreso" | "confeti" | "parte"> & { numero?: number })[], lugar: LugarDeImpresos): string[] {
   const marcas: string[] = [];
   const helio = globos.filter((g) => g.helio).length;
   if (helio) marcas.push(`${helio} de helio (no pasan por la bomba)`);
-  const impresos = new Map<string, { texto: string; cantidad: number }>();
-  for (const g of globos) {
-    if (!g.impreso) continue;
+  const impresos = new Map<string, { texto: string; numeros: number[]; partes: Array<string | undefined> }>();
+  globos.forEach((g, i) => {
+    if (!g.impreso) return;
     const previo = impresos.get(g.impreso.clave);
-    if (previo) previo.cantidad += 1;
-    else impresos.set(g.impreso.clave, { texto: g.impreso.texto, cantidad: 1 });
+    if (previo) { previo.numeros.push(g.numero ?? i + 1); previo.partes.push(g.parte); }
+    else impresos.set(g.impreso.clave, { texto: g.impreso.texto, numeros: [g.numero ?? i + 1], partes: [g.parte] });
+  });
+  for (const [clave, { texto, numeros, partes }] of impresos) {
+    const otras = globos.filter((g) => g.impreso?.clave !== clave).map((g) => g.parte);
+    marcas.push(`${numeros.length} con ${texto} (${textoUbicacion(lugar, numeros, globos.length, partesPropias(partes, otras))})`);
   }
-  for (const { texto, cantidad } of impresos.values()) marcas.push(`${cantidad} con ${texto}`);
   const confeti = globos.filter((g) => g.confeti).length;
   if (confeti) marcas.push(`${confeti} con confeti dentro`);
   return marcas;
@@ -54,7 +60,7 @@ export type LineaTamano = { formatoId: string; infladoCm: number; hastaCm: numbe
 /** Más tamaños distintos que esto en un formato: se da un rango, no una línea por tamaño. */
 export const MAX_TAMANOS_POR_FORMATO = 3;
 /** Globos de una pieza que no están en ninguna capa (el remate de una columna, los acentos de un cono). */
-export type LineaAparte = LineaColorCapa & { infladoCm: number; etiqueta: string };
+export type LineaAparte = LineaColorCapa & { infladoCm: number; etiqueta: string; /** Lo impreso sobre estos globos (un remate impreso), si lo llevan. */ impreso?: string };
 
 /** Un tramo de color: `veces` globos seguidos del mismo código; `desde` es el número del primero (1 = el primero de la lista). */
 export type TramoColor = { formatoId: string; codigo: string; nombreColor: string; hex: string; veces: number; desde: number };
@@ -128,10 +134,11 @@ export function aparteDe(centros: readonly CentroLocal[]): LineaAparte[] {
   for (const c of centros) {
     const { formatoId, codigo, infladoCm, parte } = c.globo;
     const etiqueta = parte ?? "suelto";
-    const clave = `${etiqueta}|${formatoId}|${codigo}|${infladoCm}`;
+    const impreso = impresoDe(c.globo.estampado);
+    const clave = `${etiqueta}|${formatoId}|${codigo}|${infladoCm}|${impreso?.clave ?? ""}`;
     const previo = cuenta.get(clave);
     if (previo) previo.cantidad += 1;
-    else cuenta.set(clave, { formatoId, codigo, ...nombreYHex(codigo), infladoCm, etiqueta, cantidad: 1 });
+    else cuenta.set(clave, { formatoId, codigo, ...nombreYHex(codigo), infladoCm, etiqueta, cantidad: 1, ...(impreso ? { impreso: impreso.texto } : {}) });
   }
   return [...cuenta.values()].sort((a, b) => a.etiqueta.localeCompare(b.etiqueta) || b.cantidad - a.cantidad);
 }

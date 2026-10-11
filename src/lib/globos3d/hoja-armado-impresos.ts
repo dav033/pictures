@@ -67,3 +67,41 @@ export function impresoDe(estampado: EstampadoGlobo | undefined): ImpresoHoja | 
   yaDescritos.set(estampado, impreso);
   return impreso;
 }
+
+/**
+ * Dónde queda un impreso dentro del grupo de globos que se está armando (`de` completa la frase: «de la capa», «de cada
+ * cuarteto», «del tramo»):
+ * - `posicion`: el anillo o el cuarteto tienen su orden (el 1, el 2…) y el motor pone cada impreso en un globo concreto;
+ * - `numerados`: una pared numera los globos de un extremo al otro;
+ * - `libre`: la hoja no numera los globos del grupo (una franja de altura, la capa de un cono): se dice la parte de la pieza que
+ *   lleva el impreso si la hay (los ojos de una figura) y, si no, «cualquier posición».
+ */
+export type LugarDeImpresos = { tipo: "posicion" | "numerados" | "libre"; de: string };
+
+/** Hasta cuántos números se escriben antes de decir «y N más». */
+const MAX_POSICIONES = 6;
+
+function unirNumeros(numeros: readonly number[]): string {
+  const visibles = numeros.slice(0, MAX_POSICIONES).map(String);
+  if (numeros.length > visibles.length) visibles.push(`${numeros.length - visibles.length} más`);
+  return visibles.length === 1 ? visibles[0]! : `${visibles.slice(0, -1).join(", ")} y ${visibles[visibles.length - 1]}`;
+}
+
+/**
+ * Las partes de la pieza (los ojos, la cabeza) que solo llevan el impreso: las de `propias` si todas tienen parte y ninguna otra
+ * globo del grupo (`otras`) comparte una. Si el impreso cae en una parte que también tienen globos sin él (una columna orgánica:
+ * todos son «columna»), la parte no dice dónde va y se devuelve vacío.
+ */
+export function partesPropias(propias: ReadonlyArray<string | undefined>, otras: ReadonlyArray<string | undefined>): string[] {
+  if (propias.some((p) => p === undefined)) return [];
+  const partes = [...new Set(propias as string[])];
+  return partes.some((p) => otras.includes(p)) ? [] : partes;
+}
+
+/** «globos 1 y 3 de la capa», «todos los globos del tramo», «la parte «copa/ojos»» o «cualquier posición del tramo»: dónde van `numeros` de los `total` globos del grupo. */
+export function textoUbicacion(lugar: LugarDeImpresos, numeros: readonly number[], total: number, partes: readonly string[] = []): string {
+  if (numeros.length >= total) return `todos los globos ${lugar.de}`;
+  if (lugar.tipo === "libre" && partes.length) return `${partes.length === 1 ? "la parte" : "las partes"} ${partes.map((p) => `«${p}»`).join(" y ")}`;
+  if (lugar.tipo === "libre") return `cualquier posición ${lugar.de}`;
+  return `${numeros.length === 1 ? "globo" : "globos"} ${unirNumeros(numeros)} ${lugar.de}`;
+}

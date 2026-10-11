@@ -8,6 +8,8 @@ import {
 } from "@/lib/globos3d/biblioteca";
 import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import { hexDeCodigo, miniaturaDecoracion, type Miniatura } from "@/lib/globos3d/decoraciones-escena";
+import { descripcionParaCliente } from "@/lib/globos3d/descripcion-ficha";
+import { textoGlobos } from "@/lib/globos3d/texto-cantidad";
 import { urlTienda } from "@/lib/globos3d/utileria-catalogo";
 import { nombreOcasion } from "@/lib/taller/taxonomia-celebraciones";
 import { REVISADO_TIENDA } from "@/lib/globos3d/productos-tienda";
@@ -501,10 +503,10 @@ export function Ficha({ item, biblioteca, huellas, minis, onVer, onVolver, accio
         <div className="flex min-w-0 flex-col gap-3">
           <header>
             <h2 className="text-xl font-semibold text-texto">{item.nombre}</h2>
-            {item.descripcion && <p className="mt-1 text-sm text-texto-suave">{item.descripcion}</p>}
+            {item.descripcion && <p className="mt-1 whitespace-pre-line text-sm text-texto-suave">{descripcionParaCliente(item.descripcion)}</p>}
             {resumen ? (
               <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-texto">
-                <span className="font-mono">{resumen.globos} globos</span>
+                <span className="font-mono">{textoGlobos(resumen.globos)}</span>
                 {item.tipo !== "decoracion" && item.tipo !== "utileria" && <span className="font-mono">{resumen.piezas} {resumen.piezas === 1 ? "pieza" : "piezas"}</span>}
                 <Chips colores={resumen.colores} max={14} />
               </p>
@@ -624,6 +626,7 @@ function fuenteCorta(item: ItemBiblioteca): string {
 
 const TarjetaCompacta = memo(function TarjetaCompacta({ item, resumen, mini, etiqueta, onAbrir }: { item: ItemBiblioteca; resumen: ResumenItem | undefined; mini: string | undefined; etiqueta: string | null; onAbrir: (item: ItemBiblioteca) => void }) {
   const sub = `${fuenteCorta(item)}${resumen ? ` · ${resumen.globos} globos` : ""}`;
+  const descripcion = useMemo(() => (item.descripcion ? descripcionParaCliente(item.descripcion).replace(/\n/g, " ") : ""), [item.descripcion]);
   const arrastrar = useContext(ArrastreDecoracionContexto);
   const apretada = useRef<{ x: number; y: number } | null>(null);
   const arrastrable = Boolean(arrastrar) && item.tipo !== "escena";
@@ -646,7 +649,7 @@ const TarjetaCompacta = memo(function TarjetaCompacta({ item, resumen, mini, eti
           if (desde && e.detail > 0 && Math.hypot(e.clientX - desde.x, e.clientY - desde.y) > 6) return;
           onAbrir(item);
         }}
-        title={`${item.nombre}${item.descripcion ? ` — ${item.descripcion}` : ""}. ${arrastrable ? "Arrástrala al visor, o tócala para ver su ficha." : "Toca para ver su ficha y añadirla."}`}
+        title={`${item.nombre}${descripcion ? ` — ${descripcion}` : ""}. ${arrastrable ? "Arrástrala al visor, o tócala para ver su ficha." : "Toca para ver su ficha y añadirla."}`}
         className={`flex h-full w-full select-none flex-col gap-1.5 rounded-xl border border-taller-borde bg-taller-tarjeta p-2 text-left text-xs font-medium leading-snug text-taller-texto hover:border-taller-resalte ${arrastrable ? "cursor-grab active:cursor-grabbing" : ""}`}>
         <Miniatura3d item={item} url={mini} className="h-[72px] w-full rounded-lg" />
         <span className="line-clamp-2">{item.nombre}</span>

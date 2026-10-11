@@ -1,5 +1,5 @@
 import { textoTiempo } from "@/lib/globos3d/bomba-segundos";
-import { anexosDeFila, marcasDeLinea, type FilaCompacta } from "@/lib/globos3d/hoja-armado-compacta";
+import { anexosDeFila, dondeDeFila, marcasDeLinea, type FilaCompacta } from "@/lib/globos3d/hoja-armado-compacta";
 import { textoNombres } from "@/lib/globos3d/hoja-armado-texto";
 
 /**
@@ -52,7 +52,7 @@ export function HojaArmadoCompacta({ filas, primero }: { filas: FilaCompacta[]; 
                     );
                   })}
                 </ul>
-                {anexosDeFila(f).map((a) => <p key={a} className="text-xs text-neutral-700">{a}</p>)}
+                {[...anexosDeFila(f), dondeDeFila(f) ?? ""].filter(Boolean).map((a) => <p key={a} className="text-xs text-neutral-700">{a}</p>)}
               </td>
               <td className="py-1 text-right font-mono text-xs">{f.segundosBomba > 0 ? textoTiempo(f.segundosBomba) : "—"}</td>
             </tr>

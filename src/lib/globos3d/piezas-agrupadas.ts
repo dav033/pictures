@@ -3,6 +3,7 @@ import { nombreGenerico } from "./biblioteca";
 import type { TuboDecoracion } from "./decoraciones";
 import type { GloboDePieza } from "./piezas";
 import { referenciaPorCodigo } from "../plan/referencia-sempertex";
+import { textoGlobos } from "./texto-cantidad";
 
 /**
  * Una línea de la lista «Por pieza»: piezas con el mismo nombre genérico y el mismo contenido por copia. `sufijo` dice
@@ -82,12 +83,12 @@ export function etiquetaDeGrupo(g: GrupoDePiezas): string {
 
 /** «14 globos» o «6 globos · 2 copias»: lo mismo en pantalla y en el texto copiado. */
 export function cuentaDeGrupo(g: GrupoDePiezas): string {
-  return `${g.globos} globos${g.copias > g.piezas.length ? ` · ${g.copias} copias` : ""}`;
+  return `${textoGlobos(g.globos)}${g.copias > g.piezas.length ? ` · ${g.copias} copias` : ""}`;
 }
 
 /** «2 globos» o «2 globos · 3 copias» para una pieza. */
 export function cuentaDePieza(n: NodoArmado): string {
-  return `${n.globos.length} globos${n.copias > 1 ? ` · ${n.copias} copias` : ""}`;
+  return `${textoGlobos(n.globos.length)}${n.copias > 1 ? ` · ${n.copias} copias` : ""}`;
 }
 
 /** Lo que muestra «Por pieza», igual en pantalla y en el texto copiado. */

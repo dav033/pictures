@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { armarEscena, type Escena } from "@/lib/globos3d/escena";
+import { armarEscena, SALA_INICIAL, type Escena } from "@/lib/globos3d/escena";
+import { crearEstructura } from "@/lib/globos3d/herramientas-escena-estructuras";
 import { BIBLIOTECA_FABRICA, escenaDeItem } from "@/lib/globos3d/biblioteca";
 import { ESCENAS_PREDEFINIDAS } from "@/lib/globos3d/escenas-presets";
 import { hojaDeEscena, paginasDeHoja } from "@/lib/globos3d/hoja-armado";
@@ -59,4 +60,29 @@ test("cada página de la hoja se pinta completa: sin NaN ni undefined, con su n�
     }
   }
   assert.ok(conDibujo > 20 && conTabla > 20 && conCompacta > 10, `dibujos ${conDibujo}, tablas ${conTabla}, compactas ${conCompacta}`);
+});
+
+test("la hoja se arma sin volver a la lista: helio por pieza y en total, metalizados con su compra, cómo armar lo orgánico y dónde va cada impreso", () => {
+  const columna = textoDeLaHoja("idea:columna-feliz-cumpleanos-organico");
+  assert.match(columna, /Helio y cinta de toda la hoja/);
+  assert.match(columna, /Total: 73,8 L de helio con 7 % de pérdida · 1 tanque de 10\.000 L nominales · cinta: 7,2 m/);
+  assert.match(columna, /Globos metalizados \(foil\)/);
+  assert.match(columna, /Comprar: GLOBO METALIZADO NUMERO 4 PLATA/);
+  assert.match(columna, /No hay uno igual en la tienda: se compra uno parecido/);
+  assert.match(columna, /Cómo armarlo\. Orden: 1\.º estructura: .*· 2\.º relleno: /);
+  assert.match(columna, /impreso «[^»]+» \(cualquier posición del tramo\)/);
+  assert.match(columna, /Dónde: (?:arriba|abajo|izquierda|derecha)/);
+  const graduacion = textoDeLaHoja("idea:graduacion");
+  assert.match(graduacion, /Helio y cinta\d+ × R-\d+ inflado a \d+ cm[\d.,]+ L\d+ globos de helio · [\d.,]+ L con 7 % de pérdida · cinta: [\d.,]+ m · [\d.,]+ % de un tanque de 10\.000 L/);
+});
+
+test("una forma rellena con texto dice su contorno y su técnica en la hoja", () => {
+  const numero = crearEstructura("forma", { texto: "40", alto_cm: 160, tecnica: "organico", colores: ["blanco"] }, []);
+  const escena: Escena = { sala: SALA_INICIAL, nodos: [{ id: "n", nombre: "Número 40", pieza: numero.pieza, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }] };
+  const hoja = hojaDeEscena("40", escena, armarEscena(escena));
+  const paginas = paginasDeHoja(hoja);
+  const texto = paginas.map((pagina) => renderToStaticMarkup(createElement(HojaArmadoPagina, { pagina, total: paginas.length, segundosBomba: hoja.segundosBomba }))).join(" ").replace(/<[^>]+>/g, " ");
+  assert.match(texto, /Cómo armarla/);
+  assert.match(texto, /Forma rellena de globos: «40» de unos \d+ cm de alto/);
+  assert.match(texto, /Capa orgánica de unos \d+ cm de grueso/);
 });

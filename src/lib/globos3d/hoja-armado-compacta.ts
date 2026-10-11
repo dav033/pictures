@@ -6,6 +6,7 @@ import { esGloboDeHelio } from "./helio-cinta";
 import { floresDeUnidad, rellenoDe, textoFlores, type LineaFlor } from "./hoja-armado-anexos";
 import { claveDeGlobo, nombreYHex, sumaSinRedondear, type LineaColorCapa } from "./hoja-armado-comun";
 import { impresoDe, type ImpresoHoja } from "./hoja-armado-impresos";
+import { textoNombres } from "./hoja-armado-texto";
 import { globosDeUnidad } from "./hoja-armado-local";
 import type { GloboDePieza, Pieza } from "./piezas";
 
@@ -33,6 +34,9 @@ export type LineaContenido = LineaColorCapa & {
 export const marcasDeLinea = (l: LineaContenido): string[] =>
   [l.helio ? "de helio" : "", l.impreso?.texto ?? "", l.confeti ? "con confeti dentro" : "", l.parte ? `(${l.parte})` : ""].filter(Boolean);
 
+/** «Dónde: sobre «Columna…» (arriba a la izquierda)»: dónde van los globos impresos de la fila; `undefined` si no se sabe. */
+export const dondeDeFila = (f: Pick<FilaCompacta, "lugares">): string | undefined => (f.lugares.length ? `Dónde: ${textoNombres(f.lugares)}` : undefined);
+
 /** Las flores y el relleno de cada copia de una fila, como se imprimen. */
 export const anexosDeFila = (f: Pick<FilaCompacta, "flores" | "relleno">): string[] => [...(f.flores.length ? [textoFlores(f.flores)] : []), ...(f.relleno ? [f.relleno] : [])];
 
@@ -46,6 +50,8 @@ export type FilaCompacta = {
   /** Lo que lleva cada copia además de globos y tubos: sus flores y el relleno de una burbuja (ver `hoja-armado-anexos.ts`). */
   flores: LineaFlor[];
   relleno?: string;
+  /** Dónde va cada pieza de la fila (ver `dondeVaNodo`); solo las filas con globos impresos lo dicen. */
+  lugares: string[];
   /** Globos de todas las copias. */
   globos: number;
   /** Segundos de bomba de todas las copias, sin redondear. */
@@ -97,12 +103,13 @@ export function segundosDeUnidad(nodo: NodoArmado, calibracion: CalibracionBomba
 const claveDeFila = (contenido: readonly LineaContenido[], anexos: readonly string[]) => JSON.stringify([contenido.map((l) => `${l.clave}|${l.cantidad}`), anexos]);
 
 /** Suma `copias` copias de una pieza pequeña a la tabla: las que llevan lo mismo (aunque se llamen distinto) quedan en una fila. */
-export function sumarFilaCompacta(filas: Map<string, FilaCompacta>, nodo: NodoArmado, pieza: Pieza | undefined, copias: number, calibracion: CalibracionBomba): void {
+export function sumarFilaCompacta(filas: Map<string, FilaCompacta>, nodo: NodoArmado, pieza: Pieza | undefined, copias: number, calibracion: CalibracionBomba, lugar?: string): void {
   const contenido = contenidoDeUnidad(nodo);
   const flores = floresDeUnidad(nodo), relleno = rellenoDe(pieza, nodo);
   const clave = claveDeFila(contenido, anexosDeFila({ flores, relleno }));
   const porUnidad = globosDeUnidad(nodo).length;
-  const fila = filas.get(clave) ?? { nombres: [], unidades: 0, contenido, flores, relleno, globos: 0, segundosBomba: 0 };
+  const fila = filas.get(clave) ?? { nombres: [], unidades: 0, contenido, flores, relleno, lugares: [], globos: 0, segundosBomba: 0 };
+  if (lugar && contenido.some((l) => l.impreso) && !fila.lugares.includes(lugar)) fila.lugares.push(lugar);
   const nombre = nombreGenerico(nodo.nombre);
   if (!fila.nombres.includes(nombre)) fila.nombres.push(nombre);
   fila.unidades += copias;

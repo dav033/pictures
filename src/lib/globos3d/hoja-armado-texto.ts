@@ -2,8 +2,6 @@ import type { LineaTamano, TramoColor } from "./hoja-armado-comun";
 
 /** Los textos de la hoja que se prueban aparte de las pantallas. */
 
-export const plural = (n: number, uno: string, muchos: string): string => (n === 1 ? uno : muchos);
-
 /** «3» para un globo; «3–4» para varios seguidos desde el 3. */
 export const textoRango = (desde: number, cantidad: number): string => (cantidad <= 1 ? `${desde}` : `${desde}–${desde + cantidad - 1}`);
 

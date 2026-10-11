@@ -1,8 +1,10 @@
 import type { FilaBomba } from "./bomba-segundos";
+import type { ResumenHelio } from "./helio-cinta";
 import type { LineaFlor } from "./hoja-armado-anexos";
 import type { CapaHoja } from "./hoja-armado-capas";
 import type { FilaCompacta } from "./hoja-armado-compacta";
 import type { LineaAparte, LineaColorCapa } from "./hoja-armado-comun";
+import type { LineaMetalizada } from "./hoja-armado-metalizados";
 import type { TramoHoja } from "./hoja-armado-tramos";
 import type { CuartetoHoja } from "./hoja-armado-trenza";
 
@@ -30,6 +32,8 @@ export type EstructuraHoja = {
   modo: ModoHoja;
   /** Cómo leer las tablas de esta pieza cuando no son capas de armado. */
   nota?: string;
+  /** Cómo se arma la pieza entera, con lo que el motor sabe de su técnica (una forma rellena: contorno y relleno). */
+  comoArmar?: string[];
   /** Dónde está el 1 y hacia dónde sube la numeración. */
   sentido?: string;
   avisos: string[];
@@ -57,6 +61,8 @@ export type EstructuraHoja = {
   segundosPorUnidad: number;
   /** Segundos de bomba de todas las copias. */
   segundosBomba: number;
+  /** El helio y la cinta de todas las copias, con las cuentas de la lista de compra; sin él, la pieza no lleva helio. */
+  helio?: ResumenHelio;
   /** Lo que se imprime de la estructura: dos piezas con la misma firma se juntan en una sola (ver `hoja-armado-estructura.ts`). */
   firma: string;
 };
@@ -70,10 +76,14 @@ export type HojaArmado = {
   estructuras: EstructuraHoja[];
   /** Piezas pequeñas y tubos: una fila por lo que llevan, no una página por pieza. */
   compactas: FilaCompacta[];
-  /** Piezas sin globos de látex ni tubos (flores, mesas, utilería, metalizados): solo se nombran, con cuántas hay. */
+  /** Los globos metalizados (foil): qué comprar y cómo se ponen. */
+  metalizados: LineaMetalizada[];
+  /** Piezas sin globos de látex ni tubos (flores, mesas, utilería): solo se nombran, con cuántas hay. */
   otrasPiezas: string[];
   lista: LineaLista[];
   segundosBomba: number;
+  /** El helio y la cinta de toda la escena (los mismos de la lista de compra); sin él, la escena no lleva helio de látex. */
+  helio?: ResumenHelio;
   avisos: string[];
 };
 
@@ -87,9 +97,11 @@ export type TrozoEstructura = {
   cuartetos: CuartetoHoja[];
 };
 export type TrozoCompacta = { tipo: "compacta"; filas: FilaCompacta[]; primero: boolean };
+export type TrozoMetalizados = { tipo: "metalizados"; lineas: LineaMetalizada[]; primero: boolean };
 export type TrozoOtras = { tipo: "otras"; nombres: string[] };
 export type TrozoLista = { tipo: "lista"; lineas: LineaLista[]; primero: boolean; ultimo: boolean };
-export type TrozoHoja = TrozoEstructura | TrozoCompacta | TrozoOtras | TrozoLista;
+export type TrozoHelio = { tipo: "helio"; resumen: ResumenHelio };
+export type TrozoHoja = TrozoEstructura | TrozoCompacta | TrozoMetalizados | TrozoOtras | TrozoLista | TrozoHelio;
 
 /** Una página impresa: uno o varios trozos (las estructuras pequeñas comparten página). */
 export type PaginaHoja = { numero: number; trozos: TrozoHoja[] };

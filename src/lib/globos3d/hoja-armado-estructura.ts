@@ -3,6 +3,7 @@ import type { NodoArmado } from "./escena";
 import { floresDeUnidad, rellenoDe } from "./hoja-armado-anexos";
 import { aparteDe, agruparPorNivel, claveDeGlobo, colorear, globoHoja, sinParte, sumaSinRedondear, type GloboHoja } from "./hoja-armado-comun";
 import { capasDeAnillos, type CapaHoja } from "./hoja-armado-capas";
+import { NOTA_FORMA_RELLENA, NOTA_ORGANICA, comoArmarForma, conComoArmarOrganico, esOrganica } from "./hoja-armado-como-armar";
 import { tubosDeUnidad } from "./hoja-armado-compacta";
 import { centrosDeUnidad, globosPorUnidad, type CentroLocal } from "./hoja-armado-local";
 import { sentidoDePared, tramosDeGlobos, tramosPorCapa, type TramoHoja } from "./hoja-armado-tramos";
@@ -27,9 +28,19 @@ const NOTA_ALTURAS = "Tabla por franja de altura (medida sobre el punto más baj
 const NOTA_CAPAS = "Las capas de esta pieza no son del tamaño de un módulo, así que no se dibujan: cada tramo es una capa, de la base a la punta.";
 const NOTA_CONO = "Cada tramo es un anillo del cono, de la base a la punta; los globos de remate y acento van aparte.";
 
-type Reparto = Pick<EstructuraHoja, "modo" | "capas" | "tramos" | "cuartetos"> & { aparte: CentroLocal[]; nota?: string; sentido?: string };
+type Reparto = Pick<EstructuraHoja, "modo" | "capas" | "tramos" | "cuartetos"> & { aparte: CentroLocal[]; nota?: string; sentido?: string; comoArmar?: string[] };
 
 const sinDatos = () => ({ capas: [] as CapaHoja[], tramos: [] as TramoHoja[], cuartetos: [] as CuartetoHoja[] });
+
+/** Las franjas de altura: lo orgánico y las formas rellenas traen su «cómo armar»; el resto, solo para contar (`NOTA_ALTURAS`). */
+function franjasDeAltura(pieza: Pieza | undefined, centros: readonly CentroLocal[], calibracion: CalibracionBomba): Reparto {
+  const tramos = tramosDeGlobos(centros, "alturas", calibracion);
+  const base = { ...sinDatos(), modo: "alturas" as const, aparte: [] };
+  if (esOrganica(pieza)) return { ...base, tramos: conComoArmarOrganico(tramos, pieza), nota: NOTA_ORGANICA };
+  const comoArmar = comoArmarForma(pieza);
+  if (comoArmar.length) return { ...base, tramos, comoArmar, nota: NOTA_FORMA_RELLENA };
+  return { ...base, tramos, nota: NOTA_ALTURAS };
+}
 
 /** Cómo se reparten los globos de una copia según la pieza: anillos, capas, trenza, paredes o franjas de altura. */
 function repartoDe(pieza: Pieza | undefined, centros: readonly CentroLocal[], calibracion: CalibracionBomba): Reparto {
@@ -59,7 +70,7 @@ function repartoDe(pieza: Pieza | undefined, centros: readonly CentroLocal[], ca
     const { niveles, aparte } = agruparPorNivel(centros);
     if (niveles.length >= 2) return { ...sinDatos(), modo: "capas", tramos: tramosPorCapa(niveles, calibracion), aparte, nota: NOTA_CONO };
   }
-  return { ...sinDatos(), modo: "alturas", tramos: tramosDeGlobos(centros, "alturas", calibracion), aparte: [], nota: NOTA_ALTURAS };
+  return franjasDeAltura(pieza, centros, calibracion);
 }
 
 function patronDe(pieza: Pieza | undefined): EstructuraHoja["patron"] {
@@ -86,6 +97,7 @@ export function estructuraDeNodo(nodo: NodoArmado, pieza: Pieza | undefined, cal
     patron: patronDe(pieza),
     modo,
     nota: reparto.nota,
+    comoArmar: reparto.comoArmar,
     sentido: reparto.sentido,
     avisos: nodo.avisos,
     capas: reparto.capas,
@@ -118,13 +130,13 @@ const claveGlobo = (g: GloboHoja) => claveDeGlobo({ ...g, infladoCm: Math.round(
 function firmaDe(e: Omit<EstructuraHoja, "firma">, globos: readonly GloboHoja[]): string {
   const contenido = [
     e.globosPorUnidad, globos.map(claveGlobo).sort(),
-    e.aparte.map((a) => `${a.etiqueta}${a.formatoId}${a.codigo}${a.infladoCm}${a.cantidad}`), e.tubos.map((t) => `${t.formatoId}${t.codigo}${t.cantidad}`),
+    e.aparte.map((a) => `${a.etiqueta}${a.formatoId}${a.codigo}${a.infladoCm}${a.cantidad}${a.impreso ?? ""}`), e.tubos.map((t) => `${t.formatoId}${t.codigo}${t.cantidad}`),
     e.flores.map((f) => `${f.tipo}${f.cantidad}`), e.relleno ?? "",
   ];
-  const tramos = e.tramos.map((t) => [t.etiqueta, t.colores.map((c) => `${c.formatoId}${c.codigo}${c.cantidad}`).sort(), t.marcas]);
+  const tramos = e.tramos.map((t) => [t.etiqueta, t.colores.map((c) => `${c.formatoId}${c.codigo}${c.cantidad}`).sort(), t.marcas, t.comoArmar ?? ""]);
   const capas = e.capas.map((c) => [c.numero, c.hasta, c.giroGrados, c.sentidoNumeracion, c.alturaCm, c.globos.map(claveGlobo)]);
   const cuartetos = e.cuartetos.map((c) => [c.desde, c.hasta, c.globos.map(claveGlobo)]);
-  return JSON.stringify([e.modo, e.sentido, e.nota, capas, tramos, cuartetos, contenido]);
+  return JSON.stringify([e.modo, e.sentido, e.nota, e.comoArmar ?? [], capas, tramos, cuartetos, contenido]);
 }
 
 /** Junta estructuras de la misma firma: las unidades y los totales se suman; lo demás es igual. */

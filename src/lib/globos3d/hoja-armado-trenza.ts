@@ -40,7 +40,7 @@ export function cuartetosDeNiveles(niveles: readonly (readonly CentroLocal[])[],
     const grupo = niveles[i]!;
     const globos = grupo.map((c) => globoHoja(c));
     const filas = filasBomba(grupo.map((c) => c.globo), calibracion);
-    bloques.push({ desde: i + 1, hasta: j + 1, repeticiones: j - i + 1, globos, colores: colorear(globos), marcas: marcasDe(globos), secuencia: secuenciaDeColor(globos), filasBomba: filas, segundosBomba: sumaSinRedondear(filas) });
+    bloques.push({ desde: i + 1, hasta: j + 1, repeticiones: j - i + 1, globos, colores: colorear(globos), marcas: marcasDe(globos, { tipo: "posicion", de: j > i ? "de cada cuarteto" : "del cuarteto" }), secuencia: secuenciaDeColor(globos), filasBomba: filas, segundosBomba: sumaSinRedondear(filas) });
     i = j + 1;
   }
   return bloques;

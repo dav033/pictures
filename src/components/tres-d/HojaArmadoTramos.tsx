@@ -23,9 +23,9 @@ export function HojaArmadoTramos({ tramos, numerado }: { tramos: TramoHoja[]; nu
           <th className="py-1 text-right font-semibold">Bomba</th>
         </tr>
       </thead>
-      <tbody>
-        {tramos.map((t) => (
-          <tr key={t.numero} className="break-inside-avoid border-b border-neutral-200 align-top">
+      {tramos.map((t) => (
+        <tbody key={t.numero} className="break-inside-avoid">
+          <tr className={`${t.comoArmar ? "" : "border-b border-neutral-200 "}align-top`}>
             <td className="py-1.5 pr-3">
               <span className="font-semibold">{t.etiqueta}</span>
               <span className="block font-mono text-xs text-neutral-600">
@@ -49,8 +49,13 @@ export function HojaArmadoTramos({ tramos, numerado }: { tramos: TramoHoja[]; nu
             </td>
             <td className="py-1.5 text-right font-mono text-xs">{textoTiempo(t.segundosBomba)}</td>
           </tr>
-        ))}
-      </tbody>
+          {t.comoArmar && (
+            <tr className="border-b border-neutral-200">
+              <td colSpan={4} className="pb-1.5 text-xs text-neutral-700"><span className="font-semibold">Cómo armarlo.</span> {t.comoArmar}</td>
+            </tr>
+          )}
+        </tbody>
+      ))}
     </table>
   );
 }

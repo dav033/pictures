@@ -3,6 +3,7 @@ import {
   agruparDesdePrimero, colorear, globoHoja, marcasDe, sumaSinRedondear, tamanosDe,
   type GloboHoja, type LineaColorCapa, type LineaTamano,
 } from "./hoja-armado-comun";
+import type { LugarDeImpresos } from "./hoja-armado-impresos";
 import type { CentroLocal } from "./hoja-armado-local";
 
 /**
@@ -32,6 +33,8 @@ export type TramoHoja = {
   tamanos: LineaTamano[];
   /** Cuántos van de helio, impresos o con confeti (ver `marcasDe`). */
   marcas: string[];
+  /** Cómo se arma la franja, si el motor lo sabe (las franjas de lo orgánico: ver `hoja-armado-como-armar.ts`). */
+  comoArmar?: string;
   filasBomba: FilaBomba[];
   segundosBomba: number;
 };
@@ -50,11 +53,11 @@ export function sentidoDePared(centros: readonly CentroLocal[]): string {
     : "El globo 1 está en el extremo del fondo de la pared; la numeración sube hacia el frente.";
 }
 
-function tramoDe(grupo: readonly CentroLocal[], numero: number, primerNumero: number, etiqueta: string, desdeCm: number, hastaCm: number, posicion: (c: CentroLocal) => number, calibracion: CalibracionBomba): TramoHoja {
+function tramoDe(grupo: readonly CentroLocal[], numero: number, primerNumero: number, etiqueta: string, desdeCm: number, hastaCm: number, posicion: (c: CentroLocal) => number, lugarDeImpresos: LugarDeImpresos, calibracion: CalibracionBomba): TramoHoja {
   const ordenados = [...grupo].sort((a, b) => posicion(a) - posicion(b));
   const globos: GloboNumerado[] = ordenados.map((c, k) => ({ ...globoHoja(c, posicion(c)), numero: primerNumero + k }));
   const filas = filasBomba(grupo.map((c) => c.globo), calibracion);
-  return { numero, etiqueta, desdeCm, hastaCm, globos, colores: colorear(globos), tamanos: tamanosDe(globos), marcas: marcasDe(globos), filasBomba: filas, segundosBomba: sumaSinRedondear(filas) };
+  return { numero, etiqueta, desdeCm, hastaCm, globos, colores: colorear(globos), tamanos: tamanosDe(globos), marcas: marcasDe(globos, lugarDeImpresos), filasBomba: filas, segundosBomba: sumaSinRedondear(filas) };
 }
 
 /**
@@ -79,7 +82,7 @@ export function tramosDeGlobos(centros: readonly CentroLocal[], modo: "alturas" 
     const etiqueta = modo === "paredes"
       ? `Tramo ${i + 1}: de ${desde} a ${hasta} cm a lo largo de la pared`
       : `Tramo ${i + 1}: de ${Math.round(Math.min(...alturas))} a ${Math.round(Math.max(...alturas))} cm de altura`;
-    const tramo = tramoDe(grupo, i + 1, primerNumero, etiqueta, desde, hasta, pos, calibracion);
+    const tramo = tramoDe(grupo, i + 1, primerNumero, etiqueta, desde, hasta, pos, modo === "paredes" ? { tipo: "numerados", de: "de la pared" } : { tipo: "libre", de: "del tramo" }, calibracion);
     primerNumero += grupo.length;
     return tramo;
   });
@@ -93,7 +96,7 @@ export function tramosPorCapa(niveles: readonly (readonly CentroLocal[])[], cali
   return niveles.map((grupo, i) => {
     const altura = Math.round(grupo.reduce((s, c) => s + c.y, 0) / grupo.length - base);
     const etiqueta = `Capa ${i + 1}: a ${altura} cm de la base`;
-    const tramo = tramoDe(grupo, i + 1, primerNumero, etiqueta, altura, altura, (c) => c.y, calibracion);
+    const tramo = tramoDe(grupo, i + 1, primerNumero, etiqueta, altura, altura, (c) => c.y, { tipo: "libre", de: "de la capa" }, calibracion);
     primerNumero += grupo.length;
     return tramo;
   });

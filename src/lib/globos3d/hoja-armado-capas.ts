@@ -103,7 +103,7 @@ function capaDeBloque(cruda: CapaCruda, numero: number, hasta: number, giro: num
     extensionCm: radio + mayor / 2 + 2,
     dibujable: globos.length <= MAX_GLOBOS_ANILLO,
     colores: colorear(globos),
-    marcas: marcasDe(globos),
+    marcas: marcasDe(globos, { tipo: "posicion", de: hasta > numero ? "de cada capa" : "de la capa" }),
     secuencia: secuenciaDeColor(globos),
     filasBomba: filas,
     segundosBomba: sumaSinRedondear(filas),

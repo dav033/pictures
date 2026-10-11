@@ -1,11 +1,12 @@
 import { textoFilaBomba, textoTiempo } from "@/lib/globos3d/bomba-segundos";
 import type { TrozoEstructura } from "@/lib/globos3d/hoja-armado";
 import { textoFlores } from "@/lib/globos3d/hoja-armado-anexos";
-import { plural } from "@/lib/globos3d/hoja-armado-texto";
+import { plural } from "@/lib/globos3d/texto-cantidad";
 import { totalDeCapas } from "@/lib/globos3d/hoja-armado-capas";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { HojaArmadoCapa } from "./HojaArmadoCapa";
 import { HojaArmadoCuartetos } from "./HojaArmadoCuartetos";
+import { HojaArmadoHelioDePieza } from "./HojaArmadoHelio";
 import { HojaArmadoTramos } from "./HojaArmadoTramos";
 
 const LINEA = "flex items-center gap-1.5";
@@ -40,15 +41,21 @@ export function HojaArmadoEstructura({ trozo }: { trozo: TrozoEstructura }) {
           {e.patron && <p><span className="font-semibold">Patrón {e.patron.nombre.toLowerCase()}:</span> {e.patron.descripcion}</p>}
           {e.sentido && <p className="font-semibold">{e.sentido}</p>}
           {e.nota && <p className="text-xs text-neutral-700">{e.nota}</p>}
+          {e.comoArmar && e.comoArmar.length > 0 && (
+            <div>
+              <p className="font-semibold">Cómo armarla</p>
+              {e.comoArmar.map((linea) => <p key={linea} className="text-xs">{linea}</p>)}
+            </div>
+          )}
           {e.aparte.length > 0 && (
             <div>
               <p className="font-semibold">Aparte (no van en las capas)</p>
               <ul className="text-xs">
                 {e.aparte.map((a) => (
-                  <li key={`${a.etiqueta}|${a.formatoId}|${a.codigo}|${a.infladoCm}`} className={LINEA}>
+                  <li key={`${a.etiqueta}|${a.formatoId}|${a.codigo}|${a.infladoCm}|${a.impreso ?? ""}`} className={LINEA}>
                     <span className="size-3 shrink-0 rounded-full ring-1 ring-black/20" style={{ background: a.hex }} aria-hidden />
                     <span className="font-mono">{a.cantidad} ×</span>
-                    <span>{a.formatoId} {referenciaPorCodigo(a.codigo)?.nombreCompleto ?? a.nombreColor} a {Math.round(a.infladoCm)} cm ({a.etiqueta})</span>
+                    <span>{a.formatoId} {referenciaPorCodigo(a.codigo)?.nombreCompleto ?? a.nombreColor} a {Math.round(a.infladoCm)} cm ({a.etiqueta}){a.impreso ? ` · ${a.impreso}` : ""}</span>
                   </li>
                 ))}
               </ul>
@@ -75,6 +82,7 @@ export function HojaArmadoEstructura({ trozo }: { trozo: TrozoEstructura }) {
             <p>Bomba de la pieza: {textoTiempo(e.segundosPorUnidad)}{varias ? ` por copia · ${textoTiempo(e.segundosBomba)} en total` : ""}</p>
             <ul>{e.filasBomba.map((f) => <li key={f.formatoId}>{textoFilaBomba(f)}</li>)}</ul>
           </div>
+          {e.helio && <HojaArmadoHelioDePieza resumen={e.helio} copias={e.unidades} />}
         </div>
       )}
       {capas.length > 0 && (
