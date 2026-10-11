@@ -25,13 +25,13 @@ import { aplicarHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 import { RANGOS_ESTRUCTURA } from "../../src/lib/globos3d/herramientas-escena-estructuras";
 import { RANGOS_TRAZO } from "../../src/lib/globos3d/herramientas-escena-trazo";
 import { GROSOR_CUERPO_CM, validarTrazo, type ParametrosTrazoOrganico } from "../../src/lib/globos3d/trazo-organico";
-import { LARGO_MAXIMO_CUERPO_CM, PRESUPUESTO_CUERPO_CM3, cuerpoDeOrganico, volumenDeCuerpoCm3, type Cuerpo } from "../../src/lib/globos3d/presupuesto-cuerpo";
+import { GLOBOS_MAXIMOS_CUERPO, LARGO_MAXIMO_CUERPO_CM, PRESUPUESTO_CUERPO_CM3, cuerpoDeOrganico, volumenDeCuerpoCm3, type Cuerpo } from "../../src/lib/globos3d/presupuesto-cuerpo";
 import { cuerpoDePieza, engrosarEnPresupuesto } from "../../src/lib/globos3d/presupuesto-ajustes";
 import { comoOrganico, conGrosor, esPiezaOrganica } from "../../src/lib/globos3d/organico-ajustes";
 import { compilarLectura } from "../../src/lib/globos3d/compilar-lectura";
 import { LecturaFotoSchema } from "../../src/lib/globos3d/lectura-foto";
 import type { Pieza } from "../../src/lib/globos3d/piezas";
-import { PiezaEspecSchema, type PiezaEspec } from "../../src/lib/globos3d/motor/espec-cliente-v1";
+import { PiezaEspecSchema, TAMANOS_ESPEC, type PiezaEspec } from "../../src/lib/globos3d/motor/espec-cliente-v1";
 import { construirArcoAsimetrico, construirArcoOrganico, construirAro, construirColumnaOrganica, construirGuirnaldaOrganica, construirSemiarco } from "../../src/lib/globos3d/motor/constructores-organicos";
 import { RANGO_GROSOR_GUIADA_CM } from "../../src/lib/globos3d/motor/medidas-espec";
 import { medidasEditables } from "../../src/lib/globos3d/motor/rangos-medidas";
@@ -89,6 +89,20 @@ const ARCO_GRANDE = { tipo: "arco_organico", ancho_cm: 500, alto_cm: 320 } as co
 const { cabe: topeArco, pieza: enElTope } = rechazadaConGrosorQueCabe("arco_organico 500 × 320 a 160", { ...ARCO_GRANDE, grosor_cm: 160 });
 assert.ok(topeArco >= 120, `el arco de 500 × 320 llega a ${topeArco} cm (antes del rango ancho, a 120)`);
 console.log(`  ✓ agregar_pieza: el marco y el arco de 500 × 320 a 160 cm se rechazan; el grosor que dice el error se arma (arco hasta ${topeArco} cm)`);
+
+// Los globos también: un cuerpo de solo R-5 lleva muchos más que uno de la mezcla de siempre del mismo volumen (una columna de 320 × 160
+// con R-5 tardaba 18 s y 22,6 s más en armarse otra vez, y su volumen, 6,4 M cm³, cabía en el presupuesto).
+const soloChicos = agregar({ tipo: "columna_organica", alto_cm: 320, grosor_cm: 160, tamanos: ["R-5"] });
+assert.ok(!soloChicos.ok && /lleva demasiados globos/.test(soloChicos.error) && soloChicos.error.includes(`hasta ${GLOBOS_MAXIMOS_CUERPO}`), soloChicos.ok ? "" : soloChicos.error);
+assert.ok(grosorDelError(soloChicos) < 160 && grosorDelError(soloChicos) >= GROSOR_CUERPO_CM.min, `dice el grosor que cabe: ${grosorDelError(soloChicos)} cm`);
+assert.ok(!agregar({ tipo: "columna_organica", alto_cm: 320, grosor_cm: grosorDelError(soloChicos) + 1, tamanos: ["R-5"] }).ok, "un centímetro más ya no cabe");
+assert.ok(agregar({ tipo: "columna_organica", alto_cm: 320, grosor_cm: 160, tamanos: ["R-12"] }).ok, "la misma columna con R-12 sí");
+// El tope de globos se mide con los tamaños que la pieza lleva, también en el aro y el marco (que filtran la mezcla después de sacar sus tramos).
+for (const tipo of ["guirnalda_organica", "semiarco_organico", "marco_organico"] as const) {
+  const r = agregar({ tipo, ...(tipo === "guirnalda_organica" ? { ancho_cm: 800 } : tipo === "semiarco_organico" ? { ancho_cm: 300, alto_cm: 300 } : { ancho_cm: 500, alto_cm: 320 }), grosor_cm: 160, tamanos: ["R-5"] });
+  assert.ok(!r.ok && /demasiados globos|demasiado grueso/.test(r.error), `${tipo} de solo R-5 a 160 cm se rechaza: ${r.ok ? "entró" : r.error}`);
+}
+console.log("  ✓ el presupuesto cuenta los globos de estructura: una columna de solo R-5 de 320 × 160 se rechaza (con R-12 entra) y dice el grosor que cabe");
 
 // El largo también tiene tope: un trazo de 100 m tardaba 57 s aunque fino.
 const largo = agregar({ tipo: "trazo_organico", puntos: [{ x_cm: -5000, y_cm: 100, grosor_cm: 20 }, { x_cm: 5000, y_cm: 100, grosor_cm: 20 }] });
@@ -196,7 +210,15 @@ for (const [oficial, construir, medidas, rango] of CONSTRUCTORES) {
   assert.ok(volumen(cuerpo) <= PRESUPUESTO_CUERPO_CM3 && cuerpo.largoCm <= LARGO_MAXIMO_CUERPO_CM, `${oficial}: ${Math.round(cuerpo.largoCm)} cm de largo a ${Math.round(cuerpo.grosorCm)} cm pasa de los topes`);
   assert.ok(avisos.some((a) => a.includes("El grosor") && a.includes(`se usó ${rango[1]} cm`)), `${oficial}: avisa que acotó el grosor a ${rango[1]} cm: ${avisos.join(" | ")}`);
 }
-console.log("  ✓ los constructores de la guiada acotan el grosor al rango del cliente y, con las medidas más grandes, caben en los topes");
+// El tope de globos no toca a la guiada: con las medidas más grandes y cualquiera de sus mezclas de tamaños, los constructores arman.
+for (const tamanos of TAMANOS_ESPEC) {
+  for (const [oficial, construir, medidas] of CONSTRUCTORES) {
+    const medida = PiezaEspecSchema.parse({ id: "EST_01_PRUEBA", oficial, nombre: "prueba", lugar: "centro", medidas, colores: [color], tamanos });
+    const avisos: string[] = [];
+    assert.doesNotThrow(() => construir({ espec: medida, medidas, avisos, notas: [] }), `${oficial} con ${tamanos}`);
+  }
+}
+console.log("  ✓ los constructores de la guiada acotan el grosor al rango del cliente y, con las medidas más grandes y cualquier mezcla de tamaños, caben en los topes");
 
 // Lo que el cliente ve y paga no cambia con el rango ancho del Taller: el grosor de la columna se edita en 0,3–1,2 m y uno explícito
 // fuera de ahí arma (y cotiza) lo mismo que su tope.

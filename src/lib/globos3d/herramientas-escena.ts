@@ -835,14 +835,14 @@ const NOMBRE_BASE: Readonly<Record<TipoClasico, string>> = {
 };
 
 /** Una pieza nueva de cualquier tipo que la IA puede crear, con lo pedido, su nombre y dónde suele ir. */
-function crearPieza(tipo: TipoNuevo, props: Propiedades, notas: string[]): { pieza: Pieza; nombre: string; lugar: LugarPieza } {
+function crearPieza(tipo: TipoNuevo, props: Propiedades, notas: string[], techoCm?: number): { pieza: Pieza; nombre: string; lugar: LugarPieza } {
   if (esClasico(tipo)) {
     const pieza = aplicarPropiedades(piezaBase(tipo), props, notas);
     const lugar: LugarPieza = tipo === "decoracion" ? "techo" : tipo === "guirnalda" || tipo === "pared_malla" ? "pared" : "piso";
     return { pieza, nombre: NOMBRE_BASE[tipo], lugar };
   }
   for (const campo of ["patron", "forma", "decoracion_id"] as const) if (props[campo] !== undefined) fallar(`«${campo}» no aplica a ${tipo} (vale en ${campo === "decoracion_id" ? "decoracion" : campo === "forma" ? "arco" : "columna, arco, guirnalda o pared_malla"}).`);
-  return crearEstructura(tipo, props, notas);
+  return crearEstructura(tipo, props, notas, techoCm);
 }
 
 /** Alto (y ancho de arco a arco) que la pieza nueva toma de la que reemplaza, si no se piden y caben en su rango. */
@@ -967,7 +967,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
     case "agregar_pieza": {
       const a = ESQUEMAS.agregar_pieza.parse(argumentos);
       if (escena.nodos.length >= MAX_NODOS) fallar(`La escena ya tiene ${escena.nodos.length} piezas (máximo ${MAX_NODOS}).`);
-      const hecho = crearPieza(a.tipo, a, notas);
+      const hecho = crearPieza(a.tipo, a, notas, escena.sala.altoCm);
       const pieza = hecho.pieza;
       const id = idNuevo(escena, a.tipo.replace(/_/g, "-"));
       const colocacion = a.donde ? colocacionDe(a.donde, escena, null, pieza, id) : colocacionDeLugar(hecho.lugar, pieza);

@@ -1,6 +1,9 @@
 import type { Vec3 } from "./modulos";
 import { formaColumna, formaGuirnalda, RELLENO_TUPIDO, type ColorOrganico, type FranjaColor, type OpcionesOrganico, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "./organico";
 
+/** El tramo de dentro del aro: lo que lo distingue de las demás estructuras (su cuerpo, el presupuesto y su rango de grosor). */
+export const ANILLO_INTERIOR = "anillo_interior";
+
 /**
  * Estructuras orgánicas que no son columna, guirnalda recta ni arco de dos patas, armadas con el mismo motor
  * (`armarOrganico`) sobre recorridos propios. Cada una devuelve las opciones del motor: la escena las usa como pieza
@@ -62,7 +65,7 @@ export function opcionesAroOrganico(a: OpcionesAroOrganico): OpcionesOrganico {
     irregularidad: 0.04, tapas: {},
   };
   const dentro: TramoOrganico = {
-    id: "anillo_interior", nombre: "Anillo de dentro", recorrido: circulo(rDentro, R, a.interior.adelanteCm),
+    id: ANILLO_INTERIOR, nombre: "Anillo de dentro", recorrido: circulo(rDentro, R, a.interior.adelanteCm),
     grosor: [{ t: 0, radioCm: a.interior.radioCm }, { t: 1, radioCm: a.interior.radioCm }],
     mezcla: [{ t: 0, pesos: a.interior.pesos }, { t: 1, pesos: a.interior.pesos }],
     irregularidad: 0.16, tapas: {},

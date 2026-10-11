@@ -1,6 +1,6 @@
 import { RANGOS_ESTRUCTURA, grosorDeAro } from "./herramientas-escena-estructuras";
 import { conGrosor, opcionesDe, type PiezaOrganica } from "./organico-ajustes";
-import { LARGO_MAXIMO_CUERPO_CM, PRESUPUESTO_CUERPO_CM3, cuerpoDeOrganico, grosorQueCabe, volumenDeCuerpoCm3, type Cuerpo } from "./presupuesto-cuerpo";
+import { GLOBOS_MAXIMOS_CUERPO, LARGO_MAXIMO_CUERPO_CM, PRESUPUESTO_CUERPO_CM3, cuerpoDeOrganico, grosorQueCabe, volumenDeCuerpoCm3, type Cuerpo } from "./presupuesto-cuerpo";
 import { GROSOR_CUERPO_CM } from "./trazo-organico";
 
 /**
@@ -32,19 +32,45 @@ export function textoTope(p: PiezaOrganica): string {
   return `pasaría del presupuesto de armado (con ${Math.round(cuerpoDePieza(p).largoCm)} cm de largo, lo más grueso que se arma de una vez es ${queCabe} cm)`;
 }
 
-/** Qué tope pasaría el cambio (el rango del aro, o los de armado), o null si cabe. Lo que ya pasaba de un tope no cuenta si no empeora. */
-function topePasado(antes: PiezaOrganica, despues: PiezaOrganica): "aro" | "armado" | null {
+/**
+ * Qué tope pasaría el cambio (el rango del aro, o los de armado), o null si cabe. Lo que ya pasaba de un tope no cuenta si no empeora. Los globos de
+ * estructura (`conGlobos`) se cuentan en la pieza que queda, no en un paso del camino: engrosar un cuerpo para que quepan los R-24 sube los globos de
+ * la mezcla de antes, y la mezcla nueva los baja.
+ */
+function topePasado(antes: PiezaOrganica, despues: PiezaOrganica, conGlobos: boolean): "aro" | "armado" | null {
   const aro = grosorDeAro(opcionesDe(despues));
   if (aro !== null && aro > TOPE_ARO_CM && aro > (grosorDeAro(opcionesDe(antes)) ?? 0)) return "aro";
   const a = cuerpoDePieza(antes), d = cuerpoDePieza(despues);
   const volumen = (c: Cuerpo) => volumenDeCuerpoCm3(c.largoCm, c.grosorCm);
-  return volumen(d) > Math.max(PRESUPUESTO_CUERPO_CM3, volumen(a)) || d.largoCm > Math.max(LARGO_MAXIMO_CUERPO_CM, a.largoCm) ? "armado" : null;
+  const pesaMas = volumen(d) > Math.max(PRESUPUESTO_CUERPO_CM3, volumen(a)) || d.largoCm > Math.max(LARGO_MAXIMO_CUERPO_CM, a.largoCm)
+    || (conGlobos && (d.globos ?? 0) > Math.max(GLOBOS_MAXIMOS_CUERPO, a.globos ?? 0));
+  return pesaMas ? "armado" : null;
 }
 
 /** Por qué no se deja el cambio, dicho para el modelo, o null si cabe. */
-export function porQueNoCabe(antes: PiezaOrganica, despues: PiezaOrganica): string | null {
-  const tope = topePasado(antes, despues);
+export function porQueNoCabe(antes: PiezaOrganica, despues: PiezaOrganica, conGlobos = true): string | null {
+  const tope = topePasado(antes, despues, conGlobos);
   return tope === "aro" ? `un aro orgánico va hasta ${TOPE_ARO_CM} cm de grosor` : tope === "armado" ? textoTope(antes) : null;
+}
+
+/**
+ * El valor (el peso de un formato, la densidad) más cercano a `valor` con que la pieza que da `pieza(valor)` cabe en el presupuesto de armado,
+ * respecto de `referencia` (por omisión, la que da `pieza(1)`); `valor` si ya cabe y `null` si no hay ninguno. Más globos de un formato chico o
+ * más densidad son más globos de estructura (se baja el valor hasta que cabe), y el empaque los intenta uno por uno aunque no quepan; más globos
+ * de un formato grande son menos (con `subirHasta` se puede subir, si el pedido admite más de lo pedido). Se busca sin armar nada.
+ */
+export function valorQueCabeEnPresupuesto(pieza: (valor: number) => PiezaOrganica, valor: number, referencia: PiezaOrganica = pieza(1), subirHasta?: number): number | null {
+  const pasa = (v: number) => porQueNoCabe(referencia, pieza(v)) !== null;
+  if (!pasa(valor)) return valor;
+  const partir = (cabe: number, noCabe: number): number => {
+    for (let i = 0; i < PASOS_BUSQUEDA; i++) {
+      const medio = (cabe + noCabe) / 2;
+      if (pasa(medio)) noCabe = medio; else cabe = medio;
+    }
+    return cabe;
+  };
+  if (!pasa(1)) return partir(1, valor);
+  return subirHasta !== undefined && subirHasta > valor && !pasa(subirHasta) ? partir(subirHasta, valor) : null;
 }
 
 /**
@@ -53,13 +79,13 @@ export function porQueNoCabe(antes: PiezaOrganica, despues: PiezaOrganica): stri
  */
 export type Engrosado = { pieza: PiezaOrganica; factor: number; tope: string | null } | { pieza: null; tope: string };
 
-export function engrosarEnPresupuesto(p: PiezaOrganica, factor: number): Engrosado {
-  const tope = porQueNoCabe(p, conGrosor(p, factor));
+export function engrosarEnPresupuesto(p: PiezaOrganica, factor: number, conGlobos = true): Engrosado {
+  const tope = porQueNoCabe(p, conGrosor(p, factor), conGlobos);
   if (tope === null) return { pieza: conGrosor(p, factor), factor, tope: null };
   let cabe = 1, noCabe = factor;
   for (let i = 0; i < PASOS_BUSQUEDA; i++) {
     const medio = (cabe + noCabe) / 2;
-    if (topePasado(p, conGrosor(p, medio)) === null) cabe = medio; else noCabe = medio;
+    if (topePasado(p, conGrosor(p, medio), conGlobos) === null) cabe = medio; else noCabe = medio;
   }
   return cabe < 1 + ENGROSAR_MINIMO ? { pieza: null, tope } : { pieza: conGrosor(p, cabe), factor: cabe, tope };
 }

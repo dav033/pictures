@@ -1,13 +1,17 @@
 import { ajustarTrazo, crearTrazo, type PuntoPedido } from "./herramientas-escena-trazo";
 import { esColumnaTrazo, GROSOR_CUERPO_CM } from "./trazo-organico";
-import { comprobarCambioDeCuerpo, comprobarCuerpo, cuerpoDeOrganico, medirTramos } from "./presupuesto-cuerpo";
+import { comprobarCambioDeCuerpo, comprobarCuerpo, cuerpoDeOrganico, segundosDeArmar } from "./presupuesto-cuerpo";
+import { globosDeEstructura } from "./organico-estructura";
+import { EMPAQUES } from "./organico-empaques";
+import { altoQueCabe, decidirAlto } from "./alto-nueva-organica";
 import { armarPieza, type Pieza, type TipoPieza } from "./piezas";
 import { formatoPorId } from "./formatos";
 import {
-  formaColumna, formaGuirnalda, formaSemiarco, MEZCLA_COLUMNA_GRUESA, MEZCLA_GUIRNALDA, RELLENO_TUPIDO,
-  type ColorOrganico, type OpcionesOrganico, type PuntoMezcla, type RellenoOrganico, type TramoOrganico,
+  formaColumna, formaGuirnalda, formaSemiarco, MEZCLA_COLUMNA_GRUESA, MEZCLA_GUIRNALDA,
+  type ColorOrganico, type OpcionesOrganico, type TramoOrganico,
 } from "./organico";
-import { INFLADOS_ORGANICOS, opcionesArcoRectangular, opcionesAroOrganico } from "./estructuras-organicas";
+import { BASE_TRAMOS, medidaConTamanos, mezclaCon, rellenoCon, tamanosPosibles } from "./mezcla-tamanos-organica";
+import { ANILLO_INTERIOR, INFLADOS_ORGANICOS, opcionesArcoRectangular, opcionesAroOrganico } from "./estructuras-organicas";
 import { COLUMNA_QUINCE_AZUL } from "./organico-presets";
 import { CONTORNOS_PREDEFINIDOS, type ColoresForma, type ContornoForma, type ContornoPredefinido, type OpcionesForma } from "./formas";
 import { normalizarTexto, type OpcionesLetras, type TecnicaLetras } from "./letras";
@@ -19,7 +23,7 @@ import { ARBOLES_PREDEFINIDOS } from "./arboles-globos";
 import { PARED_TRENZAS_INICIAL } from "./pared-trenzas";
 import type { Vec3 } from "./modulos";
 import {
-  FORMATOS_ORGANICOS, conAcabado, fallar, formatosOrganicosDe, metalizadoMasParecido, referenciaDePedido, resolverColorFlexible, resolverColorOrganico,
+  FORMATOS_ORGANICOS, conAcabado, fallar, metalizadoMasParecido, referenciaDePedido, resolverColorFlexible, resolverColorOrganico,
 } from "./herramientas-escena-colores";
 import { recolorearConPaleta } from "./herramientas-escena-recolor";
 
@@ -116,35 +120,6 @@ export function coloresOrganicosPedidos(pedidos: readonly string[], pesos: reado
   return salida;
 }
 
-/** Los tamaños que de verdad se pueden usar: los pedidos (o todos) en los que se fabrica algún color de la paleta. */
-function tamanosPosibles(colores: readonly ColorOrganico[], tamanos: readonly string[] | undefined, maximoInfladoCm = Infinity): string[] {
-  const pedidos = tamanos?.length ? tamanos.map((t) => t.trim().toUpperCase()) : [...FORMATOS_ORGANICOS];
-  for (const t of pedidos) if (!(FORMATOS_ORGANICOS as readonly string[]).includes(t)) fallar(`El tamaño «${t}» no es de la técnica orgánica: usa ${FORMATOS_ORGANICOS.join(", ")}.`);
-  const conColor = pedidos.filter((f) => colores.some((c) => (c.formatos ?? formatosOrganicosDe(c.codigo)).includes(f)));
-  if (!conColor.length) fallar(`Ningún color de la paleta se fabrica en ${pedidos.join(", ")}.`);
-  // Sin tamaños pedidos, lo que no cabe en el grosor no se usa (un R-24 en una columna de 40 cm).
-  const caben = tamanos?.length ? conColor : conColor.filter((f) => (INFLADOS_ORGANICOS[f] ?? 0) <= maximoInfladoCm);
-  if (caben.length) return caben;
-  // Nada cabe: los dos más chicos que haya.
-  return [...conColor].sort((a, b) => (INFLADOS_ORGANICOS[a] ?? 0) - (INFLADOS_ORGANICOS[b] ?? 0)).slice(0, 2);
-}
-
-function mezclaCon(mezcla: readonly PuntoMezcla[], permitidos: readonly string[]): PuntoMezcla[] {
-  return mezcla.map((p) => {
-    const pesos = Object.fromEntries(Object.entries(p.pesos).filter(([f, w]) => permitidos.includes(f) && w > 0));
-    if (Object.keys(pesos).length) return { t: p.t, pesos };
-    const grandes = permitidos.filter((f) => f !== "R-5");
-    return { t: p.t, pesos: Object.fromEntries((grandes.length ? grandes : permitidos).map((f) => [f, 1])) };
-  });
-}
-
-function rellenoCon(permitidos: readonly string[]): RellenoOrganico[] {
-  const r = RELLENO_TUPIDO.filter((x) => permitidos.includes(x.formatoId)).map((x) => ({ ...x }));
-  if (r.length) return r;
-  const menor = [...permitidos].sort((a, b) => (INFLADOS_ORGANICOS[a] ?? 0) - (INFLADOS_ORGANICOS[b] ?? 0))[0];
-  return menor ? [{ formatoId: menor, infladoCm: r0((INFLADOS_ORGANICOS[menor] ?? 20) * 0.88), trios: false }] : [];
-}
-
 const FLORES = () => structuredClone(COLUMNA_QUINCE_AZUL.flores);
 
 function piezaOrganica(tramos: readonly TramoOrganico[], colores: ColorOrganico[], permitidos: readonly string[], suelo: boolean, flores: boolean, semilla: number): Pieza {
@@ -156,19 +131,31 @@ function piezaOrganica(tramos: readonly TramoOrganico[], colores: ColorOrganico[
 }
 
 /**
- * El alto pedido es el que se ve (de abajo a lo más alto de los globos): los globos grandes de la punta sobresalen
- * del recorrido, así que se mide armada y, si se pasa o se queda corta más de 4 cm, se estira o se encoge.
+ * El alto pedido es el que se ve (de abajo a lo más alto de los globos): los globos grandes de la punta sobresalen del recorrido, así que se
+ * mide armada y, si se pasa o se queda corta más de 4 cm, se estira o se encoge (`alto-nueva-organica.ts`: en una pieza de segundos no se arma otra
+ * vez, y se dice; si además no cabe bajo el techo, se estira a lo que cabe, o se dice qué alto_cm pedir).
  */
-function alAlto(pieza: Pieza, altoCm: number): Pieza {
+function alAlto(pieza: Pieza, altoCm: number, notas: string[], techoCm?: number): Pieza {
   if (pieza.tipo !== "organico") return pieza;
-  const medido = medidasArmadas(pieza).altoCm;
-  return Math.abs(medido - altoCm) > 4 ? escalarOrganico(pieza, { altoCm }) : pieza;
+  const armadasAntes = EMPAQUES.hechos, inicio = performance.now();
+  const medidoCm = medidasArmadas(pieza).altoCm;
+  const costoMs = EMPAQUES.hechos > armadasAntes ? performance.now() - inicio : 1000 * segundosDeArmar(globosDeEstructura(pieza.opciones));
+  const { accion, nota } = decidirAlto({ medidoCm, pedidoCm: altoCm, costoMs, techoCm });
+  if (nota) notas.push(nota);
+  if (accion === "reajustar") return escalarOrganico(pieza, { altoCm });
+  if (accion !== "al_techo" || techoCm === undefined) return pieza;
+  const objetivoCm = Math.min(altoCm, techoCm - 2);
+  const ajustada = escalarOrganico(pieza, { altoCm: objetivoCm });
+  const nuevoCm = medidasArmadas(ajustada).altoCm;
+  if (nuevoCm > techoCm) fallar(`La pieza mide ${nuevoCm} cm, aun estirada a ${objetivoCm} cm, y no cabe bajo el techo de ${r0(techoCm)} cm: pídela con alto_cm = ${altoQueCabe(objetivoCm, nuevoCm, techoCm)} o menos.`);
+  notas.push(`para caber bajo el techo de ${r0(techoCm)} cm la pieza quedó de ${nuevoCm} cm de alto y no de los ${altoCm} pedidos`);
+  return ajustada;
 }
 
 /** Una semilla estable por medidas (dos columnas iguales pedidas iguales salen iguales; otras medidas, otro reparto). */
 const semillaDe = (...n: number[]) => (n.reduce((s, x) => (s * 31 + r0(x)) % 9973, 7) || 7);
 
-function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic${string}`>, "trazo_organico">, p: PedidoEstructura, notas: string[]): { pieza: Pieza; nombre: string; lugar: LugarPieza } {
+function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic${string}`>, "trazo_organico">, p: PedidoEstructura, notas: string[], techoCm?: number): { pieza: Pieza; nombre: string; lugar: LugarPieza } {
   const pedidos = pedidosCon(p);
   const colores = coloresOrganicosPedidos(pedidos ?? [...PALETA_ORGANICA], pedidos ? p.pesos : [45, 25, 15, 15], notas);
   const flores = p.flores ?? false;
@@ -179,9 +166,9 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
       const grosor = enRango(p.grosor_cm ?? 70, R.grosor_cm, "grosor_cm");
       const inclinacion = p.inclinacion_cm === undefined ? 0 : enRango(p.inclinacion_cm, R.inclinacion_cm, "inclinacion_cm");
       const tramoDe = (g: number) => formaColumna({ altoCm: alto, radioBaseCm: g / 2, radioMedioCm: r1(g * 0.43), radioPuntaCm: r1(g * 0.36), inclinacionCm: inclinacion, serpenteoCm: 4, mezcla: MEZCLA_COLUMNA_GRUESA });
-      comprobarCuerpo(medirTramos((g) => [tramoDe(g)]), grosor);
       const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.75);
-      return { pieza: alAlto(piezaOrganica([tramoDe(grosor)], colores, permitidos, true, flores, semillaDe(alto, grosor, inclinacion)), alto), nombre: inclinacion ? "Columna orgánica inclinada" : "Columna orgánica", lugar: "piso" };
+      comprobarCuerpo(medidaConTamanos((g) => ({ tramos: [tramoDe(g)], ...BASE_TRAMOS }), permitidos), grosor);
+      return { pieza: alAlto(piezaOrganica([tramoDe(grosor)], colores, permitidos, true, flores, semillaDe(alto, grosor, inclinacion)), alto, notas, techoCm), nombre: inclinacion ? "Columna orgánica inclinada" : "Columna orgánica", lugar: "piso" };
     }
     case "guirnalda_organica": {
       const R = RANGOS_ESTRUCTURA.guirnalda_organica;
@@ -193,8 +180,8 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
         const puntos: Vec3[] = Array.from({ length: 11 }, (_, i) => { const x = -a + (2 * a * i) / 10; return { x: r1(x), y: r1(caida * ((x / a) ** 2 - 1)), z: 0 }; });
         return { ...formaGuirnalda({ id: "guirnalda", nombre: "Guirnalda orgánica", puntos, radioInicioCm: g / 2, radioFinCm: g / 2, mezcla: MEZCLA_GUIRNALDA }), tapas: { inicio: true, fin: true } };
       };
-      comprobarCuerpo(medirTramos((g) => [tramoDe(g)]), grosor);
       const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.8);
+      comprobarCuerpo(medidaConTamanos((g) => ({ tramos: [tramoDe(g)], ...BASE_TRAMOS }), permitidos), grosor);
       return { pieza: piezaOrganica([tramoDe(grosor)], colores, permitidos, false, flores, semillaDe(largo, caida, grosor)), nombre: "Guirnalda orgánica", lugar: "pared" };
     }
     case "semiarco_organico": {
@@ -203,9 +190,9 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
       const alto = enRango(p.alto_cm ?? 200, R.alto_cm, "alto_cm");
       const grosor = enRango(p.grosor_cm ?? 60, R.grosor_cm, "grosor_cm");
       const tramoDe = (g: number) => formaSemiarco({ anchoCm: ancho, altoCm: alto, radioBaseCm: g / 2, radioPuntaCm: r1(g * 0.33), origen: { x: -ancho / 2, y: 0, z: 0 } });
-      comprobarCuerpo(medirTramos((g) => [tramoDe(g)]), grosor);
       const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.75);
-      return { pieza: alAlto(piezaOrganica([tramoDe(grosor)], colores, permitidos, true, flores, semillaDe(ancho, alto, grosor)), alto), nombre: "Semiarco orgánico", lugar: "piso" };
+      comprobarCuerpo(medidaConTamanos((g) => ({ tramos: [tramoDe(g)], ...BASE_TRAMOS }), permitidos), grosor);
+      return { pieza: alAlto(piezaOrganica([tramoDe(grosor)], colores, permitidos, true, flores, semillaDe(ancho, alto, grosor)), alto, notas, techoCm), nombre: "Semiarco orgánico", lugar: "piso" };
     }
     case "aro_organico": {
       const R = RANGOS_ESTRUCTURA.aro_organico;
@@ -214,7 +201,7 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
       const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.9);
       const exterior = permitidos.includes("R-12") ? "R-12" : permitidos.find((f) => f !== "R-5") ?? permitidos[0]!;
       const aroDe = (g: number) => opcionesAroOrganico({ diametroCm: diametro, exterior: { formatoId: exterior, radioCm: 13 }, interior: { pesos: { "R-9": 0.75, "R-5": 0.25 }, radioCm: g / 2, adelanteCm: 6 }, colores, semilla: semillaDe(diametro, g) });
-      comprobarCuerpo(medirTramos((g) => aroDe(g).tramos), grosor);
+      comprobarCuerpo(medidaConTamanos(aroDe, permitidos), grosor);
       const base = aroDe(grosor);
       const opciones: OpcionesOrganico = { ...base, tramos: base.tramos.map((t) => ({ ...t, mezcla: mezclaCon(t.mezcla, permitidos) })), relleno: rellenoCon(permitidos), huecosFlores: flores ? 14 : 0, vista: { x: 0, y: 0, z: 1 } };
       return { pieza: { tipo: "organico", opciones, flores: flores ? FLORES() : null }, nombre: "Aro orgánico", lugar: "piso" };
@@ -229,10 +216,10 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
         anchoEjeCm: ancho - g, altoEjeCm: alto - g / 2, radioEsquinaCm: 40, radioBaseCm: g / 2 + 4, radioPataCm: g / 2, radioArribaCm: g / 2, hueco: null,
         mezcla: { base: { "R-18": 0.15, "R-12": 0.65, "R-9": 0.2 }, pata: { "R-12": 0.7, "R-9": 0.3 }, arriba: { "R-18": 0.15, "R-12": 0.6, "R-9": 0.25 } }, colores, semilla: semillaDe(ancho, alto, g),
       });
-      comprobarCuerpo(medirTramos((g) => marcoDe(g).tramos), grosor);
+      comprobarCuerpo(medidaConTamanos(marcoDe, permitidos), grosor);
       const base = marcoDe(grosor);
       const opciones: OpcionesOrganico = { ...base, tramos: base.tramos.map((t) => ({ ...t, mezcla: mezclaCon(t.mezcla, permitidos) })), relleno: rellenoCon(permitidos), huecosFlores: flores ? 14 : 0, vista: { x: 0, y: 0, z: 1 } };
-      return { pieza: alAlto({ tipo: "organico", opciones, flores: flores ? FLORES() : null }, alto), nombre: "Marco orgánico", lugar: "piso" };
+      return { pieza: alAlto({ tipo: "organico", opciones, flores: flores ? FLORES() : null }, alto, notas, techoCm), nombre: "Marco orgánico", lugar: "piso" };
     }
   }
 }
@@ -251,7 +238,7 @@ type Organico = Extract<Pieza, { tipo: "organico" }>;
 
 /** El grosor de un aro orgánico (el diámetro de su anillo de dentro, `opcionesAroOrganico`), o null si no es un aro: conserva su rango al cambiarlo. */
 export function grosorDeAro(o: Pick<OpcionesOrganico, "tramos">): number | null {
-  const dentro = o.tramos.find((t) => t.id === "anillo_interior");
+  const dentro = o.tramos.find((t) => t.id === ANILLO_INTERIOR);
   return dentro ? 2 * Math.max(0, ...dentro.grosor.map((g) => g.radioCm)) : null;
 }
 
@@ -321,6 +308,8 @@ export function ajustarOrganico(pieza: Organico, p: PedidoEstructura, notas: str
   if (p.tamanos?.length) {
     const permitidos = tamanosPosibles(o.opciones.colores, p.tamanos);
     o = { ...o, opciones: { ...o.opciones, tramos: o.opciones.tramos.map((t) => ({ ...t, mezcla: mezclaCon(t.mezcla, permitidos) })), relleno: rellenoCon(permitidos) } };
+    // Los tamaños cambian cuántos globos lleva el cuerpo (solo R-5 lleva varias veces los de la mezcla de siempre): también cuentan para el presupuesto.
+    comprobarCambioDeCuerpo(antes, cuerpoDeOrganico(o.opciones), medirConGrosor(o), 2 * radioMayor(o.opciones));
   }
   if (p.flores !== undefined) o = { ...o, flores: p.flores ? (o.flores ?? FLORES()) : null, opciones: { ...o.opciones, huecosFlores: p.flores ? Math.max(14, o.opciones.huecosFlores) : 0 } };
   return o;
@@ -457,14 +446,15 @@ function crearGlobo(p: PedidoEstructura, notas: string[]): { pieza: Pieza; nombr
 }
 
 /** Crea una estructura nueva de uno de los `TIPOS_ESTRUCTURA` con lo pedido; error claro si algo no vale. */
-export function crearEstructura(tipo: TipoEstructura, p: PedidoEstructura, notas: string[]): { pieza: Pieza; nombre: string; lugar: LugarPieza } {
+/** `techoCm`: lo que cabe de alto donde va (la sala), para estirar una pieza orgánica pesada que se pasa de ahí. */
+export function crearEstructura(tipo: TipoEstructura, p: PedidoEstructura, notas: string[], techoCm?: number): { pieza: Pieza; nombre: string; lugar: LugarPieza } {
   switch (tipo) {
     case "columna_organica":
     case "guirnalda_organica":
     case "semiarco_organico":
     case "aro_organico":
     case "marco_organico":
-      return crearOrganica(tipo, p, notas);
+      return crearOrganica(tipo, p, notas, techoCm);
     case "trazo_organico": {
       const pedidos = pedidosCon(p);
       const { pieza, nombre } = crearTrazo(p, coloresOrganicosPedidos(pedidos ?? [...PALETA_ORGANICA], pedidos ? p.pesos : [45, 25, 15, 15], notas));

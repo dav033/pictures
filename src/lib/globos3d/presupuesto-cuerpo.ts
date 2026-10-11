@@ -1,5 +1,7 @@
+import { ANILLO_INTERIOR } from "./estructuras-organicas";
 import { fallar } from "./herramientas-escena-colores";
 import type { OpcionesOrganico } from "./organico";
+import { globosDeEstructura } from "./organico-estructura";
 import { GROSOR_CUERPO_CM } from "./trazo-organico";
 
 /**
@@ -18,6 +20,16 @@ import { GROSOR_CUERPO_CM } from "./trazo-organico";
  * Un cuerpo fino y muy largo lleva miles de globos chicos aunque su volumen quepa (un trazo de 100 m tardaba 57 s): el largo (la suma
  * de sus tramos) también tiene tope. Lo más largo que arman las herramientas es el aro de 3 m (dos anillos, unos 1570 cm).
  *
+ * **Por globos.** El volumen tampoco dice cuántos globos lleva el cuerpo: uno de solo R-5 lleva varias veces los globos de uno de la mezcla de
+ * siempre con el mismo volumen, y el armado crece con el cuadrado de los globos (una columna de solo R-5 de 320 × 160, 6,4 M cm³, tardaba 18 s
+ * y 22,6 s más en armarse otra vez). Por eso también se cuenta, sin armar, los globos de estructura que pide la mezcla de tamaños del cuerpo
+ * (`organico-estructura.ts`) y `GLOBOS_MAXIMOS_CUERPO` los acota. Medido en el equipo del taller (cargado), el armado tarda unos 10⁻⁵·N² s con N
+ * los globos de todo el cuerpo, y N es de 1,3 a 4,6 veces los de estructura (el resto es relleno de huecos, que sale del empaque). Las piezas más
+ * pesadas que ya se armaban llevan 310–345 globos de estructura (el arco a 133 cm, el marco a 100, la guirnalda a 115: 1000–1150 en total, 6–15 s) y
+ * las de la guiada, 310 como mucho (el aro de 3 m, 495, no cuenta entero: ver `FRACCION_GLOBOS_ARO`). El tope (430) está por encima de todo eso:
+ * deja fuera la columna de solo R-5 de 320 × 160 (590–640 globos de estructura, 1600 en total, 34 s) y deja entrar la de 115 cm de grosor
+ * (unos 12 s). Acota el peor caso, no iguala los tiempos.
+ *
  * Con el rango ancho de grosor (`GROSOR_CUERPO_CM`, 12–160 cm), estos topes valen para las rutas en que la IA de escena pide un cuerpo:
  * crear (agregar_pieza), cambiar una pieza que ya existe (cambiar_pieza), el trazo y `ajustar_tamanos` (que engruesa para que quepan
  * más globos: se acota al tope y se dice, `presupuesto-ajustes.ts`). La guiada arma con los rangos del cliente
@@ -30,9 +42,18 @@ import { GROSOR_CUERPO_CM } from "./trazo-organico";
  */
 export const PRESUPUESTO_CUERPO_CM3 = 8_000_000;
 export const LARGO_MAXIMO_CUERPO_CM = 2000;
+/** Globos de estructura (contados sin armar, `organico-estructura.ts`) hasta los que se arma un cuerpo de una vez: ver «Por globos». */
+export const GLOBOS_MAXIMOS_CUERPO = 430;
+/** Un aro lleva casi sin relleno (sus dos anillos delgados se cubren de estructura: 1,3 globos en total por cada uno de estructura, contra 2,5 a 4,6 en lo demás medido): cuenta la mitad. */
+export const FRACCION_GLOBOS_ARO = 0.5;
+/** Lo que tarda armar un cuerpo de tantos globos de estructura en el equipo del taller (cargado): medido, 134 → 1,4 s, 233 → 4 s, 310 → 8 s, 625 → 34 s. */
+export const segundosDeArmar = (globosDeEstructuraPieza: number): number => 8e-5 * globosDeEstructuraPieza ** 2;
 
-/** Un cuerpo de globos reducido a lo que cuesta armarlo: lo largo que es y el diámetro (parejo) que tendría con su mismo volumen. */
-export type Cuerpo = { largoCm: number; grosorCm: number };
+/**
+ * Un cuerpo de globos reducido a lo que cuesta armarlo: lo largo que es, el diámetro (parejo) que tendría con su mismo volumen y, si se sabe
+ * la mezcla, cuántos globos de estructura lleva.
+ */
+export type Cuerpo = { largoCm: number; grosorCm: number; globos?: number };
 
 type Punto = { x: number; y: number; z?: number };
 
@@ -55,21 +76,23 @@ export function cuerpoDeTramos(tramos: readonly Cuerpo[]): Cuerpo {
  * El cuerpo de una pieza orgánica sin armarla: el largo de sus tramos (más un diámetro, que es lo que las puntas asoman del eje) y el
  * radio medio de cada uno.
  */
-export function cuerpoDeOrganico(o: Pick<OpcionesOrganico, "tramos">): Cuerpo {
+export function cuerpoDeOrganico(o: Pick<OpcionesOrganico, "tramos" | "densidad" | "inflados">): Cuerpo {
   const cuerpo = cuerpoDeTramos(o.tramos.map((t) => ({
     largoCm: largoDeRecorrido(t.recorrido),
     grosorCm: t.grosor.length ? (2 * t.grosor.reduce((suma, g) => suma + g.radioCm, 0)) / t.grosor.length : 0,
   })));
-  return { ...cuerpo, largoCm: cuerpo.largoCm + cuerpo.grosorCm };
+  const esAro = o.tramos.some((t) => t.id === ANILLO_INTERIOR);
+  return { ...cuerpo, largoCm: cuerpo.largoCm + cuerpo.grosorCm, globos: Math.round(globosDeEstructura(o) * (esAro ? FRACCION_GLOBOS_ARO : 1)) };
 }
 
-const cabe = (c: Cuerpo) => c.largoCm <= LARGO_MAXIMO_CUERPO_CM && volumenDeCuerpoCm3(c.largoCm, c.grosorCm) <= PRESUPUESTO_CUERPO_CM3;
+const globosDe = (c: Cuerpo) => c.globos ?? 0;
+const cabe = (c: Cuerpo) => c.largoCm <= LARGO_MAXIMO_CUERPO_CM && volumenDeCuerpoCm3(c.largoCm, c.grosorCm) <= PRESUPUESTO_CUERPO_CM3 && globosDe(c) <= GLOBOS_MAXIMOS_CUERPO;
 
 /** El cuerpo de una pieza según el grosor (cm) con que se pida: la pieza se vuelve a sacar con ese grosor (su largo puede cambiar con él). */
 export type MedidaPorGrosor = (grosorCm: number) => Cuerpo;
 
-/** La medida por grosor de una pieza nueva, por los tramos con que se arma con cada grosor. */
-export const medirTramos = (tramosDe: (grosorCm: number) => Pick<OpcionesOrganico, "tramos">["tramos"]): MedidaPorGrosor => (g) => cuerpoDeOrganico({ tramos: tramosDe(g) });
+/** La medida por grosor de una pieza nueva, por las opciones con que se arma con cada grosor (los tramos con la mezcla de tamaños que de verdad lleva). */
+export const medirTramos = (opcionesDe: (grosorCm: number) => Pick<OpcionesOrganico, "tramos" | "densidad" | "inflados">): MedidaPorGrosor => (g) => cuerpoDeOrganico(opcionesDe(g));
 
 /** El mayor grosor entero (desde el mínimo del rango hasta `hastaCm`) con que el cuerpo cabe, buscado con la pieza misma; 0 si ni con el mínimo cabe. */
 export function grosorQueCabe(medir: MedidaPorGrosor, hastaCm: number): number {
@@ -84,10 +107,16 @@ export function grosorQueCabe(medir: MedidaPorGrosor, hastaCm: number): number {
 
 const demasiadoLargo = (c: Cuerpo) =>
   `Ese cuerpo (${Math.round(c.largoCm)} cm de largo) es demasiado largo para armarlo de una vez: hasta ${LARGO_MAXIMO_CUERPO_CM} cm. Pártelo en varias piezas o acórtalo.`;
+const volumen = (c: Cuerpo) => volumenDeCuerpoCm3(c.largoCm, c.grosorCm);
 function demasiadoGrueso(c: Cuerpo, medir: MedidaPorGrosor, grosorPedidoCm: number): string {
   const queCabe = grosorQueCabe(medir, grosorPedidoCm);
+  const medidas = `${Math.round(c.largoCm)} cm de largo a ${Math.round(grosorPedidoCm)} cm de grosor`;
+  if (volumen(c) <= PRESUPUESTO_CUERPO_CM3) {
+    const salida = queCabe ? `con esos tamaños el grosor máximo es ${queCabe} cm (o baja el largo)` : `ni con ${GROSOR_CUERPO_CM.min} cm de grosor cabe con esos tamaños: baja el largo`;
+    return `Ese cuerpo (${medidas}) lleva demasiados globos para armarlo de una vez: unos ${globosDe(c)} de estructura, y se arman hasta ${GLOBOS_MAXIMOS_CUERPO}. Con globos más grandes (R-12, R-18, R-24) lleva muchos menos: ${salida}.`;
+  }
   const salida = queCabe ? `con esas medidas el grosor máximo es ${queCabe} cm (o baja el largo)` : `ni con ${GROSOR_CUERPO_CM.min} cm de grosor cabe: baja el largo`;
-  return `Ese cuerpo (${Math.round(c.largoCm)} cm de largo a ${Math.round(grosorPedidoCm)} cm de grosor) es demasiado grueso o largo para armarlo de una vez: ${salida}.`;
+  return `Ese cuerpo (${medidas}) es demasiado grueso o largo para armarlo de una vez: ${salida}.`;
 }
 
 /** Rechaza una pieza orgánica que no cabe en los topes de armado: demasiado larga, o con el grosor que sí cabe. */
@@ -108,6 +137,6 @@ export function comprobarLargo(largoCm: number): void {
  */
 export function comprobarCambioDeCuerpo(antes: Cuerpo, despues: Cuerpo, sugerir: MedidaPorGrosor, grosorPedidoCm: number): void {
   if (despues.largoCm > LARGO_MAXIMO_CUERPO_CM && despues.largoCm > antes.largoCm) fallar(demasiadoLargo(despues));
-  const volumen = (c: Cuerpo) => volumenDeCuerpoCm3(c.largoCm, c.grosorCm);
-  if (volumen(despues) > PRESUPUESTO_CUERPO_CM3 && volumen(despues) > volumen(antes)) fallar(demasiadoGrueso(despues, sugerir, grosorPedidoCm));
+  const masPesado = (volumen(despues) > PRESUPUESTO_CUERPO_CM3 && volumen(despues) > volumen(antes)) || (globosDe(despues) > GLOBOS_MAXIMOS_CUERPO && globosDe(despues) > globosDe(antes));
+  if (masPesado) fallar(demasiadoGrueso(despues, sugerir, grosorPedidoCm));
 }

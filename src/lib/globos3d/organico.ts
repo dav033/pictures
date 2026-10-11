@@ -2,9 +2,11 @@ import { TABLA_SEMPERTEX, type ReferenciaSempertex } from "@/lib/plan/referencia
 import { formatoPorId, infladoValido } from "./formatos";
 import { asignarColores } from "./organico-color";
 import { colocarFijos } from "./organico-fijos";
+import { anotarEmpaque } from "./organico-empaques";
+import { infladoNominal, perfilDeEstructura } from "./organico-estructura";
 import { centroCuerpo } from "./geometria";
 import type { GloboColocado, Vec3 } from "./modulos";
-import { crearAzar, vec, suma, resta, escala, punto, cruz, norma, distancia, unitario, limitar, aplastamiento, muestrear, muestraEn, proyectar, interpolarGrosor, mezclaEn, radioEnvoltura, profundidad, rangoS, superficie, estructuraPorCm, type TramoPreparado } from "./organico-geometria";
+import { crearAzar, vec, suma, resta, escala, punto, cruz, norma, distancia, unitario, limitar, aplastamiento, muestrear, muestraEn, proyectar, interpolarGrosor, radioEnvoltura, profundidad, rangoS, superficie, type TramoPreparado } from "./organico-geometria";
 export { aplastamiento, crearAzar, estructuraPorCm, largoRecorrido, mezclaEn, profundidad, type TramoPreparado } from "./organico-geometria";
 export { MEZCLA_COLUMNA_GRUESA, MEZCLA_GUIRNALDA, RELLENO_TUPIDO, formaColumna, formaGuirnalda, formaSemiarco, type OpcionesColumna } from "./organico-formas";
 
@@ -297,7 +299,9 @@ function geometriaOrganica(opciones: OpcionesOrganico): GeometriaOrganica {
     GEOMETRIAS.set(clave, guardada);
     return guardada;
   }
+  const inicio = performance.now();
   const nueva = empacarOrganico(opciones);
+  anotarEmpaque(inicio, nueva.estructuraPorMetro.reduce((suma, porMetro, i) => suma + (porMetro * nueva.tramos[i]!.largo) / 100, 0));
   GEOMETRIAS.set(clave, nueva);
   while (GEOMETRIAS.size > TOPE_GEOMETRIAS) { const primera = GEOMETRIAS.keys().next().value; if (primera === undefined) break; GEOMETRIAS.delete(primera); }
   return nueva;
@@ -319,9 +323,9 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
   const nominal = new Map<string, number>();
   const formatoValido = (id: string): boolean => {
     if (nominal.has(id)) return true;
-    const f = formatoPorId(id);
-    if (!f || f.tipo !== "redondo") { avisos.push(`El formato ${id} no es un redondo modelado: se quita de la mezcla.`); return false; }
-    nominal.set(id, infladoValido(f, opciones.inflados?.[id] ?? f.infladoDecoracionCm));
+    const inflado = infladoNominal(opciones, id);
+    if (inflado === null) { avisos.push(`El formato ${id} no es un redondo modelado: se quita de la mezcla.`); return false; }
+    nominal.set(id, inflado);
     return true;
   };
   const inflar = (id: string, base?: number): number => {
@@ -811,22 +815,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
   for (const tp of tramos) for (const p of tp.def.mezcla) for (const [id, w] of Object.entries(p.pesos)) if (w > 0) formatoValido(id);
   tramos.forEach((tp, it) => {
     const ds = 1;
-    const acumulados = new Map<string, number[]>();
-    let totalTramo = 0;
-    for (let s = 0; s < tp.largo; s += ds) {
-      const t = (s + ds / 2) / tp.largo;
-      const pesos = [...mezclaEn(tp.def.mezcla, t)].filter(([id]) => formatoValido(id));
-      const R = interpolarGrosor(tp.def.grosor, t);
-      const consumo = pesos.reduce((acc, [id, w]) => acc + w / estructuraPorCm(nominal.get(id)!, R), 0);
-      const n = consumo > 0 ? (densidad * (tp.def.densidad ?? 1)) / consumo : 0;
-      totalTramo += n * ds;
-      for (const [id] of nominal) {
-        const w = pesos.find(([x]) => x === id)?.[1] ?? 0;
-        const lista = acumulados.get(id) ?? [];
-        lista.push((lista[lista.length - 1] ?? 0) + n * w * ds);
-        acumulados.set(id, lista);
-      }
-    }
+    const { acumulados, total: totalTramo } = perfilDeEstructura(tp.def, tp.largo, nominal, densidad, formatoValido);
     estructuraPorMetro.push(totalTramo / (tp.largo / 100));
     for (const [id, acumulado] of acumulados) {
       const total = acumulado[acumulado.length - 1] ?? 0;
