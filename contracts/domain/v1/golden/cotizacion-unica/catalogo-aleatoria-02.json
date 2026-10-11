@@ -1,0 +1,46 @@
+{
+ "caso": "catalogo-aleatoria-02",
+ "origen": "catalogo",
+ "idea": null,
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "R-5",
+   "codigo": "850",
+   "cantidad": 185,
+   "productId": "9407246041383",
+   "color": "amatista",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "48718443151655",
+     "unidadesPaq": 20,
+     "precio": 4208
+    },
+    {
+     "variantId": "48718443118887",
+     "unidadesPaq": 50,
+     "precio": 9313
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 37252,
+  "reserva": {
+   "objetivo": 15,
+   "cubierta": 15,
+   "sinCubrir": 0,
+   "excedenteNatural": 15
+  },
+  "compras": [
+   {
+    "variantId": "48718443118887",
+    "paquetes": 4,
+    "cantidad": 185,
+    "reserva": 15,
+    "paraReserva": true
+   }
+  ]
+ }
+}

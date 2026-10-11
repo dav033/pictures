@@ -14,7 +14,7 @@
  * Sin red, sin proveedor, sin coste.
  */
 import assert from "node:assert/strict";
-import { separarNotasReparto } from "../../src/lib/ia/herramientas/registro-herramientas";
+import { separarNotasReparto } from "../../src/lib/ia/herramientas/notas-plan";
 import { SYSTEM_PROMPT_BASE } from "../../src/lib/ia/omoikane/prompt-sistema";
 
 const PUERTA = "puerta_fisica:EST_01_ARCO: Arco: 24 globos por metro está fuera de la banda de su densidad.";
@@ -50,6 +50,11 @@ caso("sin notas no cambia nada", () => {
 caso("un prefijo solo cuenta al principio: un texto que lo menciona sigue siendo advertencia", () => {
   const menciona = "sobrante_alto:V-1 (ver reparto_distinto: no aplica)";
   assert.deepEqual(separarNotasReparto([menciona]).advertencias, [menciona]);
+});
+
+caso("la reserva sin cubrir no le llega al modelo: es informativa, no se corrige (D-038, revisión 3)", () => {
+  const reserva = "reserva_merma_no_cubierta:4";
+  assert.deepEqual(separarNotasReparto([PUERTA, reserva, REPARTO]), { advertencias: [PUERTA], notasReparto: [REPARTO] });
 });
 
 caso("el prompt de sistema dice que notas_reparto se explican y no se corrigen", () => {

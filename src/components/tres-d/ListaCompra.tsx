@@ -10,6 +10,7 @@ import { ProductosFiesta } from "./UtileriaFiesta";
 import { BTN } from "./ui-taller";
 import { SeccionHelio } from "./SeccionHelio";
 import { SeccionBomba } from "./SeccionBomba";
+import { SeccionPrecio } from "./SeccionPrecio";
 import { almacenDelNavegador, filasBomba, guardarCalibracionBomba, inflablesDeEscena, leerCalibracionBomba, lineasBomba, type CalibracionBomba } from "@/lib/globos3d/bomba-segundos";
 import { avisoMetalizados, contarMetalizados, gruposDeHelio, lineasHelio, resumenHelio } from "@/lib/globos3d/helio-cinta";
 import { agruparPiezas, filasPorPieza, textoPorPieza, type FilaPorPieza } from "@/lib/globos3d/piezas-agrupadas";
@@ -102,6 +103,7 @@ export function ListaCompra({ nombre, escena, armada, productosExactos, onHojaDe
         {corazonesSinCobertura(armada.materiales).map((x) => <p key={x.codigo} className="text-xs text-red-600" role="note">Sin cobertura: la tienda no vende el Corazón 12 en {referenciaPorCodigo(x.codigo)?.nombreCompleto ?? x.codigo} ({x.codigo}); {x.cantidad} {x.cantidad === 1 ? "corazón no se puede comprar" : "corazones no se pueden comprar"} en ese color.</p>)}
         {armada.flores.length > 0 && <p className="mt-1 text-xs text-taller-suave">Las flores artificiales son follaje: no cuentan como globos.</p>}
       </section>
+      <SeccionPrecio materiales={armada.materiales} />
       <SeccionHelio grupos={gruposDeHelio(escena.nodos, armada.porNodo)} metalizados={contarMetalizados(escena.nodos, armada.porNodo)} />
       <SeccionBomba globos={inflablesDeEscena(armada)} calibracion={calibracion} onCambiar={cambiarCalibracion} />
       <section aria-label="Por pieza">

@@ -142,7 +142,7 @@ export function sobreDelMotor(entrada: EntradaSobre): SobreDelMotor {
       required_quantity: compra.cantidadConMerma, unidades_con_merma: compra.cantidadConMerma, unidades_paquete: compra.unidadesPaquete, paquetes: compra.paquetes,
       purchase_quantity: compra.paquetes * compra.unidadesPaquete, used: compra.cantidad, leftover_inventory: Math.max(0, compra.paquetes * compra.unidadesPaquete - compra.cantidadConMerma),
       consumption_cost: Math.round((compra.cantidad * compra.precioPaquete) / compra.unidadesPaquete), purchase_cost: compra.subtotal,
-      additional_package_for_waste: false, sobrante: compra.sobrante, precio_paquete: compra.precioPaquete, subtotal: compra.subtotal,
+      additional_package_for_waste: compra.paraReserva, sobrante: compra.sobrante, precio_paquete: compra.precioPaquete, subtotal: compra.subtotal,
       estructuras: piezas, elementos_origen: piezas.map((id) => ({ kind: "estructura" as const, id })),
     };
   });

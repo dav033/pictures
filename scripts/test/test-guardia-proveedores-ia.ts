@@ -162,6 +162,7 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
   "src/app/api/taller/buscar-foto/route.ts": "taller 3D: búsqueda por foto en la biblioteca (embedding de imagen con Gemini)",
   "src/app/api/guiada/motor/route.ts": "REQ-007: bandera GUIADA_MOTOR (3d|python) con la que se crea un plan de la guiada; la lectura para un plan nuevo queda en decidir(regla:motor_guiada)",
   "src/app/api/taller/hoja-armado/route.ts": "PRO-01: bandera taller_hoja_armado del Taller 3D (lectura con sesión, sin IA)",
+  "src/app/api/taller/cotizacion/route.ts": "D-038: precio de la lista de compra del Taller 3D con el cotizador único (Python lista-materiales, sin IA); cada cotización queda en decidir(regla:cotizacion_taller)",
   "src/app/api/catalogo/repositorios/route.ts": "REQ-013 fase 5: manifiestos de los repositorios, los que ve el Taller y la bandera de la interfaz por repositorio (lectura con sesión, sin IA)",
   "src/app/api/guiada/motor/plan/route.ts": "REQ-007 fase 2: plan de la guiada armado por el motor 3D (sin modelo ni RAG) y cotizado con Python (lista-materiales); el motivo de cada caída a Python queda en decidir(regla:motor_guiada)",
   "src/app/api/guiada/motor/armada/route.ts": "REQ-007 fase 3: la armada (o el SVG de reserva) del plan 3D para la vista del cliente; solo vuelve a armar la espec firmada, sin modelo, RAG ni Python",

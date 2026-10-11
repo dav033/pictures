@@ -10,7 +10,8 @@
  *   con el cruce en vivo, `material_no_disponible` y fallos del servicio como fallos tipados (nunca lanza);
  * - el sobre del plan cumple `PlanGuiadoSchema` y `CotizacionPlanGuiadoSchema`, lleva el token `globos3d` firmado sobre
  *   el hash de la espec, y sus cantidades por pieza, por variante y en total cuadran con la lista del motor;
- * - el carrusel («¿cuánto cuesta?» de una idea) cotiza lo que cuenta el motor: 26 de las 28 ideas; la lista curada queda para el resto;
+ * - el carrusel («¿cuánto cuesta?» de una idea) cotiza el plan que recibe el cliente: con el motor, 26 de las 28 ideas; si no, el
+ *   plan de Python de la idea guardada (D-038); la lista curada solo para lo que no tiene plan guardado;
  * - los pasos de montaje leen el sobre (la tarjeta, la tabla, la compra y la cotización se prueban en test-ui-plan-motor3d.ts).
  *
  * Run: npx tsx --conditions=react-server scripts/test/test-motor-guiada-precio.ts
@@ -31,6 +32,7 @@ import { registroPrecio } from "../motor/generar-golden-precio";
 import { pythonDoble, type PythonDoble } from "../lib/python-doble-precio";
 import { cotizarIdeaConMotor } from "../../src/lib/guiada-motor/cotizar-idea";
 import { decidirCotizacionDelCarrusel } from "../../src/lib/guiada-motor/carrusel";
+import { cotizarIdeaConPython } from "../../src/lib/guiada-motor/cotizar-idea-python";
 import { isPythonAdapterError, llamarPythonListaMateriales } from "../../src/lib/ia/nucleo/python-adapter";
 import { planGuardadoDeIdea } from "../../src/lib/plan/planes-ideas-guardados";
 import { CotizacionGuiadaSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1";
@@ -168,7 +170,7 @@ async function main(): Promise<void> {
 
   const SIN_CRUCE = new Set(todos.filter((c) => registroPrecio(c).faltantes.length > 0).map((c) => c.id));
 
-  await caso("cotizarBom: paquetes de Python, una reserva para el plan, una variante por compra y la forma CotizacionPlanGuiado", async () => {
+  await caso("cotizarBom: paquetes de Python, una reserva por globo, una variante por compra y la forma CotizacionPlanGuiado", async () => {
     let cotizadas = 0;
     for (const c of ARMABLES) {
       const r = resultados.get(c.id)!;
@@ -184,9 +186,11 @@ async function main(): Promise<void> {
       assert.equal(pedido.schema_version, "lista-materiales.v1");
       assert.equal(new Set(pedido.materiales.map((m) => m.variant_id)).size, pedido.materiales.length, "Python no admite variantes repetidas");
       assert.equal(cotizada.compras.reduce((s, x) => s + x.cantidad, 0), unidades(r.bom.total), "las compras cubren exactamente lo que cuenta el motor");
-      // UNA reserva para todo el plan: ceil(Σ × 0,08), cubierta primero con lo que sobra de los paquetes.
-      assert.equal(cotizada.reserva.objetivo, Math.ceil(unidades(r.bom.total) * MERMA), `${c.id}: la reserva es del plan entero`);
-      assert.equal(cotizada.reserva.sinCubrir, 0);
+      // D-038: cada globo (talla y color) lleva su reserva, ceil(n × 0,08), y la cubren sus propias compras.
+      assert.equal(cotizada.reserva.objetivo, r.bom.total.reduce((s, l) => s + Math.ceil(l.cantidad * MERMA), 0), `${c.id}: la reserva es la de cada globo`);
+      // Sus repuestos salen de sus propios paquetes; los que no caben bajo el tope quedan dichos (`sinCubrir`).
+      for (const l of r.bom.total) assert.ok(cotizada.compras.filter((x) => x.formatoId === l.formatoId && x.codigo === l.codigo).reduce((s, x) => s + x.reserva, 0) <= Math.ceil(l.cantidad * MERMA), `${c.id}: ${l.formatoId} ${l.codigo} no cubre más que su reserva`);
+      assert.equal(cotizada.reserva.sinCubrir, cotizada.reserva.objetivo - cotizada.reserva.cubierta);
       assert.equal(cotizada.compras.reduce((s, x) => s + x.reserva, 0), cotizada.reserva.cubierta);
       for (const compra of cotizada.compras) {
         const capacidad = compra.paquetes * compra.unidadesPaquete;
@@ -231,7 +235,9 @@ async function main(): Promise<void> {
     let salida: Salida;
     try {
       salida = JSON.parse(execFileSync("python", [path.join(RAIZ, "scripts", "test", "oraculo-python-compra.py")], { encoding: "utf8", input: JSON.stringify(casosOraculo.map((c) => ({ grupos: grupos(c) }))), maxBuffer: 64 * 1024 * 1024 })) as Salida;
-    } catch {
+    } catch (error) {
+      // Solo se omite si no hay `python`; un oráculo que falla (p. ej. plan.py cambió de forma) es un fallo, no un salto.
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       console.log("  (sin python utilizable: se omite el oráculo de plan.py)");
       return;
     }
@@ -328,11 +334,11 @@ async function main(): Promise<void> {
     assert.equal(publicado.ok && publicado.snapshotCruce, "products_catalog:publicado");
     const sinLector = await cotizarBom(bom, { ...dependencias(pythonDoble(cruce)), snapshotPublicado: async () => { throw new Error("sin base"); } });
     assert.equal(sinLector.ok && sinLector.snapshot, cruce.snapshot, "si no se puede leer el publicado, el del cruce");
-    // Más líneas de las que admite `lista-materiales.v1` (256): se dice, no se manda.
+    // Más líneas de las que admite `lista-materiales.v1` (256): se cotizan por trozos y la suma es el total (D-038, A4).
     const claves = Object.keys(cruce.entradas).slice(0, 300).map((k) => k.split("|") as [string, string]);
-    const enorme = { total: claves.map(([formatoId, codigo]) => ({ formatoId, codigo, cantidad: 3 })), porPieza: {} };
-    const demasiadas = await cotizarBom(enorme, dependencias(pythonDoble(cruce)));
-    assert.equal(!demasiadas.ok && demasiadas.razon, "precio_fallido");
+    const enorme = { total: claves.map(([formatoId, codigo]) => ({ formatoId, codigo, cantidad: 3 })), porPieza: {} }, porTrozos = pythonDoble(cruce);
+    const demasiadas = await cotizarBom(enorme, dependencias(porTrozos));
+    assert.ok(demasiadas.ok && demasiadas.total === demasiadas.compras.reduce((s, x) => s + x.subtotal, 0) && porTrozos.llamadas.length === 2 && porTrozos.llamadas.every((l) => l.materiales.length <= 256));
   });
 
   await caso("el sobre del plan: PlanGuiadoSchema + CotizacionPlanGuiadoSchema, token globos3d, hash de la espec y cantidades que cuadran", async () => {
@@ -401,7 +407,7 @@ async function main(): Promise<void> {
     assert.equal(abrirContextoPlan(a.approval_token)!.planHash, abrirContextoPlan(b.approval_token)!.planHash);
   });
 
-  await caso("carrusel: «¿cuánto cuesta?» de una idea con el motor 3d; la lista curada queda para lo que no arma", async () => {
+  await caso("carrusel: «¿cuánto cuesta?» de una idea con el motor 3d; lo que no arma cae al plan de Python", async () => {
     const ideas = todos.filter((c) => c.id.startsWith("idea-")).map((c) => c.id.replace(/^idea-/, ""));
     assert.equal(ideas.length, 28);
     const cotizadas: string[] = [], curadas: string[] = [];
@@ -417,7 +423,7 @@ async function main(): Promise<void> {
       for (const l of cot.lineas) assert.equal(l.cantidadNecesaria + l.sobrante, l.paquetes * l.unidadesPaquete);
     }
     assert.equal(cotizadas.length, 26);
-    assert.deepEqual(curadas, ["deco-real-03 (no_representable)", "deco-real-27 (no_representable)"], "el centro de mesa con bouquet y el aro parcial siguen con la lista curada; la columna de la 06 (ahora de R-12 por bandas) ya se cotiza con el motor");
+    assert.deepEqual(curadas, ["deco-real-03 (no_representable)", "deco-real-27 (no_representable)"], "el centro de mesa con bouquet y el aro parcial caen al plan de Python; la columna de la 06 (ahora de R-12 por bandas) ya se cotiza con el motor");
     // Una idea sin plan guardado (las figuras 21, 23 y 26) y la lista curada de siempre (merma 0) siguen siendo válidas.
     assert.deepEqual(await cotizarIdeaConMotor("deco-real-21-figura", { planGuardado: planGuardadoDeIdea, crosswalk: async () => cruce, cotizarLista: pythonDoble(cruce).cotizarLista }), { ok: false, razon: "sin_plan_guardado" });
     assert.equal(CotizacionGuiadaSchema.safeParse({ lineas: [{ id: "1", tamano: "x", cantidadNecesaria: 1, disponible: true, varianteId: "1", nombre: "n", precioPaquete: 1, unidadesPaquete: 1, paquetes: 1, subtotal: 1, sobrante: 0 }], total: 1, mermaPorcentaje: 0, incluyeIva: true, complementosSoportados: false }).success, true);
@@ -446,31 +452,45 @@ async function main(): Promise<void> {
     assert.equal(ok.ok, true);
   });
 
-  await caso("carrusel: la decisión de «¿cuánto cuesta?» con la bandera, y el motor solo se carga con la bandera en 3d", async () => {
-    let cargas = 0;
+  await caso("carrusel (D-038): «¿cuánto cuesta?» es el precio del plan que recibe el cliente, y el motor solo se carga con la bandera en 3d", async () => {
+    let cargas = 0, python = 0;
     const motorOk = async (id: string) => { cargas += 1; return cotizarIdeaConMotor(id, { planGuardado: planGuardadoDeIdea, crosswalk: async () => cruce, cotizarLista: pythonDoble(cruce).cotizarLista }); };
-    // python: la lista curada, y ni se toca el motor.
-    assert.deepEqual(await decidirCotizacionDelCarrusel("deco-real-07-eb12910e210c94b6184d025127acce95", { leerMotor: async () => "python", cotizarConMotor: motorOk }), { usar: "curada", motivo: "bandera_python" });
+    const cotizacionPython = { lineas: [{ id: "v1", tamano: "R-12", cantidadNecesaria: 10, disponible: true, varianteId: "v1", nombre: "Globo", precioPaquete: 3963, unidadesPaquete: 12, paquetes: 1, subtotal: 3963, sobrante: 2 }], total: 3963, mermaPorcentaje: 8, incluyeIva: true, complementosSoportados: false as const };
+    const pythonOk = async (id: string) => { python += 1; return cotizarIdeaConPython(id, { planGuardado: planGuardadoDeIdea, resolver: async () => ({ cotizacion: cotizacionPython }) }); };
+    const deps = (motor: "3d" | "python", extra: Partial<Parameters<typeof decidirCotizacionDelCarrusel>[1]> = {}) => ({ leerMotor: async () => motor, tienePlanGuardado: async (id: string) => planGuardadoDeIdea(id) !== null, cotizarConMotor: motorOk, cotizarConPython: pythonOk, ...extra });
+    const IDEA = "deco-real-07-eb12910e210c94b6184d025127acce95";
+    // python: el plan de Python de la idea guardada, y ni se toca el motor.
+    const dePython = await decidirCotizacionDelCarrusel(IDEA, deps("python"));
+    assert.equal(dePython.usar, "plan_python");
+    if (dePython.usar === "plan_python") { assert.equal(dePython.motivo, "bandera_python"); assert.equal(dePython.resultado.cotizacion.total, 3963); }
     assert.equal(cargas, 0, "con la bandera en python el motor no se carga");
-    // 3d: el precio del motor.
-    const delMotor = await decidirCotizacionDelCarrusel("deco-real-07-eb12910e210c94b6184d025127acce95", { leerMotor: async () => "3d", cotizarConMotor: motorOk });
+    // 3d: el precio del motor (el del plan del 3D).
+    const delMotor = await decidirCotizacionDelCarrusel(IDEA, deps("3d"));
     assert.equal(delMotor.usar, "motor");
     assert.equal(cargas, 1);
     if (delMotor.usar === "motor") { assert.equal(delMotor.resultado.cotizacion.mermaPorcentaje, 8); assert.ok(delMotor.resultado.cotizacion.total > 0); }
-    // 3d, pero el motor no la arma (figura sin plan, pieza sin constructor, hueco en la tienda): la curada, con el motivo.
-    for (const [id, motivo] of [["deco-real-21-figura", "sin_plan_guardado"], ["deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1", "no_representable"]] as const) {
-      assert.equal((await decidirCotizacionDelCarrusel(id, { leerMotor: async () => "3d", cotizarConMotor: motorOk })).usar === "curada" && true, true);
-      const d = await decidirCotizacionDelCarrusel(id, { leerMotor: async () => "3d", cotizarConMotor: motorOk });
-      assert.equal(d.usar === "curada" ? d.motivo : null, motivo);
-    }
-    // Un fallo al leer la bandera o del propio motor nunca tumba el turno.
-    assert.deepEqual(await decidirCotizacionDelCarrusel("x", { leerMotor: async () => { throw new Error("sin base"); }, cotizarConMotor: motorOk }), { usar: "curada", motivo: "no_se_pudo_leer_la_bandera" });
-    const roto = await decidirCotizacionDelCarrusel("x", { leerMotor: async () => "3d", cotizarConMotor: async () => { throw new Error("se cayó"); } });
-    assert.deepEqual(roto, { usar: "curada", motivo: "error_del_motor", detalle: "se cayó" });
-    // La ruta del asistente no importa el motor ni el cruce de forma estática: solo con `import()` dentro de la rama 3d.
+    // 3d, pero el motor no la arma: el plan cae a Python y la tarjeta también.
+    const aproximada = await decidirCotizacionDelCarrusel("deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1", deps("3d"));
+    assert.deepEqual(aproximada.usar === "plan_python" ? aproximada.motivo : null, "no_representable");
+    // Sin plan guardado (las figuras): la lista curada, y no se cotiza ni con el motor ni con Python.
+    const antes = { cargas, python };
+    assert.deepEqual(await decidirCotizacionDelCarrusel("deco-real-21-figura", deps("3d")), { usar: "curada", motivo: "sin_plan_guardado" });
+    assert.deepEqual({ cargas, python }, antes);
+    // Un fallo al leer la bandera nunca tumba el turno: queda el plan de Python.
+    const sinBandera = await decidirCotizacionDelCarrusel(IDEA, deps("3d", { leerMotor: async () => { throw new Error("sin base"); } }));
+    assert.deepEqual(sinBandera.usar === "plan_python" ? sinBandera.motivo : null, "no_se_pudo_leer_la_bandera");
+    // Un fallo pasajero del motor o de su precio no cae a Python: no hay precio (el plan del 3D podría salir luego con otro).
+    assert.deepEqual(await decidirCotizacionDelCarrusel(IDEA, deps("3d", { cotizarConMotor: async () => { throw new Error("se cayó"); } })), { usar: "sin_precio", motivo: "error_del_motor", detalle: "se cayó" });
+    assert.equal((await decidirCotizacionDelCarrusel(IDEA, deps("3d", { cotizarConMotor: async () => ({ ok: false, razon: "precio_fallido" }) }))).usar, "sin_precio");
+    // Si Python tampoco cotiza, no hay precio: nunca otro número que el del plan.
+    const nada = await decidirCotizacionDelCarrusel(IDEA, deps("python", { cotizarConPython: async () => { throw new Error("python caído"); } }));
+    assert.deepEqual(nada, { usar: "sin_precio", motivo: "error_de_python", detalle: "python caído" });
+    const sinPlanes = await decidirCotizacionDelCarrusel(IDEA, deps("python", { tienePlanGuardado: async () => { throw new Error("json roto"); } }));
+    assert.deepEqual(sinPlanes, { usar: "sin_precio", motivo: "error_planes_guardados", detalle: "json roto" }, "sin leer los planes guardados no se cae a la lista curada");
+    // La ruta del asistente no importa el motor, el cruce ni los planes guardados de forma estática: solo con `import()`.
     const ruta = readFileSync(path.join(RAIZ, "src", "app", "api", "asistente-guiado", "route.ts"), "utf8");
     const importesEstaticos = [...ruta.matchAll(/^import .* from "([^"]+)";$/gm)].map((m) => m[1]!);
-    for (const prohibido of ["@/lib/globos3d/motor/v1", "@/lib/guiada-motor/cotizar-idea", "@/lib/plan/planes-ideas-guardados"]) assert.ok(!importesEstaticos.includes(prohibido), `${prohibido} no debe importarse de forma estática en la ruta`);
+    for (const prohibido of ["@/lib/globos3d/motor/v1", "@/lib/guiada-motor/cotizar-idea", "@/lib/guiada-motor/cotizar-idea-python", "@/lib/plan/planes-ideas-guardados"]) assert.ok(!importesEstaticos.includes(prohibido), `${prohibido} no debe importarse de forma estática en la ruta`);
     assert.match(ruta, /import\("@\/lib\/globos3d\/motor\/v1"\)/);
   });
 

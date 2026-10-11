@@ -17,20 +17,11 @@
   {
    "formatoId": "R-12",
    "codigo": "012",
-   "cantidad": 12,
+   "cantidad": 32,
    "reserva": 3,
-   "paquetes": 2,
+   "paquetes": 3,
    "productId": "8634239451431",
    "variantId": "46594234548519"
-  },
-  {
-   "formatoId": "R-12",
-   "codigo": "012",
-   "cantidad": 20,
-   "reserva": 0,
-   "paquetes": 1,
-   "productId": "8634239451431",
-   "variantId": "46594234581287"
   }
  ]
 }

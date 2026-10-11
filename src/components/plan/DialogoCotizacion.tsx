@@ -280,7 +280,7 @@ export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, on
                   <p className="mt-0.5 text-[13px] text-texto-suave">COP · {numero.format(comprados)} {plan.estructuras.every(cuentaEnGlobos) ? "globos" : "unidades"} comprados, {numero.format(enDecoracion)} en la decoración</p>
                 </div>
               </div>
-              <p className="mt-3 text-xs text-texto-tenue">Incluye una reserva del {plan.totales.merma_porcentaje}% por globos que se revientan al inflar o montar. No incluye montaje.</p>
+              <p className="mt-3 text-xs text-texto-tenue">Incluye repuestos de cada globo (el {plan.totales.merma_porcentaje} %, al menos uno) salvo cuando comprarlos encarece de más. No incluye montaje.</p>
               <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                 <Dialog.Close className="ui-pressable inline-flex h-11 items-center justify-center rounded-[0.8rem] border border-borde bg-superficie px-4 text-sm font-medium text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
                   Volver a la propuesta

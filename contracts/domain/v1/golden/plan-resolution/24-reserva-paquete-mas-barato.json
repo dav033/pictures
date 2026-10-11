@@ -74,7 +74,7 @@
     }
   ],
   "catalog_snapshot_id": "SNAP-GOLDEN-001",
-  "description": "Dos grupos sin sobrante natural: R-12 rosado en paquete de 100 a 30.000 COP y R-24 dorado en paquete de 25 a 80.000 COP, con la variante cara ordenada primero. El paquete extra de la reserva de merma va al que cubre lo pendiente al menor costo (antes iba al primero por variant_id y el plan costaba 190.000 en vez de 140.000), y los totales reportan solo el paquete de delta y el ahorro real.",
+  "description": "Dos grupos sin sobrante natural: R-12 rosado en paquete de 100 a 30.000 COP y R-24 dorado en paquete de 25 a 80.000 COP, con la variante cara ordenada primero. Desde D-038 (2026-10-10) cada globo lleva su propia reserva de merma (a quien se le revienta un dorado de 24 le hace falta un dorado de 24): 2 dorados y 8 rosados. Un paquete de repuestos solo se compra si cuesta como mucho max(10.000 COP, 10 % del diseño de ese globo): aquí ninguno (80.000 y 30.000), así que el plan cuesta su diseño, 110.000 COP, y dice la reserva no cubierta (10). Con UNA reserva para el plan el paquete extra iba al que la cubría más barato (140.000; antes, al primero por variant_id, 190.000).",
   "expected": {
     "material_estimate": {
       "balloons": [
@@ -609,47 +609,51 @@
           "waste_reserve": 0
         },
         {
-          "additional_package_for_waste": true,
-          "consumption_cost": 33000,
+          "additional_package_for_waste": false,
+          "consumption_cost": 30000,
           "design_quantity": 100,
-          "leftover_inventory": 90,
-          "operational_surplus": 90,
-          "package_count": 2,
-          "potential_surplus": 100,
+          "leftover_inventory": 0,
+          "operational_surplus": 0,
+          "package_count": 1,
+          "potential_surplus": 0,
           "product_id": "P-ROSA",
-          "purchase_cost": 60000,
-          "purchase_quantity": 200,
-          "required_quantity": 110,
+          "purchase_cost": 30000,
+          "purchase_quantity": 100,
+          "required_quantity": 100,
           "units_per_package": 100,
           "used": 100,
           "variant_id": "V-Z-ROSA-12",
-          "waste_adjusted_quantity": 110,
-          "waste_reserve": 10
+          "waste_adjusted_quantity": 100,
+          "waste_reserve": 0
         }
       ],
       "special_elements": [],
       "totals": {
-        "additional_waste_packages": 1,
-        "consumption_cost": 113000,
-        "covered_waste_reserve": 10,
+        "additional_waste_packages": 0,
+        "consumption_cost": 110000,
+        "covered_waste_reserve": 0,
         "design_quantity": 125,
-        "natural_package_surplus": 100,
-        "operational_surplus": 90,
-        "potential_surplus": 100,
-        "purchase_cost": 140000,
-        "purchase_quantity": 225,
-        "required_quantity": 135,
+        "natural_package_surplus": 0,
+        "operational_surplus": 0,
+        "potential_surplus": 0,
+        "purchase_cost": 110000,
+        "purchase_quantity": 125,
+        "required_quantity": 125,
         "target_waste_reserve": 10,
-        "uncovered_waste_reserve": 0,
-        "waste_adjusted_quantity": 135,
-        "waste_only_savings_cop": 80000
+        "uncovered_waste_reserve": 10,
+        "waste_adjusted_quantity": 125,
+        "waste_only_savings_cop": 110000
       },
       "version": "design-material-estimate-v1",
-      "warnings": []
+      "warnings": [
+        "reserva_merma_no_cubierta:10"
+      ]
     },
     "operation_schema_version": "plan-resolution-result.v1",
     "plan_resuelto": {
-      "advertencias": [],
+      "advertencias": [
+        "reserva_merma_no_cubierta:10"
+      ],
       "alternativas": [],
       "comercial": {
         "delta_cop": 0,
@@ -697,9 +701,9 @@
           "waste_reserve": 0
         },
         {
-          "additional_package_for_waste": true,
+          "additional_package_for_waste": false,
           "color": "rosado",
-          "consumption_cost": 33000,
+          "consumption_cost": 30000,
           "design_quantity": 100,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -713,28 +717,28 @@
           ],
           "imagen": "https://cdn.example.test/v-z-rosa-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 90,
-          "paquetes": 2,
+          "leftover_inventory": 0,
+          "paquetes": 1,
           "precio_paquete": 30000,
           "product_id": "P-ROSA",
-          "purchase_cost": 60000,
-          "purchase_quantity": 200,
-          "required_quantity": 110,
+          "purchase_cost": 30000,
+          "purchase_quantity": 100,
+          "required_quantity": 100,
           "sku": "SKU-V-Z-ROSA-12",
           "sku_original": "SHOP-V-Z-ROSA-12",
-          "sobrante": 100,
+          "sobrante": 0,
           "source_snapshot_id": "SNAP-GOLDEN-001",
           "source_variant_id": "SOURCE-V-Z-ROSA-12",
-          "subtotal": 60000,
+          "subtotal": 30000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex rosado — R-12 / PAQUETE X 100",
-          "unidades_con_merma": 110,
+          "unidades_con_merma": 100,
           "unidades_inferidas": false,
           "unidades_necesarias": 100,
           "unidades_paquete": 100,
           "used": 100,
           "variant_id": "V-Z-ROSA-12",
-          "waste_reserve": 10
+          "waste_reserve": 0
         }
       ],
       "costes_por_estructura": [
@@ -904,16 +908,16 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "1bbb79394753065711af0a8558cd9539c293e423d82777479268804f9367ae07",
+      "plan_hash": "f8dbf03d9415c872eb9d31e5ae040a2f9a0025cb2190ede06be96bb1d4ee2c91",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
       "sustituciones": [],
       "totales": {
-        "additional_waste_packages": 1,
+        "additional_waste_packages": 0,
         "ahorro_paquetes_cop": 0,
-        "consumption_cost": 113000,
-        "covered_waste_reserve": 10,
+        "consumption_cost": 110000,
+        "covered_waste_reserve": 0,
         "design_quantity": 125,
         "globos_por_tamano": {
           "R-12": 100,
@@ -922,20 +926,20 @@
         "incluye_iva": true,
         "merma_porcentaje": 8.0,
         "natural_package_surplus": 0,
-        "purchase_cost": 140000,
+        "purchase_cost": 110000,
         "target_waste_reserve": 10,
-        "total_cop": 140000,
+        "total_cop": 110000,
         "total_unidades": 125,
-        "uncovered_waste_reserve": 0,
-        "waste_only_savings_cop": 80000
+        "uncovered_waste_reserve": 10,
+        "waste_only_savings_cop": 110000
       }
     },
     "quote": {
-      "consumption_cost_cop": 113000,
-      "covered_waste_reserve": 10,
+      "consumption_cost_cop": 110000,
+      "covered_waste_reserve": 0,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 90,
+      "leftover_inventory": 0,
       "lines": [
         {
           "available": true,
@@ -973,11 +977,11 @@
         {
           "available": true,
           "color": "rosado",
-          "consumption_cost_cop": 33000,
+          "consumption_cost_cop": 30000,
           "design_quantity": 100,
           "diameter_inches": 12.0,
           "id": "V-Z-ROSA-12",
-          "leftover_inventory": 90,
+          "leftover_inventory": 0,
           "origins": [
             {
               "id": "EST_01_KIT",
@@ -985,31 +989,31 @@
             }
           ],
           "package_price_cop": 30000,
-          "packages": 2,
+          "packages": 1,
           "product_id": "P-ROSA",
-          "purchase_cost_cop": 60000,
-          "purchase_quantity": 200,
-          "required_quantity": 110,
+          "purchase_cost_cop": 30000,
+          "purchase_quantity": 100,
+          "required_quantity": 100,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
             "EST_01_KIT"
           ],
-          "subtotal_cop": 60000,
-          "surplus": 100,
+          "subtotal_cop": 30000,
+          "surplus": 0,
           "title": "Globo latex rosado — R-12 / PAQUETE X 100",
           "units_per_package": 100,
           "used": 100,
           "variant_id": "V-Z-ROSA-12",
-          "waste_reserve": 10
+          "waste_reserve": 0
         }
       ],
-      "plan_hash": "1bbb79394753065711af0a8558cd9539c293e423d82777479268804f9367ae07",
-      "purchase_cost_cop": 140000,
+      "plan_hash": "f8dbf03d9415c872eb9d31e5ae040a2f9a0025cb2190ede06be96bb1d4ee2c91",
+      "purchase_cost_cop": 110000,
       "schema_version": "quote.v1",
       "supported_complements": false,
       "target_waste_reserve": 10,
-      "total_cop": 140000,
+      "total_cop": 110000,
       "waste_percentage": 8.0
     }
   },

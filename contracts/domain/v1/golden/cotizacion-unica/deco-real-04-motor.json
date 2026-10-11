@@ -1,0 +1,532 @@
+{
+ "caso": "deco-real-04-motor",
+ "origen": "motor",
+ "idea": "deco-real-04-71mp5umakml-ac-uf894-1000-ql80",
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "R-5",
+   "codigo": "044",
+   "cantidad": 8,
+   "productId": "8869949341991",
+   "color": "azul",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "47466206953767",
+     "unidadesPaq": 12,
+     "precio": 1826
+    },
+    {
+     "variantId": "47466207019303",
+     "unidadesPaq": 50,
+     "precio": 6164
+    }
+   ]
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "530",
+   "cantidad": 9,
+   "productId": "8634246201639",
+   "color": "verde",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594247786791",
+     "unidadesPaq": 20,
+     "precio": 3114
+    },
+    {
+     "variantId": "46594247819559",
+     "unidadesPaq": 50,
+     "precio": 6764
+    }
+   ]
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "931",
+   "cantidad": 5,
+   "productId": "8634272022823",
+   "color": "verde",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594294612263",
+     "unidadesPaq": 20,
+     "precio": 6014
+    },
+    {
+     "variantId": "46594294645031",
+     "unidadesPaq": 50,
+     "precio": 13301
+    }
+   ]
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "940",
+   "cantidad": 5,
+   "productId": "8634249543975",
+   "color": "azul",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594250342695",
+     "unidadesPaq": 20,
+     "precio": 6014
+    },
+    {
+     "variantId": "46594250375463",
+     "unidadesPaq": 50,
+     "precio": 13301
+    }
+   ]
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "970",
+   "cantidad": 5,
+   "productId": "8634255638823",
+   "color": "dorado",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594264596775",
+     "unidadesPaq": 20,
+     "precio": 6014
+    },
+    {
+     "variantId": "46594264629543",
+     "unidadesPaq": 50,
+     "precio": 13301
+    }
+   ]
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "044",
+   "cantidad": 10,
+   "productId": "8869949341991",
+   "color": "azul",
+   "diamPulg": 9,
+   "presentaciones": [
+    {
+     "variantId": "47466206986535",
+     "unidadesPaq": 12,
+     "precio": 2427
+    },
+    {
+     "variantId": "47466208100647",
+     "unidadesPaq": 20,
+     "precio": 3638
+    },
+    {
+     "variantId": "47466207052071",
+     "unidadesPaq": 50,
+     "precio": 7921
+    }
+   ]
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "530",
+   "cantidad": 13,
+   "productId": "8634246201639",
+   "color": "verde",
+   "diamPulg": 9,
+   "presentaciones": [
+    {
+     "variantId": "46594247852327",
+     "unidadesPaq": 20,
+     "precio": 4197
+    },
+    {
+     "variantId": "46594247885095",
+     "unidadesPaq": 50,
+     "precio": 8617
+    }
+   ]
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "970",
+   "cantidad": 6,
+   "productId": "8634255638823",
+   "color": "dorado",
+   "diamPulg": 9,
+   "presentaciones": [
+    {
+     "variantId": "46594264858919",
+     "unidadesPaq": 20,
+     "precio": 8832
+    },
+    {
+     "variantId": "46594264891687",
+     "unidadesPaq": 80,
+     "precio": 28977
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "044",
+   "cantidad": 10,
+   "productId": "8869949341991",
+   "color": "azul",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "47230981046567",
+     "unidadesPaq": 12,
+     "precio": 3963
+    },
+    {
+     "variantId": "47230981079335",
+     "unidadesPaq": 20,
+     "precio": 6029
+    },
+    {
+     "variantId": "47230981112103",
+     "unidadesPaq": 50,
+     "precio": 13037
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "530",
+   "cantidad": 13,
+   "productId": "8634246201639",
+   "color": "verde",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594247917863",
+     "unidadesPaq": 12,
+     "precio": 4238
+    },
+    {
+     "variantId": "46594247950631",
+     "unidadesPaq": 20,
+     "precio": 6471
+    },
+    {
+     "variantId": "46594247983399",
+     "unidadesPaq": 50,
+     "precio": 13847
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "931",
+   "cantidad": 6,
+   "productId": "8634272022823",
+   "color": "verde",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594294677799",
+     "unidadesPaq": 12,
+     "precio": 8832
+    },
+    {
+     "variantId": "46594294710567",
+     "unidadesPaq": 50,
+     "precio": 28977
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "940",
+   "cantidad": 6,
+   "productId": "8634249543975",
+   "color": "azul",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594250408231",
+     "unidadesPaq": 12,
+     "precio": 8832
+    },
+    {
+     "variantId": "46594250440999",
+     "unidadesPaq": 50,
+     "precio": 28977
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "970",
+   "cantidad": 6,
+   "productId": "8634255638823",
+   "color": "dorado",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594264662311",
+     "unidadesPaq": 12,
+     "precio": 8832
+    },
+    {
+     "variantId": "46594264695079",
+     "unidadesPaq": 50,
+     "precio": 28977
+    }
+   ]
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "044",
+   "cantidad": 4,
+   "productId": "8869949341991",
+   "color": "azul",
+   "diamPulg": 18,
+   "presentaciones": [
+    {
+     "variantId": "47466210656551",
+     "unidadesPaq": 6,
+     "precio": 7199
+    },
+    {
+     "variantId": "47466210918695",
+     "unidadesPaq": 50,
+     "precio": 51854
+    }
+   ]
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "940",
+   "cantidad": 3,
+   "productId": "8634249543975",
+   "color": "azul",
+   "diamPulg": 18,
+   "presentaciones": [
+    {
+     "variantId": "46594250473767",
+     "unidadesPaq": 6,
+     "precio": 17704
+    },
+    {
+     "variantId": "46594250506535",
+     "unidadesPaq": 50,
+     "precio": 140622
+    }
+   ]
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "970",
+   "cantidad": 3,
+   "productId": "8634255638823",
+   "color": "dorado",
+   "diamPulg": 18,
+   "presentaciones": [
+    {
+     "variantId": "46594264727847",
+     "unidadesPaq": 6,
+     "precio": 17704
+    },
+    {
+     "variantId": "46594264760615",
+     "unidadesPaq": 50,
+     "precio": 140622
+    }
+   ]
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "044",
+   "cantidad": 1,
+   "productId": "8869949341991",
+   "color": "azul",
+   "diamPulg": 24,
+   "presentaciones": [
+    {
+     "variantId": "47466208133415",
+     "unidadesPaq": 3,
+     "precio": 10124
+    }
+   ]
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "940",
+   "cantidad": 1,
+   "productId": "8634249543975",
+   "color": "azul",
+   "diamPulg": 24,
+   "presentaciones": [
+    {
+     "variantId": "46594250539303",
+     "unidadesPaq": 3,
+     "precio": 24246
+    }
+   ]
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "970",
+   "cantidad": 1,
+   "productId": "8634255638823",
+   "color": "dorado",
+   "diamPulg": 24,
+   "presentaciones": [
+    {
+     "variantId": "46594264793383",
+     "unidadesPaq": 3,
+     "precio": 24246
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 176591,
+  "reserva": {
+   "objetivo": 21,
+   "cubierta": 21,
+   "sinCubrir": 0,
+   "excedenteNatural": 124
+  },
+  "compras": [
+   {
+    "variantId": "46594247786791",
+    "paquetes": 1,
+    "cantidad": 9,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594247852327",
+    "paquetes": 1,
+    "cantidad": 13,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594247950631",
+    "paquetes": 1,
+    "cantidad": 13,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594250342695",
+    "paquetes": 1,
+    "cantidad": 5,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594250408231",
+    "paquetes": 1,
+    "cantidad": 6,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594250473767",
+    "paquetes": 1,
+    "cantidad": 3,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594250539303",
+    "paquetes": 1,
+    "cantidad": 1,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594264596775",
+    "paquetes": 1,
+    "cantidad": 5,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594264662311",
+    "paquetes": 1,
+    "cantidad": 6,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594264727847",
+    "paquetes": 1,
+    "cantidad": 3,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594264793383",
+    "paquetes": 1,
+    "cantidad": 1,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594264858919",
+    "paquetes": 1,
+    "cantidad": 6,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594294612263",
+    "paquetes": 1,
+    "cantidad": 5,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594294677799",
+    "paquetes": 1,
+    "cantidad": 6,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "47230981046567",
+    "paquetes": 1,
+    "cantidad": 10,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "47466206953767",
+    "paquetes": 1,
+    "cantidad": 8,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "47466206986535",
+    "paquetes": 1,
+    "cantidad": 10,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "47466208133415",
+    "paquetes": 1,
+    "cantidad": 1,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "47466210656551",
+    "paquetes": 1,
+    "cantidad": 4,
+    "reserva": 1,
+    "paraReserva": false
+   }
+  ]
+ }
+}

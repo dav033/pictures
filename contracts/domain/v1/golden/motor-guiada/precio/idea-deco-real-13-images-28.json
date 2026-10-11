@@ -9,17 +9,17 @@
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 9,
-  "cubierta": 9,
-  "sinCubrir": 0
+  "objetivo": 14,
+  "cubierta": 13,
+  "sinCubrir": 1
  },
  "pedido": [
   {
    "formatoId": "R-5",
    "codigo": "968",
    "cantidad": 19,
-   "reserva": 0,
-   "paquetes": 1,
+   "reserva": 2,
+   "paquetes": 2,
    "productId": "8634249838887",
    "variantId": "46594251358503"
   },
@@ -27,8 +27,8 @@
    "formatoId": "R-12",
    "codigo": "968",
    "cantidad": 24,
-   "reserva": 0,
-   "paquetes": 2,
+   "reserva": 2,
+   "paquetes": 3,
    "productId": "8634249838887",
    "variantId": "46594251424039"
   },
@@ -45,7 +45,7 @@
    "formatoId": "R-24",
    "codigo": "968",
    "cantidad": 2,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634249838887",
    "variantId": "46594251555111"
@@ -54,10 +54,10 @@
    "formatoId": "R-5",
    "codigo": "406",
    "cantidad": 12,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634277921063",
-   "variantId": "46594308440359"
+   "variantId": "46594308473127"
   },
   {
    "formatoId": "R-9",
@@ -72,7 +72,7 @@
    "formatoId": "R-9",
    "codigo": "406",
    "cantidad": 15,
-   "reserva": 5,
+   "reserva": 3,
    "paquetes": 1,
    "productId": "8634277921063",
    "variantId": "46594308636967"
@@ -81,7 +81,7 @@
    "formatoId": "R-12",
    "codigo": "406",
    "cantidad": 16,
-   "reserva": 4,
+   "reserva": 2,
    "paquetes": 1,
    "productId": "8634277921063",
    "variantId": "46594308735271"
@@ -90,7 +90,7 @@
    "formatoId": "R-18",
    "codigo": "406",
    "cantidad": 4,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634277921063",
    "variantId": "46594308800807"
@@ -99,7 +99,7 @@
    "formatoId": "R-24",
    "codigo": "406",
    "cantidad": 1,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634277921063",
    "variantId": "46594308866343"

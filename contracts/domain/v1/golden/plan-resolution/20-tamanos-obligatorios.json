@@ -1045,92 +1045,92 @@
       "purchases": [
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 30960,
+          "consumption_cost": 33600,
           "design_quantity": 129,
-          "leftover_inventory": 21,
-          "operational_surplus": 21,
+          "leftover_inventory": 10,
+          "operational_surplus": 10,
           "package_count": 3,
           "potential_surplus": 21,
           "product_id": "P-BLANCO",
           "purchase_cost": 36000,
           "purchase_quantity": 150,
-          "required_quantity": 129,
+          "required_quantity": 140,
           "units_per_package": 50,
           "used": 129,
           "variant_id": "V-BLANCO-12",
-          "waste_adjusted_quantity": 129,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 140,
+          "waste_reserve": 11
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 3600,
+          "consumption_cost": 4320,
           "design_quantity": 5,
-          "leftover_inventory": 20,
-          "operational_surplus": 20,
+          "leftover_inventory": 19,
+          "operational_surplus": 19,
           "package_count": 1,
           "potential_surplus": 20,
           "product_id": "P-BLANCO",
           "purchase_cost": 18000,
           "purchase_quantity": 25,
-          "required_quantity": 5,
+          "required_quantity": 6,
           "units_per_package": 25,
           "used": 5,
           "variant_id": "V-BLANCO-18",
-          "waste_adjusted_quantity": 5,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 1
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 9100,
+          "consumption_cost": 9880,
           "design_quantity": 35,
-          "leftover_inventory": 15,
-          "operational_surplus": 15,
+          "leftover_inventory": 12,
+          "operational_surplus": 12,
           "package_count": 1,
           "potential_surplus": 15,
           "product_id": "P-DORADO",
           "purchase_cost": 13000,
           "purchase_quantity": 50,
-          "required_quantity": 35,
+          "required_quantity": 38,
           "units_per_package": 50,
           "used": 35,
           "variant_id": "V-DORADO-12",
-          "waste_adjusted_quantity": 35,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 38,
+          "waste_reserve": 3
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 12920,
+          "consumption_cost": 3040,
           "design_quantity": 3,
-          "leftover_inventory": 8,
-          "operational_surplus": 8,
+          "leftover_inventory": 21,
+          "operational_surplus": 21,
           "package_count": 1,
           "potential_surplus": 22,
           "product_id": "P-DORADO",
           "purchase_cost": 19000,
           "purchase_quantity": 25,
-          "required_quantity": 17,
+          "required_quantity": 4,
           "units_per_package": 25,
           "used": 3,
           "variant_id": "V-DORADO-18",
-          "waste_adjusted_quantity": 17,
-          "waste_reserve": 14
+          "waste_adjusted_quantity": 4,
+          "waste_reserve": 1
         }
       ],
       "special_elements": [],
       "totals": {
         "additional_waste_packages": 0,
-        "consumption_cost": 56580,
-        "covered_waste_reserve": 14,
+        "consumption_cost": 50840,
+        "covered_waste_reserve": 16,
         "design_quantity": 172,
         "natural_package_surplus": 78,
-        "operational_surplus": 64,
+        "operational_surplus": 62,
         "potential_surplus": 78,
         "purchase_cost": 86000,
         "purchase_quantity": 250,
-        "required_quantity": 186,
-        "target_waste_reserve": 14,
+        "required_quantity": 188,
+        "target_waste_reserve": 16,
         "uncovered_waste_reserve": 0,
-        "waste_adjusted_quantity": 186,
+        "waste_adjusted_quantity": 188,
         "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
@@ -1158,7 +1158,7 @@
         {
           "additional_package_for_waste": false,
           "color": "blanco",
-          "consumption_cost": 30960,
+          "consumption_cost": 33600,
           "design_quantity": 129,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -1177,13 +1177,13 @@
           ],
           "imagen": "https://cdn.example.test/v-blanco-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 21,
+          "leftover_inventory": 10,
           "paquetes": 3,
           "precio_paquete": 12000,
           "product_id": "P-BLANCO",
           "purchase_cost": 36000,
           "purchase_quantity": 150,
-          "required_quantity": 129,
+          "required_quantity": 140,
           "sku": "SKU-V-BLANCO-12",
           "sku_original": "SHOP-V-BLANCO-12",
           "sobrante": 21,
@@ -1192,18 +1192,18 @@
           "subtotal": 36000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
-          "unidades_con_merma": 129,
+          "unidades_con_merma": 140,
           "unidades_inferidas": false,
           "unidades_necesarias": 129,
           "unidades_paquete": 50,
           "used": 129,
           "variant_id": "V-BLANCO-12",
-          "waste_reserve": 0
+          "waste_reserve": 11
         },
         {
           "additional_package_for_waste": false,
           "color": "blanco",
-          "consumption_cost": 3600,
+          "consumption_cost": 4320,
           "design_quantity": 5,
           "diam_pulg": 18.0,
           "elementos_origen": [
@@ -1217,13 +1217,13 @@
           ],
           "imagen": "https://cdn.example.test/v-blanco-18.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 20,
+          "leftover_inventory": 19,
           "paquetes": 1,
           "precio_paquete": 18000,
           "product_id": "P-BLANCO",
           "purchase_cost": 18000,
           "purchase_quantity": 25,
-          "required_quantity": 5,
+          "required_quantity": 6,
           "sku": "SKU-V-BLANCO-18",
           "sku_original": "SHOP-V-BLANCO-18",
           "sobrante": 20,
@@ -1232,18 +1232,18 @@
           "subtotal": 18000,
           "tamano_codigo": "R-18",
           "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
-          "unidades_con_merma": 5,
+          "unidades_con_merma": 6,
           "unidades_inferidas": false,
           "unidades_necesarias": 5,
           "unidades_paquete": 25,
           "used": 5,
           "variant_id": "V-BLANCO-18",
-          "waste_reserve": 0
+          "waste_reserve": 1
         },
         {
           "additional_package_for_waste": false,
           "color": "dorado",
-          "consumption_cost": 9100,
+          "consumption_cost": 9880,
           "design_quantity": 35,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -1257,13 +1257,13 @@
           ],
           "imagen": "https://cdn.example.test/v-dorado-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 15,
+          "leftover_inventory": 12,
           "paquetes": 1,
           "precio_paquete": 13000,
           "product_id": "P-DORADO",
           "purchase_cost": 13000,
           "purchase_quantity": 50,
-          "required_quantity": 35,
+          "required_quantity": 38,
           "sku": "SKU-V-DORADO-12",
           "sku_original": "SHOP-V-DORADO-12",
           "sobrante": 15,
@@ -1272,18 +1272,18 @@
           "subtotal": 13000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex dorado — R-12 / PAQUETE X 50",
-          "unidades_con_merma": 35,
+          "unidades_con_merma": 38,
           "unidades_inferidas": false,
           "unidades_necesarias": 35,
           "unidades_paquete": 50,
           "used": 35,
           "variant_id": "V-DORADO-12",
-          "waste_reserve": 0
+          "waste_reserve": 3
         },
         {
           "additional_package_for_waste": false,
           "color": "dorado",
-          "consumption_cost": 12920,
+          "consumption_cost": 3040,
           "design_quantity": 3,
           "diam_pulg": 18.0,
           "elementos_origen": [
@@ -1297,13 +1297,13 @@
           ],
           "imagen": "https://cdn.example.test/v-dorado-18.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 8,
+          "leftover_inventory": 21,
           "paquetes": 1,
           "precio_paquete": 19000,
           "product_id": "P-DORADO",
           "purchase_cost": 19000,
           "purchase_quantity": 25,
-          "required_quantity": 17,
+          "required_quantity": 4,
           "sku": "SKU-V-DORADO-18",
           "sku_original": "SHOP-V-DORADO-18",
           "sobrante": 22,
@@ -1312,13 +1312,13 @@
           "subtotal": 19000,
           "tamano_codigo": "R-18",
           "titulo": "Globo latex dorado — R-18 / PAQUETE X 25",
-          "unidades_con_merma": 17,
+          "unidades_con_merma": 4,
           "unidades_inferidas": false,
           "unidades_necesarias": 3,
           "unidades_paquete": 25,
           "used": 3,
           "variant_id": "V-DORADO-18",
-          "waste_reserve": 14
+          "waste_reserve": 1
         }
       ],
       "costes_por_estructura": [
@@ -1595,7 +1595,7 @@
         },
         "supuestos": []
       },
-      "plan_hash": "4b09b51e49df6387d86004e6efa04f472a6921dcae3367c1cacf6c646d9b597c",
+      "plan_hash": "74da59ef2faa5a6c898bcce1ab6fbdd5c9ebb7f89165440f6742c5f0dd3b1b77",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -1603,8 +1603,8 @@
       "totales": {
         "additional_waste_packages": 0,
         "ahorro_paquetes_cop": 12000,
-        "consumption_cost": 56580,
-        "covered_waste_reserve": 14,
+        "consumption_cost": 50840,
+        "covered_waste_reserve": 16,
         "design_quantity": 172,
         "globos_por_tamano": {
           "R-12": 164,
@@ -1614,7 +1614,7 @@
         "merma_porcentaje": 8.0,
         "natural_package_surplus": 78,
         "purchase_cost": 86000,
-        "target_waste_reserve": 14,
+        "target_waste_reserve": 16,
         "total_cop": 86000,
         "total_unidades": 172,
         "uncovered_waste_reserve": 0,
@@ -1622,20 +1622,20 @@
       }
     },
     "quote": {
-      "consumption_cost_cop": 56580,
-      "covered_waste_reserve": 14,
+      "consumption_cost_cop": 50840,
+      "covered_waste_reserve": 16,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 64,
+      "leftover_inventory": 62,
       "lines": [
         {
           "available": true,
           "color": "blanco",
-          "consumption_cost_cop": 30960,
+          "consumption_cost_cop": 33600,
           "design_quantity": 129,
           "diameter_inches": 12.0,
           "id": "V-BLANCO-12",
-          "leftover_inventory": 21,
+          "leftover_inventory": 10,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1651,7 +1651,7 @@
           "product_id": "P-BLANCO",
           "purchase_cost_cop": 36000,
           "purchase_quantity": 150,
-          "required_quantity": 129,
+          "required_quantity": 140,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -1664,16 +1664,16 @@
           "units_per_package": 50,
           "used": 129,
           "variant_id": "V-BLANCO-12",
-          "waste_reserve": 0
+          "waste_reserve": 11
         },
         {
           "available": true,
           "color": "blanco",
-          "consumption_cost_cop": 3600,
+          "consumption_cost_cop": 4320,
           "design_quantity": 5,
           "diameter_inches": 18.0,
           "id": "V-BLANCO-18",
-          "leftover_inventory": 20,
+          "leftover_inventory": 19,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1685,7 +1685,7 @@
           "product_id": "P-BLANCO",
           "purchase_cost_cop": 18000,
           "purchase_quantity": 25,
-          "required_quantity": 5,
+          "required_quantity": 6,
           "size": "R-18",
           "size_code": "R-18",
           "structures": [
@@ -1697,16 +1697,16 @@
           "units_per_package": 25,
           "used": 5,
           "variant_id": "V-BLANCO-18",
-          "waste_reserve": 0
+          "waste_reserve": 1
         },
         {
           "available": true,
           "color": "dorado",
-          "consumption_cost_cop": 9100,
+          "consumption_cost_cop": 9880,
           "design_quantity": 35,
           "diameter_inches": 12.0,
           "id": "V-DORADO-12",
-          "leftover_inventory": 15,
+          "leftover_inventory": 12,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1718,7 +1718,7 @@
           "product_id": "P-DORADO",
           "purchase_cost_cop": 13000,
           "purchase_quantity": 50,
-          "required_quantity": 35,
+          "required_quantity": 38,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -1730,16 +1730,16 @@
           "units_per_package": 50,
           "used": 35,
           "variant_id": "V-DORADO-12",
-          "waste_reserve": 0
+          "waste_reserve": 3
         },
         {
           "available": true,
           "color": "dorado",
-          "consumption_cost_cop": 12920,
+          "consumption_cost_cop": 3040,
           "design_quantity": 3,
           "diameter_inches": 18.0,
           "id": "V-DORADO-18",
-          "leftover_inventory": 8,
+          "leftover_inventory": 21,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1751,7 +1751,7 @@
           "product_id": "P-DORADO",
           "purchase_cost_cop": 19000,
           "purchase_quantity": 25,
-          "required_quantity": 17,
+          "required_quantity": 4,
           "size": "R-18",
           "size_code": "R-18",
           "structures": [
@@ -1763,14 +1763,14 @@
           "units_per_package": 25,
           "used": 3,
           "variant_id": "V-DORADO-18",
-          "waste_reserve": 14
+          "waste_reserve": 1
         }
       ],
-      "plan_hash": "4b09b51e49df6387d86004e6efa04f472a6921dcae3367c1cacf6c646d9b597c",
+      "plan_hash": "74da59ef2faa5a6c898bcce1ab6fbdd5c9ebb7f89165440f6742c5f0dd3b1b77",
       "purchase_cost_cop": 86000,
       "schema_version": "quote.v1",
       "supported_complements": false,
-      "target_waste_reserve": 14,
+      "target_waste_reserve": 16,
       "total_cop": 86000,
       "waste_percentage": 8.0
     }

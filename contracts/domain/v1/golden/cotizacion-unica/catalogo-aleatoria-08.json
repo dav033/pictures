@@ -1,0 +1,141 @@
+{
+ "caso": "catalogo-aleatoria-08",
+ "origen": "catalogo",
+ "idea": null,
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "LOL-660",
+   "codigo": "030",
+   "cantidad": 374,
+   "productId": "8634222477607",
+   "color": "verde",
+   "diamPulg": 6,
+   "presentaciones": [
+    {
+     "variantId": "46594187952423",
+     "unidadesPaq": 20,
+     "precio": 14041
+    },
+    {
+     "variantId": "46594187985191",
+     "unidadesPaq": 50,
+     "precio": 32336
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "010",
+   "cantidad": 84,
+   "productId": "8634233585959",
+   "color": "rosado",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594211348775",
+     "unidadesPaq": 12,
+     "precio": 3963
+    },
+    {
+     "variantId": "46594211381543",
+     "unidadesPaq": 20,
+     "precio": 6029
+    },
+    {
+     "variantId": "46594211414311",
+     "unidadesPaq": 50,
+     "precio": 13037
+    }
+   ]
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "023",
+   "cantidad": 355,
+   "productId": "8634229948711",
+   "color": "mostaza",
+   "diamPulg": 24,
+   "presentaciones": [
+    {
+     "variantId": "46594208104743",
+     "unidadesPaq": 3,
+     "precio": 10124
+    }
+   ]
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "107",
+   "cantidad": 214,
+   "productId": "8634306593063",
+   "color": "crema",
+   "diamPulg": 18,
+   "presentaciones": [
+    {
+     "variantId": "46594353266983",
+     "unidadesPaq": 6,
+     "precio": 7199
+    },
+    {
+     "variantId": "46594353201447",
+     "unidadesPaq": 50,
+     "precio": 51854
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 1841031,
+  "reserva": {
+   "objetivo": 84,
+   "cubierta": 84,
+   "sinCubrir": 0,
+   "excedenteNatural": 58
+  },
+  "compras": [
+   {
+    "variantId": "46594187952423",
+    "paquetes": 3,
+    "cantidad": 60,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594187985191",
+    "paquetes": 7,
+    "cantidad": 314,
+    "reserva": 30,
+    "paraReserva": true
+   },
+   {
+    "variantId": "46594208104743",
+    "paquetes": 128,
+    "cantidad": 355,
+    "reserva": 29,
+    "paraReserva": true
+   },
+   {
+    "variantId": "46594211414311",
+    "paquetes": 2,
+    "cantidad": 84,
+    "reserva": 7,
+    "paraReserva": true
+   },
+   {
+    "variantId": "46594353201447",
+    "paquetes": 4,
+    "cantidad": 200,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594353266983",
+    "paquetes": 6,
+    "cantidad": 14,
+    "reserva": 18,
+    "paraReserva": true
+   }
+  ]
+ }
+}

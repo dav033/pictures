@@ -1,0 +1,109 @@
+{
+ "caso": "catalogo-aleatoria-04",
+ "origen": "catalogo",
+ "idea": null,
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "R-12",
+   "codigo": "661",
+   "cantidad": 251,
+   "productId": "9885210738983",
+   "color": "nude",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "50245445517607",
+     "unidadesPaq": 12,
+     "precio": 3963
+    },
+    {
+     "variantId": "50245445583143",
+     "unidadesPaq": 50,
+     "precio": 13037
+    }
+   ]
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "806",
+   "cantidad": 194,
+   "productId": "9661845995815",
+   "color": "blanco",
+   "diamPulg": 24,
+   "presentaciones": [
+    {
+     "variantId": "49475777954087",
+     "unidadesPaq": 3,
+     "precio": 17908
+    }
+   ]
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "009",
+   "cantidad": 287,
+   "productId": "8634239844647",
+   "color": "rosado",
+   "diamPulg": 18,
+   "presentaciones": [
+    {
+     "variantId": "46594235859239",
+     "unidadesPaq": 6,
+     "precio": 7199
+    },
+    {
+     "variantId": "46594235892007",
+     "unidadesPaq": 50,
+     "precio": 51854
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 1652193,
+  "reserva": {
+   "objetivo": 60,
+   "cubierta": 60,
+   "sinCubrir": 0,
+   "excedenteNatural": 49
+  },
+  "compras": [
+   {
+    "variantId": "46594235859239",
+    "paquetes": 2,
+    "cantidad": 12,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594235892007",
+    "paquetes": 6,
+    "cantidad": 275,
+    "reserva": 23,
+    "paraReserva": true
+   },
+   {
+    "variantId": "49475777954087",
+    "paquetes": 70,
+    "cantidad": 194,
+    "reserva": 16,
+    "paraReserva": true
+   },
+   {
+    "variantId": "50245445517607",
+    "paquetes": 2,
+    "cantidad": 24,
+    "reserva": 0,
+    "paraReserva": true
+   },
+   {
+    "variantId": "50245445583143",
+    "paquetes": 5,
+    "cantidad": 227,
+    "reserva": 21,
+    "paraReserva": false
+   }
+  ]
+ }
+}

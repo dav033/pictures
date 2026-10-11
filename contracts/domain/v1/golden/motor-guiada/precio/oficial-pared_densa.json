@@ -24,7 +24,7 @@
    "formatoId": "LOL-12",
    "codigo": "005",
    "cantidad": 16,
-   "reserva": 4,
+   "reserva": 2,
    "paquetes": 1,
    "productId": "8634217890087",
    "variantId": "46594168979751"
@@ -41,9 +41,18 @@
   {
    "formatoId": "R-5",
    "codigo": "040",
-   "cantidad": 100,
-   "reserva": 6,
-   "paquetes": 3,
+   "cantidad": 12,
+   "reserva": 0,
+   "paquetes": 1,
+   "productId": "8634239385895",
+   "variantId": "46594233631015"
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "040",
+   "cantidad": 88,
+   "reserva": 8,
+   "paquetes": 2,
    "productId": "8634239385895",
    "variantId": "46594233729319"
   }

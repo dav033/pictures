@@ -9,8 +9,8 @@
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 4,
-  "cubierta": 4,
+  "objetivo": 6,
+  "cubierta": 6,
   "sinCubrir": 0
  },
  "pedido": [
@@ -18,7 +18,7 @@
    "formatoId": "R-12",
    "codigo": "005",
    "cantidad": 16,
-   "reserva": 0,
+   "reserva": 2,
    "paquetes": 1,
    "productId": "8634235781415",
    "variantId": "46594221310247"
@@ -27,7 +27,7 @@
    "formatoId": "R-12",
    "codigo": "040",
    "cantidad": 16,
-   "reserva": 0,
+   "reserva": 2,
    "paquetes": 1,
    "productId": "8634239385895",
    "variantId": "46594233893159"
@@ -36,7 +36,7 @@
    "formatoId": "R-12",
    "codigo": "970",
    "cantidad": 16,
-   "reserva": 4,
+   "reserva": 2,
    "paquetes": 2,
    "productId": "8634255638823",
    "variantId": "46594264662311"

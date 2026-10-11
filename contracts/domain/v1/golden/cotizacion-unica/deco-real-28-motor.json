@@ -1,0 +1,262 @@
+{
+ "caso": "deco-real-28-motor",
+ "origen": "motor",
+ "idea": "deco-real-28-aro-blanco-dorado-y-nude",
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "R-5",
+   "codigo": "073",
+   "cantidad": 3,
+   "productId": "8634275266855",
+   "color": "latte",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594302411047",
+     "unidadesPaq": 50,
+     "precio": 6164
+    }
+   ]
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "806",
+   "cantidad": 18,
+   "productId": "9661845995815",
+   "color": "blanco",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "49475778085159",
+     "unidadesPaq": 20,
+     "precio": 4208
+    },
+    {
+     "variantId": "49475777986855",
+     "unidadesPaq": 50,
+     "precio": 9313
+    }
+   ]
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "970",
+   "cantidad": 8,
+   "productId": "8634255638823",
+   "color": "dorado",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594264596775",
+     "unidadesPaq": 20,
+     "precio": 6014
+    },
+    {
+     "variantId": "46594264629543",
+     "unidadesPaq": 50,
+     "precio": 13301
+    }
+   ]
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "073",
+   "cantidad": 16,
+   "productId": "8634275266855",
+   "color": "latte",
+   "diamPulg": 9,
+   "presentaciones": [
+    {
+     "variantId": "47466211803431",
+     "unidadesPaq": 12,
+     "precio": 2427
+    },
+    {
+     "variantId": "47466211836199",
+     "unidadesPaq": 50,
+     "precio": 7921
+    }
+   ]
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "806",
+   "cantidad": 22,
+   "productId": "9661845995815",
+   "color": "blanco",
+   "diamPulg": 9,
+   "presentaciones": [
+    {
+     "variantId": "49475777921319",
+     "unidadesPaq": 12,
+     "precio": 4304
+    },
+    {
+     "variantId": "49475778150695",
+     "unidadesPaq": 20,
+     "precio": 6527
+    },
+    {
+     "variantId": "49475778052391",
+     "unidadesPaq": 50,
+     "precio": 14202
+    }
+   ]
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "970",
+   "cantidad": 22,
+   "productId": "8634255638823",
+   "color": "dorado",
+   "diamPulg": 9,
+   "presentaciones": [
+    {
+     "variantId": "46594264858919",
+     "unidadesPaq": 20,
+     "precio": 8832
+    },
+    {
+     "variantId": "46594264891687",
+     "unidadesPaq": 80,
+     "precio": 28977
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "073",
+   "cantidad": 4,
+   "productId": "8634275266855",
+   "color": "latte",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594302181671",
+     "unidadesPaq": 12,
+     "precio": 3963
+    },
+    {
+     "variantId": "46594302247207",
+     "unidadesPaq": 50,
+     "precio": 13037
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "806",
+   "cantidad": 8,
+   "productId": "9661845995815",
+   "color": "blanco",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "49475778183463",
+     "unidadesPaq": 12,
+     "precio": 6527
+    },
+    {
+     "variantId": "49475778216231",
+     "unidadesPaq": 50,
+     "precio": 21403
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "970",
+   "cantidad": 4,
+   "productId": "8634255638823",
+   "color": "dorado",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594264662311",
+     "unidadesPaq": 12,
+     "precio": 8832
+    },
+    {
+     "variantId": "46594264695079",
+     "unidadesPaq": 50,
+     "precio": 28977
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 66834,
+  "reserva": {
+   "objetivo": 13,
+   "cubierta": 13,
+   "sinCubrir": 0,
+   "excedenteNatural": 109
+  },
+  "compras": [
+   {
+    "variantId": "46594264596775",
+    "paquetes": 1,
+    "cantidad": 8,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594264662311",
+    "paquetes": 1,
+    "cantidad": 4,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594264858919",
+    "paquetes": 2,
+    "cantidad": 22,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594302181671",
+    "paquetes": 1,
+    "cantidad": 4,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594302411047",
+    "paquetes": 1,
+    "cantidad": 3,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "47466211803431",
+    "paquetes": 2,
+    "cantidad": 16,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "49475777921319",
+    "paquetes": 2,
+    "cantidad": 22,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "49475778085159",
+    "paquetes": 1,
+    "cantidad": 18,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "49475778183463",
+    "paquetes": 1,
+    "cantidad": 8,
+    "reserva": 1,
+    "paraReserva": false
+   }
+  ]
+ }
+}

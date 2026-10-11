@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import type { ResolucionPlan } from "./resolver-backend";
-import type { PlanDecoracion } from "./tipos";
+import { PlanDecoracionSchema, type PlanDecoracion } from "./tipos";
 
 /**
  * Resoluciones que este mismo proceso acaba de firmar, para no volver a
@@ -75,7 +75,37 @@ export function resolucionRecordada(planHash: string, clave: string, ahora = Dat
   return entrada.clave === clave ? structuredClone(entrada.resolucion) : undefined;
 }
 
+/** Pedido (lo que se le pidió a Python) -> la resolución que dio, para quien vuelve a pedir lo mismo. */
+const porPedido = new Map<string, { planHash: string; clave: string }>();
+
+/**
+ * Recuerda una resolución por el PEDIDO que la produjo (D-038): «¿cuánto cuesta?» de una idea y «Crear mi plan con esta
+ * idea» piden lo mismo (`pedidoDeIdeaSola`), así que el segundo reutiliza la del primero en vez de resolver otra vez.
+ */
+export function recordarResolucionDePedido(pedido: ContextoResolucion, resolucion: ResolucionPlan, ahora = Date.now()): void {
+  // Como en las ediciones: solo se recuerda un plan firmado que cumple el esquema del plan.
+  const firmado = PlanDecoracionSchema.safeParse(resolucion.resuelto.plan);
+  if (!firmado.success) return;
+  const clave = claveResolucion({ plan: firmado.data, catalogSnapshotId: pedido.catalogSnapshotId, allowlist: pedido.allowlist });
+  recordarResolucion(clave, resolucion, ahora);
+  const delPedido = claveResolucion(pedido);
+  porPedido.delete(delPedido);
+  porPedido.set(delPedido, { planHash: resolucion.resuelto.plan_hash, clave });
+  while (porPedido.size > MAX_ENTRADAS) {
+    const masVieja = porPedido.keys().next().value;
+    if (masVieja === undefined) break;
+    porPedido.delete(masVieja);
+  }
+}
+
+/** La resolución de exactamente este pedido, si este proceso la recuerda y sigue vigente. */
+export function resolucionDePedido(pedido: ContextoResolucion, ahora = Date.now()): ResolucionPlan | undefined {
+  const referencia = porPedido.get(claveResolucion(pedido));
+  return referencia ? resolucionRecordada(referencia.planHash, referencia.clave, ahora) : undefined;
+}
+
 /** Para pruebas: cada caso parte sin resoluciones recordadas. */
 export function olvidarResoluciones(): void {
   entradas.clear();
+  porPedido.clear();
 }

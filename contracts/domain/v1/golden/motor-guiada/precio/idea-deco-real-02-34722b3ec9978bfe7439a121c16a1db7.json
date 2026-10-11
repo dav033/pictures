@@ -17,17 +17,17 @@
   {
    "formatoId": "R-12",
    "codigo": "061",
-   "cantidad": 12,
-   "reserva": 6,
-   "paquetes": 2,
+   "cantidad": 20,
+   "reserva": 0,
+   "paquetes": 1,
    "productId": "8634238599463",
-   "variantId": "46594228617511"
+   "variantId": "46594228683047"
   },
   {
    "formatoId": "R-12",
    "codigo": "061",
-   "cantidad": 48,
-   "reserva": 2,
+   "cantidad": 40,
+   "reserva": 5,
    "paquetes": 1,
    "productId": "8634238599463",
    "variantId": "46594228715815"
@@ -35,17 +35,17 @@
   {
    "formatoId": "R-12",
    "codigo": "080",
-   "cantidad": 12,
+   "cantidad": 20,
    "reserva": 0,
    "paquetes": 1,
    "productId": "8634239516967",
-   "variantId": "46594235171111"
+   "variantId": "46594235203879"
   },
   {
    "formatoId": "R-12",
    "codigo": "080",
-   "cantidad": 48,
-   "reserva": 2,
+   "cantidad": 40,
+   "reserva": 5,
    "paquetes": 1,
    "productId": "8634239516967",
    "variantId": "46594235269415"

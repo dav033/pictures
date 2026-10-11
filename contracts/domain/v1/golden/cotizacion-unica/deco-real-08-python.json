@@ -1,0 +1,105 @@
+{
+ "caso": "deco-real-08-python",
+ "origen": "python",
+ "idea": "deco-real-08-images-23",
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "R-12",
+   "codigo": "080",
+   "cantidad": 44,
+   "productId": "8634239516967",
+   "color": "negro",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594235171111",
+     "unidadesPaq": 12,
+     "precio": 3963
+    },
+    {
+     "variantId": "46594235203879",
+     "unidadesPaq": 20,
+     "precio": 6029
+    },
+    {
+     "variantId": "46594235269415",
+     "unidadesPaq": 50,
+     "precio": 13037
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "570",
+   "cantidad": 44,
+   "productId": "8634250199335",
+   "color": "dorado",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594252833063",
+     "unidadesPaq": 12,
+     "precio": 4238
+    },
+    {
+     "variantId": "46594252865831",
+     "unidadesPaq": 20,
+     "precio": 6471
+    },
+    {
+     "variantId": "46594252898599",
+     "unidadesPaq": 50,
+     "precio": 13847
+    }
+   ]
+  },
+  {
+   "formatoId": "R-36",
+   "codigo": "080",
+   "cantidad": 2,
+   "productId": "8634239516967",
+   "color": "negro",
+   "diamPulg": 36,
+   "presentaciones": [
+    {
+     "variantId": "46594235433255",
+     "unidadesPaq": 2,
+     "precio": 9819
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 46522,
+  "reserva": {
+   "objetivo": 9,
+   "cubierta": 9,
+   "sinCubrir": 0,
+   "excedenteNatural": 12
+  },
+  "compras": [
+   {
+    "variantId": "46594235269415",
+    "paquetes": 1,
+    "cantidad": 44,
+    "reserva": 4,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594235433255",
+    "paquetes": 2,
+    "cantidad": 2,
+    "reserva": 1,
+    "paraReserva": true
+   },
+   {
+    "variantId": "46594252898599",
+    "paquetes": 1,
+    "cantidad": 44,
+    "reserva": 4,
+    "paraReserva": false
+   }
+  ]
+ }
+}

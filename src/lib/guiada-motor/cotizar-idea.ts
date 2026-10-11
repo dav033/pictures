@@ -12,7 +12,7 @@ import type { PlanIdeaGuardado } from "@/lib/plan/plan-de-idea";
  */
 export type CotizacionIdea = z.infer<typeof CotizacionGuiadaSchema>;
 export type ResultadoCotizacionIdea =
-  | { ok: true; cotizacion: CotizacionIdea; globos: number; avisos: string[] }
+  | { ok: true; cotizacion: CotizacionIdea; globos: number; avisos: string[]; planHash?: string }
   | { ok: false; razon: "sin_plan_guardado" | "no_representable" | "sin_cobertura" | "precio_fallido"; detalle?: string };
 
 export async function cotizarIdeaConMotor(ideaId: string, deps: DependenciasCotizacion & { planGuardado: (id: string) => PlanIdeaGuardado | null }): Promise<ResultadoCotizacionIdea> {
@@ -33,6 +33,6 @@ export async function cotizarIdeaConMotor(ideaId: string, deps: DependenciasCoti
   }));
   const cotizacion = CotizacionGuiadaSchema.safeParse({ lineas, total: cotizada.total, mermaPorcentaje: cotizada.cotizacion.mermaPorcentaje, incluyeIva: true, complementosSoportados: false });
   return cotizacion.success
-    ? { ok: true, cotizacion: cotizacion.data, globos: resultado.bom.total.reduce((suma, l) => suma + l.cantidad, 0), avisos: resultado.avisos }
+    ? { ok: true, cotizacion: cotizacion.data, globos: resultado.bom.total.reduce((suma, l) => suma + l.cantidad, 0), avisos: resultado.avisos, planHash: resultado.especHash }
     : { ok: false, razon: "precio_fallido", detalle: "la cotización del motor no cumple el contrato" };
 }

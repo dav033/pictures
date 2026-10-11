@@ -1,0 +1,53 @@
+{
+ "caso": "catalogo-aleatoria-10",
+ "origen": "catalogo",
+ "idea": null,
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "LOL-12",
+   "codigo": "150",
+   "cantidad": 60,
+   "productId": "8869947965735",
+   "color": "lavanda",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "47230975017255",
+     "unidadesPaq": 20,
+     "precio": 8501
+    },
+    {
+     "variantId": "47230975050023",
+     "unidadesPaq": 50,
+     "precio": 17962
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 26463,
+  "reserva": {
+   "objetivo": 5,
+   "cubierta": 5,
+   "sinCubrir": 0,
+   "excedenteNatural": 10
+  },
+  "compras": [
+   {
+    "variantId": "47230975017255",
+    "paquetes": 1,
+    "cantidad": 20,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "47230975050023",
+    "paquetes": 1,
+    "cantidad": 40,
+    "reserva": 5,
+    "paraReserva": true
+   }
+  ]
+ }
+}

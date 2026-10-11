@@ -87,6 +87,9 @@ jobs:
         run: npm run test-motor-guiada-color-dicho
       - if: ${{ !cancelled() }}
         run: npm run test-motor-guiada-tarjeta-total
+      # D-038: la misma lista de materiales cuesta lo mismo en el plan del 3D, su tarjeta y el Taller (la de Python, en pytest).
+      - if: ${{ !cancelled() }}
+        run: npm run test-cotizacion-unica
       - if: ${{ !cancelled() }}
         run: npm run catalogo:test
       - if: ${{ !cancelled() }}

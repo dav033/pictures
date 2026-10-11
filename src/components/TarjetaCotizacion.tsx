@@ -325,7 +325,7 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
 
       <div className="mt-2 border-t border-borde-suave bg-superficie-suave px-4 py-3 @xl:px-5.5">
         <p className="text-xs text-texto-suave">
-          Incluye {cotizacion.mermaPorcentaje}% de reserva por globos que se revientan al inflar o montar · precios {cotizacion.incluyeIva ? "con IVA incluido" : "sin IVA"} · no incluye montaje ni complementos.
+          {cotizacion.mermaPorcentaje > 0 ? `Incluye repuestos de cada globo (el ${cotizacion.mermaPorcentaje} %, al menos uno) salvo cuando comprarlos encarece de más · ` : ""}precios {cotizacion.incluyeIva ? "con IVA incluido" : "sin IVA"} · no incluye montaje ni complementos.
         </p>
         {puedeEditar && (
           <div className="mt-3 flex flex-wrap items-center justify-end gap-2">

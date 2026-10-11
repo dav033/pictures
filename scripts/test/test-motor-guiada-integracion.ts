@@ -31,25 +31,29 @@ const COLORES_CANDIDATOS = ["dorado", "blanco", "azul", "rosa", "plateado"] as c
 const MEDIDAS = ["anchoM", "altoM", "largoM"] as const;
 
 type Foto = { globos: number; ratio: number | null; precio: number | string | null; noRep: boolean };
-/** Medido el 2026-10-09 con el motor 1.2.2. `precio`: política `python`; `noRep`: el motor no arma el caso entero. */
+/**
+ * Medido el 2026-10-09 con el motor 1.2.2. `precio`: política `python`; `noRep`: el motor no arma el caso entero. Los precios
+ * se volvieron a medir el 2026-10-10 con D-038: cada globo (talla y color) lleva su propia reserva, cubierta con su diseño en
+ * una sola combinación si los repuestos no cuestan de más (`comprarGlobo`).
+ */
 const FOTO: Record<string, Foto> = {
   "idea-deco-real-01-305": { globos: 112, ratio: 0.772, precio: 34000, noRep: false },
-  "idea-deco-real-02-34722b3ec9978bfe7439a121c16a1db7": { globos: 120, ratio: 0.784, precio: 37963, noRep: false },
+  "idea-deco-real-02-34722b3ec9978bfe7439a121c16a1db7": { globos: 120, ratio: 0.784, precio: 38132, noRep: false },
   "idea-deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1": { globos: 87, ratio: null, precio: null, noRep: true },
   "idea-deco-real-04-71mp5umakml-ac-uf894-1000-ql80": { globos: 115, ratio: 1.139, precio: 176591, noRep: false },
   "idea-deco-real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec": { globos: 115, ratio: 1.127, precio: 145608, noRep: false },
   "idea-deco-real-06-columna-globos-alta-colorida-cinta-dorada-sobre-": { globos: 44, ratio: 1, precio: 24350, noRep: false },
-  "idea-deco-real-07-eb12910e210c94b6184d025127acce95": { globos: 74, ratio: 0.851, precio: 55441, noRep: false },
-  "idea-deco-real-08-images-23": { globos: 90, ratio: 1, precio: 36703, noRep: false },
+  "idea-deco-real-07-eb12910e210c94b6184d025127acce95": { globos: 74, ratio: 0.851, precio: 59404, noRep: false },
+  "idea-deco-real-08-images-23": { globos: 90, ratio: 1, precio: 46522, noRep: false },
   "idea-deco-real-09-images-24": { globos: 34, ratio: 0.829, precio: 58369, noRep: false },
   "idea-deco-real-10-images-25": { globos: 79, ratio: 1.082, precio: 132093, noRep: false },
-  "idea-deco-real-11-images-26": { globos: 113, ratio: 0.942, precio: 91597, noRep: false },
-  "idea-deco-real-12-images-27": { globos: 127, ratio: 1.165, precio: 142299, noRep: false },
-  "idea-deco-real-13-images-28": { globos: 111, ratio: 1.088, precio: 99581, noRep: false },
+  "idea-deco-real-11-images-26": { globos: 113, ratio: 0.942, precio: 93663, noRep: false },
+  "idea-deco-real-12-images-27": { globos: 127, ratio: 1.165, precio: 151131, noRep: false },
+  "idea-deco-real-13-images-28": { globos: 111, ratio: 1.088, precio: 115501, noRep: false },
   "idea-deco-real-14-images-29": { globos: 112, ratio: 0.772, precio: 34000, noRep: false },
-  "idea-deco-real-15-images-30": { globos: 96, ratio: 1.079, precio: 109581, noRep: false },
+  "idea-deco-real-15-images-30": { globos: 96, ratio: 1.079, precio: 110792, noRep: false },
   "idea-deco-real-16-images-31": { globos: 93, ratio: 0.979, precio: 80385, noRep: false },
-  "idea-deco-real-17-img-2939-1-600x600": { globos: 115, ratio: 1.127, precio: 173143, noRep: false },
+  "idea-deco-real-17-img-2939-1-600x600": { globos: 115, ratio: 1.127, precio: 181975, noRep: false },
   "idea-deco-real-18-sddefault": { globos: 34, ratio: 0.919, precio: 46416, noRep: false },
   "idea-deco-real-19-semiarco-organico-combinaciones-con-reflex-26bbc": { globos: 63, ratio: 1.086, precio: 104762, noRep: false },
   "idea-deco-real-20-semiarcoilusionazul-1200x1200": { globos: 45, ratio: 1.023, precio: 50103, noRep: false },
@@ -58,15 +62,15 @@ const FOTO: Record<string, Foto> = {
   "idea-deco-real-25-guirnalda-dia-de-la-madre": { globos: 52, ratio: 0.813, precio: 22323, noRep: false },
   "idea-deco-real-27-aro-navideno-verde-salvia": { globos: 0, ratio: null, precio: null, noRep: true },
   "idea-deco-real-28-aro-blanco-dorado-y-nude": { globos: 105, ratio: 1.117, precio: 66834, noRep: false },
-  "idea-deco-real-29-arco-link-o-loon-fucsia-tulipanes": { globos: 32, ratio: 1.067, precio: 13955, noRep: false },
-  "idea-deco-real-30-columna-balon-futbol": { globos: 72, ratio: 1.2, precio: 49488, noRep: false },
+  "idea-deco-real-29-arco-link-o-loon-fucsia-tulipanes": { globos: 32, ratio: 1.067, precio: 11889, noRep: false },
+  "idea-deco-real-30-columna-balon-futbol": { globos: 72, ratio: 1.2, precio: 51554, noRep: false },
   "idea-deco-real-31-arco-futbol-balones-gigantes": { globos: 105, ratio: 1.4, precio: 71558, noRep: false },
-  "oficial-arco": { globos: 128, ratio: null, precio: 54072, noRep: false },
+  "oficial-arco": { globos: 128, ratio: null, precio: 58035, noRep: false },
   "oficial-arco_asimetrico": { globos: 117, ratio: null, precio: 95656, noRep: false },
   "oficial-arco_no_denso": { globos: 96, ratio: null, precio: 102503, noRep: false },
   "oficial-semiarco": { globos: 53, ratio: null, precio: 75137, noRep: false },
   "oficial-semiarco_asimetrico": { globos: 57, ratio: null, precio: 96458, noRep: false },
-  "oficial-columna": { globos: 36, ratio: null, precio: 18824, noRep: false },
+  "oficial-columna": { globos: 36, ratio: null, precio: 20890, noRep: false },
   "oficial-columna_asimetrica": { globos: 42, ratio: null, precio: 57814, noRep: false },
   "oficial-columna_no_densa": { globos: 20, ratio: null, precio: 54508, noRep: false },
   "oficial-pared_densa": { globos: 181, ratio: null, precio: "sin_cobertura", noRep: false },

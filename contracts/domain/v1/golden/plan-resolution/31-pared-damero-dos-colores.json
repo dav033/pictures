@@ -955,56 +955,56 @@
       "purchases": [
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 18000,
+          "consumption_cost": 17640,
           "design_quantity": 90,
-          "leftover_inventory": 0,
-          "operational_surplus": 0,
+          "leftover_inventory": 2,
+          "operational_surplus": 2,
           "package_count": 2,
           "potential_surplus": 10,
           "product_id": "P-BLANCO",
           "purchase_cost": 18000,
           "purchase_quantity": 100,
-          "required_quantity": 100,
+          "required_quantity": 98,
           "units_per_package": 50,
           "used": 90,
           "variant_id": "V-BLANCO-12",
-          "waste_adjusted_quantity": 100,
-          "waste_reserve": 10
+          "waste_adjusted_quantity": 98,
+          "waste_reserve": 8
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 18050,
+          "consumption_cost": 18620,
           "design_quantity": 90,
-          "leftover_inventory": 5,
-          "operational_surplus": 5,
+          "leftover_inventory": 2,
+          "operational_surplus": 2,
           "package_count": 2,
           "potential_surplus": 10,
           "product_id": "P-NEGRO",
           "purchase_cost": 19000,
           "purchase_quantity": 100,
-          "required_quantity": 95,
+          "required_quantity": 98,
           "units_per_package": 50,
           "used": 90,
           "variant_id": "V-NEGRO-12",
-          "waste_adjusted_quantity": 95,
-          "waste_reserve": 5
+          "waste_adjusted_quantity": 98,
+          "waste_reserve": 8
         }
       ],
       "special_elements": [],
       "totals": {
         "additional_waste_packages": 0,
-        "consumption_cost": 36050,
-        "covered_waste_reserve": 15,
+        "consumption_cost": 36260,
+        "covered_waste_reserve": 16,
         "design_quantity": 180,
         "natural_package_surplus": 20,
-        "operational_surplus": 5,
+        "operational_surplus": 4,
         "potential_surplus": 20,
         "purchase_cost": 37000,
         "purchase_quantity": 200,
-        "required_quantity": 195,
-        "target_waste_reserve": 15,
+        "required_quantity": 196,
+        "target_waste_reserve": 16,
         "uncovered_waste_reserve": 0,
-        "waste_adjusted_quantity": 195,
+        "waste_adjusted_quantity": 196,
         "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
@@ -1022,7 +1022,7 @@
         {
           "additional_package_for_waste": false,
           "color": "blanco",
-          "consumption_cost": 18000,
+          "consumption_cost": 17640,
           "design_quantity": 90,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -1036,13 +1036,13 @@
           ],
           "imagen": "https://cdn.example.test/v-blanco-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 0,
+          "leftover_inventory": 2,
           "paquetes": 2,
           "precio_paquete": 9000,
           "product_id": "P-BLANCO",
           "purchase_cost": 18000,
           "purchase_quantity": 100,
-          "required_quantity": 100,
+          "required_quantity": 98,
           "sku": "SKU-V-BLANCO-12",
           "sku_original": "SHOP-V-BLANCO-12",
           "sobrante": 10,
@@ -1051,18 +1051,18 @@
           "subtotal": 18000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
-          "unidades_con_merma": 100,
+          "unidades_con_merma": 98,
           "unidades_inferidas": false,
           "unidades_necesarias": 90,
           "unidades_paquete": 50,
           "used": 90,
           "variant_id": "V-BLANCO-12",
-          "waste_reserve": 10
+          "waste_reserve": 8
         },
         {
           "additional_package_for_waste": false,
           "color": "negro",
-          "consumption_cost": 18050,
+          "consumption_cost": 18620,
           "design_quantity": 90,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -1076,13 +1076,13 @@
           ],
           "imagen": "https://cdn.example.test/v-negro-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 5,
+          "leftover_inventory": 2,
           "paquetes": 2,
           "precio_paquete": 9500,
           "product_id": "P-NEGRO",
           "purchase_cost": 19000,
           "purchase_quantity": 100,
-          "required_quantity": 95,
+          "required_quantity": 98,
           "sku": "SKU-V-NEGRO-12",
           "sku_original": "SHOP-V-NEGRO-12",
           "sobrante": 10,
@@ -1091,13 +1091,13 @@
           "subtotal": 19000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex negro — R-12 / PAQUETE X 50",
-          "unidades_con_merma": 95,
+          "unidades_con_merma": 98,
           "unidades_inferidas": false,
           "unidades_necesarias": 90,
           "unidades_paquete": 50,
           "used": 90,
           "variant_id": "V-NEGRO-12",
-          "waste_reserve": 5
+          "waste_reserve": 8
         }
       ],
       "costes_por_estructura": [
@@ -1631,7 +1631,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "c326f0fa6096e14feb32943a5d01f49a1f5abbbdd0102fc6bcb0e37d8c7918c4",
+      "plan_hash": "54c65b031665cfe874a478706bef4fdfee0061f473d8f3f6f0280b4eec8a93c7",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -1639,8 +1639,8 @@
       "totales": {
         "additional_waste_packages": 0,
         "ahorro_paquetes_cop": 0,
-        "consumption_cost": 36050,
-        "covered_waste_reserve": 15,
+        "consumption_cost": 36260,
+        "covered_waste_reserve": 16,
         "design_quantity": 180,
         "globos_por_tamano": {
           "R-12": 180
@@ -1649,7 +1649,7 @@
         "merma_porcentaje": 8.0,
         "natural_package_surplus": 20,
         "purchase_cost": 37000,
-        "target_waste_reserve": 15,
+        "target_waste_reserve": 16,
         "total_cop": 37000,
         "total_unidades": 180,
         "uncovered_waste_reserve": 0,
@@ -1657,20 +1657,20 @@
       }
     },
     "quote": {
-      "consumption_cost_cop": 36050,
-      "covered_waste_reserve": 15,
+      "consumption_cost_cop": 36260,
+      "covered_waste_reserve": 16,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 5,
+      "leftover_inventory": 4,
       "lines": [
         {
           "available": true,
           "color": "blanco",
-          "consumption_cost_cop": 18000,
+          "consumption_cost_cop": 17640,
           "design_quantity": 90,
           "diameter_inches": 12.0,
           "id": "V-BLANCO-12",
-          "leftover_inventory": 0,
+          "leftover_inventory": 2,
           "origins": [
             {
               "id": "EST_01_PARED",
@@ -1682,7 +1682,7 @@
           "product_id": "P-BLANCO",
           "purchase_cost_cop": 18000,
           "purchase_quantity": 100,
-          "required_quantity": 100,
+          "required_quantity": 98,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -1694,16 +1694,16 @@
           "units_per_package": 50,
           "used": 90,
           "variant_id": "V-BLANCO-12",
-          "waste_reserve": 10
+          "waste_reserve": 8
         },
         {
           "available": true,
           "color": "negro",
-          "consumption_cost_cop": 18050,
+          "consumption_cost_cop": 18620,
           "design_quantity": 90,
           "diameter_inches": 12.0,
           "id": "V-NEGRO-12",
-          "leftover_inventory": 5,
+          "leftover_inventory": 2,
           "origins": [
             {
               "id": "EST_01_PARED",
@@ -1715,7 +1715,7 @@
           "product_id": "P-NEGRO",
           "purchase_cost_cop": 19000,
           "purchase_quantity": 100,
-          "required_quantity": 95,
+          "required_quantity": 98,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -1727,14 +1727,14 @@
           "units_per_package": 50,
           "used": 90,
           "variant_id": "V-NEGRO-12",
-          "waste_reserve": 5
+          "waste_reserve": 8
         }
       ],
-      "plan_hash": "c326f0fa6096e14feb32943a5d01f49a1f5abbbdd0102fc6bcb0e37d8c7918c4",
+      "plan_hash": "54c65b031665cfe874a478706bef4fdfee0061f473d8f3f6f0280b4eec8a93c7",
       "purchase_cost_cop": 37000,
       "schema_version": "quote.v1",
       "supported_complements": false,
-      "target_waste_reserve": 15,
+      "target_waste_reserve": 16,
       "total_cop": 37000,
       "waste_percentage": 8.0
     }

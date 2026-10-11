@@ -776,75 +776,75 @@
       "purchases": [
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 8100,
+          "consumption_cost": 6840,
           "design_quantity": 35,
-          "leftover_inventory": 5,
-          "operational_surplus": 5,
+          "leftover_inventory": 12,
+          "operational_surplus": 12,
           "package_count": 1,
           "potential_surplus": 15,
           "product_id": "P-F15-BLANCO",
           "purchase_cost": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 45,
+          "required_quantity": 38,
           "units_per_package": 50,
           "used": 35,
           "variant_id": "V-F15-BLANCO-12",
-          "waste_adjusted_quantity": 45,
-          "waste_reserve": 10
+          "waste_adjusted_quantity": 38,
+          "waste_reserve": 3
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 6480,
+          "consumption_cost": 7020,
           "design_quantity": 36,
-          "leftover_inventory": 14,
-          "operational_surplus": 14,
+          "leftover_inventory": 11,
+          "operational_surplus": 11,
           "package_count": 1,
           "potential_surplus": 14,
           "product_id": "P-F15-LILA",
           "purchase_cost": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 36,
+          "required_quantity": 39,
           "units_per_package": 50,
           "used": 36,
           "variant_id": "V-F15-LILA-12",
-          "waste_adjusted_quantity": 36,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 39,
+          "waste_reserve": 3
         },
         {
-          "additional_package_for_waste": false,
-          "consumption_cost": 8460,
+          "additional_package_for_waste": true,
+          "consumption_cost": 9180,
           "design_quantity": 47,
-          "leftover_inventory": 3,
-          "operational_surplus": 3,
-          "package_count": 1,
-          "potential_surplus": 3,
+          "leftover_inventory": 49,
+          "operational_surplus": 49,
+          "package_count": 2,
+          "potential_surplus": 53,
           "product_id": "P-F15-PLATEADO",
-          "purchase_cost": 9000,
-          "purchase_quantity": 50,
-          "required_quantity": 47,
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 51,
           "units_per_package": 50,
           "used": 47,
           "variant_id": "V-F15-PLATEADO-12",
-          "waste_adjusted_quantity": 47,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 51,
+          "waste_reserve": 4
         }
       ],
       "special_elements": [],
       "totals": {
-        "additional_waste_packages": 0,
+        "additional_waste_packages": 1,
         "consumption_cost": 23040,
         "covered_waste_reserve": 10,
         "design_quantity": 118,
         "natural_package_surplus": 32,
-        "operational_surplus": 22,
-        "potential_surplus": 32,
-        "purchase_cost": 27000,
-        "purchase_quantity": 150,
+        "operational_surplus": 72,
+        "potential_surplus": 82,
+        "purchase_cost": 36000,
+        "purchase_quantity": 200,
         "required_quantity": 128,
         "target_waste_reserve": 10,
         "uncovered_waste_reserve": 0,
         "waste_adjusted_quantity": 128,
-        "waste_only_savings_cop": 9000
+        "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
       "warnings": [
@@ -865,7 +865,7 @@
         {
           "additional_package_for_waste": false,
           "color": "blanco",
-          "consumption_cost": 8100,
+          "consumption_cost": 6840,
           "design_quantity": 35,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -879,13 +879,13 @@
           ],
           "imagen": "https://cdn.example.test/blanco-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 5,
+          "leftover_inventory": 12,
           "paquetes": 1,
           "precio_paquete": 9000,
           "product_id": "P-F15-BLANCO",
           "purchase_cost": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 45,
+          "required_quantity": 38,
           "sku": "SKU-F15-BLANCO-12",
           "sku_original": "SHOP-F15-BLANCO-12",
           "sobrante": 15,
@@ -894,18 +894,18 @@
           "subtotal": 9000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex blanco — R-12",
-          "unidades_con_merma": 45,
+          "unidades_con_merma": 38,
           "unidades_inferidas": false,
           "unidades_necesarias": 35,
           "unidades_paquete": 50,
           "used": 35,
           "variant_id": "V-F15-BLANCO-12",
-          "waste_reserve": 10
+          "waste_reserve": 3
         },
         {
           "additional_package_for_waste": false,
           "color": "lila",
-          "consumption_cost": 6480,
+          "consumption_cost": 7020,
           "design_quantity": 36,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -919,13 +919,13 @@
           ],
           "imagen": "https://cdn.example.test/lila-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 14,
+          "leftover_inventory": 11,
           "paquetes": 1,
           "precio_paquete": 9000,
           "product_id": "P-F15-LILA",
           "purchase_cost": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 36,
+          "required_quantity": 39,
           "sku": "SKU-F15-LILA-12",
           "sku_original": "SHOP-F15-LILA-12",
           "sobrante": 14,
@@ -934,18 +934,18 @@
           "subtotal": 9000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex lila — R-12",
-          "unidades_con_merma": 36,
+          "unidades_con_merma": 39,
           "unidades_inferidas": false,
           "unidades_necesarias": 36,
           "unidades_paquete": 50,
           "used": 36,
           "variant_id": "V-F15-LILA-12",
-          "waste_reserve": 0
+          "waste_reserve": 3
         },
         {
-          "additional_package_for_waste": false,
+          "additional_package_for_waste": true,
           "color": "plateado",
-          "consumption_cost": 8460,
+          "consumption_cost": 9180,
           "design_quantity": 47,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -959,28 +959,28 @@
           ],
           "imagen": "https://cdn.example.test/plateado-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 3,
-          "paquetes": 1,
+          "leftover_inventory": 49,
+          "paquetes": 2,
           "precio_paquete": 9000,
           "product_id": "P-F15-PLATEADO",
-          "purchase_cost": 9000,
-          "purchase_quantity": 50,
-          "required_quantity": 47,
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 51,
           "sku": "SKU-F15-PLATEADO-12",
           "sku_original": "SHOP-F15-PLATEADO-12",
-          "sobrante": 3,
+          "sobrante": 53,
           "source_snapshot_id": "SNAP-GOLDEN-A5-009",
           "source_variant_id": "SOURCE-F15-PLATEADO-12",
-          "subtotal": 9000,
+          "subtotal": 18000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex plateado — R-12",
-          "unidades_con_merma": 47,
+          "unidades_con_merma": 51,
           "unidades_inferidas": false,
           "unidades_necesarias": 47,
           "unidades_paquete": 50,
           "used": 47,
           "variant_id": "V-F15-PLATEADO-12",
-          "waste_reserve": 0
+          "waste_reserve": 4
         }
       ],
       "costes_por_estructura": [
@@ -1151,7 +1151,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "d18586ff2dea00a8da3936771a433572074ba53118f6a4ca58ee62834e28f215",
+      "plan_hash": "83b1d4ec45e1f0ee61f0f91ea0c5a29395c48b075ac60aca9becc82d7f72e7e8",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -1176,7 +1176,7 @@
         }
       ],
       "totales": {
-        "additional_waste_packages": 0,
+        "additional_waste_packages": 1,
         "ahorro_paquetes_cop": 0,
         "consumption_cost": 23040,
         "covered_waste_reserve": 10,
@@ -1187,12 +1187,12 @@
         "incluye_iva": true,
         "merma_porcentaje": 8.0,
         "natural_package_surplus": 32,
-        "purchase_cost": 27000,
+        "purchase_cost": 36000,
         "target_waste_reserve": 10,
-        "total_cop": 27000,
+        "total_cop": 36000,
         "total_unidades": 118,
         "uncovered_waste_reserve": 0,
-        "waste_only_savings_cop": 9000
+        "waste_only_savings_cop": 0
       }
     },
     "quote": {
@@ -1200,16 +1200,16 @@
       "covered_waste_reserve": 10,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 22,
+      "leftover_inventory": 72,
       "lines": [
         {
           "available": true,
           "color": "blanco",
-          "consumption_cost_cop": 8100,
+          "consumption_cost_cop": 6840,
           "design_quantity": 35,
           "diameter_inches": 12.0,
           "id": "V-F15-BLANCO-12",
-          "leftover_inventory": 5,
+          "leftover_inventory": 12,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1221,7 +1221,7 @@
           "product_id": "P-F15-BLANCO",
           "purchase_cost_cop": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 45,
+          "required_quantity": 38,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -1233,16 +1233,16 @@
           "units_per_package": 50,
           "used": 35,
           "variant_id": "V-F15-BLANCO-12",
-          "waste_reserve": 10
+          "waste_reserve": 3
         },
         {
           "available": true,
           "color": "lila",
-          "consumption_cost_cop": 6480,
+          "consumption_cost_cop": 7020,
           "design_quantity": 36,
           "diameter_inches": 12.0,
           "id": "V-F15-LILA-12",
-          "leftover_inventory": 14,
+          "leftover_inventory": 11,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1254,7 +1254,7 @@
           "product_id": "P-F15-LILA",
           "purchase_cost_cop": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 36,
+          "required_quantity": 39,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -1266,16 +1266,16 @@
           "units_per_package": 50,
           "used": 36,
           "variant_id": "V-F15-LILA-12",
-          "waste_reserve": 0
+          "waste_reserve": 3
         },
         {
           "available": true,
           "color": "plateado",
-          "consumption_cost_cop": 8460,
+          "consumption_cost_cop": 9180,
           "design_quantity": 47,
           "diameter_inches": 12.0,
           "id": "V-F15-PLATEADO-12",
-          "leftover_inventory": 3,
+          "leftover_inventory": 49,
           "origins": [
             {
               "id": "EST_01_ARCO",
@@ -1283,31 +1283,31 @@
             }
           ],
           "package_price_cop": 9000,
-          "packages": 1,
+          "packages": 2,
           "product_id": "P-F15-PLATEADO",
-          "purchase_cost_cop": 9000,
-          "purchase_quantity": 50,
-          "required_quantity": 47,
+          "purchase_cost_cop": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 51,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
             "EST_01_ARCO"
           ],
-          "subtotal_cop": 9000,
-          "surplus": 3,
+          "subtotal_cop": 18000,
+          "surplus": 53,
           "title": "Globo latex plateado — R-12",
           "units_per_package": 50,
           "used": 47,
           "variant_id": "V-F15-PLATEADO-12",
-          "waste_reserve": 0
+          "waste_reserve": 4
         }
       ],
-      "plan_hash": "d18586ff2dea00a8da3936771a433572074ba53118f6a4ca58ee62834e28f215",
-      "purchase_cost_cop": 27000,
+      "plan_hash": "83b1d4ec45e1f0ee61f0f91ea0c5a29395c48b075ac60aca9becc82d7f72e7e8",
+      "purchase_cost_cop": 36000,
       "schema_version": "quote.v1",
       "supported_complements": false,
       "target_waste_reserve": 10,
-      "total_cop": 27000,
+      "total_cop": 36000,
       "waste_percentage": 8.0
     }
   },

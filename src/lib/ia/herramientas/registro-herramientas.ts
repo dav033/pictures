@@ -87,6 +87,7 @@ import { aplicarReferenciasMedidas, busquedasDeReferencias, familiaDeTitulo } fr
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, accionEstimacionInconsistente, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, sinCoronaSinCobertura, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
+import { separarNotasReparto } from "./notas-plan";
 import { ArgsArmarEstructuraSchema, ArgsConsultarOpcionesArmadoSchema, erroresDeArgs, opcionesDePares } from "./armado-motor";
 import { EstimarConteoRequestV1Schema } from "@/lib/ia/contracts/domain-v1";
 import { ArgsEstimarConteoGlobosSchema, erroresDeEstimacion, objetivoDeLaFoto, solicitudDeEstimacion, type ObjetivoDeLaEstimacion } from "./estimar-conteo";
@@ -815,21 +816,6 @@ export function pistasConteoDelPlan(plan: Pick<PlanDecoracion, "estructuras">, b
     pistas.set(elementId, { referencia_element_id: elementId, ...conteo });
   }
   return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
-}
-
-/**
- * Los avisos de Python que cuentan cómo quedó el reparto de color de una pieza (`plan._color_warnings` y
- * `patron_color`, 2026-10-05). No son algo que el modelo pueda corregir volviendo a confirmar: un arco clásico
- * reparte su espiral por igual pida lo que pida la participación, y un patrón sin material para un acento lo
- * pierde igual. Si viajaran en `advertencias`, que el prompt trata como instrucciones para corregir el plan,
- * cada uno costaría una vuelta entera del modelo y otra resolución. Viajan aparte, en `notas_reparto`, para que
- * el modelo los explique al cliente.
- */
-const PREFIJOS_NOTA_REPARTO = ["reparto_distinto:", "color_sin_globos:", "patron_sin_aplicar:", "pista_patron_incompleta:"] as const;
-
-export function separarNotasReparto(advertencias: readonly string[]): { advertencias: string[]; notasReparto: string[] } {
-  const esNota = (aviso: string) => PREFIJOS_NOTA_REPARTO.some((prefijo) => aviso.startsWith(prefijo));
-  return { advertencias: advertencias.filter((aviso) => !esNota(aviso)), notasReparto: advertencias.filter(esNota) };
 }
 
 /** Arma el registro de herramientas (nombre → handler) que el motor genérico

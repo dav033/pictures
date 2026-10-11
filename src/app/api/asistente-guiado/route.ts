@@ -8,20 +8,18 @@ import { diferenciaOpciones, sanearOpcionesCatalogo } from "@/lib/ia/guiado/opci
 import { eventoDeMensajes, generosBabyShower, ideasGuiadas, ideasRealesDeOpcion, ideasYaVistas, NOMBRE_GENERO, tematicaFielAlCliente } from "@/lib/ia/guiado/ideas-guiadas";
 import { esPedidoParecidasAFoto, ideasParecidasAFoto, ordenarIdeasPorPieza, pedidoDeIdeas } from "@/lib/ia/guiado/pedido-ideas";
 import { CHIP_FOTO_GUIADA, FiltroFlujoGuiado, FRASE_IDEAS_GUIADAS, fraseCercanasYaDicha, sanearRespuestaGuiada, type CercanasPorColor, type ContextoRespuesta } from "@/lib/ia/guiado/respuesta-guiada";
-import { AsistenteGuiadoRequestSchema, CotizacionGuiadaSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { AsistenteGuiadoRequestSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { PROMPT_GUIADO } from "@/lib/ia/guiado/prompt-guiado";
 import { ChatSseEventV1Schema, CHAT_SSE_CONTRACT_VERSION } from "@/lib/ia/contracts/chat-v1";
-import { ListaMaterialesRequestSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { llamarPythonListaMateriales } from "@/lib/ia/nucleo/python-adapter";
 import { leerMotorGuiada } from "@/lib/guiada-motor/bandera";
 import { avisoEdicionDelPlanAbierto } from "@/lib/ia/guiado/aviso-edicion-plan";
 import { filaDeCotizacionDeIdea, registrarAuditoriaPlan3d } from "@/lib/guiada-motor/auditoria-plan";
-import { decidirCotizacionDelCarrusel } from "@/lib/guiada-motor/carrusel";
+import { costearDecoracion } from "@/lib/guiada-motor/costear-idea";
 import { ErrorIA } from "@/lib/ia/nucleo/tipos";
 import type { ErrorCodeV1 } from "@/lib/ia/contracts/chat-v1";
 import { decoracionCotizableCoincide, normalizarCiudad, protegerHerramientas } from "@/lib/ia/guiado/utilidades";
-import { presentacionMaterialGuiado } from "@/lib/ia/guiado/presentacion-material-guiado";
 import { pasosParaCliente } from "@/lib/ia/guiado/pasos-cliente";
 import { ESTRUCTURAS_OFICIALES, ESTRUCTURAS_OFICIALES_IDS, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { COLORES_PROPUESTA_V2 } from "@/lib/rag/taxonomy/v2";
@@ -361,14 +359,16 @@ async function turnoGuiado(request: Request) {
         }
         datos.uso = usoConfirmado;
         const decoracion = proveedores.find((item) => item.id === entrada.decoracionId);
-        if (!decoracion || decoracion.materiales.length === 0) {
+        if (!decoracion) {
           datos.cotizacion = null;
           return { ok: false, motivo: "costeo_pendiente_datos_de_catalogo", aviso: "Esta decoración todavía no tiene productos asociados en el catálogo; no inventes un precio." };
         }
-        // REQ-007 (ruling Q3): con el motor 3D, el precio sale de lo que el motor cuenta para esta idea; la lista curada queda para lo que no arma (las figuras).
-        // El motor y el cruce con la tienda (250 KB) se cargan SOLO aquí y SOLO con la bandera en 3d: el resto de los turnos no los paga.
-        const decision = await decidirCotizacionDelCarrusel(decoracion.id, {
+        // D-038: el precio de la idea es el del plan que el cliente recibe al elegirla (motor 3D o Python, según la bandera).
+        // El motor, el cruce con la tienda (250 KB) y los planes guardados se cargan SOLO aquí, con `import()`: el resto de
+        // los turnos no los paga, y el motor solo con la bandera en 3d.
+        const costeo = await costearDecoracion(decoracion, usoConfirmado, {
           leerMotor: async () => (await leerMotorGuiada(request)).motor,
+          tienePlanGuardado: async (ideaId) => (await import("@/lib/plan/planes-ideas-guardados")).planGuardadoDeIdea(ideaId) !== null,
           cotizarConMotor: async (ideaId) => {
             const [{ cotizarIdeaConMotor }, motor, { planGuardadoDeIdea }] = await Promise.all([import("@/lib/guiada-motor/cotizar-idea"), import("@/lib/globos3d/motor/v1"), import("@/lib/plan/planes-ideas-guardados")]);
             return cotizarIdeaConMotor(ideaId, {
@@ -376,29 +376,21 @@ async function turnoGuiado(request: Request) {
               cotizarLista: (entrada) => llamarPythonListaMateriales({ entrada, requestId: crypto.randomUUID(), correlationId: requestId, parentSignal: deadline.signal }),
             });
           },
+          cotizarConPython: async (ideaId) => {
+            const [{ cotizarIdeaConPython, DEADLINE_COTIZAR_IDEA_MS }, { planGuardadoDeIdea }, { resolverIdeaSola }] = await Promise.all([import("@/lib/guiada-motor/cotizar-idea-python"), import("@/lib/plan/planes-ideas-guardados"), import("@/lib/plan/resolver-idea")]);
+            // Recordada por su pedido: «Crear mi plan con esta idea» la reutiliza (D-038).
+            return cotizarIdeaConPython(ideaId, { planGuardado: planGuardadoDeIdea, resolver: (pedido) => resolverIdeaSola(pedido, { requestId: crypto.randomUUID(), correlationId: requestId, signal: deadline.signal, deadlineMs: DEADLINE_COTIZAR_IDEA_MS }) });
+          },
+          cotizarLista: (entrada) => llamarPythonListaMateriales({ entrada, requestId: crypto.randomUUID(), correlationId: requestId, parentSignal: deadline.signal }),
+          auditar: decidir,
         });
-        // Durable (plan_audit_log): `decidir` de abajo solo llega a stdout y a /tmp.
+        // Durable (plan_audit_log): `decidir` solo llega a stdout y a /tmp. Una fila por cada «¿cuánto cuesta?», con lo que
+        // decidió el costeo (motor 3D, plan de Python, lista curada o sin precio), su motivo, el total y el hash del plan.
+        const decision = costeo.decision;
         const filaAuditoria = filaDeCotizacionDeIdea(decision, decoracion.id, requestId, "/api/asistente-guiado");
-        if (filaAuditoria) await registrarAuditoriaPlan3d(filaAuditoria);
-        if (decision.usar === "motor") {
-          const delMotor = decision.resultado;
-          datos.cotizacion = delMotor.cotizacion;
-          decidir("regla:cotizacion_guiada", "precio de los materiales de la idea elegida, contados por el motor 3D (Python cotiza)", { cotiza: true, motor: "3d", total: delMotor.cotizacion.total, lineas: delMotor.cotizacion.lineas.length, globos: delMotor.globos }, { entrada: { decoracionId: decoracion.id, uso: usoConfirmado } });
-          return { cotizacion: delMotor.cotizacion, incluyeIva: true, uso: usoConfirmado, aviso: "Precio de los materiales en la tienda en línea, con IVA, incluida una reserva del 8 % por globos que se revientan. No incluye montaje." };
-        }
-        if (decision.motivo !== "bandera_python") decidir("regla:cotizacion_guiada", "el motor 3D no cotiza esta idea: se usa la lista curada", { motor: "python", razon: decision.motivo, ...(decision.detalle ? { detalle: decision.detalle } : {}) }, { entrada: { decoracionId: decoracion.id } });
-        const entradaCotizacion = ListaMaterialesRequestSchema.parse({ schema_version: "lista-materiales.v1", materiales: decoracion.materiales.map((material) => ({ variant_id: material.variantId, cantidad: material.cantidad })) });
-        const cotizada = await llamarPythonListaMateriales({ entrada: entradaCotizacion, requestId: crypto.randomUUID(), correlationId: requestId, parentSignal: deadline.signal });
-        const cotizacion = CotizacionGuiadaSchema.parse({
-          lineas: cotizada.lineas.map((linea) => {
-            const presentacion = presentacionMaterialGuiado(decoracion.materiales.find((material) => material.variantId === linea.variant_id)?.nota);
-            return { id: linea.variant_id, tamano: "sin tamaño aplicable", ...presentacion, cantidadNecesaria: linea.cantidad_necesaria, disponible: true, varianteId: linea.variant_id, precioPaquete: linea.precio_paquete, unidadesPaquete: linea.unidades_paquete, paquetes: linea.paquetes, subtotal: linea.subtotal, sobrante: linea.sobrante };
-          }),
-          total: cotizada.total, mermaPorcentaje: 0, incluyeIva: true, complementosSoportados: false,
-        });
-        datos.cotizacion = cotizacion;
-        decidir("regla:cotizacion_guiada", "precio de los materiales de la idea elegida (Python)", { cotiza: true, total: cotizacion.total, lineas: cotizacion.lineas.length }, { entrada: { decoracionId: decoracion.id, uso: usoConfirmado, materiales: entradaCotizacion.materiales } });
-        return { cotizacion, incluyeIva: true, uso: usoConfirmado, aviso: "Precio de los materiales en la tienda en línea, con IVA. No incluye montaje." };
+        await registrarAuditoriaPlan3d(filaAuditoria);
+        datos.cotizacion = costeo.cotizacion;
+        return costeo.respuesta;
       },
       abrir_accion_plan: async (args: Record<string, unknown>) => {
         const { accion } = z.object({ accion: z.enum(ACCIONES_PLAN) }).strict().parse(args);

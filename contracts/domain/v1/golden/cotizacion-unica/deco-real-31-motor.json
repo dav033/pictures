@@ -1,0 +1,432 @@
+{
+ "caso": "deco-real-31-motor",
+ "origen": "motor",
+ "idea": "deco-real-31-arco-futbol-balones-gigantes",
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "R-5",
+   "codigo": "005",
+   "cantidad": 2,
+   "productId": "8634235781415",
+   "color": "blanco",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594221080871",
+     "unidadesPaq": 12,
+     "precio": 1826
+    },
+    {
+     "variantId": "46594221113639",
+     "unidadesPaq": 20,
+     "precio": 2759
+    },
+    {
+     "variantId": "46594221146407",
+     "unidadesPaq": 50,
+     "precio": 6164
+    }
+   ]
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "031",
+   "cantidad": 18,
+   "productId": "8634233684263",
+   "color": "verde",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594213052711",
+     "unidadesPaq": 12,
+     "precio": 1826
+    },
+    {
+     "variantId": "46594213085479",
+     "unidadesPaq": 20,
+     "precio": 2759
+    },
+    {
+     "variantId": "46594213118247",
+     "unidadesPaq": 50,
+     "precio": 6164
+    }
+   ]
+  },
+  {
+   "formatoId": "R-5",
+   "codigo": "080",
+   "cantidad": 8,
+   "productId": "8634239516967",
+   "color": "negro",
+   "diamPulg": 5,
+   "presentaciones": [
+    {
+     "variantId": "46594234974503",
+     "unidadesPaq": 12,
+     "precio": 1826
+    },
+    {
+     "variantId": "46594235007271",
+     "unidadesPaq": 20,
+     "precio": 2759
+    },
+    {
+     "variantId": "46594235040039",
+     "unidadesPaq": 50,
+     "precio": 6164
+    }
+   ]
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "005",
+   "cantidad": 9,
+   "productId": "8634235781415",
+   "color": "blanco",
+   "diamPulg": 9,
+   "presentaciones": [
+    {
+     "variantId": "46594221179175",
+     "unidadesPaq": 12,
+     "precio": 2427
+    },
+    {
+     "variantId": "46594221211943",
+     "unidadesPaq": 20,
+     "precio": 3638
+    },
+    {
+     "variantId": "46594221244711",
+     "unidadesPaq": 50,
+     "precio": 7921
+    }
+   ]
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "031",
+   "cantidad": 7,
+   "productId": "8634233684263",
+   "color": "verde",
+   "diamPulg": 9,
+   "presentaciones": [
+    {
+     "variantId": "46594213151015",
+     "unidadesPaq": 12,
+     "precio": 2427
+    },
+    {
+     "variantId": "46594213183783",
+     "unidadesPaq": 20,
+     "precio": 3638
+    },
+    {
+     "variantId": "46594213216551",
+     "unidadesPaq": 50,
+     "precio": 7921
+    }
+   ]
+  },
+  {
+   "formatoId": "R-9",
+   "codigo": "080",
+   "cantidad": 8,
+   "productId": "8634239516967",
+   "color": "negro",
+   "diamPulg": 9,
+   "presentaciones": [
+    {
+     "variantId": "46594235072807",
+     "unidadesPaq": 12,
+     "precio": 2427
+    },
+    {
+     "variantId": "46594235105575",
+     "unidadesPaq": 20,
+     "precio": 3638
+    },
+    {
+     "variantId": "46594235138343",
+     "unidadesPaq": 50,
+     "precio": 7921
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "005",
+   "cantidad": 16,
+   "productId": "8634235781415",
+   "color": "blanco",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594221277479",
+     "unidadesPaq": 12,
+     "precio": 3963
+    },
+    {
+     "variantId": "46594221310247",
+     "unidadesPaq": 20,
+     "precio": 6029
+    },
+    {
+     "variantId": "46594221343015",
+     "unidadesPaq": 50,
+     "precio": 13037
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "031",
+   "cantidad": 9,
+   "productId": "8634233684263",
+   "color": "verde",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594213249319",
+     "unidadesPaq": 12,
+     "precio": 3963
+    },
+    {
+     "variantId": "46594213282087",
+     "unidadesPaq": 20,
+     "precio": 6029
+    },
+    {
+     "variantId": "46594213314855",
+     "unidadesPaq": 50,
+     "precio": 13037
+    }
+   ]
+  },
+  {
+   "formatoId": "R-12",
+   "codigo": "080",
+   "cantidad": 16,
+   "productId": "8634239516967",
+   "color": "negro",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594235171111",
+     "unidadesPaq": 12,
+     "precio": 3963
+    },
+    {
+     "variantId": "46594235203879",
+     "unidadesPaq": 20,
+     "precio": 6029
+    },
+    {
+     "variantId": "46594235269415",
+     "unidadesPaq": 50,
+     "precio": 13037
+    }
+   ]
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "005",
+   "cantidad": 5,
+   "productId": "8634235781415",
+   "color": "blanco",
+   "diamPulg": 18,
+   "presentaciones": [
+    {
+     "variantId": "46594221474087",
+     "unidadesPaq": 6,
+     "precio": 7199
+    },
+    {
+     "variantId": "46594221506855",
+     "unidadesPaq": 50,
+     "precio": 51854
+    }
+   ]
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "031",
+   "cantidad": 4,
+   "productId": "8634233684263",
+   "color": "verde",
+   "diamPulg": 18,
+   "presentaciones": [
+    {
+     "variantId": "46594213380391",
+     "unidadesPaq": 6,
+     "precio": 7199
+    },
+    {
+     "variantId": "46594213413159",
+     "unidadesPaq": 50,
+     "precio": 51854
+    }
+   ]
+  },
+  {
+   "formatoId": "R-18",
+   "codigo": "080",
+   "cantidad": 1,
+   "productId": "8634239516967",
+   "color": "negro",
+   "diamPulg": 18,
+   "presentaciones": [
+    {
+     "variantId": "46594235302183",
+     "unidadesPaq": 6,
+     "precio": 7199
+    },
+    {
+     "variantId": "46594235367719",
+     "unidadesPaq": 50,
+     "precio": 51854
+    }
+   ]
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "005",
+   "cantidad": 1,
+   "productId": "8634235781415",
+   "color": "blanco",
+   "diamPulg": 24,
+   "presentaciones": [
+    {
+     "variantId": "46594221539623",
+     "unidadesPaq": 3,
+     "precio": 10124
+    }
+   ]
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "080",
+   "cantidad": 1,
+   "productId": "8634239516967",
+   "color": "negro",
+   "diamPulg": 24,
+   "presentaciones": [
+    {
+     "variantId": "46594235400487",
+     "unidadesPaq": 3,
+     "precio": 10124
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 71558,
+  "reserva": {
+   "objetivo": 17,
+   "cubierta": 17,
+   "sinCubrir": 0,
+   "excedenteNatural": 51
+  },
+  "compras": [
+   {
+    "variantId": "46594213085479",
+    "paquetes": 1,
+    "cantidad": 18,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594213151015",
+    "paquetes": 1,
+    "cantidad": 7,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594213249319",
+    "paquetes": 1,
+    "cantidad": 9,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594213380391",
+    "paquetes": 1,
+    "cantidad": 4,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594221080871",
+    "paquetes": 1,
+    "cantidad": 2,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594221179175",
+    "paquetes": 1,
+    "cantidad": 9,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594221310247",
+    "paquetes": 1,
+    "cantidad": 16,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594221474087",
+    "paquetes": 1,
+    "cantidad": 5,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594221539623",
+    "paquetes": 1,
+    "cantidad": 1,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594234974503",
+    "paquetes": 1,
+    "cantidad": 8,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594235072807",
+    "paquetes": 1,
+    "cantidad": 8,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594235203879",
+    "paquetes": 1,
+    "cantidad": 16,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594235302183",
+    "paquetes": 1,
+    "cantidad": 1,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594235400487",
+    "paquetes": 1,
+    "cantidad": 1,
+    "reserva": 1,
+    "paraReserva": false
+   }
+  ]
+ }
+}

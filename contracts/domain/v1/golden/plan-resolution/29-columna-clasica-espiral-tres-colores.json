@@ -890,74 +890,74 @@
       "purchases": [
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 6800,
+          "consumption_cost": 7480,
           "design_quantity": 20,
-          "leftover_inventory": 5,
-          "operational_surplus": 5,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
           "package_count": 1,
           "potential_surplus": 5,
           "product_id": "P-AZUL",
           "purchase_cost": 8500,
           "purchase_quantity": 25,
-          "required_quantity": 20,
+          "required_quantity": 22,
           "units_per_package": 25,
           "used": 20,
           "variant_id": "V-AZUL-12",
-          "waste_adjusted_quantity": 20,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 22,
+          "waste_reserve": 2
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 15040,
+          "consumption_cost": 14080,
           "design_quantity": 40,
-          "leftover_inventory": 3,
-          "operational_surplus": 3,
+          "leftover_inventory": 6,
+          "operational_surplus": 6,
           "package_count": 2,
           "potential_surplus": 10,
           "product_id": "P-BLANCO",
           "purchase_cost": 16000,
           "purchase_quantity": 50,
-          "required_quantity": 47,
+          "required_quantity": 44,
           "units_per_package": 25,
           "used": 40,
           "variant_id": "V-BLANCO-12",
-          "waste_adjusted_quantity": 47,
-          "waste_reserve": 7
+          "waste_adjusted_quantity": 44,
+          "waste_reserve": 4
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 7200,
+          "consumption_cost": 7920,
           "design_quantity": 20,
-          "leftover_inventory": 5,
-          "operational_surplus": 5,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
           "package_count": 1,
           "potential_surplus": 5,
           "product_id": "P-NEGRO",
           "purchase_cost": 9000,
           "purchase_quantity": 25,
-          "required_quantity": 20,
+          "required_quantity": 22,
           "units_per_package": 25,
           "used": 20,
           "variant_id": "V-NEGRO-12",
-          "waste_adjusted_quantity": 20,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 22,
+          "waste_reserve": 2
         }
       ],
       "special_elements": [],
       "totals": {
         "additional_waste_packages": 0,
-        "consumption_cost": 29040,
-        "covered_waste_reserve": 7,
+        "consumption_cost": 29480,
+        "covered_waste_reserve": 8,
         "design_quantity": 80,
         "natural_package_surplus": 20,
-        "operational_surplus": 13,
+        "operational_surplus": 12,
         "potential_surplus": 20,
         "purchase_cost": 33500,
         "purchase_quantity": 100,
-        "required_quantity": 87,
-        "target_waste_reserve": 7,
+        "required_quantity": 88,
+        "target_waste_reserve": 8,
         "uncovered_waste_reserve": 0,
-        "waste_adjusted_quantity": 87,
+        "waste_adjusted_quantity": 88,
         "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
@@ -975,7 +975,7 @@
         {
           "additional_package_for_waste": false,
           "color": "azul",
-          "consumption_cost": 6800,
+          "consumption_cost": 7480,
           "design_quantity": 20,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -989,13 +989,13 @@
           ],
           "imagen": "https://cdn.example.test/v-azul-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 5,
+          "leftover_inventory": 3,
           "paquetes": 1,
           "precio_paquete": 8500,
           "product_id": "P-AZUL",
           "purchase_cost": 8500,
           "purchase_quantity": 25,
-          "required_quantity": 20,
+          "required_quantity": 22,
           "sku": "SKU-V-AZUL-12",
           "sku_original": "SHOP-V-AZUL-12",
           "sobrante": 5,
@@ -1004,18 +1004,18 @@
           "subtotal": 8500,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex azul — R-12 / PAQUETE X 25",
-          "unidades_con_merma": 20,
+          "unidades_con_merma": 22,
           "unidades_inferidas": false,
           "unidades_necesarias": 20,
           "unidades_paquete": 25,
           "used": 20,
           "variant_id": "V-AZUL-12",
-          "waste_reserve": 0
+          "waste_reserve": 2
         },
         {
           "additional_package_for_waste": false,
           "color": "blanco",
-          "consumption_cost": 15040,
+          "consumption_cost": 14080,
           "design_quantity": 40,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -1029,13 +1029,13 @@
           ],
           "imagen": "https://cdn.example.test/v-blanco-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 3,
+          "leftover_inventory": 6,
           "paquetes": 2,
           "precio_paquete": 8000,
           "product_id": "P-BLANCO",
           "purchase_cost": 16000,
           "purchase_quantity": 50,
-          "required_quantity": 47,
+          "required_quantity": 44,
           "sku": "SKU-V-BLANCO-12",
           "sku_original": "SHOP-V-BLANCO-12",
           "sobrante": 10,
@@ -1044,18 +1044,18 @@
           "subtotal": 16000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex blanco — R-12 / PAQUETE X 25",
-          "unidades_con_merma": 47,
+          "unidades_con_merma": 44,
           "unidades_inferidas": false,
           "unidades_necesarias": 40,
           "unidades_paquete": 25,
           "used": 40,
           "variant_id": "V-BLANCO-12",
-          "waste_reserve": 7
+          "waste_reserve": 4
         },
         {
           "additional_package_for_waste": false,
           "color": "negro",
-          "consumption_cost": 7200,
+          "consumption_cost": 7920,
           "design_quantity": 20,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -1069,13 +1069,13 @@
           ],
           "imagen": "https://cdn.example.test/v-negro-12.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 5,
+          "leftover_inventory": 3,
           "paquetes": 1,
           "precio_paquete": 9000,
           "product_id": "P-NEGRO",
           "purchase_cost": 9000,
           "purchase_quantity": 25,
-          "required_quantity": 20,
+          "required_quantity": 22,
           "sku": "SKU-V-NEGRO-12",
           "sku_original": "SHOP-V-NEGRO-12",
           "sobrante": 5,
@@ -1084,13 +1084,13 @@
           "subtotal": 9000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex negro — R-12 / PAQUETE X 25",
-          "unidades_con_merma": 20,
+          "unidades_con_merma": 22,
           "unidades_inferidas": false,
           "unidades_necesarias": 20,
           "unidades_paquete": 25,
           "used": 20,
           "variant_id": "V-NEGRO-12",
-          "waste_reserve": 0
+          "waste_reserve": 2
         }
       ],
       "costes_por_estructura": [
@@ -1404,7 +1404,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "cce3c57903f62b17265f021a0b97a9cf0915cd41897fb69e5c2d604d327e1235",
+      "plan_hash": "848d77c0b6121cfa7ff0b3fb19495bb5e4e2ab0015b2003810d2a84f28f75ad2",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -1412,8 +1412,8 @@
       "totales": {
         "additional_waste_packages": 0,
         "ahorro_paquetes_cop": 0,
-        "consumption_cost": 29040,
-        "covered_waste_reserve": 7,
+        "consumption_cost": 29480,
+        "covered_waste_reserve": 8,
         "design_quantity": 80,
         "globos_por_tamano": {
           "R-12": 80
@@ -1422,7 +1422,7 @@
         "merma_porcentaje": 8.0,
         "natural_package_surplus": 20,
         "purchase_cost": 33500,
-        "target_waste_reserve": 7,
+        "target_waste_reserve": 8,
         "total_cop": 33500,
         "total_unidades": 80,
         "uncovered_waste_reserve": 0,
@@ -1430,20 +1430,20 @@
       }
     },
     "quote": {
-      "consumption_cost_cop": 29040,
-      "covered_waste_reserve": 7,
+      "consumption_cost_cop": 29480,
+      "covered_waste_reserve": 8,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 13,
+      "leftover_inventory": 12,
       "lines": [
         {
           "available": true,
           "color": "azul",
-          "consumption_cost_cop": 6800,
+          "consumption_cost_cop": 7480,
           "design_quantity": 20,
           "diameter_inches": 12.0,
           "id": "V-AZUL-12",
-          "leftover_inventory": 5,
+          "leftover_inventory": 3,
           "origins": [
             {
               "id": "EST_01_COLUMNA",
@@ -1455,7 +1455,7 @@
           "product_id": "P-AZUL",
           "purchase_cost_cop": 8500,
           "purchase_quantity": 25,
-          "required_quantity": 20,
+          "required_quantity": 22,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -1467,16 +1467,16 @@
           "units_per_package": 25,
           "used": 20,
           "variant_id": "V-AZUL-12",
-          "waste_reserve": 0
+          "waste_reserve": 2
         },
         {
           "available": true,
           "color": "blanco",
-          "consumption_cost_cop": 15040,
+          "consumption_cost_cop": 14080,
           "design_quantity": 40,
           "diameter_inches": 12.0,
           "id": "V-BLANCO-12",
-          "leftover_inventory": 3,
+          "leftover_inventory": 6,
           "origins": [
             {
               "id": "EST_01_COLUMNA",
@@ -1488,7 +1488,7 @@
           "product_id": "P-BLANCO",
           "purchase_cost_cop": 16000,
           "purchase_quantity": 50,
-          "required_quantity": 47,
+          "required_quantity": 44,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -1500,16 +1500,16 @@
           "units_per_package": 25,
           "used": 40,
           "variant_id": "V-BLANCO-12",
-          "waste_reserve": 7
+          "waste_reserve": 4
         },
         {
           "available": true,
           "color": "negro",
-          "consumption_cost_cop": 7200,
+          "consumption_cost_cop": 7920,
           "design_quantity": 20,
           "diameter_inches": 12.0,
           "id": "V-NEGRO-12",
-          "leftover_inventory": 5,
+          "leftover_inventory": 3,
           "origins": [
             {
               "id": "EST_01_COLUMNA",
@@ -1521,7 +1521,7 @@
           "product_id": "P-NEGRO",
           "purchase_cost_cop": 9000,
           "purchase_quantity": 25,
-          "required_quantity": 20,
+          "required_quantity": 22,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -1533,14 +1533,14 @@
           "units_per_package": 25,
           "used": 20,
           "variant_id": "V-NEGRO-12",
-          "waste_reserve": 0
+          "waste_reserve": 2
         }
       ],
-      "plan_hash": "cce3c57903f62b17265f021a0b97a9cf0915cd41897fb69e5c2d604d327e1235",
+      "plan_hash": "848d77c0b6121cfa7ff0b3fb19495bb5e4e2ab0015b2003810d2a84f28f75ad2",
       "purchase_cost_cop": 33500,
       "schema_version": "quote.v1",
       "supported_complements": false,
-      "target_waste_reserve": 7,
+      "target_waste_reserve": 8,
       "total_cop": 33500,
       "waste_percentage": 8.0
     }

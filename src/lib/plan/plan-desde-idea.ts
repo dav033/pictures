@@ -10,9 +10,10 @@ import { claveResolucion, recordarResolucion } from "./cache-resoluciones";
 import { conFotosDeCatalogo } from "./cotizacion-fotos";
 import { PlanEditError } from "./edicion-error";
 import type { BasePlan } from "./edicion-esquemas";
-import { planConIdea, unirAllowlist } from "./plan-de-idea";
+import { pedidoDeIdeaSola, planConIdea, unirAllowlist } from "./plan-de-idea";
 import { planGuardadoDeIdea } from "./planes-ideas-guardados";
 import { resolverPlan } from "./resolver-backend";
+import { resolverIdeaSola } from "./resolver-idea";
 import { PlanDecoracionSchema, type PlanDecoracion } from "./tipos";
 
 /**
@@ -48,15 +49,16 @@ export async function planDesdeIdea({ ideaId, base, signal }: Entrada): Promise<
   // Sumada a un plan, la idea lleva sus tallas obligatorias («R-5, R-12»): sin ellas su guirnalda salía con otros
   // tamaños y sustituciones. Si con ellas cambia alguna pieza que ya estaba, se resuelve sin ellas (abajo).
   const conTallasDeIdea = Boolean(base && guardado.plan.restricciones?.tamanos.length);
-  let combinado = planConIdea(guardado.plan, base ? base.plan : null, { restriccionesDeIdea: conTallasDeIdea });
+  const solo = base ? null : pedidoDeIdeaSola(guardado);
+  let combinado = solo?.combinado ?? planConIdea(guardado.plan, base?.plan ?? null, { restriccionesDeIdea: conTallasDeIdea });
   const entradaRegistro = { ideaId, archivo: guardado.archivo, conBase: Boolean(base), planHashBase: base?.plan_hash ?? null, piezasIdea: guardado.plan.estructuras.map((estructura) => estructura.estructura_id), globosIdea: guardado.globos };
   if (!combinado.ok) {
     decidir("regla:plan_desde_idea", "plan exacto de una idea del catálogo", { aplicado: false, motivo: combinado.motivo, detalle: combinado.detalle }, { entrada: entradaRegistro, motivo: "va por el camino del modelo" });
     throw new PlanEditError(422, combinado.motivo === "ubicacion_ocupada" ? "Esa idea va donde ya hay otra pieza de tu plan." : "No pude sumar esa idea a tu plan.");
   }
   // El snapshot y los productos: los del plan vigente más los de la idea, o los de la idea sola.
-  const snapshot = verificado ? verificado.snapshot : guardado.snapshot;
-  const allowlist = verificado ? unirAllowlist(verificado.contexto.allowlist, guardado.allowlist) : guardado.allowlist;
+  const snapshot = verificado ? verificado.snapshot : solo?.catalogSnapshotId ?? guardado.snapshot;
+  const allowlist = verificado ? unirAllowlist(verificado.contexto.allowlist, guardado.allowlist) : solo?.allowlist ?? guardado.allowlist;
   const requestId = verificado ? verificado.requestId : crypto.randomUUID();
   const correlationId = verificado ? verificado.correlationId : requestId;
   decidir("regla:plan_desde_idea", "plan exacto de una idea del catálogo: sus piezas, medidas, productos y tamaños, sin modelo", {
@@ -65,7 +67,10 @@ export async function planDesdeIdea({ ideaId, base, signal }: Entrada): Promise<
     snapshot, productos: allowlist.length,
   }, { entrada: entradaRegistro });
   const resolver = (plan: PlanDecoracion) => resolverPlan({ plan, allowlist, catalogSnapshotId: snapshot, requestId: crypto.randomUUID(), correlationId, ...(signal ? { signal } : {}) });
-  let resolucion = await resolver(combinado.plan);
+  // Una idea sola: la misma petición que su «¿cuánto cuesta?», que pudo dejarla resuelta (D-038).
+  let resolucion = solo
+    ? await resolverIdeaSola({ plan: combinado.plan, allowlist, catalogSnapshotId: snapshot }, { requestId: crypto.randomUUID(), correlationId, ...(signal ? { signal } : {}) })
+    : await resolver(combinado.plan);
   let tallasDeIdea = conTallasDeIdea;
   if (base && conTallasDeIdea && !piezasIntactas(base, resolucion.resuelto)) {
     const sinTallas = planConIdea(guardado.plan, base.plan);

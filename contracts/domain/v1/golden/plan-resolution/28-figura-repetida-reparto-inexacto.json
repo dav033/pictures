@@ -559,56 +559,56 @@
       "purchases": [
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 3840,
+          "consumption_cost": 3520,
           "design_quantity": 20,
-          "leftover_inventory": 26,
-          "operational_surplus": 26,
+          "leftover_inventory": 28,
+          "operational_surplus": 28,
           "package_count": 1,
           "potential_surplus": 30,
           "product_id": "P-F28-BLANCO",
           "purchase_cost": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 24,
+          "required_quantity": 22,
           "units_per_package": 50,
           "used": 20,
           "variant_id": "V-F28-BLANCO-9",
-          "waste_adjusted_quantity": 24,
-          "waste_reserve": 4
+          "waste_adjusted_quantity": 22,
+          "waste_reserve": 2
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 4800,
+          "consumption_cost": 5280,
           "design_quantity": 30,
-          "leftover_inventory": 20,
-          "operational_surplus": 20,
+          "leftover_inventory": 17,
+          "operational_surplus": 17,
           "package_count": 1,
           "potential_surplus": 20,
           "product_id": "P-F28-ROSADO",
           "purchase_cost": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 30,
+          "required_quantity": 33,
           "units_per_package": 50,
           "used": 30,
           "variant_id": "V-F28-ROSADO-9",
-          "waste_adjusted_quantity": 30,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 33,
+          "waste_reserve": 3
         }
       ],
       "special_elements": [],
       "totals": {
         "additional_waste_packages": 0,
-        "consumption_cost": 8640,
-        "covered_waste_reserve": 4,
+        "consumption_cost": 8800,
+        "covered_waste_reserve": 5,
         "design_quantity": 50,
         "natural_package_surplus": 50,
-        "operational_surplus": 46,
+        "operational_surplus": 45,
         "potential_surplus": 50,
         "purchase_cost": 16000,
         "purchase_quantity": 100,
-        "required_quantity": 54,
-        "target_waste_reserve": 4,
+        "required_quantity": 55,
+        "target_waste_reserve": 5,
         "uncovered_waste_reserve": 0,
-        "waste_adjusted_quantity": 54,
+        "waste_adjusted_quantity": 55,
         "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
@@ -632,7 +632,7 @@
         {
           "additional_package_for_waste": false,
           "color": "blanco",
-          "consumption_cost": 3840,
+          "consumption_cost": 3520,
           "design_quantity": 20,
           "diam_pulg": 9.0,
           "elementos_origen": [
@@ -646,13 +646,13 @@
           ],
           "imagen": "https://cdn.example.test/blanco-9.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 26,
+          "leftover_inventory": 28,
           "paquetes": 1,
           "precio_paquete": 8000,
           "product_id": "P-F28-BLANCO",
           "purchase_cost": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 24,
+          "required_quantity": 22,
           "sku": "SKU-F28-BLANCO-9",
           "sku_original": "SHOP-F28-BLANCO-9",
           "sobrante": 30,
@@ -661,18 +661,18 @@
           "subtotal": 8000,
           "tamano_codigo": "R-9",
           "titulo": "Globo latex blanco — R-9",
-          "unidades_con_merma": 24,
+          "unidades_con_merma": 22,
           "unidades_inferidas": false,
           "unidades_necesarias": 20,
           "unidades_paquete": 50,
           "used": 20,
           "variant_id": "V-F28-BLANCO-9",
-          "waste_reserve": 4
+          "waste_reserve": 2
         },
         {
           "additional_package_for_waste": false,
           "color": "rosado",
-          "consumption_cost": 4800,
+          "consumption_cost": 5280,
           "design_quantity": 30,
           "diam_pulg": 9.0,
           "elementos_origen": [
@@ -686,13 +686,13 @@
           ],
           "imagen": "https://cdn.example.test/rosado-9.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 20,
+          "leftover_inventory": 17,
           "paquetes": 1,
           "precio_paquete": 8000,
           "product_id": "P-F28-ROSADO",
           "purchase_cost": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 30,
+          "required_quantity": 33,
           "sku": "SKU-F28-ROSADO-9",
           "sku_original": "SHOP-F28-ROSADO-9",
           "sobrante": 20,
@@ -701,13 +701,13 @@
           "subtotal": 8000,
           "tamano_codigo": "R-9",
           "titulo": "Globo latex rosado — R-9",
-          "unidades_con_merma": 30,
+          "unidades_con_merma": 33,
           "unidades_inferidas": false,
           "unidades_necesarias": 30,
           "unidades_paquete": 50,
           "used": 30,
           "variant_id": "V-F28-ROSADO-9",
-          "waste_reserve": 0
+          "waste_reserve": 3
         }
       ],
       "costes_por_estructura": [
@@ -839,7 +839,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "1243a6e0618f8be2d666c3aa913542a38a5c63730f714f8b2bd1be91a221d730",
+      "plan_hash": "1c8bd91e84927a15e7add34203ff48bb16868e0d2b5ff61c6cf8a6265428915e",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -847,8 +847,8 @@
       "totales": {
         "additional_waste_packages": 0,
         "ahorro_paquetes_cop": 0,
-        "consumption_cost": 8640,
-        "covered_waste_reserve": 4,
+        "consumption_cost": 8800,
+        "covered_waste_reserve": 5,
         "design_quantity": 50,
         "globos_por_tamano": {
           "R-9": 50
@@ -857,7 +857,7 @@
         "merma_porcentaje": 8.0,
         "natural_package_surplus": 50,
         "purchase_cost": 16000,
-        "target_waste_reserve": 4,
+        "target_waste_reserve": 5,
         "total_cop": 16000,
         "total_unidades": 50,
         "uncovered_waste_reserve": 0,
@@ -865,20 +865,20 @@
       }
     },
     "quote": {
-      "consumption_cost_cop": 8640,
-      "covered_waste_reserve": 4,
+      "consumption_cost_cop": 8800,
+      "covered_waste_reserve": 5,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 46,
+      "leftover_inventory": 45,
       "lines": [
         {
           "available": true,
           "color": "blanco",
-          "consumption_cost_cop": 3840,
+          "consumption_cost_cop": 3520,
           "design_quantity": 20,
           "diameter_inches": 9.0,
           "id": "V-F28-BLANCO-9",
-          "leftover_inventory": 26,
+          "leftover_inventory": 28,
           "origins": [
             {
               "id": "EST_01_FIGURA",
@@ -890,7 +890,7 @@
           "product_id": "P-F28-BLANCO",
           "purchase_cost_cop": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 24,
+          "required_quantity": 22,
           "size": "R-9",
           "size_code": "R-9",
           "structures": [
@@ -902,16 +902,16 @@
           "units_per_package": 50,
           "used": 20,
           "variant_id": "V-F28-BLANCO-9",
-          "waste_reserve": 4
+          "waste_reserve": 2
         },
         {
           "available": true,
           "color": "rosado",
-          "consumption_cost_cop": 4800,
+          "consumption_cost_cop": 5280,
           "design_quantity": 30,
           "diameter_inches": 9.0,
           "id": "V-F28-ROSADO-9",
-          "leftover_inventory": 20,
+          "leftover_inventory": 17,
           "origins": [
             {
               "id": "EST_01_FIGURA",
@@ -923,7 +923,7 @@
           "product_id": "P-F28-ROSADO",
           "purchase_cost_cop": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 30,
+          "required_quantity": 33,
           "size": "R-9",
           "size_code": "R-9",
           "structures": [
@@ -935,14 +935,14 @@
           "units_per_package": 50,
           "used": 30,
           "variant_id": "V-F28-ROSADO-9",
-          "waste_reserve": 0
+          "waste_reserve": 3
         }
       ],
-      "plan_hash": "1243a6e0618f8be2d666c3aa913542a38a5c63730f714f8b2bd1be91a221d730",
+      "plan_hash": "1c8bd91e84927a15e7add34203ff48bb16868e0d2b5ff61c6cf8a6265428915e",
       "purchase_cost_cop": 16000,
       "schema_version": "quote.v1",
       "supported_complements": false,
-      "target_waste_reserve": 4,
+      "target_waste_reserve": 5,
       "total_cop": 16000,
       "waste_percentage": 8.0
     }

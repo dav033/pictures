@@ -18,7 +18,11 @@ import type { BomLinea } from "./resultado-motor-v1";
  */
 export type CotizacionPlanGuiado = z.infer<typeof CotizacionPlanGuiadoSchema>;
 
-/** Las líneas que admite `lista-materiales.v1` en una sola cotización (`ListaMaterialesRequestSchema`). */
+/**
+ * Las líneas que admite `lista-materiales.v1` en una sola cotización (`ListaMaterialesRequestSchema`). Una lista más larga
+ * (el Taller: 256 globos pueden ser más de 400 compras) se cotiza por trozos: Python cobra cada línea sola (paquetes
+ * cerrados por variante), así que la suma de los trozos es exactamente el total.
+ */
 const MAX_LINEAS_COTIZACION = 256;
 
 /** Una compra: una variante de la tienda, lo que cubre del conteo del motor y lo que Python cobra por ella. */
@@ -114,13 +118,19 @@ async function cotizarConCruce(bom: BomPorPieza, crosswalk: Crosswalk, snapshotP
   const plan = planearCompra(bom.total, crosswalk, politica);
   if (!plan.ok) return { ok: false, razon: "sin_cobertura", faltantes: plan.faltantes };
   const { compras: planeadas } = plan;
-  if (!planeadas.length || planeadas.length > MAX_LINEAS_COTIZACION) return { ok: false, razon: "precio_fallido", detalle: `la lista tiene ${planeadas.length} líneas y el servicio de precios admite de 1 a ${MAX_LINEAS_COTIZACION}` };
+  if (!planeadas.length) return { ok: false, razon: "precio_fallido", detalle: "la lista no tiene nada que comprar" };
   if (new Set(planeadas.map((c) => c.variante.variantId)).size !== planeadas.length) return { ok: false, razon: "precio_fallido", detalle: "dos líneas del motor caen en la misma variante de la tienda" };
 
-  let cotizada: PythonListaMaterialesResultado;
+  const lineasCotizadas: PythonListaMaterialesResultado["lineas"] = [];
+  let totalCotizado = 0;
   try {
     // Los paquetes ya están decididos: se pide exactamente lo que esos paquetes cubren y Python cobra paquetes cerrados.
-    cotizada = await deps.cotizarLista(ListaMaterialesRequestSchema.parse({ schema_version: "lista-materiales.v1", materiales: planeadas.map((c) => ({ variant_id: c.variante.variantId, cantidad: c.paquetes * c.unidadesPaquete })) }));
+    for (let inicio = 0; inicio < planeadas.length; inicio += MAX_LINEAS_COTIZACION) {
+      const trozo = planeadas.slice(inicio, inicio + MAX_LINEAS_COTIZACION);
+      const cotizada = await deps.cotizarLista(ListaMaterialesRequestSchema.parse({ schema_version: "lista-materiales.v1", materiales: trozo.map((c) => ({ variant_id: c.variante.variantId, cantidad: c.paquetes * c.unidadesPaquete })) }));
+      lineasCotizadas.push(...cotizada.lineas);
+      totalCotizado += cotizada.total;
+    }
   } catch (error) {
     if (esMaterialNoDisponible(error)) return { ok: false, razon: "material_no_disponible", detalle: "Python no tiene alguna de las variantes elegidas" };
     return { ok: false, razon: "precio_fallido", detalle: error instanceof Error ? error.message : "el servicio de precios falló" };
@@ -128,7 +138,7 @@ async function cotizarConCruce(bom: BomPorPieza, crosswalk: Crosswalk, snapshotP
 
   const compras: CompraMotor[] = [];
   for (const [indice, planeada] of planeadas.entries()) {
-    const linea = cotizada.lineas[indice]!;
+    const linea = lineasCotizadas[indice]!;
     // Si el paquete del catálogo cambió desde que se armó el cruce, la decisión de qué comprar ya no vale: se trata como cruce viejo.
     if (linea.unidades_paquete !== planeada.unidadesPaquete || linea.paquetes !== planeada.paquetes) return { ok: false, razon: "material_no_disponible", detalle: `el paquete de ${planeada.variante.variantId} ya no es el del cruce` };
     compras.push({
@@ -137,7 +147,7 @@ async function cotizarConCruce(bom: BomPorPieza, crosswalk: Crosswalk, snapshotP
     });
   }
   const porPieza = repartirPorPieza(bom.porPieza, compras) as Record<string, AsignacionPieza<CompraMotor>[]>;
-  return { ok: true, snapshot: snapshotPrecios, snapshotCruce: crosswalk.snapshot, politica, compras, reserva: plan.reserva, porPieza, total: cotizada.total, cotizacion: cotizacionDe(compras, cotizada.total, porPieza) };
+  return { ok: true, snapshot: snapshotPrecios, snapshotCruce: crosswalk.snapshot, politica, compras, reserva: plan.reserva, porPieza, total: totalCotizado, cotizacion: cotizacionDe(compras, totalCotizado, porPieza) };
 }
 
 /** Aplica la política de paquetes, cruza con la tienda y cotiza. Nunca lanza: todo fallo es un `FalloCotizacion` para que el plan caiga a Python. */

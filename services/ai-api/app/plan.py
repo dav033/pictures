@@ -42,7 +42,6 @@ from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from functools import lru_cache, partial
-from math import isfinite
 from typing import Annotated, Literal, Protocol, cast
 from urllib.parse import urlparse
 
@@ -120,7 +119,11 @@ from app.flores_pieza import (
     lineas_del_cuerpo,
     partes_de_flores,
 )
+from app.numeros import entero as _integer
+from app.numeros import numero as _number
 from app.patron_de_la_foto import mezcla_del_motor
+from app.presentaciones import optimizar_cobertura as _optimizar_cobertura
+from app.presentaciones import comprar_globo, presentaciones_del_globo
 from app.supuestos import agregar_supuesto, supuesto
 from app.merma import MERMA as _MERMA_COMPARTIDA
 from app.operational_models import ContractModel, OperationalRequest
@@ -703,26 +706,6 @@ def _text(value: object) -> str | None:
         return None
     value = value.strip()
     return value or None
-
-
-def _number(value: object) -> float | None:
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, (int, float, Decimal)):
-        number = float(value)
-    elif isinstance(value, str):
-        try:
-            number = float(value)
-        except ValueError:
-            return None
-    else:
-        return None
-    return number if isfinite(number) else None
-
-
-def _integer(value: object) -> int | None:
-    number = _number(value)
-    return int(number) if number is not None and number.is_integer() else None
 
 
 def _price(value: object) -> int | None:
@@ -3259,114 +3242,6 @@ def _package_cost(candidate: Candidate, quantity: int, waste: float = 0.0) -> in
     return math.ceil(required / candidate.units_per_package) * candidate.price
 
 
-def _optimizar_cobertura(
-    unidades_objetivo: int | float,
-    opciones: Sequence[Mapping[str, object]],
-    merma: float = 0.0,
-) -> dict[str, object] | None:
-    """Cheapest mix of presentations covering the units, by bounded search."""
-    candidatas: list[dict[str, object]] = []
-    for option in opciones:
-        variant_id = option.get("variant_id")
-        units_per_package = _integer(option.get("unidades_paquete"))
-        price = _number(option.get("precio"))
-        if (
-            not isinstance(variant_id, str)
-            or units_per_package is None
-            or units_per_package <= 0
-            or price is None
-            or price <= 0
-        ):
-            continue
-        min_packages = _number(option.get("min_paquetes"))
-        normalized_min = max(0, math.floor(min_packages or 0))
-        normalized_price: int | float = int(price) if price.is_integer() else price
-        candidatas.append(
-            {
-                "variant_id": variant_id,
-                "unidades_paquete": units_per_package,
-                "precio": normalized_price,
-                "min_paquetes": normalized_min,
-            }
-        )
-    candidatas.sort(key=lambda item: cast(str, item["variant_id"]))
-    if unidades_objetivo <= 0 or not candidatas:
-        return None
-
-    unidades_con_merma = math.ceil(unidades_objetivo * (1 + merma))
-    min_units_per_package = min(int(cast(int, item["unidades_paquete"])) for item in candidatas)
-    max_paquetes = max(
-        1,
-        max(int(cast(int, item["min_paquetes"])) for item in candidatas),
-        math.ceil(unidades_con_merma / min_units_per_package) + 2,
-    )
-    mejor: dict[str, object] | None = None
-
-    def visitar(indice: int, restantes: float, elegidas: list[dict[str, object]]) -> None:
-        nonlocal mejor
-        if indice == len(candidatas):
-            if restantes > 0:
-                return
-            compras = [item for item in elegidas if int(cast(int, item["paquetes"])) > 0]
-            capacidad = sum(int(cast(int, item["capacidad"])) for item in compras)
-            costo = sum(
-                int(cast(int, item["paquetes"])) * cast(int | float, item["precio"])
-                for item in compras
-            )
-            candidato: dict[str, object] = {
-                "unidades_objetivo": unidades_objetivo,
-                "unidades_con_merma": unidades_con_merma,
-                "costo": costo,
-                "sobrante": capacidad - unidades_objetivo,
-                "paquetes": sum(int(cast(int, item["paquetes"])) for item in compras),
-                "compras": compras,
-            }
-            if mejor is None:
-                mejor = candidato
-                return
-            mejor_key = (
-                cast(int | float, mejor["costo"]),
-                cast(int | float, mejor["sobrante"]),
-                cast(int, mejor["paquetes"]),
-                "|".join(
-                    cast(str, item["variant_id"])
-                    for item in cast(list[dict[str, object]], mejor["compras"])
-                ),
-            )
-            candidate_key = (
-                cast(int | float, candidato["costo"]),
-                cast(int | float, candidato["sobrante"]),
-                cast(int, candidato["paquetes"]),
-                "|".join(cast(str, item["variant_id"]) for item in compras),
-            )
-            if candidate_key < mejor_key:
-                mejor = candidato
-            return
-
-        option = candidatas[indice]
-        units_per_package = int(cast(int, option["unidades_paquete"]))
-        min_packages = int(cast(int, option["min_paquetes"]))
-        max_for_option = min(
-            max_paquetes,
-            max(min_packages, math.ceil(restantes / units_per_package) + 1),
-        )
-        for packages in range(max_for_option + 1):
-            if packages > 0 and packages < min_packages:
-                continue
-            capacity = packages * units_per_package
-            visitar(
-                indice + 1,
-                restantes - capacity,
-                [
-                    *elegidas,
-                    {**option, "paquetes": packages, "capacidad": capacity},
-                ],
-            )
-
-    visitar(0, float(unidades_con_merma), [])
-    return mejor
-
-
 def _plan_cost_optimizer_enabled() -> bool:
     """PLAN_COST_OPTIMIZER_V2 defaults ON and accepts 1/true/on."""
     raw = os.environ.get("PLAN_COST_OPTIMIZER_V2")
@@ -4186,12 +4061,15 @@ def _resolve_structures(
 def _presentation_key(line: Mapping[str, object]) -> str:
     raw_shape = line.get("forma")
     shape = raw_shape if isinstance(raw_shape, str) else ""
+    # The size code too, not only the diameter: LOL 6 and LOL 660 are both 6"
+    # but different balloons (D-038, review 3).
     return "|".join(
         (
             str(line.get("product_id")),
             _normalize(_text(line.get("color")) or ""),
             shape,
             _format_number(float(cast(float, _number(line.get("diam_pulg"))))),
+            _text(line.get("tamano_codigo")) or "",
         )
     )
 
@@ -4200,16 +4078,21 @@ def _reoptimize_presentations(
     structures: Sequence[dict[str, object]],
     candidates_by_product: Mapping[str, Sequence[Candidate]],
     allowlist: Mapping[str, set[str]],
-) -> dict[str, int]:
+) -> tuple[dict[str, int], set[str], dict[str, int], int]:
     """Buy each product+size+color once for the whole plan.
 
-    The need of every structure is added up and covered with the cheapest
-    combination of allowlisted presentations (x12, x20, x50...). Each structure
-    line is then rebuilt against the chosen purchases, in structure order, so
-    every purchase keeps the structures it covers. Regression (E2E 2026-09-14):
-    the same Azul Rey R-12 was bought as x12 for the arch and x20 for the
-    columns, about 15 % more than one consolidated purchase. Returns the
-    packages chosen per variant.
+    The need of every structure is added up and, with that balloon's own waste
+    reserve (D-038: ``ceil(need * MERMA)`` per balloon, not one for the plan),
+    covered with the cheapest combination of the presentations the store sells
+    of it (x12, x20, x50..., not only the allowlisted ones; ``comprar_globo``).
+    Each structure line is then rebuilt against the chosen purchases, in
+    structure order, so every purchase keeps the structures it covers.
+    Regression (E2E 2026-09-14): the same Azul Rey R-12 was bought as x12 for
+    the arch and x20 for the columns, about 15 % more than one consolidated
+    purchase. Returns the packages chosen per variant, the variants whose packs
+    went up for the reserve (``additional_package_for_waste``), the reserve each
+    variant covers and the reserve those balloons asked for (spares are bought
+    only within ``comprar_globo``'s cap, so it can be more than what is covered).
     """
     groups: dict[str, list[Mapping[str, object]]] = {}
     for structure in structures:
@@ -4219,39 +4102,53 @@ def _reoptimize_presentations(
             groups.setdefault(_presentation_key(line), []).append(line)
     packages: dict[str, int] = {}
     optimizations: dict[str, tuple[list[dict[str, object]], dict[str, Candidate]]] = {}
+    for_waste: set[str] = set()
+    reserves: dict[str, int] = {}
+    reserve_target = 0
     for key, lines in groups.items():
         first = lines[0]
         product_id = str(first.get("product_id"))
         color = _text(first.get("color"))
         permitted = allowlist.get(product_id) or set()
         product_candidates = candidates_by_product.get(product_id, ())
+        # D-038: every pack the store sells of this same balloon, not only the allowlisted ones.
+        reference = next(
+            (item for item in product_candidates if item.variant_id == first.get("variant_id")),
+            None,
+        )
         options = [
             candidate
-            for candidate in product_candidates
-            if candidate.variant_id in permitted
-            and candidate.diameter_inches == _number(first.get("diam_pulg"))
+            for candidate in presentaciones_del_globo(reference, product_candidates, permitted)
+            if candidate.diameter_inches == _number(first.get("diam_pulg"))
+            and candidate.size_code == _text(first.get("tamano_codigo"))
             and candidate.shape == first.get("forma")
             and (not color or _normalize(color) in candidate.colors)
         ]
-        coverage = _optimizar_cobertura(
-            sum(_integer(line.get("unidades")) or 0 for line in lines),
-            [
-                {
-                    "variant_id": candidate.variant_id,
-                    "unidades_paquete": candidate.units_per_package,
-                    "precio": candidate.price,
-                }
-                for candidate in options
-            ],
-        )
-        if coverage is None:
+        need = sum(_integer(line.get("unidades")) or 0 for line in lines)
+        offers: list[Mapping[str, object]] = [
+            {
+                "variant_id": candidate.variant_id,
+                "unidades_paquete": candidate.units_per_package,
+                "precio": candidate.price,
+            }
+            for candidate in options
+        ]
+        bought = comprar_globo(need, offers, MERMA)
+        if bought is None:
             continue
-        purchases = [dict(item) for item in cast(list[dict[str, object]], coverage["compras"])]
+        # The lines take the design balloons of each purchase (its ``capacidad`` here), never its reserve.
+        purchases = [
+            {**item, "capacidad": bought.diseno[str(item["variant_id"])]}
+            for item in cast(list[dict[str, object]], bought.cobertura["compras"])
+        ]
         for purchase in purchases:
             variant_id = str(purchase["variant_id"])
             packages[variant_id] = packages.get(variant_id, 0) + int(
                 cast(int, purchase["paquetes"])
             )
+            reserves[variant_id] = reserves.get(variant_id, 0) + bought.reserva[variant_id]
+        for_waste.update(bought.para_reserva)
+        reserve_target += bought.objetivo_reserva
         optimizations[key] = (
             purchases,
             {candidate.variant_id: candidate for candidate in product_candidates},
@@ -4296,14 +4193,24 @@ def _reoptimize_presentations(
         structure["lineas"] = new_lines
         structure["total_unidades"] = sum(_integer(line.get("unidades")) or 0 for line in new_lines)
         structure["mezcla_real"] = _mix_real(new_lines)
-    return packages
+    return packages, for_waste, reserves, reserve_target
 
 
 def _consolidate(
     structures: Sequence[Mapping[str, object]],
     candidate_by_variant: Mapping[str, Candidate],
     packages_by_variant: Mapping[str, int] | None = None,
+    for_waste: Collection[str] = (),
+    reserves: Mapping[str, int] | None = None,
+    reserve_target: int = 0,
 ) -> tuple[list[dict[str, object]], dict[str, int], dict[str, int]]:
+    """One purchase per variant, with the waste reserve each one covers.
+
+    ``reserves`` is what ``_reoptimize_presentations`` covered of each balloon's
+    own reserve and ``reserve_target`` what those balloons asked for (D-038). A
+    balloon purchase outside them (no presentation could cover it) keeps its
+    reserve uncovered; any gap is said (``reserva_merma_no_cubierta``).
+    """
     grouped: dict[str, dict[str, object]] = {}
     for structure in structures:
         for line in _mappings(structure.get("lineas")):
@@ -4340,7 +4247,7 @@ def _consolidate(
                     "leftover_inventory": 0,
                     "consumption_cost": 0,
                     "purchase_cost": 0,
-                    "additional_package_for_waste": False,
+                    "additional_package_for_waste": variant_id in for_waste,
                     "sobrante": 0,
                     "precio_paquete": candidate_by_variant[variant_id].price,
                     "subtotal": 0,
@@ -4385,68 +4292,38 @@ def _consolidate(
     eligible = [
         purchase for purchase in purchases if _number(purchase.get("diam_pulg")) is not None
     ]
-    target_reserve = math.ceil(
-        sum(int(cast(int, item["design_quantity"])) for item in eligible) * MERMA
+    bought_reserves = reserves or {}
+    allocations = {
+        str(item["variant_id"]): bought_reserves[str(item["variant_id"])]
+        for item in eligible
+        if str(item["variant_id"]) in bought_reserves
+    }
+    target_reserve = reserve_target + sum(
+        math.ceil(int(cast(int, item["design_quantity"])) * MERMA)
+        for item in eligible
+        if str(item["variant_id"]) not in bought_reserves
     )
+    # Packs that the reserve made the plan buy (``for_waste``) are not natural surplus.
     natural_surplus = sum(
-        max(0, int(cast(int, item["purchase_quantity"])) - int(cast(int, item["design_quantity"])))
+        max(
+            0,
+            (
+                int(cast(int, item["paquetes"]))
+                - (
+                    _waste_extra_packages(
+                        int(cast(int, item["design_quantity"])),
+                        int(cast(int, item["unidades_paquete"])),
+                        int(cast(int, item["paquetes"])),
+                    )
+                    if item["additional_package_for_waste"] is True
+                    else 0
+                )
+            )
+            * int(cast(int, item["unidades_paquete"]))
+            - int(cast(int, item["design_quantity"])),
+        )
         for item in eligible
     )
-    groups: dict[str, int] = {}
-    for purchase in eligible:
-        key = f"R-{_format_number(float(cast(float, purchase['diam_pulg'])))}|{_normalize(str(purchase.get('color') or ''))}"
-        groups[key] = groups.get(key, 0) + int(cast(int, purchase["sobrante"]))
-    remaining = target_reserve
-    covered_groups: dict[str, int] = {}
-    for key, available in sorted(groups.items(), key=lambda item: (-item[1], item[0])):
-        covered = min(remaining, available)
-        covered_groups[key] = covered
-        remaining -= covered
-        if remaining <= 0:
-            break
-    allocations: dict[str, int] = {}
-    for purchase in eligible:
-        key = f"R-{_format_number(float(cast(float, purchase['diam_pulg'])))}|{_normalize(str(purchase.get('color') or ''))}"
-        available = max(
-            0,
-            int(cast(int, purchase["purchase_quantity"]))
-            - int(cast(int, purchase["design_quantity"])),
-        )
-        allocation = min(covered_groups.get(key, 0), available)
-        if allocation:
-            allocations[str(purchase["variant_id"])] = allocation
-            covered_groups[key] = covered_groups.get(key, 0) - allocation
-    covered_reserve = sum(allocations.values())
-    remaining = max(0, target_reserve - covered_reserve)
-    # When the natural surplus is not enough, buy the balloon presentation that
-    # covers what is left at the lowest cost. It used to buy on the first
-    # purchase by variant_id, so an 80,000 COP R-24 package could cover a
-    # reserve that a 30,000 COP R-12 package covered just as well.
-    reserve_candidates = [
-        purchase for purchase in eligible if int(cast(int, purchase["design_quantity"])) > 0
-    ]
-    while remaining > 0 and reserve_candidates:
-        pending = remaining
-        chosen = min(
-            reserve_candidates,
-            key=lambda purchase: (
-                math.ceil(
-                    pending / candidate_by_variant[str(purchase["variant_id"])].units_per_package
-                )
-                * candidate_by_variant[str(purchase["variant_id"])].price,
-                -int(cast(int, purchase["design_quantity"])),
-                str(purchase["variant_id"]),
-            ),
-        )
-        variant_id = str(chosen["variant_id"])
-        units_per_package = candidate_by_variant[variant_id].units_per_package
-        additional_packages = math.ceil(pending / units_per_package)
-        additional_capacity = additional_packages * units_per_package
-        additional_reserve = min(pending, additional_capacity)
-        chosen["paquetes"] = int(cast(int, chosen["paquetes"])) + additional_packages
-        chosen["additional_package_for_waste"] = True
-        allocations[variant_id] = allocations.get(variant_id, 0) + additional_reserve
-        remaining -= additional_reserve
     covered_reserve = sum(allocations.values())
     for purchase in purchases:
         design = int(cast(int, purchase["design_quantity"]))
@@ -4476,6 +4353,27 @@ def _consolidate(
         },
         allocations,
     )
+
+
+def _buy(
+    structures: Sequence[dict[str, object]],
+    candidates_by_product: Mapping[str, Sequence[Candidate]],
+    candidate_by_variant: Mapping[str, Candidate],
+    allowlist: Mapping[str, set[str]],
+) -> tuple[list[dict[str, object]], dict[str, int]]:
+    """What the plan buys: one purchase per variant, and its waste reserve.
+
+    D-038: the same bill of materials costs the same here as in ``planearCompra``
+    (TypeScript, the 3D engine and the Taller); the shared fixture
+    ``contracts/domain/v1/golden/cotizacion-unica/`` pins both sides.
+    """
+    packages, for_waste, reserves, reserve_target = _reoptimize_presentations(
+        structures, candidates_by_product, allowlist
+    )
+    purchases, reserve, _allocations = _consolidate(
+        structures, candidate_by_variant, packages, for_waste, reserves, reserve_target
+    )
+    return purchases, reserve
 
 
 def _waste_extra_packages(design_quantity: int, units_per_package: int, packages: int) -> int:
@@ -4663,9 +4561,9 @@ def _material_estimate(resolved: Mapping[str, object]) -> dict[str, object]:
             1, sum(_integer(structure.get("repeticiones")) or 1 for structure in structures)
         ),
     }
-    target_reserve = math.ceil(
-        sum(_integer(line.get("design_quantity")) or 0 for line in balloons) * MERMA
-    )
+    # The same reserve the resolution bought: one per balloon (D-038), not one for the plan.
+    resolved_totals = _mapping(resolved["totales"])
+    target_reserve = _integer(resolved_totals.get("target_waste_reserve")) or 0
     covered = sum(_integer(item.get("waste_reserve")) or 0 for item in purchases)
     required = sum(_integer(item.get("required_quantity")) or 0 for item in purchases)
     purchase_quantity = sum(_integer(item.get("purchase_quantity")) or 0 for item in purchases)
@@ -4686,14 +4584,8 @@ def _material_estimate(resolved: Mapping[str, object]) -> dict[str, object]:
             "target_waste_reserve": target_reserve,
             "covered_waste_reserve": covered,
             "uncovered_waste_reserve": max(0, target_reserve - covered),
-            "natural_package_surplus": sum(
-                max(
-                    0,
-                    (_integer(item.get("purchase_quantity")) or 0)
-                    - (_integer(item.get("design_quantity")) or 0),
-                )
-                for item in purchases
-            ),
+            "natural_package_surplus": _integer(resolved_totals.get("natural_package_surplus"))
+            or 0,
             "required_quantity": required,
             "consumption_cost": sum(
                 _integer(item.get("consumption_cost")) or 0 for item in purchases
@@ -4811,8 +4703,7 @@ def _build_resolved(
     # Consolidating one product+size+color across structures is not gated by
     # PLAN_COST_OPTIMIZER_V2: "each package is bought once" is the quote the
     # customer sees. The flag only gates the commercial alternatives.
-    packages = _reoptimize_presentations(structures, candidates_by_product, allowlist)
-    purchases, reserve, _allocations = _consolidate(structures, candidate_by_variant, packages)
+    purchases, reserve = _buy(structures, candidates_by_product, candidate_by_variant, allowlist)
     for purchase in purchases:
         design = int(cast(int, purchase["design_quantity"]))
         candidate = candidate_by_variant[str(purchase["variant_id"])]

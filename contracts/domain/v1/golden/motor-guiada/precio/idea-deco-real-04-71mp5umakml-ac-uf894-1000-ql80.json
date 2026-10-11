@@ -9,8 +9,8 @@
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 10,
-  "cubierta": 10,
+  "objetivo": 21,
+  "cubierta": 21,
   "sinCubrir": 0
  },
  "pedido": [
@@ -18,7 +18,7 @@
    "formatoId": "R-5",
    "codigo": "530",
    "cantidad": 9,
-   "reserva": 10,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634246201639",
    "variantId": "46594247786791"
@@ -27,7 +27,7 @@
    "formatoId": "R-9",
    "codigo": "530",
    "cantidad": 13,
-   "reserva": 0,
+   "reserva": 2,
    "paquetes": 1,
    "productId": "8634246201639",
    "variantId": "46594247852327"
@@ -36,7 +36,7 @@
    "formatoId": "R-12",
    "codigo": "530",
    "cantidad": 13,
-   "reserva": 0,
+   "reserva": 2,
    "paquetes": 1,
    "productId": "8634246201639",
    "variantId": "46594247950631"
@@ -45,7 +45,7 @@
    "formatoId": "R-5",
    "codigo": "940",
    "cantidad": 5,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634249543975",
    "variantId": "46594250342695"
@@ -54,7 +54,7 @@
    "formatoId": "R-12",
    "codigo": "940",
    "cantidad": 6,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634249543975",
    "variantId": "46594250408231"
@@ -63,7 +63,7 @@
    "formatoId": "R-18",
    "codigo": "940",
    "cantidad": 3,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634249543975",
    "variantId": "46594250473767"
@@ -72,7 +72,7 @@
    "formatoId": "R-24",
    "codigo": "940",
    "cantidad": 1,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634249543975",
    "variantId": "46594250539303"
@@ -81,7 +81,7 @@
    "formatoId": "R-5",
    "codigo": "970",
    "cantidad": 5,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264596775"
@@ -90,7 +90,7 @@
    "formatoId": "R-12",
    "codigo": "970",
    "cantidad": 6,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264662311"
@@ -99,7 +99,7 @@
    "formatoId": "R-18",
    "codigo": "970",
    "cantidad": 3,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264727847"
@@ -108,7 +108,7 @@
    "formatoId": "R-24",
    "codigo": "970",
    "cantidad": 1,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264793383"
@@ -117,7 +117,7 @@
    "formatoId": "R-9",
    "codigo": "970",
    "cantidad": 6,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264858919"
@@ -126,7 +126,7 @@
    "formatoId": "R-5",
    "codigo": "931",
    "cantidad": 5,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634272022823",
    "variantId": "46594294612263"
@@ -135,7 +135,7 @@
    "formatoId": "R-12",
    "codigo": "931",
    "cantidad": 6,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8634272022823",
    "variantId": "46594294677799"
@@ -144,7 +144,7 @@
    "formatoId": "R-12",
    "codigo": "044",
    "cantidad": 10,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8869949341991",
    "variantId": "47230981046567"
@@ -153,7 +153,7 @@
    "formatoId": "R-5",
    "codigo": "044",
    "cantidad": 8,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8869949341991",
    "variantId": "47466206953767"
@@ -162,7 +162,7 @@
    "formatoId": "R-9",
    "codigo": "044",
    "cantidad": 10,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8869949341991",
    "variantId": "47466206986535"
@@ -171,7 +171,7 @@
    "formatoId": "R-24",
    "codigo": "044",
    "cantidad": 1,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8869949341991",
    "variantId": "47466208133415"
@@ -180,7 +180,7 @@
    "formatoId": "R-18",
    "codigo": "044",
    "cantidad": 4,
-   "reserva": 0,
+   "reserva": 1,
    "paquetes": 1,
    "productId": "8869949341991",
    "variantId": "47466210656551"

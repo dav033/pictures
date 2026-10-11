@@ -1,0 +1,51 @@
+{
+ "caso": "deco-real-29-python",
+ "origen": "python",
+ "idea": "deco-real-29-arco-link-o-loon-fucsia-tulipanes",
+ "snapshot": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+ "lineas": [
+  {
+   "formatoId": "R-12",
+   "codigo": "012",
+   "cantidad": 30,
+   "productId": "8634239451431",
+   "color": "fucsia",
+   "diamPulg": 12,
+   "presentaciones": [
+    {
+     "variantId": "46594234548519",
+     "unidadesPaq": 12,
+     "precio": 3963
+    },
+    {
+     "variantId": "46594234581287",
+     "unidadesPaq": 20,
+     "precio": 6029
+    },
+    {
+     "variantId": "46594234614055",
+     "unidadesPaq": 50,
+     "precio": 13037
+    }
+   ]
+  }
+ ],
+ "esperado": {
+  "total": 11889,
+  "reserva": {
+   "objetivo": 3,
+   "cubierta": 3,
+   "sinCubrir": 0,
+   "excedenteNatural": 6
+  },
+  "compras": [
+   {
+    "variantId": "46594234548519",
+    "paquetes": 3,
+    "cantidad": 30,
+    "reserva": 3,
+    "paraReserva": true
+   }
+  ]
+ }
+}

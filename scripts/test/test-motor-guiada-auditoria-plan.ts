@@ -23,7 +23,8 @@ import { armarDesdeEspec, cotizarBom, crearCachePiezas, crosswalkIncluido, type 
 import { PlanGuiadoSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1";
 import { filaDeCotizacionDeIdea, registrarAuditoriaPlan3d, type FilaAuditoriaPlan3d } from "../../src/lib/guiada-motor/auditoria-plan";
 import { cotizarIdeaConMotor } from "../../src/lib/guiada-motor/cotizar-idea";
-import { decidirCotizacionDelCarrusel } from "../../src/lib/guiada-motor/carrusel";
+import { costearDecoracion, type DependenciasCosteo } from "../../src/lib/guiada-motor/costear-idea";
+import { cotizarIdeaConPython } from "../../src/lib/guiada-motor/cotizar-idea-python";
 import { atenderEditarMotor, type DependenciasEditarMotor } from "../../src/lib/guiada-motor/editar-motor";
 import { atenderPlanMotor, type DependenciasPlanMotor } from "../../src/lib/guiada-motor/plan-motor";
 import { crearTopePorNavegador } from "../../src/lib/guiada-motor/tope-imagenes-navegador";
@@ -411,15 +412,31 @@ test("las rutas escriben con `registrarAuditoriaPlan3d` (el tipo exige la depend
 
 const doble = pythonDoble(cruce);
 const cotizarIdea = (ideaId: string) => cotizarIdeaConMotor(ideaId, { planGuardado: planGuardadoDeIdea, crosswalk: async () => cruce, cotizarLista: doble.cotizarLista });
+const HASH_PYTHON = "b".repeat(64);
+const cotizacionPython = { lineas: [{ id: "v1", tamano: "R-12", cantidadNecesaria: 10, disponible: true, varianteId: "v1", nombre: "Globo", precioPaquete: 3963, unidadesPaquete: 12, paquetes: 1, subtotal: 3963, sobrante: 2 }], total: 3963, mermaPorcentaje: 8, incluyeIva: true, complementosSoportados: false as const, plan_hash: HASH_PYTHON };
+/** El costeo de la ruta, con Python sustituido por dobles: lo que decide es lo que la fila cuenta. */
+function depsCosteo(motor: "3d" | "python" | "sin_bandera", extra: Partial<DependenciasCosteo> = {}): DependenciasCosteo {
+  return {
+    leerMotor: async () => { if (motor === "sin_bandera") throw new Error("sin base"); return motor; },
+    tienePlanGuardado: async (id) => planGuardadoDeIdea(id) !== null,
+    cotizarConMotor: cotizarIdea,
+    cotizarConPython: (id) => cotizarIdeaConPython(id, { planGuardado: planGuardadoDeIdea, resolver: async () => ({ cotizacion: cotizacionPython }) }),
+    cotizarLista: doble.cotizarLista,
+    auditar: () => undefined,
+    ...extra,
+  };
+}
+const costear = async (ideaId: string, deps: DependenciasCosteo) => (await costearDecoracion({ id: ideaId, materiales: [] }, "personal", deps)).decision;
 
-test("el precio de una idea con el motor 3D deja COTIZACION_IDEA_3D con el total y las variantes", async () => {
-  const decision = await decidirCotizacionDelCarrusel(IDEA, { leerMotor: async () => "3d", cotizarConMotor: cotizarIdea });
+test("el precio de una idea con el motor 3D deja COTIZACION_IDEA_3D con el total, las variantes y el hash del plan", async () => {
+  const decision = await costear(IDEA, depsCosteo("3d"));
   assert.equal(decision.usar, "motor");
-  const fila = filaDeCotizacionDeIdea(decision, IDEA, "00000000-0000-4000-8000-0000000000aa", "/api/asistente-guiado")!;
+  const fila = filaDeCotizacionDeIdea(decision, IDEA, "00000000-0000-4000-8000-0000000000aa", "/api/asistente-guiado");
   assert.equal(fila.estado, "COTIZACION_IDEA_3D");
   assert.equal(fila.superficie, "/api/asistente-guiado");
   assert.deepEqual(fila.pedido, { idea_id: IDEA });
   assert.ok(fila.totalCop && fila.totalCop > 0 && fila.compras && fila.compras.length > 0);
+  assert.match(fila.planHash ?? "", /^[0-9a-f]{64}$/);
   const base = baseDoble();
   await registrarAuditoriaPlan3d(fila, { pool: base.pool });
   const guardada = filaInsertada(base.consultas[0]!);
@@ -427,15 +444,23 @@ test("el precio de una idea con el motor 3D deja COTIZACION_IDEA_3D con el total
   assert.equal(guardada.cost_chosen_cop, fila.totalCop);
 });
 
-test("si el 3D no cotiza la idea y se usa la lista curada, queda COTIZACION_IDEA_FALLBACK; con la bandera en python no hubo decisión y no hay fila", async () => {
-  const sinPlan = await decidirCotizacionDelCarrusel("deco-real-21-no-tiene-plan", { leerMotor: async () => "3d", cotizarConMotor: cotizarIdea });
-  assert.equal(sinPlan.usar, "curada");
-  const fila = filaDeCotizacionDeIdea(sinPlan, "deco-real-21-no-tiene-plan", "00000000-0000-4000-8000-0000000000bb", "/api/asistente-guiado")!;
-  assert.deepEqual([fila.estado, fila.error, fila.motor.efectivo], ["COTIZACION_IDEA_FALLBACK", "sin_plan_guardado", "python"]);
-  const sinLeer = await decidirCotizacionDelCarrusel(IDEA, { leerMotor: async () => { throw new Error("sin base"); }, cotizarConMotor: cotizarIdea });
-  const filaSinLeer = filaDeCotizacionDeIdea(sinLeer, IDEA, "00000000-0000-4000-8000-0000000000dd", "/api/asistente-guiado")!;
-  assert.equal(filaSinLeer.motor.bandera, null, "no se leyó la bandera: la fila no dice que era 3d");
-  assert.deepEqual(filaSinLeer.resultado, { accion: "cotizacion_idea", motor: "python", razon: "no_se_pudo_leer_la_bandera" });
-  const python = await decidirCotizacionDelCarrusel(IDEA, { leerMotor: async () => "python", cotizarConMotor: cotizarIdea });
-  assert.equal(filaDeCotizacionDeIdea(python, IDEA, "00000000-0000-4000-8000-0000000000cc", "/api/asistente-guiado"), null);
+test("cada «¿cuánto cuesta?» deja su fila (D-038): plan de Python, lista curada y sin precio, sin texto del cliente", async () => {
+  // Bandera en python: el plan de Python de la idea guardada, con su total y su hash.
+  const python = filaDeCotizacionDeIdea(await costear(IDEA, depsCosteo("python")), IDEA, "00000000-0000-4000-8000-0000000000cc", "/api/asistente-guiado");
+  assert.deepEqual([python.estado, python.motor.bandera, python.motor.efectivo, python.totalCop, python.planHash, python.error], ["COTIZACION_IDEA_PYTHON", "python", "python", 3963, HASH_PYTHON, undefined]);
+  // Sin leer la bandera: también el plan de Python, y la fila no dice que la bandera era 3d.
+  const sinLeer = filaDeCotizacionDeIdea(await costear(IDEA, depsCosteo("sin_bandera")), IDEA, "00000000-0000-4000-8000-0000000000dd", "/api/asistente-guiado");
+  assert.equal(sinLeer.motor.bandera, null, "no se leyó la bandera: la fila no dice que era 3d");
+  assert.deepEqual(sinLeer.resultado, { accion: "cotizacion_idea", motor: "python", razon: "no_se_pudo_leer_la_bandera", globos: 10, lineas: 1 });
+  // El 3D no arma la idea: cae al plan de Python, como el plan, y la fila dice por qué.
+  const centroDeMesa = "deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1";
+  const cae = filaDeCotizacionDeIdea(await costear(centroDeMesa, depsCosteo("3d")), centroDeMesa, "00000000-0000-4000-8000-0000000000ee", "/api/asistente-guiado");
+  assert.deepEqual([cae.estado, cae.error, cae.motor.bandera, cae.motor.efectivo], ["COTIZACION_IDEA_FALLBACK", "no_representable", "3d", "python"]);
+  // Sin plan guardado (las figuras): la lista curada.
+  const sinPlan = filaDeCotizacionDeIdea(await costear("deco-real-21-no-tiene-plan", depsCosteo("3d")), "deco-real-21-no-tiene-plan", "00000000-0000-4000-8000-0000000000bb", "/api/asistente-guiado");
+  assert.deepEqual([sinPlan.estado, sinPlan.error, sinPlan.motor.efectivo], ["COTIZACION_IDEA_FALLBACK", "sin_plan_guardado", "python"]);
+  // Sin precio: la fila lo dice con un código, nunca con el detalle del error ni el aviso al cliente.
+  const sinPrecio = filaDeCotizacionDeIdea(await costear(IDEA, depsCosteo("python", { cotizarConPython: async () => { throw new Error(PRIVADO); } })), IDEA, "00000000-0000-4000-8000-0000000000ff", "/api/asistente-guiado");
+  assert.deepEqual([sinPrecio.estado, sinPrecio.error, sinPrecio.motor.efectivo], ["COTIZACION_IDEA_SIN_PRECIO", "error_de_python", "ninguno"]);
+  for (const fila of [python, sinLeer, cae, sinPlan, sinPrecio]) assert.doesNotMatch(JSON.stringify(fila), new RegExp(`${PRIVADO}|No pude|Precio de los materiales`));
 });

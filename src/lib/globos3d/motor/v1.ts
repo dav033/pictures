@@ -33,6 +33,8 @@ export { MERMA, MERMA_PORCENTAJE, cantidadConMerma } from "./merma";
 export { crosswalkEnVivo, crosswalkIncluido, snapshotPublicado } from "./crosswalk-vigente";
 export { POLITICA_PAQUETES, POLITICAS_PAQUETES, planearCompra, type PoliticaPaquetes, type ReservaPlan } from "./plan-de-compra";
 export { cotizarBom, type CompraMotor, type CotizacionDelMotor, type DependenciasCotizacion, type FalloCotizacion, type ResultadoCotizacionBom } from "./cotizar-bom";
+// La lista de materiales sumada por formato y código, para quien cotiza una lista que no armó el motor (el Taller, D-038).
+export { sumarLineas } from "./bom";
 export { sobreDelMotor, SobreMotorSchema, type EntradaSobre, type PlanGuiadoMotor, type SobreDelMotor } from "./plan-guiado-desde-motor";
 export type { ConceptoPlan } from "./proyeccion-plan";
 // Vista (fase 3): la armada compacta proyectada a SVG, para el cliente sin WebGL.

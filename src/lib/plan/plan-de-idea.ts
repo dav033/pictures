@@ -119,3 +119,12 @@ export function planConIdea(idea: PlanDecoracion, base: PlanDecoracion | null, o
   if (!valido.success) return { ok: false, motivo: "esquema", detalle: valido.error.issues.map((issue) => issue.message).join("; ") };
   return { ok: true, plan: valido.data, nuevas, separadas: separado.separadas.length, renombradas: separado.renombradas.length + nombrado.renombradas.length };
 }
+
+/**
+ * Lo que se le pide a Python para UNA idea sola: el plan de la idea, su allowlist y su snapshot. Lo usan «Crear mi plan con
+ * esta idea» (`planDesdeIdea` sin base) y su «¿cuánto cuesta?» (`cotizarIdeaConPython`): la misma petición da el mismo
+ * plan y el mismo total, así que la tarjeta cuesta lo que el plan (D-038).
+ */
+export function pedidoDeIdeaSola(guardado: PlanIdeaGuardado): { combinado: PlanConIdea; allowlist: EntradaAllowlist[]; catalogSnapshotId: string } {
+  return { combinado: planConIdea(guardado.plan, null), allowlist: guardado.allowlist, catalogSnapshotId: guardado.snapshot };
+}

@@ -4,7 +4,7 @@ import type { Pool } from "pg";
 import { getRagPool } from "@/lib/rag/db";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { avisar, contextoActual, registrarError } from "@/lib/registro";
-import type { DecisionCarrusel } from "./carrusel";
+import type { DecisionCosteo } from "./costear-idea";
 
 /**
  * Auditoría DURABLE de lo que decide el motor 3D de la vista guiada (plan nuevo, cambios del cliente, «¿cuánto cuesta?» de una
@@ -26,7 +26,9 @@ export const ESTADOS_AUDITORIA_3D = [
   "PLAN_3D_FALLBACK",
   "PLAN_3D_EDICION_RECHAZADA",
   "COTIZACION_IDEA_3D",
+  "COTIZACION_IDEA_PYTHON",
   "COTIZACION_IDEA_FALLBACK",
+  "COTIZACION_IDEA_SIN_PRECIO",
 ] as const;
 export type EstadoAuditoria3d = (typeof ESTADOS_AUDITORIA_3D)[number];
 
@@ -175,31 +177,54 @@ export async function registrarAuditoriaPlan3d(fila: FilaAuditoriaPlan3d, opcion
   if (!(await esperarConPlazo(escritura, opciones.plazoMs ?? PLAZO_ESCRITURA_MS))) sinGuardar("guiada_motor.auditoria_plan_lenta", fila, avisarFallo);
 }
 
-/** La fila de «¿cuánto cuesta?» de una idea del carrusel: lo que cotizó el motor 3D, o por qué se quedó con la lista curada. `null` si la bandera estaba en `python` (no hubo decisión del 3D). */
-export function filaDeCotizacionDeIdea(decision: DecisionCarrusel, ideaId: string, requestId: string, superficie: string): FilaAuditoriaPlan3d | null {
+type CotizacionAuditada = { total: number; lineas: ReadonlyArray<{ varianteId: string; paquetes: number; subtotal: number }> };
+
+const deLaCotizacion = (cotizacion: CotizacionAuditada | null) => (cotizacion
+  ? { totalCop: cotizacion.total, compras: cotizacion.lineas.map((linea) => ({ variantId: linea.varianteId, paquetes: linea.paquetes, subtotal: linea.subtotal })) }
+  : {});
+
+/**
+ * La fila de cada «¿cuánto cuesta?» de una idea del carrusel (D-038), con lo que decidió el costeo: el plan del motor 3D
+ * (`COTIZACION_IDEA_3D`), el plan de Python de la idea guardada con la bandera en `python` (`COTIZACION_IDEA_PYTHON`) o
+ * porque el 3D no la arma (`COTIZACION_IDEA_FALLBACK`, con la razón), la lista curada de lo que no tiene plan guardado
+ * (`COTIZACION_IDEA_FALLBACK`, `sin_plan_guardado`) o ningún precio (`COTIZACION_IDEA_SIN_PRECIO`). Solo códigos, el
+ * total, las variantes y el hash del plan: nunca el texto de un aviso ni el detalle de un error.
+ */
+export function filaDeCotizacionDeIdea(decision: DecisionCosteo, ideaId: string, requestId: string, superficie: string): FilaAuditoriaPlan3d {
   const pedido = { idea_id: codigoSeguro(ideaId) };
+  const base = { requestId, superficie, pedido };
   if (decision.usar === "motor") {
-    const { cotizacion, globos, avisos } = decision.resultado;
+    const { cotizacion, globos, avisos, planHash } = decision.resultado;
+    const hash = planHash ? hashSeguro(planHash) : undefined;
     return {
-      requestId,
-      estado: "COTIZACION_IDEA_3D",
-      superficie,
-      pedido,
+      ...base, estado: "COTIZACION_IDEA_3D", ...(hash ? { planHash: hash } : {}),
       resultado: { accion: "cotizacion_idea", motor: "3d", globos, lineas: cotizacion.lineas.length, avisos: avisos.length },
-      motor: { bandera: "3d", efectivo: "3d" },
-      totalCop: cotizacion.total,
-      compras: cotizacion.lineas.map((linea) => ({ variantId: linea.varianteId, paquetes: linea.paquetes, subtotal: linea.subtotal })),
+      motor: { bandera: "3d", efectivo: "3d" }, ...deLaCotizacion(cotizacion),
     };
   }
-  if (decision.motivo === "bandera_python") return null;
+  if (decision.usar === "plan_python") {
+    const { cotizacion, globos, planHash } = decision.resultado;
+    const hash = planHash ? hashSeguro(planHash) : undefined;
+    const porLaBandera = decision.motivo === "bandera_python" || decision.motivo === "no_se_pudo_leer_la_bandera";
+    // Sin leer la bandera no se sabe qué decía; con otra razón, el 3D la intentó (bandera en `3d`).
+    const bandera = decision.motivo === "bandera_python" ? "python" : decision.motivo === "no_se_pudo_leer_la_bandera" ? null : "3d";
+    return {
+      ...base, estado: porLaBandera ? "COTIZACION_IDEA_PYTHON" : "COTIZACION_IDEA_FALLBACK", ...(hash ? { planHash: hash } : {}),
+      resultado: { accion: "cotizacion_idea", motor: "python", razon: codigoSeguro(decision.motivo), globos, lineas: cotizacion.lineas.length },
+      motor: { bandera, efectivo: "python" }, ...deLaCotizacion(cotizacion),
+      ...(porLaBandera ? {} : { error: codigoSeguro(decision.motivo) }),
+    };
+  }
+  if (decision.usar === "curada") {
+    return {
+      ...base, estado: "COTIZACION_IDEA_FALLBACK",
+      resultado: { accion: "cotizacion_idea", motor: "python", razon: decision.motivo },
+      motor: { bandera: null, efectivo: "python" }, ...deLaCotizacion(decision.cotizacion), error: decision.motivo,
+    };
+  }
   return {
-    requestId,
-    estado: "COTIZACION_IDEA_FALLBACK",
-    superficie,
-    pedido,
-    resultado: { accion: "cotizacion_idea", motor: "python", razon: decision.motivo },
-    // Sin leer la bandera no se sabe qué decía; el resto de razones se dieron con ella en `3d`.
-    motor: { bandera: decision.motivo === "no_se_pudo_leer_la_bandera" ? null : "3d", efectivo: "python" },
-    error: decision.motivo,
+    ...base, estado: "COTIZACION_IDEA_SIN_PRECIO",
+    resultado: { accion: "cotizacion_idea", motor: "ninguno", razon: codigoSeguro(decision.motivo) },
+    motor: { efectivo: "ninguno" }, error: codigoSeguro(decision.motivo),
   };
 }

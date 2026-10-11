@@ -82,11 +82,14 @@ async def test_same_product_size_color_is_bought_once_across_structures(
     resolved = await _resolve_vector("16-compras-consolidadas-presentaciones.json")
     purchases = cast(list[dict[str, object]], resolved["compras"])
     by_variant = {str(item["variant_id"]): item for item in purchases}
-    # Before: 3 x12 + 2 x20 of blue and 2 x12 + 1 x50 of silver, 72 310 COP.
-    assert cast(dict[str, object], resolved["totales"])["total_cop"] == 65515
-    assert by_variant["V-AZUL-12-X12"]["estructuras"] == ["EST_01_ARCO", "EST_02_COLUMNAS"]
-    assert by_variant["V-AZUL-12-X20"]["paquetes"] == 1
-    assert by_variant["V-PLATA-12-X50"]["estructuras"] == ["EST_01_ARCO", "EST_02_COLUMNAS"]
+    # Before: 3 x12 + 2 x20 of blue and 2 x12 + 1 x50 of silver, 72 310 COP, bought per
+    # structure. Consolidated with one reserve for the plan it was 65 515. Since D-038 each
+    # balloon carries its own reserve and is bought once with it: blue 66 + 6 in 1 x12 +
+    # 3 x20, silver 59 + 5 in 2 x12 + 1 x50, 70 273 COP.
+    assert cast(dict[str, object], resolved["totales"])["total_cop"] == 70273
+    assert by_variant["V-AZUL-12-X20"]["estructuras"] == ["EST_01_ARCO", "EST_02_COLUMNAS"]
+    assert by_variant["V-AZUL-12-X20"]["paquetes"] == 3
+    assert by_variant["V-PLATA-12-X12"]["estructuras"] == ["EST_01_ARCO", "EST_02_COLUMNAS"]
     # Traceability: every structure line points at a purchase and the units per
     # structure do not change.
     units = {

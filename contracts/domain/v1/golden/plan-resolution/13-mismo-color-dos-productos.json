@@ -570,45 +570,45 @@
       "purchases": [
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 3600,
+          "consumption_cost": 3240,
           "design_quantity": 16,
-          "leftover_inventory": 30,
-          "operational_surplus": 30,
+          "leftover_inventory": 32,
+          "operational_surplus": 32,
           "package_count": 1,
           "potential_surplus": 34,
           "product_id": "P-BLUE-PASTEL",
           "purchase_cost": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 20,
+          "required_quantity": 18,
           "units_per_package": 50,
           "used": 16,
           "variant_id": "V-BLUE-PASTEL-12",
-          "waste_adjusted_quantity": 20,
-          "waste_reserve": 4
+          "waste_adjusted_quantity": 18,
+          "waste_reserve": 2
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 5520,
+          "consumption_cost": 6000,
           "design_quantity": 23,
-          "leftover_inventory": 27,
-          "operational_surplus": 27,
+          "leftover_inventory": 25,
+          "operational_surplus": 25,
           "package_count": 1,
           "potential_surplus": 27,
           "product_id": "P-BLUE-REFLEX",
           "purchase_cost": 12000,
           "purchase_quantity": 50,
-          "required_quantity": 23,
+          "required_quantity": 25,
           "units_per_package": 50,
           "used": 23,
           "variant_id": "V-BLUE-REFLEX-12",
-          "waste_adjusted_quantity": 23,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 25,
+          "waste_reserve": 2
         }
       ],
       "special_elements": [],
       "totals": {
         "additional_waste_packages": 0,
-        "consumption_cost": 9120,
+        "consumption_cost": 9240,
         "covered_waste_reserve": 4,
         "design_quantity": 39,
         "natural_package_surplus": 61,
@@ -651,7 +651,7 @@
         {
           "additional_package_for_waste": false,
           "color": "azul",
-          "consumption_cost": 3600,
+          "consumption_cost": 3240,
           "design_quantity": 16,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -665,13 +665,13 @@
           ],
           "imagen": "https://cdn.example.test/v-blue-pastel-12.jpg",
           "inventory_quantity": 200,
-          "leftover_inventory": 30,
+          "leftover_inventory": 32,
           "paquetes": 1,
           "precio_paquete": 9000,
           "product_id": "P-BLUE-PASTEL",
           "purchase_cost": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 20,
+          "required_quantity": 18,
           "sku": "SKU-V-BLUE-PASTEL-12",
           "sku_original": "SHOP-V-BLUE-PASTEL-12",
           "sobrante": 34,
@@ -680,18 +680,18 @@
           "subtotal": 9000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex azul pastel — R-12",
-          "unidades_con_merma": 20,
+          "unidades_con_merma": 18,
           "unidades_inferidas": false,
           "unidades_necesarias": 16,
           "unidades_paquete": 50,
           "used": 16,
           "variant_id": "V-BLUE-PASTEL-12",
-          "waste_reserve": 4
+          "waste_reserve": 2
         },
         {
           "additional_package_for_waste": false,
           "color": "azul",
-          "consumption_cost": 5520,
+          "consumption_cost": 6000,
           "design_quantity": 23,
           "diam_pulg": 12.0,
           "elementos_origen": [
@@ -705,13 +705,13 @@
           ],
           "imagen": "https://cdn.example.test/v-blue-reflex-12.jpg",
           "inventory_quantity": 200,
-          "leftover_inventory": 27,
+          "leftover_inventory": 25,
           "paquetes": 1,
           "precio_paquete": 12000,
           "product_id": "P-BLUE-REFLEX",
           "purchase_cost": 12000,
           "purchase_quantity": 50,
-          "required_quantity": 23,
+          "required_quantity": 25,
           "sku": "SKU-V-BLUE-REFLEX-12",
           "sku_original": "SHOP-V-BLUE-REFLEX-12",
           "sobrante": 27,
@@ -720,13 +720,13 @@
           "subtotal": 12000,
           "tamano_codigo": "R-12",
           "titulo": "Globo latex azul reflex — R-12",
-          "unidades_con_merma": 23,
+          "unidades_con_merma": 25,
           "unidades_inferidas": false,
           "unidades_necesarias": 23,
           "unidades_paquete": 50,
           "used": 23,
           "variant_id": "V-BLUE-REFLEX-12",
-          "waste_reserve": 0
+          "waste_reserve": 2
         }
       ],
       "costes_por_estructura": [
@@ -857,7 +857,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "5190a3e609962f4179857cccf2898a072c75033115b219714b9a1f9991ac60a4",
+      "plan_hash": "0472a73cdb8a320f62e6e6aefd33c384b5362afebf30efd4f9ffbdcc9a64cc06",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -865,7 +865,7 @@
       "totales": {
         "additional_waste_packages": 0,
         "ahorro_paquetes_cop": 0,
-        "consumption_cost": 9120,
+        "consumption_cost": 9240,
         "covered_waste_reserve": 4,
         "design_quantity": 39,
         "globos_por_tamano": {
@@ -883,7 +883,7 @@
       }
     },
     "quote": {
-      "consumption_cost_cop": 9120,
+      "consumption_cost_cop": 9240,
       "covered_waste_reserve": 4,
       "currency": "COP",
       "includes_vat": true,
@@ -892,11 +892,11 @@
         {
           "available": true,
           "color": "azul",
-          "consumption_cost_cop": 3600,
+          "consumption_cost_cop": 3240,
           "design_quantity": 16,
           "diameter_inches": 12.0,
           "id": "V-BLUE-PASTEL-12",
-          "leftover_inventory": 30,
+          "leftover_inventory": 32,
           "origins": [
             {
               "id": "EST_01_COLUMNA",
@@ -908,7 +908,7 @@
           "product_id": "P-BLUE-PASTEL",
           "purchase_cost_cop": 9000,
           "purchase_quantity": 50,
-          "required_quantity": 20,
+          "required_quantity": 18,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -920,16 +920,16 @@
           "units_per_package": 50,
           "used": 16,
           "variant_id": "V-BLUE-PASTEL-12",
-          "waste_reserve": 4
+          "waste_reserve": 2
         },
         {
           "available": true,
           "color": "azul",
-          "consumption_cost_cop": 5520,
+          "consumption_cost_cop": 6000,
           "design_quantity": 23,
           "diameter_inches": 12.0,
           "id": "V-BLUE-REFLEX-12",
-          "leftover_inventory": 27,
+          "leftover_inventory": 25,
           "origins": [
             {
               "id": "EST_01_COLUMNA",
@@ -941,7 +941,7 @@
           "product_id": "P-BLUE-REFLEX",
           "purchase_cost_cop": 12000,
           "purchase_quantity": 50,
-          "required_quantity": 23,
+          "required_quantity": 25,
           "size": "R-12",
           "size_code": "R-12",
           "structures": [
@@ -953,10 +953,10 @@
           "units_per_package": 50,
           "used": 23,
           "variant_id": "V-BLUE-REFLEX-12",
-          "waste_reserve": 0
+          "waste_reserve": 2
         }
       ],
-      "plan_hash": "5190a3e609962f4179857cccf2898a072c75033115b219714b9a1f9991ac60a4",
+      "plan_hash": "0472a73cdb8a320f62e6e6aefd33c384b5362afebf30efd4f9ffbdcc9a64cc06",
       "purchase_cost_cop": 21000,
       "schema_version": "quote.v1",
       "supported_complements": false,

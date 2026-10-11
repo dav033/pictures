@@ -1269,74 +1269,74 @@
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 320,
+          "consumption_cost": 480,
           "design_quantity": 2,
-          "leftover_inventory": 48,
-          "operational_surplus": 48,
+          "leftover_inventory": 47,
+          "operational_surplus": 47,
           "package_count": 1,
           "potential_surplus": 48,
           "product_id": "P-F14-BLANCO",
           "purchase_cost": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 2,
+          "required_quantity": 3,
           "units_per_package": 50,
           "used": 2,
           "variant_id": "V-F14-BLANCO-9",
-          "waste_adjusted_quantity": 2,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 3,
+          "waste_reserve": 1
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 320,
+          "consumption_cost": 480,
           "design_quantity": 2,
-          "leftover_inventory": 48,
-          "operational_surplus": 48,
+          "leftover_inventory": 47,
+          "operational_surplus": 47,
           "package_count": 1,
           "potential_surplus": 48,
           "product_id": "P-F14-NARANJA",
           "purchase_cost": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 2,
+          "required_quantity": 3,
           "units_per_package": 50,
           "used": 2,
           "variant_id": "V-F14-NARANJA-9",
-          "waste_adjusted_quantity": 2,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 3,
+          "waste_reserve": 1
         },
         {
           "additional_package_for_waste": false,
-          "consumption_cost": 640,
+          "consumption_cost": 800,
           "design_quantity": 4,
-          "leftover_inventory": 46,
-          "operational_surplus": 46,
+          "leftover_inventory": 45,
+          "operational_surplus": 45,
           "package_count": 1,
           "potential_surplus": 46,
           "product_id": "P-F14-NEGRO",
           "purchase_cost": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 4,
+          "required_quantity": 5,
           "units_per_package": 50,
           "used": 4,
           "variant_id": "V-F14-NEGRO-9",
-          "waste_adjusted_quantity": 4,
-          "waste_reserve": 0
+          "waste_adjusted_quantity": 5,
+          "waste_reserve": 1
         }
       ],
       "special_elements": [],
       "totals": {
         "additional_waste_packages": 0,
-        "consumption_cost": 1760,
-        "covered_waste_reserve": 1,
+        "consumption_cost": 2240,
+        "covered_waste_reserve": 4,
         "design_quantity": 10,
         "natural_package_surplus": 190,
-        "operational_surplus": 189,
+        "operational_surplus": 186,
         "potential_surplus": 190,
         "purchase_cost": 32000,
         "purchase_quantity": 200,
-        "required_quantity": 11,
-        "target_waste_reserve": 1,
+        "required_quantity": 14,
+        "target_waste_reserve": 4,
         "uncovered_waste_reserve": 0,
-        "waste_adjusted_quantity": 11,
+        "waste_adjusted_quantity": 14,
         "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
@@ -1409,7 +1409,7 @@
         {
           "additional_package_for_waste": false,
           "color": "blanco",
-          "consumption_cost": 320,
+          "consumption_cost": 480,
           "design_quantity": 2,
           "diam_pulg": 9.0,
           "elementos_origen": [
@@ -1428,13 +1428,13 @@
           ],
           "imagen": "https://cdn.example.test/blanco-9.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 48,
+          "leftover_inventory": 47,
           "paquetes": 1,
           "precio_paquete": 8000,
           "product_id": "P-F14-BLANCO",
           "purchase_cost": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 2,
+          "required_quantity": 3,
           "sku": "SKU-BLANCO-9",
           "sku_original": "SHOP-BLANCO-9",
           "sobrante": 48,
@@ -1443,18 +1443,18 @@
           "subtotal": 8000,
           "tamano_codigo": "R-9",
           "titulo": "Globo latex blanco — R-9",
-          "unidades_con_merma": 2,
+          "unidades_con_merma": 3,
           "unidades_inferidas": false,
           "unidades_necesarias": 2,
           "unidades_paquete": 50,
           "used": 2,
           "variant_id": "V-F14-BLANCO-9",
-          "waste_reserve": 0
+          "waste_reserve": 1
         },
         {
           "additional_package_for_waste": false,
           "color": "naranja",
-          "consumption_cost": 320,
+          "consumption_cost": 480,
           "design_quantity": 2,
           "diam_pulg": 9.0,
           "elementos_origen": [
@@ -1473,13 +1473,13 @@
           ],
           "imagen": "https://cdn.example.test/naranja-9.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 48,
+          "leftover_inventory": 47,
           "paquetes": 1,
           "precio_paquete": 8000,
           "product_id": "P-F14-NARANJA",
           "purchase_cost": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 2,
+          "required_quantity": 3,
           "sku": "SKU-NARANJA-9",
           "sku_original": "SHOP-NARANJA-9",
           "sobrante": 48,
@@ -1488,18 +1488,18 @@
           "subtotal": 8000,
           "tamano_codigo": "R-9",
           "titulo": "Globo latex naranja — R-9",
-          "unidades_con_merma": 2,
+          "unidades_con_merma": 3,
           "unidades_inferidas": false,
           "unidades_necesarias": 2,
           "unidades_paquete": 50,
           "used": 2,
           "variant_id": "V-F14-NARANJA-9",
-          "waste_reserve": 0
+          "waste_reserve": 1
         },
         {
           "additional_package_for_waste": false,
           "color": "negro",
-          "consumption_cost": 640,
+          "consumption_cost": 800,
           "design_quantity": 4,
           "diam_pulg": 9.0,
           "elementos_origen": [
@@ -1518,13 +1518,13 @@
           ],
           "imagen": "https://cdn.example.test/negro-9.jpg",
           "inventory_quantity": 500,
-          "leftover_inventory": 46,
+          "leftover_inventory": 45,
           "paquetes": 1,
           "precio_paquete": 8000,
           "product_id": "P-F14-NEGRO",
           "purchase_cost": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 4,
+          "required_quantity": 5,
           "sku": "SKU-NEGRO-9",
           "sku_original": "SHOP-NEGRO-9",
           "sobrante": 46,
@@ -1533,13 +1533,13 @@
           "subtotal": 8000,
           "tamano_codigo": "R-9",
           "titulo": "Globo latex negro — R-9",
-          "unidades_con_merma": 4,
+          "unidades_con_merma": 5,
           "unidades_inferidas": false,
           "unidades_necesarias": 4,
           "unidades_paquete": 50,
           "used": 4,
           "variant_id": "V-F14-NEGRO-9",
-          "waste_reserve": 0
+          "waste_reserve": 1
         }
       ],
       "costes_por_estructura": [
@@ -1905,7 +1905,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "a11d9a0d23fd1cf0b29170a253aa07fcbb01cca68991a451f190fc7401072ef8",
+      "plan_hash": "c49c07ad313885063bd2bcd92c4ff441aadc15d5c14bf809d4040abb3d8fda0a",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -1913,8 +1913,8 @@
       "totales": {
         "additional_waste_packages": 0,
         "ahorro_paquetes_cop": 32000,
-        "consumption_cost": 1760,
-        "covered_waste_reserve": 1,
+        "consumption_cost": 2240,
+        "covered_waste_reserve": 4,
         "design_quantity": 10,
         "globos_por_tamano": {
           "R-9": 10
@@ -1923,7 +1923,7 @@
         "merma_porcentaje": 8.0,
         "natural_package_surplus": 190,
         "purchase_cost": 32000,
-        "target_waste_reserve": 1,
+        "target_waste_reserve": 4,
         "total_cop": 32000,
         "total_unidades": 10,
         "uncovered_waste_reserve": 0,
@@ -1931,11 +1931,11 @@
       }
     },
     "quote": {
-      "consumption_cost_cop": 1760,
-      "covered_waste_reserve": 1,
+      "consumption_cost_cop": 2240,
+      "covered_waste_reserve": 4,
       "currency": "COP",
       "includes_vat": true,
-      "leftover_inventory": 189,
+      "leftover_inventory": 186,
       "lines": [
         {
           "available": true,
@@ -1978,11 +1978,11 @@
         {
           "available": true,
           "color": "blanco",
-          "consumption_cost_cop": 320,
+          "consumption_cost_cop": 480,
           "design_quantity": 2,
           "diameter_inches": 9.0,
           "id": "V-F14-BLANCO-9",
-          "leftover_inventory": 48,
+          "leftover_inventory": 47,
           "origins": [
             {
               "id": "EST_01_FIGURA",
@@ -1998,7 +1998,7 @@
           "product_id": "P-F14-BLANCO",
           "purchase_cost_cop": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 2,
+          "required_quantity": 3,
           "size": "R-9",
           "size_code": "R-9",
           "structures": [
@@ -2011,16 +2011,16 @@
           "units_per_package": 50,
           "used": 2,
           "variant_id": "V-F14-BLANCO-9",
-          "waste_reserve": 0
+          "waste_reserve": 1
         },
         {
           "available": true,
           "color": "naranja",
-          "consumption_cost_cop": 320,
+          "consumption_cost_cop": 480,
           "design_quantity": 2,
           "diameter_inches": 9.0,
           "id": "V-F14-NARANJA-9",
-          "leftover_inventory": 48,
+          "leftover_inventory": 47,
           "origins": [
             {
               "id": "EST_01_FIGURA",
@@ -2036,7 +2036,7 @@
           "product_id": "P-F14-NARANJA",
           "purchase_cost_cop": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 2,
+          "required_quantity": 3,
           "size": "R-9",
           "size_code": "R-9",
           "structures": [
@@ -2049,16 +2049,16 @@
           "units_per_package": 50,
           "used": 2,
           "variant_id": "V-F14-NARANJA-9",
-          "waste_reserve": 0
+          "waste_reserve": 1
         },
         {
           "available": true,
           "color": "negro",
-          "consumption_cost_cop": 640,
+          "consumption_cost_cop": 800,
           "design_quantity": 4,
           "diameter_inches": 9.0,
           "id": "V-F14-NEGRO-9",
-          "leftover_inventory": 46,
+          "leftover_inventory": 45,
           "origins": [
             {
               "id": "EST_01_FIGURA",
@@ -2074,7 +2074,7 @@
           "product_id": "P-F14-NEGRO",
           "purchase_cost_cop": 8000,
           "purchase_quantity": 50,
-          "required_quantity": 4,
+          "required_quantity": 5,
           "size": "R-9",
           "size_code": "R-9",
           "structures": [
@@ -2087,14 +2087,14 @@
           "units_per_package": 50,
           "used": 4,
           "variant_id": "V-F14-NEGRO-9",
-          "waste_reserve": 0
+          "waste_reserve": 1
         }
       ],
-      "plan_hash": "a11d9a0d23fd1cf0b29170a253aa07fcbb01cca68991a451f190fc7401072ef8",
+      "plan_hash": "c49c07ad313885063bd2bcd92c4ff441aadc15d5c14bf809d4040abb3d8fda0a",
       "purchase_cost_cop": 32000,
       "schema_version": "quote.v1",
       "supported_complements": false,
-      "target_waste_reserve": 1,
+      "target_waste_reserve": 4,
       "total_cop": 32000,
       "waste_percentage": 8.0
     }
