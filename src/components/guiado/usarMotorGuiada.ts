@@ -4,36 +4,51 @@ import { useCallback } from "react";
 import type { z } from "zod";
 import type { BriefGuiadoSchema, PlanGuiadoSchema, PropuestaComposicionSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { TEXTO_AVISO_RECALCULO } from "@/lib/guiada-motor/mensajes-cliente";
-import { esRazonRecalculo, type CuerpoPlanMotor } from "@/lib/guiada-motor/plan-contrato";
+import { esRazonRecalculo, type CuerpoPlanMotor, type RazonBanderaFallida } from "@/lib/guiada-motor/plan-contrato";
 import { MOTOR_POR_DEFECTO, PARA_PLAN_NUEVO, PARA_PLAN_PYTHON, RUTA_MOTOR_GUIADA, RespuestaMotorSchema, type FuenteMotor, type MotorGuiada } from "@/lib/guiada-motor/tipos";
 import { avisosRecalculo, type AvisosRecalculo } from "./aviso-recalculo";
 import { cuerpoDeIdea, cuerpoDePropuesta, pedirPlanAlMotor3d, type IntentoMotor3d } from "./plan-motor3d";
 import { pedirPlanDeIdea, type PlanExacto } from "./plan-exacto-idea";
+import { reportarFalloBandera } from "./reportar-fallo-bandera";
 
 type Fetch = (entrada: string, init?: RequestInit) => Promise<Response>;
 
-/** Lo más que espera el cliente la lectura de la bandera: pasado esto, Python (la bandera nunca retrasa el plan del cliente). */
-export const TIMEOUT_BANDERA_MS = 1000;
+/**
+ * Lo más que espera el cliente la lectura de la bandera: pasado esto, Python (la bandera nunca retrasa el plan del cliente).
+ * 1 s se quedaba corto con el servidor en frío (arranque de Vercel + Neon despertando): el cliente caía a Python sin que el
+ * 3D llegara a pedirse. 2,5 s cubre ese arranque y sigue siendo una espera corta frente al plan, que tarda varios segundos.
+ */
+export const TIMEOUT_BANDERA_MS = 2500;
+
+/** Quien cuenta (sin lanzar) que la bandera no se leyó y el plan sale de Python; por defecto avisa al servidor. */
+type ReportarFalloBandera = (razon: RazonBanderaFallida) => void;
 
 export type LecturaBandera = { motor: MotorGuiada; fuente: FuenteMotor | null; /** El cliente tocó «Detener» antes o durante la lectura: no se arma ningún plan. */ detenido: boolean };
 
 /**
- * Pregunta al servidor con qué motor se crea un plan nuevo. No bloquea: espera `timeoutMs` (1 s) como mucho y cualquier fallo
+ * Pregunta al servidor con qué motor se crea un plan nuevo. No bloquea: espera `timeoutMs` (2,5 s) como mucho y cualquier fallo
  * (red, 401, respuesta rara, tiempo) devuelve `python`. Si `signal` ya estaba abortada o se aborta durante la lectura
  * («Detener»), devuelve `detenido`: quien llama NO sigue con ningún plan.
+ *
+ * Que la lectura falle no es silencioso: si el plan NUEVO va a salir de Python por eso (`para: plan_nuevo`; no si el cliente tocó
+ * «Detener», ni al rehacer un plan de Python ni en la lectura al cargar, donde no se crea ningún plan), `reportar` deja el motivo (`bandera_timeout` / `bandera_error`) en el servidor.
  */
-export async function pedirMotorGuiada(opciones: { para?: typeof PARA_PLAN_NUEVO | typeof PARA_PLAN_PYTHON; signal?: AbortSignal; fetchImpl?: Fetch; timeoutMs?: number } = {}): Promise<LecturaBandera> {
-  const { para, signal, fetchImpl = fetch, timeoutMs = TIMEOUT_BANDERA_MS } = opciones;
-  const sinLectura = (): LecturaBandera => ({ motor: MOTOR_POR_DEFECTO, fuente: null, detenido: signal?.aborted === true });
-  if (signal?.aborted) return sinLectura();
+export async function pedirMotorGuiada(opciones: { para?: typeof PARA_PLAN_NUEVO | typeof PARA_PLAN_PYTHON; signal?: AbortSignal; fetchImpl?: Fetch; timeoutMs?: number; reportar?: ReportarFalloBandera } = {}): Promise<LecturaBandera> {
+  const { para, signal, fetchImpl = fetch, timeoutMs = TIMEOUT_BANDERA_MS, reportar = reportarFalloBandera } = opciones;
+  const sinLectura = (razon: RazonBanderaFallida): LecturaBandera => {
+    const detenido = signal?.aborted === true;
+    if (!detenido && para === PARA_PLAN_NUEVO) reportar(razon);
+    return { motor: MOTOR_POR_DEFECTO, fuente: null, detenido };
+  };
+  if (signal?.aborted) return { motor: MOTOR_POR_DEFECTO, fuente: null, detenido: true };
+  const limite = AbortSignal.timeout(timeoutMs);
   try {
-    const limite = AbortSignal.timeout(timeoutMs);
     const respuesta = await fetchImpl(para ? `${RUTA_MOTOR_GUIADA}?para=${para}` : RUTA_MOTOR_GUIADA, { cache: "no-store", signal: signal ? AbortSignal.any([signal, limite]) : limite });
-    if (!respuesta.ok) return sinLectura();
+    if (!respuesta.ok) return sinLectura("bandera_error");
     const lectura = RespuestaMotorSchema.safeParse(await respuesta.json());
-    return lectura.success ? { ...lectura.data, detenido: signal?.aborted === true } : sinLectura();
+    return lectura.success ? { ...lectura.data, detenido: signal?.aborted === true } : sinLectura("bandera_error");
   } catch {
-    return sinLectura();
+    return sinLectura(limite.aborted ? "bandera_timeout" : "bandera_error");
   }
 }
 

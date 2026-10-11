@@ -7,7 +7,8 @@ import { PlanGuiadoSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1
 import { WidgetGuiadoSchema } from "../../src/lib/ia/guiado/widgets";
 import { atenderFijarMotor, atenderLecturaMotor, type DependenciasMotor } from "../../src/lib/guiada-motor/manejadores";
 import { GET, POST } from "../../src/app/api/guiada/motor/route";
-import { pedirMotorGuiada } from "../../src/components/guiado/usarMotorGuiada";
+import { reportarFalloBandera } from "../../src/components/guiado/reportar-fallo-bandera";
+import { TIMEOUT_BANDERA_MS, pedirMotorGuiada } from "../../src/components/guiado/usarMotorGuiada";
 
 /** /api/guiada/motor (GET y POST), el cliente que la lee y el upcast del widget del plan, sin red ni Neon. */
 
@@ -143,6 +144,71 @@ test("el cliente cae a python ante cualquier fallo y pide ?para=plan_nuevo al cr
   assert.deepEqual(await pedirMotorGuiada({ fetchImpl: responder({ motor: "cuatro-d", fuente: "env" }) }), python);
   assert.deepEqual(await pedirMotorGuiada({ fetchImpl: responder("texto") }), python);
   assert.deepEqual(await pedirMotorGuiada({ fetchImpl: async () => { throw new TypeError("NetworkError"); } }), python);
+});
+
+/** Una lectura de la bandera que nunca responde: solo termina cuando se aborta su señal (el tiempo o «Detener»). */
+const colgada = (async (_entrada: string, init?: RequestInit) => new Promise<Response>((_resolver, rechazar) => {
+  init?.signal?.addEventListener("abort", () => rechazar(new DOMException("abortado", "AbortError")));
+})) as typeof fetch;
+
+test("la bandera que no llega en el plazo manda el plan a Python y deja el motivo `bandera_timeout`, una sola vez", async () => {
+  const vivo = setInterval(() => undefined, 20);
+  try {
+    const razones: string[] = [];
+    const lectura = await pedirMotorGuiada({ para: "plan_nuevo", fetchImpl: colgada, timeoutMs: 30, reportar: (razon) => razones.push(razon) });
+    assert.deepEqual({ motor: lectura.motor, detenido: lectura.detenido }, { motor: "python", detenido: false });
+    assert.deepEqual(razones, ["bandera_timeout"]);
+  } finally { clearInterval(vivo); }
+});
+
+test("la bandera que falla (red, 401, respuesta rara) deja `bandera_error`; la que responde a tiempo no deja nada", async () => {
+  const razones: string[] = [];
+  const reportar = (razon: string) => razones.push(razon);
+  const responder = (cuerpo: unknown, estado = 200) => (async () => Response.json(cuerpo, { status: estado })) as unknown as typeof fetch;
+  await pedirMotorGuiada({ para: "plan_nuevo", fetchImpl: responder({ motor: "3d", fuente: "cookie" }), reportar });
+  assert.deepEqual(razones, [], "una bandera leída a tiempo no se reporta");
+  await pedirMotorGuiada({ para: "plan_nuevo", fetchImpl: responder({ error: "x" }, 401), reportar });
+  await pedirMotorGuiada({ para: "plan_nuevo", fetchImpl: responder({ motor: "cuatro-d", fuente: "env" }), reportar });
+  await pedirMotorGuiada({ para: "plan_nuevo", fetchImpl: (async () => { throw new TypeError("NetworkError"); }) as typeof fetch, reportar });
+  assert.deepEqual(razones, ["bandera_error", "bandera_error", "bandera_error"]);
+});
+
+test("no se reporta lo que no crea un plan nuevo: «Detener», rehacer un plan de Python ni la lectura al cargar", async () => {
+  const razones: string[] = [];
+  const reportar = (razon: string) => razones.push(razon);
+  const fallida = (async () => { throw new TypeError("NetworkError"); }) as typeof fetch;
+  const control = new AbortController();
+  control.abort();
+  assert.equal((await pedirMotorGuiada({ para: "plan_nuevo", fetchImpl: fallida, signal: control.signal, reportar })).detenido, true);
+  const enCurso = new AbortController();
+  const detenida = pedirMotorGuiada({ para: "plan_nuevo", fetchImpl: colgada, signal: enCurso.signal, reportar });
+  setTimeout(() => enCurso.abort(), 5);
+  assert.equal((await detenida).detenido, true, "«Detener» durante la lectura");
+  await pedirMotorGuiada({ para: "plan_python", fetchImpl: fallida, reportar });
+  await pedirMotorGuiada({ fetchImpl: fallida, reportar });
+  assert.deepEqual(razones, []);
+});
+
+test("el aviso va a /api/guiada/motor/plan con la razón, sobrevive a la página (keepalive) y nunca lanza aunque la red falle", async () => {
+  const pedidos: Array<{ url: string; init: RequestInit | undefined }> = [];
+  reportarFalloBandera("bandera_timeout", (async (url: string, init?: RequestInit) => { pedidos.push({ url, init }); return Response.json({ ok: true }); }) as unknown as typeof fetch);
+  assert.equal(pedidos.length, 1);
+  assert.equal(pedidos[0]!.url, "/api/guiada/motor/plan");
+  assert.equal(pedidos[0]!.init?.method, "POST");
+  assert.equal(pedidos[0]!.init?.keepalive, true);
+  assert.deepEqual(JSON.parse(String(pedidos[0]!.init?.body)), { desde: "bandera_fallida", razon: "bandera_timeout" });
+  assert.doesNotThrow(() => reportarFalloBandera("bandera_error", (async () => { throw new TypeError("NetworkError"); }) as typeof fetch));
+  assert.doesNotThrow(() => reportarFalloBandera("bandera_error", (() => { throw new TypeError("síncrono"); }) as typeof fetch));
+  await new Promise((resolver) => setTimeout(resolver, 5));
+});
+
+test("el plazo por defecto de la bandera es 2,5 s: una lectura lenta de 1,3 s (servidor en frío) todavía cuenta", async () => {
+  assert.equal(TIMEOUT_BANDERA_MS, 2500);
+  const razones: string[] = [];
+  const lenta = (async () => { await new Promise((resolver) => setTimeout(resolver, 1300)); return Response.json({ motor: "3d", fuente: "cookie" }); }) as unknown as typeof fetch;
+  const lectura = await pedirMotorGuiada({ para: "plan_nuevo", fetchImpl: lenta, reportar: (razon) => razones.push(razon) });
+  assert.deepEqual({ motor: lectura.motor, fuente: lectura.fuente }, { motor: "3d", fuente: "cookie" });
+  assert.deepEqual(razones, []);
 });
 
 /* ---------- Upcast del widget del plan en la sesión guardada (demo_guiado_v2) ---------- */

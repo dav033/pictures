@@ -54,6 +54,21 @@ export const CuerpoPlanMotorSchema = z.discriminatedUnion("desde", [
 ]);
 export type CuerpoPlanMotor = z.infer<typeof CuerpoPlanMotorSchema>;
 
+/**
+ * Por qué el cliente no llegó a leer la bandera del motor y creó el plan con Python sin avisar al servidor: la lectura pasó de
+ * `TIMEOUT_BANDERA_MS` (`bandera_timeout`) o falló (`bandera_error`: red, 401, respuesta que no es la bandera). No son
+ * `RAZONES_FALLBACK`: el servidor nunca las responde, solo las recibe del navegador para dejar la fila.
+ */
+export const RAZONES_BANDERA_FALLIDA = ["bandera_timeout", "bandera_error"] as const;
+export type RazonBanderaFallida = (typeof RAZONES_BANDERA_FALLIDA)[number];
+
+/**
+ * Aviso del navegador a `POST /api/guiada/motor/plan` cuando la bandera no se leyó a tiempo y el plan se creó con Python:
+ * deja la fila `PLAN_3D_FALLBACK` que ese plan nunca dejaría (no llegó a pedirse al 3D). Aparte de `CuerpoPlanMotorSchema`:
+ * no arma ningún plan.
+ */
+export const CuerpoBanderaFallidaSchema = z.object({ desde: z.literal("bandera_fallida"), razon: z.enum(RAZONES_BANDERA_FALLIDA) }).strict();
+
 export const FalloPlanMotorSchema = z.object({
   error: z.string(),
   codigo: z.string(),

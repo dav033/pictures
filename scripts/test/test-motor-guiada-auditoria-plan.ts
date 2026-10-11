@@ -249,6 +249,26 @@ test("cada fallo que manda el plan a Python deja su fila PLAN_3D_FALLBACK con la
   }
 });
 
+test("el navegador que no leyó la bandera a tiempo deja su fila PLAN_3D_FALLBACK con `bandera_timeout` o `bandera_error`, sin armar ni cotizar nada", async () => {
+  for (const razon of ["bandera_timeout", "bandera_error"]) {
+    const { respuesta, filas, doble } = await crearPlan({ desde: "bandera_fallida", razon });
+    assert.equal(respuesta.status, 200, razon);
+    assert.equal(filas.length, 1, razon);
+    assert.equal(filas[0]!.estado, "PLAN_3D_FALLBACK", razon);
+    assert.equal(filas[0]!.error, razon, razon);
+    assert.equal(filas[0]!.resultado.razon, razon, razon);
+    assert.equal(filas[0]!.superficie, "/api/guiada/motor/plan", razon);
+    assert.deepEqual(filas[0]!.motor, { bandera: null, efectivo: "python" }, razon);
+    assert.match(filas[0]!.requestId, UUID, razon);
+    assert.equal(doble.llamadas.length, 0, `${razon}: no cotiza`);
+  }
+  const rechazada = await crearPlan({ desde: "bandera_fallida", razon: "cualquier cosa" });
+  assert.equal(rechazada.respuesta.status, 400, "una razón que no es de la lista no se guarda");
+  assert.equal(rechazada.filas.length, 0);
+  const sinSesion = await atenderPlanMotor(new Request("https://app.test/api/guiada/motor/plan", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ desde: "bandera_fallida", razon: "bandera_timeout" }) }), entornoPlan().deps);
+  assert.equal(sinSesion.status, 401);
+});
+
 test("un plan base que no se acepta (token de otro navegador) deja su fila y no cotiza", async () => {
   const base = planDe((await crearPlan({ desde: "idea", idea_id: IDEA })).cuerpo);
   const e = entornoPlan();

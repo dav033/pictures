@@ -10,7 +10,7 @@ import type { PlanIdeaGuardado } from "@/lib/plan/plan-de-idea";
 import { codigoSeguro, hashSeguro, idsDePiezas, type FilaAuditoriaPlan3d } from "./auditoria-plan";
 import { planDel3dVencido } from "./continuidad";
 import { verificarPlanConConcepto } from "./verificar-plan";
-import { CuerpoPlanMotorSchema, RUTA_PLAN_MOTOR, type CuerpoPlanMotor, type RazonFallback } from "./plan-contrato";
+import { CuerpoBanderaFallidaSchema, CuerpoPlanMotorSchema, RUTA_PLAN_MOTOR, type CuerpoPlanMotor, type RazonBanderaFallida, type RazonFallback } from "./plan-contrato";
 import type { RespuestaMotor } from "./tipos";
 
 /**
@@ -29,6 +29,8 @@ import type { RespuestaMotor } from "./tipos";
  * - un token de Python (`backend: python`) se rechaza: cada plan tiene un solo dueño de sus cantidades;
  * - el token del 3D va atado al navegador que pidió el plan (cookie `feedback_usuario`): copiado a otro, no sirve;
  * - todo lo que impida el plan 3D es un fallo TIPADO (`fallback.razon`) y la vista resuelve por Python;
+ * - el navegador que no pudo leer la bandera a tiempo y creó el plan con Python avisa con `{desde:"bandera_fallida", razon}`: no
+ *   arma nada, solo deja la fila `PLAN_3D_FALLBACK` con `bandera_timeout` / `bandera_error` (sin esto el plan no dejaba rastro);
  * - cada decisión (plan armado, o por qué no) deja una fila durable en `plan_audit_log` (`auditoria-plan.ts`): `decidir` solo
  *   llega a stdout y a /tmp, y en Vercel eso no dura.
  */
@@ -121,11 +123,22 @@ export async function atenderPlanMotor(request: Request, deps: DependenciasPlanM
   return acceso.conCookie(await atender(request, deps, huellaDeNavegador(acceso.usuarioId)));
 }
 
+/** El plan se creó con Python porque la bandera no se leyó a tiempo: la fila durable que ese plan no dejaría por otra vía. */
+async function registrarBanderaFallida(razon: RazonBanderaFallida, deps: DependenciasPlanMotor): Promise<Response> {
+  await deps.registrarPlan({
+    requestId: deps.nuevoId(), superficie: RUTA_PLAN_MOTOR, estado: "PLAN_3D_FALLBACK", pedido: { desde: "bandera_fallida" },
+    resultado: { accion: "plan_3d", razon, origen: "cliente" }, motor: { bandera: null, efectivo: "python" }, error: razon,
+  });
+  return Response.json({ ok: true }, { headers: SIN_CACHE });
+}
+
 async function atender(request: Request, deps: DependenciasPlanMotor, navegador: string): Promise<Response> {
   const texto = await request.text().catch(() => "");
   if (!texto || texto.length > MAX_CARACTERES_CUERPO) return error("CUERPO_INVALIDO", "Cuerpo inválido.", 400);
   let json: unknown;
   try { json = JSON.parse(texto); } catch { return error("CUERPO_INVALIDO", "El cuerpo debe ser JSON válido.", 400); }
+  const sinBandera = CuerpoBanderaFallidaSchema.safeParse(json);
+  if (sinBandera.success) return registrarBanderaFallida(sinBandera.data.razon, deps);
   const leido = CuerpoPlanMotorSchema.safeParse(json);
   if (!leido.success) return error("CUERPO_INVALIDO", "La solicitud no tiene un formato válido.", 400, { detalles: leido.error.issues.slice(0, 5).map((i) => ({ ruta: i.path.join("."), mensaje: i.message })) });
   const cuerpo = leido.data;

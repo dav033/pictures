@@ -282,7 +282,7 @@ async function main(): Promise<void> {
     });
   });
 
-  await caso("la bandera no bloquea: se espera como mucho 1 s, «Detener» durante la lectura no arma plan alguno y una señal ya abortada ni pregunta", async () => {
+  await caso("la bandera no bloquea: se espera como mucho 2,5 s, «Detener» durante la lectura no arma plan alguno y una señal ya abortada ni pregunta", async () => {
     const colgada = (llamadas: string[]) => ((entrada: string | URL | Request, init?: RequestInit) => new Promise<Response>((_resolver, rechazar) => {
       llamadas.push(String(entrada));
       init?.signal?.addEventListener("abort", () => rechazar(new DOMException("abortado", "AbortError")));
@@ -298,7 +298,7 @@ async function main(): Promise<void> {
       const lectura = await pedirMotorGuiada({ timeoutMs: 40 });
       assert.deepEqual({ motor: lectura.motor, detenido: lectura.detenido }, { motor: "python", detenido: false });
       assert.ok(Date.now() - inicio < 1000, "no espera más de lo pedido");
-      assert.equal(TIMEOUT_BANDERA_MS, 1000, "por defecto, 1 s");
+      assert.equal(TIMEOUT_BANDERA_MS, 2500, "por defecto, 2,5 s");
       // «Detener» durante la lectura de un plan por propuesta: detenido, y NO se llama al 3d ni (por quien llama) a Python.
       const b: string[] = [];
       globalThis.fetch = colgada(b);
