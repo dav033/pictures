@@ -2,7 +2,7 @@ import { armarPieza, type Pieza } from "./piezas";
 import type { ColorOrganico } from "./organico";
 import { coloresUsados } from "./recolorear";
 import {
-  FORMATOS_ORGANICOS, coloresDeDato, formatosOrganicosDe, metalizadoMasParecido, nombreColor, referenciaDePedido, resolverColorFlexible, resolverColorOrganico,
+  FORMATOS_ORGANICOS, avisarFoilAproximado, coloresDeDato, formatosOrganicosDe, metalizadoMasParecido, nombreColor, referenciaDePedido, resolverColorFlexible, resolverColorOrganico,
 } from "./herramientas-escena-colores";
 
 /**
@@ -93,11 +93,12 @@ function paletaOrganica(colores: readonly ColorOrganico[], destino: (viejo: stri
  * `null` si ese color se queda. Devuelve la pieza nueva, cuántos cambios hubo y el «antes → ahora» de cada color.
  */
 /** El foil no es látex: un metalizado va al color de foil más parecido al pedido. */
-export function recolorearMetalizado(pieza: Extract<Pieza, { tipo: "metalizado" }>, pedido: string | null): { pieza: Pieza; cambios: number; detalle: string[] } {
+export function recolorearMetalizado(pieza: Extract<Pieza, { tipo: "metalizado" }>, pedido: string | null, notas: string[]): { pieza: Pieza; cambios: number; detalle: string[] } {
   const ref = pedido ? referenciaDePedido(pedido) : null;
-  if (!ref) return { pieza, cambios: 0, detalle: [] };
+  if (!pedido || !ref) return { pieza, cambios: 0, detalle: [] };
   const color = metalizadoMasParecido(ref.codigo);
   if (color === pieza.metalizado.color) return { pieza, cambios: 0, detalle: [] };
+  avisarFoilAproximado(notas, pedido, ref.codigo);
   return { pieza: { ...pieza, metalizado: { ...pieza.metalizado, color, producto: null } }, cambios: 1, detalle: [`foil ${pieza.metalizado.color} → ${color}`] };
 }
 
@@ -161,7 +162,7 @@ export function recolorearConPedidos(pieza: Pieza, pedidoDe: (viejo: string) => 
  */
 export function recolorearConPaleta(pieza: Pieza, paleta: readonly string[], notas: string[], orden: "uso" | "aparicion" = "uso"): { pieza: Pieza; cambios: number; detalle: string[] } {
   if (!paleta.length) return { pieza, cambios: 0, detalle: [] };
-  if (pieza.tipo === "metalizado") return recolorearMetalizado(pieza, paleta[0] ?? null);
+  if (pieza.tipo === "metalizado") return recolorearMetalizado(pieza, paleta[0] ?? null, notas);
   const usados = coloresDePieza(pieza, orden).map((u) => u.codigo);
   const indice = new Map(usados.map((c, i) => [c, i]));
   return recolorearConPedidos(pieza, (viejo) => { const i = indice.get(viejo); return i === undefined ? null : paleta[i % paleta.length]!; }, notas);

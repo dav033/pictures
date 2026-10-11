@@ -53,13 +53,17 @@ export const CASOS_BIBLIOTECA: Caso[] = [
   },
   {
     area: "biblioteca",
-    frase: "busca ideas de cumpleaños en rosado",
+    frase: "busca ideas de cumpleaños en rosado (RAG simulado: devuelve ids fijos; lo que se comprueba son los filtros que arma la herramienta)",
     base: "arco_organico_columnas_guirnalda",
     biblioteca: ["idea:cumpleanos-violeta-y-plata", "idea:bautizo-unisex"],
     vueltas: [[llamar("buscar_en_biblioteca", { ocasion: "cumpleanos", colores: ["rosado"] })]],
     comprobar: (ctx) => {
       assert.equal(ctx.despues, ctx.antes, "buscar no toca la escena");
       assert.match(ctx.llamadas[0]!.resumen, /idea:cumpleanos-violeta-y-plata/, "el resultado lista los ids para insertar");
+      assert.equal(ctx.busquedas.length, 1, "una sola búsqueda");
+      const filtros = ctx.busquedas[0]!.filtros ?? {};
+      assert.ok(filtros.celebraciones?.some((c) => c.includes("cumple")), `la celebración llegó a la búsqueda: ${JSON.stringify(filtros.celebraciones)}`);
+      assert.ok(filtros.colores?.includes("009") && filtros.colores.includes("609"), `«rosado» llegó como códigos Sempertex rosados: ${JSON.stringify(filtros.colores)}`);
       assert.equal(ctx.llamadas[0]!.consulta, true);
     },
   },

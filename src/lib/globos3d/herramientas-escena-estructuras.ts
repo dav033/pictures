@@ -23,10 +23,9 @@ import { ARBOLES_PREDEFINIDOS } from "./arboles-globos";
 import { PARED_TRENZAS_INICIAL } from "./pared-trenzas";
 import type { Vec3 } from "./modulos";
 import {
-  FORMATOS_ORGANICOS, FOIL_APROXIMADO, conAcabado, distanciaDeFoil, fallar, metalizadoMasParecido, referenciaDePedido, resolverColorFlexible, resolverColorOrganico,
+  FORMATOS_ORGANICOS, avisarFoilAproximado, conAcabado, fallar, metalizadoMasParecido, referenciaDePedido, resolverColorFlexible, resolverColorOrganico,
 } from "./herramientas-escena-colores";
 import { recolorearConPaleta } from "./herramientas-escena-recolor";
-import { avisar } from "./avisos-usuario";
 
 /**
  * **Estructuras que la IA del taller 3D puede crear de cero con parámetros** (además de columna, arco, arco
@@ -84,7 +83,14 @@ export type PedidoEstructura = {
   texto?: string; figura?: string; tecnica?: string; formato?: string;
   forma_metalizado?: string; pulgadas?: number; color_metalizado?: string; modelo?: string;
   silueta?: string; puntos?: PuntoPedido[]; racimos?: number; follaje?: string[];
+  /**
+   * Solo las herramientas del Taller: avisar al usuario del tamaño pedido en que ningún color se fabrica. El motor guiado usa estas mismas funciones
+   * con sus presets (que piden R-24 por su cuenta) y sus `notas` son avisos para el cliente: ahí no se avisa nada que el cliente no pidió.
+   */
+  avisarTamanos?: boolean;
 };
+
+const notasDeTamanos = (p: PedidoEstructura, notas: string[]): string[] | undefined => (p.avisarTamanos ? notas : undefined);
 
 export type LugarPieza = "piso" | "pared" | "techo";
 
@@ -167,7 +173,7 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
       const grosor = enRango(p.grosor_cm ?? 70, R.grosor_cm, "grosor_cm");
       const inclinacion = p.inclinacion_cm === undefined ? 0 : enRango(p.inclinacion_cm, R.inclinacion_cm, "inclinacion_cm");
       const tramoDe = (g: number) => formaColumna({ altoCm: alto, radioBaseCm: g / 2, radioMedioCm: r1(g * 0.43), radioPuntaCm: r1(g * 0.36), inclinacionCm: inclinacion, serpenteoCm: 4, mezcla: MEZCLA_COLUMNA_GRUESA });
-      const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.75, notas);
+      const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.75, notasDeTamanos(p, notas));
       comprobarCuerpo(medidaConTamanos((g) => ({ tramos: [tramoDe(g)], ...BASE_TRAMOS }), permitidos), grosor);
       return { pieza: alAlto(piezaOrganica([tramoDe(grosor)], colores, permitidos, true, flores, semillaDe(alto, grosor, inclinacion)), alto, notas, techoCm), nombre: inclinacion ? "Columna orgánica inclinada" : "Columna orgánica", lugar: "piso" };
     }
@@ -181,7 +187,7 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
         const puntos: Vec3[] = Array.from({ length: 11 }, (_, i) => { const x = -a + (2 * a * i) / 10; return { x: r1(x), y: r1(caida * ((x / a) ** 2 - 1)), z: 0 }; });
         return { ...formaGuirnalda({ id: "guirnalda", nombre: "Guirnalda orgánica", puntos, radioInicioCm: g / 2, radioFinCm: g / 2, mezcla: MEZCLA_GUIRNALDA }), tapas: { inicio: true, fin: true } };
       };
-      const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.8, notas);
+      const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.8, notasDeTamanos(p, notas));
       comprobarCuerpo(medidaConTamanos((g) => ({ tramos: [tramoDe(g)], ...BASE_TRAMOS }), permitidos), grosor);
       return { pieza: piezaOrganica([tramoDe(grosor)], colores, permitidos, false, flores, semillaDe(largo, caida, grosor)), nombre: "Guirnalda orgánica", lugar: "pared" };
     }
@@ -191,7 +197,7 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
       const alto = enRango(p.alto_cm ?? 200, R.alto_cm, "alto_cm");
       const grosor = enRango(p.grosor_cm ?? 60, R.grosor_cm, "grosor_cm");
       const tramoDe = (g: number) => formaSemiarco({ anchoCm: ancho, altoCm: alto, radioBaseCm: g / 2, radioPuntaCm: r1(g * 0.33), origen: { x: -ancho / 2, y: 0, z: 0 } });
-      const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.75, notas);
+      const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.75, notasDeTamanos(p, notas));
       comprobarCuerpo(medidaConTamanos((g) => ({ tramos: [tramoDe(g)], ...BASE_TRAMOS }), permitidos), grosor);
       return { pieza: alAlto(piezaOrganica([tramoDe(grosor)], colores, permitidos, true, flores, semillaDe(ancho, alto, grosor)), alto, notas, techoCm), nombre: "Semiarco orgánico", lugar: "piso" };
     }
@@ -199,7 +205,7 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
       const R = RANGOS_ESTRUCTURA.aro_organico;
       const diametro = enRango(p.ancho_cm ?? p.alto_cm ?? 160, R.diametro_cm, "diámetro (ancho_cm)");
       const grosor = enRango(p.grosor_cm ?? 30, R.grosor_cm, "grosor_cm");
-      const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.9, notas);
+      const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.9, notasDeTamanos(p, notas));
       const exterior = permitidos.includes("R-12") ? "R-12" : permitidos.find((f) => f !== "R-5") ?? permitidos[0]!;
       const aroDe = (g: number) => opcionesAroOrganico({ diametroCm: diametro, exterior: { formatoId: exterior, radioCm: 13 }, interior: { pesos: { "R-9": 0.75, "R-5": 0.25 }, radioCm: g / 2, adelanteCm: 6 }, colores, semilla: semillaDe(diametro, g) });
       comprobarCuerpo(medidaConTamanos(aroDe, permitidos), grosor);
@@ -212,7 +218,7 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
       const ancho = enRango(p.ancho_cm ?? 220, R.ancho_cm, "ancho_cm");
       const alto = enRango(p.alto_cm ?? 230, R.alto_cm, "alto_cm");
       const grosor = enRango(p.grosor_cm ?? 60, R.grosor_cm, "grosor_cm");
-      const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.75, notas);
+      const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.75, notasDeTamanos(p, notas));
       const marcoDe = (g: number) => opcionesArcoRectangular({
         anchoEjeCm: ancho - g, altoEjeCm: alto - g / 2, radioEsquinaCm: 40, radioBaseCm: g / 2 + 4, radioPataCm: g / 2, radioArribaCm: g / 2, hueco: null,
         mezcla: { base: { "R-18": 0.15, "R-12": 0.65, "R-9": 0.2 }, pata: { "R-12": 0.7, "R-9": 0.3 }, arriba: { "R-18": 0.15, "R-12": 0.6, "R-9": 0.25 } }, colores, semilla: semillaDe(ancho, alto, g),
@@ -307,7 +313,7 @@ export function ajustarOrganico(pieza: Organico, p: PedidoEstructura, notas: str
     o = { ...o, opciones: { ...o.opciones, colores: o.opciones.colores.map((c, i) => ({ ...c, peso: r0(p.pesos![i]!) })) } };
   }
   if (p.tamanos?.length) {
-    const permitidos = tamanosPosibles(o.opciones.colores, p.tamanos, Infinity, notas);
+    const permitidos = tamanosPosibles(o.opciones.colores, p.tamanos, Infinity, notasDeTamanos(p, notas));
     o = { ...o, opciones: { ...o.opciones, tramos: o.opciones.tramos.map((t) => ({ ...t, mezcla: mezclaCon(t.mezcla, permitidos) })), relleno: rellenoCon(permitidos) } };
     // Los tamaños cambian cuántos globos lleva el cuerpo (solo R-5 lleva varias veces los de la mezcla de siempre): también cuentan para el presupuesto.
     comprobarCambioDeCuerpo(antes, cuerpoDeOrganico(o.opciones), medirConGrosor(o), 2 * radioMayor(o.opciones));
@@ -398,8 +404,10 @@ function crearMetalizado(p: PedidoEstructura, notas: string[]): { pieza: Pieza; 
     forma = tipo === "numero" && /^\d$/.test(t) ? { tipo: "numero", valor: Number(t) } : tipo === "letra" && t.length === 1 ? { tipo: "letra", valor: t } : { tipo: "letras", texto: t };
   } else if ((FORMAS_METALIZADO as readonly string[]).includes(tipo)) forma = { tipo: tipo as "corazon" | "estrella" | "redondo" | "luna" | "flor" | "nube" };
   else return fallar(`El metalizado va en forma de ${FORMAS_METALIZADO.join(", ")}.`);
-  // «El número 15» son dos números grandes de 34", no unas letras de 16": el tamaño lo da lo que se pidió, no cómo se arma el texto.
-  const porDefecto = tipo === "numero" ? 34 : forma.tipo === "letra" || forma.tipo === "letras" ? 16 : forma.tipo === "flor" ? 27 : 18;
+  // «El número 15» son dos números grandes de 34", no unas letras de 16": el tamaño por defecto lo da el texto (todo cifras = números), no cómo se arma la forma.
+  // Solo es el de una pieza nueva: pulgadas lo manda, y una escena guardada conserva el suyo.
+  const soloCifras = !!texto && /^[0-9]+$/.test(texto);
+  const porDefecto = soloCifras ? 34 : forma.tipo === "letra" || forma.tipo === "letras" ? 16 : forma.tipo === "flor" ? 27 : 18;
   const pulgadas = p.pulgadas ?? porDefecto;
   if (!(PULGADAS_METALIZADO as readonly number[]).includes(pulgadas)) fallar(`Los metalizados vienen en ${PULGADAS_METALIZADO.join(", ")} pulgadas.`);
   let color: ColorMetalizado = "oro";
@@ -410,8 +418,7 @@ function crearMetalizado(p: PedidoEstructura, notas: string[]): { pieza: Pieza; 
     const ref = referenciaDePedido(p.colores[0]) ?? fallar(`No encontré el color «${p.colores[0]}».`);
     color = metalizadoMasParecido(ref.codigo);
     // Si el foil se aleja del color pedido ya no es ese color: la persona tiene que enterarse aunque el modelo no lo cuente.
-    if (distanciaDeFoil(ref.codigo, color) > FOIL_APROXIMADO) avisar(notas, `El foil no viene en «${p.colores[0]}»: puse ${COLORES_METALIZADO[color].nombre}, el foil más parecido.`, "foil", "más parecid", "mas parecid", COLORES_METALIZADO[color].nombre);
-    else notas.push(`foil ${COLORES_METALIZADO[color].nombre} (el más parecido a ${p.colores[0]})`);
+    if (!avisarFoilAproximado(notas, p.colores[0], ref.codigo)) notas.push(`foil ${COLORES_METALIZADO[color].nombre} (el más parecido a ${p.colores[0]})`);
   }
   return { pieza: { tipo: "metalizado", metalizado: { forma, pulgadas, color } }, nombre: `Metalizado ${texto ?? tipo} ${COLORES_METALIZADO[color].nombre.toLowerCase()}`, lugar: "piso" };
 }

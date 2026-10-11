@@ -132,6 +132,8 @@ export const CASOS_HONESTIDAD: Caso[] = [
     comprobar: (ctx) => {
       const foil = (unicoNuevo(ctx).pieza as { metalizado: { color: string } }).metalizado.color;
       assert.equal(foil, "verde_vibrante", "el único foil verde que hay");
+      // Por encima de la distancia máxima de familia (55 contra 28) ya es otro verde: se dice. El rojo (8) está del otro lado y no avisa (casos de foil).
+      assert.match(ctx.respuesta, /Aviso:.*El foil no viene en «verde».*Verde vibrante/);
     },
   },
   {
@@ -141,8 +143,8 @@ export const CASOS_HONESTIDAD: Caso[] = [
     vueltas: [[llamar("agregar_pieza", { tipo: "metalizado", forma_metalizado: "corazon", colores: ["chocolate"] })]],
     comprobar: (ctx) => {
       const foil = (unicoNuevo(ctx).pieza as { metalizado: { color: string } }).metalizado.color;
-      assert.notEqual(foil, "azul_pastel", "un foil azul no se parece a un chocolate");
-      assert.match(ctx.respuesta, /Aviso:.*El foil no viene en «chocolate».*foil más parecido/i, "el foil es una aproximación y la respuesta lo tiene que decir aunque el modelo diga «Listo»");
+      assert.equal(foil, "negro_mate", "el foil más oscuro y neutro: un chocolate nunca va a un foil azul o rosado");
+      assert.match(ctx.llamadas[0]!.resumen, /Negro mate.*el más parecido a chocolate/, "la herramienta cuenta con qué se quedó");
     },
   },
   {

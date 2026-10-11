@@ -160,7 +160,7 @@ export function lineaDeMobiliarioParametrico(escena: Escena, n: NodoEscena): { m
 function mesasDelPedido(escena: Escena, ids: readonly string[] | undefined, notas: string[]): { escena: Escena; mesas: string[] } {
   let actual = escena;
   // Las mesas del salón armado (y sus sillas) no se convierten ni se editan aquí: las recalcula `ajustar_salon`.
-  const aSalon = "se cambian con ajustar_salon (sillas_por_mesa, mesas, mesa), que las recalcula y las centra";
+  const aSalon = "se cambian con ajustar_salon (sillas_por_mesa, mesas, mesa), que las recalcula y las centra; el color del mantel, las sillas y los cojines se cambia con cambiar_pieza y colores sobre cada mesa (en ese orden)";
   const delSalon = new Set<string>();
   if (ids?.length) {
     const suyas = ids.filter((id) => esMesaDelSalon(escena, id));

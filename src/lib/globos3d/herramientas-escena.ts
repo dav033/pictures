@@ -745,11 +745,11 @@ function aplicarPropiedades(base: Pieza, entrada: Propiedades, notas: string[], 
       }
       if (props.flores !== undefined) Object.assign(a, props.flores ? { flores: structuredClone(COLUMNA_QUINCE_AZUL.flores), huecosFlores: 14 } : { flores: null, huecosFlores: 0 });
       // Con tamaños de globo propios deja de ser el arco por medidas: pasa a pieza orgánica con esos tamaños.
-      if (props.tamanos?.length) return ajustarOrganico({ tipo: "organico", opciones: opcionesArcoOrganico(a), flores: a.flores }, { tamanos: props.tamanos }, notas);
+      if (props.tamanos?.length) return ajustarOrganico({ tipo: "organico", opciones: opcionesArcoOrganico(a), flores: a.flores }, { tamanos: props.tamanos, avisarTamanos: true }, notas);
       return { ...base, arco: a };
     }
     case "organico":
-      return ajustarOrganico(base, props, notas);
+      return ajustarOrganico(base, { ...props, avisarTamanos: true }, notas);
     case "pared_trenzas": {
       const o = { ...base.opciones };
       if (props.alto_cm !== undefined) o.altoCm = enRango(props.alto_cm, RANGOS.pared_trenzas.alto_cm, "alto_cm");
@@ -842,7 +842,7 @@ function crearPieza(tipo: TipoNuevo, props: Propiedades, notas: string[], techoC
     return { pieza, nombre: NOMBRE_BASE[tipo], lugar };
   }
   for (const campo of ["patron", "forma", "decoracion_id"] as const) if (props[campo] !== undefined) fallar(`«${campo}» no aplica a ${tipo} (vale en ${campo === "decoracion_id" ? "decoracion" : campo === "forma" ? "arco" : "columna, arco, guirnalda o pared_malla"}).`);
-  return crearEstructura(tipo, props, notas, techoCm);
+  return crearEstructura(tipo, { ...props, avisarTamanos: true }, notas, techoCm);
 }
 
 /** Alto (y ancho de arco a arco) que la pieza nueva toma de la que reemplaza, si no se piden y caben en su rango. */
@@ -1033,7 +1033,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
         if (falso) fallar(falso);
       }
       const nodoNuevo: NodoEscena = { ...nodo, pieza, nombre: veredicto?.tipo === "corregido" ? veredicto.nombre : a.nombre ?? nodo.nombre };
-      if (JSON.stringify(nodoNuevo) === JSON.stringify(nodo)) return { escena, resumen: conNotas(`«${nodo.nombre}» ya estaba así: no cambió nada.`, notas) };
+      if (JSON.stringify(nodoNuevo) === JSON.stringify(nodo)) return { escena, resumen: conNotas(`«${nodo.nombre}» ya estaba así: no cambió nada.`, notas), avisos: avisosDe(notas) };
       return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza), resumen: conNotas(`Cambié «${nodoNuevo.nombre}» (${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}.`, notas), avisos: avisosDe(notas) };
     }
 
@@ -1056,7 +1056,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
         comprobarAltura(pieza, nodo.colocacion, escena.sala);
         nueva = reubicarSobre(nueva, nodo.id, nodo.pieza, pieza);
       }
-      return { escena: nueva, resumen: hecho.resumen };
+      return { escena: nueva, resumen: hecho.resumen, avisos: hecho.avisos };
     }
 
     case "reemplazar_pieza": {
@@ -1111,7 +1111,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       const unicas = [...new Set(notas)];
       notas.length = 0;
       notas.push(...unicas.slice(0, 6));
-      return { escena: { ...escena, nodos }, resumen: conNotas(`Recoloreé ${hechas.length} pieza${hechas.length === 1 ? "" : "s"} sin agregar ni quitar nada (${escena.nodos.length} piezas en la escena): ${hechas.join(" | ")}.`, notas) };
+      return { escena: { ...escena, nodos }, resumen: conNotas(`Recoloreé ${hechas.length} pieza${hechas.length === 1 ? "" : "s"} sin agregar ni quitar nada (${escena.nodos.length} piezas en la escena): ${hechas.join(" | ")}.`, notas), avisos: avisosDe(notas) };
     }
 
     case "buscar_en_biblioteca": {

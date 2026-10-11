@@ -1,6 +1,7 @@
 import { TABLA_SEMPERTEX, referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
 import { labDeRgb, type Lab } from "@/lib/rag/catalog/similitud-color";
-import { distanciaLab } from "./colores-formato";
+import { avisar } from "./avisos-usuario";
+import { DISTANCIA_MAXIMA_FAMILIA, distanciaLab } from "./colores-formato";
 import { FORMATOS_GLOBO, coloresDelFormato, formatoPorId } from "./formatos";
 import { COLORES_METALIZADO, type ColorMetalizado } from "./metalizados";
 
@@ -218,31 +219,72 @@ const diferenciaDeMatiz = (a: number, b: number): number => { const d = Math.abs
 const CROMA_CON_TONO = 25;
 const MATIZ_MAXIMO_GRADOS = 50;
 
+/** Un color con menos viveza que esta es neutro (blanco, gris, negro, plata, crema): solo puede salir en un foil neutro. */
+const CROMA_NEUTRO = 8;
+/** Los foiles neutros: plata, negro mate, blanco y arena (el azul pastel es casi gris, pero es azul). */
+const CROMA_FOIL_NEUTRO = 10;
+
+export type FoilElegido = {
+  color: ColorMetalizado;
+  /** Distancia CIELAB del globo inflado al foil elegido. */
+  distancia: number;
+  /** El dorado brillante va a Oro por regla (es lo que la tienda vende como «dorado»): no es una aproximación aunque el hex se aleje. */
+  porRegla: boolean;
+};
+
 /**
- * El color de foil (metalizado) más parecido a un color Sempertex. Un dorado brillante (Metal, Reflex, Silk) es el foil Oro, que es el que la tienda
- * vende como «dorado»; el dorado mate es solo para quien lo pide mate. Un color con tono (un verde) se queda en foiles del mismo tono: por distancia
- * pura un verde quedaba en el azul pastel, que es casi gris y está más cerca en luz y viveza.
+ * El color de foil (metalizado) más parecido a un color Sempertex.
+ * - Un dorado brillante (Metal, Reflex, Silk) es el foil Oro; el dorado mate es solo para quien lo pide mate (Fashion no tiene dorado).
+ * - Un color con tono (un verde) se queda en foiles del mismo tono: por distancia pura un verde quedaba en el azul pastel, que está más cerca en luz y viveza.
+ * - Un color neutro (gris, blanco, negro, plata) se queda en los foiles neutros.
  */
-export function metalizadoMasParecido(codigo: string): ColorMetalizado {
+export function foilMasParecido(codigo: string): FoilElegido {
   const ref = referenciaPorCodigo(codigo);
-  if (ref && /dorad/i.test(ref.nombreCompleto) && !/rosa/i.test(ref.nombreCompleto) && !/matte/i.test(ref.acabado)) return "oro";
+  if (ref && /dorad/i.test(ref.nombreCompleto) && !/rosa/i.test(ref.nombreCompleto)) {
+    return { color: "oro", distancia: distanciaLab(ref.hexGlobo, COLORES_METALIZADO.oro.hex), porRegla: true };
+  }
   const hex = ref?.hexGlobo ?? COLORES_METALIZADO.oro.hex;
   const claves = Object.keys(COLORES_METALIZADO) as ColorMetalizado[];
   const lab = labDeHex(hex);
-  const delMismoTono = cromaDe(lab) < CROMA_CON_TONO ? claves : claves.filter((k) => {
+  const croma = cromaDe(lab);
+  const masCercano = (pool: readonly ColorMetalizado[]): ColorMetalizado | undefined => [...pool].sort((x, y) => distanciaLab(hex, COLORES_METALIZADO[x].hex) - distanciaLab(hex, COLORES_METALIZADO[y].hex))[0];
+  const delMismoTono = (cromaMinimoFoil: number) => claves.filter((k) => {
     const foil = labDeHex(COLORES_METALIZADO[k].hex);
-    return cromaDe(foil) >= CROMA_CON_TONO / 2 && diferenciaDeMatiz(matizDe(foil), matizDe(lab)) <= MATIZ_MAXIMO_GRADOS;
+    return cromaDe(foil) >= cromaMinimoFoil && diferenciaDeMatiz(matizDe(foil), matizDe(lab)) <= MATIZ_MAXIMO_GRADOS;
   });
-  const candidatos = delMismoTono.length ? delMismoTono : claves;
-  return [...candidatos].sort((a, b) => distanciaLab(hex, COLORES_METALIZADO[a].hex) - distanciaLab(hex, COLORES_METALIZADO[b].hex))[0] ?? "oro";
+  let color: ColorMetalizado | undefined;
+  if (croma >= CROMA_CON_TONO) color = masCercano(delMismoTono(CROMA_CON_TONO / 2));
+  else if (croma < CROMA_NEUTRO) color = masCercano(claves.filter((k) => cromaDe(labDeHex(COLORES_METALIZADO[k].hex)) < CROMA_FOIL_NEUTRO));
+  else {
+    // Un pastel (un rosado pálido) tiene poca viveza pero sí tono: su foil es del mismo tono si queda cerca; si no (un chocolate, un menta), el más cercano
+    // entre los neutros y los del mismo tono, nunca uno de otro tono (un menta en el azul pastel).
+    const mismoTono = delMismoTono(CROMA_FOIL_NEUTRO);
+    const delTono = masCercano(mismoTono);
+    if (delTono && distanciaLab(hex, COLORES_METALIZADO[delTono].hex) <= DISTANCIA_MAXIMA_FAMILIA) color = delTono;
+    else color = masCercano([...mismoTono, ...claves.filter((k) => cromaDe(labDeHex(COLORES_METALIZADO[k].hex)) < CROMA_FOIL_NEUTRO)]);
+  }
+  color ??= masCercano(claves) ?? "oro";
+  return { color, distancia: distanciaLab(hex, COLORES_METALIZADO[color].hex), porRegla: false };
 }
 
-/** Cuánto se aleja el foil elegido del color pedido (distancia CIELAB del globo inflado): pasado `FOIL_APROXIMADO` ya es otro color y hay que decirlo. */
-export function distanciaDeFoil(codigo: string, color: ColorMetalizado): number {
-  const ref = referenciaPorCodigo(codigo);
-  return ref ? distanciaLab(ref.hexGlobo, COLORES_METALIZADO[color].hex) : 0;
+export const metalizadoMasParecido = (codigo: string): ColorMetalizado => foilMasParecido(codigo).color;
+
+/**
+ * Pasada `DISTANCIA_MAXIMA_FAMILIA` (la misma con que el taller da un color por otro de su familia) el foil ya es otro color que el pedido y la persona
+ * se tiene que enterar. Por debajo (un rojo al foil Rojo: 8) es el mismo color; por encima (un verde al Verde vibrante: 56) no.
+ */
+export const foilEsAproximado = (f: FoilElegido): boolean => !f.porRegla && f.distancia > DISTANCIA_MAXIMA_FAMILIA;
+
+/**
+ * El único sitio que avisa de un foil aproximado (crear, recolorear y editar_globos): lo anota en `notas` como aviso para el usuario y devuelve `true`.
+ * Las palabras que dan el aviso por dicho son solo las de decir que no viene en ese color: nombrar el foil o el color no lo es.
+ */
+export function avisarFoilAproximado(notas: string[], pedido: string, codigo: string): boolean {
+  const foil = foilMasParecido(codigo);
+  if (!foilEsAproximado(foil)) return false;
+  avisar(notas, `El foil no viene en «${pedido}»: puse ${COLORES_METALIZADO[foil.color].nombre}, el foil más parecido.`, "no viene en", "más parecid", "mas parecid");
+  return true;
 }
-export const FOIL_APROXIMADO = 22;
 
 /** Los formatos que existen (para los mensajes de error). */
 export const listaFormatos = (): string => FORMATOS_GLOBO.map((f) => f.id).join(", ");

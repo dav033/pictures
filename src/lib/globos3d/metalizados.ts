@@ -428,8 +428,9 @@ export function armarMetalizado(m: OpcionesMetalizado): MetalizadoArmado {
 /** El producto genérico de un metalizado que no es uno del catálogo de la tienda (`generico`, sin url). */
 function productoGenerico(m: OpcionesMetalizado, globos: number): ProductoDePieza {
   const f = m.forma;
+  const soloCifras = f.tipo === "letras" && /^[0-9]+$/.test(f.texto);
   const nombre = f.tipo === "letras"
-    ? `Genérico: letras metalizadas ${COLORES_METALIZADO[m.color].nombre.toLowerCase()} ${m.pulgadas}" («${f.texto.toUpperCase()}», una por letra)`
+    ? `Genérico: ${soloCifras ? "números metalizados" : "letras metalizadas"} ${COLORES_METALIZADO[m.color].nombre.toLowerCase()} ${m.pulgadas}" («${f.texto.toUpperCase()}», uno por ${soloCifras ? "número" : "letra"})`
     : `Genérico: metalizado ${nombreMetalizado(m)}`;
   return { nombre, url: "", cantidad: Math.max(1, globos), generico: true };
 }

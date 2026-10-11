@@ -281,13 +281,26 @@ export const CASOS_SALON: Caso[] = [
     area: "salon",
     frase: "pon manteles negros en todas las mesas del salón",
     base: "salon-armado",
-    vueltas: [[llamar("cambiar_mesas", { color_mantel: "negro" })]],
+    // El camino que sirve es cambiar_pieza con colores (mantel, sillas, cojines) sobre cada mesa del salón; cambiar_mesas las rechaza (siguiente caso).
+    vueltas: [[1, 2, 3, 4].map((n) => llamar("cambiar_pieza", { id: `salon-mesa-0${n}`, colores: ["negro"] }))],
     sumaSola: false,
     tocables: ["salon-mesa-01", "salon-mesa-02", "salon-mesa-03", "salon-mesa-04"],
     comprobar: (ctx) => {
-      assert.match(JSON.stringify(nodoDe(ctx.despues, "salon-mesa-01").pieza), /#(1|0)[0-9a-f]{5}/i, "el mantel de la mesa 1 queda negro");
+      const coloresDe = (escena: typeof ctx.antes, id: string) => (nodoDe(escena, id).pieza as { mueble?: { opciones?: { colores?: string[] } } }).mueble?.opciones?.colores;
+      for (const n of mesasDeInvitados(ctx)) {
+        assert.equal(coloresDe(ctx.despues, n.id)?.[0], "#1c1c1c", `el mantel de ${n.id} queda negro`);
+        assert.equal(coloresDe(ctx.despues, n.id)?.[1], coloresDe(ctx.antes, n.id)?.[1], `las sillas de ${n.id} no cambian`);
+      }
+      assert.deepEqual(ctx.despues.salon, ctx.antes.salon, "el registro del salón no cambia");
     },
-    fallaCon: /cambiar_mesas: Las 4 mesas de la escena son del salón armado/,
-    fallaEsperada: "cambiar_mesas y cambiar_sillas rechazan las mesas de un salón armado y mandan a ajustar_salon, que no tiene color de mantel ni de sillas: tras armar_salon no hay camino para recolorear el mobiliario",
+  },
+  {
+    area: "salon",
+    frase: "pon manteles negros en las mesas del salón (cambiar_mesas manda al camino que sirve)",
+    base: "salon-armado",
+    vueltas: [[llamar("cambiar_mesas", { color_mantel: "negro" })]],
+    // Antes mandaba a ajustar_salon, que no tiene color: un callejón sin salida para el modelo.
+    rechazo: /son del salón armado.*cambiar_pieza y colores sobre cada mesa/,
+    comprobar: () => undefined,
   },
 ];

@@ -2,7 +2,8 @@ import { z } from "zod";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { FORMATOS_GLOBO, coloresDelFormato } from "./formatos";
 import type { Escena, NodoEscena } from "./escena";
-import { ErrorHerramienta, codigosDePedido, fallar, listaFormatos, nombreColor, palabras, referenciaDePedido, resolverColor } from "./herramientas-escena-colores";
+import { avisosDe, type AvisoUsuario } from "./avisos-usuario";
+import { ErrorHerramienta, avisarFoilAproximado, codigosDePedido, fallar, listaFormatos, nombreColor, palabras, referenciaDePedido, resolverColor } from "./herramientas-escena-colores";
 import { editarSeleccion, sinCoincidencias, textoLineas, type CambioSeleccion, type ResultadoEdicion } from "./editar-seleccion";
 import type { SelectorGlobos } from "./partes-globos";
 import type { Pieza } from "./piezas";
@@ -127,7 +128,7 @@ export function textoResultado(r: ResultadoEdicion): string {
   return partes.join("; ");
 }
 
-export function editarGlobos(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string; editadas: PiezaEditada[] } {
+export function editarGlobos(escena: Escena, argumentos: unknown): { escena: Escena; resumen: string; editadas: PiezaEditada[]; avisos: readonly AvisoUsuario[] } {
   const a = ESQUEMA_EDITAR_GLOBOS.parse(argumentos);
   const c = a.cambio;
   const cuantos = [c.color !== undefined || c.a !== undefined, c.formato !== undefined, c.inflado_cm !== undefined, c.quitar === true].filter(Boolean).length;
@@ -148,6 +149,7 @@ export function editarGlobos(escena: Escena, argumentos: unknown): { escena: Esc
         if (!a.id) continue;
         const pedido = c.color ?? c.a ?? fallar(`${nombre} es un globo metalizado (foil): solo se le cambia el color.`);
         const ref = referenciaDePedido(pedido) ?? fallar(`No encontré el color «${pedido}» en la tabla Sempertex.`);
+        avisarFoilAproximado(notas, pedido, ref.codigo);
         resultado = editarSeleccion(nodo.pieza, {}, { tipo: "color", codigo: ref.codigo });
       } else {
         const plan = planDe(nodo, a, notas);
@@ -173,5 +175,5 @@ export function editarGlobos(escena: Escena, argumentos: unknown): { escena: Esc
     !a.id && omitidas.length ? `Sin globos de esa selección (no se tocaron): ${omitidas.join(", ")}` : "",
     notas.length ? `Notas: ${[...new Set(notas)].join("; ")}` : "",
   ].filter(Boolean).join(". ");
-  return { escena: nueva, resumen, editadas };
+  return { escena: nueva, resumen, editadas, avisos: avisosDe(notas) };
 }

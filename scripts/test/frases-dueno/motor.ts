@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
-import type { RespuestaBusquedaTaller, ResultadoTaller } from "../../../src/lib/taller/buscar";
+import type { EntradaBusqueda, RespuestaBusquedaTaller, ResultadoTaller } from "../../../src/lib/taller/buscar";
 import { DECLARACIONES_ESCENA } from "../../../src/lib/globos3d/herramientas-escena";
 import { aplicarHerramientaIA } from "../../../src/lib/catalogo/herramientas-ia-aplicar";
 import { politicaDe } from "../../../src/lib/catalogo/herramientas-ia";
@@ -36,6 +36,8 @@ export type Contexto = {
   antes: Escena;
   despues: Escena;
   llamadas: LlamadaHecha[];
+  /** Lo que la herramienta le pidió a la búsqueda de la biblioteca (los filtros que armó con los argumentos del modelo). */
+  busquedas: EntradaBusqueda[];
   /** La respuesta final tal como la entrega el servidor: el texto del modelo más «Ojo, no todo salió…» / «Aviso: …». */
   respuesta: string;
   /** La verificación automática de la última vuelta que cambió la escena (la que recibe el modelo). */
@@ -103,11 +105,12 @@ function resultadoDeBiblioteca(id: string): ResultadoTaller {
   };
 }
 
-async function aplicar(escena: Escena, herramienta: string, args: Args, biblioteca: readonly string[] | undefined) {
+async function aplicar(escena: Escena, herramienta: string, args: Args, biblioteca: readonly string[] | undefined, busquedas: EntradaBusqueda[]) {
   // Sin red. Con `biblioteca` la búsqueda responde como el RAG con esos ids (el modelo elige uno y lo inserta de verdad); sin ella, el RAG está apagado
   // (como con TALLER_RAG_ENABLED apagado) y buscar_en_biblioteca leería el índice completo en memoria (~30 s): ninguna frase lo necesita.
-  const buscar = async (): Promise<RespuestaBusquedaTaller> => {
+  const buscar = async (entrada: EntradaBusqueda): Promise<RespuestaBusquedaTaller> => {
     if (!biblioteca) throw new Error("la prueba no usa la red");
+    busquedas.push(entrada);
     return { fuente: "rag", resultados: biblioteca.map(resultadoDeBiblioteca), ids: [...biblioteca], ramas: ["fts"], interpretacion: null, avisos: [] };
   };
   return aplicarHerramientaIA(escena, herramienta, args, POLITICA, { buscar, habilitado: biblioteca !== undefined });
@@ -120,6 +123,7 @@ export async function correrCaso(caso: Caso): Promise<Contexto> {
   const antes = escenaDeBase(caso.base);
   let escena = antes;
   const llamadas: LlamadaHecha[] = [];
+  const busquedas: EntradaBusqueda[] = [];
   const intentos: Intento[] = [];
   const avisos: AvisoUsuario[] = [];
   let verificacion = "";
@@ -130,7 +134,7 @@ export async function correrCaso(caso: Caso): Promise<Contexto> {
       const incumple = validarContraEsquema(llamada.herramienta, args);
       if (caso.fueraDeEsquema) assert.notEqual(incumple, null, `el esquema de ${llamada.herramienta} tenía que rechazar estos argumentos`);
       else assert.equal(incumple, null, `el modelo mandó argumentos que el esquema de ${llamada.herramienta} no acepta: ${incumple}`);
-      const hecho = await aplicar(escena, llamada.herramienta, args, caso.biblioteca);
+      const hecho = await aplicar(escena, llamada.herramienta, args, caso.biblioteca, busquedas);
       const r = hecho.resultado;
       llamadas.push({
         herramienta: llamada.herramienta, args, ok: r.ok, resumen: r.ok ? r.resumen : "", error: r.ok ? "" : r.error,
@@ -142,7 +146,7 @@ export async function correrCaso(caso: Caso): Promise<Contexto> {
     if (escena !== antesDeVuelta) verificacion = verificarCambios(antesDeVuelta, escena);
   }
   const respuesta = conHonestidad(caso.textoModelo ?? TEXTO_OPTIMISTA, fallosPendientes(intentos), problemasNuevos(antes, escena), avisos);
-  return { antes, despues: escena, llamadas, respuesta, verificacion };
+  return { antes, despues: escena, llamadas, busquedas, respuesta, verificacion };
 }
 
 // ----------------------------------------------------------------------------------------------------------

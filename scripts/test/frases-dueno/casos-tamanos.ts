@@ -233,4 +233,49 @@ export const CASOS_TAMANOS: Caso[] = [
     fallaCon: /solo la pata izquierda cambia/,
     fallaEsperada: "el motor orgánico arma las dos patas con UN solo azar y UN solo reparto de colores por cuotas: al subir los R-24 de una pata cambian el relleno, los R-9 y los colores de la otra (banco-escena-ia estilo-30)",
   },
+  {
+    area: "tamanos",
+    frase: "ponle globos R-24 a la columna orgánica verde (cambiar_pieza)",
+    base: "vacia",
+    textoModelo: "Listo, la columna lleva R-24.",
+    vueltas: [
+      [llamar("agregar_pieza", { tipo: "columna_organica", colores: ["verde"], tamanos: ["R-12", "R-5"] })],
+      [llamar("cambiar_pieza", { id: "columna-organica", tamanos: ["R-5", "R-24"] })],
+    ],
+    sumaSola: false,
+    tocables: ["columna-organica"],
+    comprobar: (ctx) => {
+      assert.equal(globosDeFormato(ctx.despues, "columna-organica", "R-24"), 0, "el verde Fashion no se fabrica en R-24");
+      assert.match(ctx.respuesta, /Aviso:.*Pediste R-24.*ningún color de la paleta se fabrica en ese tamaño/, "aunque el modelo diga que lleva R-24");
+    },
+  },
+  {
+    area: "tamanos",
+    frase: "cambia la columna por una orgánica verde con R-5 y R-24 (reemplazar_pieza)",
+    base: "arco_organico_columnas_guirnalda",
+    textoModelo: "Listo, la columna ahora es orgánica con R-24.",
+    vueltas: [[llamar("reemplazar_pieza", { id: "columna-izq", tipo: "columna_organica", colores: ["verde"], tamanos: ["R-5", "R-24"] })]],
+    sumaSola: false,
+    tocables: ["columna-izq"],
+    comprobar: (ctx) => {
+      assert.equal(globosDeFormato(ctx.despues, "columna-izq", "R-24"), 0);
+      assert.match(ctx.respuesta, /Aviso:.*Pediste R-24.*ese tamaño/);
+    },
+  },
+  {
+    area: "tamanos",
+    frase: "ponle R-24 a la columna verde otra vez (ya estaba así: el aviso se mantiene)",
+    base: "vacia",
+    textoModelo: "Listo, ya lo tenía.",
+    vueltas: [
+      [llamar("agregar_pieza", { tipo: "columna_organica", colores: ["verde"], tamanos: ["R-5", "R-24"] })],
+      [llamar("cambiar_pieza", { id: "columna-organica", tamanos: ["R-5", "R-24"] })],
+    ],
+    sumaSola: false,
+    tocables: ["columna-organica"],
+    comprobar: (ctx) => {
+      assert.match(ctx.llamadas[1]!.resumen, /ya estaba así/, "el segundo pedido no cambia nada");
+      assert.ok(ctx.llamadas[1]!.avisos.some((a) => /Pediste R-24/.test(a.texto)), "y aun así la herramienta devuelve el aviso, no solo la nota del resumen");
+    },
+  },
 ];
