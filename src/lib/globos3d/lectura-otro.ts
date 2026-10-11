@@ -7,7 +7,8 @@
  *   de regalo NO son una mesa ni un carrito: describen lo que hay encima o cerca. Un material suelto tampoco es la pieza: unas lentejuelas
  *   son la pared solo si lo dice («de fondo», «en la pared»), un tapete es el redondo del catálogo solo si dice su forma o el piso (no
  *   uno cuadrado, ni uno de bienvenida con letras, ni uno de color sobre la mesa), y un pedestal solo no es el juego de tres del catálogo (azul, blanco y dorado).
- * - `escenografia`: fondo de la foto sin pieza (ventanales, césped, deck, cerca, cielo, florero): no es capacidad que falte. Solo si TODO
+ * - `escenografia`: fondo de la foto sin pieza (ventanales, césped, deck, cerca, cielo, florero): no es capacidad que falte. También el
+ *   salón y la gente, que no son la decoración: lo del primer plano («primer plano: mesa de invitados con vajilla») y las personas. Solo si TODO
  *   lo que dice es fondo («ventanales y césped», «pared de ladrillo blanca»); lo que lleva puesto cuenta («pared con mariposas de papel»,
  *   «piso con tapete»), y un «muro de globos» o una «pared de flores» no son fondo. Un florero es fondo con sus flores y sus ramas, no
  *   con globos. Si después del fondo nombra una pieza del catálogo («pared blanca, mesa de postres a la izquierda», «ventanales, césped y
@@ -59,6 +60,13 @@ const AL_PIE_DE_LA_ESTRUCTURA = /\bal pie de\s+(?:la |las |los |el )?(?:guirnald
 const SUPERFICIE = /^(?:pared(?:es)?|muros?|piso|suelo)$/;
 /** Lo que un florero lleva sin dejar de ser fondo (el arreglo entero). */
 const VEGETAL = /^(?:flor(?:es)?|ramas?|ramitas?|plantas?|hojas?|follaje|tallos?|rosas?|lavanda|eucalipto|hierbas?|espigas?)$/;
+/** Lo del primer plano de la foto (la mesa de invitados desde donde se toma, su vajilla): el salón, no la decoración. */
+const PRIMER_PLANO = /^primer plano\b/;
+const MESA_DE_INVITADOS = /^mesas? de (?:los )?invitados\b/;
+/** Lo que lleva globos o es una figura, foto, muñeco o pieza hecha (de cartón, acrílico, madera…) es decoración aunque nombre a una persona. */
+const ES_DECORACION = /\b(?:globos?|carton|impres[oa]s?|fotos?|figuras?|munec[oa]s?|siluetas?|recortes?|peluches?|estatuas?|maniquies?|papel|acrilico|mdf|madera|vinil|neon|topper|pastel|inflables?)\b/;
+/** Las personas de la foto (el sustantivo principal): no son decoración. */
+const PERSONAS = /^(?:personas?|gente|invitad[oa]s?|comensales|ninas?|ninos?|senoras?|senores?|hombres?|mujer(?:es)?|chic[oa]s|quinceaneras?|cumpleaner[oa]s?|novi[oa]s?|bailarin(?:es|as)?|musicos?|meseros?|publico)$/;
 /** Un tapete o una alfombra con letras o un mensaje (el de bienvenida) no es la pieza redonda del catálogo. */
 const CON_LETRAS = /\b(?:bienvenida|welcome|letras?|texto|frase|mensaje|logo|nombre)\b|«/;
 /** Una forma que no es la redonda del catálogo. */
@@ -99,6 +107,8 @@ function idDelCatalogo({ cabeza, util, clausula }: { cabeza: string; util: strin
     case "carrito": case "carritos": return dice(/\bdulces\b/, util) ? "carrito_dulces" : null;
     case "alfombra": case "alfombras": return dice(/\bredond[oa]s?\b/) && !CON_LETRAS.test(completa) ? "alfombra_redonda" : null;
     case "silla": case "sillas": return dice(/\btapiz/) ? "silla_moderna" : null;
+    // Un trono de XV años o un sillón tapizado es el sillón del catálogo (su color y su medida, los del catálogo).
+    case "trono": case "tronos": case "sillon": case "sillones": return /\bglobos?\b/.test(completa) ? null : "sillon";
     case "jarron": case "jarrones": case "florero": case "floreros": return /\bpampas?\b/.test(completa) ? "jarron_pampas" : null;
     // Un arreglo de pampas en el piso («pampas con flores al pie del arco») es el jarrón de pampas del catálogo; entre los globos o en la guirnalda son follaje.
     case "pampas": case "pampa": case "arreglo": case "arreglos": return /\bpampas?\b/.test(completa) && /\b(?:en el (?:piso|suelo)|al pie)\b/.test(completa) && !PAMPAS_CON_GLOBOS.test(completa.replace(AL_PIE_DE_LA_ESTRUCTURA, " ")) ? "jarron_pampas" : null;
@@ -157,8 +167,16 @@ function elementosDe(texto: string): string[] {
 }
 
 /** Una descripción que empieza por un fondo de la foto y nombra después una pieza del catálogo es esa pieza; si no, lo que dice su principio. */
+/** ¿Lo del salón y no de la decoración: lo que el lector anotó del primer plano («primer plano: …», la mesa de invitados) o las personas? */
+function esDelSalon(texto: string): boolean {
+  if (ES_DECORACION.test(texto)) return false;
+  const cabeza = nombreDe(texto)?.cabeza ?? "";
+  return PRIMER_PLANO.test(texto) || MESA_DE_INVITADOS.test(cabeza) || PERSONAS.test(palabrasDe(cabeza)[0] ?? "");
+}
+
 function clasificarDescripcion(texto: string): Clase {
   const principio = clasificar(texto);
+  if (principio.tipo !== "catalogo" && esDelSalon(texto)) return ESCENOGRAFIA;
   const nombre = nombreDe(texto);
   if (principio.tipo === "catalogo" || !nombre || !FONDO.test(palabrasDe(nombre.cabeza)[0] ?? "")) return principio;
   for (const elemento of elementosDe(texto)) {

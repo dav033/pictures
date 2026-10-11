@@ -1,0 +1,161 @@
+{
+ "resumen": "Decoración de salón de fiesta con mesa redonda vestida en primer plano y fondo al fondo con arcos calados, pared de lentejuelas, guirnaldas orgánicas de globos rosados, violetas y dorados, y sillón de quinceañera.",
+ "aspecto": 1,
+ "escala": {
+  "altoImagenCm": 280,
+  "referencia": "mesa redonda de 75 cm de alto"
+ },
+ "pisoY": 0.95,
+ "sala": {
+  "pared": "#e0c8d8",
+  "piso": "#d6cbcd"
+ },
+ "piezas": [
+  {
+   "tipo": "fondo",
+   "id": "mesa_redonda_mantel",
+   "x": 0.5,
+   "yBase": 1,
+   "ancho": 1,
+   "alto": 0.6,
+   "colores": [
+    {
+     "nombre": "blanco",
+     "hex": "#f2eedd",
+     "peso": 70,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "dorado",
+     "hex": "#c2a25d",
+     "peso": 30,
+     "acabado": "cromado"
+    }
+   ]
+  },
+  {
+   "tipo": "guirnalda_organica",
+   "puntos": [
+    {
+     "x": 0.03,
+     "y": 0.26,
+     "grosor": 0.12
+    },
+    {
+     "x": 0.11,
+     "y": 0.22,
+     "grosor": 0.11
+    },
+    {
+     "x": 0.28,
+     "y": 0.21,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.4,
+     "y": 0.2,
+     "grosor": 0.09
+    },
+    {
+     "x": 0.52,
+     "y": 0.22,
+     "grosor": 0.09
+    }
+   ],
+   "tamanos": {},
+   "mezcla": {
+    "grandes": 20,
+    "medianos": 55,
+    "chicos": 25,
+    "diametroGrande": 0.12,
+    "diametroMediano": 0.07,
+    "diametroChico": 0.04
+   },
+   "racimos": 0.5,
+   "colores": [
+    {
+     "nombre": "rosado",
+     "hex": "#f3bfcf",
+     "peso": 40,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "violeta",
+     "hex": "#802a6d",
+     "peso": 30,
+     "acabado": "brillante"
+    },
+    {
+     "nombre": "dorado",
+     "hex": "#cfa453",
+     "peso": 20,
+     "acabado": "cromado"
+    },
+    {
+     "nombre": "blanco",
+     "hex": "#ffffff",
+     "peso": 10,
+     "acabado": "mate"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "lentejuelas",
+   "x": 0.11,
+   "yBase": 0.46,
+   "ancho": 0.08,
+   "alto": 0.25,
+   "colores": [
+    {
+     "nombre": "dorado",
+     "hex": "#d4af58",
+     "peso": 100,
+     "acabado": "cromado"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "lentejuelas",
+   "x": 0.39,
+   "yBase": 0.39,
+   "ancho": 0.09,
+   "alto": 0.23,
+   "colores": [
+    {
+     "nombre": "rosa",
+     "hex": "#e89bb8",
+     "peso": 100,
+     "acabado": "cromado"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "sillon",
+   "x": 0.61,
+   "yBase": 0.45,
+   "ancho": 0.12,
+   "alto": 0.2,
+   "colores": [
+    {
+     "nombre": "rosa",
+     "hex": "#e39bb5",
+     "peso": 80,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "dorado",
+     "hex": "#caa354",
+     "peso": 20,
+     "acabado": "cromado"
+    }
+   ]
+  },
+  {
+   "tipo": "otro",
+   "descripcion": "estabilidad central de mesa de varillas metálicas doradas y vajilla con copas"
+  }
+ ]
+}

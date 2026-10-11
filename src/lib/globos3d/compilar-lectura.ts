@@ -32,6 +32,7 @@ import { recogerPuntas } from "./puntas-lectura";
 import { apoyoDeRacimo } from "./apoyo-racimo";
 import { colocarCuerpo } from "./fondos-en-el-piso";
 import { montonesAlPie } from "./montones-al-pie";
+import { sinPrimerPlano } from "./sujeto-foto";
 import { colgadoDelanteDePaneles, letrerosDelanteDeGlobos } from "./colgado-delante";
 
 export { codigoDeColor } from "./colores-lectura";
@@ -129,7 +130,9 @@ function engrosarParaGrandes<T extends { x: number; y: number; grosor: number; p
 
 export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
   const notas: string[] = [], omitidas: string[] = [], decoracionesOmitidas: string[] = [];
-  const l = montonesAlPie(leida, notas);
+  const sujeto = sinPrimerPlano(leida);
+  notas.push(...sujeto.notas);
+  const l = montonesAlPie(sujeto.lectura, notas);
   const H = l.escala.altoImagenCm;
   const piso = pisoDeLectura(l);
   const X = (x: number) => r1((x - 0.5) * l.aspecto * H);
@@ -371,7 +374,7 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
       case "otro": {
         // Un nombre del catálogo se arma con su pieza (más abajo, `colocarOtros`); el fondo sin pieza no cuenta; lo demás queda pendiente.
         const r = resolverOtro(p.descripcion);
-        if (r.tipo === "escenografia") { notas.push(`Pieza ${i + 1} (otro): «${p.descripcion}» es fondo de la foto, sin pieza del taller.`); return; }
+        if (r.tipo === "escenografia") { notas.push(`Pieza ${i + 1} (otro): «${p.descripcion}» es fondo de la foto (el lugar, el salón o la gente), no decoración: no se arma.`); return; }
         if (r.tipo === "figura") { figurasPorColocar.push({ indice: i, descripcion: p.descripcion, figuras: r.figuras, lugar: { lado: r.lado, profundidad: r.profundidad } }); return; }
         const entrada = r.tipo === "catalogo" ? entradaDeCatalogo(r.id) : undefined;
         if (r.tipo !== "catalogo" || !entrada) { omitidas.push(p.descripcion); return; }

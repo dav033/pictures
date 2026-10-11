@@ -5,6 +5,7 @@ import type { DecisionEscala } from "./escala-por-muebles";
 import { medirConDetecciones } from "./medir-con-detecciones";
 import { idNuevo, type Escena, type NodoEscena } from "./escena";
 import type { LecturaFoto, PiezaLeida } from "./lectura-foto";
+import { sujetoDeLaFoto } from "./sujeto-foto";
 import { leerFotoConIA, type FotoLectura, type OpcionesLectura, type ResultadoLectura, type UsoModelo } from "./leer-foto-ia";
 
 /**
@@ -56,12 +57,14 @@ export async function modelarDesdeFoto(foto: FotoLectura, deps: DependenciasMode
     ? detectar(foto).catch((error: unknown): null => { avisos.push(`No se pudieron detectar los globos uno por uno (la lectura va sin medir): ${error instanceof Error ? error.message : String(error)}`); return null; })
     : Promise.resolve(null);
   const [leida, plantillas, deteccion] = await Promise.all([(deps.leer ?? leerFotoConIA)(foto, deps.opciones ?? {}), buscar, detectando]);
-  const medida = deteccion ? medirConDetecciones(leida.lectura, deteccion.globos, deteccion.fondos) : { lectura: leida.lectura, notas: [] as string[], escala: undefined };
+  // Lo del primer plano (la mesa de invitados desde donde se tomó la foto) sale antes de medir: la lectura que vuelve es la del montaje.
+  const sujeto = sujetoDeLaFoto(leida.lectura);
+  const medida = deteccion ? medirConDetecciones(sujeto.lectura, deteccion.globos, deteccion.fondos) : { lectura: sujeto.lectura, notas: [] as string[], escala: undefined };
   if (deteccion) decidir("regla:foto_medida_con_detecciones", "la lectura de la foto medida con los globos y fondos detectados", datosDeLaMedida(leida.lectura, medida, deteccion));
   const compilada = compilarLectura(medida.lectura);
   if (compilada.decoracionesOmitidas.length) decidir("regla:foto_decoracion_omitida", "decoraciones de la lectura que no se pudieron armar y se omitieron (la pieza se armó sin ellas)", { decoraciones: compilada.decoracionesOmitidas });
   return {
-    escena: compilada.escena, lectura: medida.lectura, notas: [...medida.notas, ...compilada.notas], omitidas: compilada.omitidas, descartadas: leida.descartadas, plantillas, avisos,
+    escena: compilada.escena, lectura: medida.lectura, notas: [...sujeto.notas, ...medida.notas, ...compilada.notas], omitidas: compilada.omitidas, descartadas: leida.descartadas, plantillas, avisos,
     uso: {
       entrada: leida.uso.entrada + (deteccion?.uso.entrada ?? 0), salida: leida.uso.salida + (deteccion?.uso.salida ?? 0), pensamiento: leida.uso.pensamiento + (deteccion?.uso.pensamiento ?? 0),
       costeEstimadoUsd: Math.round((leida.costeEstimadoUsd + (deteccion?.costeEstimadoUsd ?? 0)) * 1e5) / 1e5, intentos: leida.intentos, modelo: leida.modelo,

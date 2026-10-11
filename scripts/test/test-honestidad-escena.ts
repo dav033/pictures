@@ -173,9 +173,9 @@ prueba("hay un tope de líneas: muchos fallos distintos se resumen", () => {
   assert.ok(r.length < 600, `respuesta larga: ${r.length}`);
 });
 
-prueba("la ruta aplica la honestidad al texto final, incluso al de la IA cortada, y registra los fallos", () => {
+prueba("la ruta aplica la honestidad al texto final, incluso al de la IA cortada, y registra los fallos (los avisos de las herramientas y lo no armado de la foto)", () => {
   const ruta = readFileSync("src/app/api/escena-ia/route.ts", "utf8");
-  for (const patron of [/intentos\.push\(\{ herramienta: nombre, ok: hecho\.ok/, /respuesta = conHonestidad\(respuesta, fallos, problemas, avisosUsuario\)/, /avisosUsuario\.push\(\.\.\.\("avisos" in hecho \? hecho\.avisos \?\? \[\] : \[\]\)\)/, /"La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer\."/, /conHonestidad\(aviso, fallosPendientes\(intentos\), problemasNuevos\(base, escena\), avisosUsuario\)/, /cortado, plazo: control\.estado\(\), fallos, problemas/]) assert.match(ruta, patron);
+  for (const patron of [/intentos\.push\(\{ herramienta: nombre, ok: hecho\.ok/, /respuesta = conHonestidad\(respuesta, fallos, problemas, conAvisoDeFoto\(respuesta\)\)/, /return aviso \? \[\.\.\.avisosUsuario, aviso\] : avisosUsuario;/, /avisosUsuario\.push\(\.\.\.\("avisos" in hecho \? hecho\.avisos \?\? \[\] : \[\]\)\)/, /"La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer\."/, /conHonestidad\(aviso, fallosPendientes\(intentos\), problemasNuevos\(base, escena\), conAvisoDeFoto\(aviso\)\)/, /cortado, plazo: control\.estado\(\), fallos, problemas/]) assert.match(ruta, patron);
 });
 
 // ----------------------------------------------------------------------------------------------------------

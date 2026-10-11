@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { Part } from "@google/genai";
 import { MIMES_FOTO, TOPE_BYTES_FOTO } from "@/lib/taller/buscar-foto";
 import { LADO_MAXIMO_LECTURA, motivoFotoInvalida, respuestaDeErrorLectura } from "@/lib/taller/escena-desde-foto";
+import type { AvisoUsuario } from "./avisos-usuario";
 import type { Escena } from "./escena";
 import type { ResultadoHerramienta } from "./herramientas-escena";
 import { ModelarDesdeFotoSchema } from "./herramientas-escena-foto";
@@ -85,6 +86,32 @@ export function aplicarModeladoDeFoto(escena: Escena, foto: FotoPreparada | null
   const nueva = combinarEscenaDeFoto(escena, foto.modelado.escena, a.data.modo, maxNodos);
   if (!nueva) return { ok: false, escena, error: `La escena pasaría de ${maxNodos} piezas: usa el modo «reemplazar» o quita piezas antes.` };
   return { ok: true, escena: nueva, consulta: false, resumen: `Armé lo leído de la foto (${a.data.modo}): ${piezasEnTexto(foto.modelado.escena.nodos.length)}; la escena tiene ahora ${piezasEnTexto(nueva.nodos.length)}.` };
+}
+
+/** Palabras que no distinguen una pieza de otra en la respuesta (las dice cualquier texto sobre la foto). */
+const PALABRAS_GENERICAS: ReadonlySet<string> = new Set(["globo", "globos", "fondo", "pieza", "piezas", "panel", "blanco", "blanca", "dorado", "dorada", "rosado", "rosada", "grande", "grandes", "sobre", "junto", "entre", "izquierda", "derecha", "centro", "central"]);
+const sinTildes = (t: string) => t.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+
+/** Las dos primeras palabras que distinguen lo omitido (de su primera cláusula), para saber si la respuesta ya lo nombró. */
+const clavesDe = (omitida: string): string[] =>
+  sinTildes(omitida.split(/[,;:(]/)[0] ?? omitida).split(/[^a-z0-9]+/).filter((w) => w.length >= 5 && !PALABRAS_GENERICAS.has(w)).slice(0, 2);
+
+/** Una pieza que falló al compilarse se dice sin el error interno. */
+const paraLaPersona = (omitida: string): string => {
+  const fallo = /^Pieza \d+ \(([^)]+)\):/.exec(omitida);
+  return fallo ? `una pieza (${fallo[1]!.replace(/_/g, " ")}) no se pudo armar` : omitida;
+};
+
+/**
+ * Lo de la foto que no se armó (neones con forma, flores del piso, fotos impresas…) y la respuesta no nombra, como aviso para el usuario:
+ * el servidor agrega «No pude armar de la foto: …» (`conHonestidad`). Cada pieza se mira por separado; nunca se calla ni lleva el error
+ * interno de una pieza que falló. `null` si no queda nada sin decir.
+ */
+export function avisoDeOmitidas(omitidas: readonly string[], respuesta: string): AvisoUsuario | null {
+  const dicho = sinTildes(respuesta);
+  const calladas = omitidas.filter((o) => { const claves = clavesDe(o); return !claves.length || !claves.some((c) => dicho.includes(c)); });
+  if (!calladas.length) return null;
+  return { texto: `No pude armar de la foto: ${[...new Set(calladas.map(paraLaPersona))].join(" · ")}.`, palabras: [] };
 }
 
 export const REGLAS_FOTO = `FOTO ADJUNTA: el mensaje trae una foto de una decoración y su lectura (piezas, colores, medidas, posiciones) ya calculada por un lector de visión; tú también ves la foto.

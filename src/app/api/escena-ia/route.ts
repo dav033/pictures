@@ -16,7 +16,7 @@ import type { AvisoUsuario } from "@/lib/globos3d/avisos-usuario";
 import { TEXTO_CUOTA_IA, TEXTO_IA_CAIDA, TEXTO_SIN_IA, conHonestidad, fallosPendientes, objetivoDe, textoTopeHora, type Intento } from "@/lib/globos3d/honestidad-respuesta";
 import { problemasNuevos } from "@/lib/globos3d/problemas-escena";
 import { tomarCupoEscenaIA, TOPE_POR_HORA } from "@/lib/globos3d/cupo-escena-ia";
-import { FotoCuerpoSchema, REGLAS_FOTO, aplicarModeladoDeFoto, prepararFotoAdjunta, type FotoPreparada } from "@/lib/globos3d/escena-ia-foto";
+import { FotoCuerpoSchema, REGLAS_FOTO, aplicarModeladoDeFoto, avisoDeOmitidas, prepararFotoAdjunta, type FotoPreparada } from "@/lib/globos3d/escena-ia-foto";
 import { MODELAR_DESDE_FOTO } from "@/lib/globos3d/herramientas-escena-foto";
 import { MAX_PASOS_REFINAR, RefinarCuerpoSchema, REPORTAR_COMPARACION, aplicarReporte, declaracionesDeRefinado, prepararRefinado, reglasDeRonda } from "@/lib/globos3d/refinado/ronda-servidor";
 import { decidirRonda, type ReporteComparacion } from "@/lib/globos3d/refinado/ronda";
@@ -60,6 +60,7 @@ import { TEXTO_PEDIDO_SIN_TIEMPO, TEXTO_SIN_TIEMPO_NADA_HECHO, controlarPlazo, c
 export const maxDuration = 75;
 
 const MAX_PASOS = 12;
+const CORTADA = "La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer.";
 const MAX_LLAMADAS = 40;
 
 const CuerpoSchema = z.object({
@@ -202,6 +203,11 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   const intentos: Intento[] = [];
   // Lo que una herramienta que SÍ funcionó manda decirle al usuario (un color sustituido): también llega a la respuesta final.
   const avisosUsuario: AvisoUsuario[] = [];
+  // Lo de la foto que no se armó y la respuesta no nombra se dice siempre («No pude armar de la foto: …»).
+  const conAvisoDeFoto = (texto: string): AvisoUsuario[] => {
+    const aviso = adjunta && (adjunta.aplicada || acciones.some((a) => a.herramienta === MODELAR_DESDE_FOTO)) ? avisoDeOmitidas(adjunta.modelado.omitidas, texto) : null;
+    return aviso ? [...avisosUsuario, aviso] : avisosUsuario;
+  };
 
   try {
     for (;;) {
@@ -266,8 +272,8 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
     decidir("modelo:escena_ia", "el asistente de escena no pudo terminar", { error: corto(texto, 300), pasos, llamadas, acciones, porTiempo }, { entrada: { mensaje } });
     if (acciones.some((a) => !a.consulta)) {
       // Lo ya aplicado se devuelve: el usuario puede deshacerlo con un clic.
-      const aviso = porTiempo ? TEXTO_PEDIDO_SIN_TIEMPO : "La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer.";
-      return Response.json({ escena, respuesta: conHonestidad(aviso, fallosPendientes(intentos), problemasNuevos(base, escena), avisosUsuario), acciones, uso: { pasos, llamadas, costeEstimadoUsd: costeUsd(modeloIA, usos, adjunta?.modelado.uso.costeEstimadoUsd ?? 0) } });
+      const aviso = porTiempo ? TEXTO_PEDIDO_SIN_TIEMPO : CORTADA;
+      return Response.json({ escena, respuesta: conHonestidad(aviso, fallosPendientes(intentos), problemasNuevos(base, escena), conAvisoDeFoto(aviso)), acciones, uso: { pasos, llamadas, costeEstimadoUsd: costeUsd(modeloIA, usos, adjunta?.modelado.uso.costeEstimadoUsd ?? 0) } });
     }
     if (porTiempo) return Response.json({ error: TEXTO_SIN_TIEMPO_NADA_HECHO }, { status: 504 });
     return Response.json({ error: cuota ? TEXTO_CUOTA_IA : TEXTO_IA_CAIDA }, { status: cuota ? 429 : 502 });
@@ -279,7 +285,7 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   // Lo que falló o quedó mal se dice aunque el modelo lo calle (una pregunta corta el turno: no hay nada que afirmar todavía).
   const fallos = fallosPendientes(intentos);
   const problemas = problemasNuevos(base, escena);
-  if (!pregunta) respuesta = conHonestidad(respuesta, fallos, problemas, avisosUsuario);
+  if (!pregunta) respuesta = conHonestidad(respuesta, fallos, problemas, conAvisoDeFoto(respuesta));
   const costeLecturaUsd = adjunta?.modelado.uso.costeEstimadoUsd ?? 0;
   const costeEstimadoUsd = costeUsd(modeloIA, usos, costeLecturaUsd);
   const ronda = refinar ? decidirRonda(refinar.ronda, reportes, cambios.length) : null;

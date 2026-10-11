@@ -6,6 +6,9 @@ import type { Escalon } from "./mezcla-lectura";
 import { FONDOS_CON_SUPERFICIE } from "./fondos-familias";
 import { decidirEscala, escalaPorMuebles, escalasCorroboradas, intervaloPorReferenciasBlandas, type DecisionEscala, type IntervaloEscala } from "./escala-por-muebles";
 import { medirFondos, type FondoDetectado } from "./medir-fondos";
+import { pisoPorFondosDetectados } from "./piso-por-fondos";
+import { alargarPorLosGlobos } from "./puntas-por-globos";
+import { sujetoDeLaFoto } from "./sujeto-foto";
 
 export type { FondoDetectado } from "./medir-fondos";
 export type GloboDetectado = CajaDetectada;
@@ -247,9 +250,13 @@ function esDeUnFondo(g: Globo, p: PiezaLeida, aspecto: number): boolean {
  * La lectura con sus guirnaldas orgánicas y montones de piso medidos por los globos detectados, la escala de la foto sacada
  * de ellos (si hay con qué) y los fondos en su caja detectada. Pura: misma lectura y mismas detecciones, misma salida.
  */
-export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDetectado[], fondos: readonly FondoDetectado[] = []): { lectura: LecturaFoto; notas: string[]; escala?: DecisionEscala } {
+export function medirConDetecciones(leida: LecturaFoto, detectados: readonly GloboDetectado[], fondos: readonly FondoDetectado[] = []): { lectura: LecturaFoto; notas: string[]; escala?: DecisionEscala } {
+  // Sin el primer plano (la mesa de invitados desde donde se tomó la foto): su piso y su escala no son los de la decoración.
+  const sujeto = sujetoDeLaFoto(leida);
+  const piso = pisoPorFondosDetectados(sujeto.lectura, fondos);
+  const l = { ...sujeto.lectura, pisoY: piso.pisoY };
   const conFondos = medirFondos(l.piezas, fondos, l.aspecto, l.pisoY);
-  const notas = [...conFondos.notas];
+  const notas = [...sujeto.notas, ...(piso.nota ? [piso.nota] : []), ...conFondos.notas];
   const piezas = [...conFondos.piezas];
   const globos = globosDe(detectados, l.aspecto);
   const guirnaldas = l.piezas.map((p, i) => ({ p, i })).filter((x): x is { p: Guirnalda; i: number } => x.p.tipo === "guirnalda_organica");
@@ -257,16 +264,23 @@ export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDe
   let escala = l.escala;
   let decision: DecisionEscala | undefined;
   if ((guirnaldas.length || montones.length) && globos.length) {
-    // 1. De quién es cada globo.
-    const ejes = guirnaldas.map(({ p }) => ({ eje: p.puntos.map((q) => ({ x: q.x * l.aspecto, y: q.y })) as P[], alcance: Math.max(...p.puntos.map((q) => q.grosor)) * ALCANCE_GUIRNALDA }));
-    const asignados: Globo[][] = guirnaldas.map(() => []);
+    // 1. De quién es cada globo: de un fondo, de un montón, de otra pieza o, los libres, de las guirnaldas.
     const deMonton: Globo[][] = montones.map(() => []);
+    const libres: Globo[] = [];
     let deOtras = 0, deFondos = 0;
     for (const g of globos) {
       if (piezas.some((p) => esDeUnFondo(g, p, l.aspecto))) { deFondos++; continue; }
       const k = montones.findIndex(({ p }) => Math.abs(g.x - p.x * l.aspecto) <= p.ancho / 2 && g.y >= p.yArriba && g.y <= p.yPie);
       if (k >= 0) { deMonton[k]!.push(g); continue; }
       if (l.piezas.some((p) => dentroDeOtraPieza(g, p, l.aspecto))) { deOtras++; continue; }
+      libres.push(g);
+    }
+    // Las puntas de cada guirnalda llegan hasta donde llegan sus globos (el lector a veces la corta antes del último racimo).
+    const alargadas = alargarPorLosGlobos(guirnaldas.map(({ p }) => p), libres, l.aspecto);
+    notas.push(...alargadas.notas);
+    const ejes = alargadas.guirnaldas.map((p) => ({ eje: p.puntos.map((q) => ({ x: q.x * l.aspecto, y: q.y })) as P[], alcance: Math.max(...p.puntos.map((q) => q.grosor)) * ALCANCE_GUIRNALDA }));
+    const asignados: Globo[][] = guirnaldas.map(() => []);
+    for (const g of libres) {
       let mejor = -1, dMin = Infinity;
       ejes.forEach((e, j) => { const d = proyectar(g, e.eje).d; if (d <= e.alcance + g.d / 2 && d < dMin) { dMin = d; mejor = j; } });
       if (mejor >= 0) asignados[mejor]!.push(g);
@@ -276,8 +290,8 @@ export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDe
     // Los colores de la escena: los de las piezas de globos (no los de los fondos), para los que un montón vea y el lector no haya puesto.
     const paleta = l.piezas.flatMap((q) => (q.tipo === "guirnalda_organica" || q.tipo === "columna_organica" || q.tipo === "racimo_piso" ? q.colores : []));
     const escalas: number[] = [];
-    guirnaldas.forEach(({ p, i }, k) => {
-      const m = medirGuirnalda(p, asignados[k]!, l.aspecto, l.pisoY);
+    guirnaldas.forEach(({ i }, k) => {
+      const m = medirGuirnalda(alargadas.guirnaldas[k]!, asignados[k]!, l.aspecto, l.pisoY);
       piezas[i] = m.pieza;
       notas.push(...m.notas);
       if (m.escalaCm) escalas.push(m.escalaCm);
@@ -301,7 +315,7 @@ export function medirConDetecciones(l: LecturaFoto, detectados: readonly GloboDe
   const valida = LecturaFotoSchema.safeParse({ ...l, escala, piezas });
   if (!valida.success) {
     const motivos = valida.error.issues.slice(0, 3).map((x) => `${x.path.join(".")}: ${x.message}`).join("; ");
-    return { lectura: l, notas: [`La medida con los globos detectados no cumple el esquema de la lectura (${motivos}): la lectura queda como la escribió el lector.`] };
+    return { lectura: l, notas: [...sujeto.notas, ...(piso.nota ? [piso.nota] : []), `La medida con los globos detectados no cumple el esquema de la lectura (${motivos}): la lectura queda como la escribió el lector.`] };
   }
   return { lectura: valida.data, notas, ...(decision ? { escala: decision } : {}) };
 }
