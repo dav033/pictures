@@ -131,7 +131,10 @@ async function main() {
     assert.match(modelo, /getGeminiClient\("escena_ia"\)/);
     assert.match(modelo, /getClaudeClient\("escena_ia"\)/);
     assert.match(ruta, /decidir\("herramienta:escena_ia"/);
-    assert.match(ruta, /signal: request\.signal/);
+    // El corte del navegador («Detener») sigue llegando al modelo: la ruta lo junta con el del plazo (`corteConPlazo`) y se lo pasa a la sesión.
+    assert.match(ruta, /const corte = corteConPlazo\(request\.signal, plazo\);/);
+    assert.match(ruta, /signal: corte,/);
+    assert.match(readFileSync(path.resolve(__dirname, "../../src/lib/globos3d/plazo-escena-ia.ts"), "utf8"), /AbortSignal\.any\(\[corteDelNavegador,/);
     assert.match(readFileSync(path.resolve(__dirname, "../../src/lib/globos3d/modelo-escena/sesion-gemini.ts"), "utf8"), /abortSignal: signal/);
     assert.match(readFileSync(path.resolve(__dirname, "../../src/lib/globos3d/modelo-escena/sesion-claude.ts"), "utf8"), /cliente\.messages\.create\(cuerpo, \{ signal \}\)/);
     assert.match(ruta, /const MAX_PASOS = 12;/);

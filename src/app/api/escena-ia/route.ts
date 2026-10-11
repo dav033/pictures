@@ -25,6 +25,7 @@ import { modelarFotoReal } from "@/lib/taller/modelar-foto-real";
 import { buscarVisible } from "@/lib/taller/buscar-visible";
 import { normalizarFotoA } from "@/lib/taller/normalizar-foto";
 import { TIPO_NDJSON, responderEnFlujo, type EventoFlujo } from "@/lib/globos3d/flujo-escena-ia";
+import { TEXTO_PEDIDO_SIN_TIEMPO, TEXTO_SIN_TIEMPO_NADA_HECHO, controlarPlazo, corteConPlazo, corteElPlazo, crearPlazo, respuestaConPlazo, textoHerramientaSinTiempo, textoPasoSinTiempo } from "@/lib/globos3d/plazo-escena-ia";
 
 /**
  * Taller 3D → «Pídele a la IA»: el usuario escribe en lenguaje natural («un arco orgánico rosado y dorado de 3 m,
@@ -50,7 +51,13 @@ import { TIPO_NDJSON, responderEnFlujo, type EventoFlujo } from "@/lib/globos3d/
  * Avance en vivo (D-021, flujo-escena-ia.ts): con `Accept: application/x-ndjson` la respuesta va línea a línea (fase, un `paso` por
  * herramienta aplicada y un `final` con el mismo JSON de siempre); sin la cabecera, el JSON único de siempre. El corte del navegador
  * (`request.signal`, «Detener») ya llega al modelo.
+ *
+ * Tiempo (P-054, plazo-escena-ia.ts): el pedido tiene `maxDuration` segundos. Antes de cada vuelta del modelo y de cada herramienta se mira si queda
+ * tiempo (una herramienta bloquea hasta ~15 s: los topes de armado); si no, la herramienta no se aplica y el modelo recibe «No pude: …» para decirlo,
+ * y una llamada al modelo que sigue en pie al final se corta con el plazo.
  */
+
+export const maxDuration = 75;
 
 const MAX_PASOS = 12;
 const MAX_LLAMADAS = 40;
@@ -125,6 +132,8 @@ async function atenderPOST(request: Request) {
 }
 
 async function procesarPedido(request: Request, avisar?: Avisar): Promise<Response> {
+  const plazo = crearPlazo(maxDuration * 1000);
+  const control = controlarPlazo(plazo);
   let cuerpo: unknown;
   try { cuerpo = await request.json(); } catch { return Response.json({ error: "El pedido no llegó en un formato válido." }, { status: 400 }); }
   const validado = CuerpoSchema.safeParse(cuerpo);
@@ -176,12 +185,13 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   const reglasExtra = adjunta ? `\n\n${REGLAS_FOTO}` : refinar ? `\n\n${reglasDeRonda(refinar.ronda)}` : "";
   if (seleccion) decidir("regla:escena_ia_seleccion", "pieza elegida en el editor que viaja con el pedido", { seleccion, valida: seleccionValida(inicial, seleccion) });
   // Con la ronda de refinado, el modelo solo ve el mensaje de la ronda (sin historial).
+  const corte = corteConPlazo(request.signal, plazo);
   const sesion = modeloIA.iniciar({
     sistema: `${SISTEMA}\n\n${REGLAS_AGENTE}${reglasExtra}${reglaCatalogoIA(politica, declaraciones)}`,
     declaraciones,
     historial: partesRefinar ? [] : historial,
     partesUsuario: partesRefinar ?? (adjunta ? [{ text: textoUsuario }, adjunta.imagen] : [{ text: textoUsuario }]),
-    signal: request.signal,
+    signal: corte,
   });
   let escena = base;
   const tokens = { entrada: 0, salida: 0, pensamiento: 0 };
@@ -195,6 +205,7 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
 
   try {
     for (;;) {
+      if (!control.hayVuelta()) break;
       avisar?.({ tipo: "fase", fase: "pensando" });
       const paso = await sesion.pedir(forzarFoto && pasos === 0 ? [MODELAR_DESDE_FOTO, PREGUNTAR_USUARIO] : undefined);
       usos.push(paso.uso);
@@ -211,17 +222,22 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
       for (const llamada of funciones) {
         const nombre = llamada.nombre;
         llamadas += 1;
+        const faltaTiempo = llamadas <= MAX_LLAMADAS && !control.puedeAplicar();
         // `buscar_en_biblioteca` va por la búsqueda de la biblioteca (async, con TALLER_RAG_ENABLED) y, con la política del catálogo, acotada al repositorio que pidió el modelo; el resto, síncrono como siempre.
         const { resultado: hecho, busqueda } = llamadas > MAX_LLAMADAS
           ? { resultado: { ok: false as const, escena, error: `Tope de ${MAX_LLAMADAS} herramientas por mensaje: no se aplicó.` }, busqueda: null }
-          : nombre === MODELAR_DESDE_FOTO
-            ? { resultado: aplicarModeladoDeFoto(escena, adjunta, llamada.args, MAX_NODOS), busqueda: null }
-            : nombre === REPORTAR_COMPARACION && refinar
-              ? { resultado: aplicarReporte(escena, llamada.args, reportes), busqueda: null }
-              : await aplicarHerramientaIA(escena, nombre, llamada.args ?? {}, politica, { buscar: (entrada) => buscarVisible(entrada) });
+          : faltaTiempo
+            ? { resultado: { ok: false as const, escena, error: textoHerramientaSinTiempo(nombre) }, busqueda: null }
+            : nombre === MODELAR_DESDE_FOTO
+              ? { resultado: aplicarModeladoDeFoto(escena, adjunta, llamada.args, MAX_NODOS), busqueda: null }
+              : nombre === REPORTAR_COMPARACION && refinar
+                ? { resultado: aplicarReporte(escena, llamada.args, reportes), busqueda: null }
+                : await aplicarHerramientaIA(escena, nombre, llamada.args ?? {}, politica, { buscar: (entrada) => buscarVisible(entrada) });
         decidir("herramienta:escena_ia", `aplicar ${nombre} a la escena del taller 3D`, hecho.ok ? { ok: true, resumen: hecho.resumen, piezas: hecho.escena.nodos.length, ...(busqueda ? { busqueda: { fuente: busqueda.fuente, ids: busqueda.ids, motivo: busqueda.motivo ?? null } } : {}) } : { ok: false, error: hecho.error }, { entrada: { herramienta: nombre, argumentos: llamada.args ?? {}, paso: pasos, ...(busqueda?.entrada ? { busqueda: busqueda.entrada } : {}) } });
-        intentos.push({ herramienta: nombre, ok: hecho.ok, objetivo: objetivoDe(llamada.args, nombre), ...(hecho.ok ? {} : { error: hecho.error }) });
-        avisar?.({ tipo: "paso", n: llamadas, herramienta: nombre, resumen: corto((hecho.ok ? hecho.resumen : hecho.error).split("\n")[0] ?? "", 140), consulta: hecho.ok && hecho.consulta, ok: hecho.ok });
+        // El usuario ve «No pude: …» sin lo que se le pide al modelo que haga (textoHerramientaSinTiempo).
+        const textoError = faltaTiempo ? textoPasoSinTiempo(nombre) : hecho.ok ? "" : hecho.error;
+        intentos.push({ herramienta: nombre, ok: hecho.ok, objetivo: objetivoDe(llamada.args, nombre), ...(hecho.ok ? {} : { error: textoError }) });
+        avisar?.({ tipo: "paso", n: llamadas, herramienta: nombre, resumen: corto((hecho.ok ? hecho.resumen : textoError).split("\n")[0] ?? "", 140), consulta: hecho.ok && hecho.consulta, ok: hecho.ok });
         if (hecho.ok) {
           escena = hecho.escena;
           avisosUsuario.push(...("avisos" in hecho ? hecho.avisos ?? [] : []));
@@ -245,17 +261,21 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   } catch (error) {
     const texto = error instanceof Error ? error.message : String(error);
     const cuota = /429|RESOURCE_EXHAUSTED|quota/i.test(texto);
-    decidir("modelo:escena_ia", "el asistente de escena no pudo terminar", { error: corto(texto, 300), pasos, llamadas, acciones }, { entrada: { mensaje } });
+    // El plazo cortó la llamada al modelo: lo dice la señal, no el reloj (un fallo del proveedor justo al final no es un tiempo agotado).
+    const porTiempo = corteElPlazo(corte, request.signal);
+    decidir("modelo:escena_ia", "el asistente de escena no pudo terminar", { error: corto(texto, 300), pasos, llamadas, acciones, porTiempo }, { entrada: { mensaje } });
     if (acciones.some((a) => !a.consulta)) {
       // Lo ya aplicado se devuelve: el usuario puede deshacerlo con un clic.
-      return Response.json({ escena, respuesta: conHonestidad("La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer.", fallosPendientes(intentos), problemasNuevos(base, escena), avisosUsuario), acciones, uso: { pasos, llamadas, costeEstimadoUsd: costeUsd(modeloIA, usos, adjunta?.modelado.uso.costeEstimadoUsd ?? 0) } });
+      const aviso = porTiempo ? TEXTO_PEDIDO_SIN_TIEMPO : "La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer.";
+      return Response.json({ escena, respuesta: conHonestidad(aviso, fallosPendientes(intentos), problemasNuevos(base, escena), avisosUsuario), acciones, uso: { pasos, llamadas, costeEstimadoUsd: costeUsd(modeloIA, usos, adjunta?.modelado.uso.costeEstimadoUsd ?? 0) } });
     }
+    if (porTiempo) return Response.json({ error: TEXTO_SIN_TIEMPO_NADA_HECHO }, { status: 504 });
     return Response.json({ error: cuota ? TEXTO_CUOTA_IA : TEXTO_IA_CAIDA }, { status: cuota ? 429 : 502 });
   }
 
   const cambios = acciones.filter((a) => !a.consulta);
   if (cortado) respuesta = `${respuesta ? `${respuesta} ` : ""}Llegué al tope de ${maxPasos} pasos: revisa lo hecho y pídeme lo que falte.`;
-  if (!respuesta) respuesta = cambios.length ? `Listo: ${cambios.length} cambio${cambios.length > 1 ? "s" : ""} en la escena.` : "No hice cambios.";
+  respuesta = respuestaConPlazo(respuesta, cambios.length, control.estado());
   // Lo que falló o quedó mal se dice aunque el modelo lo calle (una pregunta corta el turno: no hay nada que afirmar todavía).
   const fallos = fallosPendientes(intentos);
   const problemas = problemasNuevos(base, escena);
@@ -265,7 +285,7 @@ async function procesarPedido(request: Request, avisar?: Avisar): Promise<Respon
   const ronda = refinar ? decidirRonda(refinar.ronda, reportes, cambios.length) : null;
   if (ronda) decidir("regla:escena_ia_refinar", "ronda de comparación con la foto", { ...ronda, reportes: reportes.length });
   decidir("modelo:escena_ia", "respuesta final del asistente de escena", {
-    respuesta, acciones, pasos, llamadas, cortado, fallos, problemas: problemas.map((p) => p.texto), tokens, costeEstimadoUsd, proveedor: modeloIA.proveedor, modelo: modeloIA.modelo, pregunta,
+    respuesta, acciones, pasos, llamadas, cortado, plazo: control.estado(), fallos, problemas: problemas.map((p) => p.texto), tokens, costeEstimadoUsd, proveedor: modeloIA.proveedor, modelo: modeloIA.modelo, pregunta,
     refinar: ronda,
     foto: adjunta ? { piezasLeidas: adjunta.modelado.lectura.piezas.length, aplicadaSola: adjunta.aplicada, plantillas: adjunta.modelado.plantillas.map((p) => p.id), costeLecturaUsd } : null,
     piezasAntes: inicial.nodos.length, piezasDespues: escena.nodos.length, ids: escena.nodos.map((n) => n.id),

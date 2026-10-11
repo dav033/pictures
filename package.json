@@ -12,7 +12,7 @@
     "contracts:export": "tsx scripts/ops/export-chat-contract-schemas.ts",
     "contracts:export:domain": "tsx scripts/ops/export-domain-contract-schemas.ts",
     "contracts:check": "tsx scripts/ops/export-chat-contract-schemas.ts --check && tsx scripts/ops/export-domain-contract-schemas.ts --check",
-    "globos3d:test": "tsx --conditions=react-server --test src/lib/globos3d/*.test.ts scripts/test/test-taller-hoja-armado-bandera.ts && tsx --test src/components/tres-d/PanelOrganico.test.ts src/components/tres-d/sala-ambiente.test.ts src/components/tres-d/HojaArmado.test.ts",
+    "globos3d:test": "tsx --conditions=react-server --test src/lib/globos3d/*.test.ts scripts/test/test-taller-hoja-armado-bandera.ts && tsx --test src/components/tres-d/PanelOrganico.test.ts src/components/tres-d/sala-ambiente.test.ts src/components/tres-d/HojaArmado.test.ts && tsx --conditions=react-server scripts/test/test-banco-pendientes-organico.ts && tsx --conditions=react-server scripts/test/test-ajustar-tamanos-biblioteca.ts && tsx --conditions=react-server scripts/test/test-tiempo-escena-ia.ts",
     "taller:test-hoja-armado-ui": "tsx scripts/test/test-hoja-armado-ui.ts",
     "taller:test-anadir-repositorios-ui": "tsx scripts/test/test-anadir-repositorios-ui.ts && tsx scripts/test/test-anadir-repositorios-marcha-atras-ui.ts && tsx scripts/test/test-lista-repositorios-ui.ts",
     "e2e:humo": "tsx scripts/e2e/humo.ts",

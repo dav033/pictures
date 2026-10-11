@@ -175,7 +175,7 @@ prueba("hay un tope de líneas: muchos fallos distintos se resumen", () => {
 
 prueba("la ruta aplica la honestidad al texto final, incluso al de la IA cortada, y registra los fallos", () => {
   const ruta = readFileSync("src/app/api/escena-ia/route.ts", "utf8");
-  for (const patron of [/intentos\.push\(\{ herramienta: nombre, ok: hecho\.ok/, /respuesta = conHonestidad\(respuesta, fallos, problemas, avisosUsuario\)/, /avisosUsuario\.push\(\.\.\.\("avisos" in hecho \? hecho\.avisos \?\? \[\] : \[\]\)\)/, /conHonestidad\("La IA se cortó/, /cortado, fallos, problemas/]) assert.match(ruta, patron);
+  for (const patron of [/intentos\.push\(\{ herramienta: nombre, ok: hecho\.ok/, /respuesta = conHonestidad\(respuesta, fallos, problemas, avisosUsuario\)/, /avisosUsuario\.push\(\.\.\.\("avisos" in hecho \? hecho\.avisos \?\? \[\] : \[\]\)\)/, /"La IA se cortó a mitad de camino; esto es lo que alcanzó a hacer\."/, /conHonestidad\(aviso, fallosPendientes\(intentos\), problemasNuevos\(base, escena\), avisosUsuario\)/, /cortado, plazo: control\.estado\(\), fallos, problemas/]) assert.match(ruta, patron);
 });
 
 // ----------------------------------------------------------------------------------------------------------
