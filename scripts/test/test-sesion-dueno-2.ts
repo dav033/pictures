@@ -45,6 +45,17 @@ prueba("el aviso de color es un dato de la herramienta, sin la instrucción para
   assert.equal(conHonestidad("Ojo: ese color no se fabrica en R-9, puse el más parecido.", [], [], r.avisos), "Ojo: ese color no se fabrica en R-9, puse el más parecido.");
   assert.equal(aplicarHerramienta(e, "ver_escena", {}).ok && (aplicarHerramienta(e, "ver_escena", {}) as { avisos?: unknown }).avisos, undefined);
 });
+prueba("los códigos de color del aviso cuentan como dichos (la expresión llevaba un retroceso 0x08 en vez de \\b y nunca casaba)", () => {
+  const e = paso(vacia(), "agregar_pieza", { tipo: "arco_organico", colores: ["dorado reflex", "plata reflex"] });
+  const r = aplicarHerramienta(e, "cambiar_pieza", { id: "arco-organico", colores: ["azul reflex", "violeta reflex", "rojo reflex"] });
+  assert.ok(r.ok && r.avisos?.length === 1);
+  if (!r.ok) return;
+  const codigos = r.avisos![0]!.palabras.filter((p) => /^\d{3}$/.test(p));
+  assert.ok(codigos.length >= 2, `palabras: ${r.avisos![0]!.palabras.join(" | ")}`);
+  assert.equal(conHonestidad(`Cambié el rojo por el ${codigos[0]}.`, [], [], r.avisos), `Cambié el rojo por el ${codigos[0]}.`, "nombrar el código basta");
+  assert.ok(r.avisos![0]!.palabras.every((p) => !p.includes("\x08")), "ninguna palabra lleva un retroceso");
+  assert.ok(!readFileSync("src/lib/globos3d/avisos-color-escena.ts", "utf8").includes("\x08"), "el fuente no lleva caracteres de control");
+});
 prueba("la respuesta que lo calla recibe «Aviso: …»; la que lo dice no se repite", () => {
   const avisos: AvisoUsuario[] = [{ texto: "«Marco»: Ningún color de la paleta se fabrica en R-9: se usa Metal Rojo (515), el más parecido a Reflex Cristal Rojo (915).", palabras: ["no se fabrica", "más parecid", "sustitu", "515", "915"] }];
   const r = conHonestidad("Listo, recoloreé la escena.", [], [], avisos);
@@ -57,7 +68,8 @@ prueba("la respuesta que lo calla recibe «Aviso: …»; la que lo dice no se re
 prueba("la ruta junta los avisos de cada herramienta y los pasa a la respuesta final", () => {
   const ruta = readFileSync("src/app/api/escena-ia/route.ts", "utf8");
   assert.match(ruta, /avisosUsuario\.push\(\.\.\.\("avisos" in hecho \? hecho\.avisos \?\? \[\] : \[\]\)\)/);
-  assert.match(ruta, /conHonestidad\(respuesta, fallos, problemas, avisosUsuario\)/);
+  assert.match(ruta, /conHonestidad\(respuesta, fallos, problemas, conAvisoDeFoto\(respuesta\)\)/);
+  assert.match(ruta, /return aviso \? \[\.\.\.avisosUsuario, aviso\] : avisosUsuario;/, "los avisos de las herramientas siguen yendo con el de la foto");
 });
 
 console.log("Claves desconocidas");

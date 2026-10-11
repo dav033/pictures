@@ -42,5 +42,5 @@ export function avisosDeColor(antes: Escena, despues: Escena): string {
 
 /** Los mismos avisos como datos para el usuario: la respuesta los da por dichos si dice que no se fabrica / el más parecido, o nombra alguno de sus códigos de color. */
 export function avisosDeColorParaElUsuario(antes: Escena, despues: Escena): AvisoUsuario[] {
-  return avisosNuevos(antes, despues).slice(0, 4).map((texto) => ({ texto: texto.length > 320 ? `${texto.slice(0, 319)}…` : texto, palabras: ["no se fabrica", "más parecid", "mas parecid", "sustitu", ...(texto.match(/\d{3}/g) ?? [])] }));
+  return avisosNuevos(antes, despues).slice(0, 4).map((texto) => ({ texto: texto.length > 320 ? `${texto.slice(0, 319)}…` : texto, palabras: ["no se fabrica", "más parecid", "mas parecid", "sustitu", ...(texto.match(/\b\d{3}\b/g) ?? [])] }));
 }

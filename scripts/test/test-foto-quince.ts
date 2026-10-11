@@ -4,7 +4,8 @@
  * en el centro y una guirnalda de 84 globos flotando a media pared. Sin red ni IA: las lecturas y las detecciones son las del
  * registro real (`scripts/test/fixtures/foto-quince/`, sin la foto: tiene personas):
  * - `lectura-produccion.json`: Gemini con el prompt de producción (la mesa del primer plano como `mesa_redonda_mantel`, escala de la mesa);
- * - `lectura-nueva.json`: Gemini con el prompt nuevo; `lectura-claude.json`: Claude (CLI) con el prompt nuevo.
+ * - `lectura-nueva.json`: Gemini con el prompt nuevo; `lectura-claude.json`: Claude (CLI) con el prompt nuevo;
+ * - `lectura-cromado-a.json`, `-b.json` y `-c.json` (la c con el piso leído en el primer plano, 0,88): Gemini (2026-10-11) con el prompt que nombra el malva y la ciruela espejo como cromados.
  * Cada una pasa por el camino de producción (`medirConDetecciones` → `compilarLectura`).
  *
  *   NODE_OPTIONS=--use-system-ca npx tsx --conditions=react-server scripts/test/test-foto-quince.ts
@@ -15,6 +16,9 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { compilarLectura } from "../../src/lib/globos3d/compilar-lectura";
+import { codigoDeColor } from "../../src/lib/globos3d/colores-lectura";
+import { ajustarColoresSiPuede } from "../../src/lib/globos3d/cuotas-color";
+import { copiasDeTelon, esTelonRepetible } from "../../src/lib/globos3d/telones-en-fila";
 import { avisoDeOmitidas } from "../../src/lib/globos3d/escena-ia-foto";
 import { armarEscena, type Escena } from "../../src/lib/globos3d/escena";
 import { escalaDelMontaje } from "../../src/lib/globos3d/escala-del-montaje";
@@ -22,6 +26,7 @@ import { conHonestidad } from "../../src/lib/globos3d/honestidad-respuesta";
 import { LecturaFotoSchema, type LecturaFoto, type PiezaLeida } from "../../src/lib/globos3d/lectura-foto";
 import { resolverOtro } from "../../src/lib/globos3d/lectura-otro";
 import { medirConDetecciones, type FondoDetectado, type GloboDetectado } from "../../src/lib/globos3d/medir-con-detecciones";
+import { medirFondos } from "../../src/lib/globos3d/medir-fondos";
 import { pisoPorFondosDetectados } from "../../src/lib/globos3d/piso-por-fondos";
 import { alargarPorLosGlobos } from "../../src/lib/globos3d/puntas-por-globos";
 import { sinPrimerPlano, sujetoDeLaFoto } from "../../src/lib/globos3d/sujeto-foto";
@@ -48,9 +53,21 @@ function modelar(archivo: string) {
 const esDorado = (codigo: string) => /dorado/i.test(referenciaPorCodigo(codigo)?.nombreCompleto ?? "");
 const idsDe = (e: Escena) => e.nodos.map((n) => n.id);
 
+/** La parte (0 a 1) de cada color de la guirnalda `k` de la lectura medida en lo armado, junto a la que dice la lectura: por el código con que se arma cada color. */
+function repartoDeLaGuirnalda(archivo: string, k: number) {
+  const { medida, armada } = modelar(archivo);
+  const leida = medida.lectura.piezas.filter((p): p is Extract<PiezaLeida, { tipo: "guirnalda_organica" }> => p.tipo === "guirnalda_organica")[k]!;
+  const nodo = armada.porNodo.filter((n) => n.id.startsWith("guirnalda-organica"))[k]!;
+  const peso = leida.colores.reduce((s, x) => s + x.peso, 0);
+  return leida.colores.map((x) => {
+    const codigos = new Set(["R-18", "R-12", "R-9", "R-5", "R-24"].map((f) => codigoDeColor(x, [f], [])));
+    return { nombre: x.nombre, leido: x.peso / peso, armado: nodo.globos.filter((g) => codigos.has(g.codigo)).length / nodo.globos.length, dorado: [...codigos].some(esDorado), globos: nodo.globos.length };
+  });
+}
+
 /** Lo que tiene que cumplir cualquiera de las tres lecturas: el sujeto, la guirnalda, el color y el fondo. */
 function comprobarEscena(archivo: string, fondosEsperados: Readonly<Record<string, number>>) {
-  const { c, armada, notas } = modelar(archivo);
+  const { medida, c, armada, notas } = modelar(archivo);
   // 1. Ni una mesa: la del primer plano es el salón desde donde se tomó la foto.
   assert.ok(!c.escena.nodos.some((n) => /^mesa/.test(n.id)), `sin mesas: ${idsDe(c.escena).join(", ")}`);
   assert.ok(notas.some((n) => /primer plano/.test(n)), "la nota dice que lo del primer plano no es la decoración");
@@ -64,10 +81,18 @@ function comprobarEscena(archivo: string, fondosEsperados: Readonly<Record<strin
   for (const g of c.escena.nodos.filter((n) => n.id.startsWith("guirnalda-organica"))) assert.equal(g.colocacion.en === "pared" && g.colocacion.pared, "fondo", `${g.id} en la pared del fondo`);
   const abajo = Math.min(...guirnaldas.map((n) => n.caja.min.y)), arriba = Math.max(...guirnaldas.map((n) => n.caja.max.y));
   assert.ok(abajo >= 60 && abajo <= 200 && arriba >= 220 && arriba <= 330, `la guirnalda va de ${Math.round(abajo)} a ${Math.round(arriba)} cm del piso`);
-  // 3. El dorado de los racimos cromados cuenta.
+  // 3. El dorado de los racimos cromados cuenta, y es el que dice la lectura (medida con los globos detectados): el de cada guirnalda y, juntas, el de toda la escena.
   const globos = armada.globos;
   const dorado = globos.filter((g) => esDorado(g.codigo)).length / globos.length;
-  assert.ok(dorado >= 0.25, `dorado ${Math.round(dorado * 100)} %`);
+  const guirnaldasLeidas = medida.lectura.piezas.filter((p) => p.tipo === "guirnalda_organica").length;
+  let doradoLeido = 0;
+  for (let k = 0; k < guirnaldasLeidas; k++) {
+    const reparto = repartoDeLaGuirnalda(archivo, k);
+    doradoLeido += reparto.filter((x) => x.dorado).reduce((s, x) => s + x.leido, 0) * reparto[0]!.globos;
+    for (const x of reparto) assert.ok(Math.abs(x.armado - x.leido) <= 0.05, `guirnalda ${k + 1}, ${x.nombre}: leído ${Math.round(x.leido * 100)} %, armado ${Math.round(x.armado * 100)} %`);
+  }
+  doradoLeido /= globosGuirnalda;
+  assert.ok(dorado > 0 && Math.abs(dorado - doradoLeido) <= 0.05, `dorado armado ${Math.round(dorado * 100)} %, leído ${Math.round(doradoLeido * 100)} %`);
   // 4. Los paneles, puertas y el trono del catálogo.
   for (const [prefijo, cuantos] of Object.entries(fondosEsperados)) {
     const hay = c.escena.nodos.filter((n) => n.id === prefijo || n.id.startsWith(`${prefijo}-`)).length;
@@ -92,12 +117,38 @@ prueba("prompt nuevo (Gemini): la mesa es «primer plano», la puerta con arco y
   const r = comprobarEscena("lectura-nueva.json", { lentejuelas: 1, "arcos-chiara": 1, sillon: 1 });
   assert.ok(r.notas.some((n) => /primer plano: mesa de invitados.*no decoración/.test(n)), r.notas.join(" | "));
   assert.ok(r.notas.some((n) => /línea del piso leída \(0\.52\).*0\.452/.test(n)), "el piso pasa a las patas del trono detectado");
+  // El dorado de la foto es ~36 % de los globos detectados (21 de 58), no el 59 % de antes; el morado detectado (26 %) es el merlot de la lectura.
+  assert.ok(r.dorado >= 0.3 && r.dorado <= 0.42, `dorado ${Math.round(r.dorado * 100)} %`);
+  const merlot = repartoDeLaGuirnalda("lectura-nueva.json", 0).find((x) => /merlot/i.test(x.nombre))!;
+  assert.ok(merlot.leido >= 0.2 && merlot.armado >= 0.2, `merlot leído ${Math.round(merlot.leido * 100)} %, armado ${Math.round(merlot.armado * 100)} %`);
+  assert.ok(r.c.escena.nodos.filter((n) => n.id === "lentejuelas" || n.id.startsWith("lentejuelas-")).length === 2, "la otra pared de glitter que la detección trae y el lector no leyó");
   assert.ok(r.c.omitidas.some((o) => /mariposa/.test(o)), r.c.omitidas.join(" | "));
 });
 
 prueba("prompt nuevo (Claude): neones de mariposa y flores del piso como «No pude», y la puerta con arco", () => {
   const r = comprobarEscena("lectura-claude.json", { lentejuelas: 2, "arcos-chiara": 1, sillon: 1 });
   assert.deepEqual(r.c.omitidas.filter((o) => /mariposa|flores/.test(o)).length, 3, r.c.omitidas.join(" | "));
+});
+
+prueba("prompt con el cromado (Gemini, 2026-10-11, tres lecturas): el malva o ciruela espejo se lee Reflex Violeta cromado y se arma Reflex, el dorado es el de la foto y las dos paredes de glitter salen", () => {
+  for (const [archivo, puerta] of [["lectura-cromado-a.json", "marco-tela"], ["lectura-cromado-b.json", "marco-tela"], ["lectura-cromado-c.json", "arcos-chiara"]] as const) {
+    const r = comprobarEscena(archivo, { lentejuelas: 2, [puerta]: 1, sillon: 1 });
+    assert.ok(r.dorado >= 0.27 && r.dorado <= 0.4, `${archivo}: dorado ${Math.round(r.dorado * 100)} %`);
+    const { armada } = modelar(archivo);
+    const violeta = armada.globos.filter((g) => g.codigo === "951").length / armada.globos.length;
+    assert.ok(violeta >= 0.18, `${archivo}: Reflex Violeta ${Math.round(violeta * 100)} %`);
+    assert.equal(armada.globos.filter((g) => g.codigo === "051").length, 0, `${archivo}: ni un Fashion Violeta mate`);
+  }
+});
+
+prueba("si el lector pone el piso en el primer plano (0,88) y la detección lo sube al pie del montaje, los paneles vuelven a decir la escala (con el piso de antes salía en 640 cm y la guirnalda de 112 globos)", () => {
+  const { medida, armada } = modelar("lectura-cromado-c.json");
+  assert.ok(medida.notas.some((n) => /línea del piso leída \(0\.88\).*0\.452/.test(n)), medida.notas.join(" | "));
+  assert.ok(medida.notas.some((n) => /no cuadra con los paneles del fondo que leyó: ellos dan \d+ cm/.test(n)), medida.notas.join(" | "));
+  assert.ok(medida.lectura.escala.altoImagenCm >= 900, `escala ${medida.lectura.escala.altoImagenCm} cm`);
+  assert.equal(medida.notas.filter((n) => /no cuadra con los paneles del fondo/.test(n)).length, 1, "la nota de la escala sale una sola vez");
+  assert.ok(!/telones del fondo \(leída \d+: telones/.test(medida.lectura.escala.referencia), medida.lectura.escala.referencia);
+  assert.ok(armada.globos.length >= 130, `${armada.globos.length} globos`);
 });
 
 prueba("lo que no se armó llega a la persona como «No pude armar de la foto», pieza por pieza, aunque el modelo lo calle", () => {
@@ -168,6 +219,64 @@ prueba("la punta se alarga por una masa continua de globos, no por uno suelto le
   assert.equal(alargarPorLosGlobos([p], lejos, 1).guirnaldas[0], p, "con un hueco, no");
   const vecina = { ...p, puntos: [{ x: 0.6, y: 0.2, grosor: 0.08 }, { x: 0.9, y: 0.2, grosor: 0.08 }] } as typeof p;
   assert.equal(alargarPorLosGlobos([p, vecina], cadena, 1).guirnaldas[0], p, "los globos de la vecina son de ella");
+});
+
+prueba("tres puertas leídas como UNA pieza con cantidad son tres, de lado a lado de lo leído; dos paredes de glitter, dos", () => {
+  const puertasLeidas = fondo("arcos_chiara", { x: 0.45, yBase: 0.5, ancho: 0.3, alto: 0.3, cantidad: 3 }) as Extract<PiezaLeida, { tipo: "fondo" }>;
+  const compiladas = compilarLectura(LecturaFotoSchema.parse({ ...base, piezas: [guirnalda, puertasLeidas] }));
+  const puertas = armarEscena(compiladas.escena).porNodo.filter((n) => n.id === "arcos-chiara" || n.id.startsWith("arcos-chiara-"));
+  assert.equal(puertas.length, 3, compiladas.escena.nodos.map((n) => n.id).join(", "));
+  const cajas = puertas.map((n) => n.caja).sort((a, b) => a.min.x - b.min.x);
+  const ancho = cajas.map((q) => q.max.x - q.min.x);
+  assert.ok(Math.max(...ancho) - Math.min(...ancho) <= 2, `mismo ancho: ${ancho.map(Math.round).join(", ")}`);
+  for (let i = 1; i < cajas.length; i++) assert.ok(cajas[i]!.min.x >= cajas[i - 1]!.max.x - 1, "una junto a otra, sin encimarse");
+  const centro = (cajas[0]!.min.x + cajas[2]!.max.x) / 2;
+  assert.ok(Math.abs(centro - (0.45 - 0.5) * base.aspecto * base.escala.altoImagenCm) <= 25, `centradas en x 0,45: ${Math.round(centro)} cm`);
+  assert.ok(compiladas.notas.some((n) => /la foto trae 3 en fila; se arman 3/.test(n)), compiladas.notas.join(" | "));
+  const conNombre = copiasDeTelon({ ...puertasLeidas, texto: "XV Ana", colorTexto: "dorado" }, base.aspecto)!;
+  assert.deepEqual(conNombre.map((c) => c.texto), [undefined, "XV Ana", undefined], "el nombre rotulado va una sola vez, en la copia del centro");
+  assert.deepEqual(conNombre.map((c) => c.colorTexto), [undefined, "dorado", undefined]);
+  // Los arcos chiara escalonados llevan un arco por color: tres colores × cantidad 3 no son nueve arcos, son UN juego de arcos.
+  const escalonados = { ...puertasLeidas, colores: [color, { ...color, hex: "#f2dcc4" }, { ...color, hex: "#d6336c" }] };
+  assert.equal(copiasDeTelon(escalonados, base.aspecto), null, "con varios colores no es una fila");
+  const juego = compilarLectura(LecturaFotoSchema.parse({ ...base, piezas: [guirnalda, escalonados] }));
+  assert.equal(juego.escena.nodos.filter((n) => n.id.startsWith("arcos-chiara")).length, 1, "un solo juego de arcos");
+  assert.ok(copiasDeTelon({ ...puertasLeidas, colores: [color] }, base.aspecto)?.length === 3, "con un solo color sí: tres puertas");
+  const una = compilarLectura(LecturaFotoSchema.parse({ ...base, piezas: [guirnalda, { ...puertasLeidas, cantidad: undefined }] }));
+  assert.equal(una.escena.nodos.filter((n) => n.id.startsWith("arcos-chiara")).length, 1, "sin cantidad, una sola pieza como siempre");
+  const paredes = compilarLectura(LecturaFotoSchema.parse({ ...base, piezas: [guirnalda, fondo("lentejuelas", { cantidad: 2, ancho: 0.4, alto: 0.3, yBase: 0.5 })] }));
+  assert.equal(paredes.escena.nodos.filter((n) => n.id.startsWith("lentejuelas")).length, 2);
+});
+
+prueba("si el ajuste de colores lanza, la guirnalda se queda como salió (con su nota y su «no se armó» del ajuste) y no va entera a «omitidas»", () => {
+  const { c, medida } = modelar("lectura-nueva.json");
+  const armada = armarEscena(c.escena);
+  assert.ok(armada.porNodo.some((n) => n.id === "guirnalda-organica"));
+  const pieza = c.escena.nodos.find((n) => n.id === "guirnalda-organica")!.pieza;
+  assert.equal(pieza.tipo, "organico");
+  if (pieza.tipo !== "organico") return;
+  const notas: string[] = [], omitidas: string[] = [];
+  const paleta = { paleta: [...pieza.opciones.colores], origen: pieza.opciones.colores.map((_, i) => i), objetivo: pieza.opciones.colores.map(() => 1 / pieza.opciones.colores.length) };
+  const fallido = ajustarColoresSiPuede("Pieza 1 (guirnalda_organica): el ajuste de los colores al reparto de la lectura", pieza, paleta, (g) => `color ${g}`, notas, omitidas, () => { throw new Error("falla forzada"); });
+  assert.equal(fallido.pieza, pieza, "la pieza sale como estaba");
+  assert.equal(fallido.nota, null);
+  assert.ok(notas.some((n) => /el ajuste de los colores.*no se pudo armar y se omite \(falla forzada\); el resto de la pieza se arma igual/.test(n)), notas.join(" | "));
+  assert.ok(omitidas.some((o) => /el ajuste de los colores.*falla forzada/.test(o)) && omitidas.length === 1, omitidas.join(" | "));
+  const bien = ajustarColoresSiPuede("x", pieza, paleta, (g) => `color ${g}`, [], []);
+  assert.equal(bien.pieza.tipo, "organico", "sin fallo, el ajuste de siempre");
+  assert.ok(medida.notas.length > 0 && !c.omitidas.some((o) => /ajuste de los colores/.test(o)), "una compilación normal no omite nada del ajuste");
+  const fuente = readFileSync("src/lib/globos3d/compilar-lectura.ts", "utf8");
+  assert.equal((fuente.match(/ajustarColoresSiPuede\(/g) ?? []).length, 2, "la guirnalda y el montón de piso pasan por el ajuste que no tira la pieza");
+  assert.ok(!/conLasCuotasDeLaLectura\(/.test(fuente), "ninguna pieza llama al ajuste sin la red");
+});
+
+prueba("solo los cinco telones de ancho y alto se repiten por una detección: un aro, el biombo o una escalera (piezas que se cobran) no se agregan solos", () => {
+  for (const id of ["lentejuelas", "arcos_chiara", "panel_redondo", "media_luna", "cortina_luces"]) assert.equal(esTelonRepetible(id), true, id);
+  for (const id of ["aro_metalico", "aro_hexagonal", "arco_metalico", "biombo", "escalera_decorativa", "cortina_flecos", "marco_tela", "letrero", "sillon"]) assert.equal(esTelonRepetible(id), false, id);
+  const aro = fondo("aro_metalico", { x: 0.3, yBase: 0.5, ancho: 0.2, alto: 0.3 });
+  const caja = (x0: number, x1: number) => ({ id: "aro_metalico", box_2d: [200, x0, 500, x1] });
+  const r = medirFondos([aro], [caja(200, 400), caja(600, 800)], base.aspecto);
+  assert.equal(r.piezas.filter((p) => p.tipo === "fondo" && p.id === "aro_metalico").length, 1, "el segundo aro detectado no se arma por sí solo");
 });
 
 prueba("el «otro» del salón y de la gente no es un «No pude»; el trono es el sillón del catálogo", () => {

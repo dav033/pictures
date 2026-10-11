@@ -6,6 +6,7 @@ import type { Escalon } from "./mezcla-lectura";
 import { FONDOS_CON_SUPERFICIE } from "./fondos-familias";
 import { decidirEscala, escalaPorMuebles, escalasCorroboradas, intervaloPorReferenciasBlandas, type DecisionEscala, type IntervaloEscala } from "./escala-por-muebles";
 import { medirFondos, type FondoDetectado } from "./medir-fondos";
+import { escalaDelMontaje } from "./escala-del-montaje";
 import { pisoPorFondosDetectados } from "./piso-por-fondos";
 import { alargarPorLosGlobos } from "./puntas-por-globos";
 import { sujetoDeLaFoto } from "./sujeto-foto";
@@ -254,9 +255,15 @@ export function medirConDetecciones(leida: LecturaFoto, detectados: readonly Glo
   // Sin el primer plano (la mesa de invitados desde donde se tomó la foto): su piso y su escala no son los de la decoración.
   const sujeto = sujetoDeLaFoto(leida);
   const piso = pisoPorFondosDetectados(sujeto.lectura, fondos);
-  const l = { ...sujeto.lectura, pisoY: piso.pisoY };
+  // Con el piso corregido (el lector lo puso en el primer plano), los telones del montaje vuelven a decir su escala: con el piso de antes salía corta.
+  const conPiso = { ...sujeto.lectura, pisoY: piso.pisoY };
+  // Desde la escala que leyó el lector: la del primer paso (con el piso de antes) no se anida en el texto ni se repite en las notas.
+  const reescala = piso.pisoY !== sujeto.lectura.pisoY ? escalaDelMontaje({ ...conPiso, escala: leida.escala }) : null;
+  const escalaConPiso = reescala && reescala.lectura.escala !== leida.escala ? reescala : { lectura: conPiso, notas: [] };
+  const l = escalaConPiso.lectura;
+  const notasDelSujeto = escalaConPiso.notas.length ? sujeto.notas.filter((n) => !/no cuadra con los paneles del fondo/.test(n)) : sujeto.notas;
   const conFondos = medirFondos(l.piezas, fondos, l.aspecto, l.pisoY);
-  const notas = [...sujeto.notas, ...(piso.nota ? [piso.nota] : []), ...conFondos.notas];
+  const notas = [...notasDelSujeto, ...(piso.nota ? [piso.nota] : []), ...escalaConPiso.notas, ...conFondos.notas];
   const piezas = [...conFondos.piezas];
   const globos = globosDe(detectados, l.aspecto);
   const guirnaldas = l.piezas.map((p, i) => ({ p, i })).filter((x): x is { p: Guirnalda; i: number } => x.p.tipo === "guirnalda_organica");
@@ -315,7 +322,7 @@ export function medirConDetecciones(leida: LecturaFoto, detectados: readonly Glo
   const valida = LecturaFotoSchema.safeParse({ ...l, escala, piezas });
   if (!valida.success) {
     const motivos = valida.error.issues.slice(0, 3).map((x) => `${x.path.join(".")}: ${x.message}`).join("; ");
-    return { lectura: l, notas: [...sujeto.notas, ...(piso.nota ? [piso.nota] : []), `La medida con los globos detectados no cumple el esquema de la lectura (${motivos}): la lectura queda como la escribió el lector.`] };
+    return { lectura: l, notas: [...notasDelSujeto, ...(piso.nota ? [piso.nota] : []), ...escalaConPiso.notas, `La medida con los globos detectados no cumple el esquema de la lectura (${motivos}): la lectura queda como la escribió el lector.`] };
   }
   return { lectura: valida.data, notas, ...(decision ? { escala: decision } : {}) };
 }

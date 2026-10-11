@@ -13,6 +13,8 @@
 import assert from "node:assert/strict";
 import { compilarLectura } from "../../src/lib/globos3d/compilar-lectura";
 import { codigoDeColor, fijosDeAnclas, paletaDeLectura } from "../../src/lib/globos3d/colores-lectura";
+import { esVinoCiruela } from "../../src/lib/globos3d/familia-vino";
+import { referenciaPorCodigo, seFabricaEn } from "../../src/lib/plan/referencia-sempertex";
 import { compararLecturas } from "../../src/lib/globos3d/comparar-lecturas";
 import { FONDO_SALA_FOTO_CM, profundidadEnElPiso } from "../../src/lib/globos3d/encuadre-foto";
 import { FOV_FOTO_GRADOS, PROFUNDIDAD_DE_LA_FOTO_CM } from "../../src/lib/globos3d/proyeccion-foto";
@@ -211,6 +213,80 @@ prueba("precedencia: los chicos con color propio por escalón lo conservan y el 
   const paleta = paletaDeLectura({ colores: [...CUATRO_ZONAS, PLATEADO], mezcla: { gigantes: 5, grandes: 25, medianos: 50, chicos: 20, diametroGigante: 0.25, diametroGrande: 0.13, diametroMediano: 0.09, diametroChico: 0.05, formatoGigante: "R-36", formatoGrande: "R-18", formatoMediano: "R-12", formatoChico: "R-5" }, coloresPorEscalon: [{ escalon: "chicos", pesos: [0, 0, 0, 0, 100] }], puntos: [{ x: 0.1, y: 0.3, dominante: "nude" }, { x: 0.9, y: 0.3 }] }, 300, []);
   const franja = paleta.find((c) => c.franjas?.length)!;
   assert.ok(franja.formatos && !franja.formatos.includes("R-5") && franja.formatos.includes("R-12"), JSON.stringify(franja.formatos));
+});
+
+console.log("Un solo reparto de colores");
+const MEZCLA_CHICA: MezclaLeida = { grandes: 20, medianos: 55, chicos: 25, diametroGrande: 0.14, diametroMediano: 0.08, diametroChico: 0.04, formatoGrande: "R-18", formatoMediano: "R-12", formatoChico: "R-9" };
+const unTramoDorado = (dominantes: readonly (string | undefined)[]): LecturaFoto => lectura([{
+  tipo: "guirnalda_organica", tamanos: {}, racimos: 0.5, mezcla: MEZCLA_CHICA,
+  puntos: dominantes.map((dominante, i) => ({ x: 0.1 + (i * 0.8) / (dominantes.length - 1), y: 0.3, grosor: 0.16, ...(dominante ? { dominante } : {}) })),
+  colores: [{ nombre: "dorado", hex: "#D4AF37", peso: 30, acabado: "cromado" }, { nombre: "rosado", hex: "#f2b6c8", peso: 40, acabado: "mate" }, { nombre: "lila", hex: "#c6a2ca", peso: 30, acabado: "mate" }],
+}], { aspecto: 2, escala: { altoImagenCm: 400, referencia: "prueba" } });
+const parteDeCodigo = (globos: ReadonlyArray<{ codigo: string }>, color: ColorLeido) => globos.filter((b) => b.codigo === codigoDeColor(color, ["R-12"], [])).length / globos.length;
+
+prueba("el color de un tramo no se suma al reparto de toda la pieza: lo armado lleva lo que la lectura dice (el dorado leído al 30 % salía al 50 %)", () => {
+  const l = unTramoDorado(["dorado", "dorado", "dorado", undefined, undefined, undefined, undefined, undefined]);
+  const c = compilarLectura(l);
+  const globos = armarEscena(c.escena).porNodo[0]!.globos;
+  const dorado = l.piezas[0]!.tipo === "guirnalda_organica" ? l.piezas[0]!.colores[0]! : DORADO;
+  assert.ok(Math.abs(parteDeCodigo(globos, dorado) - 0.3) <= 0.04, `dorado ${Math.round(parteDeCodigo(globos, dorado) * 100)} % de ${globos.length}`);
+  for (const [i, nombre] of [[1, "rosado"], [2, "lila"]] as const) {
+    const color = (l.piezas[0] as Extract<PiezaLeida, { tipo: "guirnalda_organica" }>).colores[i]!;
+    const real = parteDeCodigo(globos, color), leido = color.peso / 100;
+    assert.ok(Math.abs(real - leido) <= 0.04, `${nombre} ${Math.round(real * 100)} % (leído ${Math.round(leido * 100)} %)`);
+  }
+  assert.ok(c.notas.some((n) => /Los colores de lo armado se ajustaron al reparto de la lectura: .*dorado \d+ % → 3\d % \(leído 30 %\)/.test(n)), c.notas.join(" | "));
+  // El tramo conserva su color: el trecho de la izquierda sigue siendo, sobre todo, dorado.
+  const xs = globos.map((b) => b.nudo.x), minimo = Math.min(...xs), ancho = Math.max(...xs) - minimo;
+  const izquierda = globos.filter((b) => (b.nudo.x - minimo) / ancho <= 0.25);
+  assert.ok(parteDeCodigo(izquierda, dorado) >= 0.55, `el tramo dorado lleva ${Math.round(parteDeCodigo(izquierda, dorado) * 100)} % de dorado`);
+});
+
+prueba("un color que la lectura dejó sin entrada en todos los escalones no se persigue: los demás llegan a su parte renormalizada, sin agotar las vueltas", () => {
+  const colores: ColorLeido[] = [{ nombre: "dorado", hex: "#D4AF37", peso: 40, acabado: "cromado" }, { nombre: "rosado", hex: "#f2b6c8", peso: 30, acabado: "mate" }, { nombre: "lila", hex: "#c6a2ca", peso: 30, acabado: "mate" }];
+  const escalon = (e: "grandes" | "medianos" | "chicos") => ({ escalon: e, pesos: [60, 40, 0] });
+  const l = lectura([{
+    tipo: "guirnalda_organica", tamanos: {}, racimos: 0.5, mezcla: MEZCLA_CHICA, colores,
+    puntos: [0, 1, 2, 3, 4].map((i) => ({ x: 0.1 + i * 0.2, y: 0.3, grosor: 0.16, ...(i < 2 ? { dominante: "dorado" } : {}) })),
+    coloresPorEscalon: [escalon("grandes"), escalon("medianos"), escalon("chicos")],
+  }], { aspecto: 2, escala: { altoImagenCm: 400, referencia: "prueba" } });
+  const c = compilarLectura(l);
+  const globos = armarEscena(c.escena).porNodo[0]!.globos;
+  assert.equal(parteDeCodigo(globos, colores[2]!), 0, "el lila no sale en ningún escalón");
+  const nota = c.notas.find((n) => /se ajustaron al reparto de la lectura/.test(n));
+  assert.ok(!nota || !/lila/.test(nota), `la nota no persigue un color que no sale: ${nota}`);
+  assert.ok(Math.abs(parteDeCodigo(globos, colores[0]!) - 40 / 70) <= 0.05 && Math.abs(parteDeCodigo(globos, colores[1]!) - 30 / 70) <= 0.05, `dorado ${Math.round(parteDeCodigo(globos, colores[0]!) * 100)} %, rosado ${Math.round(parteDeCodigo(globos, colores[1]!) * 100)} %`);
+});
+
+prueba("sin tramos ni escalones que se apilen (la paleta ya cuadra) no se toca nada, y el resultado no cambia entre dos compilaciones", () => {
+  const l = unTramoDorado([undefined, undefined, undefined, undefined, undefined]);
+  const a = compilarLectura(l), b = compilarLectura(l);
+  assert.ok(!a.notas.some((n) => /se ajustaron al reparto/.test(n)), a.notas.join(" | "));
+  assert.deepEqual(a.escena, b.escena);
+  const tramo = unTramoDorado(["dorado", "dorado", "dorado", undefined, undefined, undefined, undefined, undefined]);
+  assert.deepEqual(compilarLectura(tramo).escena, compilarLectura(tramo).escena, "determinista");
+});
+
+prueba("un malva, ciruela o merlot CROMADO va a un Reflex por su hex aunque el nombre lleve a un látex mate; el Reflex que ya lo es y lo mate no cambian", () => {
+  const color = (nombre: string, hex: string, acabado: ColorLeido["acabado"]): ColorLeido => ({ nombre, hex, peso: 10, acabado });
+  const familia = (c: ColorLeido, formatos = ["R-12"]) => referenciaPorCodigo(codigoDeColor(c, formatos, []))?.familia;
+  assert.equal(codigoDeColor(color("Fashion Merlot", "#581825", "cromado"), ["R-12"], []), "912", "el merlot cromado de la foto de XV: Reflex Fucsia, el espejo vino de la tabla");
+  assert.equal(codigoDeColor(color("malva", "#7c3f6e", "cromado"), ["R-12"], []), "912", "el malva (no está en la tabla): el Reflex más cercano a su hex");
+  assert.equal(codigoDeColor(color("violeta", "#7c3f6e", "cromado"), ["R-12"], []), "951", "«violeta» cromado ya es el Reflex Violeta: el nombre se respeta");
+  assert.equal(familia(color("Fashion Violeta", "#6a3fa0", "brillante")), "fashion", "con acabado brillante o mate el nombre manda: es látex mate");
+  assert.equal(codigoDeColor(color("Fashion Merlot", "#581825", "mate"), ["R-12"], []), "018", "el merlot mate sigue siendo el Fashion Merlot");
+  assert.equal(codigoDeColor(color("Reflex Dorado Rosa", "#9e4551", "cromado"), ["R-12"], []), "968", "un nombre que ya es Reflex se respeta");
+  assert.equal(codigoDeColor(color("Metal Rojo", "#8b1a2a", "cromado"), ["R-12"], []), codigoDeColor(color("Metal Rojo", "#b21827", "cromado"), ["R-12"], []), "un nombre Metal se respeta: el producto no depende de qué tan oscuro salió el hex");
+  assert.equal(codigoDeColor(color("dorado", "#d4af37", "cromado"), ["R-12"], []), codigoDeColor(color("dorado", "#c9a04a", "cromado"), ["R-12"], []), "el dorado no es de la familia del vino");
+  const en18 = codigoDeColor(color("Fashion Merlot", "#581825", "cromado"), ["R-18"], []);
+  assert.ok(familia(color("Fashion Merlot", "#581825", "cromado"), ["R-18"]) === "reflex" && seFabricaEn(en18, "R-18"), `en R-18: ${en18}`);
+  const notas: string[] = [];
+  codigoDeColor(color("Fashion Merlot", "#581825", "cromado"), ["R-12"], notas);
+  assert.ok(notas.some((n) => /es cromado y su color medido.*vino–ciruela: va 912 Reflex Fucsia y no 018 Fashion Merlot/.test(n)), notas.join(" | "));
+  assert.equal(esVinoCiruela("#581825"), true);
+  assert.equal(esVinoCiruela("#7c3f6e"), true);
+  assert.equal(esVinoCiruela("#6a3fa0"), true);
+  for (const fuera of ["#d4af37", "#e8b2c6", "#c6a2ca", "#812a28", "#1c1c1c", "#2d4f9c", "#835836"]) assert.equal(esVinoCiruela(fuera), false, fuera);
 });
 
 console.log("Notas del lector");

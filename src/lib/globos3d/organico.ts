@@ -1,6 +1,6 @@
 import { TABLA_SEMPERTEX, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
 import { formatoPorId, infladoValido } from "./formatos";
-import { asignarColores } from "./organico-color";
+import { asignarColores, type ColorAsignado } from "./organico-color";
 import { colocarFijos } from "./organico-fijos";
 import { anotarEmpaque } from "./organico-empaques";
 import { infladoNominal, perfilDeEstructura } from "./organico-estructura";
@@ -1049,21 +1049,34 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
   return { tramos, globos, huecos, estructuraPorMetro, avisos, usosAzar };
 }
 
-export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
-  const geometria = geometriaOrganica(opciones);
-  const { tramos, globos, huecos, estructuraPorMetro } = geometria;
-  const avisos = [...geometria.avisos];
+/** 6. Color por cuotas, sin dos iguales pegados cuando se puede (ver `organico-color.ts`), sobre un empaque ya hecho. */
+function repartirColores(geometria: GeometriaOrganica, opciones: OpcionesOrganico, avisos: string[]): ColorAsignado {
+  const { tramos, globos } = geometria;
   // El azar sigue donde lo dejó el empaque (el mismo resultado que armarlo todo de una).
   const azar = crearAzar(opciones.semilla);
   for (let i = 0; i < geometria.usosAzar; i++) azar();
-
-  // 6. Color por cuotas, sin dos iguales pegados cuando se puede (ver `organico-color.ts`).
-  const referencias = new Map<string, ReferenciaSempertex>(TABLA_SEMPERTEX.referencias.map((r) => [r.codigo, r]));
-  const { paleta, entrada, codigos } = asignarColores({
+  return asignarColores({
     globos, colores: opciones.colores, avisos, azar,
     tramoDe: (i) => tramos[globos[i]!.tramo]!.def.id,
     fraccionDe: (i) => { const tp = tramos[globos[i]!.tramo]!; return limitar(proyectar(tp, globos[i]!.c).s / tp.largo, 0, 1); },
   });
+}
+
+/**
+ * Qué color de `opciones.colores` tomó cada globo (su posición en la lista, o `null` si ninguno lo sirvió: un fijo de color ajeno o un globo al que ningún color alcanza y va el de rescate), sin armar la pieza
+ * entera: reparte los colores sobre el empaque guardado (milisegundos). Con esto se mide cuánto del total es de cada color.
+ */
+export function colorDeCadaGlobo(opciones: OpcionesOrganico): Array<number | null> {
+  const { paleta, entrada } = repartirColores(geometriaOrganica(opciones), opciones, []);
+  return entrada.map((k) => (k === null || k === undefined ? null : opciones.colores.indexOf(paleta[k]!)));
+}
+
+export function armarOrganico(opciones: OpcionesOrganico): ResultadoOrganico {
+  const geometria = geometriaOrganica(opciones);
+  const { tramos, globos, huecos, estructuraPorMetro } = geometria;
+  const avisos = [...geometria.avisos];
+  const referencias = new Map<string, ReferenciaSempertex>(TABLA_SEMPERTEX.referencias.map((r) => [r.codigo, r]));
+  const { paleta, entrada, codigos } = repartirColores(geometria, opciones, avisos);
 
   // Salida.
   const salida: GloboOrganico[] = globos.map((g, i) => {

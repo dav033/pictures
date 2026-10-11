@@ -1,5 +1,6 @@
 import { referenciaPorCodigo } from "../plan/referencia-sempertex";
 import { coloresDelFormato } from "./formatos";
+import { esVinoCiruela } from "./familia-vino";
 import { distanciaLab, resolverColorFlexible, resolverColorOrganico } from "./herramientas-escena-colores";
 import type { AnclaLeida, ColorLeido, ColoresEscalon, MezclaLeida } from "./lectura-foto";
 import { formatosDeEscalones } from "./mezcla-lectura";
@@ -44,8 +45,31 @@ export function codigoDeBlancoCalido(c: ColorLeido, formatos: readonly string[])
   return formatos.every((f) => coloresDelFormato(f).some((r) => r.codigo === codigo)) ? codigo : null;
 }
 
-/** Un color leído → código Sempertex (en los formatos pedidos): por nombre y acabado, si no por el hex medido. */
+/** Hasta esta distancia CIELAB un Reflex vale por el vino–ciruela cromado medido (el Reflex Fucsia queda a 14 del malva de la foto de XV, el Violeta a 17). */
+const DISTANCIA_MAXIMA_VINO_CROMADO = 45;
+
+/**
+ * El Reflex de un malva, ciruela, uva, borgoña o merlot CROMADO que el nombre llevó a un látex que no es Reflex (el lector lo escribía «Fashion Merlot» o «violeta
+ * brillante», que son mate: 018, 051; el espejo de la foto salía mate): el hex medido en la parte iluminada manda sobre el nombre y va el Reflex más cercano, entre los que
+ * se fabrican en todos los formatos pedidos. Un nombre que ya es Reflex («Reflex Dorado Rosa») o Metal («Metal Rojo») se respeta: el producto no depende de qué tan oscuro salió el hex.
+ */
+function codigoDeVinoCromado(c: ColorLeido, codigoPorNombre: string, formatos: readonly string[]): string | null {
+  if (c.acabado !== "cromado" || !esVinoCiruela(c.hex) || ["reflex", "metal"].includes(referenciaPorCodigo(codigoPorNombre)?.familia ?? "")) return null;
+  const reflex = coloresDelFormato(formatos[0] ?? "R-12").filter((r) => r.familia === "reflex" && formatos.every((f) => coloresDelFormato(f).some((x) => x.codigo === r.codigo)));
+  const mejor = reflex.map((r) => ({ r, d: distanciaLab(c.hex, r.hexGlobo) })).sort((a, b) => a.d - b.d || a.r.codigo.localeCompare(b.r.codigo))[0];
+  return mejor && mejor.d <= DISTANCIA_MAXIMA_VINO_CROMADO ? mejor.r.codigo : null;
+}
+
+/** Un color leído → código Sempertex (en los formatos pedidos): por nombre y acabado, si no por el hex medido; un vino–ciruela cromado va a un Reflex. */
 export function codigoDeColor(c: ColorLeido, formatos: readonly string[], notas: string[]): string {
+  const porNombre = codigoPorNombre(c, formatos, notas);
+  const vino = codigoDeVinoCromado(c, porNombre, formatos);
+  if (!vino) return porNombre;
+  notas.push(`«${c.nombre}» es cromado y su color medido (${c.hex}) es de la familia vino–ciruela: va ${nombreDeCodigo(vino)} y no ${nombreDeCodigo(porNombre)}.`);
+  return vino;
+}
+
+function codigoPorNombre(c: ColorLeido, formatos: readonly string[], notas: string[]): string {
   if (c.acabado === "cristal" || c.acabado === "confeti") return CRISTAL;
   const calido = codigoDeBlancoCalido(c, formatos);
   if (calido) { notas.push(`«${c.nombre}» → ${nombreDeCodigo(calido)}`); return calido; }
@@ -63,17 +87,24 @@ export function codigoDeColor(c: ColorLeido, formatos: readonly string[], notas:
   }
 }
 
-/** La paleta simple: un color por código (los repetidos suman su peso). */
-export function coloresOrganicos(colores: readonly ColorLeido[], notas: string[]): ColorOrganico[] {
-  const salida: ColorOrganico[] = [];
-  for (const c of colores) {
-    const codigo = codigoDeColor(c, ["R-12"], notas);
+/** La paleta simple: un color por código (los repetidos suman su peso), con el grupo de color leído de cada entrada. */
+function coloresOrganicosConOrigen(colores: readonly ColorLeido[], notas: string[], codigos = colores.map((c) => codigoDeColor(c, ["R-12"], notas))): { paleta: ColorOrganico[]; origen: number[] } {
+  const paleta: ColorOrganico[] = [], origen: number[] = [];
+  const grupos = grupoDeCadaColor(colores, codigos);
+  colores.forEach((c, k) => {
+    const codigo = codigos[k]!;
     const peso = Math.max(1, r0(c.peso));
-    const previo = salida.find((x) => x.codigo === codigo && Boolean(x.confeti) === (c.acabado === "confeti"));
-    if (previo) { previo.peso += peso; continue; }
-    salida.push({ codigo, peso, ...(c.acabado === "confeti" ? { confeti: true } : {}), ...(codigo === CRISTAL ? { formatos: [...FORMATOS_CRISTAL] } : {}) });
-  }
-  return salida;
+    const previo = paleta.findIndex((x, i) => origen[i] === grupos[k] && x.codigo === codigo);
+    if (previo >= 0) { paleta[previo]!.peso += peso; return; }
+    paleta.push({ codigo, peso, ...(c.acabado === "confeti" ? { confeti: true } : {}), ...(codigo === CRISTAL ? { formatos: [...FORMATOS_CRISTAL] } : {}) });
+    origen.push(grupos[k]!);
+  });
+  return { paleta, origen };
+}
+
+/** El grupo de cada color leído: el del primero que tiene su mismo código (y su confeti): los que el motor junta en una sola entrada. */
+function grupoDeCadaColor(colores: readonly ColorLeido[], codigos: readonly string[]): number[] {
+  return colores.map((c, k) => colores.findIndex((x, j) => codigos[j] === codigos[k] && (x.acabado === "confeti") === (c.acabado === "confeti")));
 }
 
 /** Una entrada de la paleta limitada a unos formatos (el cristal, además, solo en los suyos); null si no va en ninguno. */
@@ -142,21 +173,41 @@ function formatoMenorConColor(formatoId: string, codigo: string): string | null 
 }
 const nombreDeCodigo = (codigo: string) => { const r = referenciaPorCodigo(codigo); return r ? `${r.codigo} ${r.nombreCompleto}` : codigo; };
 
+/**
+ * La paleta de una pieza orgánica leída con de dónde viene cada entrada: `origen[i]` es el grupo de color leído de la entrada `i` (el índice del primer
+ * color leído con su mismo código) y `objetivo[g]` la parte (0 a 1) que el lector le da al grupo `g`, la que `cuotas-color.ts` hace cumplir en lo armado.
+ */
+export type PaletaConOrigen = { paleta: ColorOrganico[]; origen: number[]; objetivo: number[] };
+
+/** La parte de cada grupo de color leído (0 a 1): la suma de los pesos de sus colores sobre el total; 0 en los que no encabezan su grupo. */
+function objetivoDe(colores: readonly ColorLeido[], grupos: readonly number[]): number[] {
+  const total = colores.reduce((s, c) => s + Math.max(0, c.peso), 0) || 1;
+  const objetivo = colores.map(() => 0);
+  colores.forEach((c, k) => { objetivo[grupos[k]!]! += Math.max(0, c.peso) / total; });
+  return objetivo;
+}
+
 /** La paleta de una pieza orgánica leída, con sus colores por escalón y por tramo si los trae. */
 export function paletaDeLectura(p: PiezaConColores, altoImagenCm: number, notas: string[]): ColorOrganico[] {
+  return paletaConOrigen(p, altoImagenCm, notas).paleta;
+}
+
+export function paletaConOrigen(p: PiezaConColores, altoImagenCm: number, notas: string[]): PaletaConOrigen {
   const porEscalon = (p.coloresPorEscalon ?? []).filter((e) => e.pesos.some((w) => w > 0));
   const conDominantes = Boolean(p.puntos?.some((q) => q.dominante));
-  if (!porEscalon.length && !conDominantes) return coloresOrganicos(p.colores, notas);
   const codigos = p.colores.map((c) => codigoDeColor(c, ["R-12"], notas));
+  const grupos = grupoDeCadaColor(p.colores, codigos);
+  const objetivo = objetivoDe(p.colores, grupos);
+  if (!porEscalon.length && !conDominantes) return { ...coloresOrganicosConOrigen(p.colores, notas, codigos), objetivo };
   const formatosDe = formatosDeEscalones(p.mezcla, altoImagenCm);
   // Los chicos con colores propios no admiten el del tramo (ver arriba).
   const formatosDelTramo = porEscalon.some((e) => e.escalon === "chicos") ? FORMATOS_ORGANICOS.filter((f) => !formatosDe.chicos.includes(f)) : null;
-  const salida: ColorOrganico[] = [];
-  const empujar = (x: ColorOrganico | null) => { if (x) salida.push(x); };
+  const salida: ColorOrganico[] = [], origen: number[] = [];
+  const empujar = (x: ColorOrganico | null, k: number) => { if (x) { salida.push(x); origen.push(grupos[k]!); } };
   if (porEscalon.length) {
     const propios = new Set(porEscalon.flatMap((e) => formatosDe[e.escalon]));
     const resto = FORMATOS_ORGANICOS.filter((f) => !propios.has(f));
-    p.colores.forEach((c, k) => empujar(entrada(c, codigos[k]!, c.peso, resto)));
+    p.colores.forEach((c, k) => empujar(entrada(c, codigos[k]!, c.peso, resto), k));
     // Cada escalón con sus colores en SU formato. Nunca se cambia el color por el tamaño: si el color no se fabrica en el
     // formato del escalón (el Reflex Dorado no viene en 36"), esos globos van en el formato de ABAJO más cercano en que sí
     // viene (un gigante dorado cromado es un R-24 Reflex Dorado, no un R-36 Latte); nunca en uno más grande. Si no viene en
@@ -164,15 +215,17 @@ export function paletaDeLectura(p: PiezaConColores, altoImagenCm: number, notas:
     for (const e of porEscalon) p.colores.forEach((c, k) => {
       const suyos = formatosDe[e.escalon];
       const unico = suyos.length === 1 ? suyos[0]! : null;
-      if (!unico || c.acabado === "cristal" || c.acabado === "confeti") { empujar(entrada(c, unico ? codigoDeColor(c, suyos, notas) : codigos[k]!, e.pesos[k] ?? 0, suyos)); return; }
+      if (!unico || c.acabado === "cristal" || c.acabado === "confeti") { empujar(entrada(c, unico ? codigoDeColor(c, suyos, notas) : codigos[k]!, e.pesos[k] ?? 0, suyos), k); return; }
       const codigo = codigos[k]!;
       const menor = seFabricaEn(unico, codigo) ? unico : formatoMenorConColor(unico, codigo);
-      if (!menor) { empujar(entrada(c, codigoDeColor(c, suyos, notas), e.pesos[k] ?? 0, suyos)); return; }
+      if (!menor) { empujar(entrada(c, codigoDeColor(c, suyos, notas), e.pesos[k] ?? 0, suyos), k); return; }
       if (menor !== unico) notas.push(`${nombreDeCodigo(codigo)} no viene en ${unico}: sus ${e.escalon} van en ${menor}, del mismo color.`);
-      empujar(entrada(c, codigo, e.pesos[k] ?? 0, [menor]));
+      empujar(entrada(c, codigo, e.pesos[k] ?? 0, [menor]), k);
     });
   } else {
-    salida.push(...coloresOrganicos(p.colores, notas));
+    const simple = coloresOrganicosConOrigen(p.colores, notas, codigos);
+    salida.push(...simple.paleta);
+    origen.push(...simple.origen);
   }
   if (conDominantes && p.puntos) {
     const fr = fraccionesDe(p.puntos);
@@ -184,8 +237,8 @@ export function paletaDeLectura(p: PiezaConColores, altoImagenCm: number, notas:
       if (k < 0) { notas.push(`El color dominante «${q.dominante}» no está entre los colores de la pieza.`); return; }
       const desde = i === 0 ? 0 : (fr[i - 1]! + fr[i]!) / 2, hasta = i === fr.length - 1 ? 1 : (fr[i]! + fr[i + 1]!) / 2;
       const base = entrada(p.colores[k]!, codigos[k]!, total * DOMINANTE_VECES, formatosDelTramo);
-      if (base) salida.push({ ...base, franjas: [{ desde: Math.round(desde * 1000) / 1000, hasta: Math.round(hasta * 1000) / 1000 }] });
+      if (base) { salida.push({ ...base, franjas: [{ desde: Math.round(desde * 1000) / 1000, hasta: Math.round(hasta * 1000) / 1000 }] }); origen.push(grupos[k]!); }
     });
   }
-  return salida;
+  return { paleta: salida, origen, objetivo };
 }

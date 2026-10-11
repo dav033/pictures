@@ -293,6 +293,25 @@ prueba("sin un color parecido en la pieza el globo no cuenta (en vez de caer en 
   assert.equal(indice("negro"), -1);
 });
 
+prueba("el «morado» y el «vino» del detector son el malva, la ciruela o el merlot de la lectura (lo que el CIELAB a 40 dejaba sin contar)", () => {
+  const nueva: ColorLeido[] = [
+    { nombre: "Fashion Rosado", hex: "#e8b2c6", peso: 35, acabado: "mate" }, { nombre: "Fashion Lila", hex: "#c6a2ca", peso: 25, acabado: "mate" },
+    { nombre: "Metal Dorado", hex: "#d4af37", peso: 20, acabado: "cromado" }, { nombre: "Fashion Merlot", hex: "#581825", peso: 20, acabado: "mate" },
+  ];
+  const indice = indiceDeDetectado(nueva);
+  assert.equal(indice("morado"), 3, "el morado de la foto de XV es el Merlot de la lectura (a 57 del morado típico)");
+  assert.equal(indice("vino"), 3);
+  assert.equal(indice("lila"), 1, "el lila sigue siendo el lila: no se lo come la familia del vino");
+  assert.equal(indice("fucsia"), -1, "solo el morado y el vino casan con la familia");
+  assert.equal(indiceDeDetectado(nueva.slice(0, 3))("morado"), -1, "sin un vino–ciruela en la pieza, el morado no cuenta en el lila ni en el rosado");
+  const malva: ColorLeido[] = [{ nombre: "dorado", hex: "#d4a84b", peso: 40, acabado: "cromado" }, { nombre: "malva", hex: "#7c3f6e", peso: 60, acabado: "cromado" }];
+  assert.equal(indiceDeDetectado(malva)("morado"), 1, "el malva (a 31) ya casaba por la distancia de siempre");
+  // La cuenta: 15 globos morados entre 43 ya no desaparecen del reparto (el dorado salía 39 de 100 sin ellos y el merlot 0 en los escalones).
+  const lista = [...Array(21).fill("dorado"), ...Array(17).fill("rosa"), ...Array(15).fill("morado"), ...Array(5).fill("lila")].map((c) => unGlobo(0.03, c));
+  const pesos = Object.fromEntries(coloresDe(nueva, lista).map((c) => [c.nombre, c.peso]));
+  assert.deepEqual(pesos, { "Fashion Rosado": 29, "Fashion Lila": 9, "Metal Dorado": 36, "Fashion Merlot": 26 });
+});
+
 prueba("los pesos de los colores quedan en una sola escala: los que no aparecen conservan su parte", () => {
   const colores: ColorLeido[] = [{ ...DORADO, peso: 50 }, { ...BLANCO, peso: 30 }, { nombre: "verde", hex: "#3A9D5D", peso: 20, acabado: "mate" }];
   const globos = [...Array.from({ length: 30 }, () => unGlobo(0.1, "dorado")), ...Array.from({ length: 10 }, () => unGlobo(0.1, "blanco"))];
@@ -372,6 +391,27 @@ prueba("los fondos del catálogo se ponen en su caja detectada; los que no se pa
   assert.equal(r.notas.length, 1);
   const completo = medirConDetecciones(lectura([fondo, guirnalda(EJE_FESTON)]), deteccionBase, [{ id: "lentejuelas", box_2d: [300, 290, 850, 710] }]);
   assert.equal((completo.lectura.piezas[0] as Extract<PiezaLeida, { tipo: "fondo" }>).ancho, 0.42);
+});
+
+prueba("otro panel igual al leído (la otra pared de glitter, la tercera puerta) que la detección trae y el lector no leyó se arma; lo encimado, lo chico y lo no leído no", () => {
+  const panel: PiezaLeida = { tipo: "fondo", id: "lentejuelas", x: 0.4, yBase: 0.4, ancho: 0.08, alto: 0.15, colores: [DORADO], texto: "Ana" };
+  const cajaDe = (x0: number, x1: number, y0 = 250, y1 = 400) => ({ id: "lentejuelas", box_2d: [y0, x0, y1, x1] });
+  // Cajas en 0-1000: la del leído en x 360 a 440; la otra pared en x 65 a 172.
+  const r = medirFondos([panel], [cajaDe(360, 440), cajaDe(65, 172)], ASPECTO);
+  const nuevas = r.piezas.filter((q): q is Extract<PiezaLeida, { tipo: "fondo" }> => q.tipo === "fondo");
+  assert.equal(nuevas.length, 2, "el leído y el que faltaba");
+  assert.ok(Math.abs(nuevas[1]!.x - 0.1185) < 0.001 && Math.abs(nuevas[1]!.ancho - 0.107) < 0.001 && Math.abs(nuevas[1]!.yBase - 0.4) < 0.001, JSON.stringify(nuevas[1]));
+  assert.deepEqual(nuevas[1]!.colores, [DORADO], "con los colores del leído");
+  assert.equal(nuevas[1]!.texto, undefined, "el nombre rotulado no se copia");
+  assert.ok(r.notas.some((n) => /detectado en la foto .* además del que leyó el lector/.test(n)), r.notas.join(" | "));
+  assert.equal(medirFondos([panel], [cajaDe(360, 440), cajaDe(370, 430)], ASPECTO).piezas.length, 1, "una caja dentro del mismo panel no es otro panel");
+  assert.equal(medirFondos([panel], [cajaDe(360, 440), cajaDe(500, 510, 250, 260)], ASPECTO).piezas.length, 1, "un pedazo de la décima parte no es un panel");
+  const sinLeer = medirFondos([{ ...panel, id: "arcos_chiara" }], [cajaDe(360, 440), cajaDe(65, 172)], ASPECTO);
+  assert.equal(sinLeer.piezas.filter((q) => q.tipo === "fondo").length, 1, "un «lentejuelas» detectado donde el lector solo leyó arcos no se inventa");
+  const lejos = medirFondos([{ ...panel, x: 0.85 }], [cajaDe(360, 440)], ASPECTO);
+  assert.equal(lejos.piezas.length, 1, "el lector puso su único panel lejos de la caja detectada: esa caja no es otro panel y el panel no se duplica");
+  const tres = medirFondos([panel], [cajaDe(360, 440), cajaDe(65, 172), cajaDe(560, 660)], ASPECTO);
+  assert.equal(tres.piezas.filter((q) => q.tipo === "fondo").length, 3, "una tercera, a la derecha");
 });
 
 console.log("Mosaico de la detección");

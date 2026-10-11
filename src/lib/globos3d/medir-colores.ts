@@ -1,4 +1,5 @@
 import { distanciaLab } from "./colores-formato";
+import { esVinoCiruela } from "./familia-vino";
 import type { ColorLeido, ColoresEscalon } from "./lectura-foto";
 import type { Globo } from "./medir-geometria";
 import type { Escalon } from "./mezcla-lectura";
@@ -53,6 +54,8 @@ export const ALFA_DOMINANTE = 0.05;
  */
 export const DISTANCIA_MAXIMA_NEUTRO = 15;
 export const DISTANCIA_MAXIMA_METAL = 60;
+/** El morado o el vino detectado casa con el vino–ciruela de la pieza hasta esta distancia (el Merlot queda a 57 del morado típico). */
+export const DISTANCIA_MAXIMA_VINO = 70;
 /** El tono (grados) de un hex #rrggbb. */
 function tonoDe(hex: string): number {
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number];
@@ -85,7 +88,10 @@ export function indiceDeDetectado(colores: readonly ColorLeido[]): (color: strin
     };
     const normal = mejorEntre(() => true, PALABRAS_NEUTRAS.has(c) ? DISTANCIA_MAXIMA_NEUTRO : DISTANCIA_MAXIMA_COLOR);
     // El champaña 971 de una guirnalda es «dorado» para el detector aunque su hex quede a 43 del dorado típico: si ningún color se le parece, casa con el cromado más cercano.
-    return normal >= 0 || c !== "dorado" ? normal : mejorEntre((x) => x.acabado === "cromado" && esTonoDorado(x.hex), DISTANCIA_MAXIMA_METAL);
+    if (normal >= 0) return normal;
+    // «morado» y «vino» son las dos únicas palabras del detector para un malva, ciruela o merlot: casan con el color de la pieza de esa familia más cercano.
+    if (c === "morado" || c === "vino") return mejorEntre((x) => esVinoCiruela(x.hex), DISTANCIA_MAXIMA_VINO);
+    return c !== "dorado" ? normal : mejorEntre((x) => x.acabado === "cromado" && esTonoDorado(x.hex), DISTANCIA_MAXIMA_METAL);
   };
   return (color) => {
     if (!memo.has(color)) memo.set(color, calcular(color));

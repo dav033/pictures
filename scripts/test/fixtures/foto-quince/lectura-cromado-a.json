@@ -1,0 +1,149 @@
+{
+ "resumen": "Decoración de salón de fiesta al fondo con paneles, trono y guirnalda orgánica en tonos rosados, lilas y dorados, vista en perspectiva tras la mesa de invitados.",
+ "aspecto": 1,
+ "escala": {
+  "altoImagenCm": 320,
+  "referencia": "trono de 150 cm"
+ },
+ "pisoY": 0.48,
+ "sala": {
+  "pared": "#d49bb0",
+  "piso": "#ebd8df"
+ },
+ "piezas": [
+  {
+   "tipo": "guirnalda_organica",
+   "puntos": [
+    {
+     "x": 0.03,
+     "y": 0.26,
+     "grosor": 0.12
+    },
+    {
+     "x": 0.11,
+     "y": 0.21,
+     "grosor": 0.11
+    },
+    {
+     "x": 0.23,
+     "y": 0.22,
+     "grosor": 0.11
+    },
+    {
+     "x": 0.31,
+     "y": 0.22,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.41,
+     "y": 0.21,
+     "grosor": 0.09
+    },
+    {
+     "x": 0.52,
+     "y": 0.22,
+     "grosor": 0.1
+    },
+    {
+     "x": 0.6,
+     "y": 0.23,
+     "grosor": 0.11
+    }
+   ],
+   "tamanos": {},
+   "mezcla": {
+    "grandes": 20,
+    "medianos": 55,
+    "chicos": 25,
+    "diametroGrande": 0.11,
+    "diametroMediano": 0.065,
+    "diametroChico": 0.035
+   },
+   "racimos": 0.4,
+   "colores": [
+    {
+     "nombre": "Fashion Rosado",
+     "hex": "#f4a8cb",
+     "peso": 40,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "Reflex Violeta",
+     "hex": "#a1387d",
+     "peso": 25,
+     "acabado": "cromado"
+    },
+    {
+     "nombre": "Reflex Dorado",
+     "hex": "#cca34c",
+     "peso": 20,
+     "acabado": "cromado"
+    },
+    {
+     "nombre": "Fashion Blanco",
+     "hex": "#f7f5f7",
+     "peso": 15,
+     "acabado": "mate"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "marco_tela",
+   "x": 0.28,
+   "yBase": 0.48,
+   "ancho": 0.12,
+   "alto": 0.28,
+   "colores": [
+    {
+     "nombre": "blanco",
+     "hex": "#f4eff4",
+     "peso": 100,
+     "acabado": "mate"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "lentejuelas",
+   "x": 0.39,
+   "yBase": 0.48,
+   "ancho": 0.1,
+   "alto": 0.28,
+   "colores": [
+    {
+     "nombre": "rosa",
+     "hex": "#d48aa4",
+     "peso": 100,
+     "acabado": "brillante"
+    }
+   ]
+  },
+  {
+   "tipo": "fondo",
+   "id": "sillon",
+   "x": 0.6,
+   "yBase": 0.45,
+   "ancho": 0.1,
+   "alto": 0.22,
+   "colores": [
+    {
+     "nombre": "rosa",
+     "hex": "#e0b1c7",
+     "peso": 70,
+     "acabado": "mate"
+    },
+    {
+     "nombre": "dorado",
+     "hex": "#cfa94e",
+     "peso": 30,
+     "acabado": "cromado"
+    }
+   ]
+  },
+  {
+   "tipo": "otro",
+   "descripcion": "primer plano: mesa de invitados con vajilla, copas y personas en la fiesta"
+  }
+ ]
+}

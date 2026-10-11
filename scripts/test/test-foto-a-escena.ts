@@ -66,6 +66,11 @@ await prueba("el prompt trae el oficio, los colores Sempertex y 3 lecturas de ej
   for (const e of ejemplos) { LecturaFotoSchema.parse(e.lectura); assert.ok(p.includes(JSON.stringify(e.lectura))); }
   assert.ok(p.length < 30_000, `prompt de ${p.length} caracteres`);
 });
+await prueba("el prompt nombra el malva, la ciruela, la uva y el vino con brillo de espejo como cromados (el lector los leía Fashion mate); y conserva las pistas del oficio", () => {
+  const p = construirPromptLectura();
+  assert.ok(/cromado = espejo \(dorado y plata casi siempre; también malva, ciruela, uva, vino o rosa con brillo de espejo: cromados, no Fashion mate\)/.test(p), "el malva y la ciruela espejo son cromados");
+  for (const pista of ["chiavari", "taburete_alto (de bar)", "larga de banquete", "rotulo_acrilico (nombre recortado en acrílico dorado o plata, con su texto)", "(nunca más de 24)", "Los números de los ejemplos son de OTRAS fotos: no los copies", "Varias sillas iguales en fila = UNA pieza con cantidad"]) assert.ok(p.includes(pista), `falta «${pista}»`);
+});
 await prueba("al evaluar una foto de referencia, esa foto no va de ejemplo (y se reemplaza por otra)", () => {
   const sin = ejemplosDeLectura(["referencia:happy-birthday-azul-dorado-redondo"]);
   assert.equal(sin.length, 3);

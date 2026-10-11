@@ -27,7 +27,9 @@ import { colocarFiguras, type FiguraPorColocar } from "./figuras-lectura";
 import { acabadoRotuloLeido, avisoDeTexto, limpiarTexto } from "./rotulos";
 import { mesaLeida, mobiliarioLeido, tintaLeida, type MedidaLeida, type MesaLeida } from "./compilar-mobiliario";
 import type { ColorLeido, LecturaFoto, PiezaLeida } from "./lectura-foto";
-import { codigoDeColor, fijosDeAnclas, paletaDeLectura } from "./colores-lectura";
+import { codigoDeColor, fijosDeAnclas, paletaConOrigen, paletaDeLectura } from "./colores-lectura";
+import { ajustarColoresSiPuede } from "./cuotas-color";
+import { copiasDeTelon } from "./telones-en-fila";
 import { recogerPuntas } from "./puntas-lectura";
 import { apoyoDeRacimo } from "./apoyo-racimo";
 import { colocarCuerpo } from "./fondos-en-el-piso";
@@ -183,13 +185,16 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         const puntos = recogerPuntas(engrosarParaGrandes(medidos, grosorMinimoDePesos(pesos), notas)).map(({ enBorde: _, ...q }) => q);
         const x0 = r1((Math.min(...puntos.map((q) => q.x)) + Math.max(...puntos.map((q) => q.x))) / 2);
         const fijos = fijosDeAnclas(p, H, notas).map((f) => ({ ...f, x: r1(X(f.x) - x0), y: r1(Y(f.y)) }));
-        const trazo = { puntos: puntos.map((q) => ({ ...q, x: r1(q.x - x0) })), mezcla: pesos, colores: paletaDeLectura(p, H, notas), racimos: p.racimos, semilla: 11 + i, ...(fijos.length ? { fijos } : {}) };
+        const paleta = paletaConOrigen(p, H, notas);
+        const trazo = { puntos: puntos.map((q) => ({ ...q, x: r1(q.x - x0) })), mezcla: pesos, colores: paleta.paleta, racimos: p.racimos, semilla: 11 + i, ...(fijos.length ? { fijos } : {}) };
         const sinFollaje: ReturnType<typeof floresLeidas> = { flores: null, notas: [] };
         const { flores, notas: notasFollaje } = p.follaje?.length ? conNotaSiFalla(`Pieza ${i + 1} (guirnalda_organica): el follaje`, notas, decoracionesOmitidas, () => floresLeidas(p.follaje!), sinFollaje) : sinFollaje;
         notas.push(...notasFollaje.map((n) => `Pieza ${i + 1} (guirnalda_organica): ${n}`));
         const largo = puntos.slice(1).reduce((s, q, k) => s + Math.hypot(q.x - puntos[k]!.x, q.y - puntos[k]!.y), 0);
         const huecos = Math.max(4, Math.min(30, r0(largo / 45)));
-        const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, flores, huecos, p.mezcla).pieza : piezaDeGenerador({ tipo: "trazo", trazo }, flores, huecos);
+        const armada = traeMezcla(p) ? piezaConMezcla(trazo, pesos, flores, huecos, p.mezcla).pieza : piezaDeGenerador({ tipo: "trazo", trazo }, flores, huecos);
+        const { pieza, nota } = ajustarColoresSiPuede(`Pieza ${i + 1} (guirnalda_organica): el ajuste de los colores al reparto de la lectura`, armada, paleta, (g) => p.colores[g]!.nombre, notas, decoracionesOmitidas);
+        if (nota) notas.push(`Pieza ${i + 1} (guirnalda_organica): ${nota}`);
         poner("guirnalda-organica", "Guirnalda orgánica", pieza, { en: "pared", pared: "fondo", aLoLargoCm: x0, alturaCm: r0(cajaTrazo(trazo).minY) });
         return;
       }
@@ -207,8 +212,11 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         const puntos = puntosDeSilueta("columna_racimos", { anchoCm: r0(Math.max(g, ancho)), altoCm: r0(Math.max(alto, g * 0.8)), grosorCm: r0(g) });
         // Sus gigantes y grandes, uno por uno: x desde el centro del montón y y desde su pie, a la escala con que se ve de cerca.
         const fijos = fijosDeAnclas(p, H, notas).map((f) => ({ ...f, x: r1((f.x - p.x) * l.aspecto * H * factor), y: r1(Math.max(0, (p.yPie - f.y) * H * factor)), ...(f.infladoCm ? { infladoCm: r0(f.infladoCm * factor) } : {}) }));
-        const trazo = { silueta: "columna_racimos" as const, puntos, mezcla: pesos, colores: paletaDeLectura({ colores: p.colores, mezcla: p.mezcla, coloresPorEscalon: p.coloresPorEscalon }, H, notas), racimos: p.racimos, semilla: 31 + i, ...(fijos.length ? { fijos } : {}) };
-        const pieza = traeMezcla(p) ? piezaConMezcla(trazo, pesos, null, 0, p.mezcla).pieza : piezaDeGenerador({ tipo: "trazo", trazo });
+        const paleta = paletaConOrigen({ colores: p.colores, mezcla: p.mezcla, coloresPorEscalon: p.coloresPorEscalon }, H, notas);
+        const trazo = { silueta: "columna_racimos" as const, puntos, mezcla: pesos, colores: paleta.paleta, racimos: p.racimos, semilla: 31 + i, ...(fijos.length ? { fijos } : {}) };
+        const armado = traeMezcla(p) ? piezaConMezcla(trazo, pesos, null, 0, p.mezcla).pieza : piezaDeGenerador({ tipo: "trazo", trazo });
+        const { pieza, nota } = ajustarColoresSiPuede(`Pieza ${i + 1} (racimo_piso): el ajuste de los colores al reparto de la lectura`, armado, paleta, (g) => p.colores[g]!.nombre, notas, decoracionesOmitidas);
+        if (nota) notas.push(`Pieza ${i + 1} (racimo_piso): ${nota}`);
         // Si su pie se ve más arriba de la línea del piso, no se apoya en él (un montón colgado de un aro, prendido a la estructura): va a esa altura, en el plano de la decoración.
         const alzadoCm = Y(p.yPie);
         if (alzadoCm > RACIMO_ALZADO_CM && !apoyo) notas.push(`Pieza ${i + 1} (racimo_piso): su pie se ve ${Math.round(alzadoCm)} cm sobre la línea del piso y no hay mesa ni pedestal debajo: se cuelga en el aire, en el plano de la decoración.`);
@@ -310,6 +318,13 @@ export function compilarLectura(leida: LecturaFoto): EscenaCompilada {
         return;
       }
       case "fondo": {
+        // Varios paneles iguales en fila (tres puertas, dos paredes de lentejuelas): una copia por cada uno, no un solo telón con todo el ancho.
+        const copias = copiasDeTelon(p, l.aspecto);
+        if (copias) {
+          notas.push(`Pieza ${i + 1} (${p.id.replace(/_/g, " ")}): la foto trae ${copias.length} en fila; se arman ${copias.length}, cada uno con su parte del ancho leído.`);
+          for (const copia of copias) compilarPieza(copia, i);
+          return;
+        }
         const medidaDe = (q: typeof p): MedidaLeida => {
           // Lo apoyado en el piso cuyo pie se ve más abajo que la línea del piso está más cerca de la cámara: se ve más grande de lo que es.
           const { delanteCm, factor } = seApoyaEnElPiso(q) ? profundidadEnElPiso(l, q.yBase) : { delanteCm: 0, factor: 1 };

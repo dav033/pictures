@@ -1,6 +1,6 @@
 import { TELONES_DE_DIAMETRO, esTelon } from "./fondos-escenografia";
 import { mismaFamiliaDeFondo } from "./fondos-familias";
-import { fondosSinLeer } from "./fondos-sin-leer";
+import { fondosSinLeer, telonesSinLeer } from "./fondos-sin-leer";
 import type { PiezaLeida } from "./lectura-foto";
 
 /**
@@ -124,5 +124,9 @@ export function medirFondos(piezas: readonly PiezaLeida[], fondos: readonly Fond
   // Lo detectado que el lector no leyó y va sobre una mesa (los pasteles) se vuelve pieza.
   const sobrantes = fondos.filter((f) => !usados.has(f)).flatMap((f) => { const caja = cajaDeDeteccion(f, aspecto); return caja ? [{ id: f.id, caja }] : []; });
   const nuevas = fondosSinLeer(sobrantes, aspecto, Math.max(0, MAXIMO_PIEZAS - salida.length), salida);
-  return { piezas: [...salida, ...nuevas.piezas, ...nuevas.otros], notas: [...[...notaDe.entries()].sort((a, b) => a[0] - b[0]).map(([, n]) => n), ...nuevas.notas] };
+  // Otro panel igual a uno leído (la pared de glitter del otro lado, la tercera puerta): la detección lo trae y el lector no.
+  const detectadasPorId = new Map<string, number>();
+  for (const f of fondos) if (cajaDeDeteccion(f, aspecto)) detectadasPorId.set(f.id, (detectadasPorId.get(f.id) ?? 0) + 1);
+  const paneles = telonesSinLeer(sobrantes, salida, aspecto, Math.max(0, MAXIMO_PIEZAS - salida.length - nuevas.piezas.length - nuevas.otros.length), detectadasPorId);
+  return { piezas: [...salida, ...nuevas.piezas, ...nuevas.otros, ...paneles.piezas], notas: [...[...notaDe.entries()].sort((a, b) => a[0] - b[0]).map(([, n]) => n), ...nuevas.notas, ...paneles.notas] };
 }
