@@ -1,3 +1,4 @@
+import { avisar } from "./avisos-usuario";
 import { FORMATOS_ORGANICOS, fallar, formatosOrganicosDe } from "./herramientas-escena-colores";
 import { INFLADOS_ORGANICOS } from "./estructuras-organicas";
 import { RELLENO_TUPIDO, type ColorOrganico, type OpcionesOrganico, type PuntoMezcla, type RellenoOrganico } from "./organico";
@@ -11,12 +12,19 @@ import { medirTramos } from "./presupuesto-cuerpo";
 
 const r0 = (n: number) => Math.round(n);
 
-/** Los tamaños que de verdad se pueden usar: los pedidos (o todos) en los que se fabrica algún color de la paleta. */
-export function tamanosPosibles(colores: readonly ColorOrganico[], tamanos: readonly string[] | undefined, maximoInfladoCm = Infinity): string[] {
+/**
+ * Los tamaños que de verdad se pueden usar: los pedidos (o todos) en los que se fabrica algún color de la paleta. Un tamaño que se pidió y en el que
+ * ningún color se fabrica (el R-24 en un verde Fashion) se quita, y se avisa en `notas`: la pieza no lleva lo que la persona pidió.
+ */
+export function tamanosPosibles(colores: readonly ColorOrganico[], tamanos: readonly string[] | undefined, maximoInfladoCm = Infinity, notas?: string[]): string[] {
   const pedidos = tamanos?.length ? tamanos.map((t) => t.trim().toUpperCase()) : [...FORMATOS_ORGANICOS];
   for (const t of pedidos) if (!(FORMATOS_ORGANICOS as readonly string[]).includes(t)) fallar(`El tamaño «${t}» no es de la técnica orgánica: usa ${FORMATOS_ORGANICOS.join(", ")}.`);
   const conColor = pedidos.filter((f) => colores.some((c) => (c.formatos ?? formatosOrganicosDe(c.codigo)).includes(f)));
   if (!conColor.length) fallar(`Ningún color de la paleta se fabrica en ${pedidos.join(", ")}.`);
+  const sinColor = pedidos.filter((f) => !conColor.includes(f));
+  if (notas && tamanos?.length && sinColor.length) {
+    avisar(notas, `Pediste ${sinColor.join(" y ")}, pero ningún color de la paleta se fabrica en ${sinColor.length > 1 ? "esos tamaños" : "ese tamaño"}: la pieza lleva solo ${conColor.join(", ")}.`, "no se fabrica");
+  }
   // Sin tamaños pedidos, lo que no cabe en el grosor no se usa (un R-24 en una columna de 40 cm).
   const caben = tamanos?.length ? conColor : conColor.filter((f) => (INFLADOS_ORGANICOS[f] ?? 0) <= maximoInfladoCm);
   if (caben.length) return caben;

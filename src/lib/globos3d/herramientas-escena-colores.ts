@@ -1,4 +1,5 @@
 import { TABLA_SEMPERTEX, referenciaPorCodigo, type ReferenciaSempertex } from "@/lib/plan/referencia-sempertex";
+import { labDeRgb, type Lab } from "@/lib/rag/catalog/similitud-color";
 import { distanciaLab } from "./colores-formato";
 import { FORMATOS_GLOBO, coloresDelFormato, formatoPorId } from "./formatos";
 import { COLORES_METALIZADO, type ColorMetalizado } from "./metalizados";
@@ -209,12 +210,39 @@ export function resolverColorOrganico(pedido: string, notas: string[]): { codigo
   return { codigo, formatos: formatosOrganicosDe(codigo) };
 }
 
-/** El color de foil (metalizado) más parecido a un color Sempertex. */
+const labDeHex = (hex: string): Lab => labDeRgb(parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16));
+const cromaDe = (lab: Lab): number => Math.hypot(lab[1], lab[2]);
+const matizDe = (lab: Lab): number => (Math.atan2(lab[2], lab[1]) * 180) / Math.PI;
+const diferenciaDeMatiz = (a: number, b: number): number => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+/** Desde esta viveza un color tiene tono propio (un verde, un rojo) y no puede salir en un foil de otro tono. */
+const CROMA_CON_TONO = 25;
+const MATIZ_MAXIMO_GRADOS = 50;
+
+/**
+ * El color de foil (metalizado) más parecido a un color Sempertex. Un dorado brillante (Metal, Reflex, Silk) es el foil Oro, que es el que la tienda
+ * vende como «dorado»; el dorado mate es solo para quien lo pide mate. Un color con tono (un verde) se queda en foiles del mismo tono: por distancia
+ * pura un verde quedaba en el azul pastel, que es casi gris y está más cerca en luz y viveza.
+ */
 export function metalizadoMasParecido(codigo: string): ColorMetalizado {
-  const hex = referenciaPorCodigo(codigo)?.hexGlobo ?? COLORES_METALIZADO.oro.hex;
+  const ref = referenciaPorCodigo(codigo);
+  if (ref && /dorad/i.test(ref.nombreCompleto) && !/rosa/i.test(ref.nombreCompleto) && !/matte/i.test(ref.acabado)) return "oro";
+  const hex = ref?.hexGlobo ?? COLORES_METALIZADO.oro.hex;
   const claves = Object.keys(COLORES_METALIZADO) as ColorMetalizado[];
-  return [...claves].sort((a, b) => distanciaLab(hex, COLORES_METALIZADO[a].hex) - distanciaLab(hex, COLORES_METALIZADO[b].hex))[0] ?? "oro";
+  const lab = labDeHex(hex);
+  const delMismoTono = cromaDe(lab) < CROMA_CON_TONO ? claves : claves.filter((k) => {
+    const foil = labDeHex(COLORES_METALIZADO[k].hex);
+    return cromaDe(foil) >= CROMA_CON_TONO / 2 && diferenciaDeMatiz(matizDe(foil), matizDe(lab)) <= MATIZ_MAXIMO_GRADOS;
+  });
+  const candidatos = delMismoTono.length ? delMismoTono : claves;
+  return [...candidatos].sort((a, b) => distanciaLab(hex, COLORES_METALIZADO[a].hex) - distanciaLab(hex, COLORES_METALIZADO[b].hex))[0] ?? "oro";
 }
+
+/** Cuánto se aleja el foil elegido del color pedido (distancia CIELAB del globo inflado): pasado `FOIL_APROXIMADO` ya es otro color y hay que decirlo. */
+export function distanciaDeFoil(codigo: string, color: ColorMetalizado): number {
+  const ref = referenciaPorCodigo(codigo);
+  return ref ? distanciaLab(ref.hexGlobo, COLORES_METALIZADO[color].hex) : 0;
+}
+export const FOIL_APROXIMADO = 22;
 
 /** Los formatos que existen (para los mensajes de error). */
 export const listaFormatos = (): string => FORMATOS_GLOBO.map((f) => f.id).join(", ");

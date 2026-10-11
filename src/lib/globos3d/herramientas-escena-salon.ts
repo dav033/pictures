@@ -93,7 +93,9 @@ export const HERRAMIENTAS_SALON: Readonly<Record<string, HerramientaExtra>> = {
     descripcion: "Mueve una zona del salón (pista, mesa principal con sus sillas, mesa de postres, fondo de fotos con su arco, entrada) a otro centro, con todo lo suyo. Avisa si queda encima de mesas.",
     aplicar: (escena, argumentos) => {
       const a = MoverSchema.parse(argumentos ?? {});
-      return moverZona(escena, a.zona, a.x_cm, a.z_cm);
+      const notas: string[] = [];
+      const r = moverZona(escena, a.zona, a.x_cm, a.z_cm, notas);
+      return { escena: r.escena, resumen: unir(r.resumen, notas), avisos: avisosDe(notas) };
     },
   },
   quitar_zona: {

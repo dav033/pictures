@@ -1,3 +1,4 @@
+import { avisar } from "./avisos-usuario";
 import type { Escena } from "./escena";
 import { fallar } from "./herramientas-escena-colores";
 import { desplazarNodo, quitarConLoSuyo } from "./salon-nodos";
@@ -15,8 +16,11 @@ const NOMBRE: Readonly<Record<ZonaSalon | "mesas", string>> = {
 };
 const metros = (cm: number) => `${(cm / 100).toLocaleString("es-CO", { maximumFractionDigits: 1 })} m`;
 
-/** Mueve el centro de una zona a (`xCm`, `zCm`) (lo que no se diga se queda); con todo lo suyo (sillas, arco, columnas, y la decoración del usuario que sigue a la zona). */
-export function moverZona(escena: Escena, zona: ZonaSalon, xCm: number | undefined, zCm: number | undefined): { escena: Escena; resumen: string } {
+/**
+ * Mueve el centro de una zona a (`xCm`, `zCm`) (lo que no se diga se queda); con todo lo suyo (sillas, arco, columnas, y la decoración del usuario que sigue a la zona).
+ * Si queda encima de mesas de invitados lo anota en `notas` como aviso para el usuario: el modelo no puede callar que dejó las piezas encimadas.
+ */
+export function moverZona(escena: Escena, zona: ZonaSalon, xCm: number | undefined, zCm: number | undefined, notas: string[]): { escena: Escena; resumen: string } {
   if (xCm === undefined && zCm === undefined) fallar("Dime a dónde: x_cm (izquierda − a derecha +) y/o z_cm (fondo − a frente +), desde el centro de la sala.");
   const ancla = anclaDeZona(escena, zona);
   const caja = cajaDeZona(escena, zona);
@@ -31,8 +35,8 @@ export function moverZona(escena: Escena, zona: ZonaSalon, xCm: number | undefin
   const ids = new Set(miembrosDeZona(escena, zona).map((v) => v.nodo.id));
   const choques = mesasVivas(escena).filter((m) => { const c = cajaDeMueble(m.nodo); return c !== null && seCruzan(c, nueva); }).length;
   const nodos = escena.nodos.map((n) => (ids.has(n.id) ? desplazarNodo(n, dx, dz) : n));
-  const aviso = choques ? ` Ojo: ${choques} mesa(s) de invitados quedaron encimadas con ella: muévela otra vez o ajusta las mesas.` : "";
-  return { escena: { ...escena, nodos }, resumen: `Moví ${NOMBRE[zona]} (${ids.size} pieza${ids.size > 1 ? "s" : ""}) a x = ${Math.round(ax + dx)}, z = ${Math.round(az + dz)} cm.${aviso}` };
+  if (choques) avisar(notas, `Ojo: ${choques} mesa(s) de invitados quedaron encimadas con ${NOMBRE[zona]}: muévela otra vez o ajusta las mesas.`, "encimad", "encima");
+  return { escena: { ...escena, nodos }, resumen: `Moví ${NOMBRE[zona]} (${ids.size} pieza${ids.size > 1 ? "s" : ""}) a x = ${Math.round(ax + dx)}, z = ${Math.round(az + dz)} cm.` };
 }
 
 /** Quita una zona (o las mesas de invitados) con lo suyo y lo que estaba sobre ella; las piezas del usuario que no estaban sobre ella no se tocan. */

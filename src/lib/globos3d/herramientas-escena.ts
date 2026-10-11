@@ -42,7 +42,7 @@ import { sillasDeMesaNodo } from "./mobiliario-asientos-mesa";
 import { aceptaDecoraciones, colocacionSobre, describirSobre, moverCopia, radioLateral, separarCopia, sitioDescrito, type SitioDescrito } from "./lienzo-escena";
 import { ESCENAS_PREDEFINIDAS, arcoOrganico, columnaClasica, escenaPredefinida, guirnaldaFeston, piezaNueva } from "./escenas-presets";
 import { avisosDeColor, avisosDeColorParaElUsuario } from "./avisos-color-escena";
-import type { AvisoUsuario } from "./avisos-usuario";
+import { avisosDe, type AvisoUsuario } from "./avisos-usuario";
 import { cambiarMobiliario, resumenDeEscenografia } from "./herramientas-escena-mobiliario";
 import { elementosDeEscenografia } from "./mobiliario-pieza";
 import { ACABADOS_ROTULO } from "./rotulos";
@@ -934,7 +934,7 @@ function errorDeZod(error: z.ZodError): string {
   return `Parámetros no válidos: ${error.issues.slice(0, 4).map((i) => `${i.path.join(".") || "(raíz)"}: ${i.message}`).join("; ")}.`;
 }
 
-function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown): { escena: Escena; resumen: string; consulta?: boolean } {
+function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown): { escena: Escena; resumen: string; consulta?: boolean; avisos?: readonly AvisoUsuario[] } {
   const notas: string[] = [];
   switch (nombre) {
     case "ver_escena":
@@ -974,7 +974,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       comprobarAltura(pieza, colocacion, escena.sala);
       const nodo: NodoEscena = { id, nombre: a.nombre ?? hecho.nombre, pieza, colocacion };
       const nueva = insertar(escena, nodo);
-      return { escena: nueva, resumen: conNotas(`Agregué «${nodo.nombre}» (id ${id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas) };
+      return { escena: nueva, resumen: conNotas(`Agregué «${nodo.nombre}» (id ${id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas), avisos: avisosDe(notas) };
     }
 
     case "agregar_del_catalogo": {
@@ -1034,7 +1034,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       }
       const nodoNuevo: NodoEscena = { ...nodo, pieza, nombre: veredicto?.tipo === "corregido" ? veredicto.nombre : a.nombre ?? nodo.nombre };
       if (JSON.stringify(nodoNuevo) === JSON.stringify(nodo)) return { escena, resumen: conNotas(`«${nodo.nombre}» ya estaba así: no cambió nada.`, notas) };
-      return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza), resumen: conNotas(`Cambié «${nodoNuevo.nombre}» (${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}.`, notas) };
+      return { escena: reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza), resumen: conNotas(`Cambié «${nodoNuevo.nombre}» (${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}.`, notas), avisos: avisosDe(notas) };
     }
 
     case "ajustar_tamanos": {
@@ -1083,7 +1083,7 @@ function ejecutar(escena: Escena, nombre: NombreHerramienta, argumentos: unknown
       if (colgadas.length) notas.push(`lo que va en ella (${colgadas.join(", ")}) sigue con ella; revisa que encaje`);
       const nodoNuevo: NodoEscena = { id: nodo.id, nombre, pieza, colocacion };
       const nueva = reubicarSobre(reemplazar(escena, nodoNuevo), nodo.id, nodo.pieza, pieza);
-      return { escena: nueva, resumen: conNotas(`Cambié «${nodo.nombre}» (${NOMBRE_TIPO[nodo.pieza.tipo]}) por «${nombre}» (mismo id ${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas) };
+      return { escena: nueva, resumen: conNotas(`Cambié «${nodo.nombre}» (${NOMBRE_TIPO[nodo.pieza.tipo]}) por «${nombre}» (mismo id ${nodo.id}): ${NOMBRE_TIPO[pieza.tipo]} ${medidasDe(pieza)}${coloresDicho(pieza)}, ${dondeTexto(colocacion, nueva)}.`, notas), avisos: avisosDe(notas) };
     }
 
     case "recolorear_escena": {
