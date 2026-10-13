@@ -22,6 +22,7 @@ import { acabadosFotoSinComprar } from "./acabados-foto-plan";
 import { avisosFloresFotoSinComprar } from "@/lib/plan/flores-pieza";
 import { lecturaFoto } from "./lectura-foto";
 import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
+import { planListoParaAccion, rutaOpcionIdea } from "./opcion-idea";
 import { respuestaPrecioPlan, SELECTOR_PRECIO_TOTAL } from "./precio-chat";
 import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
 import type { AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
@@ -254,6 +255,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const imagenEnCursoRef = useRef<string | null>(null);
   /** «Genera la imagen» sin plan: el plan que había (o ninguno); al llegar uno distinto se dibuja su imagen. */
   const imagenTrasPlanRef = useRef<{ planPrevio: string | null } | null>(null);
+  /** «Cuánto cuesta» / «Aprender» elegidos con una idea y sin plan: se ejecutan cuando llega el plan exacto de la idea. */
+  const accionTrasPlanIdeaRef = useRef<{ accion: "costear" | "aprender"; planPrevio: string | null; ideaId: string } | null>(null);
   const fotosRef = useRef(new Map<string, FotoInspiracion>());
   const restauradoRef = useRef(false);
   const flujoRef = useRef<{ id: string; texto: string } | null>(null);
@@ -498,6 +501,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     let limpio = texto.trim();
     if ((!limpio && !archivo) || cargandoRef.current) return;
     registrarAccion("turno.enviar", { texto: limpio, opciones: opcionesEnvio, conFoto: Boolean(archivo) });
+    accionTrasPlanIdeaRef.current = null;
     limpiarAvisos();
     if (!limpio) limpio = "Mira esta foto de inspiración.";
 
@@ -1405,7 +1409,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
    * dicen antes de llamar al modelo. El plan de antes no se toca hasta que llega el nuevo, que lo deja como versión
    * anterior; si falla, sigue vigente y hay «Reintentar».
    */
-  async function agregarIdeaAlPlan(decoracion: DecoracionSempertex, origen: "eleccion" | "carrusel", mensajeOrigenId: string): Promise<void> {
+  async function agregarIdeaAlPlan(decoracion: DecoracionSempertex, origen: "eleccion" | "carrusel", mensajeOrigenId: string, accionTrasPlan?: "costear" | "aprender"): Promise<void> {
     if (cargandoRef.current) return;
     const vigente = planVigente;
     const resultado = propuestaAgregarIdea(decoracion, vigente?.widget.plan ?? null);
@@ -1421,6 +1425,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       colores: resultado.propuesta.colores, colores_nuevos: resultado.coloresNuevos,
     });
     limpiarAvisos();
+    if (accionTrasPlan) accionTrasPlanIdeaRef.current = { accion: accionTrasPlan, planPrevio: vigente?.mensajeId ?? null, ideaId: decoracion.id };
     setAgregandoId(decoracion.id);
     const idPlan = nuevoId();
     agregar([
@@ -1481,6 +1486,26 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     mostrarMensaje(planVigente.mensajeId);
   }
 
+  /** «Cuánto cuesta» / «Aprender» sobre el plan a la vista, por reglas: el precio dicho es el `cotizacion.total` de la tarjeta. */
+  function resolverOpcionConPlan(accion: "costear" | "aprender", plan: NonNullable<typeof planVigente>): void {
+    accionPlan(accion, plan.mensajeId, "barra");
+    if (accion !== "costear") return;
+    agregar([
+      { id: nuevoId(), role: "user", content: "Quiero saber cuánto cuestan los materiales." },
+      { id: nuevoId(), role: "assistant", content: respuestaPrecioPlan(plan.widget, plan.widget.usoCosteo ?? uso ?? "personal") },
+    ]);
+  }
+
+  // «Cuánto cuesta» / «Aprender» de una idea elegida: con el plan exacto de la idea ya a la vista, se resuelven por reglas
+  // (la tarjeta del plan y su cotización única), sin turno de modelo.
+  useEffect(() => {
+    const pendiente = accionTrasPlanIdeaRef.current;
+    if (!pendiente || !planVigente || !planListoParaAccion(pendiente, idPlanVigente, planVigente.widget.ideas ?? [])) return;
+    accionTrasPlanIdeaRef.current = null;
+    resolverOpcionConPlan(pendiente.accion, planVigente);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando aparece un plan nuevo
+  }, [idPlanVigente]);
+
   function elegirOpcion(opcion: OpcionGuiada, mensajeId?: string): void {
     if (cargandoRef.current) return;
     registrarAccion("opcion.elegir", { opcion, mensajeId: mensajeId ?? null });
@@ -1495,6 +1520,15 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       return;
     }
     if (opcion === "contratar") { preguntarCiudad("ciudad-decorador", "Quiero contratar un decorador"); return; }
+    const ruta = rutaOpcionIdea(opcion, { hayIdea: Boolean(seleccionada), hayPlan: Boolean(planVigente), ideaEnElPlan: Boolean(seleccionada && planVigente?.widget.ideas?.includes(seleccionada.id)) });
+    if (ruta === "accion-plan" && planVigente && (opcion === "costear" || opcion === "aprender")) {
+      resolverOpcionConPlan(opcion, planVigente);
+      return;
+    }
+    if (ruta === "plan-exacto-de-idea" && seleccionada && (opcion === "costear" || opcion === "aprender")) {
+      void agregarIdeaAlPlan(seleccionada, "eleccion", mensajeId ?? "", opcion);
+      return;
+    }
     const textos: Record<Exclude<OpcionGuiada, "contratar">, string> = {
       costear: "Quiero saber cuánto cuestan los materiales.",
       comprar: "Quiero saber dónde comprar los materiales.",
