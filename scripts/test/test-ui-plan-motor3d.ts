@@ -374,7 +374,7 @@ async function main(): Promise<void> {
     const fuente = readFileSync("src/components/guiado/VistaGuiada.tsx", "utf8");
     assert.match(fuente, /async function verComoQuedaria[\s\S]{0,700}widget\.motor === "3d" && !firmaDePlan\(widget\.plan\)\)[\s\S]{0,200}return;/, "verComoQuedaria se detiene, antes de cualquier ruta, con un plan 3D sin espec firmada");
     assert.match(fuente, /widget\.motor === "3d"\) \{[\s\S]{0,400}pedirImagenPlan3D\(/, "y con espec firmada el plan 3D va por su propia ruta (test-motor3d-imagen-cliente.ts lo prueba entero)");
-    assert.match(fuente, /async function aplicarEdicionChat[\s\S]{0,500}const del3d = planDelMensaje\([^\n]*\?\.motor === "3d";/, "los cambios por chat saben si el plan es del 3D");
+    assert.match(fuente, /async function aplicarEdicionChat[\s\S]{0,700}const vigente = planDelMensaje\([^\n]*\);\s*const del3d = vigente\?\.motor === "3d";/, "los cambios por chat saben si el plan es del 3D");
     assert.match(fuente, /dependenciasEdicionChat\(signal, del3d \? \{ turnoId: mensajeId \} : undefined\)/, "…y entonces van al servidor del 3D con el id del turno, no a /api/plan-editar");
     assert.match(fuente, /motor=\{widget\.motor\}/, "la tarjeta recibe el motor del plan");
     assert.match(fuente, /colocarPlan\(mensajeId, resultado\.plan, resultado\.cotizacion, Boolean\(foto\), idea, foto\?\.referenciaId, resultado\.motor, propuesta\)/, "el plan guarda el motor con que se armó (y, si es del 3D, la propuesta que lo armó)");
