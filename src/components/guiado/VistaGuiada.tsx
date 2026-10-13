@@ -22,7 +22,7 @@ import { acabadosFotoSinComprar } from "./acabados-foto-plan";
 import { avisosFloresFotoSinComprar } from "@/lib/plan/flores-pieza";
 import { lecturaFoto } from "./lectura-foto";
 import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
-import { planListoParaAccion, rutaOpcionIdea } from "./opcion-idea";
+import { avanzarOpcionIdea, marcarChipAlElegir, resultadoPlanIdea, rutaOpcionIdea, TEXTO_OPCION_IDEA, type AccionIdea, type EsperaOpcionIdea, type EventoOpcionIdea, type PasoOpcionIdea, type ResultadoPlanIdea } from "./opcion-idea";
 import { respuestaPrecioPlan, SELECTOR_PRECIO_TOTAL } from "./precio-chat";
 import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
 import type { AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
@@ -121,6 +121,8 @@ type AccionFallo =
   | { tipo: "foto"; referenciaId: string; mensajeId: string; sinRemate?: boolean; piezaNueva?: PiezaNuevaChat }
   /** Un cambio del plan pedido por chat (`edicion-chat-guiada.ts`) que no salió: se repite ESE cambio, sin el modelo. */
   | { tipo: "edicion"; pedido: PedidoEdicionPlan; mensajeId: string }
+  /** «Cuánto cuesta» / «Aprender» de una idea cuyo plan exacto no llegó: se pide ESE plan otra vez, sin el modelo. */
+  | { tipo: "opcion-idea"; accion: AccionIdea; ideaId: string; usuarioId: string; mensajeId: string; opcionesId: string | null }
   /** «Recalcular mi plan» del aviso de corte del 3D (P-049): da el consentimiento y pide el plan de nuevo (Python, sin preguntar otra vez). */
   | { tipo: typeof TIPO_ACCION_RECALCULAR_3D; planHash: string; mensajeId: string }
   | { tipo: "subir-foto" }
@@ -255,8 +257,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const imagenEnCursoRef = useRef<string | null>(null);
   /** «Genera la imagen» sin plan: el plan que había (o ninguno); al llegar uno distinto se dibuja su imagen. */
   const imagenTrasPlanRef = useRef<{ planPrevio: string | null } | null>(null);
-  /** «Cuánto cuesta» / «Aprender» elegidos con una idea y sin plan: se ejecutan cuando llega el plan exacto de la idea. */
-  const accionTrasPlanIdeaRef = useRef<{ accion: "costear" | "aprender"; planPrevio: string | null; ideaId: string } | null>(null);
+  /** «Cuánto cuesta» / «Aprender» elegidos con una idea y sin plan: esperan el plan exacto de la idea en SU mensaje (opcion-idea.ts). */
+  const esperaOpcionIdeaRef = useRef<EsperaOpcionIdea | null>(null);
   const fotosRef = useRef(new Map<string, FotoInspiracion>());
   const restauradoRef = useRef(false);
   const flujoRef = useRef<{ id: string; texto: string } | null>(null);
@@ -445,6 +447,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const vaciar = useCallback(() => {
     turnoRef.current += 1;
     sesionRef.current += 1;
+    esperaOpcionIdeaRef.current = avanzarOpcionIdea(esperaOpcionIdeaRef.current, { tipo: "reinicio" }).espera;
     controlRef.current?.abort("usuario");
     imagenControlRef.current?.abort("usuario");
     controlRef.current = null;
@@ -501,7 +504,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     let limpio = texto.trim();
     if ((!limpio && !archivo) || cargandoRef.current) return;
     registrarAccion("turno.enviar", { texto: limpio, opciones: opcionesEnvio, conFoto: Boolean(archivo) });
-    accionTrasPlanIdeaRef.current = null;
+    avanzarEspera({ tipo: "otra-accion" });
     limpiarAvisos();
     if (!limpio) limpio = "Mira esta foto de inspiración.";
 
@@ -1285,12 +1288,13 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   }, [idPlanVigente]);
 
   // ── Acciones del plan (tarjeta, barra o pedidas al modelo) ───────────────────────────────────────────────────
-  function accionPlan(accion: AccionPlan, mensajeId: string, origen: "tarjeta" | "barra" | "modelo" = "tarjeta"): void {
+  /** `origen` «opcion»: el chip de una idea elegida, cuya petición ya está en el chat (no se repite). */
+  function accionPlan(accion: AccionPlan, mensajeId: string, origen: "tarjeta" | "barra" | "modelo" | "opcion" = "tarjeta"): void {
     const widget = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
     if (!widget || widget.reemplazado) return;
     registrarAccion("plan.accion", { accion, origen, mensajeId, plan_hash: widget.plan.plan_hash });
     if (accion !== "costear" && accion !== "comprar") limpiarAvisos();
-    const delCliente = origen !== "modelo";
+    const delCliente = origen === "tarjeta" || origen === "barra";
     switch (accion) {
       case "ver":
         void verComoQuedaria(mensajeId);
@@ -1368,9 +1372,10 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
    * El plan EXACTO de la idea (`/api/plan-idea`): sus piezas, medidas, productos Sempertex y tamaños, que Python cuenta y
    * firma sin modelo; con `base`, sumadas a las del plan vigente. Verificador (2026-10-06, v43qux): por /api/chat la
    * guirnalda de 51 globos de 12″ y 18″ volvía como 77 globos de otros productos, y las columnas negras y doradas perdían
-   * la bola negra de 36″. «fallo» = la idea no tiene plan guardado o no cabe: se sigue por el camino de siempre.
+   * la bola negra de 36″. Quien llama decide qué hacer si no llega (`trasFallo` lo dice en el registro): «Agregar al plan»
+   * sigue por el camino de siempre; los chips de la idea, nunca por el modelo (`opcion-idea.ts`).
    */
-  async function planExactoDeIdea(mensajeId: string, decoracion: DecoracionSempertex, base: PlanGuiado | null, idea: IdeaAgregada, propuesta: Propuesta, planAnterior: PlanActualGuiado | null): Promise<"ok" | "fallo" | "detenido" | "obsoleto"> {
+  async function planExactoDeIdea(mensajeId: string, decoracion: DecoracionSempertex, base: PlanGuiado | null, idea: IdeaAgregada, trasFallo: string): Promise<ResultadoPlanIdea> {
     const turno = ++turnoRef.current;
     const control = new AbortController();
     controlRef.current = control;
@@ -1390,13 +1395,9 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
         colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, false, resultado.avisos.length ? { ...idea, avisos: resultado.avisos } : idea, undefined, resultado.motor);
         return "ok";
       }
-      if (resultado.detenido && !porTiempo) {
-        actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, widgets: [{ tipo: "propuesta", propuesta, estado: "fallo" }] }));
-        setFallo({ titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion: { tipo: "plan", propuesta, mensajeId, ...(planAnterior ? { planAnterior } : {}), idea }, mensajeId });
-        return "detenido";
-      }
-      registrarFallo("idea.plan_exacto_fallo", resultado.motivo, { id: decoracion.id, estado: resultado.estado, porTiempo, accion: "se arma por el camino de siempre (/api/chat)" }, "warn");
-      return "fallo";
+      const final = resultadoPlanIdea(resultado, porTiempo);
+      if (final !== "detenido") registrarFallo("idea.plan_exacto_fallo", resultado.motivo, { id: decoracion.id, estado: resultado.estado, porTiempo, resultado: final, accion: trasFallo }, "warn");
+      return final;
     } finally {
       window.clearTimeout(reloj);
       terminarPlan(turno, mensajeId);
@@ -1410,8 +1411,9 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
    * dicen antes de llamar al modelo. El plan de antes no se toca hasta que llega el nuevo, que lo deja como versión
    * anterior; si falla, sigue vigente y hay «Reintentar».
    */
-  async function agregarIdeaAlPlan(decoracion: DecoracionSempertex, origen: "eleccion" | "carrusel", mensajeOrigenId: string, accionTrasPlan?: "costear" | "aprender"): Promise<void> {
+  async function agregarIdeaAlPlan(decoracion: DecoracionSempertex, origen: "eleccion" | "carrusel", mensajeOrigenId: string): Promise<void> {
     if (cargandoRef.current) return;
+    avanzarEspera({ tipo: "otra-accion" });
     const vigente = planVigente;
     const resultado = propuestaAgregarIdea(decoracion, vigente?.widget.plan ?? null);
     const datos = { id: decoracion.id, titulo: decoracion.titulo, origen, mensajeId: mensajeOrigenId, plan_hash_base: vigente?.widget.plan.plan_hash ?? null };
@@ -1426,7 +1428,6 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       colores: resultado.propuesta.colores, colores_nuevos: resultado.coloresNuevos,
     });
     limpiarAvisos();
-    if (accionTrasPlan) accionTrasPlanIdeaRef.current = { accion: accionTrasPlan, planPrevio: vigente?.mensajeId ?? null, ideaId: decoracion.id };
     setAgregandoId(decoracion.id);
     const idPlan = nuevoId();
     agregar([
@@ -1438,8 +1439,12 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const idea: IdeaAgregada = { id: decoracion.id, titulo: decoracion.titulo, sumada: Boolean(vigente) };
     try {
       // Un plan que salió de una foto se rehace por el camino de siempre, que conserva la foto y su lectura.
-      const exacto = vigente?.widget.fotoInspiracion ? "fallo" : await planExactoDeIdea(idPlan, decoracion, vigente?.widget.plan ?? null, idea, resultado.propuesta, planAnterior);
-      if (exacto !== "fallo") {
+      const exacto = vigente?.widget.fotoInspiracion ? "fallo" : await planExactoDeIdea(idPlan, decoracion, vigente?.widget.plan ?? null, idea, "se arma por el camino de siempre (/api/chat)");
+      if (exacto === "detenido") {
+        actualizarMensaje(idPlan, (mensaje) => ({ ...mensaje, widgets: [{ tipo: "propuesta", propuesta: resultado.propuesta, estado: "fallo" }] }));
+        setFallo({ titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion: { tipo: "plan", propuesta: resultado.propuesta, mensajeId: idPlan, ...(planAnterior ? { planAnterior } : {}), idea }, mensajeId: idPlan });
+      }
+      if (exacto !== "fallo" && exacto !== "sin-plan-guardado") {
         registrarAccion(exacto === "ok" ? "idea.agregada" : "idea.agregar_sin_plan", { id: decoracion.id, estado: exacto, exacto: true });
         return;
       }
@@ -1487,30 +1492,87 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     mostrarMensaje(planVigente.mensajeId);
   }
 
-  /** «Cuánto cuesta» / «Aprender» sobre el plan a la vista, por reglas: el precio dicho es el `cotizacion.total` de la tarjeta. */
-  function resolverOpcionConPlan(accion: "costear" | "aprender", plan: NonNullable<typeof planVigente>): void {
-    accionPlan(accion, plan.mensajeId, "barra");
+  /**
+   * «Cuánto cuesta» / «Aprender» sobre el plan a la vista, por reglas: el precio dicho es el `cotizacion.total` de la tarjeta.
+   * `conPeticion`: false cuando el cliente ya dijo lo que quería al tocar el chip de la idea (una sola burbuja suya).
+   */
+  function resolverOpcionConPlan(accion: AccionIdea, plan: NonNullable<typeof planVigente>, conPeticion: boolean): void {
+    accionPlan(accion, plan.mensajeId, conPeticion ? "barra" : "opcion");
     if (accion !== "costear") return;
     agregar([
-      { id: nuevoId(), role: "user", content: "Quiero saber cuánto cuestan los materiales." },
+      ...(conPeticion ? [{ id: nuevoId(), role: "user" as const, content: TEXTO_OPCION_IDEA.costear(null) }] : []),
       { id: nuevoId(), role: "assistant", content: respuestaPrecioPlan(plan.widget, plan.widget.usoCosteo ?? uso ?? "personal") },
     ]);
   }
 
-  // «Cuánto cuesta» / «Aprender» de una idea elegida: con el plan exacto de la idea ya a la vista, se resuelven por reglas
-  // (la tarjeta del plan y su cotización única), sin turno de modelo.
+  function avanzarEspera(evento: EventoOpcionIdea): PasoOpcionIdea {
+    const paso = avanzarOpcionIdea(esperaOpcionIdeaRef.current, evento);
+    esperaOpcionIdeaRef.current = paso.espera;
+    return paso;
+  }
+
+  function marcarChipOpcion(espera: EsperaOpcionIdea): void {
+    if (espera.opcionesId) actualizarWidget(espera.opcionesId, "opciones", (widget) => ({ ...widget, elegida: espera.accion }));
+  }
+
+  /**
+   * «Cuánto cuesta» / «Aprender» con una idea elegida y sin plan: UNA petición del cliente y el plan EXACTO guardado de la
+   * idea en el mensaje siguiente, sin modelo; con él a la vista, la acción se resuelve por reglas (efecto de abajo). No
+   * depende de que la idea se pueda sumar a un plan (las figuras también tienen precio). Si la idea no tiene plan guardado,
+   * esa misma petición va al turno de siempre, que cotiza su lista curada sin armar otro plan; si el plan no llega (red,
+   * plazo, «Detener»), se dice y se ofrece repetirlo, nunca un plan del modelo con otras cifras. `reintento`: los mensajes
+   * del intento anterior, que se reutilizan.
+   */
+  async function pedirOpcionDeIdea(accion: AccionIdea, decoracion: DecoracionSempertex, opcionesId: string | null, reintento?: { usuarioId: string; mensajeId: string }): Promise<void> {
+    if (cargandoRef.current) return;
+    limpiarAvisos();
+    const texto = TEXTO_OPCION_IDEA[accion](decoracion.titulo);
+    const usuarioId = reintento?.usuarioId ?? nuevoId();
+    const mensajeId = reintento?.mensajeId ?? nuevoId();
+    const preparando = `Preparo el plan de «${decoracion.titulo}» con sus globos exactos.`;
+    if (reintento) actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: preparando }));
+    else agregar([{ id: usuarioId, role: "user", content: texto }, { id: mensajeId, role: "assistant", content: preparando }]);
+    pedirFinal();
+    esperaOpcionIdeaRef.current = { accion, ideaId: decoracion.id, mensajeId, sesion: sesionRef.current, opcionesId };
+    registrarAccion("opcion.plan_exacto", { accion, id: decoracion.id, mensajeId, reintento: Boolean(reintento) });
+    const resultado = await planExactoDeIdea(mensajeId, decoracion, null, { id: decoracion.id, titulo: decoracion.titulo, sumada: false }, "se dice y se ofrece repetirlo (sin modelo)");
+    const paso = avanzarEspera({ tipo: "resultado", mensajeId, resultado });
+    if (paso.turnoChat) {
+      registrarAccion("opcion.sin_plan_guardado", { accion, id: decoracion.id });
+      marcarChipOpcion(paso.turnoChat);
+      setMensajes((actuales) => actuales.filter((mensaje) => mensaje.id !== usuarioId && mensaje.id !== mensajeId));
+      void enviar(texto);
+      return;
+    }
+    if (paso.reintento) {
+      const detenido = resultado === "detenido";
+      actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: detenido ? "Detuviste la respuesta." : `No pude preparar el plan de «${decoracion.titulo}» ahora.` }));
+      setFallo({
+        titulo: detenido ? "Detuviste la respuesta" : "No pude preparar el plan de esta idea",
+        detalle: detenido ? "Puedes pedirlo otra vez cuando quieras." : "Solo uso el plan de la idea para no darte cifras distintas. Inténtalo de nuevo en un momento.",
+        etiqueta: "Intentar de nuevo",
+        accion: { tipo: "opcion-idea", accion, ideaId: decoracion.id, usuarioId, mensajeId, opcionesId },
+        mensajeId,
+      });
+    }
+  }
+
+  // «Cuánto cuesta» / «Aprender» de una idea elegida: con el plan exacto de la idea ya en SU mensaje, se resuelven por reglas
+  // (la tarjeta del plan y su cotización única), sin turno de modelo ni otra burbuja del cliente.
   useEffect(() => {
-    const pendiente = accionTrasPlanIdeaRef.current;
-    if (!pendiente || !planVigente || !planListoParaAccion(pendiente, idPlanVigente, planVigente.widget.ideas ?? [])) return;
-    accionTrasPlanIdeaRef.current = null;
-    resolverOpcionConPlan(pendiente.accion, planVigente);
+    const paso = avanzarEspera({ tipo: "plan", mensajeId: idPlanVigente, ideas: planVigente?.widget.ideas ?? [], sesion: sesionRef.current });
+    if (!paso.resolver || !planVigente) return;
+    marcarChipOpcion(paso.resolver);
+    resolverOpcionConPlan(paso.resolver.accion, planVigente, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando aparece un plan nuevo
   }, [idPlanVigente]);
 
   function elegirOpcion(opcion: OpcionGuiada, mensajeId?: string): void {
     if (cargandoRef.current) return;
     registrarAccion("opcion.elegir", { opcion, mensajeId: mensajeId ?? null });
-    if (mensajeId) actualizarWidget(mensajeId, "opciones", (widget) => ({ ...widget, elegida: opcion }));
+    avanzarEspera({ tipo: "otra-accion" });
+    const ruta = rutaOpcionIdea(opcion, { hayIdea: Boolean(seleccionada), hayPlan: Boolean(planVigente), ideaEnElPlan: Boolean(seleccionada && planVigente?.widget.ideas?.includes(seleccionada.id)) });
+    if (mensajeId && marcarChipAlElegir(ruta)) actualizarWidget(mensajeId, "opciones", (widget) => ({ ...widget, elegida: opcion }));
     if (opcion === "comprar" && seleccionada) {
       limpiarAvisos();
       agregar([
@@ -1521,19 +1583,20 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       return;
     }
     if (opcion === "contratar") { preguntarCiudad("ciudad-decorador", "Quiero contratar un decorador"); return; }
-    const ruta = rutaOpcionIdea(opcion, { hayIdea: Boolean(seleccionada), hayPlan: Boolean(planVigente), ideaEnElPlan: Boolean(seleccionada && planVigente?.widget.ideas?.includes(seleccionada.id)) });
     if (ruta === "accion-plan" && planVigente && (opcion === "costear" || opcion === "aprender")) {
-      resolverOpcionConPlan(opcion, planVigente);
+      resolverOpcionConPlan(opcion, planVigente, true);
       return;
     }
     if (ruta === "plan-exacto-de-idea" && seleccionada && (opcion === "costear" || opcion === "aprender")) {
-      void agregarIdeaAlPlan(seleccionada, "eleccion", mensajeId ?? "", opcion);
+      // Tras un fallo, tocar otra vez el mismo chip es «Intentar de nuevo»: reutiliza su burbuja y su mensaje.
+      const previo = fallo?.accion.tipo === "opcion-idea" && fallo.accion.accion === opcion && fallo.accion.ideaId === seleccionada.id ? fallo.accion : null;
+      void pedirOpcionDeIdea(opcion, seleccionada, mensajeId ?? null, previo ? { usuarioId: previo.usuarioId, mensajeId: previo.mensajeId } : undefined);
       return;
     }
     const textos: Record<Exclude<OpcionGuiada, "contratar">, string> = {
-      costear: "Quiero saber cuánto cuestan los materiales.",
+      costear: TEXTO_OPCION_IDEA.costear(null),
       comprar: "Quiero saber dónde comprar los materiales.",
-      aprender: seleccionada ? `Quiero aprender a hacerlo: armar «${seleccionada.titulo}» paso a paso.` : "Quiero aprender a hacerlo paso a paso.",
+      aprender: TEXTO_OPCION_IDEA.aprender(seleccionada?.titulo ?? null),
     };
     void enviar(textos[opcion]);
   }
@@ -1671,6 +1734,22 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       case "plan": void reintentarPlan(accion); return;
       case "foto": void aceptarPlanFoto(accion.referenciaId, { mensajeId: accion.mensajeId, ...(accion.sinRemate ? { sinRemate: true } : {}), ...(accion.piezaNueva ? { piezaNueva: accion.piezaNueva } : {}) }); return;
       case "edicion": void reintentarEdicion(accion); return;
+      case "opcion-idea": {
+        setFallo(null);
+        // Ya hay un plan con la idea: la acción se resuelve sobre él; si no, ese pedido quedó atrás y el mensaje lo dice.
+        if (planVigente?.widget.ideas?.includes(accion.ideaId)) {
+          marcarChipOpcion({ accion: accion.accion, ideaId: accion.ideaId, mensajeId: accion.mensajeId, sesion: sesionRef.current, opcionesId: accion.opcionesId });
+          resolverOpcionConPlan(accion.accion, planVigente, false);
+          return;
+        }
+        const decoracion = seleccionada?.id === accion.ideaId ? seleccionada : null;
+        if (!decoracion || planVigente) {
+          actualizarMensaje(accion.mensajeId, (mensaje) => ({ ...mensaje, content: "Ese pedido quedó atrás: elige la idea otra vez y vuelve a tocar la opción." }));
+          return;
+        }
+        void pedirOpcionDeIdea(accion.accion, decoracion, accion.opcionesId, { usuarioId: accion.usuarioId, mensajeId: accion.mensajeId });
+        return;
+      }
       case "recalcular-3d": recalcularPlan3d(accion.planHash); return;
       case "subir-foto": setFallo(null); archivoRef.current?.click(); return;
       // La conversación ya está en la sesión (se guarda en cada cambio) y el mensaje sin respuesta vuelve con «Reintentar».
