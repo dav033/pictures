@@ -425,8 +425,11 @@ test("las rutas escriben con `registrarAuditoriaPlan3d` (el tipo exige la depend
   const fuente = (ruta: string) => readFileSync(new URL(`../../src/app/api/${ruta}/route.ts`, import.meta.url), "utf8");
   for (const ruta of ["guiada/motor/plan", "guiada/motor/editar"]) assert.match(fuente(ruta), /registrarPlan: registrarAuditoriaPlan3d/, ruta);
   const guiada = fuente("asistente-guiado");
-  assert.match(guiada, /filaDeCotizacionDeIdea\(decision, decoracion\.id, requestId, "\/api\/asistente-guiado"\)/);
-  assert.match(guiada, /await registrarAuditoriaPlan3d\(filaAuditoria\)/);
+  // La fila de «¿cuánto cuesta?» de una idea la escribe la función compartida por la herramienta y la regla sin modelo
+  // (costear-idea-elegida.ts); la ruta le pasa su superficie y `registrarAuditoriaPlan3d`.
+  const compartida = readFileSync(new URL("../../src/lib/guiada-motor/costear-idea-elegida.ts", import.meta.url), "utf8");
+  assert.match(compartida, /await entorno\.registrarAuditoria\(filaDeCotizacionDeIdea\(costeo\.decision, decoracion\.id, entorno\.requestId, entorno\.superficie\)\)/);
+  assert.match(guiada, /superficie: "\/api\/asistente-guiado", registrarAuditoria: registrarAuditoriaPlan3d/);
 });
 
 /* ---------- «¿Cuánto cuesta?» de una idea del carrusel ---------- */
