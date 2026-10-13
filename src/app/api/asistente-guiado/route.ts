@@ -31,6 +31,7 @@ import { briefConHechos, etiquetaEdadCliente, hechosDelCliente, pedidoCompletoDe
 import type { BriefGuiado } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { conRegistro, contextoActual, decidir, envolverRegistroHerramientas } from "@/lib/registro";
 import { crearDeadlineIA } from "@/lib/ia/plazo-servidor";
+import { responderConsultaIdea } from "@/lib/ia/guiado/consulta-plan-chat";
 import { detectarEleccionIdea, detectarPedidoEdicion, fraseDelPedido, HERRAMIENTA_ELEGIR_IDEA, HERRAMIENTAS_EDICION, herramientasConEdicion, ideaDesdeHerramienta, pedidoDesdeHerramienta, textoIdeasParaModelo, textoPiezasParaModelo, type DeteccionEdicion, type HerramientaEdicion } from "@/lib/ia/guiado/edicion-plan-chat";
 
 export const maxDuration = 75;
@@ -105,6 +106,19 @@ function falloProveedor(error: unknown): { code: ErrorCodeV1; message: string; s
   if (error.causa === "filtrado") return { code: "AI_FILTERED", message: "El proveedor no pudo procesar esta solicitud.", status: 422, retryable: false };
   if (error.causa === "red") return { code: "AI_NETWORK", message: "No se pudo contactar al proveedor de IA.", status: 502, retryable: true };
   return { code: "AI_PROVIDER", message: "No se pudo iniciar el asistente guiado.", status: 502, retryable: true };
+}
+
+/** Un turno resuelto por reglas: el mismo SSE (texto y fin) que el del modelo, sin llamarlo. */
+function respuestaSinModelo(requestId: string, headers: Record<string, string>, reply: string, result: Record<string, unknown>): Response {
+  const eventos = [
+    { type: "texto", delta: reply },
+    { type: "fin", reply, brief: {}, proveedor: "reglas", modelo: "reglas", result },
+  ].map((campos) => {
+    const evento = { schema_version: CHAT_SSE_CONTRACT_VERSION, request_id: requestId, correlation_id: requestId, ...campos };
+    if (!ChatSseEventV1Schema.safeParse(evento).success) throw new Error("EVENTO_GUIADO_INVALIDO");
+    return `event: ${campos.type}\ndata: ${JSON.stringify(evento)}\n\n`;
+  });
+  return new Response(eventos.join(""), { headers: { ...headers, "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" } });
 }
 
 /** El request_id del turno es el de la petición registrada (x-request-id), si es un UUID: así el SSE, la telemetría, el Python y la auditoría hablan del mismo id. */
@@ -189,6 +203,11 @@ async function turnoGuiado(request: Request) {
   const eleccionIdea = !alcancePropuesta && !turnoDelPlan ? detectarEleccionIdea(ultimoUsuario, ideasVisibles) : null;
   if (planActual) decidir("regla:edicion_plan_chat", "qué pide el cliente sobre su plan vigente (reglas, antes del modelo)", deteccionEdicion, { entrada: { ultimoUsuario, ultimoAsistente: ultimoAsistente?.slice(0, 300) ?? null, piezas: textoPiezasParaModelo(planActual), colores: planActual.colores, alcancePropuesta } });
   if (ideasVisibles.length) decidir("regla:elegir_idea_chat", "si el cliente elige con palabras una de las ideas que tiene a la vista", eleccionIdea ?? { elige: false }, { entrada: { ultimoUsuario, ideas: ideasVisibles.map((idea) => idea.titulo) } });
+  // Juez 2026-10-11, D1: con una idea elegida y sin plan, «¿cuántos globos lleva?» / colores / medidas se responden con
+  // los datos de la idea, antes del modelo (que preguntaba si era para negocio o uso personal).
+  const consultaIdea = estado?.decoracionId && !planActual && !alcancePropuesta && !turnoDelPlan && !eleccionIdea ? responderConsultaIdea(ultimoUsuario, estado.decoracionId) : null;
+  if (estado?.decoracionId && !planActual && !alcancePropuesta) decidir("regla:consulta_idea_chat", "pregunta por la idea elegida (globos, colores, medidas): se responde con sus datos, sin modelo", consultaIdea ? { tipo: consultaIdea.consulta.tipo, piezas: consultaIdea.consulta.piezas } : { responde: false }, { entrada: { ultimoUsuario, decoracionId: estado.decoracionId } });
+  if (consultaIdea) return respuestaSinModelo(requestId, headers, consultaIdea.texto, { opciones: ["contratar", "costear", "comprar", "aprender"] });
   // Lo que escribió el cliente, normalizado: la ciudad de buscar_proveedores tiene que salir de aquí, no del modelo.
   const textoCliente = ` ${normalizarBusqueda(mensajesDelCliente.join(" "))} `;
   // El brief del cliente solo se usa para completar; las herramientas fijan evento, edad y temática, y al final del turno
