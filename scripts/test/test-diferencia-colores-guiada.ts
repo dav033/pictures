@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { avisoEnCurso, type CambioPlan, type PlanGuiado } from "@/components/guiado/ajuste/ajuste-plan-guiado";
-import { confirmacionCambioHecho, diferenciaCambioColor } from "@/components/guiado/ajuste/diferencia-colores";
+import { confirmacionCambioHecho, diferenciaCambioColor, textoCambioColor } from "@/components/guiado/ajuste/diferencia-colores";
 import { avisoEdicionChat, ejecutarEdicionChat, type DependenciasEdicionChat } from "@/components/guiado/ajuste/edicion-chat-guiada";
 import { hacerCambioDelPanel } from "@/components/guiado/ajuste/usarAjustePlanGuiado";
 import { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
@@ -59,6 +59,46 @@ const conCambios = diferenciaCambioColor(base, movido, cambio);
 assert.equal(conCambios.nuevo.globos, 49, "el naranja quedó con 49 (9 más que el azul)");
 assert.deepEqual(conCambios.otros.map(({ antes, despues }) => [antes, despues]), [[36, 33], [36, 33], [39, 36]], "plata, blanco y rosado perdieron 3 cada uno");
 assert.ok(conCambios.otros.every((otro) => otro.color.length > 0 && !/azul|naranja/i.test(otro.color)), "los otros colores no repiten el que cambió");
+
+// Cambiar a un color que ya está en el plan: sus globos se suman, y no se cuenta como «otro color» que se movió.
+const COLUMNA0 = base.plan.estructuras[1]!.estructura_id;
+const BLANCO = "8634235781415";
+const cambioABlanco: Extract<CambioPlan, { tipo: "reemplazar-color" }> = { tipo: "reemplazar-color", color: "azul", globo: { productId: BLANCO, color: "blanco", variantIds: ["b5", "b9", "b12"], nombre: "Fashion Blanco" } };
+const fusionado = (() => {
+  const entrada = planConColorReemplazado(base.plan, { color: "azul" }, { product_id: BLANCO, color: "blanco", acabadoMotor: "mate" }).plan;
+  const estructuras = base.estructuras.map((estructura) => ({
+    ...estructura,
+    lineas: (estructura.lineas ?? []).map((cruda) => {
+      const linea = LineaSchema.parse(cruda);
+      return linea.product_id === AZUL ? { ...linea, product_id: BLANCO, color: "blanco", variant_id: `b${linea.diam_pulg}`, titulo: `B2b Globo Latex Redondo Fashion Blanco — R-${linea.diam_pulg}` } : linea;
+    }),
+  }));
+  return PlanGuiadoSchema.parse({ ...base, plan: entrada, estructuras, plan_hash: "d".repeat(64) });
+})();
+const alBlanco = diferenciaCambioColor(base, fusionado, cambioABlanco);
+assert.equal(alBlanco.anterior.globos, 40);
+assert.equal(alBlanco.nuevo.globos, 76, "el blanco que ya estaba (36) más los 40 del azul");
+assert.equal(alBlanco.nuevo.yaTenia, 36, "dice cuántos globos ya tenía el color que entra");
+assert.ok(alBlanco.otros.every((otro) => !/blanco/i.test(otro.color)), "el blanco no es un «otro color» que bajó a 0");
+const confirmacionBlanco = confirmacionCambioHecho(base, cambioABlanco, undefined, fusionado, {});
+assert.match(confirmacionBlanco, /Fashion Blanco ya tenía 36 globos en el plan; ahora lleva 76 globos, con los de azul \(tenía 40\)/, confirmacionBlanco);
+assert.doesNotMatch(confirmacionBlanco, /blanco 0|antes 36\)|igual/i, `no se contradice: ${confirmacionBlanco}`);
+assert.equal(sinCambios.nuevo.yaTenia, 0, "un color nuevo no tenía globos");
+// Python recuenta el blanco fusionado (76 → 72): la cifra no se esconde.
+const recontado = PlanGuiadoSchema.parse({ ...fusionado, estructuras: fusionado.estructuras.map((estructura) => {
+  let quitado = false;
+  return { ...estructura, lineas: (estructura.lineas ?? []).map((cruda) => { const linea = LineaSchema.parse(cruda); if (quitado || linea.product_id !== BLANCO) return linea; quitado = true; return { ...linea, unidades: linea.unidades - 2 }; }) };
+}) });
+const textoRecontado = confirmacionCambioHecho(base, cambioABlanco, undefined, recontado, {});
+assert.match(textoRecontado, /ahora lleva 72 globos.*Al volver a contar, la suma de 76 quedó en 72/, textoRecontado);
+// Solo en la columna: las cifras son las de esa pieza y lo dice.
+const enColumnaABlanco = diferenciaCambioColor(base, fusionado, { ...cambioABlanco, estructuraIds: [COLUMNA0] }, [COLUMNA0]);
+assert.equal(enColumnaABlanco.nuevo.enAlgunasPiezas, true);
+assert.equal(enColumnaABlanco.nuevo.yaTenia, 16, "el blanco que ya tenía la columna");
+assert.match(textoCambioColor({ ...cambioABlanco, estructuraIds: [COLUMNA0] }, enColumnaABlanco), /ya tenía 16 globos en esas piezas/);
+// Mismo nombre de color en otro producto, sin producto anterior: no se cuenta dos veces.
+const otroAzul: Extract<CambioPlan, { tipo: "reemplazar-color" }> = { tipo: "reemplazar-color", color: "azul", globo: { productId: BLANCO, color: "azul", variantIds: [], nombre: "Otro azul" } };
+assert.equal(diferenciaCambioColor(base, fusionado, otroAzul).anterior.globos, 40, "el azul que sale no incluye al producto que entra");
 
 // --- 2. La confirmación: «igual» solo si no se movió nada; si se movió, la cifra real y el precio ----------------------
 const confirmacionIgual = confirmacionCambioHecho(base, cambio, undefined, igual, { antes: cotizacion(176591), despues: cotizacion(176591) });
