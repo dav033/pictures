@@ -13,13 +13,15 @@ export type RutaOpcionIdea =
   | "accion-plan"
   /** Hay una idea elegida y aún no hay plan: se pide el plan exacto de la idea (sin modelo) y luego la acción. */
   | "plan-exacto-de-idea"
+  /** Hay un plan que no lleva la idea elegida: el plan queda como está y la acción va por reglas, sin modelo ni plan nuevo. */
+  | "turno-reglas"
   /** Sin idea ni plan, o una opción que ya resuelve la vista por su cuenta: camino de siempre (/api/chat). */
   | "chat";
 
 /** No mira si la idea se puede SUMAR a un plan (figuras, topes): cotizar o aprender una idea no depende de eso. */
 export function rutaOpcionIdea(opcion: OpcionEnlatada, contexto: { hayIdea: boolean; hayPlan: boolean; ideaEnElPlan: boolean }): RutaOpcionIdea {
   if (opcion !== "costear" && opcion !== "aprender") return "chat";
-  if (contexto.hayPlan) return !contexto.hayIdea || contexto.ideaEnElPlan ? "accion-plan" : "plan-exacto-de-idea";
+  if (contexto.hayPlan) return !contexto.hayIdea || contexto.ideaEnElPlan ? "accion-plan" : "turno-reglas";
   return contexto.hayIdea ? "plan-exacto-de-idea" : "chat";
 }
 

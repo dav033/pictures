@@ -1637,6 +1637,10 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       void pedirOpcionDeIdea(opcion, seleccionada, mensajeId ?? null, previo ? { usuarioId: previo.usuarioId, mensajeId: previo.mensajeId } : undefined);
       return;
     }
+    if (ruta === "turno-reglas" && seleccionada && (opcion === "costear" || opcion === "aprender")) {
+      void enviar(TEXTO_OPCION_IDEA[opcion](seleccionada.titulo), { accionIdea: opcion });
+      return;
+    }
     const textos: Record<Exclude<OpcionGuiada, "contratar">, string> = {
       costear: TEXTO_OPCION_IDEA.costear(null),
       comprar: "Quiero saber dónde comprar los materiales.",

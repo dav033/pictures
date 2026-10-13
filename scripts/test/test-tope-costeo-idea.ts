@@ -121,6 +121,41 @@ void (async () => {
   await assert.rejects(() => costearIdeaElegida({}, { decoracionId: idea.id, uso: "personal" }, roto), /motor caído/);
   assert.ok((await pedir()).ok, "tras el fallo el cupo sigue disponible");
 
+  // The real interruption: costing never throws, an aborted signal ends as sin_precio and must give the slot back with no audit row.
+  reiniciarCosteoIdeaPorHora();
+  filas.length = 0;
+  const control = new AbortController();
+  const abortado: EntornoCosteoIdea = { ...entorno, interrumpido: () => control.signal.aborted, costeo: { ...deps, cotizarCurada: async () => { control.abort(); return { ok: false, razon: "precio_fallido", detalle: "aborted" }; } } };
+  const interrumpida = await costearIdeaElegida({}, { decoracionId: idea.id, uso: "personal" }, abortado);
+  assert.ok(interrumpida.ok && interrumpida.costeo.decision.usar === "sin_precio");
+  assert.equal(filas.length, 0, "an aborted quote leaves no durable audit row");
+  assert.ok((await pedir()).ok, "the aborted quote refunded its slot (cap 1)");
+  assert.equal(filas.length, 1);
+  // Without interruption a sin_precio result is an answer: it spends the slot and is audited.
+  reiniciarCosteoIdeaPorHora();
+  filas.length = 0;
+  const sinPrecio: EntornoCosteoIdea = { ...entorno, interrumpido: () => false, costeo: { ...deps, cotizarCurada: async () => ({ ok: false, razon: "sin_cobertura", detalle: "x" }) } };
+  await costearIdeaElegida({}, { decoracionId: idea.id, uso: "personal" }, sinPrecio);
+  assert.equal(filas.length, 1);
+  assert.equal((await pedir()).ok, false, "a real sin_precio answer counts toward the cap");
+  delete process.env.COSTEO_IDEA_TOPE_HORA;
+
+  // A rejected cap value is logged once and the default stays.
+  const avisos: string[] = [];
+  const warnOriginal = console.warn;
+  console.warn = (...args: unknown[]) => { avisos.push(args.join(" ")); };
+  try {
+    reiniciarCosteoIdeaPorHora();
+    for (const roto of ["0", "1e3", "3000000000"]) {
+      assert.equal(topeCosteoIdeaPorHora({ COSTEO_IDEA_TOPE_HORA: roto }), 300);
+      assert.equal(topeCosteoIdeaPorHora({ COSTEO_IDEA_TOPE_HORA: roto }), 300);
+    }
+    assert.equal(topeCosteoIdeaPorHora({ COSTEO_IDEA_TOPE_HORA: "" }), 300);
+    assert.equal(topeCosteoIdeaPorHora({ COSTEO_IDEA_TOPE_HORA: "7" }), 7);
+  } finally { console.warn = warnOriginal; }
+  assert.equal(avisos.length, 3, "one warning per distinct rejected value; empty and valid values stay silent");
+  assert.match(avisos[1] ?? "", /COSTEO_IDEA_TOPE_HORA «1e3»/);
+
   reiniciarCosteoIdeaPorHora();
   const vieja = tomarCosteoIdea(1_000, 1);
   assert.ok(tomarCosteoIdea(3_601_001, 1).ok);

@@ -19,6 +19,11 @@ export type EntornoCosteoIdea = {
   tomarCosteo: () => Promise<ResultadoTope>;
   /** Refund interrupted quotes to the original counter. */
   devolverCosteo: (toma: ResultadoTope) => Promise<void>;
+  /**
+   * True once the request was aborted or its deadline expired. The costing never throws on that: it ends as `sin_precio`, so
+   * such a result is an interrupted quote (slot refunded, no durable audit row), not a customer who got an answer.
+   */
+  interrumpido?: () => boolean;
 };
 
 /**
@@ -46,6 +51,10 @@ export async function costearIdeaElegida(
   }
   try {
     const costeo = await costearDecoracion(decoracion, confirmado.uso, entorno.costeo);
+    if (costeo.decision.usar === "sin_precio" && entorno.interrumpido?.()) {
+      await entorno.devolverCosteo(toma);
+      return { ok: true, uso: confirmado.uso, costeo };
+    }
     // Durable (plan_audit_log): una fila por cada «¿cuánto cuesta?», con lo que decidió el costeo (motor 3D, plan de Python,
     // lista curada o sin precio), su motivo, el total y el hash del plan.
     await entorno.registrarAuditoria(filaDeCotizacionDeIdea(costeo.decision, decoracion.id, entorno.requestId, entorno.superficie));

@@ -23,21 +23,23 @@ import { respuestaPrecioPlan } from "@/components/guiado/precio-chat";
  * modelo: `npx tsx scripts/test/test-opcion-idea-guiada.ts`.
  */
 
+const vista = readFileSync("src/components/guiado/VistaGuiada.tsx", "utf8");
 // ── Ruta del chip ───────────────────────────────────────────────────────────────────────────────────────────────
 const sinPlan = { hayIdea: true, hayPlan: false, ideaEnElPlan: false };
 assert.equal(rutaOpcionIdea("costear", sinPlan), "plan-exacto-de-idea");
 assert.equal(rutaOpcionIdea("aprender", sinPlan), "plan-exacto-de-idea");
 assert.equal(rutaOpcionIdea("costear", { hayIdea: true, hayPlan: true, ideaEnElPlan: true }), "accion-plan");
 assert.equal(rutaOpcionIdea("costear", { hayIdea: false, hayPlan: true, ideaEnElPlan: false }), "accion-plan");
-assert.equal(rutaOpcionIdea("costear", { hayIdea: true, hayPlan: true, ideaEnElPlan: false }), "plan-exacto-de-idea", "an existing plan A cannot redirect the chosen idea B to the model");
-assert.equal(rutaOpcionIdea("aprender", { hayIdea: true, hayPlan: true, ideaEnElPlan: false }), "plan-exacto-de-idea");
+assert.equal(rutaOpcionIdea("costear", { hayIdea: true, hayPlan: true, ideaEnElPlan: false }), "turno-reglas", "an existing plan A is neither replaced by idea B nor redirected to the model: the rule path prices B alone");
+assert.equal(rutaOpcionIdea("aprender", { hayIdea: true, hayPlan: true, ideaEnElPlan: false }), "turno-reglas");
+assert.equal(marcarChipAlElegir("turno-reglas"), true, "the rule turn accepts the action at once");
+assert.match(vista, /ruta === "turno-reglas" && seleccionada[\s\S]{0,200}void enviar\(TEXTO_OPCION_IDEA\[opcion\]\(seleccionada\.titulo\), \{ accionIdea: opcion \}\)/, "idea B beside plan A goes straight to the rule turn with accionIdea");
 assert.equal(accionIdeaAlElegirUso({ hayIdea: true, hayPlan: true, ideaEnElPlan: false }), "costear");
 const contextoDeB = estadoDelTurnoDeIdea({ uso: "personal", planActual: { piezas: ["A"] }, motorPlan: "3d", alcancePropuesta: "completa", piezaPedida: "columna", ideasMostradas: [{ id: "B" }] }, "costear", "B");
 assert.deepEqual(contextoDeB, { uso: "personal", ideasMostradas: [{ id: "B" }], decoracionId: "B", accionIdea: "costear" }, "an explicit idea action excludes the old plan and scope from the unchanged API contract");
 assert.deepEqual(ideasTrasArmarIdea({ id: "B", sumada: false }, ["A"]), ["B"]);
 assert.deepEqual(ideasTrasArmarIdea({ id: "B", sumada: true }, ["A"]), ["A", "B"]);
 assert.ok(AsistenteGuiadoRequestSchema.safeParse({ schema_version: "asistente-guiado.v1", messages: [{ role: "user", content: "Cuánto cuesta" }], brief: {}, estadoGuiado: estadoDelTurnoDeIdea({ planActual: {}, alcancePropuesta: "completa" }, "costear", "deco-b") }).success);
-const vista = readFileSync("src/components/guiado/VistaGuiada.tsx", "utf8");
 assert.match(vista, /const estadoGuiado = estadoDelTurnoDeIdea\(/);
 assert.match(vista, /const elegida = seleccionada && \(accionIdea \|\| !planVigente\)/);
 assert.doesNotMatch(vista, /if \(!decoracion \|\| planVigente\)/, "retrying B preserves its existing bubble while unrelated plan A remains");

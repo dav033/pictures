@@ -20,8 +20,20 @@ declare global {
 /** Invalid or absent configuration retains the default cap. */
 export function topeCosteoIdeaPorHora(env: Record<string, string | undefined> = process.env): number {
   const crudo = env.COSTEO_IDEA_TOPE_HORA?.trim();
-  const valor = crudo && /^\d+$/.test(crudo) ? Number(crudo) : 0;
-  return Number.isSafeInteger(valor) && valor >= 1 && valor <= MAXIMO_ENTERO_BASE ? valor : TOPE_COSTEO_IDEA_POR_HORA_DEFECTO;
+  if (!crudo) return TOPE_COSTEO_IDEA_POR_HORA_DEFECTO;
+  const valor = /^\d+$/.test(crudo) ? Number(crudo) : 0;
+  if (Number.isSafeInteger(valor) && valor >= 1 && valor <= MAXIMO_ENTERO_BASE) return valor;
+  avisarValorRechazado(crudo);
+  return TOPE_COSTEO_IDEA_POR_HORA_DEFECTO;
+}
+
+let valorRechazadoAvisado: string | undefined;
+
+/** The value is a cap number or garbage (not a secret); logged once per distinct value, since the cap is read on every quote. */
+function avisarValorRechazado(crudo: string): void {
+  if (valorRechazadoAvisado === crudo) return;
+  valorRechazadoAvisado = crudo;
+  console.warn(`[topes] COSTEO_IDEA_TOPE_HORA «${crudo.slice(0, 40)}» no es un entero entre 1 y ${MAXIMO_ENTERO_BASE}: se usa el tope por defecto (${TOPE_COSTEO_IDEA_POR_HORA_DEFECTO} por hora).`);
 }
 
 /** The instance fallback; tests inject the clock. */
@@ -62,5 +74,6 @@ export function devolverCosteoIdeaDurable(toma: ResultadoTope): Promise<void> {
 
 /** Test reset. */
 export function reiniciarCosteoIdeaPorHora(): void {
+  valorRechazadoAvisado = undefined;
   globalThis.__costeoIdeaPorHora = undefined;
 }

@@ -212,7 +212,7 @@ async function turnoGuiado(request: Request) {
   if (consultaIdea) return respuestaSinModelo(requestId, headers, consultaIdea.texto, { opciones: ["contratar", "costear", "comprar", "aprender"] });
   /** El costeo de la idea elegida, con la idea y el uso confirmados (estadoGuiado): lo comparten el chip y `costear_decoracion`. */
   const entornoCosteo = (signal: AbortSignal): EntornoCosteoIdea => ({
-    decoraciones: proveedores, requestId, superficie: "/api/asistente-guiado", registrarAuditoria: registrarAuditoriaPlan3d, tomarCosteo: tomarCosteoIdeaDurable, devolverCosteo: devolverCosteoIdeaDurable,
+    decoraciones: proveedores, requestId, superficie: "/api/asistente-guiado", registrarAuditoria: registrarAuditoriaPlan3d, tomarCosteo: tomarCosteoIdeaDurable, devolverCosteo: devolverCosteoIdeaDurable, interrumpido: () => signal.aborted,
     costeo: dependenciasDeCosteo({ request, requestId, signal, auditar: decidir }),
   });
   // REQ-015 (D-043): el chip «Cuánto cuesta» / «Aprender» de la idea (o el uso elegido tras él) se responde por reglas: el
