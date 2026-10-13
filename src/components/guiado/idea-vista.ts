@@ -10,6 +10,13 @@ import { hexColor, lineaGlobo, type LineaGlobo, type PiezaVista } from "./piezas
 
 const GRIS = "#9ca3af";
 
+/**
+ * Los números de la tarjeta salen de la foto de la idea y de su plan guardado; el plan que arma el cliente lo cuenta
+ * Python de nuevo con sus colores y puede cerrar en otra cifra (la revisión del 2026-10-11 vio 101 en la tarjeta y 115
+ * en el plan). Esta tarjeta no puede calcular ese plan, así que lo dice en vez de prometer una cifra exacta.
+ */
+export const AVISO_CANTIDAD_APROXIMADA = "Cantidad de la idea como se ve en la foto. El número final es el de tu plan, que se cuenta de nuevo.";
+
 /** Una línea de la idea lista para pintar: su producto Sempertex, su tono del catálogo y su tamaño. */
 export function lineaDeIdea(linea: LineaIdea): LineaGlobo | null {
   const base = lineaGlobo({ color: linea.color, tamano_codigo: linea.codigo, titulo: linea.titulo, unidades: linea.unidades });

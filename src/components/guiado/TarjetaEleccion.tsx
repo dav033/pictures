@@ -16,7 +16,7 @@ import { DUR, EASE_REBOTE, EASE_SALIDA, grupoConRitmo, hijoEscalonado } from "./
 import { FilaPieza } from "./FilaPieza";
 import { FotoDecoracion } from "./FotoDecoracion";
 import { GloboMiniatura } from "./GloboMiniatura";
-import { lineasSinPiezaDeIdea, piezasVistaDeIdea, resumenIdea } from "./idea-vista";
+import { AVISO_CANTIDAD_APROXIMADA, lineasSinPiezaDeIdea, piezasVistaDeIdea, resumenIdea } from "./idea-vista";
 import { nombreGlobosCliente } from "./formato";
 import { globosPorColor, productoSempertex, rotuloGlobo, tablaGlobos, tamanoDeLinea, type LineaGlobo, type PiezaVista } from "./piezas-vista";
 import { PanelPlegable } from "./Plegable";
@@ -74,9 +74,11 @@ function EleccionDetallada({ decoracion, detalle, agregar }: { decoracion: Decor
           </div>
           <h3 className="mt-1 text-lg font-semibold leading-snug text-texto">{decoracion.titulo}</h3>
           <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <abbr title="aproximadamente" className="text-sm text-texto-suave no-underline">aprox.</abbr>
             <span className="text-4xl font-semibold tracking-tight text-texto tabular-nums"><ContadorGlobos total={resumen.globos} /></span>
             <span className="text-base text-texto-suave">{resumen.globos === 1 ? "globo" : "globos"} Sempertex</span>
           </div>
+          <p className="text-xs text-texto-suave">{AVISO_CANTIDAD_APROXIMADA}</p>
           {resumen.otros.length > 0 && (
             <p className="text-xs text-texto-suave">y {listaNatural(resumen.otros.map((otro) => `${NUMERO.format(otro.unidades)} ${otro.producto}`))}</p>
           )}
@@ -203,7 +205,7 @@ function DetalleTablas({ piezas, sinPieza, tituloSinPieza, globos, estimados, to
     <div className="space-y-4 pb-1 pt-2">
       {tablas.map((item, posicion) => <TablaGlobosPieza key={item.id} titulo={item.titulo} oficial={item.oficial} tabla={item.tabla} repeticiones={item.repeticiones} ayuda={posicion === 0} />)}
       {tablas.length > 1 && (
-        <p className="text-right text-sm font-semibold text-texto">Toda la idea: <span className="tabular-nums"><CifraAnimada valor={globos} /></span> {globos === 1 ? "globo" : "globos"}</p>
+        <p className="text-right text-sm font-semibold text-texto">Toda la idea, aprox.: <span className="tabular-nums"><CifraAnimada valor={globos} /></span> {globos === 1 ? "globo" : "globos"}</p>
       )}
       {nota && <p className="text-xs leading-relaxed text-texto-suave">{nota}</p>}
     </div>
