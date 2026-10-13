@@ -21,6 +21,9 @@ assert.doesNotMatch(cuantos.texto, /negocio|uso personal/i, "no es la pregunta d
 assert.ok(responderConsultaIdea("cuantos globos tiene esta decoracion", DINO), "sin signos ni tildes");
 assert.match(responderConsultaIdea("¿de qué colores es?", DINO)?.texto ?? "", /Reflex|Fashion|Chrome|Sempertex|\(\d+/, "colores con sus globos");
 assert.match(responderConsultaIdea("¿cuánto mide?", DINO)?.texto ?? "", /2,46/, "medidas de la pieza");
+for (const texto of ["¿Qué medidas tiene mi idea?", "¿Cuánto mide mi decoración?", "cuanto mide mi decoracion"]) {
+  assert.match(responderConsultaIdea(texto, DINO)?.texto ?? "", /2,46/, `el posesivo sobre la idea se responde: ${texto}`);
+}
 
 const total = responderConsultaIdea("¿cuántos globos lleva en total?", COLUMNAS);
 assert.match(total?.texto ?? "", /aprox\.?\s+87 globos/);
@@ -30,7 +33,7 @@ assert.doesNotMatch(pieza?.texto ?? "", /87/);
 assert.match(responderConsultaIdea("¿qué lleva?", MIXTA)?.texto ?? "", /Bouquet|bouquet/);
 
 // Lo que no es una pregunta sobre la idea sigue su camino.
-for (const texto of ["¿cuánto cuesta?", "hazla más grande", "me gusta", "es para mi negocio", "¿qué colores me recomiendas?", "", "¿qué hay de unicornios?", "¿qué hay para una boda?", "¿qué hay?", "¿cuántos globos necesito para un arco de 3 m?", "¿cuántos globos lleva un arco?", "¿cuántos globos lleva si la hago de 3 metros?", "¿cuántos globos lleva la segunda?", "¿qué colores tiene la de frozen?", "¿qué tamaño de globos uso?", "¿qué medidas tiene mi salón?"]) {
+for (const texto of ["¿cuánto cuesta?", "hazla más grande", "me gusta", "es para mi negocio", "¿qué colores me recomiendas?", "", "¿qué hay de unicornios?", "¿qué hay para una boda?", "¿qué hay?", "¿cuántos globos necesito para un arco de 3 m?", "¿cuántos globos lleva un arco?", "¿cuántos globos lleva si la hago de 3 metros?", "¿cuántos globos lleva la segunda?", "¿qué colores tiene la de frozen?", "¿qué tamaño de globos uso?", "¿qué medidas tiene mi salón?", "¿cuánto mide mi espacio?", "¿qué medidas tiene mi pared?", "¿qué medidas tiene mi cuarto?", "¿cuánto mide mi casa?", "¿cuánto mide mi patio?", "¿cuánto mide mi evento?", "¿cuánto mide la habitación de mi hija?", "¿cuánto mide nuestra casa?", "¿cuánto mide mi pieza?"]) {
   assert.equal(responderConsultaIdea(texto, DINO), null, texto);
 }
 assert.equal(responderConsultaIdea("¿cuántos globos lleva?", "deco-no-existe"), null, "idea desconocida: no inventa");

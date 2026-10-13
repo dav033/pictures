@@ -132,7 +132,7 @@ export function responderConsultaIdea(texto: string, decoracionId: string): Resp
   const limpio = plegarTexto(texto);
   // «¿qué hay de…?» pide ideas; «qué tamaño de globos» y «qué medidas tiene mi salón» no son la medida de la pieza.
   if (consulta.tipo === "resumen" && /\bque hay\b/.test(limpio)) return null;
-  if (consulta.tipo === "medidas" && /\b(?:globos?|salon|mi|lugar|espacio|sala|techo|pared)\b/.test(limpio)) return null;
+  if (consulta.tipo === "medidas" && (/\b(?:globos?|salon|lugar|espacio|sala|techo|pared|cuarto|habitacion|casa|local|terraza|entrada|puerta|ventana|oficina|tienda)\b/.test(limpio) || refierePosesivoAjeno(limpio))) return null;
   const piezas = piezasDeIdea(detalle);
   const pedidas = consulta.piezas.length ? piezas.filter((pieza) => consulta.piezas.includes(pieza.nombre)) : [];
   const globosIdea = [...detalle.piezas.flatMap((pieza) => pieza.lineas), ...(detalle.lineasSinPieza ?? [])].filter(esGloboDeIdea).reduce((suma, linea) => suma + linea.unidades, 0);
@@ -155,6 +155,11 @@ export function responderConsultaIdea(texto: string, decoracionId: string): Resp
       return { consulta, texto: `${encabezado}: ${lista(cuales.map(detallePieza))}.${enteras ? ` En total son aprox. ${globosEnTexto(globosIdea)}.` : ""}${aviso}` };
     }
   }
+}
+
+/** «mi idea» / «mi decoración» son la pieza elegida; «mi patio», «nuestra casa», «mi evento» hablan de otra cosa. */
+function refierePosesivoAjeno(limpio: string): boolean {
+  return /\b(?:mi|mis|tu|tus|nuestr[oa]s?)\s+(?!(?:idea|ideas|decoracion|decoraciones|deco)\b)\w/.test(limpio);
 }
 
 function plegarTexto(texto: string): string {
