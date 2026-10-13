@@ -1,5 +1,5 @@
 import type { AccionIdeaGuiada } from "@/lib/ia/contracts/asistente-guiado-v1";
-import type { CosteoIdeaElegida } from "@/lib/guiada-motor/costear-idea-elegida";
+import type { CosteoIdeaElegida, MotivoSinCosteo } from "@/lib/guiada-motor/costear-idea-elegida";
 import { datosDelCosteo } from "@/lib/guiada-motor/dependencias-costeo";
 import { pasoParaCliente } from "./pasos-cliente";
 
@@ -11,10 +11,18 @@ import { pasoParaCliente } from "./pasos-cliente";
 const OPCIONES = ["contratar", "costear", "comprar", "aprender"] as const;
 const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
+export const TEXTO_MUCHOS_PEDIDOS_DE_PRECIO = "Muchas personas están pidiendo precios ahora; vuelve a intentarlo en unos minutos.";
+
 export const PREGUNTA_USO = "¿Es para tu negocio o para uso personal?";
 
+export function respuestaCosteoBloqueado(motivo: MotivoSinCosteo): Record<string, unknown> {
+  return motivo === "muchos_pedidos_de_precio"
+    ? { ok: false, motivo, aviso: `Dile al cliente, con tus palabras y sin cifras: ${TEXTO_MUCHOS_PEDIDOS_DE_PRECIO} No inventes ni estimes un precio.` }
+    : { ok: false, motivo };
+}
+
 export type IdeaConPasos = { id: string; titulo: string; pasos: ReadonlyArray<{ orden: number; texto: string }> };
-export type RespuestaAccionIdea = { texto: string; result: Record<string, unknown>; motivo: "pasos" | "falta_uso" | "cotizada" | "sin_precio" | "no_validada" };
+export type RespuestaAccionIdea = { texto: string; result: Record<string, unknown>; motivo: "pasos" | "falta_uso" | "cotizada" | "sin_precio" | "no_validada" | "muchos_pedidos" };
 
 function textoPrecio(titulo: string, costeo: Extract<CosteoIdeaElegida, { ok: true }>): string {
   const total = costeo.costeo.cotizacion?.total;
@@ -32,6 +40,7 @@ export async function responderAccionIdea(accion: AccionIdeaGuiada, idea: IdeaCo
   const costeo = await costear();
   if (!costeo.ok) {
     if (costeo.motivo === "falta_que_el_cliente_elija_negocio_o_personal") return { texto: PREGUNTA_USO, result: { preguntaUso: true }, motivo: "falta_uso" };
+    if (costeo.motivo === "muchos_pedidos_de_precio") return { texto: TEXTO_MUCHOS_PEDIDOS_DE_PRECIO, result: { opciones: [...OPCIONES] }, motivo: "muchos_pedidos" };
     return { texto: "No pude confirmar la idea que elegiste. Elígela otra vez y vuelve a tocar «Cuánto cuesta».", result: { opciones: [...OPCIONES] }, motivo: "no_validada" };
   }
   const result: Record<string, unknown> = { uso: costeo.uso, opciones: [...OPCIONES] };

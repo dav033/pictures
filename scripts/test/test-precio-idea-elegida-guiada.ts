@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert";
-import { cancelarPrecioIdea, empezarPrecioIdea, fijarPrecioIdea, reutilizarPlanIdea, resolverPrecioIdea, TEXTO_PRECIO_AL_ELEGIR, vistaPrecioIdea, type EstadoPrecioIdea } from "@/components/guiado/precio-idea-elegida";
+import { readFileSync } from "node:fs";
+import { cancelarPrecioIdea, empezarPrecioIdea, fijarPrecioIdea, precioIdeaDesdePlanVigente, reutilizarPlanIdea, resolverPrecioIdea, TEXTO_PRECIO_AL_ELEGIR, vistaPrecioIdea, type EstadoPrecioIdea } from "@/components/guiado/precio-idea-elegida";
 import { resultadoPlanIdea } from "@/components/guiado/opcion-idea";
 import { respuestaPrecioPlan, textoMaterialesDesde } from "@/components/guiado/precio-chat";
 
@@ -12,6 +13,17 @@ function cotizacion(total: number, incluyeIva = true) {
   return { lineas: [{ id: "l1", tamano: "R12", cantidadNecesaria: 10, disponible: true }], total, mermaPorcentaje: 5, incluyeIva, complementosSoportados: false as const };
 }
 const cifra = (texto: string) => texto.match(/\$\s?[\d.,]+/)?.[0];
+
+// Reload keeps the persisted exact-plan quote even when the runtime engine flag changed.
+const recargado = precioIdeaDesdePlanVigente("B", 2, { ideas: ["B"], cotizacion: cotizacion(187450) });
+assert.equal(cifra(vistaPrecioIdea(recargado, "B", "personal").tipo === "precio" ? (vistaPrecioIdea(recargado, "B", "personal") as { texto: string }).texto : ""), cifra(respuestaPrecioPlan({ cotizacion: cotizacion(187450) }, "personal")));
+assert.equal(precioIdeaDesdePlanVigente("B", 2, { ideas: ["A"], cotizacion: cotizacion(1) }), null);
+assert.equal(precioIdeaDesdePlanVigente("B", 2, null), null);
+assert.equal(precioIdeaDesdePlanVigente("B", 2, { ideas: ["A", "B"], cotizacion: cotizacion(999999) })?.fase, "al-elegir", "combined plans cannot be shown as an individual price");
+assert.equal(precioIdeaDesdePlanVigente("B", 2, { ideas: ["B"], totalAnterior: 10, cotizacion: cotizacion(999999) })?.fase, "al-elegir", "generic prior plans leave ambiguous individual provenance");
+const fuenteVista = readFileSync("src/components/guiado/VistaGuiada.tsx", "utf8");
+assert.match(fuenteVista, /const precioDelPlan = precioIdeaDesdePlanVigente[\s\S]{0,250}setPrecioIdea\(precioDelPlan\);[\s\S]{0,30}return;/, "reload reuses or hides the existing quote before consulting the current engine flag");
+assert.match(fuenteVista, /cotizacion: datos.cotizacion/, "the rule quote also updates the individual card");
 
 // Ideas representativas: una figura con plan guardado (balón) y un arco; mismas cifras que la cotización del plan exacto.
 for (const [ideaId, total] of [["deco-real-30-columna-balon-futbol", 187450], ["deco-arco-organico", 132656]] as const) {

@@ -29,7 +29,8 @@ function reemplazoDelPedido(pedido: ReemplazoDelChat, hecho: RespuestaEditarMoto
     tipo: "reemplazar-color",
     color: pedido.color,
     ...(pedido.piezas.length ? { estructuraIds: hecho.tocadas } : {}),
-    globo: { productId: entrado?.productId ?? "", color: pedido.colorNuevo, variantIds: [], nombre: entrado?.etiqueta ?? conMayuscula(colorCliente(pedido.colorNuevo)) },
+    // Chat selects a color family; each piece can buy a different product for that family.
+    globo: { productId: "", color: pedido.colorNuevo, variantIds: [], nombre: entrado?.etiqueta ?? conMayuscula(colorCliente(pedido.colorNuevo)) },
   };
 }
 

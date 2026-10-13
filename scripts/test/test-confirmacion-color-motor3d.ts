@@ -7,7 +7,7 @@
  * Run: npx tsx --conditions=react-server scripts/test/test-confirmacion-color-motor3d.ts
  */
 import assert from "node:assert/strict";
-import type { CambioPlan, PlanGuiado } from "../../src/components/guiado/ajuste/ajuste-plan-guiado";
+import { piezasAjustables, type CambioPlan, type PlanGuiado } from "../../src/components/guiado/ajuste/ajuste-plan-guiado";
 import { globosDelCatalogo3d } from "../../src/components/guiado/ajuste/catalogo-sempertex-3d";
 import { ejecutarEdicionChat, type DependenciasEdicionChat } from "../../src/components/guiado/ajuste/edicion-chat-guiada";
 import { hacerCambioDelPanel } from "../../src/components/guiado/ajuste/usarAjustePlanGuiado";
@@ -157,6 +157,20 @@ async function main(): Promise<void> {
   assert.equal(otrasCifrasIguales(base, base, []), true, "sin cambios, todo igual");
   assert.equal(otrasCifrasIguales(base, otroProducto, ["EST_01_ARCO"]), false, "la columna derecha no se tocó y cambió de globo");
   assert.equal(otrasCifrasIguales(base, otroProducto, ["EST_03_COLUMNA"]), true, "en la pieza tocada lo que salió o entró no cuenta");
+
+  // A family replacement spans different store products: round balloons and Link-O-Loon.
+  const mixta = especDesdePropuesta({ frase: "Mixed formats", colores: ["rojo"], piezas: [{ estructura: "arco", cantidad: 1 }, { estructura: "pared_densa", cantidad: 1 }] });
+  const armadoMixto = armarDesdeEspec(mixta.espec);
+  const precioMixto = await cotizar(armadoMixto.bom);
+  assert.ok(precioMixto.ok, JSON.stringify(precioMixto));
+  const sobreMixto = sobreDelMotor({ espec: mixta.espec, resultado: armadoMixto, cotizacion: precioMixto, concepto: { titulo: "Mixed formats", descripcion: "Round and Link-O-Loon" }, requestId: "22222222-2222-4222-8222-222222222222", navegador: huellaDeNavegador(`nav-${IDENTIDAD}`) });
+  assert.ok(sobreMixto.ok);
+  const cambioMixto = await ejecutarEdicionChat(PlanGuiadoSchema.parse(sobreMixto.plan), PedidoEdicionPlanSchema.parse({ tipo: "reemplazar_color", color: "rojo", colorNuevo: "azul", piezas: [] }), chatDeps(), { cotizacionAntes: sobreMixto.cotizacion, uso: "personal" });
+  const azules = piezasAjustables(cambioMixto.plan).flatMap((pieza) => pieza.colores).filter((color) => color.color === "azul");
+  assert.ok(new Set(azules.map((color) => color.productId)).size > 1, "the replacement spans distinct round and Link-O-Loon products");
+  const totalAzul = azules.reduce((total, color) => total + color.globos, 0);
+  assert.match(cambioMixto.confirmacion, new RegExp(`lleva ${totalAzul} globos`), "the confirmation counts the whole color family across products");
+  assert.doesNotMatch(cambioMixto.confirmacion, /Otros colores[^.]*azul/i, "the replacement family is not mislabeled as another color");
 
   console.log("test-confirmacion-color-motor3d: ok");
 }

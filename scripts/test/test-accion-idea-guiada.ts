@@ -2,6 +2,7 @@ import { strict as assert } from "node:assert";
 import { AsistenteGuiadoRequestSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { costearDecoracion, type DependenciasCosteo } from "@/lib/guiada-motor/costear-idea";
 import { costearIdeaElegida, type EntornoCosteoIdea } from "@/lib/guiada-motor/costear-idea-elegida";
+import { reiniciarCosteoIdeaPorHora, tomarCosteoIdea } from "@/lib/guiada-motor/tope-costeo-idea";
 import type { FilaAuditoriaPlan3d } from "@/lib/guiada-motor/auditoria-plan";
 import { PREGUNTA_USO, responderAccionIdea } from "@/lib/ia/guiado/accion-idea";
 import { accionIdeaAlElegirUso, accionIdeaDelTurno } from "@/components/guiado/opcion-idea";
@@ -46,7 +47,7 @@ const deps: DependenciasCosteo = {
 };
 const idea = { id: "deco-uno", titulo: "Arco de prueba", materiales: [{ variantId: "v1", cantidad: 10 }], pasos: [{ orden: 1, texto: "Infla los globos." }] } as const;
 const filas: FilaAuditoriaPlan3d[] = [];
-const entorno: EntornoCosteoIdea = { decoraciones: [idea], requestId: "r1", superficie: "/api/asistente-guiado", costeo: deps, registrarAuditoria: async (fila) => { filas.push(fila); } };
+const entorno: EntornoCosteoIdea = { decoraciones: [idea], requestId: "r1", superficie: "/api/asistente-guiado", costeo: deps, registrarAuditoria: async (fila) => { filas.push(fila); }, tomarCosteo: async () => ({ ok: true, usadas: 1 }), devolverCosteo: async () => undefined };
 
 void (async () => {
   const referencia = await costearDecoracion(idea, "personal", deps);
@@ -110,6 +111,18 @@ void (async () => {
   const ajena = await (await turno("Quiero saber cuánto cuestan los materiales.", { decoracionId: "deco-no-existe-en-la-biblioteca", accionIdea: "costear", uso: "personal" })).text();
   assert.match(ajena, /"proveedor":"reglas"/, "una idea que no está en la biblioteca tampoco llega al modelo");
   assert.doesNotMatch(ajena, /"cotizacion"/, "ni se cotiza");
+
+  process.env.COSTEO_IDEA_TOPE_HORA = "1";
+  reiniciarCosteoIdeaPorHora();
+  assert.ok(tomarCosteoIdea(Date.now(), 1).ok);
+  const agotado = await turno("Quiero saber cuánto cuestan los materiales.", { decoracionId: DINO, accionIdea: "costear", uso: "personal" });
+  assert.equal(agotado.status, 200);
+  const textoAgotado = await agotado.text();
+  assert.match(textoAgotado, /"proveedor":"reglas"/);
+  assert.match(textoAgotado, /Muchas personas están pidiendo precios ahora; vuelve a intentarlo en unos minutos/);
+  assert.doesNotMatch(textoAgotado, /"cotizacion"/);
+  delete process.env.COSTEO_IDEA_TOPE_HORA;
+  reiniciarCosteoIdeaPorHora();
 
   assert.equal((await turno("hola", { decoracionId: DINO, accionIdea: "comprar" })).status, 400, "la ruta rechaza una acción desconocida");
   assert.equal((await turno("hola", { accionIdea: "costear" })).status, 400, "y una acción sin idea elegida");

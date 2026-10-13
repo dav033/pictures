@@ -1,9 +1,10 @@
 import { filaDeCotizacionDeIdea, type FilaAuditoriaPlan3d } from "./auditoria-plan";
+import type { ResultadoTope } from "@/lib/topes/tope-durable";
 import { costearDecoracion, type Costeo, type DecoracionCotizable, type DependenciasCosteo } from "./costear-idea";
 
 export type UsoCosteo = "negocio" | "personal";
 
-export type MotivoSinCosteo = "falta_que_el_cliente_elija_negocio_o_personal" | "uso_o_decoracion_no_validado_por_el_cliente";
+export type MotivoSinCosteo = "falta_que_el_cliente_elija_negocio_o_personal" | "uso_o_decoracion_no_validado_por_el_cliente" | "muchos_pedidos_de_precio";
 
 export type CosteoIdeaElegida = { ok: false; motivo: MotivoSinCosteo } | { ok: true; uso: UsoCosteo; costeo: Costeo };
 
@@ -14,6 +15,10 @@ export type EntornoCosteoIdea = {
   costeo: DependenciasCosteo;
   /** La fila durable (`registrarAuditoriaPlan3d`, que espera la escritura y nunca lanza). */
   registrarAuditoria: (fila: FilaAuditoriaPlan3d) => Promise<void>;
+  /** Reserve a quote slot before costing or writing its durable audit row. */
+  tomarCosteo: () => Promise<ResultadoTope>;
+  /** Refund interrupted quotes to the original counter. */
+  devolverCosteo: (toma: ResultadoTope) => Promise<void>;
 };
 
 /**
@@ -34,9 +39,19 @@ export async function costearIdeaElegida(
     entorno.costeo.auditar("regla:cotizacion_guiada", "costear la idea elegida", { cotiza: false, motivo }, { entrada: { pedida: pedido, decoracionConfirmada: confirmado.decoracionId ?? null, usoConfirmado: confirmado.uso ?? null } });
     return { ok: false, motivo };
   }
-  const costeo = await costearDecoracion(decoracion, confirmado.uso, entorno.costeo);
-  // Durable (plan_audit_log): una fila por cada «¿cuánto cuesta?», con lo que decidió el costeo (motor 3D, plan de Python,
-  // lista curada o sin precio), su motivo, el total y el hash del plan.
-  await entorno.registrarAuditoria(filaDeCotizacionDeIdea(costeo.decision, decoracion.id, entorno.requestId, entorno.superficie));
-  return { ok: true, uso: confirmado.uso, costeo };
+  const toma = await entorno.tomarCosteo();
+  if (!toma.ok) {
+    entorno.costeo.auditar("regla:cotizacion_guiada", "costear la idea elegida", { cotiza: false, motivo: "muchos_pedidos_de_precio", usadas: toma.usadas, tope: toma.tope }, { entrada: { decoracionId: decoracion.id } });
+    return { ok: false, motivo: "muchos_pedidos_de_precio" };
+  }
+  try {
+    const costeo = await costearDecoracion(decoracion, confirmado.uso, entorno.costeo);
+    // Durable (plan_audit_log): una fila por cada «¿cuánto cuesta?», con lo que decidió el costeo (motor 3D, plan de Python,
+    // lista curada o sin precio), su motivo, el total y el hash del plan.
+    await entorno.registrarAuditoria(filaDeCotizacionDeIdea(costeo.decision, decoracion.id, entorno.requestId, entorno.superficie));
+    return { ok: true, uso: confirmado.uso, costeo };
+  } catch (error) {
+    await entorno.devolverCosteo(toma);
+    throw error;
+  }
 }

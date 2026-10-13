@@ -15,7 +15,8 @@ import { ChatSseEventV1Schema, CHAT_SSE_CONTRACT_VERSION } from "@/lib/ia/contra
 import { avisoEdicionDelPlanAbierto } from "@/lib/ia/guiado/aviso-edicion-plan";
 import { registrarAuditoriaPlan3d } from "@/lib/guiada-motor/auditoria-plan";
 import { costearIdeaElegida, type EntornoCosteoIdea } from "@/lib/guiada-motor/costear-idea-elegida";
-import { responderAccionIdea } from "@/lib/ia/guiado/accion-idea";
+import { devolverCosteoIdeaDurable, tomarCosteoIdeaDurable } from "@/lib/guiada-motor/tope-costeo-idea";
+import { responderAccionIdea, respuestaCosteoBloqueado } from "@/lib/ia/guiado/accion-idea";
 import { datosDelCosteo, dependenciasDeCosteo } from "@/lib/guiada-motor/dependencias-costeo";
 import { ErrorIA } from "@/lib/ia/nucleo/tipos";
 import type { ErrorCodeV1 } from "@/lib/ia/contracts/chat-v1";
@@ -211,7 +212,7 @@ async function turnoGuiado(request: Request) {
   if (consultaIdea) return respuestaSinModelo(requestId, headers, consultaIdea.texto, { opciones: ["contratar", "costear", "comprar", "aprender"] });
   /** El costeo de la idea elegida, con la idea y el uso confirmados (estadoGuiado): lo comparten el chip y `costear_decoracion`. */
   const entornoCosteo = (signal: AbortSignal): EntornoCosteoIdea => ({
-    decoraciones: proveedores, requestId, superficie: "/api/asistente-guiado", registrarAuditoria: registrarAuditoriaPlan3d,
+    decoraciones: proveedores, requestId, superficie: "/api/asistente-guiado", registrarAuditoria: registrarAuditoriaPlan3d, tomarCosteo: tomarCosteoIdeaDurable, devolverCosteo: devolverCosteoIdeaDurable,
     costeo: dependenciasDeCosteo({ request, requestId, signal, auditar: decidir }),
   });
   // REQ-015 (D-043): el chip «Cuánto cuesta» / «Aprender» de la idea (o el uso elegido tras él) se responde por reglas: el
@@ -396,7 +397,7 @@ async function turnoGuiado(request: Request) {
         // curada con el mismo cotizador (costear-idea-elegida.ts, con su fila durable de auditoría).
         const pedida = ArgsSchema.parse(args);
         const resultado = await costearIdeaElegida({ decoracionId: pedida.decoracionId, uso: pedida.uso }, { decoracionId: decoracionConfirmada, uso: usoConfirmado }, entornoCosteo(deadline.signal));
-        if (!resultado.ok) return { ok: false, motivo: resultado.motivo };
+        if (!resultado.ok) return respuestaCosteoBloqueado(resultado.motivo);
         datos.uso = resultado.uso;
         datosDelCosteo(datos, resultado.costeo);
         return resultado.costeo.respuesta;

@@ -25,6 +25,13 @@ export function empezarPrecioIdea(ideaId: string, sesion: number): EstadoPrecioI
   return { ideaId, sesion, fase: "cargando" };
 }
 
+/** Reload uses the persisted quote; ambiguous combined-plan provenance never becomes an individual idea price. */
+export function precioIdeaDesdePlanVigente(ideaId: string, sesion: number, plan: { ideas?: readonly string[]; cotizacion?: unknown; totalAnterior?: number } | null): EstadoPrecioIdea | null {
+  if (!plan?.ideas?.includes(ideaId)) return null;
+  if (plan.ideas.length !== 1 || plan.totalAnterior !== undefined) return { ideaId, sesion, fase: "al-elegir" };
+  return resolverPrecioIdea(empezarPrecioIdea(ideaId, sesion), { ideaId, sesion, sesionVigente: sesion, respuesta: { ok: true, cotizacion: plan.cotizacion } });
+}
+
 /**
  * Cierra el pedido de `ideaId` en `sesion`. Una respuesta tardía de otra idea, de otra conversación o ya resuelta no pisa
  * el estado de ahora. Sin cotización válida y con total, queda «al elegir».

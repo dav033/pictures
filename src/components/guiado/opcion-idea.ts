@@ -19,7 +19,7 @@ export type RutaOpcionIdea =
 /** No mira si la idea se puede SUMAR a un plan (figuras, topes): cotizar o aprender una idea no depende de eso. */
 export function rutaOpcionIdea(opcion: OpcionEnlatada, contexto: { hayIdea: boolean; hayPlan: boolean; ideaEnElPlan: boolean }): RutaOpcionIdea {
   if (opcion !== "costear" && opcion !== "aprender") return "chat";
-  if (contexto.hayPlan) return !contexto.hayIdea || contexto.ideaEnElPlan ? "accion-plan" : "chat";
+  if (contexto.hayPlan) return !contexto.hayIdea || contexto.ideaEnElPlan ? "accion-plan" : "plan-exacto-de-idea";
   return contexto.hayIdea ? "plan-exacto-de-idea" : "chat";
 }
 
@@ -109,6 +109,23 @@ export function accionIdeaDelTurno(pedida: AccionIdea | undefined, contexto: { h
 }
 
 /** Elegir negocio o uso personal con una idea elegida y sin plan sigue su «Cuánto cuesta» por reglas, sin modelo (D-043). */
-export function accionIdeaAlElegirUso(contexto: { hayIdea: boolean; hayPlan: boolean }): AccionIdea | undefined {
-  return contexto.hayIdea && !contexto.hayPlan ? "costear" : undefined;
+export function accionIdeaAlElegirUso(contexto: { hayIdea: boolean; hayPlan: boolean; ideaEnElPlan?: boolean }): AccionIdea | undefined {
+  return contexto.hayIdea && (!contexto.hayPlan || contexto.ideaEnElPlan === false) ? "costear" : undefined;
+}
+
+/** An explicit idea action keeps its selected ID and excludes unrelated plan/proposal context required by the v1 contract. */
+export function estadoDelTurnoDeIdea<T extends { planActual?: unknown; motorPlan?: unknown; alcancePropuesta?: unknown; piezaPedida?: unknown }>(estado: T, accion: AccionIdea | undefined, decoracionId: string | undefined) {
+  const accionIdea = accionIdeaDelTurno(accion, { hayIdea: Boolean(decoracionId), hayPlan: false, hayAlcance: false });
+  if (!accionIdea || !decoracionId) return estado;
+  const resto = { ...estado };
+  delete resto.planActual;
+  delete resto.motorPlan;
+  delete resto.alcancePropuesta;
+  delete resto.piezaPedida;
+  return { ...resto, decoracionId, accionIdea };
+}
+
+/** Only appended ideas inherit the existing plan's provenance. An exact replacement owns only its chosen idea. */
+export function ideasTrasArmarIdea(idea: { id: string; sumada: boolean } | undefined, anteriores: readonly string[]): string[] {
+  return idea ? [...new Set([...(idea.sumada ? anteriores : []), idea.id])].slice(-12) : [];
 }

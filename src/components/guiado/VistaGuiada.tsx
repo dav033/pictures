@@ -22,8 +22,8 @@ import { acabadosFotoSinComprar } from "./acabados-foto-plan";
 import { avisosFloresFotoSinComprar } from "@/lib/plan/flores-pieza";
 import { lecturaFoto } from "./lectura-foto";
 import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
-import { cancelarPrecioIdea, empezarPrecioIdea, fijarPrecioIdea, resolverPrecioIdea, reutilizarPlanIdea, vistaPrecioIdea, type EstadoPrecioIdea, type PlanIdeaGuardado } from "./precio-idea-elegida";
-import { accionIdeaAlElegirUso, accionIdeaDelTurno, avanzarOpcionIdea, marcarChipAlElegir, resultadoPlanIdea, rutaOpcionIdea, TEXTO_OPCION_IDEA, type AccionIdea, type EsperaOpcionIdea, type EventoOpcionIdea, type PasoOpcionIdea, type ResultadoPlanIdea } from "./opcion-idea";
+import { cancelarPrecioIdea, empezarPrecioIdea, fijarPrecioIdea, precioIdeaDesdePlanVigente, resolverPrecioIdea, reutilizarPlanIdea, vistaPrecioIdea, type EstadoPrecioIdea, type PlanIdeaGuardado } from "./precio-idea-elegida";
+import { accionIdeaAlElegirUso, avanzarOpcionIdea, estadoDelTurnoDeIdea, ideasTrasArmarIdea, marcarChipAlElegir, resultadoPlanIdea, rutaOpcionIdea, TEXTO_OPCION_IDEA, type AccionIdea, type EsperaOpcionIdea, type EventoOpcionIdea, type PasoOpcionIdea, type ResultadoPlanIdea } from "./opcion-idea";
 import { respuestaPrecioPlan, SELECTOR_PRECIO_TOTAL } from "./precio-chat";
 import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
 import type { AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
@@ -532,7 +532,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
 
     // CRUD por chat (dueño, 2026-10-07). R · «¿qué lleva mi plan?», «¿cuántos globos tiene la columna izquierda?»: se
     // responde con el plan que se ve (las cifras que contó Python), sin modelo y sin cambiar nada.
-    if (!archivo && planVigente && !opcionesEnvio.alcance && !opcionesEnvio.reintentar) {
+    if (!archivo && planVigente && !opcionesEnvio.accionIdea && !opcionesEnvio.alcance && !opcionesEnvio.reintentar) {
       const respuesta = responderConsultaPlan(limpio, planVigente.widget.plan, planActualDelPlan(planVigente.widget.plan, planVigente.widget.motor));
       if (respuesta) {
         setEntrada("");
@@ -608,6 +608,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     }
 
     const turno = ++turnoRef.current;
+    const sesionTurno = sesionRef.current;
     const control = new AbortController();
     controlRef.current = control;
     const reloj = window.setTimeout(() => control.abort("tiempo"), LIMITE_TURNO_MS * factorPlazoCliente());
@@ -616,7 +617,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const idUsuario = (opciones.reintentar ? idParaReintento(mensajes, contenido) : null) ?? nuevoId();
     const idAsistente = nuevoId();
     // Lo que viaja con el texto (uso, alcance, pieza): queda en el mensaje para repetirlo igual tras recargar.
-    const accionIdea = accionIdeaDelTurno(opciones.accionIdea, { hayIdea: Boolean(seleccionada), hayPlan: Boolean(planVigente), hayAlcance: Boolean(opciones.alcance) });
+    const accionIdea = seleccionada ? opciones.accionIdea : undefined;
     const envio: NonNullable<Mensaje["envio"]> = { ...(opciones.uso ? { uso: opciones.uso } : {}), ...(opciones.alcance ? { alcance: opciones.alcance } : {}), ...(opciones.pieza ? { pieza: opciones.pieza } : {}), ...(accionIdea ? { accionIdea } : {}) };
     const base = (opciones.reintentar ? sinUltimoTurnoGuiado(mensajes) : mensajes).filter((mensaje) => mensaje.content.trim().length > 0 || mensaje.widgets?.length || mensaje.referencia);
     const historial = prepararHistorialGuiado(base, `${contenido}${archivo ? "\nAdjunté una foto de inspiración." : ""}`);
@@ -625,7 +626,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const planAnterior = planActual ?? undefined;
     // Las ideas del último carrusel, en orden: «me quedo con la primera» la elige como «Me gusta esta» (elegir_idea).
     const ideasMostradas = ideasALaVista(mensajes);
-    const estadoGuiado = {
+    const estadoGuiado = estadoDelTurnoDeIdea({
       ...(seleccionada && !planVigente ? { decoracionId: seleccionada.id } : {}),
       ...(usoEnvio ? { uso: usoEnvio } : {}),
       ...(opciones.alcance ? { alcancePropuesta: opciones.alcance } : {}),
@@ -634,8 +635,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       ...(ideasMostradas.length ? { ideasMostradas } : {}),
       // El chip de la idea (o el uso elegido tras él): el servidor lo responde por reglas, sin modelo (D-043).
       ...(accionIdea ? { accionIdea } : {}),
-    };
-    const elegida = seleccionada && !planVigente ? seleccionada : null;
+    }, accionIdea, seleccionada?.id);
+    const elegida = seleccionada && (accionIdea || !planVigente) ? seleccionada : null;
     // Funcional: conserva lo que la acción que llamó acaba de marcar (la opción elegida en su widget).
     setMensajes((actuales) => [
       ...(opciones.reintentar ? sinUltimoTurnoGuiado(actuales) : actuales).filter((mensaje) => mensaje.content.trim().length > 0 || mensaje.widgets?.length || mensaje.referencia),
@@ -719,6 +720,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
           const valida = datos.cotizacion == null ? null : CotizacionGuiadaSchema.safeParse(datos.cotizacion);
           if (valida && !valida.success) throw new RespuestaIncompatibleError("contrato", "La cotización recibida no cumple el contrato.", versionServidor, { campos: camposInvalidos(valida.error).map((campo) => `cotizacion.${campo}`) });
           widgets.push({ tipo: "cotizacion", cotizacion: valida ? valida.data : null, uso: usoCotizado, decoracion: elegida });
+          if (accionIdea === "costear") planIdeaRef.current = null;
+          setPrecioIdea((actual) => fijarPrecioIdea(actual, { ideaId: elegida.id, sesion: sesionTurno, sesionVigente: sesionRef.current, cotizacion: datos.cotizacion }));
           registrarNoIncluidos(claveDeWidget(idAsistente, widgets.length - 1), datos.noIncluidos);
         }
         if (datos.pasos && elegida) widgets.push({ tipo: "pasos", decoracion: elegida });
@@ -931,7 +934,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       const previo = buscarPlanVigente(actuales.filter((mensaje) => mensaje.id !== mensajeId));
       const totalAnterior = previo ? totalDePlan(previo.widget.plan) : undefined;
       // Las ideas solo se heredan al agregar otra: un plan rehecho por «Cambiar algo» ya no sabe qué ideas lleva.
-      const ideas = idea ? [...new Set([...(previo?.widget.ideas ?? []), idea.id])].slice(-12) : [];
+      const ideas = ideasTrasArmarIdea(idea, previo?.widget.ideas ?? []);
       const nuevo: WidgetPlan = {
         tipo: "plan", plan, pasos: armado.pasos, motor,
         ...(propuestaGuardada ? { propuesta: propuestaGuardada } : {}),
@@ -1590,6 +1593,11 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   useEffect(() => {
     if (!ideaElegidaId) return;
     const sesion = sesionRef.current;
+    const precioDelPlan = precioIdeaDesdePlanVigente(ideaElegidaId, sesion, planVigente?.widget ?? null);
+    if (precioDelPlan) {
+      setPrecioIdea(precioDelPlan);
+      return;
+    }
     const control = new AbortController();
     const reloj = window.setTimeout(() => control.abort("tiempo"), LIMITE_PLAN_IDEA_MS);
     setPrecioIdea(empezarPrecioIdea(ideaElegidaId, sesion));
@@ -1642,7 +1650,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     registrarAccion("uso.elegir", { uso: valor, mensajeId });
     actualizarWidget(mensajeId, "uso", (widget) => ({ ...widget, elegido: valor }));
     setUso(valor);
-    const accionIdea = accionIdeaAlElegirUso({ hayIdea: Boolean(seleccionada), hayPlan: Boolean(planVigente) });
+    const accionIdea = accionIdeaAlElegirUso({ hayIdea: Boolean(seleccionada), hayPlan: Boolean(planVigente), ideaEnElPlan: Boolean(seleccionada && planVigente?.widget.ideas?.includes(seleccionada.id)) });
     void enviar(valor === "negocio" ? "Es para mi negocio." : "Es para uso personal.", { uso: valor, ...(accionIdea ? { accionIdea } : {}) });
   }
 
@@ -1780,7 +1788,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
           return;
         }
         const decoracion = seleccionada?.id === accion.ideaId ? seleccionada : null;
-        if (!decoracion || planVigente) {
+        if (!decoracion) {
           actualizarMensaje(accion.mensajeId, (mensaje) => ({ ...mensaje, content: "Ese pedido quedó atrás: elige la idea otra vez y vuelve a tocar la opción." }));
           return;
         }

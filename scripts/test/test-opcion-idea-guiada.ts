@@ -1,9 +1,14 @@
 import { strict as assert } from "node:assert";
+import { readFileSync } from "node:fs";
+import { AsistenteGuiadoRequestSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import decoracionesRaw from "@/lib/biblioteca-sempertex/decoraciones.json";
 import { DecoracionSempertexSchema } from "@/lib/biblioteca-sempertex/esquemas";
 import { propuestaAgregarIdea } from "@/components/guiado/agregar-idea";
 import {
   avanzarOpcionIdea,
+  accionIdeaAlElegirUso,
+  estadoDelTurnoDeIdea,
+  ideasTrasArmarIdea,
   marcarChipAlElegir,
   resultadoPlanIdea,
   rutaOpcionIdea,
@@ -24,7 +29,18 @@ assert.equal(rutaOpcionIdea("costear", sinPlan), "plan-exacto-de-idea");
 assert.equal(rutaOpcionIdea("aprender", sinPlan), "plan-exacto-de-idea");
 assert.equal(rutaOpcionIdea("costear", { hayIdea: true, hayPlan: true, ideaEnElPlan: true }), "accion-plan");
 assert.equal(rutaOpcionIdea("costear", { hayIdea: false, hayPlan: true, ideaEnElPlan: false }), "accion-plan");
-assert.equal(rutaOpcionIdea("costear", { hayIdea: true, hayPlan: true, ideaEnElPlan: false }), "chat", "un plan ajeno a la idea elegida no se presenta como el de la idea");
+assert.equal(rutaOpcionIdea("costear", { hayIdea: true, hayPlan: true, ideaEnElPlan: false }), "plan-exacto-de-idea", "an existing plan A cannot redirect the chosen idea B to the model");
+assert.equal(rutaOpcionIdea("aprender", { hayIdea: true, hayPlan: true, ideaEnElPlan: false }), "plan-exacto-de-idea");
+assert.equal(accionIdeaAlElegirUso({ hayIdea: true, hayPlan: true, ideaEnElPlan: false }), "costear");
+const contextoDeB = estadoDelTurnoDeIdea({ uso: "personal", planActual: { piezas: ["A"] }, motorPlan: "3d", alcancePropuesta: "completa", piezaPedida: "columna", ideasMostradas: [{ id: "B" }] }, "costear", "B");
+assert.deepEqual(contextoDeB, { uso: "personal", ideasMostradas: [{ id: "B" }], decoracionId: "B", accionIdea: "costear" }, "an explicit idea action excludes the old plan and scope from the unchanged API contract");
+assert.deepEqual(ideasTrasArmarIdea({ id: "B", sumada: false }, ["A"]), ["B"]);
+assert.deepEqual(ideasTrasArmarIdea({ id: "B", sumada: true }, ["A"]), ["A", "B"]);
+assert.ok(AsistenteGuiadoRequestSchema.safeParse({ schema_version: "asistente-guiado.v1", messages: [{ role: "user", content: "Cuánto cuesta" }], brief: {}, estadoGuiado: estadoDelTurnoDeIdea({ planActual: {}, alcancePropuesta: "completa" }, "costear", "deco-b") }).success);
+const vista = readFileSync("src/components/guiado/VistaGuiada.tsx", "utf8");
+assert.match(vista, /const estadoGuiado = estadoDelTurnoDeIdea\(/);
+assert.match(vista, /const elegida = seleccionada && \(accionIdea \|\| !planVigente\)/);
+assert.doesNotMatch(vista, /if \(!decoracion \|\| planVigente\)/, "retrying B preserves its existing bubble while unrelated plan A remains");
 assert.equal(rutaOpcionIdea("costear", { hayIdea: false, hayPlan: false, ideaEnElPlan: false }), "chat", "sin idea ni plan sigue el camino de siempre");
 assert.equal(rutaOpcionIdea("comprar", sinPlan), "chat");
 assert.equal(rutaOpcionIdea("contratar", sinPlan), "chat");
