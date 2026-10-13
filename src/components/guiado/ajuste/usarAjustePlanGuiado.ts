@@ -73,7 +73,7 @@ export type CambioDelPanelHecho = {
  */
 export async function hacerCambioDelPanel(cambio: CambioPlan, base: PlanGuiado, opciones: { motor3d?: DependenciasEdicion3d | undefined; alDescartarColor?: (color: string) => void; cotizacionAntes?: unknown; uso?: UsoPrecio | null }): Promise<CambioDelPanelHecho> {
   if (opciones.motor3d) {
-    const nuevo = await ejecutarCambio3d(cambio, base, opciones.motor3d);
+    const nuevo = await ejecutarCambio3d(cambio, base, opciones.motor3d, { antes: opciones.cotizacionAntes, uso: opciones.uso ?? null });
     return { nuevo, hecho: nuevo.descripcion, confirmacion: nuevo.confirmacion, extra: { turno_id: nuevo.turno.turnoId, espec_hash_antes: nuevo.turno.antes.especHash, espec_hash_despues: nuevo.turno.despues.especHash, avisos: nuevo.avisos } };
   }
   const nuevo = await ejecutarCambio(cambio, base, {

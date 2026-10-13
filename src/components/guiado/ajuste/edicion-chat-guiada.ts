@@ -28,6 +28,7 @@ import {
 import type { TurnoEdicion } from "@/lib/guiada-motor/editar-contrato";
 import { ejecutarEdicionChat3d, type Motor3dDelChat } from "./edicion-chat-3d";
 import { confirmacionCambioHecho, type UsoPrecio } from "./diferencia-colores";
+import { otrasCifrasIguales } from "@/lib/plan/cifras-conservadas";
 import { ejecutarCambio, type DependenciasAjuste, type PlanFirmado } from "./ejecutar-ajuste";
 import { globosDeCandidatos, planConImpresos, type GloboCatalogo } from "./selector-globos";
 
@@ -288,7 +289,7 @@ function conParejas(plan: PlanGuiado, ids: readonly string[], cambio: (estructur
  */
 export async function ejecutarEdicionChat(base: PlanGuiado, pedido: PedidoEdicionPlan, dependencias: DependenciasEdicionChat, opciones: { cotizacionAntes?: unknown; uso?: UsoPrecio | null } = {}): Promise<EdicionChatHecha> {
   // Un plan del 3D no pasa por Python: ni busca globos en su catálogo ni usa `/api/plan-editar`.
-  if (dependencias.motor3d) return ejecutarEdicionChat3d(base, pedido, dependencias.motor3d);
+  if (dependencias.motor3d) return ejecutarEdicionChat3d(base, pedido, dependencias.motor3d, { antes: opciones.cotizacionAntes, uso: opciones.uso ?? null });
   const ids = estructurasDeNombres(base, piezasDelPedido(pedido));
   if (!ids) fallo("No encontré esa pieza en tu plan. Tu plan sigue como estaba.");
   const ajuste: DependenciasAjuste = { ...dependencias, buscar: async () => [] };
@@ -486,15 +487,16 @@ export async function ejecutarEdicionChat(base: PlanGuiado, pedido: PedidoEdicio
     ? `${pedido.quitar ? "quité las flores de globo de" : `puse ${pedido.cantidad ? `${pedido.cantidad} ${pedido.cantidad === 1 ? "flor" : "flores"}` : "flores"} de globo en`} ${conArticulo(base, conFlores)}`
     : descripcionDe(base, pedido, hechos, ids, { despues: actual.plan, nueva });
   const propia = pedido.tipo === "agregar_pieza" || pedido.tipo === "colores_pieza" || pedido.tipo === "mover_pieza" || pedido.tipo === "renombrar_pieza" || pedido.tipo === "flores";
-  const confirmacion = propia ? confirmacionPropia(base, pedido, descripcion, ids)
+  const confirmacion = propia ? confirmacionPropia(base, pedido, descripcion, ids, actual.plan)
     : hechos.length === 1 ? confirmacionCambioHecho(base, hechos[0]!, actual.piezas, actual.plan, { antes: opciones.cotizacionAntes, despues: actual.cotizacion, uso: opciones.uso ?? null }) : `Listo: ${descripcion}; lo demás quedó igual.`;
   return { ...actual, descripcion: descripcion.slice(0, 160), confirmacion, cambios: hechos, globos, ...(nueva ? { nueva } : {}) };
 }
 
 /** Lo que dice el chat al terminar un cambio de pieza (sumar, colores de una pieza, mover, renombrar). */
-function confirmacionPropia(base: PlanGuiado, pedido: PedidoEdicionPlan, descripcion: string, ids: readonly string[]): string {
+function confirmacionPropia(base: PlanGuiado, pedido: PedidoEdicionPlan, descripcion: string, ids: readonly string[], despues: PlanGuiado): string {
   switch (pedido.tipo) {
-    case "colores_pieza": return `Listo: ${conArticulo(base, ids)} ${ids.length > 1 ? "quedaron" : "quedó"} en ${listaNatural(pedido.colores.map(nombreColor))}; lo demás quedó igual.`;
+    // «lo demás quedó igual» solo si al volver a contar no se movió otra cifra (juez 2026-10-11, D4).
+    case "colores_pieza": return `Listo: ${conArticulo(base, ids)} ${ids.length > 1 ? "quedaron" : "quedó"} en ${listaNatural(pedido.colores.map(nombreColor))}${otrasCifrasIguales(base, despues, ids) ? "; lo demás quedó igual" : ""}.`;
     case "renombrar_pieza": return `Listo: ${descripcion}.`;
     default: return `Listo: ${descripcion}; lo demás quedó igual.`;
   }

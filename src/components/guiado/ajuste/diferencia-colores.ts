@@ -11,7 +11,7 @@ import { confirmacionDelCambio, globosEnTexto, piezaConArticulo, piezasAjustable
  * «Cambiar» y el chat digan la misma diferencia real y nunca «quedaron igual» si alguna cifra se movió. Puro: sin red.
  */
 
-type Reemplazo = Extract<CambioPlan, { tipo: "reemplazar-color" }>;
+export type Reemplazo = Extract<CambioPlan, { tipo: "reemplazar-color" }>;
 
 export type CambioDeColor = { color: string; antes: number; despues: number };
 
@@ -60,12 +60,19 @@ function porEtiqueta(colores: readonly ColorContado[]): Map<string, number> {
 export function diferenciaCambioColor(antes: PlanGuiado, despues: PlanGuiado, cambio: Reemplazo, piezasConColor?: readonly string[]): DiferenciaCambioColor {
   const piezas = piezasConColor?.length ? new Set(piezasConColor) : cambio.estructuraIds?.length ? new Set(cambio.estructuraIds) : null;
   const tocada = (color: ColorContado) => !piezas || piezas.has(color.estructuraId);
-  const esNuevo = (color: ColorContado) => tocada(color) && color.productId === cambio.globo.productId && normal(color.color) === normal(cambio.globo.color);
-  const esViejo = (color: ColorContado) => tocada(color) && normal(color.color) === normal(cambio.color) && (!cambio.productIdAnterior || color.productId === cambio.productIdAnterior) && !esNuevo(color);
   const deAntes = coloresContados(antes);
   const deDespues = coloresContados(despues);
+  // En el 3D el globo elegido es una referencia de la lámina (`sempertex-015`) o una familia del chat (sin producto) y el
+  // plan compra el producto de la tienda: si ninguna pieza tocada lleva su producto, el color nuevo se reconoce por su
+  // nombre. En Python el producto siempre manda.
+  const delMotor3d = !cambio.globo.productId || cambio.globo.productId.startsWith("sempertex-");
+  const porNombre = delMotor3d && !deDespues.some((color) => tocada(color) && color.productId === cambio.globo.productId);
+  const esNuevo = (color: ColorContado) => tocada(color) && normal(color.color) === normal(cambio.globo.color) && (porNombre || color.productId === cambio.globo.productId);
+  const esViejo = (color: ColorContado) => tocada(color) && normal(color.color) === normal(cambio.color) && (!cambio.productIdAnterior || color.productId === cambio.productIdAnterior) && !esNuevo(color);
   const viejos = deAntes.filter(esViejo);
+  const nuevos = deDespues.filter(esNuevo);
   const etiquetasViejas = [...new Set(viejos.map((color) => color.etiqueta))];
+  // Si el color nuevo ya estaba en las piezas tocadas, su cifra se dice una vez (la del nuevo), no también como «otro color».
   const otrosAntes = porEtiqueta(deAntes.filter((color) => !esViejo(color) && !esNuevo(color)));
   const otrosDespues = porEtiqueta(deDespues.filter((color) => !esNuevo(color)));
   const otros = [...new Set([...otrosAntes.keys(), ...otrosDespues.keys()])]
@@ -75,7 +82,7 @@ export function diferenciaCambioColor(antes: PlanGuiado, despues: PlanGuiado, ca
   const cambiadas = antes.plan.estructuras.filter((estructura) => viejos.some((color) => color.estructuraId === estructura.estructura_id));
   return {
     anterior: { color: etiquetasViejas.length === 1 ? etiquetasViejas[0]!.toLocaleLowerCase("es") : colorCliente(cambio.color), globos: viejos.reduce((suma, color) => suma + color.globos, 0) },
-    nuevo: { color: cambio.globo.nombre, globos: deDespues.filter(esNuevo).reduce((suma, color) => suma + color.globos, 0), yaTenia: deAntes.filter(esNuevo).reduce((suma, color) => suma + color.globos, 0), enAlgunasPiezas: piezas !== null },
+    nuevo: { color: cambio.globo.nombre, globos: nuevos.reduce((suma, color) => suma + color.globos, 0), yaTenia: deAntes.filter(esNuevo).reduce((suma, color) => suma + color.globos, 0), enAlgunasPiezas: piezas !== null },
     otros: otros.map((otro) => ({ ...otro, color: otro.color.toLocaleLowerCase("es") })),
     donde: conElViejo.size && cambiadas.length ? `en ${listaNatural(cambiadas.map(piezaConArticulo))}` : null,
   };
@@ -108,6 +115,15 @@ export function textoCambioColor(cambio: Reemplazo, diferencia: DiferenciaCambio
     ? `. Al volver a contar cambiaron otros colores: ${listaNatural(otros.map((otro) => `${otro.color} ${otro.despues.toLocaleString("es-CO")} (antes ${otro.antes.toLocaleString("es-CO")})`))}.`
     : mismaCifra ? "; los demás colores quedaron igual." : "; los demás colores conservan sus globos.";
   return `${cabeza} ${delNuevo}${resto}${textoPrecio(precios)}`;
+}
+
+/**
+ * La confirmación contada de un cambio de color, o null si no se reconoce el color que salió o el que entró: entonces
+ * quien llama dice menos (la frase del servidor), nunca una cifra que no cuadra. La usan los caminos del motor 3D.
+ */
+export function confirmacionColorContada(antes: PlanGuiado, despues: PlanGuiado, cambio: Reemplazo, piezasConColor: readonly string[] | undefined, precios: PreciosDelCambio = {}): string | null {
+  const diferencia = diferenciaCambioColor(antes, despues, cambio, piezasConColor);
+  return diferencia.anterior.globos > 0 && diferencia.nuevo.globos > 0 ? textoCambioColor(cambio, diferencia, precios) : null;
 }
 
 /**

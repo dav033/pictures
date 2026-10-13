@@ -9,6 +9,7 @@ import {
 import type { TomaDeFoto } from "@/lib/globos3d/tope-fotos-hora";
 import { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { PedidoEdicionPlanSchema } from "@/lib/ia/guiado/edicion-plan-chat";
+import { otrasCifrasIguales } from "@/lib/plan/cifras-conservadas";
 import type { PlanIdeaGuardado } from "@/lib/plan/plan-de-idea";
 import { codigoSeguro, hashSeguro, idsDePiezas, uuidSeguro, type FilaAuditoriaPlan3d } from "./auditoria-plan";
 import { RUTA_EDITAR_MOTOR, type CodigoFalloEditar, type RespuestaEditarMotor } from "./editar-contrato";
@@ -100,9 +101,11 @@ function acotarDescripcion(hechas: readonly string[]): string {
   return dicho.length > MAX_DESCRIPCION ? `${dicho.slice(0, MAX_DESCRIPCION - 1).trimEnd()}…` : dicho;
 }
 
-function confirmacionDe(hechas: readonly string[], noAplicadas: readonly string[]): string {
+/** «lo demás quedó igual» solo si, al rearmar, no se movió ninguna otra cifra (`otrasCifrasIguales`); si no, se dice menos. */
+function confirmacionDe(hechas: readonly string[], noAplicadas: readonly string[], demasIgual: boolean): string {
   const hecho = hechas.join("; ");
-  return noAplicadas.length ? `Listo: ${hecho}. ${noAplicadas.join(" ")}` : `Listo: ${hecho}; lo demás quedó igual.`;
+  if (noAplicadas.length) return `Listo: ${hecho}. ${noAplicadas.join(" ")}`;
+  return demasIgual ? `Listo: ${hecho}; lo demás quedó igual.` : `Listo: ${hecho}.`;
 }
 
 function aEdiciones(cuerpo: z.infer<typeof CuerpoSchema>, espec: EspecClienteV1): EdicionesDePedido {
@@ -190,7 +193,7 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
       plan: sobre.plan,
       cotizacion: sobre.cotizacion,
       descripcion,
-      confirmacion: mayuscula(confirmacionDe(hecho.hechas, hecho.noAplicadas)),
+      confirmacion: mayuscula(confirmacionDe(hecho.hechas, hecho.noAplicadas, otrasCifrasIguales(cuerpo.plan, sobre.plan, hecho.tocadas))),
       avisos: [...new Set([...mapeo.avisos, ...hecho.avisos].map(mayuscula))].slice(0, 6),
       noAplicadas: hecho.noAplicadas,
       tocadas: hecho.tocadas,

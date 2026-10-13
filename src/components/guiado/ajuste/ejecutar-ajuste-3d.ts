@@ -4,6 +4,7 @@ import type { TurnoEdicion } from "@/lib/guiada-motor/editar-contrato";
 import { plegarTexto } from "@/lib/rag/taxonomy/v2";
 import { avisosDelCambio, type DependenciasEdicion3d } from "../edicion-motor3d";
 import type { CambioPlan, GloboParaPlan, PlanGuiado } from "./ajuste-plan-guiado";
+import { confirmacionColorContada, type PreciosDelCambio } from "./diferencia-colores";
 import type { PlanFirmado } from "./ejecutar-ajuste";
 
 /**
@@ -79,11 +80,18 @@ export function aCambioPanel(cambio: CambioPlan, base?: PlanGuiado): CambioPanel
   }
 }
 
-export async function ejecutarCambio3d(cambio: CambioPlan, base: PlanGuiado, dependencias: DependenciasEdicion3d): Promise<CambioHecho3d> {
+/**
+ * `precios`: la cotización de antes y el uso; un cambio de color hecho entero dice la diferencia real por color y el precio
+ * (`diferencia-colores.ts`, la misma frase del camino de Python) en lugar de la frase general del servidor.
+ */
+export async function ejecutarCambio3d(cambio: CambioPlan, base: PlanGuiado, dependencias: DependenciasEdicion3d, precios: Omit<PreciosDelCambio, "despues"> = {}): Promise<CambioHecho3d> {
   const hecho = await dependencias.editar(base, { tipo: "cambio", cambio: aCambioPanel(cambio, base) });
   const avisos = avisosDelCambio(base, hecho);
+  const contada = cambio.tipo === "reemplazar-color" && !hecho.noAplicadas.length
+    ? confirmacionColorContada(base, hecho.plan, cambio, hecho.tocadas, { ...precios, despues: hecho.cotizacion })
+    : null;
   return {
     plan: hecho.plan, cotizacion: hecho.cotizacion, piezas: hecho.tocadas,
-    descripcion: hecho.descripcion, confirmacion: [hecho.confirmacion, ...avisos].join(" "), avisos, turno: hecho.turno,
+    descripcion: hecho.descripcion, confirmacion: [contada ?? hecho.confirmacion, ...avisos].join(" "), avisos, turno: hecho.turno,
   };
 }
