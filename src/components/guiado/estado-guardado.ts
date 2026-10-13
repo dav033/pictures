@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BriefGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
+import { ACCIONES_IDEA_GUIADA, BriefGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { WidgetGuiadoSchema } from "@/lib/ia/guiado/widgets";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
 import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
@@ -35,6 +35,8 @@ const MensajeSchema = z.object({
     uso: z.enum(["negocio", "personal"]).optional(),
     alcance: z.enum(["completa", "individual"]).optional(),
     pieza: z.enum(ESTRUCTURAS_OFICIALES_IDS).optional(),
+    /** El chip de la idea (D-043): tras recargar, «Reintentar» lo repite por reglas, no con el modelo. */
+    accionIdea: z.enum(ACCIONES_IDEA_GUIADA).optional(),
   }).strict().optional(),
 }).strict();
 export type Mensaje = z.infer<typeof MensajeSchema>;

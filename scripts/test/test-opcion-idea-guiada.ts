@@ -64,9 +64,9 @@ assert.deepEqual(avanzarOpcionIdea(null, { tipo: "resultado", mensajeId: "m-plan
 // [P1] Fallo del plan (502, plazo): nada de modelo; se ofrece reintentar ESTA acción y el chip sigue disponible.
 assert.deepEqual(avanzarOpcionIdea(espera, { tipo: "resultado", mensajeId: "m-plan", resultado: "fallo" }), { espera: null, reintento: espera });
 assert.deepEqual(avanzarOpcionIdea(espera, { tipo: "resultado", mensajeId: "m-plan", resultado: "detenido" }), { espera: null, reintento: espera });
-// Sin plan guardado (figuras y ejemplos sin plan): la misma petición del cliente va al turno de siempre, que cotiza la
-// lista curada de la idea (costear_decoracion) sin armar otro plan.
-assert.deepEqual(avanzarOpcionIdea(espera, { tipo: "resultado", mensajeId: "m-plan", resultado: "sin-plan-guardado" }), { espera: null, turnoChat: espera });
+// Sin plan guardado (figuras y ejemplos sin plan) o que no se arma sola: la misma petición del cliente va al servidor con
+// `accionIdea`, que cotiza su lista curada o da sus pasos por reglas, sin modelo (D-043; test-accion-idea-guiada.ts).
+assert.deepEqual(avanzarOpcionIdea(espera, { tipo: "resultado", mensajeId: "m-plan", resultado: "sin-plan-guardado" }), { espera: null, turnoReglas: espera });
 assert.deepEqual(avanzarOpcionIdea(espera, { tipo: "resultado", mensajeId: "m-plan", resultado: "obsoleto" }), { espera: null });
 
 // [P2] El resultado de un pedido viejo (otro mensaje: p. ej. antes de «Empezar de nuevo») no toca la acción de ahora.

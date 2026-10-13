@@ -13,12 +13,13 @@ import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { PROMPT_GUIADO } from "@/lib/ia/guiado/prompt-guiado";
 import { ChatSseEventV1Schema, CHAT_SSE_CONTRACT_VERSION } from "@/lib/ia/contracts/chat-v1";
 import { avisoEdicionDelPlanAbierto } from "@/lib/ia/guiado/aviso-edicion-plan";
-import { filaDeCotizacionDeIdea, registrarAuditoriaPlan3d } from "@/lib/guiada-motor/auditoria-plan";
-import { costearDecoracion } from "@/lib/guiada-motor/costear-idea";
+import { registrarAuditoriaPlan3d } from "@/lib/guiada-motor/auditoria-plan";
+import { costearIdeaElegida, type EntornoCosteoIdea } from "@/lib/guiada-motor/costear-idea-elegida";
+import { responderAccionIdea } from "@/lib/ia/guiado/accion-idea";
 import { datosDelCosteo, dependenciasDeCosteo } from "@/lib/guiada-motor/dependencias-costeo";
 import { ErrorIA } from "@/lib/ia/nucleo/tipos";
 import type { ErrorCodeV1 } from "@/lib/ia/contracts/chat-v1";
-import { decoracionCotizableCoincide, normalizarCiudad, protegerHerramientas } from "@/lib/ia/guiado/utilidades";
+import { normalizarCiudad, protegerHerramientas } from "@/lib/ia/guiado/utilidades";
 import { pasosParaCliente } from "@/lib/ia/guiado/pasos-cliente";
 import { ESTRUCTURAS_OFICIALES, ESTRUCTURAS_OFICIALES_IDS, type EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { COLORES_PROPUESTA_V2 } from "@/lib/rag/taxonomy/v2";
@@ -208,6 +209,29 @@ async function turnoGuiado(request: Request) {
   const consultaIdea = estado?.decoracionId && !planActual && !alcancePropuesta && !turnoDelPlan && !eleccionIdea ? responderConsultaIdea(ultimoUsuario, estado.decoracionId) : null;
   if (estado?.decoracionId && !planActual && !alcancePropuesta) decidir("regla:consulta_idea_chat", "pregunta por la idea elegida (globos, colores, medidas): se responde con sus datos, sin modelo", consultaIdea ? { tipo: consultaIdea.consulta.tipo, piezas: consultaIdea.consulta.piezas } : { responde: false }, { entrada: { ultimoUsuario, decoracionId: estado.decoracionId } });
   if (consultaIdea) return respuestaSinModelo(requestId, headers, consultaIdea.texto, { opciones: ["contratar", "costear", "comprar", "aprender"] });
+  /** El costeo de la idea elegida, con la idea y el uso confirmados (estadoGuiado): lo comparten el chip y `costear_decoracion`. */
+  const entornoCosteo = (signal: AbortSignal): EntornoCosteoIdea => ({
+    decoraciones: proveedores, requestId, superficie: "/api/asistente-guiado", registrarAuditoria: registrarAuditoriaPlan3d,
+    costeo: dependenciasDeCosteo({ request, requestId, signal, auditar: decidir }),
+  });
+  // REQ-015 (D-043): el chip «Cuánto cuesta» / «Aprender» de la idea (o el uso elegido tras él) se responde por reglas: el
+  // modelo nunca lo ve, así no puede proponer ni armar otro plan con otras cifras. El contrato ya exige la idea elegida.
+  if (estado?.accionIdea && decoracionConfirmada) {
+    const accion = estado.accionIdea;
+    const idea = proveedores.find((item) => item.id === decoracionConfirmada);
+    if (!idea) {
+      decidir("regla:accion_idea_chip", "chip de una idea que no está en la biblioteca visible: no se cotiza ni va al modelo", { responde: false }, { entrada: { accion, decoracionId: decoracionConfirmada } });
+      return respuestaSinModelo(requestId, headers, "Esa idea ya no está disponible. Elige otra y vuelve a tocar la opción.", {});
+    }
+    const plazo = crearDeadlineIA(request.signal, DEADLINE_TURNO_MS);
+    try {
+      const respuesta = await responderAccionIdea(accion, idea, () => costearIdeaElegida({}, { decoracionId: decoracionConfirmada, uso: usoConfirmado }, entornoCosteo(plazo.signal)));
+      decidir("regla:accion_idea_chip", "chip de la idea elegida respondido por reglas, sin modelo", { accion, motivo: respuesta.motivo }, { entrada: { decoracionId: idea.id, uso: usoConfirmado ?? null } });
+      return respuestaSinModelo(requestId, headers, respuesta.texto, { ...(usoConfirmado && usoConfirmado !== estado.uso ? { uso: usoConfirmado } : {}), ...respuesta.result });
+    } finally {
+      plazo.dispose();
+    }
+  }
   // Lo que escribió el cliente, normalizado: la ciudad de buscar_proveedores tiene que salir de aquí, no del modelo.
   const textoCliente = ` ${normalizarBusqueda(mensajesDelCliente.join(" "))} `;
   // El brief del cliente solo se usa para completar; las herramientas fijan evento, edad y temática, y al final del turno
@@ -368,31 +392,14 @@ async function turnoGuiado(request: Request) {
       costear_decoracion: async (args: Record<string, unknown>) => {
         // La decoración y el uso son los que el cliente eligió con los botones (estadoGuiado): el modelo no ve los
         // ids internos y adivinarlos hacía fallar el costeo varias veces seguidas. Si aun así manda uno, debe coincidir.
+        // D-038: el precio de la idea es el del plan que el cliente recibe al elegirla; el de una idea sin plan, su lista
+        // curada con el mismo cotizador (costear-idea-elegida.ts, con su fila durable de auditoría).
         const pedida = ArgsSchema.parse(args);
-        const entrada = { decoracionId: pedida.decoracionId ?? decoracionConfirmada, uso: pedida.uso ?? usoConfirmado };
-        if (!usoConfirmado || entrada.uso !== usoConfirmado || !decoracionCotizableCoincide(decoracionConfirmada, entrada.decoracionId) || !proveedores.some((item) => item.id === entrada.decoracionId)) {
-          const motivo = !usoConfirmado ? "falta_que_el_cliente_elija_negocio_o_personal" : "uso_o_decoracion_no_validado_por_el_cliente";
-          decidir("regla:cotizacion_guiada", "costear la idea elegida", { cotiza: false, motivo }, { entrada: { pedida, decoracionConfirmada: decoracionConfirmada ?? null, usoConfirmado: usoConfirmado ?? null } });
-          return { ok: false, motivo };
-        }
-        datos.uso = usoConfirmado;
-        const decoracion = proveedores.find((item) => item.id === entrada.decoracionId);
-        if (!decoracion) {
-          datos.cotizacion = null;
-          return { ok: false, motivo: "costeo_pendiente_datos_de_catalogo", aviso: "Esta decoración todavía no tiene productos asociados en el catálogo; no inventes un precio." };
-        }
-        // D-038: el precio de la idea es el del plan que el cliente recibe al elegirla (motor 3D o Python, según la bandera);
-        // el de una idea sin plan, su lista curada con el mismo cotizador. El motor, el cruce con la tienda (250 KB) y los
-        // planes guardados se cargan SOLO aquí, con `import()`: el resto de los turnos no los paga, y el motor de un plan
-        // solo con la bandera en 3d.
-        const costeo = await costearDecoracion(decoracion, usoConfirmado, dependenciasDeCosteo({ request, requestId, signal: deadline.signal, auditar: decidir }));
-        // Durable (plan_audit_log): `decidir` solo llega a stdout y a /tmp. Una fila por cada «¿cuánto cuesta?», con lo que
-        // decidió el costeo (motor 3D, plan de Python, lista curada o sin precio), su motivo, el total y el hash del plan.
-        const decision = costeo.decision;
-        const filaAuditoria = filaDeCotizacionDeIdea(decision, decoracion.id, requestId, "/api/asistente-guiado");
-        await registrarAuditoriaPlan3d(filaAuditoria);
-        datosDelCosteo(datos, costeo);
-        return costeo.respuesta;
+        const resultado = await costearIdeaElegida({ decoracionId: pedida.decoracionId, uso: pedida.uso }, { decoracionId: decoracionConfirmada, uso: usoConfirmado }, entornoCosteo(deadline.signal));
+        if (!resultado.ok) return { ok: false, motivo: resultado.motivo };
+        datos.uso = resultado.uso;
+        datosDelCosteo(datos, resultado.costeo);
+        return resultado.costeo.respuesta;
       },
       abrir_accion_plan: async (args: Record<string, unknown>) => {
         const { accion } = z.object({ accion: z.enum(ACCIONES_PLAN) }).strict().parse(args);

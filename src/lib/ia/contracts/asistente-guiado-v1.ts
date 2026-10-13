@@ -68,6 +68,8 @@ export type PlanActualGuiado = z.infer<typeof PlanActualGuiadoSchema>;
 /** Una idea del catálogo que el cliente tiene a la vista (el último carrusel), en su orden: «me quedo con la primera». */
 export const IdeaVisibleGuiadaSchema = z.object({ id: z.string().regex(/^(?:ej|deco)-[a-z0-9-]+$/), titulo: z.string().trim().min(1).max(160) }).strict();
 export type IdeaVisibleGuiada = z.infer<typeof IdeaVisibleGuiadaSchema>;
+export const ACCIONES_IDEA_GUIADA = ["costear", "aprender"] as const;
+export type AccionIdeaGuiada = (typeof ACCIONES_IDEA_GUIADA)[number];
 // Sin .strict(): zod descarta las claves desconocidas, así un cliente anterior que todavía manda `propuesta: true` no recibe 400.
 const EstadoGuiadoSchema = z.object({
   decoracionId: z.string().regex(/^(ej|deco)-[a-z0-9-]+$/).optional(),
@@ -82,7 +84,13 @@ const EstadoGuiadoSchema = z.object({
   motorPlan: MotorGuiadaSchema.optional().catch(undefined),
   /** Las ideas del último carrusel, en orden: `elegir_idea` elige entre ellas (edicion-plan-chat.ts). */
   ideasMostradas: z.array(IdeaVisibleGuiadaSchema).max(12).optional(),
-});
+  /**
+   * REQ-015 (D-043): el chip «Cuánto cuesta» / «Aprender a hacerlo» de la idea elegida, que se responde por reglas, sin
+   * modelo. Campo opcional y aditivo dentro de v1: un cliente que no lo manda sigue igual (turno de siempre) y un servidor
+   * anterior lo descarta (este esquema no es estricto). Solo vale con la idea elegida y sin plan ni alcance de propuesta.
+   */
+  accionIdea: z.enum(ACCIONES_IDEA_GUIADA).optional(),
+}).refine((estado) => !estado.accionIdea || (estado.decoracionId !== undefined && !estado.planActual && !estado.alcancePropuesta), { path: ["accionIdea"], message: "accionIdea requiere una idea elegida, sin plan ni alcance de propuesta" });
 const FotoInspiracionSchema = z.object({ base64: z.string().min(1).max(8_000_000), mime: z.enum(["image/jpeg", "image/png", "image/webp"]) }).strict();
 export const AsistenteGuiadoRequestSchema = z.object({
   schema_version: z.literal(ASISTENTE_GUIADO_VERSION),

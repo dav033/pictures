@@ -67,8 +67,11 @@ export type PasoOpcionIdea = {
   espera: EsperaOpcionIdea | null;
   /** Ya se puede resolver sobre el plan, sin otra burbuja del cliente (ya la dijo al tocar el chip). */
   resolver?: EsperaOpcionIdea;
-  /** Sin plan guardado: la MISMA petición va al turno de siempre, que cotiza la lista curada de la idea sin armar otro plan. */
-  turnoChat?: EsperaOpcionIdea;
+  /**
+   * Sin plan guardado (o no se arma sola): la MISMA petición va al servidor con `accionIdea`, que la responde por reglas
+   * (precio de su lista curada o sus pasos), sin modelo (D-043).
+   */
+  turnoReglas?: EsperaOpcionIdea;
   /** Falló o se detuvo: se ofrece repetir ESTA acción, sin modelo; el chip sigue disponible. */
   reintento?: EsperaOpcionIdea;
 };
@@ -84,7 +87,7 @@ export function avanzarOpcionIdea(espera: EsperaOpcionIdea | null, evento: Event
       switch (evento.resultado) {
         // El plan ya está (o estará) en su mensaje: lo resuelve el evento «plan», en cualquier orden.
         case "ok": return { espera };
-        case "sin-plan-guardado": return { espera: null, turnoChat: espera };
+        case "sin-plan-guardado": return { espera: null, turnoReglas: espera };
         case "fallo":
         case "detenido": return { espera: null, reintento: espera };
         case "obsoleto": return { espera: null };
@@ -95,4 +98,17 @@ export function avanzarOpcionIdea(espera: EsperaOpcionIdea | null, evento: Event
       if (evento.mensajeId !== espera.mensajeId || !evento.ideas.includes(espera.ideaId)) return { espera };
       return { espera: null, resolver: espera };
   }
+}
+
+/**
+ * La acción de la idea que viaja con el turno: solo con la idea elegida, sin plan y sin alcance de propuesta (lo mismo que
+ * exige el contrato); si no, el servidor la rechazaría.
+ */
+export function accionIdeaDelTurno(pedida: AccionIdea | undefined, contexto: { hayIdea: boolean; hayPlan: boolean; hayAlcance: boolean }): AccionIdea | undefined {
+  return pedida && contexto.hayIdea && !contexto.hayPlan && !contexto.hayAlcance ? pedida : undefined;
+}
+
+/** Elegir negocio o uso personal con una idea elegida y sin plan sigue su «Cuánto cuesta» por reglas, sin modelo (D-043). */
+export function accionIdeaAlElegirUso(contexto: { hayIdea: boolean; hayPlan: boolean }): AccionIdea | undefined {
+  return contexto.hayIdea && !contexto.hayPlan ? "costear" : undefined;
 }

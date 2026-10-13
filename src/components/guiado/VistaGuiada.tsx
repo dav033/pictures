@@ -22,7 +22,7 @@ import { acabadosFotoSinComprar } from "./acabados-foto-plan";
 import { avisosFloresFotoSinComprar } from "@/lib/plan/flores-pieza";
 import { lecturaFoto } from "./lectura-foto";
 import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
-import { avanzarOpcionIdea, marcarChipAlElegir, resultadoPlanIdea, rutaOpcionIdea, TEXTO_OPCION_IDEA, type AccionIdea, type EsperaOpcionIdea, type EventoOpcionIdea, type PasoOpcionIdea, type ResultadoPlanIdea } from "./opcion-idea";
+import { accionIdeaAlElegirUso, accionIdeaDelTurno, avanzarOpcionIdea, marcarChipAlElegir, resultadoPlanIdea, rutaOpcionIdea, TEXTO_OPCION_IDEA, type AccionIdea, type EsperaOpcionIdea, type EventoOpcionIdea, type PasoOpcionIdea, type ResultadoPlanIdea } from "./opcion-idea";
 import { respuestaPrecioPlan, SELECTOR_PRECIO_TOTAL } from "./precio-chat";
 import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
 import type { AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
@@ -109,7 +109,7 @@ type PlanGuiado = z.infer<typeof PlanGuiadoSchema>;
 type Uso = "negocio" | "personal";
 type FotoInspiracion = { base64: string; mime: "image/jpeg" | "image/png" | "image/webp" };
 type PreguntaCiudad = "ciudad-decorador" | "ciudad-distribuidor";
-type OpcionesEnvio = { uso?: Uso; reintentar?: boolean; alcance?: "completa" | "individual"; pieza?: EstructuraOficialId };
+type OpcionesEnvio = { uso?: Uso; reintentar?: boolean; alcance?: "completa" | "individual"; pieza?: EstructuraOficialId; accionIdea?: AccionIdea };
 
 /** La idea de la biblioteca que trae un plan («Agregar al plan»): queda en el widget y dice «Está en tu plan». `sumada`: había plan. */
 /** `avisos`: si el plan exacto de la idea no salió exacto, por qué (en palabras de cliente, de `/api/plan-idea`). */
@@ -608,7 +608,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const idUsuario = (opciones.reintentar ? idParaReintento(mensajes, contenido) : null) ?? nuevoId();
     const idAsistente = nuevoId();
     // Lo que viaja con el texto (uso, alcance, pieza): queda en el mensaje para repetirlo igual tras recargar.
-    const envio: NonNullable<Mensaje["envio"]> = { ...(opciones.uso ? { uso: opciones.uso } : {}), ...(opciones.alcance ? { alcance: opciones.alcance } : {}), ...(opciones.pieza ? { pieza: opciones.pieza } : {}) };
+    const accionIdea = accionIdeaDelTurno(opciones.accionIdea, { hayIdea: Boolean(seleccionada), hayPlan: Boolean(planVigente), hayAlcance: Boolean(opciones.alcance) });
+    const envio: NonNullable<Mensaje["envio"]> = { ...(opciones.uso ? { uso: opciones.uso } : {}), ...(opciones.alcance ? { alcance: opciones.alcance } : {}), ...(opciones.pieza ? { pieza: opciones.pieza } : {}), ...(accionIdea ? { accionIdea } : {}) };
     const base = (opciones.reintentar ? sinUltimoTurnoGuiado(mensajes) : mensajes).filter((mensaje) => mensaje.content.trim().length > 0 || mensaje.widgets?.length || mensaje.referencia);
     const historial = prepararHistorialGuiado(base, `${contenido}${archivo ? "\nAdjunté una foto de inspiración." : ""}`);
     const usoEnvio = opciones.uso ?? uso ?? undefined;
@@ -623,6 +624,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       ...(opciones.alcance === "individual" && opciones.pieza ? { piezaPedida: opciones.pieza } : {}),
       ...(planActual ? { planActual, ...(planVigente?.widget.motor === "3d" ? { motorPlan: "3d" as const } : {}) } : {}),
       ...(ideasMostradas.length ? { ideasMostradas } : {}),
+      // El chip de la idea (o el uso elegido tras él): el servidor lo responde por reglas, sin modelo (D-043).
+      ...(accionIdea ? { accionIdea } : {}),
     };
     const elegida = seleccionada && !planVigente ? seleccionada : null;
     // Funcional: conserva lo que la acción que llamó acaba de marcar (la opción elegida en su widget).
@@ -1519,7 +1522,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
    * «Cuánto cuesta» / «Aprender» con una idea elegida y sin plan: UNA petición del cliente y el plan EXACTO guardado de la
    * idea en el mensaje siguiente, sin modelo; con él a la vista, la acción se resuelve por reglas (efecto de abajo). No
    * depende de que la idea se pueda sumar a un plan (las figuras también tienen precio). Si la idea no tiene plan guardado,
-   * esa misma petición va al turno de siempre, que cotiza su lista curada sin armar otro plan; si el plan no llega (red,
+   * esa misma petición va al servidor con `accionIdea`, que la responde por reglas sin modelo (D-043); si el plan no llega (red,
    * plazo, «Detener»), se dice y se ofrece repetirlo, nunca un plan del modelo con otras cifras. `reintento`: los mensajes
    * del intento anterior, que se reutilizan.
    */
@@ -1537,11 +1540,11 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     registrarAccion("opcion.plan_exacto", { accion, id: decoracion.id, mensajeId, reintento: Boolean(reintento) });
     const resultado = await planExactoDeIdea(mensajeId, decoracion, null, { id: decoracion.id, titulo: decoracion.titulo, sumada: false }, "se dice y se ofrece repetirlo (sin modelo)");
     const paso = avanzarEspera({ tipo: "resultado", mensajeId, resultado });
-    if (paso.turnoChat) {
+    if (paso.turnoReglas) {
       registrarAccion("opcion.sin_plan_guardado", { accion, id: decoracion.id });
-      marcarChipOpcion(paso.turnoChat);
+      marcarChipOpcion(paso.turnoReglas);
       setMensajes((actuales) => actuales.filter((mensaje) => mensaje.id !== usuarioId && mensaje.id !== mensajeId));
-      void enviar(texto);
+      void enviar(texto, { accionIdea: accion });
       return;
     }
     if (paso.reintento) {
@@ -1606,7 +1609,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     registrarAccion("uso.elegir", { uso: valor, mensajeId });
     actualizarWidget(mensajeId, "uso", (widget) => ({ ...widget, elegido: valor }));
     setUso(valor);
-    void enviar(valor === "negocio" ? "Es para mi negocio." : "Es para uso personal.", { uso: valor });
+    const accionIdea = accionIdeaAlElegirUso({ hayIdea: Boolean(seleccionada), hayPlan: Boolean(planVigente) });
+    void enviar(valor === "negocio" ? "Es para mi negocio." : "Es para uso personal.", { uso: valor, ...(accionIdea ? { accionIdea } : {}) });
   }
 
   function elegirTipo(tipo: "completa" | "individual", mensajeId: string): void {
