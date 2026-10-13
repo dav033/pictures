@@ -254,7 +254,7 @@
     "plan:test-color-foto-colores-nombrados": "tsx --conditions=react-server scripts/test/test-color-foto-colores-nombrados.ts",
     "flux:test-tope-fal": "tsx scripts/test/test-exp-fal-lib-tope.ts",
     "flux:test-fal-sin-saldo": "tsx --conditions=react-server scripts/test/test-fal-sin-saldo.ts",
-    "guiada:test": "tsx scripts/test/test-edicion-plan-chat-guiada.ts && tsx scripts/test/test-crud-plan-chat-guiada.ts && tsx scripts/test/test-precio-chat-guiado.ts && tsx scripts/test/test-ajuste-plan-guiado.ts && tsx scripts/test/test-usabilidad-guiada-97.ts && tsx scripts/test/test-opcion-idea-guiada.ts && tsx --conditions=react-server scripts/test/test-accion-idea-guiada.ts && tsx --conditions=react-server scripts/test/test-consulta-idea-guiada.ts && tsx scripts/test/test-diferencia-colores-guiada.ts && tsx scripts/test/test-detalles-ideas.ts"
+    "guiada:test": "tsx scripts/test/test-edicion-plan-chat-guiada.ts && tsx scripts/test/test-crud-plan-chat-guiada.ts && tsx scripts/test/test-precio-chat-guiado.ts && tsx scripts/test/test-ajuste-plan-guiado.ts && tsx scripts/test/test-usabilidad-guiada-97.ts && tsx scripts/test/test-opcion-idea-guiada.ts && tsx --conditions=react-server scripts/test/test-accion-idea-guiada.ts && tsx --conditions=react-server scripts/test/test-consulta-idea-guiada.ts && tsx scripts/test/test-diferencia-colores-guiada.ts && tsx scripts/test/test-detalles-ideas.ts && tsx scripts/test/test-precio-idea-elegida-guiada.ts"
   },
   "dependencies": {
     "@google/genai": "^2.16.0",

@@ -22,6 +22,7 @@ import { acabadosFotoSinComprar } from "./acabados-foto-plan";
 import { avisosFloresFotoSinComprar } from "@/lib/plan/flores-pieza";
 import { lecturaFoto } from "./lectura-foto";
 import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
+import { cancelarPrecioIdea, empezarPrecioIdea, resolverPrecioIdea, vistaPrecioIdea, type EstadoPrecioIdea } from "./precio-idea-elegida";
 import { accionIdeaAlElegirUso, accionIdeaDelTurno, avanzarOpcionIdea, marcarChipAlElegir, resultadoPlanIdea, rutaOpcionIdea, TEXTO_OPCION_IDEA, type AccionIdea, type EsperaOpcionIdea, type EventoOpcionIdea, type PasoOpcionIdea, type ResultadoPlanIdea } from "./opcion-idea";
 import { respuestaPrecioPlan, SELECTOR_PRECIO_TOTAL } from "./precio-chat";
 import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
@@ -212,6 +213,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const [cargando, setCargandoEstado] = useState(false);
   const [fallo, setFallo] = useState<Fallo | null>(null);
   const [seleccionada, setSeleccionada] = useState<DecoracionSempertex | null>(null);
+  const [precioIdea, setPrecioIdea] = useState<EstadoPrecioIdea | null>(null);
   const [uso, setUso] = useState<Uso | null>(null);
   const [imagenEnCurso, setImagenEnCurso] = useState<string | null>(null);
   /** Imágenes ya pagadas, en memoria, por id del mensaje del plan: se ven en el acto aunque guardarlas falle. */
@@ -1570,6 +1572,22 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando aparece un plan nuevo
   }, [idPlanVigente]);
 
+  // El precio de la tarjeta «Tu elección»: UN pedido del plan exacto por idea elegida (sin modelo), con el mismo motor que la
+  // cotización; si cambia la idea o se reinicia, el pedido de antes se cancela y su respuesta no cuenta (`precio-idea-elegida.ts`).
+  const ideaElegidaId = seleccionada?.id ?? null;
+  useEffect(() => {
+    if (!ideaElegidaId) return;
+    const sesion = sesionRef.current;
+    const control = new AbortController();
+    const reloj = window.setTimeout(() => control.abort("tiempo"), LIMITE_PLAN_IDEA_MS);
+    setPrecioIdea(empezarPrecioIdea(ideaElegidaId, sesion));
+    const cerrar = (respuesta: { ok: true; cotizacion: unknown } | { ok: false }) => control.signal.reason === "cambio" ? undefined : setPrecioIdea((actual) => resolverPrecioIdea(actual, { ideaId: ideaElegidaId, sesion, sesionVigente: sesionRef.current, respuesta }));
+    planDeIdeaMotor({ ideaId: ideaElegidaId, base: null, signal: control.signal, alFallback: () => undefined })
+      .then((resultado) => cerrar(resultado.ok ? { ok: true, cotizacion: resultado.cotizacion } : { ok: false }), () => cerrar({ ok: false }));
+    return () => { window.clearTimeout(reloj); control.abort("cambio"); setPrecioIdea((actual) => cancelarPrecioIdea(actual, ideaElegidaId)); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando cambia la idea elegida
+  }, [ideaElegidaId]);
+
   function elegirOpcion(opcion: OpcionGuiada, mensajeId?: string): void {
     if (cargandoRef.current) return;
     registrarAccion("opcion.elegir", { opcion, mensajeId: mensajeId ?? null });
@@ -1810,6 +1828,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
           key={clave} decoracion={widget.decoracion} agregar={datosAgregar(widget.decoracion)}
           onAgregar={() => void agregarIdeaAlPlan(widget.decoracion, "eleccion", mensajeId)}
           onVerPlan={planVigente ? () => verPlanDesdeIdea(widget.decoracion.id) : undefined}
+          precio={vistaPrecioIdea(precioIdea, widget.decoracion.id, uso)}
         />;
       case "opciones":
         return <ChipsOpciones key={clave} activo={activo && !widget.elegida} elegida={widget.elegida ?? null} hechas={hechasOpciones} deshabilitado={cargando} onElegir={(opcion) => elegirOpcion(opcion, mensajeId)} />;
