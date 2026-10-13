@@ -34,6 +34,7 @@ import { listaNatural } from "@/lib/ia/guiado/propuesta-composicion";
 import { avisoColoresFoto } from "@/lib/plan/colores-foto-plan";
 import { ajustesDePython } from "@/lib/ia/guiado/ajustes-python";
 import { avisosSinVista3d } from "@/lib/guiada-motor/sin-vista-3d";
+import { textoMaterialesDesde } from "./precio-chat";
 import { AjustesPropuesta } from "@/components/plan/AjustesPropuesta";
 
 export type AccionPlan = "ver" | "costear" | "comprar" | "aprender" | "contratar" | "cambiar";
@@ -143,6 +144,7 @@ export function TarjetaPlan(props: Props) {
   const costeoAbierto = costeoVisible ?? usoCosteo !== null;
   // El uso de este plan o, si todavía no se costeó, el que el cliente ya dijo: no se le vuelve a preguntar.
   const usoMostrado = usoCosteo ?? usoConocido ?? null;
+  const materialesDesde = textoMaterialesDesde(cotizacion, usoMostrado);
   // Las cuatro acciones son excluyentes (dueño, 2026-10-07: «seleccionar una deseleccione el resto, porque hay
   // solapamiento de menú»): elegir una cierra los paneles de las demás y solo ella queda marcada.
   const [seleccion, setSeleccion] = useState<"costear" | "comprar" | "aprender" | "contratar" | null>(null);
@@ -225,6 +227,7 @@ export function TarjetaPlan(props: Props) {
           <span className="text-base text-texto-suave">{desglose.total === 1 ? "globo" : "globos"}</span>
           {totalAnterior !== undefined && !recalculando && <PastillaDiferencia key={plan.plan_hash} diferencia={desglose.total - totalAnterior} />}
         </div>
+        {!recalculando && materialesDesde && <p className="mt-1 text-sm font-medium text-texto" data-testid="materiales-desde">{materialesDesde}</p>}
         <p className="mt-0.5 text-sm text-texto-suave">
           {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0)} {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0) === 1 ? "pieza" : "piezas"}: {listaNatural(piezas.map((pieza) => `${pieza.repeticiones > 1 ? `${pieza.repeticiones} × ` : ""}${pieza.nombre}`))}
         </p>
