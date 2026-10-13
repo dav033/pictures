@@ -38,6 +38,24 @@ export function resolverPrecioIdea(estado: EstadoPrecioIdea | null, entrada: Ata
   return { ...atado, fase: "listo", cotizacion: { total: leida.data.total, incluyeIva: leida.data.incluyeIva } };
 }
 
+/**
+ * Una cotización del plan exacto de la idea que llegó después (p. ej. la del chip «Cuánto cuesta» tras otro pedido): la tarjeta
+ * muestra la última, así nunca dice una cifra y la cotización otra. Solo si es de esta idea y conversación y es legible.
+ */
+export function fijarPrecioIdea(estado: EstadoPrecioIdea | null, entrada: Atado & { sesionVigente: number; cotizacion: unknown }): EstadoPrecioIdea | null {
+  if (!estado || estado.ideaId !== entrada.ideaId || estado.sesion !== entrada.sesion || entrada.sesion !== entrada.sesionVigente) return estado;
+  const leida = CotizacionPlanGuiadoSchema.safeParse(entrada.cotizacion);
+  if (!leida.success || !(leida.data.total > 0)) return estado;
+  return { ideaId: estado.ideaId, sesion: estado.sesion, fase: "listo", cotizacion: { total: leida.data.total, incluyeIva: leida.data.incluyeIva } };
+}
+
+/** El plan exacto ya resuelto de la idea elegida en esta conversación (plan, cotización y motor), para no pedirlo dos veces. */
+export type PlanIdeaGuardado<R> = Atado & { resultado: R };
+
+export function reutilizarPlanIdea<R>(guardado: PlanIdeaGuardado<R> | null, ideaId: string, sesion: number): R | null {
+  return guardado && guardado.ideaId === ideaId && guardado.sesion === sesion ? guardado.resultado : null;
+}
+
 /** El pedido de `ideaId` se canceló sin respuesta (la idea dejó de ser la elegida sin reiniciar): su tarjeta no se queda calculando. */
 export function cancelarPrecioIdea(estado: EstadoPrecioIdea | null, ideaId: string): EstadoPrecioIdea | null {
   return estado && estado.ideaId === ideaId && estado.fase === "cargando" ? { ideaId: estado.ideaId, sesion: estado.sesion, fase: "al-elegir" } : estado;

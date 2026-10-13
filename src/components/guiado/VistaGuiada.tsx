@@ -22,7 +22,7 @@ import { acabadosFotoSinComprar } from "./acabados-foto-plan";
 import { avisosFloresFotoSinComprar } from "@/lib/plan/flores-pieza";
 import { lecturaFoto } from "./lectura-foto";
 import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
-import { cancelarPrecioIdea, empezarPrecioIdea, resolverPrecioIdea, vistaPrecioIdea, type EstadoPrecioIdea } from "./precio-idea-elegida";
+import { cancelarPrecioIdea, empezarPrecioIdea, fijarPrecioIdea, resolverPrecioIdea, reutilizarPlanIdea, vistaPrecioIdea, type EstadoPrecioIdea, type PlanIdeaGuardado } from "./precio-idea-elegida";
 import { accionIdeaAlElegirUso, accionIdeaDelTurno, avanzarOpcionIdea, marcarChipAlElegir, resultadoPlanIdea, rutaOpcionIdea, TEXTO_OPCION_IDEA, type AccionIdea, type EsperaOpcionIdea, type EventoOpcionIdea, type PasoOpcionIdea, type ResultadoPlanIdea } from "./opcion-idea";
 import { respuestaPrecioPlan, SELECTOR_PRECIO_TOTAL } from "./precio-chat";
 import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
@@ -261,6 +261,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const imagenTrasPlanRef = useRef<{ planPrevio: string | null } | null>(null);
   /** «Cuánto cuesta» / «Aprender» elegidos con una idea y sin plan: esperan el plan exacto de la idea en SU mensaje (opcion-idea.ts). */
   const esperaOpcionIdeaRef = useRef<EsperaOpcionIdea | null>(null);
+  /** El plan exacto ya resuelto de la idea elegida (sin plan base): la tarjeta y el chip «Cuánto cuesta» dicen la misma cifra. */
+  const planIdeaRef = useRef<PlanIdeaGuardado<Extract<Awaited<ReturnType<typeof planDeIdeaMotor>>, { ok: true }>> | null>(null);
   const fotosRef = useRef(new Map<string, FotoInspiracion>());
   const restauradoRef = useRef(false);
   const flujoRef = useRef<{ id: string; texto: string } | null>(null);
@@ -1393,13 +1395,19 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     let porTiempo = false;
     const reloj = window.setTimeout(() => { porTiempo = true; control.abort("tiempo"); }, LIMITE_PLAN_IDEA_MS);
     try {
-      const resultado = await planDeIdeaMotor({
+      const sesion = sesionRef.current;
+      const yaResuelto = base ? null : reutilizarPlanIdea(planIdeaRef.current, decoracion.id, sesion);
+      const resultado = yaResuelto ?? await planDeIdeaMotor({
         ideaId: decoracion.id, base: base ? { plan: base, motor: planVigente?.widget.motor ?? "python" } : null, signal: control.signal,
         alFallback: (fallo) => registrarFallo("plan.motor_3d_fallback", fallo.detalle, { razon: fallo.razon, estado: fallo.estado, idea: decoracion.id, accion: base ? "se sigue en el 3D (propuesta)" : "se arma con Python" }, "warn"),
       });
       if (turno !== turnoRef.current) return "obsoleto";
+      if (resultado.ok && !base && !yaResuelto && sesion === sesionRef.current) {
+        planIdeaRef.current = { ideaId: decoracion.id, sesion, resultado };
+        setPrecioIdea((actual) => fijarPrecioIdea(actual, { ideaId: decoracion.id, sesion, sesionVigente: sesionRef.current, cotizacion: resultado.cotizacion }));
+      }
       if (resultado.ok) {
-        registrarAccion("idea.plan_exacto", { id: decoracion.id, plan_hash: resultado.plan.plan_hash, nuevas: resultado.nuevas, globosIdea: resultado.globosIdea, globosPlan: totalDePlan(resultado.plan), sumada: idea.sumada, exacto: resultado.exacto, avisos: resultado.avisos });
+        registrarAccion("idea.plan_exacto", { id: decoracion.id, plan_hash: resultado.plan.plan_hash, nuevas: resultado.nuevas, globosIdea: resultado.globosIdea, globosPlan: totalDePlan(resultado.plan), sumada: idea.sumada, exacto: resultado.exacto, avisos: resultado.avisos, reutilizado: Boolean(yaResuelto) });
         // Si no salió exacto, la tarjeta dice por qué en una línea discreta (antes el cliente no se enteraba).
         colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, false, resultado.avisos.length ? { ...idea, avisos: resultado.avisos } : idea, undefined, resultado.motor);
         return "ok";
@@ -1586,8 +1594,11 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const reloj = window.setTimeout(() => control.abort("tiempo"), LIMITE_PLAN_IDEA_MS);
     setPrecioIdea(empezarPrecioIdea(ideaElegidaId, sesion));
     const cerrar = (respuesta: { ok: true; cotizacion: unknown } | { ok: false }) => control.signal.reason === "cambio" ? undefined : setPrecioIdea((actual) => resolverPrecioIdea(actual, { ideaId: ideaElegidaId, sesion, sesionVigente: sesionRef.current, respuesta }));
-    planDeIdeaMotor({ ideaId: ideaElegidaId, base: null, signal: control.signal, alFallback: () => undefined })
-      .then((resultado) => cerrar(resultado.ok ? { ok: true, cotizacion: resultado.cotizacion } : { ok: false }), () => cerrar({ ok: false }));
+    planDeIdeaMotor({ ideaId: ideaElegidaId, base: null, signal: control.signal, alFallback: (fallo) => registrarFallo("plan.motor_3d_fallback", fallo.detalle, { razon: fallo.razon, estado: fallo.estado, idea: ideaElegidaId, accion: "precio de la tarjeta con Python" }, "warn") })
+      .then((resultado) => {
+        if (resultado.ok && control.signal.reason !== "cambio" && !reutilizarPlanIdea(planIdeaRef.current, ideaElegidaId, sesion)) planIdeaRef.current = { ideaId: ideaElegidaId, sesion, resultado };
+        cerrar(resultado.ok ? { ok: true, cotizacion: resultado.cotizacion } : { ok: false });
+      }, () => cerrar({ ok: false }));
     return () => { window.clearTimeout(reloj); control.abort("cambio"); setPrecioIdea((actual) => cancelarPrecioIdea(actual, ideaElegidaId)); };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando cambia la idea elegida
   }, [ideaElegidaId]);

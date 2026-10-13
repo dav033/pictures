@@ -1,5 +1,5 @@
 import { strict as assert } from "node:assert";
-import { cancelarPrecioIdea, empezarPrecioIdea, resolverPrecioIdea, TEXTO_PRECIO_AL_ELEGIR, vistaPrecioIdea, type EstadoPrecioIdea } from "@/components/guiado/precio-idea-elegida";
+import { cancelarPrecioIdea, empezarPrecioIdea, fijarPrecioIdea, reutilizarPlanIdea, resolverPrecioIdea, TEXTO_PRECIO_AL_ELEGIR, vistaPrecioIdea, type EstadoPrecioIdea } from "@/components/guiado/precio-idea-elegida";
 import { resultadoPlanIdea } from "@/components/guiado/opcion-idea";
 import { respuestaPrecioPlan, textoMaterialesDesde } from "@/components/guiado/precio-chat";
 
@@ -64,4 +64,21 @@ assert.equal(cancelarPrecioIdea(listo, "nueva"), listo);
 
 // Un pedido por elección: empezar no depende del render (puro, mismo estado por la misma entrada) y no hay otro camino que lo repita.
 assert.deepEqual(empezarPrecioIdea("i", 2), empezarPrecioIdea("i", 2));
+
+// P1-1 (auditoría): el chip «Cuánto cuesta» y la tarjeta no pueden dar dos cifras. Con el resultado ya resuelto de la idea, el chip lo
+// reutiliza (no pide otro plan al motor); si de todos modos llega una cotización distinta, la tarjeta pasa a mostrar la última.
+const guardado = { ideaId: "nueva", sesion: 1, resultado: { motor: "python", total: 100 } };
+assert.equal(reutilizarPlanIdea(guardado, "nueva", 1), guardado.resultado, "misma idea y conversación: se reutiliza");
+assert.equal(reutilizarPlanIdea(guardado, "otra", 1), null, "otra idea: se pide de nuevo");
+assert.equal(reutilizarPlanIdea(guardado, "nueva", 2), null, "otra conversación: se pide de nuevo");
+assert.equal(reutilizarPlanIdea(null, "nueva", 1), null);
+const primera = resolverPrecioIdea(empezarPrecioIdea("nueva", 1), { ideaId: "nueva", sesion: 1, sesionVigente: 1, respuesta: { ok: true, cotizacion: cotizacion(187450) } });
+const posterior = fijarPrecioIdea(primera, { ideaId: "nueva", sesion: 1, sesionVigente: 1, cotizacion: cotizacion(163038) });
+assert.equal(cifra(vistaPrecioIdea(posterior, "nueva", "personal").tipo === "precio" ? (vistaPrecioIdea(posterior, "nueva", "personal") as { texto: string }).texto : ""), cifra(respuestaPrecioPlan({ cotizacion: cotizacion(163038) }, "personal")), "la tarjeta dice lo que dijo la cotización posterior");
+const sinPrecio = fijarPrecioIdea(resolverPrecioIdea(empezarPrecioIdea("nueva", 1), { ideaId: "nueva", sesion: 1, sesionVigente: 1, respuesta: { ok: false } }), { ideaId: "nueva", sesion: 1, sesionVigente: 1, cotizacion: cotizacion(163038) });
+assert.equal(sinPrecio?.fase, "listo", "si la tarjeta decía «Precio al elegir» y luego hay cotización, la muestra");
+assert.equal(fijarPrecioIdea(primera, { ideaId: "vieja", sesion: 1, sesionVigente: 1, cotizacion: cotizacion(1) }), primera, "de otra idea no pisa");
+assert.equal(fijarPrecioIdea(primera, { ideaId: "nueva", sesion: 0, sesionVigente: 1, cotizacion: cotizacion(1) }), primera, "de otra conversación no pisa");
+assert.equal(fijarPrecioIdea(primera, { ideaId: "nueva", sesion: 1, sesionVigente: 1, cotizacion: { total: 0 } }), primera, "una cotización ilegible no pisa");
+assert.equal(fijarPrecioIdea(null, { ideaId: "nueva", sesion: 1, sesionVigente: 1, cotizacion: cotizacion(1) }), null);
 console.log("test-precio-idea-elegida-guiada: ok");
