@@ -60,7 +60,7 @@ import { prepararHistorialGuiado, sinUltimoTurnoGuiado } from "@/lib/ia/guiado/u
 import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-referencia";
 import { prepararFotoReferencia } from "@/lib/imagen-cliente/preparar-foto";
 import type { WidgetGuiado } from "@/lib/ia/guiado/widgets";
-import { CLAVE_ACCIONES_IDEA, EstadoGuardadoSchema, juntarAccionesIdea, MAX_MENSAJES_GUARDADOS, ReferenciaSchema, separarAccionesIdea, type Mensaje } from "./estado-guardado";
+import { CLAVE_ACCIONES_IDEA, EstadoGuardadoSchema, juntarAccionesIdea, MAX_MENSAJES_GUARDADOS, PREPARANDO_PLAN_IDEA, ReferenciaSchema, separarAccionesIdea, sinEsperaTransitoria, type Mensaje } from "./estado-guardado";
 import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
 import { coloresFaltantesPlanGuiado, cuerpoPlanGuiado, defectoPlanGuiado, referenciaDelPlan, resumenPlanGuiado, type ReferenciaDelPlan } from "@/lib/ia/guiado/instruccion-plan";
 import { cuerpoPlanFoto, lecturaConPiezaNueva, planLlevaPiezaPedida } from "@/lib/ia/guiado/foto-con-pieza";
@@ -371,7 +371,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     // Durante la transmisión no se guarda en cada fotograma: se guarda al terminar.
     if (!restaurado || transmitiendoId) return;
     try {
-      const { mensajes: guardables, acciones } = separarAccionesIdea(mensajes.slice(-MAX_MENSAJES_GUARDADOS));
+      const { mensajes: guardables, acciones } = separarAccionesIdea(sinEsperaTransitoria(mensajes, esperaOpcionIdeaRef.current?.mensajeId ?? null).slice(-MAX_MENSAJES_GUARDADOS));
       sessionStorage.setItem(CLAVE_SESION, JSON.stringify({ mensajes: guardables, brief, seleccionadaId: seleccionada?.id ?? null, uso }));
       if (Object.keys(acciones).length) sessionStorage.setItem(CLAVE_ACCIONES_IDEA, JSON.stringify(acciones)); else sessionStorage.removeItem(CLAVE_ACCIONES_IDEA);
     }
@@ -1546,9 +1546,9 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const texto = TEXTO_OPCION_IDEA[accion](decoracion.titulo);
     const usuarioId = reintento?.usuarioId ?? nuevoId();
     const mensajeId = reintento?.mensajeId ?? nuevoId();
-    const preparando = `Preparo el plan de «${decoracion.titulo}» con sus globos exactos.`;
+    const preparando = `${PREPARANDO_PLAN_IDEA} «${decoracion.titulo}» con sus globos exactos.`;
     if (reintento) actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: preparando }));
-    else agregar([{ id: usuarioId, role: "user", content: texto }, { id: mensajeId, role: "assistant", content: preparando }]);
+    else agregar([{ id: usuarioId, role: "user", content: texto, envio: { accionIdea: accion } }, { id: mensajeId, role: "assistant", content: preparando }]);
     pedirFinal();
     esperaOpcionIdeaRef.current = { accion, ideaId: decoracion.id, mensajeId, sesion: sesionRef.current, opcionesId };
     registrarAccion("opcion.plan_exacto", { accion, id: decoracion.id, mensajeId, reintento: Boolean(reintento) });

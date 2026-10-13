@@ -80,3 +80,14 @@ export function juntarAccionesIdea(mensajes: readonly Mensaje[], crudo: unknown)
     return accionIdea.success ? { ...mensaje, envio: { ...mensaje.envio, accionIdea: accionIdea.data } } : mensaje;
   });
 }
+
+/** Lo que dice la burbuja del asistente mientras llega el plan exacto de una idea (chip «Cuánto cuesta» / «Aprender»). */
+export const PREPARANDO_PLAN_IDEA = "Preparo el plan de";
+
+/**
+ * Esa burbuja es transitoria: no se guarda mientras el plan viene en camino. Al recargar, la petición del cliente (que lleva su
+ * `accionIdea`) queda sin respuesta y vuelve con su «Reintentar» (`turnoSinRespuesta`), en vez de un «Preparo el plan…» eterno.
+ */
+export function sinEsperaTransitoria(mensajes: readonly Mensaje[], pendienteId: string | null): Mensaje[] {
+  return mensajes.filter((mensaje) => !(mensaje.id === pendienteId && mensaje.role === "assistant" && !mensaje.widgets?.length && mensaje.content.startsWith(PREPARANDO_PLAN_IDEA)));
+}
