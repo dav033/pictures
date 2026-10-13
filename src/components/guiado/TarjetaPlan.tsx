@@ -133,7 +133,7 @@ export function TarjetaPlan(props: Props) {
   const mostrarAjuste = () => filaAjusteRef.current?.scrollIntoView({ block: "start", behavior: reducido ? "auto" : "smooth" });
   // Un plan del motor 3D se cambia en el servidor del 3D (REQ-007, fase 5): el panel no pasa por Python.
   const motor3d = useMemo(() => (es3d ? crearDependenciasEdicion3d() : undefined), [es3d]);
-  const ajuste = useAjustePlanGuiado({ plan, onPlanAjustado: onPlanAjustado ?? sinAjuste, ...(motor3d ? { motor3d } : {}) });
+  const ajuste = useAjustePlanGuiado({ plan, cotizacion, uso: usoCosteo ?? usoConocido ?? null, onPlanAjustado: onPlanAjustado ?? sinAjuste, ...(motor3d ? { motor3d } : {}) });
   // Mientras Python rehace el plan (un ajuste del panel o un cambio pedido por chat), el total y los colores muestran su
   // esqueleto y las acciones esperan.
   const recalculando = ajuste.guardando || Boolean(props.recalculandoPorChat);

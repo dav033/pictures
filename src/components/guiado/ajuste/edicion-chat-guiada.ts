@@ -11,7 +11,6 @@ import { familiaDeColorPropuesta, plegarTexto, tonoClaroDe, TONOS_V2, type TonoC
 import { familiaSempertex } from "../color-globo";
 import { colorCliente } from "../formato";
 import {
-  confirmacionDelCambio,
   describirCambio,
   edicionProtagonismo,
   edicionQuitarColor,
@@ -28,6 +27,7 @@ import {
 } from "./ajuste-plan-guiado";
 import type { TurnoEdicion } from "@/lib/guiada-motor/editar-contrato";
 import { ejecutarEdicionChat3d, type Motor3dDelChat } from "./edicion-chat-3d";
+import { confirmacionCambioHecho, type UsoPrecio } from "./diferencia-colores";
 import { ejecutarCambio, type DependenciasAjuste, type PlanFirmado } from "./ejecutar-ajuste";
 import { globosDeCandidatos, planConImpresos, type GloboCatalogo } from "./selector-globos";
 
@@ -105,7 +105,7 @@ export type GloboElegidoChat = { globo: GloboParaPlan; titulo: string; acabado: 
 export type EdicionChatHecha = PlanFirmado & {
   /** La línea corta del historial y de «Último ajuste: …» («Fashion Azul Celeste en lugar de azul en las columnas»). */
   descripcion: string;
-  /** Lo que dice el chat al terminar («Listo: …; medidas y demás colores quedaron igual.»). */
+  /** Lo que dice el chat al terminar («Listo: …; las medidas no cambiaron. … lleva 20 globos (… tenía 11)…»). */
   confirmacion: string;
   cambios: CambioPlan[];
   globos: GloboElegidoChat[];
@@ -119,7 +119,7 @@ export type EdicionChatHecha = PlanFirmado & {
 /** Lo que dice el chat mientras Python rehace el plan. */
 export function avisoEdicionChat(pedido: PedidoEdicionPlan): string {
   switch (pedido.tipo) {
-    case "reemplazar_color": return `Cambio el ${nombreColor(pedido.color)} por ${nombreColor(pedido.colorNuevo)}; medidas y demás colores quedan igual…`;
+    case "reemplazar_color": return `Cambio el ${nombreColor(pedido.color)} por ${nombreColor(pedido.colorNuevo)} en sus mismos lugares; las medidas no cambian…`;
     case "agregar_color": return `Añado ${pedido.colores.map(nombreColor).join(" y ")}; tus piezas conservan sus medidas…`;
     case "quitar_color": return `Quito el ${nombreColor(pedido.color)}; lo demás queda igual…`;
     case "protagonismo": return `Pongo ${pedido.direccion > 0 ? "más" : "menos"} ${nombreColor(pedido.color)}; lo demás queda igual…`;
@@ -286,7 +286,7 @@ function conParejas(plan: PlanGuiado, ids: readonly string[], cambio: (estructur
  * anterior. Lanza `FalloPlanEditar` con el mensaje para el cliente si no se pudo; el plan que se ve no se toca hasta
  * que esto resuelve.
  */
-export async function ejecutarEdicionChat(base: PlanGuiado, pedido: PedidoEdicionPlan, dependencias: DependenciasEdicionChat): Promise<EdicionChatHecha> {
+export async function ejecutarEdicionChat(base: PlanGuiado, pedido: PedidoEdicionPlan, dependencias: DependenciasEdicionChat, opciones: { cotizacionAntes?: unknown; uso?: UsoPrecio | null } = {}): Promise<EdicionChatHecha> {
   // Un plan del 3D no pasa por Python: ni busca globos en su catálogo ni usa `/api/plan-editar`.
   if (dependencias.motor3d) return ejecutarEdicionChat3d(base, pedido, dependencias.motor3d);
   const ids = estructurasDeNombres(base, piezasDelPedido(pedido));
@@ -487,7 +487,7 @@ export async function ejecutarEdicionChat(base: PlanGuiado, pedido: PedidoEdicio
     : descripcionDe(base, pedido, hechos, ids, { despues: actual.plan, nueva });
   const propia = pedido.tipo === "agregar_pieza" || pedido.tipo === "colores_pieza" || pedido.tipo === "mover_pieza" || pedido.tipo === "renombrar_pieza" || pedido.tipo === "flores";
   const confirmacion = propia ? confirmacionPropia(base, pedido, descripcion, ids)
-    : hechos.length === 1 ? confirmacionDelCambio(base, hechos[0]!, actual.piezas, actual.plan) : `Listo: ${descripcion}; lo demás quedó igual.`;
+    : hechos.length === 1 ? confirmacionCambioHecho(base, hechos[0]!, actual.piezas, actual.plan, { antes: opciones.cotizacionAntes, despues: actual.cotizacion, uso: opciones.uso ?? null }) : `Listo: ${descripcion}; lo demás quedó igual.`;
   return { ...actual, descripcion: descripcion.slice(0, 160), confirmacion, cambios: hechos, globos, ...(nueva ? { nueva } : {}) };
 }
 

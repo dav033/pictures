@@ -1009,14 +1009,15 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   async function aplicarEdicionChat(pedido: PedidoEdicionPlan, destino: { planMensajeId: string; base: PlanGuiado; mensajeId: string; signal?: AbortSignal }): Promise<void> {
     const { planMensajeId, base, mensajeId, signal } = destino;
     // Un plan del motor 3D se cambia en el servidor del 3D (no pasa por Python); el turno lleva el id de este mensaje para calificarlo.
-    const del3d = planDelMensaje(mensajes.find((mensaje) => mensaje.id === planMensajeId))?.motor === "3d";
+    const vigente = planDelMensaje(mensajes.find((mensaje) => mensaje.id === planMensajeId));
+    const del3d = vigente?.motor === "3d";
     const transcurrido = cronometro();
     registrarAccion("plan.edicion_chat.pedir", { pedido, mensajeId, planMensajeId, plan_hash: base.plan_hash });
     setFallo(null);
     setEditandoPlanId(planMensajeId);
     setAnuncio(avisoEdicionChat(pedido));
     try {
-      const hecha = await ejecutarEdicionChat(base, pedido, dependenciasEdicionChat(signal, del3d ? { turnoId: mensajeId } : undefined));
+      const hecha = await ejecutarEdicionChat(base, pedido, dependenciasEdicionChat(signal, del3d ? { turnoId: mensajeId } : undefined), { cotizacionAntes: vigente?.cotizacion, uso: vigente?.usoCosteo ?? uso ?? null });
       const publicado = ajustarPlan(planMensajeId, hecha.plan, hecha.cotizacion, { descripcion: hecha.descripcion, baseHash: base.plan_hash });
       actualizarMensaje(mensajeId, (mensaje) => ({
         ...mensaje,

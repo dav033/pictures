@@ -141,7 +141,7 @@ assert.deepEqual(herramientas.map((herramienta) => herramienta.nombre), ["cambia
 const esquemaCambio = herramientas[0]!.esquema as { properties: { piezas: { items: { enum: string[] } }; color_actual: { enum: string[] } } };
 assert.deepEqual(esquemaCambio.properties.piezas.items.enum, ["Semiarco orgánico", "Columna izquierda", "Columna derecha"]);
 assert.deepEqual([...esquemaCambio.properties.color_actual.enum].sort(), ["azul", "blanco", "plateado", "rosado"]);
-assert.equal(fraseDelPedido(delModelo.pedido), "Cambio el azul por celeste en columna izquierda y columna derecha; lo demás queda igual.");
+assert.equal(fraseDelPedido(delModelo.pedido), "Cambio el azul por celeste en columna izquierda y columna derecha; las medidas no cambian.");
 
 // --- 3. Elegir una idea con palabras («Me gusta esta» por chat) ---------------------------------------------------
 const ideas = [
@@ -214,7 +214,12 @@ function dobles(llamadas: Llamada[], candidatos: readonly CandidatoDelServidor[]
       llamadas.push({ tipo: "reemplazar", detalle: { color: cambio.color, estructuraIds: cambio.estructuraIds ?? null, productId: cambio.globo.productId, variantIds: cambio.globo.variantIds } });
       // Lo mismo que hace el servidor (ajuste-plan-entero.ts) antes de que Python cuente: la entrada del plan con el color cambiado.
       const hecho = planConColorReemplazado(base.plan, { color: cambio.color, ...(cambio.estructuraIds?.length ? { estructuras: new Set(cambio.estructuraIds) } : {}) }, { product_id: cambio.globo.productId, color: cambio.globo.color, acabadoMotor: "mate" });
-      return { plan: firmado(base, hecho.plan), cotizacion: null, piezas: hecho.piezas };
+      // Como Python al volver a contar con la misma parte: las líneas del color viejo pasan al globo nuevo con las mismas cifras.
+      const anteriores = new Set(base.plan.estructuras.flatMap((estructura) => estructura.materiales.filter((material) => material.color === cambio.color).map((material) => material.product_id)));
+      const lineas = base.estructuras.map((estructura) => (hecho.piezas.includes(estructura.estructura_id)
+        ? { ...estructura, lineas: (estructura.lineas ?? []).map((linea) => (anteriores.has((linea as { product_id: string }).product_id) ? { ...linea, product_id: cambio.globo.productId, color: cambio.globo.color } : linea)) }
+        : estructura));
+      return { plan: PlanGuiadoSchema.parse({ ...firmado(base, hecho.plan), estructuras: lineas }), cotizacion: null, piezas: hecho.piezas };
     },
     quitarPieza: async (base, estructuraId) => {
       llamadas.push({ tipo: "quitar-pieza", detalle: estructuraId });
@@ -255,7 +260,7 @@ async function probarEjecucion(): Promise<void> {
   }
   assert.deepEqual(despues.estructuras[1]!.materiales, despues.estructuras[2]!.materiales, "las dos columnas quedan iguales entre sí");
   assert.match(hecha.descripcion, /en lugar de azul en la columna izquierda y la columna derecha$/, `«Último ajuste»: ${hecha.descripcion}`);
-  assert.match(hecha.confirmacion, /^Listo: .* en lugar de azul; medidas y demás colores quedaron igual\.$/, hecha.confirmacion);
+  assert.match(hecha.confirmacion, /^Listo: .* en lugar de azul en la columna izquierda y la columna derecha; las medidas no cambiaron\. .* lleva 40 globos, los mismos que tenía azul; los demás colores quedaron igual\.$/, hecha.confirmacion);
   assert.ok(hecha.descripcion.length <= 160);
 
   // «quita la columna derecha»: una sola pieza, las demás intactas.
@@ -298,7 +303,7 @@ async function probarEjecucion(): Promise<void> {
   // Los cambios que salen de cada pedido son los del editor (los mismos tipos que «Ajustar mi plan»).
   const tipos = new Set<CambioPlan["tipo"]>([...hecha.cambios, ...sinDerecha.cambios, ...altas.cambios, ...conDorado.cambios].map((cambio) => cambio.tipo));
   assert.deepEqual([...tipos].sort(), ["agregar-color", "medidas", "quitar-pieza", "reemplazar-color"]);
-  assert.match(avisoEdicionChat(edicionDe("el azul cámbialo por celeste en las dos columnas")), /^Cambio el azul por celeste; medidas y demás colores quedan igual…$/);
+  assert.match(avisoEdicionChat(edicionDe("el azul cámbialo por celeste en las dos columnas")), /^Cambio el azul por celeste en sus mismos lugares; las medidas no cambian…$/);
 }
 
 // --- 6. La tarjeta «Tu plan» se actualiza en su sitio: esqueleto mientras se hace y «Último ajuste: …» al terminar ---

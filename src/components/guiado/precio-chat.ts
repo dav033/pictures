@@ -9,7 +9,7 @@ const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP
 
 type Uso = "personal" | "negocio";
 
-const formatoPesos = (total: number): string => pesos.format(total).replace(/\s/g, " ");
+export const formatoPesos = (total: number): string => pesos.format(total).replace(/\s/g, " ");
 
 /**
  * «Materiales desde $X (uso personal, con IVA)» para la tarjeta del plan: el mismo `cotizacion.total` que dice

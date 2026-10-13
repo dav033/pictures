@@ -750,7 +750,7 @@ export function herramientasEdicionPlan(plan: PlanActualGuiado): DefinicionHerra
   const colorPlan = { type: "string", enum: colores };
   const colorNuevo = { type: "string", enum: [...COLORES_PROPUESTA_V2], description: "Usa el tono que dijo el cliente si es uno de los claros (celeste, rosa pastel, durazno), no su familia." };
   return [
-    { nombre: "cambiar_color_plan", descripcion: "Cambia un color del plan vigente por otro globo del catálogo, en todas las piezas que lo llevan o solo en las que nombre el cliente. Medidas, demás colores, piezas y título quedan igual.", esquema: { type: "object", properties: { color_actual: colorPlan, color_nuevo: colorNuevo, piezas }, required: ["color_actual", "color_nuevo"], additionalProperties: false } },
+    { nombre: "cambiar_color_plan", descripcion: "Cambia un color del plan vigente por otro globo del catálogo, en todas las piezas que lo llevan o solo en las que nombre el cliente. Medidas, piezas y título no cambian; al volver a contar, las cifras de los otros colores pueden moverse.", esquema: { type: "object", properties: { color_actual: colorPlan, color_nuevo: colorNuevo, piezas }, required: ["color_actual", "color_nuevo"], additionalProperties: false } },
     { nombre: "agregar_color_plan", descripcion: "Añade un color nuevo al plan vigente (en todas las piezas que lo admiten o solo en las nombradas). Lo demás queda igual.", esquema: { type: "object", properties: { color: colorNuevo, piezas }, required: ["color"], additionalProperties: false } },
     { nombre: "quitar_color_plan", descripcion: "Quita un color del plan vigente (de todas las piezas o de las nombradas); los otros colores toman su lugar y las medidas quedan igual.", esquema: { type: "object", properties: { color: colorPlan, piezas }, required: ["color"], additionalProperties: false } },
     { nombre: "mas_o_menos_color", descripcion: "Pone más o menos de un color que el plan ya lleva («más rosado», «menos dorado»), en todas las piezas o en las nombradas.", esquema: { type: "object", properties: { color: colorPlan, direccion: { type: "string", enum: ["mas", "menos"] }, piezas }, required: ["color", "direccion"], additionalProperties: false } },
@@ -973,10 +973,10 @@ function enPiezas(piezas: readonly string[]): string {
   return piezas.length ? ` en ${lista(piezas.map((pieza) => pieza.toLocaleLowerCase("es")))}` : "";
 }
 
-/** «Cambio el azul por celeste en columna izquierda y columna derecha; lo demás queda igual.» (respaldo de la respuesta). */
+/** «Cambio el azul por celeste en columna izquierda y columna derecha; las medidas no cambian.» (respaldo de la respuesta). */
 export function fraseDelPedido(pedido: PedidoEdicionPlan): string {
   switch (pedido.tipo) {
-    case "reemplazar_color": return `Cambio el ${nombreColor(pedido.color)} por ${nombreColor(pedido.colorNuevo)}${enPiezas(pedido.piezas)}; lo demás queda igual.`;
+    case "reemplazar_color": return `Cambio el ${nombreColor(pedido.color)} por ${nombreColor(pedido.colorNuevo)}${enPiezas(pedido.piezas)}; las medidas no cambian.`;
     case "agregar_color": return `Añado ${lista(pedido.colores.map(nombreColor))}${enPiezas(pedido.piezas)}; medidas y demás colores quedan igual.`;
     case "quitar_color": return `Quito el ${nombreColor(pedido.color)}${enPiezas(pedido.piezas)}; lo demás queda igual.`;
     case "protagonismo": return `Pongo ${pedido.direccion > 0 ? "más" : "menos"} ${nombreColor(pedido.color)}${enPiezas(pedido.piezas)}; lo demás queda igual.`;
