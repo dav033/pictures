@@ -16,7 +16,7 @@ type Props = {
 /**
  * La escala 1 a 10 como grupo de opciones: una sola parada de Tab (la nota elegida, o el 1), flechas / Inicio / Fin mueven el
  * foco y Enter o Espacio eligen (elegir manda la nota, así que las flechas solas no disparan peticiones). Diez columnas fijas:
- * no se mueve nada al elegir. En el teléfono cada casilla mide 36 px o más de alto.
+ * no se mueve nada al elegir. En el teléfono cada casilla mide 36 px (Taller) o 40 px (cliente) de alto.
  */
 export function ControlNota({ tema, etiquetaId, nota, alElegir }: Props) {
   const clases = CLASES[tema];
@@ -50,7 +50,7 @@ export function ControlNota({ tema, etiquetaId, nota, alElegir }: Props) {
             tabIndex={n === parada ? 0 : -1}
             onClick={() => alElegir(n)}
             onKeyDown={(e) => alTeclado(e, n)}
-            className={`h-9 min-w-0 rounded-md border text-[12px] font-semibold tabular-nums transition-colors lg:h-7 ${clases.foco} ${elegida ? clases.notaElegida : clases.nota}`}
+            className={`${tema === "cliente" ? "h-10" : "h-9 lg:h-7"} min-w-0 rounded-md border text-[12px] font-semibold tabular-nums transition-colors ${clases.foco} ${elegida ? clases.notaElegida : clases.nota}`}
           >
             {n}
           </button>

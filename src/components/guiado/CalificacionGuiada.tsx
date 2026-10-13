@@ -74,7 +74,7 @@ type Props = {
 };
 
 /**
- * La fila «¿Qué tal quedó?» bajo una respuesta de la IA de la vista guiada (REQ-010). Solo la última lleva la escala completa; manda
+ * La fila «¿Te sirvió?» (plegada; la escala aparece al tocarla) bajo una respuesta de la IA de la vista guiada (REQ-010). Manda
  * el pedido, la respuesta y el estado de antes y de después (las «escenas» de este producto); si el cliente corrige en su mensaje
  * siguiente, abre el «por qué» en una línea.
  */
@@ -91,6 +91,7 @@ export function CalificacionGuiada({ mensajes, indice, listo }: Props) {
       escenas={() => escenasDelTurnoGuiado(mensajes, indice)}
       corregido={corrigeLaRespuesta(mensajes, indice)}
       ultima={indice === ultimoTurnoGuiadoCalificable(mensajes)}
+      plegable
     />
   );
 }

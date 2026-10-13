@@ -184,7 +184,7 @@ export function BotonIrAlFinal({ visible, hayNuevo, onClick }: { visible: boolea
           whileTap={{ scale: 0.95 }}
           className={`absolute bottom-3 right-3 z-10 shadow-lg sm:right-5 ring-1 ring-borde focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 ${hayNuevo
             ? "inline-flex min-h-11 items-center gap-1.5 rounded-full bg-superficie/95 px-4 text-sm font-medium text-texto backdrop-blur-sm"
-            : "grid size-11 place-items-center rounded-full bg-superficie text-texto"}`}
+            : "grid size-11 place-items-center rounded-full bg-superficie/80 text-texto backdrop-blur-sm"}`}
         >
           {hayNuevo && <span className="size-2 rounded-full bg-acento" aria-hidden />}
           {hayNuevo && "Ver lo nuevo"}
