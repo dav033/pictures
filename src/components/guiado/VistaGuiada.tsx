@@ -60,7 +60,7 @@ import { prepararHistorialGuiado, sinUltimoTurnoGuiado } from "@/lib/ia/guiado/u
 import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-referencia";
 import { prepararFotoReferencia } from "@/lib/imagen-cliente/preparar-foto";
 import type { WidgetGuiado } from "@/lib/ia/guiado/widgets";
-import { EstadoGuardadoSchema, MAX_MENSAJES_GUARDADOS, ReferenciaSchema, type Mensaje } from "./estado-guardado";
+import { CLAVE_ACCIONES_IDEA, EstadoGuardadoSchema, juntarAccionesIdea, MAX_MENSAJES_GUARDADOS, ReferenciaSchema, separarAccionesIdea, type Mensaje } from "./estado-guardado";
 import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
 import { coloresFaltantesPlanGuiado, cuerpoPlanGuiado, defectoPlanGuiado, referenciaDelPlan, resumenPlanGuiado, type ReferenciaDelPlan } from "@/lib/ia/guiado/instruccion-plan";
 import { cuerpoPlanFoto, lecturaConPiezaNueva, planLlevaPiezaPedida } from "@/lib/ia/guiado/foto-con-pieza";
@@ -368,7 +368,11 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   useEffect(() => {
     // Durante la transmisión no se guarda en cada fotograma: se guarda al terminar.
     if (!restaurado || transmitiendoId) return;
-    try { sessionStorage.setItem(CLAVE_SESION, JSON.stringify({ mensajes: mensajes.slice(-MAX_MENSAJES_GUARDADOS), brief, seleccionadaId: seleccionada?.id ?? null, uso })); }
+    try {
+      const { mensajes: guardables, acciones } = separarAccionesIdea(mensajes.slice(-MAX_MENSAJES_GUARDADOS));
+      sessionStorage.setItem(CLAVE_SESION, JSON.stringify({ mensajes: guardables, brief, seleccionadaId: seleccionada?.id ?? null, uso }));
+      if (Object.keys(acciones).length) sessionStorage.setItem(CLAVE_ACCIONES_IDEA, JSON.stringify(acciones)); else sessionStorage.removeItem(CLAVE_ACCIONES_IDEA);
+    }
     catch (cause) { console.warn("[asistente-guiado] no se pudo guardar la conversación.", cause); }
   }, [restaurado, transmitiendoId, mensajes, brief, seleccionada, uso]);
 
@@ -465,7 +469,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     setPlaceholderForzado(null); setSugerenciasCambio(null); setAnuncio(""); setEditandoPlanId(null); setAgregandoId(null);
     marcarCargando(false);
     setConfirmandoReinicio(false);
-    try { sessionStorage.removeItem(CLAVE_SESION); } catch (cause) { console.warn("[asistente-guiado] no se pudo limpiar la sesión.", cause); }
+    try { sessionStorage.removeItem(CLAVE_SESION); sessionStorage.removeItem(CLAVE_ACCIONES_IDEA); } catch (cause) { console.warn("[asistente-guiado] no se pudo limpiar la sesión.", cause); }
     // Como una pestaña nueva: también los borradores del precio de negocio de esta vista (un plan con el mismo hash, como
     // el plan exacto de una idea, recuperaba el montaje y la ganancia de la conversación borrada).
     try { borrarEstadoGuiado(sessionStorage); } catch (cause) { console.warn("[asistente-guiado] no se pudieron limpiar los borradores del precio.", cause); }
@@ -2184,7 +2188,9 @@ function leerSesion(): { mensajes: Mensaje[]; brief: BriefGuiado; seleccionada: 
     const parsed = EstadoGuardadoSchema.safeParse(JSON.parse(raw) as unknown);
     if (!parsed.success) { console.warn("[asistente-guiado] sesión guardada inválida; se inicia una conversación nueva."); return null; }
     // Un plan que estaba en camino al recargar ya no va a llegar: la propuesta queda como fallida, con su «Reintentar».
-    const mensajes = parsed.data.mensajes
+    let accionesCrudas: unknown = null;
+    try { accionesCrudas = JSON.parse(sessionStorage.getItem(CLAVE_ACCIONES_IDEA) ?? "null") as unknown; } catch { accionesCrudas = null; }
+    const mensajes = juntarAccionesIdea(parsed.data.mensajes, accionesCrudas)
       .filter((mensaje) => mensaje.content.trim() || mensaje.widgets?.length || mensaje.referencia)
       .map((mensaje) => (mensaje.widgets?.some((widget) => widget.tipo === "propuesta" && widget.estado !== "fallo")
         ? { ...mensaje, widgets: mensaje.widgets.map((widget): WidgetGuiado => (widget.tipo === "propuesta" ? { ...widget, estado: "fallo" } : widget)) }

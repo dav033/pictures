@@ -49,3 +49,34 @@ export const EstadoGuardadoSchema = z.object({
   seleccionadaId: z.string().nullable().optional(),
   uso: z.enum(["negocio", "personal"]).nullable().optional(),
 }).strict();
+
+/**
+ * `envio.accionIdea` NO va dentro de la sesión guardada: un despliegue anterior valida `envio` con un esquema estricto y
+ * descartaría la conversación entera por una clave que no conoce. Viaja aparte, bajo otra clave de la sesión del navegador,
+ * por id de mensaje: el esquema de arriba (y el de un despliegue anterior) lee igual con o sin ella.
+ */
+export const CLAVE_ACCIONES_IDEA = "demo_guiado_v2_acciones";
+const AccionIdeaSchema = z.enum(ACCIONES_IDEA_GUIADA);
+const AccionesCrudasSchema = z.record(z.string(), z.unknown());
+type AccionesGuardadas = Record<string, z.infer<typeof AccionIdeaSchema>>;
+
+export function separarAccionesIdea(mensajes: readonly Mensaje[]): { mensajes: Mensaje[]; acciones: AccionesGuardadas } {
+  const acciones: AccionesGuardadas = {};
+  const limpios = mensajes.map((mensaje): Mensaje => {
+    if (!mensaje.envio?.accionIdea) return mensaje;
+    const { accionIdea, ...envio } = mensaje.envio;
+    acciones[mensaje.id] = accionIdea;
+    return { ...mensaje, envio };
+  });
+  return { mensajes: limpios, acciones };
+}
+
+/** Devuelve a cada mensaje su acción; un valor ilegible se ignora (el reintento cae al camino normal). */
+export function juntarAccionesIdea(mensajes: readonly Mensaje[], crudo: unknown): Mensaje[] {
+  const acciones = AccionesCrudasSchema.safeParse(crudo);
+  if (!acciones.success) return [...mensajes];
+  return mensajes.map((mensaje) => {
+    const accionIdea = AccionIdeaSchema.safeParse(acciones.data[mensaje.id]);
+    return accionIdea.success ? { ...mensaje, envio: { ...mensaje.envio, accionIdea: accionIdea.data } } : mensaje;
+  });
+}
