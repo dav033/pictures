@@ -211,8 +211,8 @@ async function turnoGuiado(request: Request) {
   if (estado?.decoracionId && !planActual && !alcancePropuesta) decidir("regla:consulta_idea_chat", "pregunta por la idea elegida (globos, colores, medidas): se responde con sus datos, sin modelo", consultaIdea ? { tipo: consultaIdea.consulta.tipo, piezas: consultaIdea.consulta.piezas } : { responde: false }, { entrada: { ultimoUsuario, decoracionId: estado.decoracionId } });
   if (consultaIdea) return respuestaSinModelo(requestId, headers, consultaIdea.texto, { opciones: ["contratar", "costear", "comprar", "aprender"] });
   /** El costeo de la idea elegida, con la idea y el uso confirmados (estadoGuiado): lo comparten el chip y `costear_decoracion`. */
-  const entornoCosteo = (signal: AbortSignal): EntornoCosteoIdea => ({
-    decoraciones: proveedores, requestId, superficie: "/api/asistente-guiado", registrarAuditoria: registrarAuditoriaPlan3d, tomarCosteo: tomarCosteoIdeaDurable, devolverCosteo: devolverCosteoIdeaDurable, interrumpido: () => signal.aborted,
+  const entornoCosteo = (signal: AbortSignal, plazoVencido: () => boolean): EntornoCosteoIdea => ({
+    decoraciones: proveedores, requestId, superficie: "/api/asistente-guiado", registrarAuditoria: registrarAuditoriaPlan3d, tomarCosteo: tomarCosteoIdeaDurable, devolverCosteo: devolverCosteoIdeaDurable, interrumpido: () => plazoVencido() && !request.signal.aborted, // el cupo solo se devuelve si venció NUESTRO plazo: un cliente que aborta cada consulta no se libera el cupo (el trabajo de Python no se detiene)
     costeo: dependenciasDeCosteo({ request, requestId, signal, auditar: decidir }),
   });
   // REQ-015 (D-043): el chip «Cuánto cuesta» / «Aprender» de la idea (o el uso elegido tras él) se responde por reglas: el
@@ -226,7 +226,7 @@ async function turnoGuiado(request: Request) {
     }
     const plazo = crearDeadlineIA(request.signal, DEADLINE_TURNO_MS);
     try {
-      const respuesta = await responderAccionIdea(accion, idea, () => costearIdeaElegida({}, { decoracionId: decoracionConfirmada, uso: usoConfirmado }, entornoCosteo(plazo.signal)));
+      const respuesta = await responderAccionIdea(accion, idea, () => costearIdeaElegida({}, { decoracionId: decoracionConfirmada, uso: usoConfirmado }, entornoCosteo(plazo.signal, () => plazo.wasDeadlineExceeded())));
       decidir("regla:accion_idea_chip", "chip de la idea elegida respondido por reglas, sin modelo", { accion, motivo: respuesta.motivo }, { entrada: { decoracionId: idea.id, uso: usoConfirmado ?? null } });
       return respuestaSinModelo(requestId, headers, respuesta.texto, { ...(usoConfirmado && usoConfirmado !== estado.uso ? { uso: usoConfirmado } : {}), ...respuesta.result });
     } finally {
@@ -396,7 +396,7 @@ async function turnoGuiado(request: Request) {
         // D-038: el precio de la idea es el del plan que el cliente recibe al elegirla; el de una idea sin plan, su lista
         // curada con el mismo cotizador (costear-idea-elegida.ts, con su fila durable de auditoría).
         const pedida = ArgsSchema.parse(args);
-        const resultado = await costearIdeaElegida({ decoracionId: pedida.decoracionId, uso: pedida.uso }, { decoracionId: decoracionConfirmada, uso: usoConfirmado }, entornoCosteo(deadline.signal));
+        const resultado = await costearIdeaElegida({ decoracionId: pedida.decoracionId, uso: pedida.uso }, { decoracionId: decoracionConfirmada, uso: usoConfirmado }, entornoCosteo(deadline.signal, () => deadline.wasDeadlineExceeded()));
         if (!resultado.ok) return respuestaCosteoBloqueado(resultado.motivo);
         datos.uso = resultado.uso;
         datosDelCosteo(datos, resultado.costeo);
