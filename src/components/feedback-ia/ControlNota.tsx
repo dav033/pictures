@@ -15,8 +15,8 @@ type Props = {
 
 /**
  * La escala 1 a 10 como grupo de opciones: una sola parada de Tab (la nota elegida, o el 1), flechas / Inicio / Fin mueven el
- * foco y Enter o Espacio eligen (elegir manda la nota, así que las flechas solas no disparan peticiones). Diez columnas fijas:
- * no se mueve nada al elegir. En el teléfono cada casilla mide 36 px (Taller) o 40 px (cliente) de alto.
+ * foco y Enter o Espacio eligen (elegir manda la nota, así que las flechas solas no disparan peticiones). Cliente: cinco columnas en dos filas
+ * donde no caben diez casillas de 40 px (teléfono) y diez desde 448 px de ancho; Taller: diez columnas. No se mueve nada al elegir.
  */
 export function ControlNota({ tema, etiquetaId, nota, alElegir }: Props) {
   const clases = CLASES[tema];
@@ -36,7 +36,8 @@ export function ControlNota({ tema, etiquetaId, nota, alElegir }: Props) {
   };
 
   return (
-    <div role="radiogroup" aria-labelledby={etiquetaId} className="grid grid-cols-10 gap-1">
+    <div className="@container">
+    <div role="radiogroup" aria-labelledby={etiquetaId} className={`grid gap-1 ${tema === "cliente" ? "grid-cols-5 @md:grid-cols-10" : "grid-cols-10"}`}>
       {NOTAS.map((n) => {
         const elegida = nota === n;
         return (
@@ -56,6 +57,7 @@ export function ControlNota({ tema, etiquetaId, nota, alElegir }: Props) {
           </button>
         );
       })}
+    </div>
     </div>
   );
 }

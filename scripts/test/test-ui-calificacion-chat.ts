@@ -13,6 +13,8 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { after, before, test } from "node:test";
 import { build } from "esbuild";
+import postcss from "postcss";
+import tailwind from "@tailwindcss/postcss";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 
 const RAIZ = path.resolve(__dirname, "..", "..");
@@ -136,6 +138,36 @@ for (const estricto of [false, true]) {
     await cerrar();
   });
 }
+
+/** Las cajas de los diez radios con una hoja de Tailwind compilada solo con las clases de estos componentes (el arnés no carga la de la app). */
+async function cajasDeLaEscala(page: Page): Promise<{ nota: string | null; ancho: number; alto: number; arriba: number }[]> {
+  const css = (await postcss([tailwind({ base: RAIZ })]).process(`@import "tailwindcss" source(none);\n@source "${path.join(RAIZ, "src", "components", "feedback-ia")}";`, { from: path.join(RAIZ, "src", "app", "arnes.css") })).css;
+  await page.addStyleTag({ content: css });
+  await turno(page, "Uno", "Respuesta uno.");
+  await lineasCalificar(page).last().click();
+  return page.getByRole("radio").evaluateAll((botones) => botones.map((boton) => { const caja = boton.getBoundingClientRect(); return { nota: boton.getAttribute("aria-label"), ancho: caja.width, alto: caja.height, arriba: Math.round(caja.top) }; }));
+}
+
+test("en un teléfono de 390 px cada nota de la escala mide al menos 40 × 40 px (dos filas de cinco)", async () => {
+  const { page, cerrar } = await abrirChat(false);
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const cajas = await cajasDeLaEscala(page);
+    assert.equal(cajas.length, 10);
+    for (const caja of cajas) assert.ok(caja.ancho >= 40 && caja.alto >= 40, `${caja.nota}: ${caja.ancho} × ${caja.alto}`);
+    assert.equal(new Set(cajas.map((caja) => caja.arriba)).size, 2, "dos filas");
+  } finally { await cerrar(); }
+});
+
+test("con ancho de sobra la escala del cliente vuelve a una sola fila de diez", async () => {
+  const { page, cerrar } = await abrirChat(false);
+  try {
+    await page.setViewportSize({ width: 900, height: 844 });
+    const cajas = await cajasDeLaEscala(page);
+    assert.equal(new Set(cajas.map((caja) => caja.arriba)).size, 1, "una fila");
+    for (const caja of cajas) assert.ok(caja.ancho >= 40 && caja.alto >= 40, `${caja.nota}: ${caja.ancho} × ${caja.alto}`);
+  } finally { await cerrar(); }
+});
 
 test("calificar manda un POST por gesto; un turno anterior se abre desde su línea y se califica sin tocar los demás", async () => {
   const { page, peticiones, cerrar } = await abrirChat(false);
