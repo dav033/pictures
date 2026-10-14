@@ -112,7 +112,11 @@ async function main(): Promise<void> {
     assert.doesNotMatch(renderToStaticMarkup(createElement(TarjetaPlan, propiedades(plan, { ...base, onDeshacer: sinAccion, vigente: false }))), /Deshacer el último ajuste/);
     // La vista guarda el plan de antes en el único camino que publica un ajuste, y lo suelta al empezar de nuevo; solo se ofrece si lo tiene.
     const fuente = readFileSync("src/components/guiado/VistaGuiada.tsx", "utf8");
-    assert.match(fuente, /function ajustarPlan[\s\S]{0,500}if \(!vigente \|\| vigente\.reemplazado \|\| vigente\.plan\.plan_hash !== baseHash\) return false;[\s\S]{0,300}deshacerAjuste\.recordar\(mensajeId, vigente, plan\.plan_hash\);/, "ajustarPlan recuerda el widget de antes");
+    // El plan de antes se recuerda al publicar un ajuste, pero solo cuando React confirma el plan ajustado (P-079): ver `publicar-ajuste-plan.ts`.
+    assert.match(fuente, /const ajustarPlan = usePublicarAjustePlan\(\{[\s\S]{0,300}recordar: deshacerAjuste\.recordar/, "la vista publica los ajustes por el hook que recuerda el widget de antes");
+    const hook = readFileSync("src/components/guiado/ajuste/publicar-ajuste-plan.ts", "utf8");
+    assert.match(hook, /if \(!vigente \|\| vigente\.reemplazado \|\| vigente\.plan\.plan_hash !== baseHash\) return false;/, "el ajuste solo se publica sobre el plan en que se hizo");
+    assert.match(hook, /if \(!actual \|\| actual\.reemplazado \|\| actual\.plan !== solicitud\.plan\) continue;[\s\S]{0,200}recordar\(solicitud\.mensajeId, solicitud\.vigente, solicitud\.plan\.plan_hash\);/, "el plan de antes se recuerda solo tras confirmarse el ajuste");
     assert.match(fuente, /const vaciar = useCallback\(\(\) => \{[\s\S]{0,1800}limpiarDeshacer\(\);[\s\S]{0,1800}\}, \[marcarCargando, limpiarDeshacer\]\);/, "«Empezar de nuevo» (`vaciar`) suelta los planes de antes");
     assert.match(fuente, /vigente && deshacerAjuste\.puede\(mensajeId, widget\) \? \{ onDeshacer: \(\) => deshacerUltimoAjuste\(mensajeId\) \}/, "la tarjeta solo recibe «Deshacer» si hay plan de antes");
     assert.match(fuente, /function deshacerUltimoAjuste[\s\S]{0,1800}if \(!resultado\.ok\) \{[\s\S]{0,400}return resultado\.mensaje;\s*\}[\s\S]{0,1400}void borrarImagenNavegador\(mensajeId\)/, "la imagen guardada de otro plan se borra solo al deshacer (no en el rechazo), para que una recarga no la traiga");
