@@ -25,10 +25,13 @@ function esReintentable(error: unknown): boolean {
   return true;
 }
 
+/** Same User-Agent as `src/lib/shopify/descargar-catalogo.ts`: the store answers 429 without one (see its note). A 429 is still not retried. */
+const USER_AGENT = "demo-decoracion-catalogo/1.0";
+
 async function fetchJson<T>(url: string, timeoutMs: number, etiqueta: string): Promise<T> {
   return conReintento(
     async () => {
-      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+      const res = await fetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" }, signal: AbortSignal.timeout(timeoutMs) });
       if (!res.ok) throw new ErrorHttp(`${etiqueta} respondió ${res.status}`, res.status);
       return (await res.json()) as T;
     },

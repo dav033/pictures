@@ -133,11 +133,12 @@ async function main() {
          AVG(CASE WHEN cost_min_cop > 0 THEN cost_chosen_cop::numeric / cost_min_cop END) AS ratio_costo,
          AVG(COALESCE((packages->>'ahorro_paquetes_cop')::numeric, 0)) AS ahorro_paquetes
        FROM plan_audit_log
-       WHERE created_at > now() - ($1 || ' days')::interval`,
+       WHERE created_at > now() - ($1 || ' days')::interval
+         AND status NOT LIKE 'PLAN\\_3D\\_%' AND status NOT LIKE 'COTIZACION\\_IDEA\\_%'`,
       [dias],
     );
     const plan = planes[0];
-    console.log("\nPlanes y generación:");
+    console.log("\nPlanes y generación (plan legado: excluye filas del motor 3D y del costeo de ideas):");
     console.log(`  planes presentados=${plan.presentados}/${plan.total}; aprobados antes de generar=${plan.aprobados_antes_de_generar}`);
     console.log(`  sobre techo sin consentimiento=${plan.sobre_techo}`);
     console.log(`  costo elegido / mínimo compatible=${plan.ratio_costo == null ? "N/A" : Number(plan.ratio_costo).toFixed(3)}`);
