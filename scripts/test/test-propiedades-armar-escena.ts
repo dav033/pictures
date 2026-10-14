@@ -1,6 +1,6 @@
 /**
  * Propiedades de `armarEscena` (REQ-014 T30) sobre escenas que salen del generador con semilla de la matriz
- * (`scripts/escenarios/generador.ts` -> `escenaDesdeEspec`): 300 casos, sin red ni coste. Cada fallo imprime su semilla base y el
+ * (`scripts/escenarios/generador.ts` -> `escenaDeEspec`): 300 casos, sin red ni coste. Cada fallo imprime su semilla base y el
  * caso (`PROPIEDADES_SEMILLA=<n> PROPIEDADES_CASOS=<n>` lo reproduce):
  *   - determinista: armar dos veces (con la caché de piezas y sin ella) da el mismo resultado;
  *   - ningún número del armado (cajas, globos, tubos, sólidos, materiales) es NaN ni Infinity, y las cajas no están invertidas;
@@ -11,7 +11,7 @@
 import assert from "node:assert/strict";
 import { escenarioDe } from "../escenarios/generador";
 import { armarEscena, type Caja, type EscenaArmada, type NodoArmado } from "../../src/lib/globos3d/escena";
-import { escenaDesdeEspec } from "../../src/lib/globos3d/motor/espec-a-escena";
+import { escenaDeEspec } from "../../src/lib/globos3d/motor/v1";
 import { configPropiedades } from "./lib-config-propiedades";
 
 const { semilla: SEMILLA } = configPropiedades();
@@ -68,12 +68,12 @@ let cajasTotales = 0;
 let noRepresentables = 0;
 for (let i = 0; i < CASOS; i += 1) caso(i, () => {
   const { espec } = escenarioDe(SEMILLA, i);
-  const hecha = escenaDesdeEspec(espec);
-  noRepresentables += hecha.noRepresentables.length;
-  const primera = armarEscena(hecha.escena, new Map(hecha.cache));
+  const hecha = escenaDeEspec(espec);
+  noRepresentables += hecha.noRepresentable.length;
+  const primera = armarEscena(hecha.escena);
   const sinCache = armarEscena(structuredClone(hecha.escena));
-  assert.deepEqual(armarEscena(hecha.escena, new Map(hecha.cache)), primera, "armar dos veces (con la caché) dio resultados distintos");
-  assert.deepEqual(sinCache, primera, "armar sin la caché de piezas da otra cosa que con ella");
+  assert.deepEqual(armarEscena(hecha.escena), primera, "armar dos veces dio resultados distintos");
+  assert.deepEqual(sinCache, primera, "armar una copia de la escena da otra cosa que la escena");
 
   const { cajas, globos } = propiedades(primera, `caso ${i}`);
   cajasTotales += cajas;
