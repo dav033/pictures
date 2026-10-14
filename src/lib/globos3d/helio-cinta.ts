@@ -1,6 +1,5 @@
 import { formatoPorId } from "./formatos";
 import type { Pieza } from "./piezas";
-import { textoNumero } from "./texto-cantidad";
 
 /**
  * Helio y cinta para la lista de compra del taller. Son estimaciones de taller, no datos de Sempertex: los litros salen
@@ -82,6 +81,12 @@ export function litrosDeHelio(diametroCm: number, cantidad: number, perdida: num
   return Math.round(litrosDeEsfera(diametroCm) * cantidad * (1 + perdida) * 10) / 10;
 }
 
+/** ¿Todos los globos de helio de la pieza llevan el mismo largo de cinta? Un techo con elementos de cinta distinta no. */
+export function cintaUniformeDePieza(pieza: Pieza | undefined): boolean {
+  if (pieza?.tipo !== "techo") return true;
+  return new Set(pieza.techo.elementos.flatMap((e) => (e.tipo === "helio" ? [e.cintaCm] : []))).size <= 1;
+}
+
 /**
  * Metros de cinta que pone una pieza entera, si lo dice: el techo suma `cintaCm` de cada globo de helio; el ramo de helio
  * pone su alto por globo. `undefined` si la pieza no lo dice (se usa la cinta por defecto).
@@ -98,10 +103,11 @@ export function metrosCintaDePieza(pieza: Pieza | undefined, cantidadHelio: numb
 
 export type GloboParaHelio = { formatoId: string; infladoCm: number; parte?: string; helio?: true };
 /** Un trozo de la escena (una pieza armada): sus globos y, si los dice, sus metros de cinta. */
-export type GrupoHelio = { globos: ReadonlyArray<GloboParaHelio>; metrosCinta?: number };
+export type GrupoHelio = { globos: ReadonlyArray<GloboParaHelio>; metrosCinta?: number; cintaUniforme?: boolean };
 
 export type FilaHelio = { formatoId: string; infladoCm: number; cantidad: number; litros: number };
-export type ResumenHelio = { filas: FilaHelio[]; globos: number; litros: number; tanques: number; metrosCinta: number };
+/** `cintaUniforme`: todos los globos llevan el mismo largo de cinta (solo entonces «m por globo» es un corte real; si no, es un promedio). */
+export type ResumenHelio = { filas: FilaHelio[]; globos: number; litros: number; tanques: number; metrosCinta: number; cintaUniforme: boolean };
 
 const redondear1 = (n: number) => Math.round(n * 10) / 10;
 
@@ -109,11 +115,17 @@ const redondear1 = (n: number) => Math.round(n * 10) / 10;
 export function resumenHelio(grupos: ReadonlyArray<GrupoHelio>): ResumenHelio | null {
   const porTamano = new Map<string, FilaHelio>();
   let globos = 0, metros = 0;
+  let cintaUniforme = true;
+  let primeraPorGlobo: number | undefined;
   for (const grupo of grupos) {
     const helio = grupo.globos.filter(esGloboDeHelio);
     if (!helio.length) continue;
     globos += helio.length;
-    metros += grupo.metrosCinta ?? helio.length * METROS_CINTA_POR_GLOBO;
+    const metrosGrupo = grupo.metrosCinta ?? helio.length * METROS_CINTA_POR_GLOBO;
+    metros += metrosGrupo;
+    const porGlobo = metrosGrupo / helio.length;
+    primeraPorGlobo ??= porGlobo;
+    if (grupo.cintaUniforme === false || Math.abs(porGlobo - primeraPorGlobo) > 1e-6) cintaUniforme = false;
     for (const g of helio) {
       const infladoCm = redondear1(g.infladoCm);
       const clave = `${g.formatoId}|${infladoCm}`;
@@ -127,7 +139,7 @@ export function resumenHelio(grupos: ReadonlyArray<GrupoHelio>): ResumenHelio | 
     .sort((a, b) => a.formatoId.localeCompare(b.formatoId) || a.infladoCm - b.infladoCm)
     .map((f) => ({ ...f, litros: litrosDeHelio(f.infladoCm, f.cantidad) }));
   const litros = redondear1(filas.reduce((suma, f) => suma + f.litros, 0));
-  return { filas, globos, litros, tanques: Math.ceil(litros / LITROS_POR_TANQUE), metrosCinta: redondear1(metros) };
+  return { filas, globos, litros, tanques: Math.ceil(litros / LITROS_POR_TANQUE), metrosCinta: redondear1(metros), cintaUniforme };
 }
 
 /** Cuántas piezas de globo metalizado (foil) lleva la escena, contando sus copias (una pieza repetida en varias anclas). */
@@ -139,19 +151,6 @@ export function contarMetalizados(nodos: ReadonlyArray<{ id: string; pieza: Piez
 export const avisoMetalizados = (cantidad: number): string =>
   `La escena lleva ${cantidad} ${cantidad === 1 ? "pieza metalizada (foil)" : "piezas metalizadas (foil)"}: se llenan con helio (salvo las de varilla) y no entran en estos litros; pide su helio aparte.`;
 
-/** Las líneas de helio para el texto copiado, con su aviso de estimación (vacío si no hay helio). */
-export function lineasHelio(resumen: ResumenHelio | null): string[] {
-  if (!resumen) return [];
-  return [
-    "",
-    "HELIO Y CINTA (estimación)",
-    ...resumen.filas.map((f) => `${f.cantidad} × ${f.formatoId} a ${textoNumero(f.infladoCm)} cm: ${textoNumero(f.litros)} L de helio con 7 % de pérdida`),
-    `Total: ${textoNumero(resumen.litros)} L → ${resumen.tanques} ${resumen.tanques === 1 ? "tanque" : "tanques"} de ${textoNumero(LITROS_POR_TANQUE)} L nominales (confirmar con el proveedor)`,
-    `Cinta: ${textoNumero(resumen.metrosCinta)} m (la de la pieza; 1,2 m por globo si no la dice)`,
-    AVISO_ALCANCE_HELIO,
-  ];
-}
-
 /**
  * Los grupos de helio de una escena armada: cada nodo con sus globos y la cinta que dice su pieza (si la dice).
  * Úsese con `resumenHelio`.
@@ -160,6 +159,6 @@ export function gruposDeHelio(nodos: ReadonlyArray<{ id: string; pieza: Pieza }>
   return porNodo.map((n) => {
     const pieza = nodos.find((x) => x.id === n.id)?.pieza;
     const cantidadHelio = n.globos.filter(esGloboDeHelio).length;
-    return { globos: n.globos, metrosCinta: metrosCintaDePieza(pieza, cantidadHelio) };
+    return { globos: n.globos, metrosCinta: metrosCintaDePieza(pieza, cantidadHelio), cintaUniforme: cintaUniformeDePieza(pieza) };
   });
 }

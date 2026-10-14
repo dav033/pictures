@@ -12,7 +12,8 @@
  */
 import assert from "node:assert/strict";
 import { BIBLIOTECA_FABRICA, escenaDeItem } from "../../src/lib/globos3d/biblioteca";
-import { AVISO_ALCANCE_HELIO, avisoMetalizados, contarMetalizados, LITROS_POR_TANQUE, PERDIDA_HELIO, esGloboDeHelio, gruposDeHelio, muestraMarcaHelio, puedeFlotar, lineasHelio, litrosDeEsfera, litrosDeHelio, metrosCintaDePieza, resumenHelio } from "../../src/lib/globos3d/helio-cinta";
+import { AVISO_ALCANCE_HELIO, avisoMetalizados, contarMetalizados, LITROS_POR_TANQUE, PERDIDA_HELIO, esGloboDeHelio, gruposDeHelio, muestraMarcaHelio, puedeFlotar, litrosDeEsfera, litrosDeHelio, metrosCintaDePieza, resumenHelio } from "../../src/lib/globos3d/helio-cinta";
+import { lineasHelio } from "../../src/lib/globos3d/helio-bom";
 import { ESCENAS_PREDEFINIDAS } from "../../src/lib/globos3d/escenas-presets";
 import { armarEscena } from "../../src/lib/globos3d/escena";
 import { armarPieza, type Pieza } from "../../src/lib/globos3d/piezas";
@@ -149,6 +150,8 @@ prueba("el texto lleva las filas, el aviso de estimación y el tanque nominal", 
   assert.equal(lineas[1], "HELIO Y CINTA (estimación)");
   assert.ok(lineas.some((l) => l.startsWith("2 × R-12 a 28 cm: 24,6 L")));
   assert.ok(lineas.some((l) => l.includes("10.000 L nominales") && l.includes("confirmar con el proveedor")));
+  assert.ok(lineas.some((l) => l.startsWith("2 × R-12 a 28 cm: 24,6 L (0,87 ft³)")));
+  assert.ok(lineas.includes("Helio (con pérdida del 7 %): 24,6 L (0,87 ft³) · cinta: 2,4 m en total, 1,2 m por globo · 1 tanque de 10.000 L nominales (confirmar con el proveedor)"));
 });
 prueba("el texto y la pantalla dicen lo que no cuenta: los foil, el doble globo y que solo cuentan los marcados", () => {
   const lineas = lineasHelio(resumenHelio([{ globos: [{ formatoId: "R-12", infladoCm: 28, helio: true }] }]));

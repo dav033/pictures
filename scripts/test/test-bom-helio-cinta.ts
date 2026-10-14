@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { METROS_CINTA_POR_GLOBO, resumenHelio } from "../../src/lib/globos3d/helio-cinta";
-import { LITROS_POR_PIE3, bomHelio, litrosAPies3 } from "../../src/lib/globos3d/helio-bom";
+import { LITROS_POR_PIE3, bomHelio, litrosAPies3, textoVolumenYCinta } from "../../src/lib/globos3d/helio-bom";
 
 const helio = (formatoId: string, infladoCm: number) => ({ formatoId, infladoCm, helio: true as const });
 
@@ -39,6 +39,17 @@ test("la cinta que dice la pieza manda sobre la de por defecto, y se promedia po
   const bom = bomHelio(resumenHelio([{ globos: [helio("R-12", 28), helio("R-12", 28)], metrosCinta: 5 }]))!;
   assert.equal(bom.metrosCinta, 5);
   assert.equal(bom.metrosCintaPorGlobo, 2.5);
+});
+
+test("cinta distinta entre piezas (10 globos a 3 m y 10 a 1 m): no es un corte único, se dice promedio", () => {
+  const grupo = (metrosCinta: number) => ({ globos: Array.from({ length: 10 }, () => helio("R-12", 28)), metrosCinta });
+  const bom = bomHelio(resumenHelio([grupo(30), grupo(10)]))!;
+  assert.equal(bom.cintaUniforme, false);
+  assert.equal(bom.metrosCintaPorGlobo, 2);
+  const texto = textoVolumenYCinta(bom);
+  assert.match(texto, /cinta: 40 m en total, promedio 2 m por globo/);
+  assert.doesNotMatch(texto, /, 2 m por globo/);
+  assert.equal(bomHelio(resumenHelio([grupo(30), grupo(30)]))!.cintaUniforme, true);
 });
 
 test("los formatos que no flotan (tubito, Link-O-Loon) no entran en el helio", () => {

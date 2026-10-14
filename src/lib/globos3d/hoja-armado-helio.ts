@@ -1,5 +1,6 @@
 import type { NodoArmado } from "./escena";
-import { gruposDeHelio, LITROS_POR_TANQUE, METROS_CINTA_POR_GLOBO, PERDIDA_HELIO, resumenHelio, type FilaHelio, type ResumenHelio } from "./helio-cinta";
+import { bomHelio, textoVolumenYCinta } from "./helio-bom";
+import { gruposDeHelio, LITROS_POR_TANQUE, METROS_CINTA_POR_GLOBO, resumenHelio, type FilaHelio, type ResumenHelio } from "./helio-cinta";
 import type { Pieza } from "./piezas";
 import { plural, textoGlobos, textoNumero } from "./texto-cantidad";
 
@@ -32,15 +33,13 @@ export function textoParteDeTanque(litros: number): string {
   return porcentaje < 0.1 ? `menos de 0,1 % de un tanque de ${nominal} L` : `${textoNumero(porcentaje)} % de un tanque de ${nominal} L`;
 }
 
-const perdida = `${Math.round(PERDIDA_HELIO * 100)} % de pérdida`;
-
-/** El cierre del bloque de una estructura: globos, litros, cinta y la parte de un tanque. */
+/** El cierre del bloque de una estructura: globos, helio (litros, ft³ y cinta, como en la lista de compra) y la parte de un tanque. */
 export const textoCierreDeEstructura = (r: ResumenHelio): string =>
-  `${textoGlobos(r.globos)} de helio · ${textoNumero(r.litros)} L con ${perdida} · cinta: ${textoNumero(r.metrosCinta)} m · ${textoParteDeTanque(r.litros)}`;
+  `${textoGlobos(r.globos)} de helio · ${textoVolumenYCinta(bomHelio(r)!)} · ${textoParteDeTanque(r.litros)}`;
 
-/** El cierre del total de la hoja: litros, tanques enteros y cinta. */
+/** El cierre del total de la hoja: el helio y la cinta como en la lista de compra, y los tanques enteros. */
 export const textoCierreDeTotal = (r: ResumenHelio): string =>
-  `Total: ${textoNumero(r.litros)} L de helio con ${perdida} · ${r.tanques} ${plural(r.tanques, "tanque", "tanques")} de ${textoNumero(LITROS_POR_TANQUE)} L nominales · cinta: ${textoNumero(r.metrosCinta)} m`;
+  `${textoVolumenYCinta(bomHelio(r)!)} · ${r.tanques} ${plural(r.tanques, "tanque", "tanques")} de ${textoNumero(LITROS_POR_TANQUE)} L nominales`;
 
 /** Lo que la estimación no cuenta ni supone, escrito para quien arma con la hoja en la mano. */
 export const NOTA_ESTIMACION_HELIO =

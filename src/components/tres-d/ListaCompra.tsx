@@ -12,7 +12,8 @@ import { SeccionHelio } from "./SeccionHelio";
 import { SeccionBomba } from "./SeccionBomba";
 import { SeccionPrecio } from "./SeccionPrecio";
 import { almacenDelNavegador, filasBomba, guardarCalibracionBomba, inflablesDeEscena, leerCalibracionBomba, lineasBomba, type CalibracionBomba } from "@/lib/globos3d/bomba-segundos";
-import { avisoMetalizados, contarMetalizados, gruposDeHelio, lineasHelio, resumenHelio } from "@/lib/globos3d/helio-cinta";
+import { avisoMetalizados, contarMetalizados, gruposDeHelio, resumenHelio } from "@/lib/globos3d/helio-cinta";
+import { lineasHelio } from "@/lib/globos3d/helio-bom";
 import { agruparPiezas, filasPorPieza, textoPorPieza, type FilaPorPieza } from "@/lib/globos3d/piezas-agrupadas";
 import { plural, textoGlobos } from "@/lib/globos3d/texto-cantidad";
 

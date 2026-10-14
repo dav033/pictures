@@ -1,10 +1,11 @@
 import { FORMATOS_GLOBO } from "./formatos";
-import { filasBomba, redondearSegundos, segundosReferencia, type CalibracionBomba, type InflableBomba } from "./bomba-segundos";
+import { filasBomba, redondearSegundos, segundosReferencia, textoFilaInflado, textoInflarA, type CalibracionBomba, type InflableBomba } from "./bomba-segundos";
 
 /**
  * Tabla de inflado por formato y «inflar a N cm» por capa. Reutiliza los datos que ya existen: el tamaño de decoración
  * del formato y los segundos de bomba estimados (`bomba-segundos`). No hay una segunda fuente de cifras.
- * Núcleo puro, todavía sin conectar al Taller (BOM y panel de piezas).
+ * Núcleo puro. El texto de cada fila (`textoFilaInflado`, definido en `bomba-segundos`) lo usan la hoja de armado (`HojaArmadoCapa`,
+ * `HojaArmadoEstructura`), la sección «Bomba» de la lista de compra (`SeccionBomba`) y el texto copiado (`lineasBomba`).
  */
 export type FilaInflado = { formatoId: string; nombre: string; infladoCm: number; segundos: number };
 
@@ -23,5 +24,4 @@ export function infladoDeCapa(globos: ReadonlyArray<InflableBomba>, calibracion:
   return filasBomba(globos, calibracion).map((f) => ({ formatoId: f.formatoId, cantidad: f.cantidad, cmMin: f.cmMin, cmMax: f.cmMax, segundos: redondearSegundos(f.segundosTotal) }));
 }
 
-/** «Inflar a 25 cm» o «Inflar a 24–26 cm». */
-export const textoInflarA = (f: Pick<InfladoDeCapa, "cmMin" | "cmMax">): string => (f.cmMin === f.cmMax ? `Inflar a ${f.cmMin} cm` : `Inflar a ${f.cmMin}–${f.cmMax} cm`);
+export { textoFilaInflado, textoInflarA };

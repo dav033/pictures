@@ -65,7 +65,7 @@ test("cada página de la hoja se pinta completa: sin NaN ni undefined, con su n�
 test("la hoja se arma sin volver a la lista: helio por pieza y en total, metalizados con su compra, cómo armar lo orgánico y dónde va cada impreso", () => {
   const columna = textoDeLaHoja("idea:columna-feliz-cumpleanos-organico");
   assert.match(columna, /Helio y cinta de toda la hoja/);
-  assert.match(columna, /Total: 73,8 L de helio con 7 % de pérdida · 1 tanque de 10\.000 L nominales · cinta: 7,2 m/);
+  assert.match(columna, /Helio \(con pérdida del 7 %\): 73,8 L \(2,61 ft³\) · cinta: 7,2 m en total, [\d,.]+ m por globo(?: promedio)? · 1 tanque de 10\.000 L nominales/);
   assert.match(columna, /Globos metalizados \(foil\)/);
   assert.match(columna, /Comprar: GLOBO METALIZADO NUMERO 4 PLATA/);
   assert.match(columna, /No hay uno igual en la tienda: se compra uno parecido/);
@@ -73,7 +73,7 @@ test("la hoja se arma sin volver a la lista: helio por pieza y en total, metaliz
   assert.match(columna, /impreso «[^»]+» \(cualquier posición del tramo\)/);
   assert.match(columna, /Dónde: (?:arriba|abajo|izquierda|derecha)/);
   const graduacion = textoDeLaHoja("idea:graduacion");
-  assert.match(graduacion, /Helio y cinta\d+ × R-\d+ inflado a \d+ cm[\d.,]+ L\d+ globos de helio · [\d.,]+ L con 7 % de pérdida · cinta: [\d.,]+ m · [\d.,]+ % de un tanque de 10\.000 L/);
+  assert.match(graduacion, /Helio y cinta\d+ × R-\d+ inflado a \d+ cm[\d.,]+ L \([\d.,]+ ft³\)\d+ globos de helio · Helio \(con pérdida del 7 %\): [\d.,]+ L \([\d.,]+ ft³\) · cinta: [\d.,]+ m en total, [\d.,]+ m por globo · [\d.,]+ % de un tanque de 10\.000 L/);
 });
 
 test("una forma rellena con texto dice su contorno y su técnica en la hoja", () => {

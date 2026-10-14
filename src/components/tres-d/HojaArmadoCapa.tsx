@@ -1,5 +1,6 @@
-import { textoFilaBomba, textoTiempo } from "@/lib/globos3d/bomba-segundos";
+import { textoTiempo } from "@/lib/globos3d/bomba-segundos";
 import type { CapaHoja } from "@/lib/globos3d/hoja-armado-capas";
+import { textoFilaInflado } from "@/lib/globos3d/inflado";
 import { textoGiro, textoSecuencia } from "@/lib/globos3d/hoja-armado-texto";
 import { DiagramaCapa } from "./DiagramaCapa";
 
@@ -35,9 +36,9 @@ export function HojaArmadoCapa({ capa }: { capa: CapaHoja }) {
         {capa.marcas.length > 0 && <p className="mt-1 text-xs text-neutral-700">{capa.marcas.join(" · ")}</p>}
         {capa.filasBomba.length > 0 && (
           <div className="mt-2 border-t border-neutral-200 pt-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Bomba{capa.repeticiones > 1 ? " por capa" : ""} · {textoTiempo(capa.segundosBomba)}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Bomba{capa.repeticiones > 1 ? " por capa" : ""} · {textoTiempo(capa.segundosBomba)} (estimación)</p>
             <ul className="font-mono text-xs">
-              {capa.filasBomba.map((f) => <li key={f.formatoId}>{textoFilaBomba(f)}</li>)}
+              {capa.filasBomba.map((f) => <li key={f.formatoId}>{textoFilaInflado(f)}</li>)}
             </ul>
           </div>
         )}

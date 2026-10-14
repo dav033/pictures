@@ -31,16 +31,35 @@ test("los totales cuadran: tamaños y colores suman lo mismo que los globos de s
   }
 });
 
-test("las ideas con globos tienen medidas positivas y técnica (si tienen una estructura)", () => {
+test("las ideas con globos tienen medidas positivas", () => {
   const conGlobos = recetas.filter((r) => r.receta.total > 0);
   assert.ok(conGlobos.length > 0);
-  for (const { item, receta } of conGlobos) {
-    // Known gap: pieces without a technique mapping (decoration, loose balloon, scenography) add no technique chip yet; any
-    // idea that has another kind of piece must have one.
-    const SIN_TECNICA = new Set(["Decoración", "Globo suelto", "Escenografía"]);
-    if (receta.piezas.some((p) => !SIN_TECNICA.has(p.nombre))) assert.ok(receta.tecnicas.length > 0, `${item.id} sin técnica`);
-    assert.ok(receta.medidas && receta.medidas.altoCm > 0 && receta.medidas.anchoCm >= 0, `${item.id} medidas`);
+  for (const { item, receta } of conGlobos) assert.ok(receta.medidas && receta.medidas.altoCm > 0 && receta.medidas.anchoCm >= 0, `${item.id} medidas`);
+});
+
+// The workshop glossary has no technique term for scenography (panels, tables, props), so `recetaDeIdea` gives it no chip on
+// purpose. The only exempt ideas are the prop-only ones: no balloons and every piece is scenography.
+const EXENTAS = new Set([
+  "utileria:banderin_halloween", "utileria:guirnalda_recortes", "utileria:banderola_fiesta", "utileria:platos_halloween",
+  "utileria:plato_de_pie", "utileria:vasos", "utileria:servilletas", "utileria:cubiertos", "utileria:bandeja", "utileria:mantel",
+  "utileria:velas", "utileria:topper", "utileria:calabaza_dulces", "utileria:bolsa_dulces", "utileria:gorritos",
+  "utileria:letrero_calabaza", "utileria:caja_regalo",
+]);
+
+test("cada idea tiene al menos una etiqueta de técnica, salvo las exentas enumeradas (solo utilería, sin globos)", () => {
+  const sinTecnica = recetas.filter((r) => r.receta.tecnicas.length === 0).map((r) => r.item.id);
+  assert.deepEqual(new Set(sinTecnica), EXENTAS);
+  for (const { item, receta } of recetas) {
+    if (!EXENTAS.has(item.id)) continue;
+    assert.equal(receta.total, 0, `${item.id} exenta pero tiene globos`);
+    assert.ok(receta.piezas.every((p) => p.nombre === "Escenografía"), `${item.id} exenta pero tiene otras piezas`);
   }
+});
+
+test("decoraciones y globos sueltos solos dicen su clase, sin inventar cómo se arman", () => {
+  const de = (id: string) => recetas.find((r) => r.item.id === id)!.receta.tecnicas;
+  assert.deepEqual(de("idea:estrella-navidena"), ["Decoración de globos"]);
+  assert.ok(de("idea:rizos-alegres").includes("Globos sueltos"));
 });
 
 test("las ocasiones de la receta son las de la ficha, una por una", () => {

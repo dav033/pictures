@@ -1,7 +1,8 @@
 "use client";
 
 import { useId, useState } from "react";
-import { SEGUNDOS_BOMBA_DEFECTO, filasBomba, nf, parsearSegundos, segundosReferencia, textoFilaBomba, textoTiempo, tiempoTotalBomba, type CalibracionBomba, type InflableBomba } from "@/lib/globos3d/bomba-segundos";
+import { SEGUNDOS_BOMBA_DEFECTO, filasBomba, nf, parsearSegundos, segundosReferencia, textoTiempo, tiempoTotalBomba, type CalibracionBomba, type InflableBomba } from "@/lib/globos3d/bomba-segundos";
+import { textoFilaInflado } from "@/lib/globos3d/inflado";
 import { formatoPorId } from "@/lib/globos3d/formatos";
 import { BTN } from "./ui-taller";
 
@@ -67,7 +68,7 @@ export function SeccionBomba({ globos, calibracion, onCambiar }: { globos: Reado
       <div id={`${idBase}-detalle`} hidden={!abierta} className="mt-2">
         <ul className="text-sm">
           {filas.map((f) => (
-            <li key={f.formatoId} className="border-b border-taller-linea py-1 font-mono">{textoFilaBomba(f)}</li>
+            <li key={f.formatoId} className="border-b border-taller-linea py-1 font-mono">{textoFilaInflado(f)}</li>
           ))}
         </ul>
         <p className="mt-1 text-xs text-taller-suave">Estimación para una bomba eléctrica estándar. c/u es el promedio por globo; el tiempo crece con el volumen del globo. Un tubito cuenta entero, una vez, aunque se tuerza en varias burbujas. Los marcados como de helio no pasan por la bomba: si alguno flota y no está marcado (una escena guardada antes), márcalo en los parámetros de su pieza.</p>

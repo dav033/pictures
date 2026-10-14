@@ -1,4 +1,4 @@
-import { textoFilaBomba, textoTiempo } from "@/lib/globos3d/bomba-segundos";
+import { textoFilaInflado, textoTiempo } from "@/lib/globos3d/bomba-segundos";
 import type { TrozoEstructura } from "@/lib/globos3d/hoja-armado";
 import { textoFlores } from "@/lib/globos3d/hoja-armado-anexos";
 import { plural } from "@/lib/globos3d/texto-cantidad";
@@ -80,7 +80,7 @@ export function HojaArmadoEstructura({ trozo }: { trozo: TrozoEstructura }) {
           {e.avisos.length > 0 && <p className="text-xs text-red-700" role="note">{e.avisos.join(" ")}</p>}
           <div className="font-mono text-xs">
             <p>Bomba de la pieza: {textoTiempo(e.segundosPorUnidad)}{varias ? ` por copia · ${textoTiempo(e.segundosBomba)} en total` : ""}</p>
-            <ul>{e.filasBomba.map((f) => <li key={f.formatoId}>{textoFilaBomba(f)}</li>)}</ul>
+            <ul>{e.filasBomba.map((f) => <li key={f.formatoId}>{textoFilaInflado(f)}</li>)}</ul>
           </div>
           {e.helio && <HojaArmadoHelioDePieza resumen={e.helio} copias={e.unidades} />}
         </div>
