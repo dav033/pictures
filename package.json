@@ -149,6 +149,7 @@
     "ia:test-tope-fal": "tsx scripts/test/test-exp-fal-lib-tope.ts",
     "ia:test-referencias-perceptual": "tsx --conditions=react-server scripts/test/test-reference-analysis-perceptual.ts",
     "ia:test-referencias-fixture": "tsx --conditions=react-server scripts/test/test-reference-analysis-fixture.ts",
+    "ia:test-reference-blueprint-boundary": "tsx --test src/lib/ia/referencia/reference-blueprint.test.ts && tsx --conditions=react-server --test src/lib/ia/referencia/analysis-cache-key.server.test.ts",
     "ia:test-analisis-ejemplos": "tsx --conditions=react-server scripts/test/test-analisis-ejemplos.ts",
     "ia:test-referencias-reglas": "tsx --conditions=react-server scripts/test/test-reference-analysis-reglas.ts",
     "ia:test-referencias-ruta": "tsx --conditions=react-server scripts/test/test-reference-analyze-route.ts",

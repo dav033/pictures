@@ -2,7 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada, type TurnoChat } from "../nucleo/tipos";
-import { analysisCacheKey } from "../referencia/reference-blueprint";
+import { analysisCacheKey } from "../referencia/analysis-cache-key.server";
 import { bytesDeBase64 } from "@sempertex/agente-core";
 import { registrarSegunProveedor, resultadoTelemetria, type ContextoTelemetriaIA } from "../nucleo/telemetria-llamadas";
 import { toolArgs } from "../referencia/candidatos-referencia";
