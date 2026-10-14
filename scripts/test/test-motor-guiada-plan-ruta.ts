@@ -216,7 +216,7 @@ test("sumar una idea a un plan del 3d: las piezas del plan quedan intactas, las 
   };
   for (const [k, e1] of base.estructuras.entries()) assert.deepEqual(globos(plan.estructuras[k]!.lineas), globos(e1.lineas), `${e1.estructura_id}: los globos de las piezas del plan quedan exactamente como estaban`);
   const espec = (plan as unknown as { espec: { origen: { tipo: string; ideaIds: string[] }; piezas: unknown[] } }).espec;
-  assert.equal(espec.origen.tipo, "idea_sumada");
+  assert.equal(espec.origen.tipo, "idea", "sumar una idea conserva el origen del plan (REQ-016 R3)");
   assert.deepEqual(espec.origen.ideaIds, ["deco-real-07-eb12910e210c94b6184d025127acce95", "deco-real-09-images-24"]);
   assert.equal(plan.plan.concepto.titulo, base.plan.concepto.titulo, "el título del plan no se pisa");
   assert.notEqual(plan.plan_hash, base.plan_hash);

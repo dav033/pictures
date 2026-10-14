@@ -282,6 +282,11 @@ test("agregar_idea: suma las piezas de la idea con ids libres y respeta el tope"
   assert.equal(r.noAplicado, undefined);
   assert.equal(r.espec.piezas.length, BASE.piezas.length + idea.piezas.length);
   assert.deepEqual(r.espec.origen.ideaIds, [ideaId]);
+  // REQ-016 R3: sumar una idea conserva el origen del plan; si ya era «edicion», sigue siéndolo.
+  assert.equal(r.espec.origen.tipo, BASE.origen.tipo);
+  const editada = aplicarEdicion(BASE, { op: "reemplazar_color", de: "azul", a: "rojo" }).espec;
+  const sumaEditada = aplicarEdicion(editada, { op: "agregar_idea", ideaId }, { idea: () => idea });
+  assert.equal(sumaEditada.espec.origen.tipo, "edicion");
   assert.deepEqual(r.espec.piezas.slice(0, BASE.piezas.length), BASE.piezas, "las del plan quedan intactas");
   assert.ok(r.tocadas.every((id) => !BASE.piezas.some((p) => p.id === id)), "las nuevas toman ids libres");
   const lleno = espec([{ estructura: "columna", cantidad: 4 }, { estructura: "arco", cantidad: 1 }, { estructura: "guirnalda", cantidad: 1 }, { estructura: "semiarco", cantidad: 2 }]);

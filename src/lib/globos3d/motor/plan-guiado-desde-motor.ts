@@ -38,6 +38,8 @@ export type EntradaSobre = {
   navegador?: string;
   /** La hora del primer plan de esta línea (la del plan base al cambiarlo o sumarle algo; ahora si es nuevo): va al token. */
   origenEn?: number;
+  /** Contexto de la última orden de color (REQ-016 T2, D-046; payload v3). */
+  colorOrder?: import("./orden-color").ContextoOrdenColor;
 };
 
 export type SobreDelMotor = { ok: true; plan: PlanGuiadoMotor; cotizacion: CotizacionDelMotor["cotizacion"] } | { ok: false; motivo: string };
@@ -159,6 +161,7 @@ export function sobreDelMotor(entrada: EntradaSobre): SobreDelMotor {
     allowlist: allowlistDesdeMapa(variantesPorProducto(cotizacion.compras)),
     ...(entrada.navegador ? { navegador: entrada.navegador } : {}),
     ...(entrada.origenEn === undefined ? {} : { origenEn: entrada.origenEn }),
+    ...(entrada.colorOrder !== undefined ? { colorOrder: entrada.colorOrder } : {}),
   });
 
   const sobre = {

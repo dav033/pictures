@@ -78,7 +78,9 @@ const RESPUESTA_NO_ARMABLE = { codigo: "PLAN_NO_ARMABLE_EN_3D", estado: 422 };
 /** Las razones cuyo detalle no trae nada del cliente: los huecos del catálogo, el servicio de precios y el tope de piezas. */
 const DETALLE_PROPIO: ReadonlySet<RazonFallback> = new Set<RazonFallback>(["sin_cobertura", "precio_fallido", "tope_de_piezas"]);
 
-type BaseVerificada = { espec: EspecClienteV1; concepto: ConceptoPlan; origenEn: number };
+import { crearContextoOrdenColorVacio, podarContextoOrdenColor, type ContextoOrdenColor } from "@/lib/globos3d/motor/v1";
+
+type BaseVerificada = { espec: EspecClienteV1; concepto: ConceptoPlan; origenEn: number; colorOrder?: ContextoOrdenColor };
 
 /** Huella (no reversible) del navegador al que se le dio el plan. */
 export const huellaDeNavegador = (usuarioId: string): string => createHash("sha256").update(`globos3d-navegador:${usuarioId}`).digest("hex");
@@ -195,7 +197,8 @@ async function atender(request: Request, deps: DependenciasPlanMotor, navegador:
       if (cotizada.razon === "sin_cobertura") return fallo("sin_cobertura", cotizada.faltantes.map((f) => `${f.formatoId} ${f.codigo}: ${f.motivo}`).join("; "));
       return fallo(cotizada.razon === "material_no_disponible" ? "sin_cobertura" : "precio_fallido", cotizada.detalle);
     }
-    const sobre = sobreDelMotor({ espec, resultado: { ...resultado, avisos }, cotizacion: cotizada, concepto, requestId: requestId(), navegador, origenEn: base?.origenEn ?? Date.now() });
+    const colorOrder = base ? (base.colorOrder ? podarContextoOrdenColor(base.colorOrder, espec) : undefined) : crearContextoOrdenColorVacio();
+    const sobre = sobreDelMotor({ espec, resultado: { ...resultado, avisos }, cotizacion: cotizada, concepto, requestId: requestId(), navegador, origenEn: base?.origenEn ?? Date.now(), ...(colorOrder !== undefined ? { colorOrder } : {}) });
     if (!sobre.ok) return fallo("sobre_invalido", sobre.motivo);
     deps.auditar("regla:motor_guiada", "plan de la guiada armado por el motor 3D y cotizado con Python", {
       bandera: bandera.motor, fuente: bandera.fuente, efectivo: "3d", ...(base && bandera.motor !== "3d" ? { conserva_motor: "plan_3d_abierto" } : {}), plan_hash: resultado.especHash, motor: resultado.motor,

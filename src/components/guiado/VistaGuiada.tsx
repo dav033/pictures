@@ -15,7 +15,7 @@ import { PreguntaUso } from "./PreguntaUso";
 import { RespuestasRapidas, dedupeOpciones, separarOpciones } from "./RespuestasRapidas";
 import { TarjetaEleccion } from "./TarjetaEleccion";
 import type { DatosAgregarIdea, EstadoAgregarIdea } from "./AgregarIdea";
-import { estadoAgregarIdea, ideasQueSiguenEnPlan, propuestaAgregarIdea } from "./agregar-idea";
+import { estadoAgregarIdea, propuestaAgregarIdea } from "./agregar-idea";
 import { TarjetasProveedores } from "./TarjetasProveedores";
 import { ReferenciaInspiracion } from "./ReferenciaInspiracion";
 import { acabadosFotoSinComprar } from "./acabados-foto-plan";
@@ -26,7 +26,10 @@ import { cancelarPrecioIdea, empezarPrecioIdea, fijarPrecioIdea, precioIdeaDesde
 import { accionIdeaAlElegirUso, avanzarOpcionIdea, estadoDelTurnoDeIdea, ideasTrasArmarIdea, marcarChipAlElegir, resultadoPlanIdea, rutaOpcionIdea, TEXTO_OPCION_IDEA, type AccionIdea, type EsperaOpcionIdea, type EventoOpcionIdea, type PasoOpcionIdea, type ResultadoPlanIdea } from "./opcion-idea";
 import { respuestaPrecioPlan, SELECTOR_PRECIO_TOTAL } from "./precio-chat";
 import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
+import { usePublicarAjustePlan } from "./ajuste/publicar-ajuste-plan";
+import { planDelMensaje, totalDePlan } from "./plan-del-mensaje";
 import type { AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
+import { useDeshacerAjuste } from "./usarDeshacerAjuste";
 import { agregarPiezaEnServidor, avisoEdicionChat, editarPiezaEnServidor, ejecutarEdicionChat, type DependenciasEdicionChat } from "./ajuste/edicion-chat-guiada";
 import { agregarColorEnServidor, aplicarEnServidor, mensajeAjuste, quitarPiezaEnServidor, reemplazarColorEnServidor } from "./ajuste/ejecutar-ajuste";
 import { armarBusqueda, LIMITE_MAXIMO } from "@/components/plan/ajuste/ajuste-propuesta";
@@ -46,7 +49,7 @@ import { CalificacionGuiada } from "./CalificacionGuiada";
 import { IndicadorEscribiendo } from "./IndicadorEscribiendo";
 import type { EtapaPlan } from "./Esqueletos";
 import { EsqueletoPlan } from "./Esqueletos";
-import { claveTexto, conMayuscula, fraseAjuste, nombreLineaCliente } from "./formato";
+import { claveTexto, conMayuscula, nombreLineaCliente } from "./formato";
 import { BotonIrAlFinal, useSeguirFinal } from "./animacion/useSeguirFinal";
 import { DUR, EASE_SALIDA, entradaMensaje, entradaUsuario, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
 import { useModoVista } from "@/lib/estado/modo-vista";
@@ -94,7 +97,7 @@ import { planActualDelPlan } from "./plan-actual";
 import { NoIncluidosSchema } from "@/lib/guiada-motor/no-incluidos";
 import type { MotorGuiada } from "@/lib/guiada-motor/tipos";
 import { ConfirmarEmpezarDeNuevo } from "./ConfirmarEmpezarDeNuevo";
-import { borrarImagenesNavegador, guardarImagenNavegador, leerImagenesNavegador } from "./imagenes-navegador";
+import { borrarImagenesNavegador, borrarImagenNavegador, guardarImagenNavegador, leerImagenesNavegador } from "./imagenes-navegador";
 import { marcarProducido } from "@/components/feedback-ia/producidos";
 
 /**
@@ -218,6 +221,10 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const [imagenEnCurso, setImagenEnCurso] = useState<string | null>(null);
   /** Imágenes ya pagadas, en memoria, por id del mensaje del plan: se ven en el acto aunque guardarlas falle. */
   const [imagenesLocales, setImagenesLocales] = useState<Readonly<Record<string, string>>>({});
+  /** Los planes de antes de cada ajuste de un plan del 3D (solo en memoria), para «Deshacer» (REQ-016, P-042). */
+  const deshacerAjuste = useDeshacerAjuste();
+  const limpiarDeshacer = deshacerAjuste.limpiar;
+
   // Las imágenes guardadas en este navegador vuelven tras una recarga (el servidor no guarda ninguna).
   useEffect(() => {
     void cargarFactorPlazoCliente();
@@ -233,6 +240,10 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const [placeholderForzado, setPlaceholderForzado] = useState<string | null>(null);
   const [sugerenciasCambio, setSugerenciasCambio] = useState<string[] | null>(null);
   const [anuncio, setAnuncio] = useState("");
+  const ajustarPlan = usePublicarAjustePlan({
+    mensajes, setMensajes, setImagenesLocales, setAnuncio,
+    recordar: deshacerAjuste.recordar, decoracionDeLaConversacion,
+  });
   /** La idea que se está sumando al plan («Agregar al plan»): su botón dice «Agregando a tu plan…». */
   const [agregandoId, setAgregandoId] = useState<string | null>(null);
   /** El plan (id de su mensaje) que se está cambiando por chat: su tarjeta muestra el esqueleto del recálculo. */
@@ -467,6 +478,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     fotosRef.current.clear();
     setMensajes([]); setBrief({}); setSeleccionada(null); setUso(null); setFoto(null); setFallo(null); setEntrada("");
     void borrarImagenesNavegador();
+    limpiarDeshacer();
     setImagenEnCurso(null); setImagenesLocales({}); setEtapaPlan({}); setAnalizandoFoto(false); setTransmitiendoId(null);
     setPlaceholderForzado(null); setSugerenciasCambio(null); setAnuncio(""); setEditandoPlanId(null); setAgregandoId(null);
     marcarCargando(false);
@@ -479,7 +491,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     // (verificador, 2026-10-06).
     contenedorRef.current?.scrollTo({ top: 0, behavior: "auto" });
     vaciarConversacionGuiada();
-  }, [marcarCargando]);
+  }, [marcarCargando, limpiarDeshacer]);
 
   // ── Registro de acciones y fallos (auditoría del servidor; con la instantánea del estado, sin fotos) ─────────────
   function estadoRegistro(): EstadoParaInstantanea {
@@ -957,42 +969,34 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     setAnuncio(idea ? [textoIdeaAgregada(idea.titulo, total, idea.sumada), ...(idea.avisos ?? [])].join(" ") : "Tu plan está listo");
   }
 
+
   /**
-   * «Ajustar mi plan»: el plan que Python rehizo queda en la MISMA tarjeta (no es una versión nueva) y su mensaje, que
-   * viaja en el historial, dice el ajuste («Ajusté: más rosado…») para que «Cambiar algo» parta de lo que se ve. Solo
-   * se publica sobre el plan en que se hizo: si entretanto llegó otro, el ajuste no lo pisa.
+   * «Deshacer» el último ajuste de un plan del 3D (REQ-016, P-042): la tarjeta vuelve al plan que tenía antes de ese ajuste —su
+   * espec, su firma y su precio tal como estaban—, sin pedirle al servidor un ajuste inverso (agrandar y achicar un paso no
+   * deja la medida de antes). Si ya no hay plan de antes (se recargó la página, o el plan cambió) lo dice y no toca nada.
    */
-  function ajustarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, { descripcion, baseHash }: AjustePublicado): boolean {
+  function deshacerUltimoAjuste(mensajeId: string): string | null {
     const vigente = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
-    if (!vigente || vigente.reemplazado || vigente.plan.plan_hash !== baseHash) return false;
-    const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacionCruda);
-    const cotizacion = precio.success ? { ...precio.data, lineas: precio.data.lineas.map((linea) => ({ ...linea, nombre: nombreLineaCliente(linea) })) } : undefined;
-    const armado = generarPasosPlan(plan);
-    const resumen = resumenPlanGuiado(plan);
+    if (!vigente || vigente.reemplazado) return "No pude deshacer: ese plan ya no es el que ves. Tu plan sigue como está.";
+    const resultado = deshacerAjuste.deshacer(mensajeId, vigente);
+    if (!resultado.ok) {
+      registrarAccion("plan.ajuste.deshacer_rechazado", { mensajeId, codigo: resultado.codigo, plan_hash: vigente.plan.plan_hash });
+      setAnuncio(resultado.mensaje);
+      return resultado.mensaje;
+    }
+    const restaurado = resultado.widget;
+    const resumen = resumenPlanGuiado(restaurado.plan);
     setMensajes((actuales) => actuales.map((mensaje) => {
       const actual = mensaje.id === mensajeId ? planDelMensaje(mensaje) : undefined;
-      if (!actual || actual.reemplazado || actual.plan.plan_hash !== baseHash) return mensaje;
-      // Ningún ajuste rehace el plan con el modelo (quitar una pieza o añadir un color tampoco): los de antes siguen en él.
-      const ajustes = [...(actual.ajustes ?? []), descripcion.slice(0, 160)].slice(-4);
-      // Las ideas sumadas siguen en el plan mientras quede alguna de sus piezas: al quitar UNA de las dos columnas de una
-      // idea, el carrusel volvía a ofrecer «Agregar a mi plan» y la duplicaba (probador 124, hallazgo 11).
-      const ideas = ideasQueSiguenEnPlan(actual.ideas ?? [], actual.plan, plan, (id) => decoracionDeLaConversacion(actuales, id));
-      const nuevo: WidgetPlan = {
-        tipo: "plan", plan, pasos: armado.pasos, motor: actual.motor, ajustes, totalAnterior: totalDePlan(actual.plan),
-        ...(cotizacion ? { cotizacion } : {}),
-        ...(actual.fotoInspiracion ? { fotoInspiracion: true, ...(actual.referenciaId ? { referenciaId: actual.referenciaId } : {}) } : {}),
-        ...(actual.usoCosteo ? { usoCosteo: actual.usoCosteo } : {}),
-        ...(actual.compraAbierta ? { compraAbierta: true } : {}),
-        // El aviso «Agregué… ahora tiene N globos» no se hereda: el total ya cambió.
-        ...(ideas.length ? { ideas } : {}),
-        // La imagen era del plan de antes: «Ver cómo quedaría» vuelve a ser la acción principal.
-        hechas: (actual.hechas ?? []).filter((hecha) => hecha !== "ver"),
-      };
-      return { ...mensaje, content: contenidoPlanAjustado(resumen, ajustes), widgets: mensaje.widgets?.map((widget): Widget => (widget.tipo === "plan" ? nuevo : widget)) };
+      if (!actual || actual.reemplazado || actual.plan.plan_hash !== vigente.plan.plan_hash) return mensaje;
+      return { ...mensaje, content: contenidoPlanAjustado(resumen, restaurado.ajustes ?? []), widgets: mensaje.widgets?.map((widget): Widget => (widget.tipo === "plan" ? restaurado : widget)) };
     }));
     setImagenesLocales((actuales) => (mensajeId in actuales ? Object.fromEntries(Object.entries(actuales).filter(([id]) => id !== mensajeId)) : actuales));
-    setAnuncio(`Listo: ${fraseAjuste(descripcion)}. Tu plan tiene ${totalDePlan(plan)} globos.`);
-    return true;
+    // La imagen guardada en el navegador es por mensaje y puede ser de otro plan que el que vuelve: una recarga no debe traerla.
+    void borrarImagenNavegador(mensajeId);
+    registrarAccion("plan.ajuste.deshacer", { mensajeId, plan_hash_antes: vigente.plan.plan_hash, plan_hash: restaurado.plan.plan_hash });
+    setAnuncio(`Listo: volví a tu plan de antes. Tiene ${totalDePlan(restaurado.plan)} globos.`);
+    return null;
   }
 
   /**
@@ -1929,6 +1933,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
             {...(widget.ajustes?.length ? { ajustes: widget.ajustes } : {})}
             recalculandoPorChat={editandoPlanId === mensajeId}
             {...(widget.fotoInspiracion ? { avisosFoto: avisosFotoDelPlan(mensajes, mensajeId, widget.plan) } : {})}
+            {...(vigente && deshacerAjuste.puede(mensajeId, widget) ? { onDeshacer: () => deshacerUltimoAjuste(mensajeId) } : {})}
             {...(vigente ? {
               onPlanAjustado: (nuevo: PlanGuiado, cotizacionNueva: unknown, ajuste: AjustePublicado) => { ajustarPlan(mensajeId, nuevo, cotizacionNueva, ajuste); },
               // Los cambios rápidos que rehace el asistente, desde «Ajustar mi plan» (los mismos de antes como chips).
@@ -2112,10 +2117,6 @@ function buscarPlanVigente(lista: readonly Mensaje[]): { mensajeId: string; widg
   return null;
 }
 
-function planDelMensaje(mensaje: Mensaje | undefined): WidgetPlan | undefined {
-  return mensaje?.widgets?.find((item): item is WidgetPlan => item.tipo === "plan");
-}
-
 function ultimoIndiceConReferencia(lista: readonly Mensaje[]): number {
   for (let indice = lista.length - 1; indice >= 0; indice -= 1) if (lista[indice]!.referencia) return indice;
   return -1;
@@ -2181,10 +2182,6 @@ function fotoDelPlan(lista: readonly Mensaje[], vigente: { mensajeId: string; wi
 /** Lo que escribió (o eligió con un botón) el cliente, en orden: de aquí salen sus palabras para el plan y la imagen. */
 function textosDelCliente(lista: readonly Mensaje[]): string[] {
   return lista.filter((mensaje) => mensaje.role === "user").map((mensaje) => mensaje.content);
-}
-
-function totalDePlan(plan: PlanGuiado): number {
-  try { return generarPasosPlan(plan).total; } catch { return 0; }
 }
 
 /** El aviso de «Agregar al plan» (en la tarjeta y para el lector de pantalla). `sumada`: la idea se sumó a un plan que ya había. */

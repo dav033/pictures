@@ -165,10 +165,13 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
   try {
     const mapeo = aEdiciones(cuerpo, base.espec);
     if (!mapeo.ok) return rechazar(mapeo.tipo === "no_soportado" ? "EDICION_NO_SOPORTADA" : "EDICION_NO_APLICADA", mapeo.mensaje, 422, mapeo.motivo, { noAplicadas: [mapeo.mensaje] });
-    const hecho = aplicarEdiciones(base.espec, mapeo.ediciones, { idea: (ideaId) => {
-      const guardado = deps.planGuardado(ideaId);
-      return guardado ? especDesdeIdeaGuardada(guardado.plan, ideaId).espec : null;
-    } });
+    const hecho = aplicarEdiciones(base.espec, mapeo.ediciones, {
+      idea: (ideaId) => {
+        const guardado = deps.planGuardado(ideaId);
+        return guardado ? especDesdeIdeaGuardada(guardado.plan, ideaId).espec : null;
+      },
+      ordenColor: base.colorOrder,
+    });
     if (!hecho.aplicadas) return rechazar("EDICION_NO_APLICADA", hecho.noAplicadas.length ? unirNoPude(hecho.noAplicadas) : "No pude: ese cambio no cambió nada en tu plan.", 422, "ninguna_edicion_aplicada", { noAplicadas: hecho.noAplicadas, avisos: hecho.avisos });
 
     const armado = deps.armar(hecho.espec);
@@ -185,7 +188,16 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
       return rechazar("PRECIO_FALLIDO", "No pude: no logré calcular el precio de ese cambio. Tu plan sigue como estaba.", 422, cotizada.razon, { noAplicadas: ["No pude: no logré calcular el precio de ese cambio."] });
     }
     const concepto: ConceptoPlan = base.concepto;
-    const sobre = sobreDelMotor({ espec: hecho.espec, resultado: armado, cotizacion: cotizada, concepto, requestId: requestId(), navegador, origenEn: base.origenEn });
+    const sobre = sobreDelMotor({
+      espec: hecho.espec,
+      resultado: armado,
+      cotizacion: cotizada,
+      concepto,
+      requestId: requestId(),
+      navegador,
+      origenEn: base.origenEn,
+      colorOrder: hecho.ordenColor !== undefined ? hecho.ordenColor : base.colorOrder,
+    });
     if (!sobre.ok) return rechazar("ERROR_DEL_MOTOR", "No pude: ese cambio no cabe en el plan. Tu plan sigue como estaba.", 422, sobre.motivo);
 
     const descripcion = acotarDescripcion(hecho.hechas);

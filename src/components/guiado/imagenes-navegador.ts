@@ -93,3 +93,16 @@ export async function borrarImagenesNavegador(): Promise<void> {
     // Sin IndexedDB no hay nada que borrar.
   }
 }
+
+/** La imagen guardada de un mensaje (su plan volvió a uno de antes: la imagen era de otro plan y una recarga no debe traerla). */
+export async function borrarImagenNavegador(mensajeId: string): Promise<void> {
+  try {
+    const db = await abrir();
+    const transaccion = db.transaction(ALMACEN, "readwrite");
+    transaccion.objectStore(ALMACEN).delete(mensajeId);
+    await terminar(transaccion);
+    db.close();
+  } catch {
+    // Sin IndexedDB no hay nada que borrar.
+  }
+}

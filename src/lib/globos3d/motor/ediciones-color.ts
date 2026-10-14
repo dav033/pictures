@@ -4,7 +4,7 @@ import { colorConPesos } from "./colores-espec";
 import { coloresNombrados } from "./color-en-pieza";
 import {
   colorEnPalabras, colorFabricable, conArticulo, conPesosNormalizados, conPiezasCambiadas, enPiezas, listaNatural,
-  MOTIVO_PIEZA_AUSENTE, mismosColores, nombreColor, noAplicado, resolverColorDicho, seleccionar, type ResultadoEdicion,
+  MOTIVO_PIEZA_AUSENTE, mismosColores, nombreColor, noAplicado, plegar, resolverColorDicho, seleccionar, type ResultadoEdicion,
 } from "./ediciones-comunes";
 import type { EdicionEspecV1 } from "./edicion-espec-v1";
 import { MAX_COLORES_PIEZA, type ColorEspec, type EspecClienteV1, type PiezaEspec } from "./espec-cliente-v1";
@@ -19,22 +19,41 @@ const TOLERANCIA_IGUAL = 0.005;
 
 type Op<T extends EdicionEspecV1["op"]> = Extract<EdicionEspecV1, { op: T }>;
 
+import {
+  esReplayProbado, identidadesDeColores, podarContextoOrdenColor, VERSION_ORDEN_COLOR,
+  type CambioPiezaReemplazo, type ContextoOrdenColor, type ResolucionSinCambio,
+} from "./orden-color";
+
 /**
  * Entrega el resultado de recorrer las piezas: lo cambiado, lo saltado y por qué. Las piezas donde no se sabe qué color dijo
  * el cliente (`dudas`) no se tocan: si nada cambió son el motivo; si algo cambió, van en `sinHacer` como «No pude: …», que
  * llega entero al cliente (los avisos se recortan).
  */
-function resultado(espec: EspecClienteV1, cambios: Map<string, PiezaEspec>, avisos: string[], dudas: readonly string[], descripcion: (tocadas: PiezaEspec[]) => string, sinCambio: string): ResultadoEdicion {
+function resultado(
+  espec: EspecClienteV1,
+  cambios: Map<string, PiezaEspec>,
+  avisos: string[],
+  dudas: readonly string[],
+  descripcion: (tocadas: PiezaEspec[]) => string,
+  sinCambio: string,
+  ordenColor?: ContextoOrdenColor,
+  sinHacerExtra: readonly string[] = [],
+): ResultadoEdicion {
+  const sinHacer = [...sinHacerExtra, ...(dudas.length ? dudas.map((duda) => `${PREFIJO_NO_PUDE}${duda}.`) : [])];
   if (!cambios.size) {
     // Sin cambio, se dice el motivo (la duda, o el genérico) y, detrás, el aviso que explica por qué (el máximo de colores, una pieza que no lo admite).
     const motivo = dudas.length ? `${dudas.join("; ")}.` : sinCambio;
-    return noAplicado(espec, avisos.length ? `${motivo} ${avisos.map((aviso) => aviso.charAt(0).toLocaleUpperCase("es") + aviso.slice(1)).join(" ")}` : motivo, avisos);
+    return noAplicado(espec, avisos.length ? `${motivo} ${avisos.map((aviso) => aviso.charAt(0).toLocaleUpperCase("es") + aviso.slice(1)).join(" ")}` : motivo, avisos, ordenColor);
   }
   const nueva = conPiezasCambiadas(espec, cambios);
   const tocadas = nueva.piezas.filter((pieza) => cambios.has(pieza.id));
   return {
-    espec: nueva, avisos, descripcion: descripcion(tocadas), tocadas: tocadas.map((pieza) => pieza.id),
-    ...(dudas.length ? { sinHacer: dudas.map((duda) => `${PREFIJO_NO_PUDE}${duda}.`) } : {}),
+    espec: nueva,
+    avisos,
+    descripcion: descripcion(tocadas),
+    tocadas: tocadas.map((pieza) => pieza.id),
+    ...(sinHacer.length ? { sinHacer } : {}),
+    ...(ordenColor !== undefined ? { ordenColor } : {}),
   };
 }
 
@@ -53,17 +72,45 @@ function noLleva(dicho: string, enEsasPiezas: boolean, nombrados: Nombrados): st
   return `no encontré «${colorEnPalabras(dicho)}»${enPiezas}; tu plan lleva ${listaNatural(parecidos)}: ${parecidos.length > 1 ? "¿es alguno de esos?" : "¿es ese?"}`;
 }
 
-export function reemplazarColor(espec: EspecClienteV1, edicion: Op<"reemplazar_color">): ResultadoEdicion {
+export function reemplazarColor(espec: EspecClienteV1, edicion: Op<"reemplazar_color">, contexto?: ContextoOrdenColor): ResultadoEdicion {
   const seleccion = seleccionar(espec, edicion.piezas);
-  if ("faltan" in seleccion) return noAplicado(espec, MOTIVO_PIEZA_AUSENTE);
+  if ("faltan" in seleccion) return noAplicado(espec, MOTIVO_PIEZA_AUSENTE, [], contexto);
   const destino = resolverColorDicho(edicion.a);
-  if (!destino.length) return noAplicado(espec, `no reconozco el color «${edicion.a}».`);
+  if (!destino.length) return noAplicado(espec, `no reconozco el color «${edicion.a}».`, [], contexto);
   const avisos: string[] = [];
-  const cambios = new Map<string, PiezaEspec>();
-  const queEntra = seleccion.piezas.flatMap((pieza) => destino.map((color) => colorFabricable(color, pieza, []).codigo));
-  const nombrados = coloresNombrados(espec, seleccion.piezas, edicion.de, queEntra);
-  let saleNombre: string | null = null;
+
+  // Paso 2: Identificar repeticiones demostradas por pieza antes de reinterpretar
+  const replays: Array<{ pieza: PiezaEspec; changed: boolean }> = [];
+  const pendientes: PiezaEspec[] = [];
+
   for (const pieza of seleccion.piezas) {
+    const entranPieza = destino.map((color) => colorFabricable(color, pieza, []).codigo);
+    if (contexto?.lastReplacement) {
+      const check = esReplayProbado(contexto.lastReplacement, pieza, edicion.de, entranPieza);
+      if (check.replay) {
+        replays.push({ pieza, changed: check.changed });
+        continue;
+      }
+    }
+    pendientes.push(pieza);
+  }
+
+  const motivoReplay = (replay: typeof replays[number]): string => replay.changed
+    ? `ese cambio de color ya estaba aplicado en ${conArticulo(replay.pieza)}.`
+    : `esa orden no cambiaba los colores de ${conArticulo(replay.pieza)}.`;
+
+  if (!pendientes.length) {
+    const motivo = replays.map(motivoReplay).join(" ");
+    return noAplicado(espec, motivo, avisos, contexto);
+  }
+
+  const queEntra = pendientes.flatMap((pieza) => destino.map((color) => colorFabricable(color, pieza, []).codigo));
+  const nombrados = coloresNombrados(espec, pendientes, edicion.de, queEntra, contexto);
+  const cambios = new Map<string, PiezaEspec>();
+  const nuevosCambiosPorPieza: CambioPiezaReemplazo[] = [];
+  let saleNombre: string | null = null;
+
+  for (const pieza of pendientes) {
     const salen = nombrados.get(pieza.id)!.indices;
     if (!salen.length) continue;
     saleNombre ??= nombreColor(pieza.colores[salen[0]!]!);
@@ -77,16 +124,87 @@ export function reemplazarColor(espec: EspecClienteV1, edicion: Op<"reemplazar_c
     const nuevos = colorConPesos(colores, MAX_COLORES_PIEZA, avisos);
     if (mismosColores(pieza.colores, nuevos)) continue;
     cambios.set(pieza.id, { ...pieza, colores: nuevos });
+    nuevosCambiosPorPieza.push({
+      piezaId: pieza.id,
+      codigosOrigen: [...new Set(salen.map((i) => pieza.colores[i]!.codigo))],
+      destinosEfectivos: entran.map((c) => c.codigo),
+      coloresResultantes: identidadesDeColores(nuevos),
+    });
   }
+
+  // Preserve resolved no-ops too: global card priority can change after another piece loses the source (P-082).
+  const nuevasSinCambio: ResolucionSinCambio[] = pendientes
+    .filter((pieza) => !cambios.has(pieza.id) && !nombrados.get(pieza.id)!.duda)
+    .map((pieza) => ({
+      piezaId: pieza.id,
+      destinosEfectivos: destino.map((color) => colorFabricable(color, pieza, []).codigo),
+      coloresResultantes: identidadesDeColores(pieza.colores),
+    }));
+
+  const sinHacerReplays = replays.map((r) => `${PREFIJO_NO_PUDE}${motivoReplay(r)}`);
+
+  // Si hubo cambios, se actualiza el contexto de la última orden de color
+  let nuevoOrdenColor: ContextoOrdenColor | undefined = contexto ? podarContextoOrdenColor(contexto, espec) : undefined;
+  if (cambios.size > 0) {
+    const frasePlegada = plegar(edicion.de);
+    const podado = contexto ? podarContextoOrdenColor(contexto, espec) : undefined;
+    const esMismaFrase = podado?.lastReplacement?.fraseOrigenPlegada === frasePlegada;
+    // Compare this order's effective destination on each old piece, including unselected pieces.
+    const retenidas = esMismaFrase && podado?.lastReplacement
+      ? podado.lastReplacement.cambiosPorPieza.filter((entry) => {
+          if (nuevosCambiosPorPieza.some((nuevo) => nuevo.piezaId === entry.piezaId)) return false;
+          const pieza = espec.piezas.find((item) => item.id === entry.piezaId);
+          if (!pieza) return false;
+          const efectivos = destino.map((color) => colorFabricable(color, pieza, []).codigo);
+          return esReplayProbado(podado.lastReplacement!, pieza, edicion.de, efectivos).replay;
+        })
+      : [];
+    const todosCambios = [...retenidas, ...nuevosCambiosPorPieza];
+    const sinCambioPrevias = podado?.lastReplacement && "resolucionesSinCambio" in podado.lastReplacement
+      ? podado.lastReplacement.resolucionesSinCambio
+      : [];
+    const sinCambioRetenidas = esMismaFrase && podado?.lastReplacement
+      ? sinCambioPrevias.filter((entry) => {
+          if (pendientes.some((pieza) => pieza.id === entry.piezaId)) return false;
+          const pieza = espec.piezas.find((item) => item.id === entry.piezaId);
+          if (!pieza) return false;
+          const efectivos = destino.map((color) => colorFabricable(color, pieza, []).codigo);
+          return esReplayProbado(podado.lastReplacement!, pieza, edicion.de, efectivos).replay;
+        })
+      : [];
+    const resolucionesSinCambio = [...sinCambioRetenidas, ...nuevasSinCambio];
+    const piezasPrevias = [...retenidas, ...sinCambioRetenidas].map((entry) => entry.piezaId);
+    const piezasSolicitadas = [...new Set([...piezasPrevias, ...seleccion.piezas.map((p) => p.id)])];
+    nuevoOrdenColor = {
+      v: VERSION_ORDEN_COLOR,
+      lastReplacement: {
+        fraseOrigenPlegada: frasePlegada,
+        piezasSolicitadas,
+        piezasCambiadas: todosCambios.map((c) => c.piezaId),
+        cambiosPorPieza: todosCambios,
+        resolucionesSinCambio,
+      },
+    };
+  }
+
   const sinCambio = saleNombre ? `tu plan ya lleva ${nombreColor(destino[0]!)} donde estaba ${saleNombre}.` : noLleva(edicion.de, Boolean(edicion.piezas?.length), nombrados);
-  return resultado(espec, cambios, avisos, dudasDe(nombrados), (tocadas) => `cambié ${saleNombre} por ${listaNatural(destino.map(nombreColor))} ${enPiezas(espec, tocadas)}`, sinCambio);
+  return resultado(
+    espec,
+    cambios,
+    avisos,
+    dudasDe(nombrados),
+    (tocadas) => `cambié ${saleNombre} por ${listaNatural(destino.map(nombreColor))} ${enPiezas(espec, tocadas)}`,
+    sinCambio,
+    nuevoOrdenColor,
+    sinHacerReplays,
+  );
 }
 
-export function agregarColor(espec: EspecClienteV1, edicion: Op<"agregar_color">): ResultadoEdicion {
+export function agregarColor(espec: EspecClienteV1, edicion: Op<"agregar_color">, contexto?: ContextoOrdenColor): ResultadoEdicion {
   const seleccion = seleccionar(espec, edicion.piezas);
-  if ("faltan" in seleccion) return noAplicado(espec, MOTIVO_PIEZA_AUSENTE);
+  if ("faltan" in seleccion) return noAplicado(espec, MOTIVO_PIEZA_AUSENTE, [], contexto);
   const colores = resolverColorDicho(edicion.color);
-  if (!colores.length) return noAplicado(espec, `no reconozco el color «${edicion.color}».`);
+  if (!colores.length) return noAplicado(espec, `no reconozco el color «${edicion.color}».`, [], contexto);
   const avisos: string[] = [];
   const cambios = new Map<string, PiezaEspec>();
   for (const pieza of seleccion.piezas) {
@@ -99,15 +217,16 @@ export function agregarColor(espec: EspecClienteV1, edicion: Op<"agregar_color">
     const lista = [...pieza.colores.map((color) => ({ ...color, peso: color.peso * (pieza.colores.length / cuantos) })), ...agregados.map((color) => ({ ...color, peso: 1 / cuantos }))];
     cambios.set(pieza.id, { ...pieza, colores: conPesosNormalizados(lista) });
   }
-  return resultado(espec, cambios, avisos, [], (tocadas) => `añadí ${listaNatural(colores.map(nombreColor))} ${enPiezas(espec, tocadas)}`, "esas piezas ya llevan ese color o no admiten otro más.");
+  const nuevoContexto = contexto ? podarContextoOrdenColor(contexto, conPiezasCambiadas(espec, cambios)) : undefined;
+  return resultado(espec, cambios, avisos, [], (tocadas) => `añadí ${listaNatural(colores.map(nombreColor))} ${enPiezas(espec, tocadas)}`, "esas piezas ya llevan ese color o no admiten otro más.", nuevoContexto);
 }
 
-export function quitarColor(espec: EspecClienteV1, edicion: Op<"quitar_color">): ResultadoEdicion {
+export function quitarColor(espec: EspecClienteV1, edicion: Op<"quitar_color">, contexto?: ContextoOrdenColor): ResultadoEdicion {
   const seleccion = seleccionar(espec, edicion.piezas);
-  if ("faltan" in seleccion) return noAplicado(espec, MOTIVO_PIEZA_AUSENTE);
+  if ("faltan" in seleccion) return noAplicado(espec, MOTIVO_PIEZA_AUSENTE, [], contexto);
   const avisos: string[] = [];
   const cambios = new Map<string, PiezaEspec>();
-  const nombrados = coloresNombrados(espec, seleccion.piezas, edicion.color);
+  const nombrados = coloresNombrados(espec, seleccion.piezas, edicion.color, [], contexto);
   let quitado = colorEnPalabras(edicion.color);
   let lleva = false;
   for (const pieza of seleccion.piezas) {
@@ -120,21 +239,23 @@ export function quitarColor(espec: EspecClienteV1, edicion: Op<"quitar_color">):
     cambios.set(pieza.id, { ...pieza, colores: conPesosNormalizados(quedan) });
   }
   const sinCambio = lleva ? "cada pieza necesita al menos un color: puedes cambiarlo por otro." : noLleva(edicion.color, Boolean(edicion.piezas?.length), nombrados);
-  return resultado(espec, cambios, avisos, dudasDe(nombrados), (tocadas) => `quité ${quitado} ${enPiezas(espec, tocadas)}`, sinCambio);
+  const nuevoContexto = contexto ? podarContextoOrdenColor(contexto, conPiezasCambiadas(espec, cambios)) : undefined;
+  return resultado(espec, cambios, avisos, dudasDe(nombrados), (tocadas) => `quité ${quitado} ${enPiezas(espec, tocadas)}`, sinCambio, nuevoContexto);
 }
 
-export function proporcionColor(espec: EspecClienteV1, edicion: Op<"proporcion_color">): ResultadoEdicion {
+export function proporcionColor(espec: EspecClienteV1, edicion: Op<"proporcion_color">, contexto?: ContextoOrdenColor): ResultadoEdicion {
   const pieza = espec.piezas.find((item) => item.id === edicion.pieza);
-  if (!pieza) return noAplicado(espec, MOTIVO_PIEZA_AUSENTE);
-  if (edicion.pesos.length !== pieza.colores.length) return noAplicado(espec, `${conArticulo(pieza)} lleva ${pieza.colores.length} colores y me diste ${edicion.pesos.length} proporciones.`);
+  if (!pieza) return noAplicado(espec, MOTIVO_PIEZA_AUSENTE, [], contexto);
+  if (edicion.pesos.length !== pieza.colores.length) return noAplicado(espec, `${conArticulo(pieza)} lleva ${pieza.colores.length} colores y me diste ${edicion.pesos.length} proporciones.`, [], contexto);
   const avisos: string[] = [];
   const total = edicion.pesos.reduce((suma, peso) => suma + peso, 0);
   const pedidos = edicion.pesos.map((peso) => peso / total);
   if (pedidos.some((peso) => peso < PROPORCION_MINIMA)) avisos.push(`Cada color lleva al menos ${Math.round(PROPORCION_MINIMA * 100)} % de ${conArticulo(pieza)}: subí los más pequeños.`);
   const colores = conPesosNormalizados(repartoConMinimo(pedidos).map((peso, indice) => ({ ...pieza.colores[indice]!, peso })));
-  if (mismosColores(pieza.colores, colores)) return noAplicado(espec, `${conArticulo(pieza)} ya lleva esa proporción de colores.`, avisos);
+  if (mismosColores(pieza.colores, colores)) return noAplicado(espec, `${conArticulo(pieza)} ya lleva esa proporción de colores.`, avisos, contexto);
   const cambios = new Map([[pieza.id, { ...pieza, colores }]]);
-  return resultado(espec, cambios, avisos, [], () => `dejé ${conArticulo(pieza)} con ${listaNatural(colores.map((color) => `${Math.round(color.peso * 100)} % ${nombreColor(color)}`))}`, "");
+  const nuevoContexto = contexto ? podarContextoOrdenColor(contexto, conPiezasCambiadas(espec, cambios)) : undefined;
+  return resultado(espec, cambios, avisos, [], () => `dejé ${conArticulo(pieza)} con ${listaNatural(colores.map((color) => `${Math.round(color.peso * 100)} % ${nombreColor(color)}`))}`, "", nuevoContexto);
 }
 
 /** Pesos que suman 1 y ninguno bajo el mínimo: lo que falta a los pequeños se lo quita a los demás en proporción. */
@@ -152,12 +273,12 @@ function repartoConMinimo(pesos: readonly number[]): number[] {
   return pesos.map(() => 1 / pesos.length);
 }
 
-export function masMenosColor(espec: EspecClienteV1, edicion: Op<"mas_menos_color">): ResultadoEdicion {
+export function masMenosColor(espec: EspecClienteV1, edicion: Op<"mas_menos_color">, contexto?: ContextoOrdenColor): ResultadoEdicion {
   const seleccion = seleccionar(espec, edicion.piezas);
-  if ("faltan" in seleccion) return noAplicado(espec, MOTIVO_PIEZA_AUSENTE);
+  if ("faltan" in seleccion) return noAplicado(espec, MOTIVO_PIEZA_AUSENTE, [], contexto);
   const avisos: string[] = [];
   const cambios = new Map<string, PiezaEspec>();
-  const nombrados = coloresNombrados(espec, seleccion.piezas, edicion.color);
+  const nombrados = coloresNombrados(espec, seleccion.piezas, edicion.color, [], contexto);
   let nombre = colorEnPalabras(edicion.color);
   let lleva = false;
   for (const pieza of seleccion.piezas) {
@@ -175,7 +296,8 @@ export function masMenosColor(espec: EspecClienteV1, edicion: Op<"mas_menos_colo
     cambios.set(pieza.id, { ...pieza, colores: conPesosNormalizados(pieza.colores.map((color, indice) => ({ ...color, peso: pesos[indice]! }))) });
   }
   const sinCambio = lleva ? `esas piezas ya llevan ${edicion.direccion > 0 ? "todo el" : "lo mínimo de"} ${nombre} que admiten, o llevan un solo color.` : noLleva(edicion.color, Boolean(edicion.piezas?.length), nombrados);
-  return resultado(espec, cambios, avisos, dudasDe(nombrados), (tocadas) => `puse ${edicion.direccion > 0 ? "más" : "menos"} ${nombre} ${enPiezas(espec, tocadas)}`, sinCambio);
+  const nuevoContexto = contexto ? podarContextoOrdenColor(contexto, conPiezasCambiadas(espec, cambios)) : undefined;
+  return resultado(espec, cambios, avisos, dudasDe(nombrados), (tocadas) => `puse ${edicion.direccion > 0 ? "más" : "menos"} ${nombre} ${enPiezas(espec, tocadas)}`, sinCambio, nuevoContexto);
 }
 
 /** El color (o colores) que se mueve toma `pedidos`, acotado; los demás se reparten lo que queda, cada uno en proporción a lo que tenía. */

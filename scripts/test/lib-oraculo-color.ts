@@ -13,7 +13,7 @@
  *    dos, o uno que no es el de la tienda cuando el color que entra ya está (repetir la orden no puede cambiar otro).
  */
 import { colorFabricable } from "../../src/lib/globos3d/motor/ediciones-comunes";
-import type { EspecClienteV1, PiezaEspec } from "../../src/lib/globos3d/motor/v1";
+import type { ContextoOrdenColor, EspecClienteV1, PiezaEspec } from "../../src/lib/globos3d/motor/v1";
 import { referenciaPorCodigo } from "../../src/lib/plan/referencia-sempertex";
 import { plegarTexto } from "../../src/lib/rag/taxonomy/v2";
 
@@ -59,7 +59,7 @@ export function codigosQueEntran(seleccion: readonly PiezaEspec[], a: string): s
   return destino ? seleccion.map((pieza) => colorFabricable(destino, pieza, []).codigo) : [];
 }
 
-export function loQueNombra(espec: EspecClienteV1, seleccion: readonly PiezaEspec[], dice: string, entran: readonly string[] = []): Map<string, NombradoEsperado> {
+export function loQueNombra(espec: EspecClienteV1, seleccion: readonly PiezaEspec[], dice: string, entran: readonly string[] = [], contexto?: ContextoOrdenColor | null): Map<string, NombradoEsperado> {
   const frase = fraseDe(dice);
   const todos = espec.piezas.flatMap((pieza) => pieza.colores);
   const llevaAlguno = (codigos: ReadonlySet<string>) => seleccion.some((pieza) => pieza.colores.some((color) => codigos.has(color.codigo)));
@@ -72,6 +72,7 @@ export function loQueNombra(espec: EspecClienteV1, seleccion: readonly PiezaEspe
   const propios = pasos[paso];
   const porPalabra = paso === 1;
   const editada = espec.origen.tipo === "edicion";
+  const historialConocido = contexto !== undefined && contexto !== null;
   const yaEntro = seleccion.some((pieza) => pieza.colores.some((color) => entran.includes(color.codigo)));
   const puedeSer = (color: { codigo: string; nombre: string }): boolean => Boolean(frase?.puedeSer.includes(color.codigo)) && !entran.includes(color.codigo) && !(frase?.tienda && PALABRA_DE_TARJETA[plegarTexto(color.nombre)]);
   return new Map(seleccion.map((pieza): [string, NombradoEsperado] => {
@@ -80,7 +81,8 @@ export function loQueNombra(espec: EspecClienteV1, seleccion: readonly PiezaEspe
     const unoQueYaEntro = codigos.length === 1 && yaEntro;
     const repeticion = unoQueYaEntro && Boolean(propios) && porPalabra && editada;
     const sinOrden = unoQueYaEntro && Boolean(propios) && porPalabra && !editada;
-    const quizaRepetida = unoQueYaEntro && (propios ? repeticion : codigos[0] !== frase?.tienda);
+    const soloMismoDestino = new Set(entran).size === 1 && entran.includes(codigos[0]!);
+    const quizaRepetida = !historialConocido && !soloMismoDestino && unoQueYaEntro && (propios ? repeticion : codigos[0] !== frase?.tienda);
     return [pieza.id, { codigos, pregunta: codigos.length > 1 || quizaRepetida, repeticion, sinOrden }];
   }));
 }

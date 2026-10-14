@@ -14,9 +14,13 @@ import { EspecClienteV1Schema, type EspecClienteV1 } from "./espec-cliente-v1";
 export type { ResultadoEdicion } from "./ediciones-comunes";
 export { PREFIJO_NO_PUDE } from "@/lib/prefijo-no-pude";
 
+import { podarContextoOrdenColor, type ContextoOrdenColor } from "./orden-color";
+
 export type ContextoEdicion = {
   /** La espec de la idea del catálogo que `agregar_idea` suma (la ruta la arma del plan guardado); null si no existe. */
   idea?: (ideaId: string) => EspecClienteV1 | null;
+  /** El contexto de la última orden de color (REQ-016 T2, D-046). `undefined` = historial desconocido (legado). */
+  ordenColor?: ContextoOrdenColor;
 };
 
 /** Aplica UNA edición a la espec. La edición se valida contra su esquema: una forma inventada no se ejecuta. */
@@ -30,20 +34,25 @@ export function aplicarEdicion(espec: EspecClienteV1, edicion: EdicionEspecV1, c
   return valida.success ? resultado : { espec, avisos: resultado.avisos, descripcion: "", tocadas: [], noAplicado: "No pude: ese cambio dejaría tu plan en un estado que no sé armar." };
 }
 
+function podarSiAplica(res: ResultadoEdicion, contexto: ContextoEdicion): ResultadoEdicion {
+  if (res.noAplicado || res.ordenColor !== undefined || !contexto.ordenColor) return res;
+  return { ...res, ordenColor: podarContextoOrdenColor(contexto.ordenColor, res.espec) };
+}
+
 function hacer(espec: EspecClienteV1, e: EdicionEspecV1, contexto: ContextoEdicion): ResultadoEdicion {
   switch (e.op) {
-    case "reemplazar_color": return reemplazarColor(espec, e);
-    case "agregar_color": return agregarColor(espec, e);
-    case "quitar_color": return quitarColor(espec, e);
-    case "proporcion_color": return proporcionColor(espec, e);
-    case "mas_menos_color": return masMenosColor(espec, e);
-    case "tamano_pieza": return tamanoPieza(espec, e);
-    case "tamano_globos": return tamanoGlobos(espec, e);
-    case "quitar_pieza": return quitarPieza(espec, e);
-    case "agregar_pieza": return agregarPieza(espec, e);
-    case "agregar_idea": return agregarIdea(espec, e, contexto.idea?.(e.ideaId) ?? null);
-    case "flores": return floresPieza(espec, e);
-    case "lado": return ladoPieza(espec, e);
+    case "reemplazar_color": return reemplazarColor(espec, e, contexto.ordenColor);
+    case "agregar_color": return agregarColor(espec, e, contexto.ordenColor);
+    case "quitar_color": return quitarColor(espec, e, contexto.ordenColor);
+    case "proporcion_color": return proporcionColor(espec, e, contexto.ordenColor);
+    case "mas_menos_color": return masMenosColor(espec, e, contexto.ordenColor);
+    case "tamano_pieza": return podarSiAplica(tamanoPieza(espec, e), contexto);
+    case "tamano_globos": return podarSiAplica(tamanoGlobos(espec, e), contexto);
+    case "quitar_pieza": return podarSiAplica(quitarPieza(espec, e), contexto);
+    case "agregar_pieza": return podarSiAplica(agregarPieza(espec, e), contexto);
+    case "agregar_idea": return podarSiAplica(agregarIdea(espec, e, contexto.idea?.(e.ideaId) ?? null), contexto);
+    case "flores": return podarSiAplica(floresPieza(espec, e), contexto);
+    case "lado": return podarSiAplica(ladoPieza(espec, e), contexto);
   }
 }
 
@@ -58,6 +67,8 @@ export type ResultadoEdiciones = {
   tocadas: string[];
   /** Cuántas ediciones cambiaron la espec. */
   aplicadas: number;
+  /** Contexto de orden de color resultante tras la tanda (REQ-016 T2, D-046). */
+  ordenColor?: ContextoOrdenColor;
 };
 
 /**
@@ -66,16 +77,19 @@ export type ResultadoEdiciones = {
  */
 export function aplicarEdiciones(inicial: EspecClienteV1, ediciones: readonly EdicionEspecV1[], contexto: ContextoEdicion = {}): ResultadoEdiciones {
   let espec = inicial;
-  const salida: ResultadoEdiciones = { espec, avisos: [], hechas: [], noAplicadas: [], tocadas: [], aplicadas: 0 };
+  let ordenColorActual = contexto.ordenColor;
+  const salida: ResultadoEdiciones = { espec, avisos: [], hechas: [], noAplicadas: [], tocadas: [], aplicadas: 0, ordenColor: ordenColorActual };
   for (const edicion of ediciones) {
-    const resultado = aplicarEdicion(espec, edicion, contexto);
+    const resultado = aplicarEdicion(espec, edicion, { ...contexto, ordenColor: ordenColorActual });
     salida.avisos.push(...resultado.avisos);
     if (resultado.noAplicado) { salida.noAplicadas.push(resultado.noAplicado); continue; }
     salida.noAplicadas.push(...(resultado.sinHacer ?? []));
     espec = resultado.espec;
+    ordenColorActual = resultado.ordenColor !== undefined ? resultado.ordenColor : (ordenColorActual ? podarContextoOrdenColor(ordenColorActual, espec) : undefined);
     salida.hechas.push(resultado.descripcion);
     salida.aplicadas += 1;
     for (const id of resultado.tocadas) if (!salida.tocadas.includes(id)) salida.tocadas.push(id);
   }
+  salida.ordenColor = ordenColorActual;
   return { ...salida, espec, avisos: [...new Set(salida.avisos)] };
 }

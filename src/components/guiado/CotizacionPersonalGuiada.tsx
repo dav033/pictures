@@ -60,7 +60,7 @@ function filasCotizacion(cotizacion: Cotizacion, decoracion: DecoracionSempertex
     // Con el título del catálogo, el producto sale de él, como en la tarjeta (`productoSempertex`): `colorSempertex` busca
     // por el color y, con un globo que su lámina no tiene («Fashion Blush Crema»), devolvía otro del mismo tono.
     const delCatalogo = catalogo && partes.esGlobo && !partes.forma ? productoSempertex(catalogo) : null;
-    const producto = delCatalogo ?? reconocido?.producto ?? (nota && partes.esGlobo && !partes.forma ? productoSempertex(titulo) : null);
+    const producto = delCatalogo ?? (nota && partes.esGlobo && !partes.forma ? productoSempertex(titulo) : null) ?? reconocido?.producto;
     const pulgadasTexto = partes.pulgadas ? ` de ${partes.pulgadas}"` : "";
     const nombre = producto ? `Sempertex ${producto}${pulgadasTexto}` : nombreLineaCliente(fuente);
     const colorNombre = reconocido ? reconocido.nombre.toLocaleLowerCase("es") : partes.color;

@@ -377,6 +377,38 @@ test("lo que el cliente escribe en un cambio (el nombre de una pieza) no llega a
   assert.doesNotMatch(JSON.stringify(e.filas), new RegExp(PRIVADO));
 });
 
+test("las aclaraciones con «puede ser» sin interrogación cuentan en no_aplicadas de la respuesta y de la fila durable (A1)", async () => {
+  // Plan con solo azul: ninguna tarjeta se llama «dorado».
+  const conAzul = (await crearPlan({ desde: "propuesta", propuesta: { frase: "x", colores: ["azul"], piezas: [{ estructura: "arco", cantidad: 1 }, { estructura: "columna", cantidad: 1 }] } })).cuerpo;
+  const plan = planDe(conAzul);
+  const e = entornoEditar();
+  // En la columna ponemos Metal Dorado y Reflex Dorado, y luego pedimos cambiar «dorado» por «rojo»
+  const { respuesta, cuerpo } = await editar(e, plan, {
+    tipo: "ops",
+    ediciones: [
+      { op: "reemplazar_color", de: "azul", a: "Metal Dorado", piezas: ["EST_02_COLUMNA"] },
+      { op: "agregar_color", color: "Reflex Dorado", piezas: ["EST_02_COLUMNA"] },
+      { op: "reemplazar_color", de: "dorado", a: "rojo", piezas: ["EST_02_COLUMNA"] },
+    ],
+  });
+  // Las primeras dos aplican, la tercera produce duda: «dorado» puede ser Metal Dorado o Reflex Dorado en la columna; dime cuál.
+  const noAplicadas: string[] = (cuerpo.noAplicadas as string[]) ?? [];
+  assert.ok(noAplicadas.length > 0, `debe haber razones noAplicadas: ${JSON.stringify(cuerpo)}`);
+  assert.ok(noAplicadas.some((texto) => texto.includes("puede ser")), `debe contener «puede ser»: ${JSON.stringify(noAplicadas)}`);
+  assert.ok(noAplicadas.every((texto) => !texto.includes("?") && !texto.includes("¿")), "no contiene signos de interrogación");
+  assert.equal(e.filas.length, 1);
+  const [fila] = e.filas;
+  assert.equal(fila!.estado, "PLAN_3D_EDITADO");
+  const cuentaNoAplicadas = (fila!.resultado as Record<string, unknown>).no_aplicadas;
+  assert.equal(cuentaNoAplicadas, noAplicadas.length, "la fila registra el conteo de no_aplicadas");
+  assert.doesNotMatch(JSON.stringify(fila), /puede ser/, "el texto de la aclaración no se guarda en la fila durable");
+});
+
+
+
+
+
+
 /* ---------- Lo que manda el navegador ---------- */
 
 test("lo que manda el navegador sin forma de código no llega a la fila: id de idea, hash del plan e id de turno", async () => {

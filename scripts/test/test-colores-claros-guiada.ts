@@ -1,6 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { clasificarColores, clasificarTonos, COLORES_CLAROS_V2, familiaDeColorPropuesta } from "../../src/lib/rag/taxonomy/v2";
@@ -63,11 +61,23 @@ assert.deepEqual(extraerRestriccionesUsuario(instruccion).colores.map((color) =>
 const planCeleste = { plan: { estructuras: [{ estructura_id: "c1", estructura_oficial: "columna", nombre: "Columna izquierda", colores_referencia: ["celeste"] }] }, estructuras: [{ estructura_id: "c1", lineas: [{ titulo: "GLOBO REDONDO FASHION AZUL CELESTE", color: "azul", diam_pulg: 12, unidades: 10 }] }] };
 assert.equal(defectoPlanGuiado(planCeleste, undefined, { coloresPedidos: propuesta.colores }), null, "el celeste comprado como «azul» no es un color faltante");
 
-// Catálogo real (snapshot de Shopify): de los azules redondos lisos, ¿cuáles quedan para un celeste?
-type Producto = { titulo: string };
-const snapshot = JSON.parse(readFileSync(path.join(process.cwd(), "data", "processed", "shopify-products.enriched.json"), "utf8")) as { productos: Producto[] };
-const lisos = snapshot.productos
-  .map((producto) => producto.titulo)
+// Controlled catalogue titles keep this regression independent of ignored Shopify snapshots.
+const productTitles: readonly string[] = [
+  "GLOBO REDONDO FASHION AZUL CELESTE",
+  "GLOBO REDONDO PASTEL MATE AZUL",
+  "GLOBO REDONDO FASHION AZUL",
+  "GLOBO REDONDO REFLEX AZUL",
+  "GLOBO REDONDO FASHION AZUL REY",
+  "GLOBO REDONDO FASHION AZUL NAVAL",
+  "GLOBO REDONDO FASHION AZUL CARIBE",
+  "GLOBO REDONDO METAL AZUL",
+  "GLOBO REDONDO NEON AZUL",
+  "GLOBO REDONDO REFLEX AZUL GALAXY",
+  "GLOBO REDONDO FASHION ROSADO",
+  "GLOBO REDONDO FASHION LILA",
+  "GLOBO REDONDO REFLEX DORADO",
+];
+const lisos = productTitles
   .filter((titulo) => /^GLOBO REDONDO /.test(titulo) && !/INFINITY|IMPRES|SURTIDO|POLICROM/i.test(titulo))
   .map((titulo) => ({ titulo, colores: coloresRealesProducto(titulo, clasificarColores(titulo).values) }));
 const azules = lisos.filter((producto) => producto.colores.length === 1 && producto.colores[0] === "azul");
@@ -75,7 +85,8 @@ const celestes = filtrarPorTonos(azules, ["celeste"], (producto) => producto).ma
 assert.ok(celestes.includes("GLOBO REDONDO FASHION AZUL CELESTE"), `«celeste» encuentra el Fashion Azul Celeste: ${celestes.join(", ")}`);
 assert.ok(celestes.includes("GLOBO REDONDO PASTEL MATE AZUL"), "y el Pastel Mate Azul");
 for (const ajeno of ["GLOBO REDONDO REFLEX AZUL", "GLOBO REDONDO FASHION AZUL REY", "GLOBO REDONDO FASHION AZUL NAVAL", "GLOBO REDONDO FASHION AZUL CARIBE", "GLOBO REDONDO METAL AZUL", "GLOBO REDONDO NEON AZUL", "GLOBO REDONDO REFLEX AZUL GALAXY"]) {
-  if (azules.some((producto) => producto.titulo === ajeno)) assert.ok(!celestes.includes(ajeno), `${ajeno} no es celeste`);
+  assert.ok(azules.some((producto) => producto.titulo === ajeno), `${ajeno} exercises the blue filter`);
+  assert.ok(!celestes.includes(ajeno), `${ajeno} no es celeste`);
 }
 const mezcla = filtrarPorTonos(lisos.filter((producto) => /FASHION (?:ROSADO|LILA|AZUL)$|REFLEX (?:AZUL|DORADO)$/.test(producto.titulo)), ["celeste"], (producto) => producto).map((producto) => producto.titulo).sort();
 for (const sigue of ["GLOBO REDONDO FASHION AZUL", "GLOBO REDONDO FASHION LILA", "GLOBO REDONDO FASHION ROSADO"]) assert.ok(mezcla.includes(sigue), `${sigue} sigue (otros colores y azul claro): ${mezcla.join(", ")}`);
@@ -121,4 +132,4 @@ const sinIdea = CotizacionGuiadaSchema.parse({ ...cotizacion, lineas: [{ ...coti
 const textoSinIdea = renderToStaticMarkup(createElement(CotizacionPersonalGuiada, { cotizacion: sinIdea })).replaceAll("&quot;", "\"");
 assert.ok(textoSinIdea.includes("Sempertex Fashion Azul Celeste de 12\""), `el celeste del plan se cotiza por su producto: ${textoSinIdea.slice(0, 300)}`);
 
-console.log(`test-colores-claros-guiada: celeste reconocido (taxonomía, propuesta, instrucción, restricción), búsqueda real → ${celestes.length} azules claros (${celestes.map((titulo) => titulo.replace("GLOBO REDONDO ", "")).join(", ")}); nombres «Celeste» y «Azul Caribe» de una sola fuente.`);
+console.log(`test-colores-claros-guiada: celeste reconocido (taxonomía, propuesta, instrucción, restricción), catálogo controlado → ${celestes.length} azules claros (${celestes.map((titulo) => titulo.replace("GLOBO REDONDO ", "")).join(", ")}); nombres «Celeste» y «Azul Caribe» de una sola fuente.`);

@@ -92,6 +92,32 @@ async function main(): Promise<void> {
     assert.ok(!html.includes("plan-armado") && !html.includes("plan-dibujo"), "ninguna vista previa de Python");
   });
 
+  await caso("«Deshacer» (REQ-016): junto al último ajuste, solo si la vista guarda el plan de antes, y apagado mientras se recalcula", () => {
+    const s = sobreDe("idea-deco-real-07-eb12910e210c94b6184d025127acce95");
+    const plan = PlanGuiadoSchema.parse(s.plan);
+    const base = { cotizacion: CotizacionPlanGuiadoSchema.parse(s.cotizacion), motor: "3d", ajustes: ["el arco más grande"] };
+    const conBoton = renderToStaticMarkup(createElement(TarjetaPlan, propiedades(plan, { ...base, onDeshacer: sinAccion })));
+    assert.match(conBoton, /aria-label="Deshacer el último ajuste"/);
+    assert.ok(texto(conBoton).includes("Último ajuste: el arco más grande"), "el último ajuste sigue a la vista");
+    assert.doesNotMatch(botonCon(conBoton, "Deshacer"), /disabled=""/, "encendido");
+    assert.match(botonCon(conBoton, "Deshacer"), /min-h-11/, "mide al menos 44 px");
+    // Sin plan guardado (recarga, plan de Python, otro plan): sin botón; sin ajuste, tampoco hay qué deshacer.
+    assert.doesNotMatch(renderToStaticMarkup(createElement(TarjetaPlan, propiedades(plan, base))), /Deshacer el último ajuste/);
+    assert.doesNotMatch(renderToStaticMarkup(createElement(TarjetaPlan, propiedades(plan, { cotizacion: base.cotizacion, motor: "3d", onDeshacer: sinAccion }))), /Deshacer el último ajuste/);
+    // Mientras el plan se rehace (un cambio por chat) o la tarjeta está ocupada: apagado, no oculto.
+    for (const ocupada of [{ recalculandoPorChat: true }, { ocupado: true }]) {
+      assert.match(botonCon(renderToStaticMarkup(createElement(TarjetaPlan, propiedades(plan, { ...base, onDeshacer: sinAccion, ...ocupada }))), "Deshacer"), /disabled=""/, JSON.stringify(ocupada));
+    }
+    // En una versión anterior del plan (no vigente) no se deshace nada.
+    assert.doesNotMatch(renderToStaticMarkup(createElement(TarjetaPlan, propiedades(plan, { ...base, onDeshacer: sinAccion, vigente: false }))), /Deshacer el último ajuste/);
+    // La vista guarda el plan de antes en el único camino que publica un ajuste, y lo suelta al empezar de nuevo; solo se ofrece si lo tiene.
+    const fuente = readFileSync("src/components/guiado/VistaGuiada.tsx", "utf8");
+    assert.match(fuente, /function ajustarPlan[\s\S]{0,500}if \(!vigente \|\| vigente\.reemplazado \|\| vigente\.plan\.plan_hash !== baseHash\) return false;[\s\S]{0,300}deshacerAjuste\.recordar\(mensajeId, vigente, plan\.plan_hash\);/, "ajustarPlan recuerda el widget de antes");
+    assert.match(fuente, /const vaciar = useCallback\(\(\) => \{[\s\S]{0,1800}limpiarDeshacer\(\);[\s\S]{0,1800}\}, \[marcarCargando, limpiarDeshacer\]\);/, "«Empezar de nuevo» (`vaciar`) suelta los planes de antes");
+    assert.match(fuente, /vigente && deshacerAjuste\.puede\(mensajeId, widget\) \? \{ onDeshacer: \(\) => deshacerUltimoAjuste\(mensajeId\) \}/, "la tarjeta solo recibe «Deshacer» si hay plan de antes");
+    assert.match(fuente, /function deshacerUltimoAjuste[\s\S]{0,1800}if \(!resultado\.ok\) \{[\s\S]{0,400}return resultado\.mensaje;\s*\}[\s\S]{0,1400}void borrarImagenNavegador\(mensajeId\)/, "la imagen guardada de otro plan se borra solo al deshacer (no en el rechazo), para que una recarga no la traiga");
+  });
+
   await caso("un plan 3D guardado sin su espec firmada (antes de la fase 3) conserva «Vista del plan en preparación»", () => {
     const s = sobreDe("idea-deco-real-07-eb12910e210c94b6184d025127acce95");
     const sinEspec = Object.fromEntries(Object.entries(PlanGuiadoSchema.parse(s.plan)).filter(([clave]) => clave !== "espec"));

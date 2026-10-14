@@ -30,5 +30,6 @@ export function sumarIdeaAEspec(base: EspecClienteV1, idea: EspecClienteV1, idea
     return { ...pieza, id };
   });
   const ideaIds = [...new Set([...(base.origen.ideaIds ?? []), ideaId])].slice(-MAX_PIEZAS_PLAN);
-  return { ok: true, espec: { version: base.version, origen: { tipo: "idea_sumada", ideaIds }, piezas: [...base.piezas, ...nuevas] }, nuevas: nuevas.map((pieza) => pieza.id) };
+  // El origen de la espec base se conserva (REQ-016 R3): si ya era «edicion», el resolutor de color sigue sabiendo que el plan se editó.
+  return { ok: true, espec: { version: base.version, origen: { ...base.origen, ideaIds }, piezas: [...base.piezas, ...nuevas] }, nuevas: nuevas.map((pieza) => pieza.id) };
 }

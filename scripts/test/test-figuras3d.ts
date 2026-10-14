@@ -13,7 +13,7 @@ import { DECORACIONES_PREDEFINIDAS, armarDecoracion, armarEstrella, armarFlorCor
 import { colocarEn, colocarTubosEn } from "../../src/lib/globos3d/decoraciones";
 import { CELEBRA_27, cuotas, decorarPared, repartirMezcla, type MezclaDecoraciones } from "../../src/lib/globos3d/mezcla";
 import { armarParedTrenzas, superficieFrontal } from "../../src/lib/globos3d/pared-trenzas";
-import { coloresDelFormato, formatoPorId } from "../../src/lib/globos3d/formatos";
+import { coloresDelFormato, colorSeVendeEnFormato, formatoPorId } from "../../src/lib/globos3d/formatos";
 import { esHalloween } from "../../src/lib/globos3d/halloween";
 
 const existe = (formatoId: string, codigo: string) => coloresDelFormato(formatoId).some((c) => c.codigo === codigo);
@@ -78,10 +78,21 @@ for (const g of petalos) {
   assert.ok(Math.abs(f.x * g.direccion.x + f.y * g.direccion.y + f.z * g.direccion.z) < 1e-9, "la cara es perpendicular al pétalo");
   assert.ok(f.y > 0.9, "la cara mira hacia fuera de la flor");
 }
-assert.ok(existe("C-6", "012") && !existe("C-12", "012"), "el Corazón 6 Fucsia viene de Celebra; el C-12 no se fabrica en Fucsia");
+assert.ok(existe("C-6", "012"), "el Corazón 6 Fucsia viene de Celebra");
+assert.ok(existe("C-12", "012"), "owner policy permits the design colour for C-12");
+assert.equal(colorSeVendeEnFormato("C-12", "012"), true, "the documented Fucsia store exception is preserved");
+assert.ok(existe("C-12", "070"), "Moca remains an allowed design colour");
+assert.equal(colorSeVendeEnFormato("C-12", "070"), false, "design permission does not invent store coverage");
 const conInterior = armarDecoracion(decoracionPredefinida("flor_corazones"));
 assert.equal(conInterior.globos.length, 6);
 assert.equal(conInterior.tubos.length, 5);
+
+// P-006: Reflex Gold 970 is not manufactured in T-160; retain the real Moca product.
+const spring = armarDecoracion(decoracionPredefinida("rizo_resorte"));
+assert.equal(spring.tubos.length, 1);
+assert.equal(spring.tubos[0]!.formatoId, "T-160");
+assert.equal(spring.tubos[0]!.codigo, "070");
+assert.equal(colorSeVendeEnFormato("T-160", "070"), true);
 
 // Materiales de tubito por largo: 8 lazos de 15 cm (~33 cm de tubo cada uno) no caben en un T-260 (~137 cm útiles).
 const grande = armarFlorTubito({ petalos: { formatoId: "T-260", grosorCm: 4, codigos: ["012"], cantidad: 8, estilo: "lazo", largoCm: 15, anchoCm: 10, aperturaGrados: 0, giroGrados: 0 }, interior: null, corona: null, centro: null });
