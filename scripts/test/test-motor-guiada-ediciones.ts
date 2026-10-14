@@ -30,6 +30,7 @@ const [ARCO, IZQ, DER] = ["EST_01_ARCO", "EST_02_COLUMNA", "EST_03_COLUMNA"] as 
 const pieza = (e: EspecClienteV1, id: string): PiezaEspec => e.piezas.find((p) => p.id === id)!;
 const suma = (p: PiezaEspec): number => p.colores.reduce((total, c) => total + c.peso, 0);
 const nombres = (p: PiezaEspec): string[] => p.colores.map((c) => c.nombre);
+const aCm = (valor: number): number => Math.round(valor * 100) / 100;
 const ok = (e: EspecClienteV1, edicion: EdicionEspecV1) => {
   const r = aplicarEdicion(e, edicion);
   assert.equal(r.noAplicado, undefined, `se esperaba hecho y fue: ${r.noAplicado}`);
@@ -177,6 +178,27 @@ test("tamano_pieza: agranda o achica un 10 %, escribe medidas, las acota a lo qu
   assert.equal(ancho.noAplicado, undefined, "la columna con una sola medida (el alto) recibe la que se pidió");
   assert.equal(pieza(ancho.espec, IZQ).medidas.altoM, 0.8);
   noPudo(BASE, { op: "tamano_pieza", pieza: "EST_09_ARCO", direccion: 1 }, /no encontré esa pieza/);
+});
+
+test("tamano_pieza: una medida fuera de rango parte de la que el constructor arma, nunca al revés", () => {
+  const guirnalda = espec([{ estructura: "guirnalda", cantidad: 1 }]);
+  const id = guirnalda.piezas[0]!.id;
+  const [minimo] = medidasEditables({ ...guirnalda.piezas[0]!, tamanos: "organica_gruesa" }).largoM!;
+  const baja: EspecClienteV1 = { ...guirnalda, piezas: [{ ...guirnalda.piezas[0]!, tamanos: "organica_gruesa", medidas: { largoM: 0.88 } }] };
+  assert.ok(0.88 < minimo, "el caso parte por debajo del mínimo");
+  noPudo(baja, { op: "tamano_pieza", pieza: id, direccion: -1 }, /ya está en su tamaño mínimo/);
+  const mas = ok(baja, { op: "tamano_pieza", pieza: id, direccion: 1 });
+  assert.equal(pieza(mas.espec, id).medidas.largoM, aCm(minimo * 1.1), "un paso de 10 % desde el mínimo con que se arma");
+
+  const columna = (altoM: number): EspecClienteV1 => ({ ...BASE, piezas: BASE.piezas.map((p) => (p.id === IZQ ? { ...p, tamanos: "clasica", medidas: { altoM } } : p)) });
+  const [bajo, alto] = medidasEditables({ ...pieza(BASE, IZQ), tamanos: "clasica" }).altoM!;
+  assert.equal(pieza(ok(columna(9), { op: "tamano_pieza", pieza: IZQ, direccion: -1 }).espec, IZQ).medidas.altoM, aCm(alto * 0.9), "9 m se arma como el máximo: achicar parte de ahí");
+  noPudo(columna(9), { op: "tamano_pieza", pieza: IZQ, direccion: 1 }, /ya está en su tamaño máximo/);
+  assert.equal(pieza(ok(columna(0.3), { op: "tamano_pieza", pieza: IZQ, direccion: 1 }).espec, IZQ).medidas.altoM, aCm(bajo * 1.1), "0,3 m se arma como el mínimo");
+  noPudo(columna(0.3), { op: "tamano_pieza", pieza: IZQ, direccion: -1 }, /ya está en su tamaño mínimo/);
+  const tope = ok(columna(alto - 0.25), { op: "tamano_pieza", pieza: IZQ, direccion: 1 });
+  assert.equal(pieza(tope.espec, IZQ).medidas.altoM, alto, "un paso que pasa del tope se queda en el tope");
+  assert.ok(tope.avisos.some((aviso) => /queda fuera de lo que se arma/.test(aviso) && new RegExp(`quedó en ${String(alto).replace(".", ",")} m`).test(aviso)), "y lo dice");
 });
 
 test("tamano_pieza: un aro se mide por su diámetro, una columna con capas manda por el alto nuevo y una pieza sin metros no cambia", () => {

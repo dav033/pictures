@@ -69,8 +69,12 @@ export function tamanoPieza(espec: EspecClienteV1, edicion: Op<"tamano_pieza">):
     for (const campo of campos) {
       const actual = actuales[campo];
       if (actual === undefined) continue;
-      const pedido = aCm(actual * factor);
-      cambios[campo] = acotar(campo, Math.abs(pedido - actual) < 0.01 ? actual + 0.01 * edicion.direccion! : pedido, editables[campo]!, pieza, avisos);
+      const rango = editables[campo]!;
+      // El constructor arma con la medida llevada al rango: se parte de esa, no de la que quedó guardada fuera de él.
+      const efectiva = Math.min(rango[1], Math.max(rango[0], aCm(actual)));
+      if (edicion.direccion! < 0 ? efectiva <= rango[0] : efectiva >= rango[1]) continue;
+      const pedido = aCm(efectiva * factor);
+      cambios[campo] = acotar(campo, Math.abs(pedido - efectiva) < 0.01 ? efectiva + 0.01 * edicion.direccion! : pedido, rango, pieza, avisos);
     }
   }
   const cambian = (Object.entries(cambios) as Array<[CampoMedida, number]>).filter(([campo, valor]) => Math.abs(valor - (actuales[campo] ?? Number.NaN)) >= 0.005 || actuales[campo] === undefined);

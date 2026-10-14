@@ -7,7 +7,9 @@
  *   npx tsx --conditions=react-server scripts/test/test-escenarios-invariantes.ts
  */
 import assert from "node:assert/strict";
-import type { EspecClienteV1, PiezaEspec } from "../../src/lib/globos3d/motor/espec-cliente-v1";
+import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
+import { TAMANOS_ESPEC, type EspecClienteV1, type PiezaEspec } from "../../src/lib/globos3d/motor/espec-cliente-v1";
+import { BANDAS, bandaDePieza, ESTRUCTURAS_SIN_BANDA } from "../escenarios/bandas";
 import { observar, type Geometria, type Observacion } from "../escenarios/ejecutar";
 import { evaluar, INVARIANTES, PRESUPUESTO_MS, piezasConBanda, type Invariante } from "../escenarios/invariantes";
 
@@ -80,8 +82,59 @@ function pruebaTiempoSoloConFlag(): void {
   console.log("  el tiempo solo se juzga en el CLI: ok");
 }
 
+/** T62: el margen por abajo de la guirnalda orgánica crece con el largo (E-01844 de la semilla 1; E-00734 de la 259600: colores sin R-9). */
+function pruebaGuirnaldaCortaToleraElRedondeo(): void {
+  const organica = (largoM: number, densidad: PiezaEspec["densidad"], codigo = "570"): PiezaEspec =>
+    pieza("EST_01_GUIRNALDA", "guirnalda", { medidas: { largoM }, tamanos: "organica_fina", densidad, colores: [{ codigo, nombre: "Color", peso: 1 }] });
+  const minimo = (largoM: number): number => { const b = bandaDePieza(organica(largoM, "sencilla", "932")); assert.equal(b.tipo, "banda"); return b.tipo === "banda" ? b.minGlobos : -1; };
+  const holgura = (largoM: number): number => Math.floor(13 * largoM) - minimo(largoM);
+  assert.ok(holgura(6) > holgura(1.27) && holgura(1.27) > 3, "sin R-9, el margen por abajo crece con el largo y supera los 3 globos fijos");
+  const corta = observar(espec(organica(1.27, "media", "932")));
+  assert.equal(corta.geometria!.globos.get("EST_01_GUIRNALDA"), 15, "E-01844: 15 globos en 1,27 m con un color sin R-9");
+  assert.deepEqual(clasesDe(corta, "banda_conteo"), [], "E-01844: 15 globos en 1,27 m media sin R-9 está dentro de la banda");
+  const sinR9 = observar(espec(organica(3.66, "sencilla", "932")));
+  assert.equal(sinR9.geometria!.globos.get("EST_01_GUIRNALDA"), 38, "E-00734: 38 globos en 3,66 m con un color sin R-9");
+  assert.deepEqual(clasesDe(sinR9, "banda_conteo"), [], "E-00734: dentro de la banda");
+  const conR9 = bandaDePieza(organica(3.66, "sencilla", "570"));
+  const sinR9Banda = bandaDePieza(organica(3.66, "sencilla", "932"));
+  assert.ok(conR9.tipo === "banda" && sinR9Banda.tipo === "banda" && sinR9Banda.minGlobos < conR9.minGlobos, "el margen relativo solo aplica a colores sin R-9");
+  assert.equal(conR9.tipo === "banda" && Math.floor(13 * conR9.ejeM) - conR9.minGlobos, 3, "con un color R-9 rige el margen fijo de 3");
+  const escasa = conGeometria(observar(espec(organica(3.66, "sencilla", "570"))), { globos: new Map([["EST_01_GUIRNALDA", Math.floor(0.75 * 13 * 3.66)]]) });
+  assert.deepEqual(clasesDe(escasa, "banda_conteo"), ["banda_conteo:guirnalda:sencilla:bajo"], "con color R-9, el 75 % del mínimo sigue fallando");
+  const vacia = conGeometria(corta, { globos: new Map([["EST_01_GUIRNALDA", 2]]) });
+  assert.deepEqual(clasesDe(vacia, "banda_conteo"), ["banda_conteo:guirnalda:media:bajo"], "una guirnalda casi vacía sigue fallando");
+  const aro = bandaDePieza(pieza("EST_01_ARO", "aro_circular", { medidas: { anchoM: 1.5, altoM: 1.5 }, tamanos: "organica_fina", densidad: "media" }));
+  assert.equal(aro.tipo === "banda" && Math.floor(19 * aro.ejeM) - aro.minGlobos, 3, "el margen escalado es solo de la guirnalda: el aro sigue con 3");
+  console.log("  guirnalda corta: el margen por abajo escala con el largo: ok");
+}
+
+/** T63: toda estructura oficial tiene banda o una exención documentada, y las cuatro de T63 se comparan con la fachada real (racimo_pared y bouquet son solo pines de regresión del valor por defecto). */
+function pruebaTodaEstructuraTieneBanda(): void {
+  const conBanda = new Set(BANDAS.flatMap((f) => f.estructuras));
+  const sinNada = ESTRUCTURAS_OFICIALES_IDS.filter((id) => !conBanda.has(id) && !ESTRUCTURAS_SIN_BANDA[id]);
+  assert.deepEqual(sinNada, [], "estructuras sin banda ni exención documentada: añade su fila a BANDAS (medida con la fachada) o su motivo a ESTRUCTURAS_SIN_BANDA");
+  const dobles = ESTRUCTURAS_OFICIALES_IDS.filter((id) => conBanda.has(id) && ESTRUCTURAS_SIN_BANDA[id]);
+  assert.deepEqual(dobles, [], "una estructura con banda no puede seguir en ESTRUCTURAS_SIN_BANDA");
+  for (const id of ["techo_globos", "pared_densa", "racimo_pared", "bouquet"] as const) {
+    assert.ok(conBanda.has(id), `${id} tiene que tener banda`);
+    for (const tamanos of TAMANOS_ESPEC) {
+      const b = bandaDePieza(pieza(`EST_01_${id.toUpperCase()}`, id, { tamanos, lugar: id === "techo_globos" ? "techo" : "centro" }));
+      assert.equal(b.tipo, "banda", `${id}:${tamanos} sin banda`);
+    }
+    const o = observar(espec(pieza(`EST_01_${id.toUpperCase()}`, id, { lugar: id === "techo_globos" ? "techo" : id === "bouquet" ? "mesa" : "centro" })));
+    const [p] = piezasConBanda(o);
+    assert.ok(p, `${id}: la pieza por defecto se compara con su banda`);
+    assert.deepEqual(clasesDe(o, "banda_conteo"), [], `${id}: la fachada cae dentro de su banda (${p.globos} globos, [${p.banda.minGlobos}, ${p.banda.maxGlobos}])`);
+    const sobre = conGeometria(o, { globos: new Map([[`EST_01_${id.toUpperCase()}`, p.banda.maxGlobos + 1]]) });
+    assert.match(clasesDe(sobre, "banda_conteo")[0] ?? "", new RegExp(`^banda_conteo:${id}:.*:sobre$`), `${id}: un conteo por encima de la banda falla`);
+  }
+  console.log("  toda estructura tiene banda o exención documentada; las cuatro de T63 se comparan: ok");
+}
+
 pruebaBuenaPasa();
 pruebaCadaInvarianteAtrapaSuFixture();
 pruebaFixtureDeSolapeToleradoPasa();
 pruebaTiempoSoloConFlag();
+pruebaGuirnaldaCortaToleraElRedondeo();
+pruebaTodaEstructuraTieneBanda();
 console.log("test-escenarios-invariantes: ok");

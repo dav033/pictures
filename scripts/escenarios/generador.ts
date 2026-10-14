@@ -5,6 +5,7 @@ import {
   DENSIDADES_ESPEC, FORMATOS_REMATE, ORIGENES_ESPEC, TAMANOS_ESPEC,
   type ColorEspec, type EspecClienteV1, type PiezaEspec,
 } from "../../src/lib/globos3d/motor/espec-cliente-v1";
+import { medidasEditables, type CampoMedida } from "../../src/lib/globos3d/motor/rangos-medidas";
 import { crearAzar, semillaDeEscenario, type Azar } from "./azar";
 
 /**
@@ -72,6 +73,19 @@ function medidasDeEstructura(oficial: EstructuraOficialId, az: Azar): PiezaEspec
   return { anchoM: dos(az, 0.5, 3), altoM: dos(az, 0.5, 3) };
 }
 
+/** Lleva cada medida al rango con que el constructor arma esa pieza y esos globos (sin consumir azar: la semilla sigue dando lo mismo). */
+function medidasAlRangoDelConstructor(pieza: PiezaEspec): PiezaEspec["medidas"] {
+  const rangos = medidasEditables(pieza);
+  const medidas = { ...pieza.medidas };
+  for (const campo of Object.keys(rangos) as CampoMedida[]) {
+    const valor = medidas[campo];
+    const [minimo, maximo] = rangos[campo]!;
+    if (valor !== undefined) medidas[campo] = Math.min(maximo, Math.max(minimo, valor));
+  }
+  if (pieza.oficial === "aro_circular" && medidas.anchoM !== undefined) medidas.altoM = medidas.anchoM;
+  return medidas;
+}
+
 function piezaAleatoria(indice: number, az: Azar): PiezaEspec {
   const oficial = az.elegir(ESTRUCTURAS_OFICIALES_IDS);
   const nombreMayus = oficial.toUpperCase();
@@ -85,6 +99,7 @@ function piezaAleatoria(indice: number, az: Azar): PiezaEspec {
     colores: coloresDe(az),
     tamanos: az.elegir(TAMANOS_ESPEC),
   };
+  pieza.medidas = medidasAlRangoDelConstructor(pieza);
   if (az.probar(0.75)) pieza.densidad = az.elegir(DENSIDADES_ESPEC);
   if (oficial === "aro_circular" && az.probar(0.15)) pieza.forma = "parcial";
   if (az.probar(0.15)) {
