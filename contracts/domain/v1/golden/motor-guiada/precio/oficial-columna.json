@@ -2,9 +2,9 @@
  "caso": "oficial-columna",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.3"
+  "version": "1.2.4"
  },
- "especHash": "598c834422b401b5fcb3fa80b259698b82936deb70ff4eb2d0284d067e09e96a",
+ "especHash": "a5bcd0279c5e5221bcc8a0fd49b7b7c8cbd3d7757c9340bf32448ba37becffed",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

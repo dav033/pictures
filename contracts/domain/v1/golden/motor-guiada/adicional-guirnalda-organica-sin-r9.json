@@ -1,0 +1,67 @@
+{
+ "caso": "adicional-guirnalda-organica-sin-r9",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.4"
+ },
+ "especHash": "d8212bce4a4a4c54282746704319fa0f0d7bf2193b9ec950304c18bd847d7e71",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_GUIRNALDA": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "932",
+     "cantidad": 13
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "932",
+     "cantidad": 33
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "932",
+     "cantidad": 4
+    }
+   ],
+   "unidades": 50,
+   "caja": [
+    -178,
+    200,
+    -250,
+    178,
+    282,
+    -195
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "932",
+    "cantidad": 13
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "932",
+    "cantidad": 33
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "932",
+    "cantidad": 4
+   }
+  ],
+  "unidades": 50
+ },
+ "caja": [
+  -178,
+  200,
+  -250,
+  178,
+  282,
+  -195
+ ]
+}

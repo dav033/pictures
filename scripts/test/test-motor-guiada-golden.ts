@@ -1,6 +1,6 @@
 /**
  * Fixtures doradas del motor 3D de la vista guiada (REQ-007, fase 1). Sin coste: no llama a ninguna IA.
- * Una por cada una de las 28 ideas guardadas y por cada una de las 18 estructuras oficiales
+ * Una por cada una de las 28 ideas guardadas, por cada una de las 18 estructuras oficiales y por la guirnalda orgánica sin R-9
  * (`contracts/domain/v1/golden/motor-guiada/`): las cantidades por (formato, código) por pieza y en total, el hash de
  * la espec, lo que no se pudo representar y la caja de cada pieza ± 5 cm.
  *
@@ -10,13 +10,14 @@
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { DIRECTORIO_DORADO, registroDe, todosLosCasos, type RegistroDorado } from "../lib/casos-motor-guiada";
+import { DIRECTORIO_DORADO, casosDorados, registroDe, todosLosCasos, type RegistroDorado } from "../lib/casos-motor-guiada";
 import { formatosOrganicosDe } from "../../src/lib/globos3d/herramientas-escena-colores";
 import { armarDesdeEspec, VERSION_MOTOR, type PiezaEspec } from "../../src/lib/globos3d/motor/v1";
 
 const TOLERANCIA_CAJA_CM = 5;
-const casos = todosLosCasos();
-assert.equal(casos.length, 28 + 18, "28 ideas guardadas y 18 estructuras oficiales");
+const casos = casosDorados();
+assert.equal(todosLosCasos().length, 28 + 18, "28 ideas guardadas y 18 estructuras oficiales");
+assert.equal(casos.length, 28 + 18 + 1, "y la guirnalda orgánica sin R-9");
 
 const esperados = new Set(casos.map((c) => `${c.id}.json`));
 const sobrantes = readdirSync(DIRECTORIO_DORADO).filter((f) => f.endsWith(".json") && !esperados.has(f));

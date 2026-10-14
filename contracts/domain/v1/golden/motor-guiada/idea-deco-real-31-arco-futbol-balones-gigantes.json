@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-31-arco-futbol-balones-gigantes",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.3"
+  "version": "1.2.4"
  },
- "especHash": "4eb388b371d7d6cdcd6d17fa1479c52fb72e745090e68d732220485fc8c148a9",
+ "especHash": "188bbd3fcad7839bd5282ae6ce129651d1fdc7c0c66eebfa84b83b7a7b8aa03a",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {

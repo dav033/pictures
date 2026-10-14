@@ -4,15 +4,11 @@
  * que se midió (el más bajo para un «bajo», el más alto para un «sobre»). Una clase fuera de esta lista falla la prueba.
  */
 export const CLASES_PERMITIDAS: ReadonlyMap<string, { razon: string; extremo: number }> = new Map([
-  ["banda_conteo:guirnalda:media:bajo", { extremo: 15.75, razon: "Guirnalda orgánica media de 1,27 m con un color que sí tiene R-9 (570): 20 globos, 15,7 por metro frente al mínimo de 19 (banda de PARIDAD con 3 globos de margen = 21). Defecto del motor en guirnaldas cortas, visible desde que el margen relativo solo aplica a colores sin R-9; ver P-087." }],
-  ["banda_conteo:aro_circular:lujosa:bajo", { extremo: 16.71, razon: "El aro lujoso cuenta por debajo de la banda de PARIDAD (24 a 40 por metro): PERFIL_ARO de calibracion-organica.ts recorta el relleno R-5 del aro." }],
-  ["banda_conteo:aro_circular:media:bajo", { extremo: 13.79, razon: "El aro medio cuenta por debajo de la banda (19 a 26 por metro) por el mismo PERFIL_ARO." }],
-  ["banda_conteo:aro_circular:sencilla:bajo", { extremo: 10.88, razon: "El aro ligero cuenta por debajo de la banda (13 a 20 por metro) por el mismo PERFIL_ARO." }],
-  ["banda_conteo:columna:sencilla:bajo", { extremo: 10.53, razon: "Columna orgánica de 0,55 m de grosor: la banda de PARIDAD supone el grosor por defecto de 0,7 m (medidas-espec.ts, GROSOR_ORGANICO_POR_DEFECTO_M)." }],
-  ["banda_conteo:columna:media:bajo", { extremo: 13.16, razon: "Columna orgánica de 0,55 m de grosor, mismo límite de grosor que la banda de 0,7 m." }],
-  ["banda_conteo:columna:lujosa:bajo", { extremo: 18.95, razon: "Columna orgánica lujosa de 0,55 m: cuenta por debajo de la banda de 0,7 m." }],
-  ["banda_conteo:columna_asimetrica:sencilla:bajo", { extremo: 10.53, razon: "Columna asimétrica de 0,55 m, mismo límite de grosor que la columna orgánica." }],
-  ["banda_conteo:columna_asimetrica:media:bajo", { extremo: 13.68, razon: "Columna asimétrica de 0,55 m, mismo límite de grosor que la columna orgánica." }],
-  ["banda_conteo:columna_asimetrica:lujosa:bajo", { extremo: 17.89, razon: "Columna asimétrica lujosa de 0,55 m: cuenta por debajo de la banda de 0,7 m." }],
-  ["banda_conteo:columna_asimetrica:lujosa:sobre", { extremo: 45.35, razon: "Columna asimétrica de 0,72 m de grosor: el tubo más grueso que el de referencia (0,7 m) lleva más globos por metro que la banda." }],
+  ["banda_conteo:guirnalda:media:bajo", { extremo: 15.75, razon: "Guirnalda orgánica media de 1,27 m, con R-9 (570) o sin él (932, tras el relleno compensado de P-087): 20 globos, 15,7 por metro frente al mínimo de 19 (banda de PARIDAD con 3 globos de margen = 21), y 65 contra 66 en la de 3,66 m sin R-9. Queda de P-087: el defecto del motor en guirnaldas medias." }],
+  // P-089: las columnas orgánicas llenan menos que su banda en tres casos medidos (barrido de 0,05 en 0,05 m de grosor y de 1 a 4 m de alto, con el 570 y el 056 sin R-9).
+  // `margenBajoSinR9` perdona hasta el 30 % del mínimo; lo que queda por debajo se declara aquí con su extremo, no se esconde con una fracción mayor.
+  ["banda_conteo:columna:media:bajo", { extremo: 11.5, razon: "Columna orgánica media: el 056 (sin R-9) de 0,7 m de grosor y 4 m de alto da 11,5 por metro contra la banda de PARIDAD del grosor por defecto (19 a 26 por metro menos el 30 %); las de 1 m de alto con R-9 dan 12 por metro (las bajas llevan menos globos por metro). Las columnas no reciben el relleno compensado de la guirnalda: P-089." }],
+  ["banda_conteo:columna_asimetrica:media:bajo", { extremo: 11.5, razon: "Columna asimétrica media: mismo caso que la columna, 056 de 0,7 m de grosor y 4 m de alto (11,5 por metro), o de 1 m de alto con R-9 (15 por metro). P-089." }],
+  ["banda_conteo:columna:lujosa:bajo", { extremo: 19, razon: "Columna orgánica lujosa de 1,05 m de grosor y 1 m de alto con el 056 (sin R-9): 19 por metro contra un mínimo medido de 29 a 47 por metro menos el 30 %; con R-9, 23 por metro a 0,7 m y 4 m de alto contra la banda de PARIDAD (24 a 40). P-089." }],
+  ["banda_conteo:columna_asimetrica:lujosa:bajo", { extremo: 23, razon: "Columna asimétrica lujosa de 1,05 m de grosor y 1 m de alto con el 056 (sin R-9): 23 por metro contra el mínimo medido menos el 30 %. P-089." }],
 ]);

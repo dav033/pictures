@@ -64,6 +64,12 @@ const medidasOrganicas = (oficial: PiezaEspec["oficial"]): PiezaEspec["medidas"]
   return [{ anchoM: 1.2, altoM: 2 }, { anchoM: 1.8, altoM: 2.4 }, { anchoM: 2.4, altoM: 2.9 }];
 };
 
+/** P-089: las columnas cuyo conteo la banda no alcanza ni con su margen (hasta `TOPE_MARGEN_SIN_R9` para colores sin R-9): el 056 (sin R-9) en las alturas y grosores donde el mínimo medido no se alcanza, las columnas de 1 m o de 4 m y la gruesa de 1,2 m con R-9. Cada celda de la lista provoca una clase de `clases-permitidas.ts`. */
+const COLUMNAS_FUERA_DE_BANDA: ReadonlyArray<readonly [codigo: string, medidas: PiezaEspec["medidas"][]]> = [
+  ["570", [{ altoM: 1 }, { altoM: 1.24 }, { anchoM: 1.05, altoM: 1 }, { anchoM: 0.7, altoM: 4 }, { anchoM: 1.2, altoM: 1.2 }]],
+  ["056", [{ anchoM: 0.35, altoM: 2.4 }, { anchoM: 0.7, altoM: 1.8 }, { anchoM: 0.7, altoM: 4 }, { anchoM: 0.9, altoM: 2.4 }, { anchoM: 1.05, altoM: 1 }, { anchoM: 1.1, altoM: 3 }]],
+];
+
 function pieza(oficial: PiezaEspec["oficial"], medidas: PiezaEspec["medidas"], tamanos: PiezaEspec["tamanos"], densidad?: PiezaEspec["densidad"]): PiezaEspec {
   return {
     id: "EST_01_" + oficial.toUpperCase(), oficial, nombre: `Pieza 1 ${oficial}`, lugar: "centro", medidas,
@@ -129,6 +135,11 @@ function pruebaRejillaDeBandas(): void {
   for (const oficial of ORGANICAS_DE_REJILLA) {
     for (const densidad of ["sencilla", "media", "lujosa"] as const) {
       for (const m of medidasOrganicas(oficial)) especs.push(envolver(pieza(oficial, m, "organica_fina", densidad)));
+    }
+  }
+  for (const oficial of ["columna", "columna_asimetrica"] as const) {
+    for (const densidad of ["sencilla", "media", "lujosa"] as const) {
+      for (const [codigo, medidas] of COLUMNAS_FUERA_DE_BANDA) for (const m of medidas) especs.push(envolver({ ...pieza(oficial, m, "organica_fina", densidad), colores: [{ codigo, nombre: "Color", peso: 1 }] }));
     }
   }
   const noPermitidas: string[] = [];

@@ -1,6 +1,8 @@
 import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { formatosOrganicosDe } from "../../src/lib/globos3d/herramientas-escena-colores";
-import { DENSIDAD_POR_DEFECTO, medidasDe } from "../../src/lib/globos3d/motor/medidas-espec";
+import { DENSIDAD_POR_DEFECTO, GROSOR_ORGANICO_POR_DEFECTO_M, medidasDe } from "../../src/lib/globos3d/motor/medidas-espec";
+import { DIAMETRO_ARO_MAX_M, DIAMETRO_ARO_MIN_M, FILAS_ARO_ORGANICO } from "./bandas-aro";
+import { FILAS_COLUMNA_ORGANICA, GROSOR_COLUMNA_MAX_M, GROSOR_COLUMNA_MIN_M } from "./bandas-columna";
 import { TAMANOS_ESPEC, type DensidadEspec, type PiezaEspec, type TamanosEspec } from "../../src/lib/globos3d/motor/espec-cliente-v1";
 
 /**
@@ -23,24 +25,7 @@ export const TOLERANCIA_GLOBOS = 3;
 const METROS_POR_CAPA = 0.2;
 
 /** Las estructuras orgánicas que PARIDAD mide por densidad (las que tienen fila de conteo en el CSV). */
-const ORGANICAS: readonly EstructuraOficialId[] = ["semiarco", "semiarco_asimetrico", "guirnalda", "columna", "columna_asimetrica", "aro_circular"];
-
-/** El formato que el relleno de la guirnalda orgánica necesita (`MEZCLA_GUIRNALDA`): sin él en ningún color, `tamanosPosibles` lo descarta. */
-const FORMATO_NECESARIO: Partial<Record<EstructuraOficialId, string>> = { guirnalda: "R-9" };
-
-/** Misma regla que `tamanosPosibles`: el formato falta si ningún color de la pieza se fabrica en él. */
-const sinFormatoNecesario = (pieza: PiezaEspec): boolean => {
-  const formato = FORMATO_NECESARIO[pieza.oficial];
-  return formato !== undefined && !pieza.colores.some((color) => formatosOrganicosDe(color.codigo).includes(formato));
-};
-
-/**
- * Las guirnaldas orgánicas cuyos colores no se fabrican en R-9 (13 de ~80 códigos: 056, 909, 912, 915, 932...) bajan del mínimo
- * más que el resto: medido con la fachada, 3,66 m sencilla da 38 globos (10,4/m) y 1,27 m sencilla 9 (7,1/m), un
- * 55-80 % del mínimo por metro. El margen por abajo escala con el largo: `TOLERANCIA_GLOBOS` más este 25 % del mínimo.
- * Es un hueco del motor (el relleno de esos colores) que la banda no corrige: ver P-087. El margen solo se aplica a esos colores; con R-9 rige el fijo.
- */
-const MARGEN_BAJO_RELATIVO: Partial<Record<EstructuraOficialId, number>> = { guirnalda: 0.25 };
+const ORGANICAS: readonly EstructuraOficialId[] = ["semiarco", "semiarco_asimetrico", "guirnalda"];
 
 export type FilaBanda = {
   estructuras: readonly EstructuraOficialId[];
@@ -48,6 +33,12 @@ export type FilaBanda = {
   tamanos: readonly TamanosEspec[];
   /** Solo para orgánicas: la densidad a la que aplica la fila. */
   densidad?: DensidadEspec;
+  /** Solo columnas orgánicas: el tramo de grosor (m, bordes incluidos) al que aplica la fila; el grosor se acota a lo que arma el motor. */
+  grosorM?: readonly [desde: number, hasta: number];
+  /** Solo el aro orgánico: el tramo de diámetro (m, bordes incluidos) al que aplica la fila; el diámetro se acota a lo que se midió. */
+  diametroM?: readonly [desde: number, hasta: number];
+  /** Fracción del mínimo que se perdona a las piezas sin R-9 en ningún color (rellenan menos: ver `bandas-columna.ts`). */
+  margenBajoSinR9?: number;
   /** Lo que se mide: el eje en metros (por defecto), el área en m² (ancho × alto) o la pieza entera (1). */
   medida?: "eje" | "area" | "pieza";
   /** Globos por unidad de `medida` (por metro, por m² o por pieza). */
@@ -83,6 +74,8 @@ export const BANDAS: readonly FilaBanda[] = [
     estructuras: ["columna"], tamanos: ["clasica"], minPorMetro: 14, maxPorMetro: 24,
     origen: "paridad", fuente: "Capas de 20 cm × 4 globos = 20/m (SEGUIMIENTO.md:98-99; armado_columna). Python: 14,7-17,9/m (08 y 29); 08 se mide con su remate.",
   },
+  ...FILAS_COLUMNA_ORGANICA,
+  ...FILAS_ARO_ORGANICO,
   { estructuras: ORGANICAS, tamanos: ["organica_fina"], densidad: "sencilla", minPorMetro: 13, maxPorMetro: 20, origen: "paridad", fuente: "Densidad ligera 13-20/m (PARIDAD §2; ver la cita de la investigación arriba). Python: 15,1-17,1/m. Foto: 13,5-18,8/m." },
   { estructuras: ORGANICAS, tamanos: ["organica_fina"], densidad: "media", minPorMetro: 19, maxPorMetro: 26, origen: "paridad", fuente: "Densidad estándar 20-26/m (PARIDAD §2, que cita la investigación de guirnalda: ese archivo no está en disco; calibracion-organica.ts cabecera). Python: 19,5-21,9/m." },
   { estructuras: ORGANICAS, tamanos: ["organica_fina"], densidad: "lujosa", minPorMetro: 24, maxPorMetro: 40, origen: "paridad", fuente: "Densidad llena 26-40/m (PARIDAD §2; ver la cita de la investigación arriba). Python: 23,0-27,5/m; foto: 22,9-39,8/m." },
@@ -121,7 +114,8 @@ export function ejeEnMetros(pieza: PiezaEspec): number | null {
     case "semiarco": case "semiarco_asimetrico": return elipsePerimetro(ancho, alto) / 4;
     case "columna": case "columna_asimetrica": case "columna_no_densa": {
       // La regla de `constructores-clasicos.ts::alturaDeColumna`: las capas mandan si el alto pedido cae a dos niveles de ellas.
-      if (!pieza.capas) return alto;
+      // Solo la columna clásica (cuartetos) las lee: la orgánica se arma por su alto y ignora `capas` (T61: E-01214, E-01910).
+      if (!pieza.capas || pieza.tamanos !== "clasica") return alto;
       const porCapas = pieza.capas * METROS_POR_CAPA;
       return pieza.medidas.altoM === undefined || Math.abs(pieza.medidas.altoM - porCapas) <= 2 * METROS_POR_CAPA ? porCapas : pieza.medidas.altoM;
     }
@@ -143,18 +137,36 @@ function medidaDeBanda(pieza: PiezaEspec, medida: NonNullable<FilaBanda["medida"
   return m.anchoM !== undefined && m.altoM !== undefined ? m.anchoM * m.altoM : null;
 }
 
+/** El grosor del tubo como lo arma `construirColumnaOrganica` (`grosorM`, si no `anchoM`, si no el de por defecto), acotado a lo que el motor acepta. */
+function grosorDeColumna(pieza: PiezaEspec): number {
+  const m = medidasDe(pieza);
+  return Math.min(GROSOR_COLUMNA_MAX_M, Math.max(GROSOR_COLUMNA_MIN_M, m.grosorM ?? m.anchoM ?? GROSOR_ORGANICO_POR_DEFECTO_M.columna));
+}
+
+/** El diámetro del aro como lo arma `construirAro` (`anchoM`, si no `altoM`), acotado a lo medido. */
+function diametroDeAro(pieza: PiezaEspec): number {
+  const m = medidasDe(pieza);
+  return Math.min(DIAMETRO_ARO_MAX_M, Math.max(DIAMETRO_ARO_MIN_M, m.anchoM ?? m.altoM ?? 0));
+}
+
+/** Ningún color de la pieza se fabrica en R-9: el relleno de ese hueco queda corto (la regla de `tamanosPosibles`). */
+const sinR9 = (pieza: PiezaEspec): boolean => !pieza.colores.some((color) => formatosOrganicosDe(color.codigo).includes("R-9"));
+
 /** La banda que le toca a una pieza (con su densidad efectiva) o el motivo de que no le toque ninguna. */
 export function bandaDePieza(pieza: PiezaEspec): BandaDePieza {
   const densidad = pieza.densidad ?? DENSIDAD_POR_DEFECTO[pieza.oficial] ?? "media";
-  const fila = BANDAS.find((f) => f.estructuras.includes(pieza.oficial) && f.tamanos.includes(pieza.tamanos) && (f.densidad === undefined || f.densidad === densidad));
+  const grosor = grosorDeColumna(pieza);
+  const diametro = diametroDeAro(pieza);
+  const fila = BANDAS.find((f) => f.estructuras.includes(pieza.oficial) && f.tamanos.includes(pieza.tamanos) && (f.densidad === undefined || f.densidad === densidad)
+    && (f.grosorM === undefined || (grosor >= f.grosorM[0] && grosor <= f.grosorM[1]))
+    && (f.diametroM === undefined || (diametro >= f.diametroM[0] && diametro <= f.diametroM[1])));
   if (!fila) return { tipo: "sin_banda", motivo: SIN_BANDA_MOTIVO };
   const ejeM = medidaDeBanda(pieza, fila.medida ?? "eje");
   if (ejeM === null || ejeM <= 0) return { tipo: "sin_banda", motivo: SIN_BANDA_MOTIVO };
   const margen = fila.margenGlobos ?? TOLERANCIA_GLOBOS;
   const minimo = Math.floor(fila.minPorMetro * ejeM);
-  const relativo = fila.tamanos.includes("organica_fina") && sinFormatoNecesario(pieza) ? MARGEN_BAJO_RELATIVO[pieza.oficial] ?? 0 : 0;
   return {
-    tipo: "banda", minGlobos: Math.max(0, minimo - margen - Math.ceil(relativo * fila.minPorMetro * ejeM)),
+    tipo: "banda", minGlobos: Math.max(0, minimo - margen - Math.ceil((fila.margenBajoSinR9 ?? 0) * minimo * (sinR9(pieza) ? 1 : 0))),
     maxGlobos: Math.ceil(fila.maxPorMetro * ejeM) + margen, ejeM, fuente: fila.fuente, densidad: fila.densidad ? densidad : null,
   };
 }

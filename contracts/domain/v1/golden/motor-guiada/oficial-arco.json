@@ -2,9 +2,9 @@
  "caso": "oficial-arco",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.3"
+  "version": "1.2.4"
  },
- "especHash": "4a820712ddae100a95ae317a1f50e37caa2e5f0ba17f2f468fbe25326faed7f6",
+ "especHash": "fa3a62b94c67a138b836028c2c807055cb64ff28ed8b4e2f74618ef648847ff3",
  "noRepresentable": [],
  "piezas": {
   "EST_01_ARCO": {

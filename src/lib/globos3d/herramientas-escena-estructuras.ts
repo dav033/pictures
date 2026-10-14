@@ -10,7 +10,7 @@ import {
   formaColumna, formaGuirnalda, formaSemiarco, MEZCLA_COLUMNA_GRUESA, MEZCLA_GUIRNALDA,
   type ColorOrganico, type OpcionesOrganico, type TramoOrganico,
 } from "./organico";
-import { BASE_TRAMOS, medidaConTamanos, mezclaCon, rellenoCon, tamanosPosibles } from "./mezcla-tamanos-organica";
+import { BASE_TRAMOS, medidaConTamanos, mezclaCon, rellenoCompensadoPara, rellenoCon, tamanosPosibles } from "./mezcla-tamanos-organica";
 import { ANILLO_INTERIOR, INFLADOS_ORGANICOS, opcionesArcoRectangular, opcionesAroOrganico } from "./estructuras-organicas";
 import { COLUMNA_QUINCE_AZUL } from "./organico-presets";
 import { CONTORNOS_PREDEFINIDOS, type ColoresForma, type ContornoForma, type ContornoPredefinido, type OpcionesForma } from "./formas";
@@ -129,10 +129,10 @@ export function coloresOrganicosPedidos(pedidos: readonly string[], pesos: reado
 
 const FLORES = () => structuredClone(COLUMNA_QUINCE_AZUL.flores);
 
-function piezaOrganica(tramos: readonly TramoOrganico[], colores: ColorOrganico[], permitidos: readonly string[], suelo: boolean, flores: boolean, semilla: number): Pieza {
+function piezaOrganica(tramos: readonly TramoOrganico[], colores: ColorOrganico[], permitidos: readonly string[], suelo: boolean, flores: boolean, semilla: number, rellenar = rellenoCon): Pieza {
   const opciones: OpcionesOrganico = {
     semilla, tramos: tramos.map((t) => ({ ...t, mezcla: mezclaCon(t.mezcla, permitidos) })), inflados: INFLADOS_ORGANICOS, variacionInflado: 0.07,
-    relleno: rellenoCon(permitidos), colores, suelo, huecosFlores: flores ? 14 : 0, vista: { x: 0, y: 0, z: 1 }, densidad: 1,
+    relleno: rellenar(permitidos), colores, suelo, huecosFlores: flores ? 14 : 0, vista: { x: 0, y: 0, z: 1 }, densidad: 1,
   };
   return { tipo: "organico", opciones, flores: flores ? FLORES() : null };
 }
@@ -189,7 +189,7 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
       };
       const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.8, notasDeTamanos(p, notas));
       comprobarCuerpo(medidaConTamanos((g) => ({ tramos: [tramoDe(g)], ...BASE_TRAMOS }), permitidos), grosor);
-      return { pieza: piezaOrganica([tramoDe(grosor)], colores, permitidos, false, flores, semillaDe(largo, caida, grosor)), nombre: "Guirnalda orgánica", lugar: "pared" };
+      return { pieza: piezaOrganica([tramoDe(grosor)], colores, permitidos, false, flores, semillaDe(largo, caida, grosor), rellenoCompensadoPara(colores)), nombre: "Guirnalda orgánica", lugar: "pared" };
     }
     case "semiarco_organico": {
       const R = RANGOS_ESTRUCTURA.semiarco_organico;
