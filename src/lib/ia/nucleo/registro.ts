@@ -7,6 +7,7 @@ import { CHAT_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { decidir, envolverChatPort } from "@/lib/registro";
 import { MODELO_LECTURA_FOTO } from "@/lib/ia/amaterasu/config-lectura-foto";
 import { claudeLocalPermitido, configClaudeLocal } from "@/lib/ia/claude/config";
+import { costeDeTurnoClaudeUsd } from "@/lib/ia/claude/precios";
 
 const CLAVE_META = "ia_proveedor";
 
@@ -102,7 +103,8 @@ async function chatClaude(proposito: string): Promise<ChatPort> {
   const { crearChatClaude } = await import("@/lib/ia/claude/chat");
   const config = configClaudeLocal();
   // Por Claude Code, la auditoría de cada turno lo dice (`parametros.transporte`): lo paga la suscripción, no la API.
-  return envolverChatPort(crearChatClaude(config), { proposito, ...(config.transporte === "cli" ? { parametros: { transporte: "cli" } } : {}) });
+  // Por la API, la auditoría lleva el coste con los precios de Haiku; por Claude Code (suscripción) no hay factura por llamada.
+  return envolverChatPort(crearChatClaude(config), { proposito, coste: config.transporte === "cli" ? () => 0 : costeDeTurnoClaudeUsd, ...(config.transporte === "cli" ? { parametros: { transporte: "cli" } } : {}) });
 }
 
 /**
