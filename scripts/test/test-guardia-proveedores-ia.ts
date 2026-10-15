@@ -142,6 +142,7 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
   "src/app/api/cotizacion-profesional/route.ts": "cotización (Python)",
   "src/app/api/catalogo/piezas/route.ts": "búsqueda de piezas del catálogo (vista clásica)",
   "src/app/api/happie/recomendar/route.ts": "Happie (IA)",
+  "src/app/api/happie/prueba-api/recomendar/route.ts": "Happie panel de prueba (IA, con sesión)",
   "src/app/api/happie/recomendar-pasos/route.ts": "Happie (IA)",
   "src/app/api/happie/recommend-package/route.ts": "Happie externo (IA)",
   "src/app/api/happie/recommend-packages/route.ts": "Happie externo (IA)",
