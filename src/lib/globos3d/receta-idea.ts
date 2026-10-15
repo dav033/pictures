@@ -47,6 +47,9 @@ const TECNICA_PIEZA: Readonly<Partial<Record<Pieza["tipo"], string>>> = {
   columna: "Armazón recto", arco: "Armazón en arco", pared_malla: "Malla de globos", pared_trenzas: "Trenzas de globos",
   mural: "Mural", techo: "Techo de globos", arbol_globos: "Árbol de globos", modulo: "Módulo prearmado",
   letras: "Letras o números", forma: "Forma", metalizado: "Metalizado (foil)",
+  // Solo nombran la clase de pieza (el glosario del taller no tiene término de técnica para ellas): no dicen cómo se arman.
+  // `escenografia` queda sin chip a propósito: son paneles y mesas, no una técnica de globos.
+  decoracion: "Decoración de globos",
 };
 
 /** Las piezas de un item del catálogo, sean de una escena, de una estructura con decoraciones o una sola. */
@@ -95,7 +98,8 @@ export function recetaDeIdea(entrada: EntradaReceta): RecetaIdea {
 
   // Las columnas de un arco o de un arco orgánico son sus patas: el arco dice el armazón, no una columna recta.
   const conArco = entrada.piezas.some((p) => p.tipo === "arco" || p.tipo === "arco_organico");
-  const tecnicas = [...new Set(entrada.piezas.filter((p) => !(conArco && p.tipo === "columna")).map((p) => TECNICA_PIEZA[p.tipo]).filter((t): t is string => Boolean(t)))];
+  const cuantosSueltos = entrada.piezas.filter((p) => p.tipo === "globo").length;
+  const tecnicas = [...new Set(entrada.piezas.filter((p) => !(conArco && p.tipo === "columna")).map((p) => (p.tipo === "globo" ? (cuantosSueltos === 1 ? "Globo suelto" : "Globos sueltos") : TECNICA_PIEZA[p.tipo])).filter((t): t is string => Boolean(t)))];
   if (entrada.piezas.some((p) => p.helio)) tecnicas.push("Helio");
   if (productos.tienda.some((t) => t.seccion === "impresos")) tecnicas.push("Impresos");
   if (productos.tienda.some((t) => t.seccion === "metalizados") && !tecnicas.includes("Metalizado (foil)")) tecnicas.push("Metalizado (foil)");

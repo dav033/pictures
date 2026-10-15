@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { z } from "zod";
 import { LecturaArmadoSchema } from "../../plan/armado-bouquet";
 import { RemateLeidoSchema } from "../../plan/armado-columna";
@@ -349,20 +348,6 @@ export type PatronColorReferencia = z.infer<typeof PatronColorReferenciaSchema>;
 
 export function stableElementId(sourceImageId: string, index: number): string {
   return `${sourceImageId}_E${String(index + 1).padStart(2, "0")}`;
-}
-
-export function analysisCacheKey(parts: {
-  model: string;
-  schemaVersion?: string;
-  systemPromptHash: string;
-  images: Array<{ image_id: string; mime: string; base64: string }>;
-}): string {
-  const hash = createHash("sha256")
-    .update(parts.model)
-    .update(parts.schemaVersion ?? "2.0")
-    .update(parts.systemPromptHash);
-  for (const image of parts.images) hash.update(image.image_id).update(image.mime).update(image.base64);
-  return hash.digest("hex");
 }
 
 function bboxIntersection(a: ReferenceBBox, b: ReferenceBBox): number {

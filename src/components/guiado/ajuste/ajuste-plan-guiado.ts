@@ -963,7 +963,8 @@ export function describirCambio(plan: PlanGuiado, cambio: CambioPlan, nuevo?: Pl
  */
 export function avisoEnCurso(plan: PlanGuiado, cambio: CambioPlan): string {
   if (cambio.tipo === "agregar-color") return `Añado ${cambio.globo?.nombre ?? colorCliente(cambio.color)} a tus piezas; sus tamaños quedan igual…`;
-  if (cambio.tipo === "reemplazar-color") return `Cambio ${colorCliente(cambio.color)} por ${cambio.globo.nombre}; medidas y demás colores quedan igual…`;
+  // Sin «los demás colores quedan igual»: al volver a contar, Python puede moverlos (juez 2026-10-11, D4).
+  if (cambio.tipo === "reemplazar-color") return `Cambio ${colorCliente(cambio.color)} por ${cambio.globo.nombre} en sus mismos lugares; las medidas no cambian…`;
   if (cambio.tipo === "quitar-pieza") {
     const estructura = plan.plan.estructuras.find((item) => item.estructura_id === cambio.estructuraId);
     return `Quito ${estructura ? piezaConArticulo(estructura) : "la pieza"}; lo demás queda igual…`;
@@ -983,7 +984,8 @@ export function confirmacionDelCambio(plan: PlanGuiado, cambio: CambioPlan, piez
     const donde = con >= total ? "a tus piezas" : `a ${con} de tus ${total} piezas`;
     return `Listo: añadí ${cambio.globo?.nombre ?? colorCliente(cambio.color)} ${donde}; sus tamaños quedaron igual.`;
   }
-  if (cambio.tipo === "reemplazar-color") return `Listo: ${cambio.globo.nombre} en lugar de ${colorCliente(cambio.color)}; medidas y demás colores quedaron igual.`;
+  // Con el plan de Python, la diferencia real por color la dice `confirmacionCambioHecho` (diferencia-colores.ts).
+  if (cambio.tipo === "reemplazar-color") return `Listo: ${cambio.globo.nombre} en lugar de ${colorCliente(cambio.color)}; las medidas no cambiaron.`;
   if (cambio.tipo === "quitar-pieza") {
     const estructura = plan.plan.estructuras.find((item) => item.estructura_id === cambio.estructuraId);
     return `Listo: quité ${estructura ? piezaConArticulo(estructura) : "la pieza"}; lo demás quedó igual.`;

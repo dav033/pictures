@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-12-images-27",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.3"
+  "version": "1.2.6"
  },
- "especHash": "00ef02c368dfb5e60f29d730b0d1b2417d1a0ba2ddb1ea7f4b49fcf53e3bf82f",
+ "especHash": "280a6f02028c8ef9c428c9665136aebb250b8cad8b6f0a0b5d55e8f5995712f2",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -27,12 +27,12 @@
     {
      "formatoId": "R-9",
      "codigo": "650",
-     "cantidad": 23
+     "cantidad": 18
     },
     {
      "formatoId": "R-9",
      "codigo": "981",
-     "cantidad": 6
+     "cantidad": 10
     },
     {
      "formatoId": "R-12",
@@ -52,12 +52,12 @@
     {
      "formatoId": "R-18",
      "codigo": "650",
-     "cantidad": 1
+     "cantidad": 5
     },
     {
      "formatoId": "R-18",
      "codigo": "981",
-     "cantidad": 8
+     "cantidad": 4
     },
     {
      "formatoId": "R-24",
@@ -70,13 +70,13 @@
      "cantidad": 1
     }
    ],
-   "unidades": 102,
+   "unidades": 101,
    "caja": [
     -126,
     0,
     -192,
     126,
-    258,
+    259,
     -128
    ]
   },
@@ -164,12 +164,12 @@
    {
     "formatoId": "R-9",
     "codigo": "650",
-    "cantidad": 28
+    "cantidad": 23
    },
    {
     "formatoId": "R-9",
     "codigo": "981",
-    "cantidad": 10
+    "cantidad": 14
    },
    {
     "formatoId": "R-12",
@@ -189,12 +189,12 @@
    {
     "formatoId": "R-18",
     "codigo": "650",
-    "cantidad": 2
+    "cantidad": 6
    },
    {
     "formatoId": "R-18",
     "codigo": "981",
-    "cantidad": 9
+    "cantidad": 5
    },
    {
     "formatoId": "R-24",
@@ -207,14 +207,14 @@
     "cantidad": 1
    }
   ],
-  "unidades": 127
+  "unidades": 126
  },
  "caja": [
   -248,
   0,
   -192,
   126,
-  258,
+  259,
   -128
  ],
  "referenciaPython": {

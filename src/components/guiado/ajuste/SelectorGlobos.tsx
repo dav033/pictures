@@ -20,7 +20,7 @@ type Props = {
   sesion: number;
   /** «Cambiar Plata cromado por…», «Añadir un color». */
   titulo: string;
-  /** Qué pasa al elegir («Cambia en todas sus medidas; lo demás queda igual»). */
+  /** Qué pasa al elegir («Cambia en todas sus medidas»). */
   detalle: string;
   /** Texto del botón final con el globo elegido («Cambiar por Reflex Dorado»). */
   accion: (globo: GloboCatalogo) => string;

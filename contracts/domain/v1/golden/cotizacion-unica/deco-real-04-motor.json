@@ -87,7 +87,7 @@
   {
    "formatoId": "R-5",
    "codigo": "970",
-   "cantidad": 5,
+   "cantidad": 4,
    "productId": "8634255638823",
    "color": "dorado",
    "diamPulg": 5,
@@ -107,7 +107,7 @@
   {
    "formatoId": "R-9",
    "codigo": "044",
-   "cantidad": 10,
+   "cantidad": 11,
    "productId": "8869949341991",
    "color": "azul",
    "diamPulg": 9,
@@ -446,7 +446,7 @@
    {
     "variantId": "46594264596775",
     "paquetes": 1,
-    "cantidad": 5,
+    "cantidad": 4,
     "reserva": 1,
     "paraReserva": false
    },
@@ -509,7 +509,7 @@
    {
     "variantId": "47466206986535",
     "paquetes": 1,
-    "cantidad": 10,
+    "cantidad": 11,
     "reserva": 1,
     "paraReserva": false
    },

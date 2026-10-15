@@ -3,6 +3,7 @@ import { FEMENINAS } from "@/lib/plan/piezas-individuales";
 import type { PlanActualGuiado } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { detectarConsultaPlan, type ConsultaPlan } from "./edicion-plan-chat";
 import { planActualDesdePlan } from "./instruccion-plan";
+import { AVISO_CANTIDAD_APROXIMADA, detalleDeIdea, esGloboDeIdea, type DetalleIdea } from "@/lib/biblioteca-sempertex/detalle-idea";
 
 /**
  * R del CRUD por chat (dueño, 2026-10-07): «¿qué lleva mi plan?», «¿cuántos globos tiene la columna izquierda?», «¿de
@@ -116,4 +117,80 @@ export function responderConsultaPlan(texto: string, plan: PlanLeible, planActua
       return { consulta, texto: `Tu plan lleva ${piezas.length === 1 ? "una pieza" : `${piezas.length} piezas`}: ${lista(piezas.map(detalle))}. En total son ${globosEnTexto(total)}, en ${lista(colores)}.` };
     }
   }
+}
+
+/**
+ * Juez 2026-10-11, D1: con una idea elegida y sin plan, «¿cuántos globos lleva?» recibía la pregunta de negocio o uso
+ * personal. Se responde con los números de la tarjeta de la idea (`detalles-ideas.json`: los globos que suma `resumenIdea`),
+ * dichos como aproximados porque el plan que arma el cliente los cuenta de nuevo. Sin modelo, sin cambiar nada.
+ */
+export function responderConsultaIdea(texto: string, decoracionId: string): RespuestaConsulta | null {
+  const detalle = detalleDeIdea(decoracionId);
+  if (!detalle || !hablaDeEstaIdea(texto)) return null;
+  const consulta = detectarConsultaPlan(texto, planDetectableDeIdea(detalle));
+  if (!consulta) return null;
+  const limpio = plegarTexto(texto);
+  // «¿qué hay de…?» pide ideas; «qué tamaño de globos» y «qué medidas tiene mi salón» no son la medida de la pieza.
+  if (consulta.tipo === "resumen" && /\bque hay\b/.test(limpio)) return null;
+  if (consulta.tipo === "medidas" && (/\b(?:globos?|salon|lugar|espacio|sala|techo|pared|cuarto|habitacion|casa|local|terraza|entrada|puerta|ventana|oficina|tienda)\b/.test(limpio) || refierePosesivoAjeno(limpio))) return null;
+  const piezas = piezasDeIdea(detalle);
+  const pedidas = consulta.piezas.length ? piezas.filter((pieza) => consulta.piezas.includes(pieza.nombre)) : [];
+  const globosIdea = [...detalle.piezas.flatMap((pieza) => pieza.lineas), ...(detalle.lineasSinPieza ?? [])].filter(esGloboDeIdea).reduce((suma, linea) => suma + linea.unidades, 0);
+  const aviso = ` ${AVISO_CANTIDAD_APROXIMADA}`;
+  const enteras = pedidas.length === 0;
+  const cuales = enteras ? piezas : pedidas;
+  switch (consulta.tipo) {
+    case "globos": {
+      if (enteras) return { consulta, texto: `Esta idea lleva aprox. ${globosEnTexto(globosIdea)} Sempertex${piezas.length > 1 ? `: ${lista(piezas.map((pieza) => `${pieza.globos} en ${conArticulo(pieza)}`))}` : ""}.${aviso}` };
+      return { consulta, texto: `${cuales.map((pieza) => `${conMayuscula(conArticulo(pieza))} lleva aprox. ${globosEnTexto(pieza.globos)}`).join(". ")}.${aviso}` };
+    }
+    case "colores": {
+      return { consulta, texto: `${cuales.map((pieza) => `${conMayuscula(conArticulo(pieza))} va en ${coloresEnTexto(pieza)}`).join(". ")}.${aviso}` };
+    }
+    case "medidas":
+      return { consulta, texto: cuales.map((pieza) => { const medida = medidasDe(pieza); return medida ? `${conMayuscula(conArticulo(pieza))} mide ${medida}.` : `${conMayuscula(conArticulo(pieza))} no se mide en metros.`; }).join(" ") };
+    case "resumen": {
+      const detallePieza = (pieza: PiezaLeida) => `${conArticulo(pieza)} (${[medidasDe(pieza)?.replace(" (ancho × alto)", ""), `aprox. ${globosEnTexto(pieza.globos)}`].filter(Boolean).join(", ")})`;
+      const encabezado = enteras ? `Esta idea lleva ${piezas.length === 1 ? "una pieza" : `${piezas.length} piezas`}` : "Esto lleva";
+      return { consulta, texto: `${encabezado}: ${lista(cuales.map(detallePieza))}.${enteras ? ` En total son aprox. ${globosEnTexto(globosIdea)}.` : ""}${aviso}` };
+    }
+  }
+}
+
+/** «mi idea» / «mi decoración» son la pieza elegida; «mi patio», «nuestra casa», «mi evento» hablan de otra cosa. */
+function refierePosesivoAjeno(limpio: string): boolean {
+  return /\b(?:mi|mis|tu|tus|nuestr[oa]s?)\s+(?!(?:idea|ideas|decoracion|decoraciones|deco)\b)\w/.test(limpio);
+}
+
+function plegarTexto(texto: string): string {
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
+}
+
+/**
+ * Sin plan, la pregunta es por la idea elegida solo si no es genérica, hipotética ni de otra idea: sin números ni
+ * medidas escritas, sin «un/una», sin condicionales («si…», «necesito») ni «la segunda» / «la de frozen».
+ */
+function hablaDeEstaIdea(texto: string): boolean {
+  const limpio = plegarTexto(texto);
+  return !/\d|\b(?:un|una|unos|unas|si|necesito|necesitaria|necesitaria|primer[ao]s?|segund[ao]s?|tercer[ao]s?|cuart[ao]s?|quint[ao]s?|sext[ao]s?|ultim[ao]s?|otra|otro|la de|el de|las de|los de)\b/.test(limpio);
+}
+
+/** Las piezas de la idea tal como las muestra su tarjeta: los globos y sus productos Sempertex, sin repartir de nuevo. */
+function piezasDeIdea(detalle: DetalleIdea): PiezaLeida[] {
+  return detalle.piezas.map((pieza) => {
+    const porProducto = new Map<string, number>();
+    for (const linea of pieza.lineas) if (esGloboDeIdea(linea)) porProducto.set(linea.producto, (porProducto.get(linea.producto) ?? 0) + linea.unidades);
+    const colores = [...porProducto].map(([color, globos]) => ({ color, globos })).sort((a, b) => b.globos - a.globos);
+    const globos = colores.length ? colores.reduce((suma, item) => suma + item.globos, 0) : pieza.total;
+    return { id: pieza.id, nombre: pieza.nombre, oficial: pieza.estructura, medidas: pieza.medidas, globos, colores };
+  });
+}
+
+/** Solo para detectar la pregunta y las piezas nombradas: el plan de `detectarConsultaPlan` pide al menos un color. */
+function planDetectableDeIdea(detalle: DetalleIdea): PlanActualGuiado {
+  const colores = [...new Set(detalle.piezas.flatMap((pieza) => pieza.colores))].slice(0, 8);
+  return {
+    piezas: detalle.piezas.map((pieza) => ({ estructura: pieza.estructura, cantidad: pieza.repeticiones, nombre: pieza.nombre })),
+    colores: colores.length ? colores : ["otro color"],
+  };
 }

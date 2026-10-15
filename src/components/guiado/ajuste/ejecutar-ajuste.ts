@@ -42,7 +42,7 @@ export type DependenciasAjuste = {
   quitarPieza: (base: PlanGuiado, estructuraId: string) => Promise<PlanFirmado>;
   /** Añade un color a las piezas que lo admiten (o solo a `estructuraIds`), con sus medidas intactas. */
   agregarColor: (base: PlanGuiado, globo: GloboElegido, estructuraIds?: readonly string[]) => Promise<PlanFirmado>;
-  /** Cambia un color por otro globo del catálogo en todas sus medidas (las demás cosas quedan igual). */
+  /** Cambia un color por otro globo del catálogo en todas sus medidas; Python vuelve a contar y puede mover las cifras de los demás colores. */
   reemplazarColor?: (base: PlanGuiado, cambio: Extract<CambioPlan, { tipo: "reemplazar-color" }>) => Promise<PlanFirmado>;
   /** Globos del catálogo de un color (búsqueda del explorador de la clásica). */
   buscar: (color: string, approvalToken: string) => Promise<readonly CandidatoDelServidor[]>;

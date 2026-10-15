@@ -2,9 +2,9 @@
  "caso": "oficial-semiarco",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.3"
+  "version": "1.2.6"
  },
- "especHash": "5de9a66f545de1331fc80f4a1f059743377557ce7865775af7e2edef0225af32",
+ "especHash": "fb299f391f83226041c04984b20809af54df6e226ed08a34760ff1f69991fed4",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -12,72 +12,72 @@
     {
      "formatoId": "R-5",
      "codigo": "005",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-5",
+     "codigo": "040",
      "cantidad": 4
     },
     {
      "formatoId": "R-5",
+     "codigo": "970",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "005",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "040",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-9",
+     "codigo": "970",
+     "cantidad": 7
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 6
+    },
+    {
+     "formatoId": "R-12",
      "codigo": "040",
      "cantidad": 7
     },
     {
-     "formatoId": "R-5",
+     "formatoId": "R-12",
+     "codigo": "970",
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "040",
+     "cantidad": 2
+    },
+    {
+     "formatoId": "R-18",
      "codigo": "970",
      "cantidad": 2
     },
     {
-     "formatoId": "R-9",
-     "codigo": "005",
-     "cantidad": 5
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "040",
-     "cantidad": 5
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "970",
-     "cantidad": 8
-    },
-    {
-     "formatoId": "R-12",
-     "codigo": "005",
-     "cantidad": 6
-    },
-    {
-     "formatoId": "R-12",
-     "codigo": "040",
-     "cantidad": 5
-    },
-    {
-     "formatoId": "R-12",
-     "codigo": "970",
-     "cantidad": 6
-    },
-    {
-     "formatoId": "R-18",
-     "codigo": "005",
-     "cantidad": 3
-    },
-    {
-     "formatoId": "R-18",
-     "codigo": "970",
-     "cantidad": 1
-    },
-    {
      "formatoId": "R-24",
-     "codigo": "040",
+     "codigo": "005",
      "cantidad": 1
     }
    ],
-   "unidades": 53,
+   "unidades": 55,
    "caja": [
-    -85,
+    -84,
     0,
-    -193,
-    85,
-    214,
-    -127
+    -196,
+    84,
+    215,
+    -124
    ]
   }
  },
@@ -86,72 +86,72 @@
    {
     "formatoId": "R-5",
     "codigo": "005",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-5",
+    "codigo": "040",
     "cantidad": 4
    },
    {
     "formatoId": "R-5",
+    "codigo": "970",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "005",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "040",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-9",
+    "codigo": "970",
+    "cantidad": 7
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 6
+   },
+   {
+    "formatoId": "R-12",
     "codigo": "040",
     "cantidad": 7
    },
    {
-    "formatoId": "R-5",
+    "formatoId": "R-12",
+    "codigo": "970",
+    "cantidad": 4
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "040",
+    "cantidad": 2
+   },
+   {
+    "formatoId": "R-18",
     "codigo": "970",
     "cantidad": 2
    },
    {
-    "formatoId": "R-9",
-    "codigo": "005",
-    "cantidad": 5
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "040",
-    "cantidad": 5
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "970",
-    "cantidad": 8
-   },
-   {
-    "formatoId": "R-12",
-    "codigo": "005",
-    "cantidad": 6
-   },
-   {
-    "formatoId": "R-12",
-    "codigo": "040",
-    "cantidad": 5
-   },
-   {
-    "formatoId": "R-12",
-    "codigo": "970",
-    "cantidad": 6
-   },
-   {
-    "formatoId": "R-18",
-    "codigo": "005",
-    "cantidad": 3
-   },
-   {
-    "formatoId": "R-18",
-    "codigo": "970",
-    "cantidad": 1
-   },
-   {
     "formatoId": "R-24",
-    "codigo": "040",
+    "codigo": "005",
     "cantidad": 1
    }
   ],
-  "unidades": 53
+  "unidades": 55
  },
  "caja": [
-  -85,
+  -84,
   0,
-  -193,
-  85,
-  214,
-  -127
+  -196,
+  84,
+  215,
+  -124
  ]
 }

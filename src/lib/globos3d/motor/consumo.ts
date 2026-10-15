@@ -10,10 +10,11 @@ import type { EspecClienteV1 } from "./espec-cliente-v1";
  * - `escena`: cambia lo que se arma (geometría, globos, colores en la escena).
  * - `bom`: cambia la lista de materiales o su hash.
  * - `flux`: entra a la imagen que se genera desde la misma geometría (sin campos hoy: la fase 4 los declarará).
- * - `ui`: lo muestra la interfaz (nombres, origen); la prueba solo comprueba que cambie el hash, porque el lector está fuera del motor.
+ * - `ui`: lo muestra la interfaz (nombres); la prueba solo comprueba que cambie el hash, porque el lector está fuera del motor.
+ * - `resolutor`: lo lee el resolutor de color (`color-en-pieza.ts`) para decidir si una frase repite una orden; ni la escena, ni la lista, ni la interfaz lo ven. La prueba comprueba que cambie el hash.
  * - `{ ignorado }`: el motor lo ignora a propósito, con el motivo.
  */
-export type Destino = "escena" | "bom" | "flux" | "ui" | { ignorado: string };
+export type Destino = "escena" | "bom" | "flux" | "ui" | "resolutor" | { ignorado: string };
 
 type Hoja<T, Ruta extends string = ""> =
   T extends readonly (infer Elemento)[] ? Hoja<Elemento, Ruta>
@@ -25,7 +26,7 @@ export type RutaHoja<T> = Hoja<T>;
 
 export const CONSUMO = {
   version: "bom",
-  "origen.tipo": "ui",
+  "origen.tipo": "resolutor",
   "origen.ideaIds": "ui",
   "piezas.id": "escena",
   "piezas.oficial": "escena",

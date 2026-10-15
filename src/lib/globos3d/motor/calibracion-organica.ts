@@ -1,7 +1,10 @@
-import { largoRecorrido, type ColorOrganico, type OpcionesOrganico, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "../organico";
+import { largoRecorrido, RELLENO_TUPIDO, type ColorOrganico, type OpcionesOrganico, type PuntoMezcla, type RellenoOrganico, type TramoOrganico } from "../organico";
+import { formatoPorId } from "../formatos";
+import { compensarRellenoMediano } from "../relleno-compensado";
+import { INFLADOS_ORGANICOS } from "../estructuras-organicas";
 import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import type { Pieza } from "../piezas";
-import type { DensidadEspec } from "./espec-cliente-v1";
+import type { DensidadEspec, PiezaEspec } from "./espec-cliente-v1";
 
 /**
  * **Calibración de las piezas orgánicas de la vista guiada.** El motor orgánico compartido (el del Taller y la biblioteca) llena
@@ -55,6 +58,41 @@ export function superficieOrganica(opciones: OpcionesOrganico): number {
   return opciones.tramos.reduce((suma, t) => suma + (largoRecorrido(t.recorrido) / 100) * (radioMedio(t) / RADIO_REFERENCIA_CM), 0);
 }
 
+const esSemiarco = (oficial: EstructuraOficialId): boolean => oficial === "semiarco" || oficial === "semiarco_asimetrico";
+/** Empirical cap selected from sampled P-099 repros and the existing 46-case ±10% price check. */
+const FACTOR_GEOMETRICO_MAXIMO_SEMIARCO = 1.04;
+
+/** Scale only the fill caps by the constructor's rounded/clamped axis versus the path after height adjustment. */
+function factorEjeContractual(ejeContractualM: number | undefined, opciones: OpcionesOrganico): number {
+  const recorridoM = opciones.tramos.reduce((suma, tramo) => suma + largoRecorrido(tramo.recorrido), 0) / 100;
+  return recorridoM > 0 && ejeContractualM !== undefined ? ejeContractualM / recorridoM : 1;
+}
+
+function formatosDeRelleno(opciones: OpcionesOrganico) {
+  const ids = new Set(opciones.tramos.flatMap((tramo) => tramo.mezcla.flatMap((punto) => Object.keys(punto.pesos))));
+  return [...ids].map((formatoId) => {
+    const formato = formatoPorId(formatoId);
+    return {
+      formatoId,
+      infladoCm: opciones.inflados?.[formatoId] ?? formato?.infladoDecoracionCm ?? 0,
+      diametroMaxCm: formato?.diametroMaxCm ?? Infinity,
+    };
+  });
+}
+
+function rellenoSemiarco(opciones: OpcionesOrganico): RellenoOrganico[] {
+  const coloresOfrecenR9 = opciones.colores.some((color) => color.formatos === undefined || color.formatos.includes("R-9"));
+  const infladoR9NominalCm = opciones.inflados?.["R-9"] ?? INFLADOS_ORGANICOS["R-9"];
+  if (infladoR9NominalCm === undefined) throw new Error("Falta el inflado nominal del R-9 para compensar el relleno del semiarco.");
+  return compensarRellenoMediano(
+    opciones.relleno,
+    coloresOfrecenR9,
+    formatosDeRelleno(opciones),
+    infladoR9NominalCm,
+    RELLENO_TUPIDO.find((relleno) => relleno.formatoId === "R-9"),
+  );
+}
+
 function conPesoR12(mezcla: readonly PuntoMezcla[], empuje: number): PuntoMezcla[] {
   return mezcla.map((p) => ({ t: p.t, pesos: Object.fromEntries(Object.entries(p.pesos).map(([formato, peso]) => [formato, formato === "R-12" ? peso * empuje : formato === "R-9" ? peso / empuje : peso])) }));
 }
@@ -78,8 +116,8 @@ function cuotaPorTamano(colores: readonly ColorOrganico[]): ColorOrganico[] {
   return colores.flatMap((c): ColorOrganico[] => (c.formatos && c.formatos.length > 1 ? c.formatos.map((formato) => ({ ...c, formatos: [formato], porFormato: true })) : [{ ...c, porFormato: true }]));
 }
 
-function rellenoCalibrado(relleno: readonly RellenoOrganico[], densidad: DensidadEspec, superficie: number, perfil: PerfilOrganico): RellenoOrganico[] {
-  const escala = FACTOR_RELLENO[densidad] * superficie;
+function rellenoCalibrado(relleno: readonly RellenoOrganico[], densidad: DensidadEspec, superficie: number, perfil: PerfilOrganico, factorGeometrico: number): RellenoOrganico[] {
+  const escala = FACTOR_RELLENO[densidad] * superficie * factorGeometrico;
   return relleno.map((r) => {
     if (r.formatoId === "R-5") return { ...r, trios: true, racimo: GLOBOS_POR_RACIMITO, maximo: Math.round(perfil.r5PorMetro * escala) };
     if (densidad === "lujosa") return r;
@@ -89,13 +127,15 @@ function rellenoCalibrado(relleno: readonly RellenoOrganico[], densidad: Densida
 }
 
 /** La pieza orgánica con su densidad y su relleno calibrados. Lo que no es orgánico (cuartetos, mallas, decoraciones) pasa igual. */
-export function calibrarOrganico(pieza: Pieza, densidad: DensidadEspec, perfil: PerfilOrganico): Pieza {
+export function calibrarOrganico(pieza: Pieza, densidad: DensidadEspec, perfil: PerfilOrganico, espec: PiezaEspec, ejeContractualM?: number): Pieza {
   if (pieza.tipo !== "organico") return pieza;
   const { opciones } = pieza;
+  const semiarco = esSemiarco(espec.oficial);
+  const factorGeometrico = semiarco ? Math.min(FACTOR_GEOMETRICO_MAXIMO_SEMIARCO, factorEjeContractual(ejeContractualM, opciones)) : 1;
   const calibradas: OpcionesOrganico = {
     ...opciones,
     densidad: (opciones.densidad ?? 1) * FACTOR_ESTRUCTURA[densidad],
-    relleno: rellenoCalibrado(opciones.relleno, densidad, superficieOrganica(opciones), perfil),
+    relleno: rellenoCalibrado(semiarco ? rellenoSemiarco(opciones) : opciones.relleno, densidad, superficieOrganica(opciones), perfil, factorGeometrico),
     colores: cuotaPorTamano(opciones.colores),
     tramos: opciones.tramos.map((t) => ({ ...t, mezcla: conR5Acotado(conPesoR12(t.mezcla, perfil.empujeR12)) })),
   };

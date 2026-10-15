@@ -21,10 +21,12 @@ type Props = {
   ultima: boolean;
   /** El chat produjo una imagen (habilita el motivo «la foto realista no coincide»). */
   conImagen?: boolean;
+  /** Siempre plegada en una línea «¿Te sirvió?» (el chat guiado), también la última respuesta. */
+  plegable?: boolean;
 };
 
 /** La fila de calificación de una respuesta de la IA en un chat del cliente (REQ-010). Cada chat la monta con una línea. */
-export function CalificacionCliente({ vista, sangria = false, turnoId, pedido, respuesta, escenas, corregido, ultima, conImagen = false }: Props) {
+export function CalificacionCliente({ vista, sangria = false, turnoId, pedido, respuesta, escenas, corregido, ultima, conImagen = false, plegable = false }: Props) {
   return (
     <div className={sangria ? "pl-11 pt-2" : "pt-0.5"}>
       <CalificacionIA
@@ -33,6 +35,7 @@ export function CalificacionCliente({ vista, sangria = false, turnoId, pedido, r
         producido={esProducido(turnoId)}
         resumida={!ultima}
         conImagen={conImagen}
+        plegable={plegable}
         config={{
           producto: "cliente",
           turnoId,

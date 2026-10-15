@@ -1,17 +1,19 @@
 import type { ResumenHelio } from "@/lib/globos3d/helio-cinta";
+import { bomHelio, textoPies3 } from "@/lib/globos3d/helio-bom";
 import { filasDeHelio, NOTA_ESTIMACION_HELIO, textoCierreDeEstructura, textoCierreDeTotal, textoDetalleEnLista, textoGloboDeHelio } from "@/lib/globos3d/hoja-armado-helio";
 import { textoNumero } from "@/lib/globos3d/texto-cantidad";
 
 /** Una fila por formato y tamaño con sus litros; con demasiados tamaños, la remisión a la lista de compra. */
 function FilasDeHelio({ resumen }: { resumen: ResumenHelio }) {
   const filas = filasDeHelio(resumen);
+  const bom = bomHelio(resumen)!;
   if (!filas) return <p className="text-xs text-neutral-700">{textoDetalleEnLista(resumen)}</p>;
   return (
     <ul className="font-mono text-xs">
-      {filas.map((f) => (
+      {filas.map((f, i) => (
         <li key={`${f.formatoId}|${f.infladoCm}`} className="flex justify-between gap-3">
           <span>{textoGloboDeHelio(f)}</span>
-          <span className="shrink-0">{textoNumero(f.litros)} L</span>
+          <span className="shrink-0">{textoNumero(f.litros)} L ({textoPies3(bom.lineas[i]!.pies3)})</span>
         </li>
       ))}
     </ul>

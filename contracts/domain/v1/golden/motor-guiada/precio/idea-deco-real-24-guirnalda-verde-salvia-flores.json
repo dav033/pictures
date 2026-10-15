@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-24-guirnalda-verde-salvia-flores",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.3"
+  "version": "1.2.6"
  },
- "especHash": "b8e8db60bf26e09d9999e3b4c7e6da35207c07e35f6d4131e00a891843c9c8a9",
+ "especHash": "54b3a89f38a8ddc836921c431b246e153c8f28617d81b36514c2e6ac1c282a5d",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

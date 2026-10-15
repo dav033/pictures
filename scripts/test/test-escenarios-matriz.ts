@@ -13,6 +13,7 @@
 import assert from "node:assert/strict";
 import { armarDesdeEspec } from "../../src/lib/globos3d/motor/v1";
 import type { EspecClienteV1, PiezaEspec } from "../../src/lib/globos3d/motor/espec-cliente-v1";
+import { CLASES_PERMITIDAS } from "../escenarios/clases-permitidas";
 import { escenarioDe, generarLote } from "../escenarios/generador";
 import { correr, clasesDe } from "../escenarios/matriz";
 import { observar } from "../escenarios/ejecutar";
@@ -29,23 +30,6 @@ const MIN_POR_CELDA = 3;
 const MARGEN_EXTREMO = 0.5;
 const TOLERANCIA_ALTO_CM = 2;
 
-/**
- * Las únicas clases de fallo que la matriz admite: exactas, con su dirección, su causa medida y el extremo de globos por metro
- * que se midió (el más bajo para un «bajo», el más alto para un «sobre»). Una clase fuera de esta lista falla la prueba.
- */
-const CLASES_PERMITIDAS: ReadonlyMap<string, { razon: string; extremo: number }> = new Map([
-  ["banda_conteo:aro_circular:lujosa:bajo", { extremo: 16.71, razon: "El aro lujoso cuenta por debajo de la banda de PARIDAD (24 a 40 por metro): PERFIL_ARO de calibracion-organica.ts recorta el relleno R-5 del aro." }],
-  ["banda_conteo:aro_circular:media:bajo", { extremo: 13.79, razon: "El aro medio cuenta por debajo de la banda (19 a 26 por metro) por el mismo PERFIL_ARO." }],
-  ["banda_conteo:aro_circular:sencilla:bajo", { extremo: 10.88, razon: "El aro ligero cuenta por debajo de la banda (13 a 20 por metro) por el mismo PERFIL_ARO." }],
-  ["banda_conteo:columna:sencilla:bajo", { extremo: 10.53, razon: "Columna orgánica de 0,55 m de grosor: la banda de PARIDAD supone el grosor por defecto de 0,7 m (medidas-espec.ts, GROSOR_ORGANICO_POR_DEFECTO_M)." }],
-  ["banda_conteo:columna:media:bajo", { extremo: 13.16, razon: "Columna orgánica de 0,55 m de grosor, mismo límite de grosor que la banda de 0,7 m." }],
-  ["banda_conteo:columna:lujosa:bajo", { extremo: 18.95, razon: "Columna orgánica lujosa de 0,55 m: cuenta por debajo de la banda de 0,7 m." }],
-  ["banda_conteo:columna_asimetrica:sencilla:bajo", { extremo: 10.53, razon: "Columna asimétrica de 0,55 m, mismo límite de grosor que la columna orgánica." }],
-  ["banda_conteo:columna_asimetrica:media:bajo", { extremo: 13.68, razon: "Columna asimétrica de 0,55 m, mismo límite de grosor que la columna orgánica." }],
-  ["banda_conteo:columna_asimetrica:lujosa:bajo", { extremo: 17.89, razon: "Columna asimétrica lujosa de 0,55 m: cuenta por debajo de la banda de 0,7 m." }],
-  ["banda_conteo:columna_asimetrica:lujosa:sobre", { extremo: 45.35, razon: "Columna asimétrica de 0,72 m de grosor: el tubo más grueso que el de referencia (0,7 m) lleva más globos por metro que la banda." }],
-  ["banda_conteo:guirnalda:media:bajo", { extremo: 15.75, razon: "Guirnalda corta (1,27 m): el margen de 3 globos no alcanza a cubrir el redondeo de una pieza tan corta." }],
-]);
 
 /** Lo que se observó de cada clase permitida a lo largo de las pruebas: veces que apareció y su extremo (globos por metro). */
 const observado = new Map<string, { veces: number; extremo: number }>();
@@ -79,6 +63,12 @@ const medidasOrganicas = (oficial: PiezaEspec["oficial"]): PiezaEspec["medidas"]
   if (oficial === "guirnalda") return [{ largoM: 1.27 }, { largoM: 2.4 }, { largoM: 4 }];
   return [{ anchoM: 1.2, altoM: 2 }, { anchoM: 1.8, altoM: 2.4 }, { anchoM: 2.4, altoM: 2.9 }];
 };
+
+/** P-089: las columnas cuyo conteo la banda no alcanza ni con su margen (hasta `TOPE_MARGEN_SIN_R9` para colores sin R-9): el 056 (sin R-9) en las alturas y grosores donde el mínimo medido no se alcanza, las columnas de 1 m o de 4 m y la gruesa de 1,2 m con R-9. Cada celda de la lista provoca una clase de `clases-permitidas.ts`. */
+const COLUMNAS_FUERA_DE_BANDA: ReadonlyArray<readonly [codigo: string, medidas: PiezaEspec["medidas"][]]> = [
+  ["570", [{ altoM: 1 }, { altoM: 1.24 }, { anchoM: 1.05, altoM: 1 }, { anchoM: 0.7, altoM: 4 }, { anchoM: 1.2, altoM: 1.2 }]],
+  ["056", [{ anchoM: 0.35, altoM: 2.4 }, { anchoM: 0.7, altoM: 1.8 }, { anchoM: 0.7, altoM: 4 }, { anchoM: 0.9, altoM: 2.4 }, { anchoM: 1.05, altoM: 1 }, { anchoM: 1.1, altoM: 3 }]],
+];
 
 function pieza(oficial: PiezaEspec["oficial"], medidas: PiezaEspec["medidas"], tamanos: PiezaEspec["tamanos"], densidad?: PiezaEspec["densidad"]): PiezaEspec {
   return {
@@ -145,6 +135,11 @@ function pruebaRejillaDeBandas(): void {
   for (const oficial of ORGANICAS_DE_REJILLA) {
     for (const densidad of ["sencilla", "media", "lujosa"] as const) {
       for (const m of medidasOrganicas(oficial)) especs.push(envolver(pieza(oficial, m, "organica_fina", densidad)));
+    }
+  }
+  for (const oficial of ["columna", "columna_asimetrica"] as const) {
+    for (const densidad of ["sencilla", "media", "lujosa"] as const) {
+      for (const [codigo, medidas] of COLUMNAS_FUERA_DE_BANDA) for (const m of medidas) especs.push(envolver({ ...pieza(oficial, m, "organica_fina", densidad), colores: [{ codigo, nombre: "Color", peso: 1 }] }));
     }
   }
   const noPermitidas: string[] = [];

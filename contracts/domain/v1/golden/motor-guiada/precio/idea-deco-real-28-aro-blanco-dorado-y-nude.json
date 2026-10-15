@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-28-aro-blanco-dorado-y-nude",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.3"
+  "version": "1.2.6"
  },
- "especHash": "d15c4a8490ecdd25f05a84fcc0f7bfd5ca37414532f8dc30a84f1440656dea18",
+ "especHash": "fb1296702c6f53763f855332e7f5c5d04da144b288bb85d2bf58628caf9bd68e",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
@@ -17,7 +17,7 @@
   {
    "formatoId": "R-5",
    "codigo": "970",
-   "cantidad": 8,
+   "cantidad": 6,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",
@@ -35,7 +35,7 @@
   {
    "formatoId": "R-9",
    "codigo": "970",
-   "cantidad": 22,
+   "cantidad": 24,
    "reserva": 2,
    "paquetes": 2,
    "productId": "8634255638823",
@@ -71,7 +71,7 @@
   {
    "formatoId": "R-9",
    "codigo": "806",
-   "cantidad": 22,
+   "cantidad": 20,
    "reserva": 2,
    "paquetes": 2,
    "productId": "9661845995815",
@@ -80,9 +80,9 @@
   {
    "formatoId": "R-5",
    "codigo": "806",
-   "cantidad": 18,
+   "cantidad": 20,
    "reserva": 2,
-   "paquetes": 1,
+   "paquetes": 2,
    "productId": "9661845995815",
    "variantId": "49475778085159"
   },

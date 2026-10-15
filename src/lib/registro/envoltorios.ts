@@ -342,7 +342,7 @@ function marcar<T extends object>(valor: T): T {
   return valor;
 }
 
-export function resultadoDeTurno(turno: TurnoChat): ResultadoLlamadaIa {
+export function resultadoDeTurno(turno: TurnoChat, costeEstimadoUsd?: number): ResultadoLlamadaIa {
   return {
     texto: turno.texto,
     llamadasHerramientas: turno.llamadas.map((llamada) => ({ nombre: llamada.nombre, ...(llamada.id ? { id: llamada.id } : {}), argumentos: llamada.args })),
@@ -357,13 +357,14 @@ export function resultadoDeTurno(turno: TurnoChat): ResultadoLlamadaIa {
       ...(turno.uso.promptHerramientas !== undefined ? { promptHerramientas: turno.uso.promptHerramientas } : {}),
     },
     modelo: turno.modelo,
+    ...(costeEstimadoUsd !== undefined ? { costeEstimadoUsd } : {}),
     ...(turno.bytesImagenEnviados !== undefined ? { crudo: { bytesImagenEnviados: turno.bytesImagenEnviados } } : {}),
   };
 }
 
 const MAX_TEXTO_STREAM = 200_000;
 
-async function* flujoChatAuditado(flujo: AsyncIterable<FragmentoChat>, descripcion: DescripcionLlamadaIa): AsyncGenerator<FragmentoChat> {
+async function* flujoChatAuditado(flujo: AsyncIterable<FragmentoChat>, descripcion: DescripcionLlamadaIa, coste?: CosteDeTurno): AsyncGenerator<FragmentoChat> {
   const llamada = iniciarLlamadaIa(descripcion);
   let acumulado = "";
   let cerrada = false;
@@ -373,7 +374,7 @@ async function* flujoChatAuditado(flujo: AsyncIterable<FragmentoChat>, descripci
         if (acumulado.length < MAX_TEXTO_STREAM) acumulado += fragmento.delta;
       } else if (fragmento.tipo === "fin" && !cerrada) {
         cerrada = true;
-        llamada.terminar(resultadoDeTurno(fragmento));
+        llamada.terminar(resultadoDeTurno(fragmento, coste?.(fragmento)));
       }
       yield fragmento;
     }
@@ -394,7 +395,10 @@ async function* flujoChatAuditado(flujo: AsyncIterable<FragmentoChat>, descripci
  * parámetros) y `respuesta_ia` (texto, llamadas a herramientas, motivo de fin, tokens, ms o error).
  * Idempotente: envolver dos veces no duplica la auditoría.
  */
-export function envolverChatPort(chat: ChatPort, opciones: { proposito: string; versionSistema?: string; parametros?: Record<string, unknown> }): ChatPort {
+/** El coste estimado (USD) de un turno, para los proveedores que lo cobran por token y tienen precio cargado. */
+export type CosteDeTurno = (turno: TurnoChat) => number | undefined;
+
+export function envolverChatPort(chat: ChatPort, opciones: { proposito: string; versionSistema?: string; parametros?: Record<string, unknown>; coste?: CosteDeTurno }): ChatPort {
   if (yaEnvuelto(chat)) return chat;
   const describir = (peticion: PeticionChat): DescripcionLlamadaIa => ({
     proveedor: chat.id,
@@ -416,7 +420,7 @@ export function envolverChatPort(chat: ChatPort, opciones: { proposito: string; 
     get thinkingLevel() {
       return chat.thinkingLevel;
     },
-    turno: (peticion) => auditarLlamadaIa(describir(peticion), () => chat.turno(peticion), resultadoDeTurno),
+    turno: (peticion) => auditarLlamadaIa(describir(peticion), () => chat.turno(peticion), (turno) => resultadoDeTurno(turno, opciones.coste?.(turno))),
     turnoStream: (peticion) => {
       // Se abre el flujo aquí mismo, como sin el envoltorio: un error síncrono del puerto se lanza igual que antes.
       let flujo: AsyncIterable<FragmentoChat>;
@@ -426,7 +430,7 @@ export function envolverChatPort(chat: ChatPort, opciones: { proposito: string; 
         iniciarLlamadaIa(describir(peticion)).fallar(error);
         throw error;
       }
-      return flujoChatAuditado(flujo, describir(peticion));
+      return flujoChatAuditado(flujo, describir(peticion), opciones.coste);
     },
   };
   return marcar(envuelto);

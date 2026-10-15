@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, useTransform } from "motion/react";
-import { Calculator, Check, ChevronDown, GraduationCap, MapPin, PenLine, ShoppingBag, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
+import { Calculator, Check, ChevronDown, GraduationCap, MapPin, PenLine, ShoppingBag, SlidersHorizontal, Sparkles, Undo2, UserRound } from "lucide-react";
 import type { z } from "zod";
 import { Lightbox } from "@/components/Lightbox";
 import type { CotizacionPlanGuiadoSchema, PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
@@ -34,6 +34,7 @@ import { listaNatural } from "@/lib/ia/guiado/propuesta-composicion";
 import { avisoColoresFoto } from "@/lib/plan/colores-foto-plan";
 import { ajustesDePython } from "@/lib/ia/guiado/ajustes-python";
 import { avisosSinVista3d } from "@/lib/guiada-motor/sin-vista-3d";
+import { textoMaterialesDesde } from "./precio-chat";
 import { AjustesPropuesta } from "@/components/plan/AjustesPropuesta";
 
 export type AccionPlan = "ver" | "costear" | "comprar" | "aprender" | "contratar" | "cambiar";
@@ -85,6 +86,12 @@ type Props = {
   /** Ajustes ya hechos sobre esta tarjeta; el último se ve bajo el total. */
   ajustes?: readonly string[];
   /**
+   * «Deshacer» el último ajuste (REQ-016, P-042): la vista vuelve al plan que había antes de él. Solo se pasa cuando guarda ese
+   * plan (un plan del 3D ajustado en esta página); sin él, el último ajuste se ve sin botón. Devuelve null si lo deshizo o, si no
+   * pudo, la frase para el cliente («No pude deshacer: …»), que la tarjeta muestra junto al botón.
+   */
+  onDeshacer?: () => string | null;
+  /**
    * Las sugerencias que rehace el asistente («Otros colores», «Agregar una pieza», «Hacerla más sencilla»): viven
    * DENTRO de «Ajustar mi plan» (pedido del dueño, 2026-10-06), no como chips sueltos bajo la tarjeta.
    */
@@ -102,7 +109,7 @@ function sinAjuste(): void {}
  * con él, con una acción principal clara («Ver cómo quedaría») y el resto a mano. Las cantidades son de Python.
  */
 export function TarjetaPlan(props: Props) {
-  const { plan, cotizacion, imagen, avisoImagen, estadoImagen, falloImagen, usoCosteo, usoConocido, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes, onSugerencia } = props;
+  const { plan, cotizacion, imagen, avisoImagen, estadoImagen, falloImagen, usoCosteo, usoConocido, compraAbierta, vigente, ocupado, hechas, totalAnterior, contextoCompra, onAccion, onCosteo, onProveedores, onDistribuidor, onPlanAjustado, ajustes, onDeshacer, onSugerencia } = props;
   const ultimoAjuste = ajustes?.at(-1);
   const es3d = props.motor === "3d";
   // La espec firmada con la que el servidor vuelve a armar la vista 3D; un plan 3D que no la trae (guardado antes) no tiene vista.
@@ -125,6 +132,9 @@ export function TarjetaPlan(props: Props) {
   const [costeoVisible, setCosteoVisible] = useState<boolean | null>(null);
   const [lightbox, setLightbox] = useState(false);
   const [ajusteAbierto, setAjusteAbierto] = useState(false);
+  /** Por qué «Deshacer» no pudo, para el plan que se ve (si el plan cambia, deja de mostrarse). */
+  const [rechazoDeshacer, setRechazoDeshacer] = useState<{ hash: string; mensaje: string } | null>(null);
+  const tituloRef = useRef<HTMLHeadingElement>(null);
   const idAjuste = useId();
   const filaAjusteRef = useRef<HTMLDivElement>(null);
   // Al terminar de abrir «Ajustar mi plan», el panel queda a la vista desde su comienzo: la conversación, pegada al
@@ -132,17 +142,27 @@ export function TarjetaPlan(props: Props) {
   const mostrarAjuste = () => filaAjusteRef.current?.scrollIntoView({ block: "start", behavior: reducido ? "auto" : "smooth" });
   // Un plan del motor 3D se cambia en el servidor del 3D (REQ-007, fase 5): el panel no pasa por Python.
   const motor3d = useMemo(() => (es3d ? crearDependenciasEdicion3d() : undefined), [es3d]);
-  const ajuste = useAjustePlanGuiado({ plan, onPlanAjustado: onPlanAjustado ?? sinAjuste, ...(motor3d ? { motor3d } : {}) });
+  const ajuste = useAjustePlanGuiado({ plan, cotizacion, uso: usoCosteo ?? usoConocido ?? null, onPlanAjustado: onPlanAjustado ?? sinAjuste, ...(motor3d ? { motor3d } : {}) });
   // Mientras Python rehace el plan (un ajuste del panel o un cambio pedido por chat), el total y los colores muestran su
   // esqueleto y las acciones esperan.
   const recalculando = ajuste.guardando || Boolean(props.recalculandoPorChat);
   const ajustable = vigente && Boolean(onPlanAjustado);
+  const deshacer = (): void => {
+    if (!onDeshacer) return;
+    const rechazo = onDeshacer();
+    // El panel «Ajustar mi plan» abierto no debe seguir diciendo «Listo: …» de un cambio que ya no está.
+    if (!rechazo) ajuste.descartarError();
+    setRechazoDeshacer(rechazo ? { hash: plan.plan_hash, mensaje: rechazo } : null);
+    // Al deshacer el último paso el botón desaparece con el foco puesto en él: el foco pasa al título de la tarjeta.
+    if (!rechazo) requestAnimationFrame(() => { if (!document.activeElement || document.activeElement === document.body) tituloRef.current?.focus({ preventScroll: true }); });
+  };
   // Las piezas que se abren con su dibujo (las arma un motor): «Cambiar la forma» desde «Ajustar mi plan».
   // «Modificar esta pieza» (los mandos del diseñador) no existe en un plan 3D: el cliente cambia colores, proporciones y tamaños (D-020).
   const modificables = useMemo(() => new Set(es3d ? [] : piezas.filter((pieza) => piezaModificable(plan, pieza.estructura_id)).map((pieza) => pieza.estructura_id)), [es3d, plan, piezas]);
   const costeoAbierto = costeoVisible ?? usoCosteo !== null;
   // El uso de este plan o, si todavía no se costeó, el que el cliente ya dijo: no se le vuelve a preguntar.
   const usoMostrado = usoCosteo ?? usoConocido ?? null;
+  const materialesDesde = textoMaterialesDesde(cotizacion, usoMostrado);
   // Las cuatro acciones son excluyentes (dueño, 2026-10-07: «seleccionar una deseleccione el resto, porque hay
   // solapamiento de menú»): elegir una cierra los paneles de las demás y solo ella queda marcada.
   const [seleccion, setSeleccion] = useState<"costear" | "comprar" | "aprender" | "contratar" | null>(null);
@@ -203,7 +223,7 @@ export function TarjetaPlan(props: Props) {
           {!vigente && <span className="rounded-full bg-superficie-2 px-2 py-0.5 text-[0.7rem] font-medium text-texto-suave">Versión anterior</span>}
         </div>
         <div className="mt-1 flex items-start justify-between gap-3">
-          <h3 className="min-w-0 text-lg font-semibold leading-snug text-texto">{plan.plan.concepto.titulo}</h3>
+          <h3 ref={tituloRef} tabIndex={-1} className="min-w-0 text-lg font-semibold leading-snug text-texto focus-visible:outline-none">{plan.plan.concepto.titulo}</h3>
           {paleta.length > 0 && (
             <motion.span className="flex shrink-0 pl-1.5 pt-1" aria-label={`Colores: ${paleta.map((color) => colorSempertex(color).nombre).join(", ")}`} role="img" variants={grupoConRitmo(0.04, 0.15)}>
               {paleta.map((color) => (
@@ -225,6 +245,7 @@ export function TarjetaPlan(props: Props) {
           <span className="text-base text-texto-suave">{desglose.total === 1 ? "globo" : "globos"}</span>
           {totalAnterior !== undefined && !recalculando && <PastillaDiferencia key={plan.plan_hash} diferencia={desglose.total - totalAnterior} />}
         </div>
+        {!recalculando && materialesDesde && <p className="mt-1 text-sm font-medium text-texto" data-testid="materiales-desde">{materialesDesde}</p>}
         <p className="mt-0.5 text-sm text-texto-suave">
           {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0)} {piezas.reduce((suma, pieza) => suma + pieza.repeticiones, 0) === 1 ? "pieza" : "piezas"}: {listaNatural(piezas.map((pieza) => `${pieza.repeticiones > 1 ? `${pieza.repeticiones} × ` : ""}${pieza.nombre}`))}
         </p>
@@ -232,17 +253,33 @@ export function TarjetaPlan(props: Props) {
         {ajustesPython.length > 0 && <AjustesPropuesta ajustes={ajustesPython} className="mt-2" />}
         {/* Sin salida animada: el ajuste nuevo reemplaza al anterior en el acto, nunca se ven dos. */}
         {ultimoAjuste && (
-          <motion.p
-            key={ultimoAjuste}
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: DUR.media, ease: EASE_SALIDA }}
-            className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-acento-suave px-2.5 py-1 text-xs text-acento"
-          >
-            <SlidersHorizontal className="size-3.5 shrink-0" aria-hidden />
-            <span>Último ajuste: {fraseAjuste(ultimoAjuste)}</span>
-          </motion.p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2">
+            <motion.p
+              key={ultimoAjuste}
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: DUR.media, ease: EASE_SALIDA }}
+              className="inline-flex items-center gap-1.5 rounded-full bg-acento-suave px-2.5 py-1 text-xs text-acento"
+            >
+              <SlidersHorizontal className="size-3.5 shrink-0" aria-hidden />
+              <span>Último ajuste: {fraseAjuste(ultimoAjuste)}</span>
+            </motion.p>
+            {/* Vuelve al plan de antes del ajuste, tal como estaba (no aplica un ajuste inverso): ver `deshacer-ajuste.ts`. */}
+            {onDeshacer && ajustable && (
+              <button
+                type="button"
+                onClick={deshacer}
+                disabled={bloqueado}
+                aria-label="Deshacer el último ajuste"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2.5 text-sm font-medium text-acento transition-colors hover:bg-acento-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 disabled:opacity-50"
+              >
+                <Undo2 className="size-4 shrink-0" aria-hidden />
+                Deshacer
+              </button>
+            )}
+          </div>
         )}
+        {rechazoDeshacer?.hash === plan.plan_hash && <p className="mt-1.5 rounded-xl bg-aviso-suave px-3 py-2 text-sm text-texto">{rechazoDeshacer.mensaje}</p>}
       </motion.header>
 
       {/* Piezas */}

@@ -5,7 +5,7 @@ import { bibliotecaVisible } from "@/lib/biblioteca-sempertex/biblioteca";
 import { detalleDeIdea, type DetalleIdea } from "@/lib/biblioteca-sempertex/detalle-idea";
 import type { DecoracionSempertex } from "@/lib/biblioteca-sempertex/esquemas";
 import { TarjetaEleccion } from "@/components/guiado/TarjetaEleccion";
-import { lineasSinPiezaDeIdea, piezasVistaDeIdea, resumenIdea } from "@/components/guiado/idea-vista";
+import { AVISO_CANTIDAD_APROXIMADA, lineasSinPiezaDeIdea, piezasVistaDeIdea, resumenIdea } from "@/components/guiado/idea-vista";
 import { productoSempertex, tablaGlobos } from "@/components/guiado/piezas-vista";
 import { construirDetalleIdea, escribirDetallesIdeas, leerMaterial, leerPlanDe, type PlanArchivo } from "../biblioteca/detalles-ideas";
 
@@ -169,6 +169,15 @@ prueba("la tarjeta «Tu elección» muestra piezas, medidas y productos Semperte
   for (const generico of ["globos negros", "globos dorados", "R-12", "PAQUETE", "B2b"]) assert.equal(texto.includes(generico), false, `no debe decir «${generico}»`);
   const sombrero = renderToStaticMarkup(createElement(TarjetaEleccion, { decoracion: visibles.find((item) => item.id === "deco-real-23-sombrero-bruja-halloween")! }));
   assert.ok(sombrero.includes("Cantidades estimadas a partir de la foto"), "una idea contada en la foto lo dice con discreción");
+});
+
+prueba("la cantidad de «Tu elección» se dice aproximada y avisa que el plan la recalcula (D2: la tarjeta decía 101/102 y el plan 115)", () => {
+  assert.doesNotMatch(AVISO_CANTIDAD_APROXIMADA, /python|motor|snapshot|catálogo/i, "sin jerga del motor");
+  for (const decoracion of visibles) {
+    const texto = renderToStaticMarkup(createElement(TarjetaEleccion, { decoracion })).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    assert.match(texto, /aprox\.\s*[\d.]+\s/, `${decoracion.id}: el total de la cabecera no dice «aprox.»`);
+    assert.ok(texto.includes(AVISO_CANTIDAD_APROXIMADA), `${decoracion.id}: falta el aviso de que el plan recalcula`);
+  }
 });
 
 void (async () => {

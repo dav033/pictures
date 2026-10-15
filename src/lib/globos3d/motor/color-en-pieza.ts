@@ -62,7 +62,9 @@ function codigosPropios(plan: PlanConPiezas, seleccion: readonly PiezaEspec[], d
   return null;
 }
 
-function buscar(plan: PlanConPiezas, seleccion: readonly PiezaEspec[], dicho: string, entran: readonly string[]): Map<string, Hallado> {
+import type { ContextoOrdenColor } from "./orden-color";
+
+function buscar(plan: PlanConPiezas, seleccion: readonly PiezaEspec[], dicho: string, entran: readonly string[], contexto?: ContextoOrdenColor | null): Map<string, Hallado> {
   const interpretado = interpretarColor(dicho);
   const propios = codigosPropios(plan, seleccion, dicho, interpretado);
   type Color = PiezaEspec["colores"][number];
@@ -72,23 +74,26 @@ function buscar(plan: PlanConPiezas, seleccion: readonly PiezaEspec[], dicho: st
   const yaEntro = entran.length > 0 && seleccion.some((pieza) => pieza.colores.some((color) => entran.includes(color.codigo)));
   const deLaTienda = interpretado.amplio ? interpretado.compra.map((color) => color.codigo) : [];
   const editada = plan.origen.tipo === "edicion";
+  const historialConocido = contexto !== undefined && contexto !== null;
   return new Map(seleccion.map((pieza): [string, Hallado] => {
     const indices = pieza.colores.flatMap((color, indice) => (esLaFrase(color) ? [indice] : []));
     const codigos = [...new Set(indices.map((indice) => pieza.colores[indice]!.codigo))];
     const parecidos = pieza.colores.filter((color) => puedeSer(color) && deOtraPalabra(color)).map((color) => color.nombre);
     const puedeSerRepetida = (codigo: string): boolean => (propios ? editada && propios.porPalabra : !deLaTienda.includes(codigo));
-    const quizaRepetida = codigos.length === 1 && yaEntro && puedeSerRepetida(codigos[0]!);
+    // Si lo que entra es solo ese mismo color y la pieza ya lo lleva, «rosa → rosado» no tiene nada que cambiar: no hay repetición que aclarar (REQ-016 R4).
+    const soloEseColor = new Set(entran).size === 1 && entran.includes(codigos[0]!);
+    const quizaRepetida = !historialConocido && codigos.length === 1 && yaEntro && !soloEseColor && puedeSerRepetida(codigos[0]!);
     return [pieza.id, { indices, preguntar: codigos.length > 1 || quizaRepetida, parecidos }];
   }));
 }
 
 /** Lo que el cliente puede repetir para elegir ese color: su nombre en la lámina; si así no sale solo él, el nombre completo. */
-function opcionPara(plan: PlanConPiezas, seleccion: readonly PiezaEspec[], pieza: PiezaEspec, indice: number, entran: readonly string[]): OpcionDeColor {
+function opcionPara(plan: PlanConPiezas, seleccion: readonly PiezaEspec[], pieza: PiezaEspec, indice: number, entran: readonly string[], contexto?: ContextoOrdenColor | null): OpcionDeColor {
   const color = pieza.colores[indice]!;
   const referencia = referenciaPorCodigo(color.codigo);
   const frases = [...new Set([...(referencia ? [nombreClienteDeReferencia(referencia), referencia.nombreCompleto] : []), color.nombre])];
   const unica = frases.find((frase) => {
-    const hallado = buscar(plan, seleccion, frase, entran).get(pieza.id)!;
+    const hallado = buscar(plan, seleccion, frase, entran, contexto).get(pieza.id)!;
     return !hallado.preguntar && hallado.indices.length === 1 && hallado.indices[0] === indice;
   });
   return { frase: unica ?? frases.at(-1)!, codigo: color.codigo };
@@ -96,14 +101,14 @@ function opcionPara(plan: PlanConPiezas, seleccion: readonly PiezaEspec[], pieza
 
 /**
  * Lo que `dicho` nombra en cada pieza de `seleccion` (por id), con los nombres de tarjeta de todo `plan`. `entran`: los
- * códigos del color que se pone en su lugar, al cambiar uno por otro.
+ * códigos del color que se pone en su lugar, al cambiar uno por otro. `contexto`: el contexto firmado de la última orden (D-046).
  */
-export function coloresNombrados(plan: PlanConPiezas, seleccion: readonly PiezaEspec[], dicho: string, entran: readonly string[] = []): Map<string, ColorNombrado> {
-  const hallados = buscar(plan, seleccion, dicho, entran);
+export function coloresNombrados(plan: PlanConPiezas, seleccion: readonly PiezaEspec[], dicho: string, entran: readonly string[] = [], contexto?: ContextoOrdenColor | null): Map<string, ColorNombrado> {
+  const hallados = buscar(plan, seleccion, dicho, entran, contexto);
   return new Map(seleccion.map((pieza): [string, ColorNombrado] => {
     const { indices, preguntar, parecidos } = hallados.get(pieza.id)!;
     if (!preguntar) return [pieza.id, { indices, parecidos }];
-    const opciones = indices.map((indice) => opcionPara(plan, seleccion, pieza, indice, entran));
+    const opciones = indices.map((indice) => opcionPara(plan, seleccion, pieza, indice, entran, contexto));
     const frases = opciones.map((opcion) => opcion.frase);
     const pregunta = frases.length > 1 ? `${conO(frases)} en ${conArticulo(pieza)}; dime cuál` : `${frases[0]} en ${conArticulo(pieza)}; si es ese, dímelo con su nombre`;
     return [pieza.id, { indices: [], duda: { texto: `«${dicho.trim()}» puede ser ${pregunta}`, opciones }, parecidos }];

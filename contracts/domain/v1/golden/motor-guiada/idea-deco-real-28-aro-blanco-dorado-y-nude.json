@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-28-aro-blanco-dorado-y-nude",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.3"
+  "version": "1.2.6"
  },
- "especHash": "d15c4a8490ecdd25f05a84fcc0f7bfd5ca37414532f8dc30a84f1440656dea18",
+ "especHash": "fb1296702c6f53763f855332e7f5c5d04da144b288bb85d2bf58628caf9bd68e",
  "noRepresentable": [],
  "piezas": {
   "EST_01_ARO_CIRCULAR": {
@@ -17,12 +17,12 @@
     {
      "formatoId": "R-5",
      "codigo": "806",
-     "cantidad": 18
+     "cantidad": 20
     },
     {
      "formatoId": "R-5",
      "codigo": "970",
-     "cantidad": 8
+     "cantidad": 6
     },
     {
      "formatoId": "R-9",
@@ -32,12 +32,12 @@
     {
      "formatoId": "R-9",
      "codigo": "806",
-     "cantidad": 22
+     "cantidad": 20
     },
     {
      "formatoId": "R-9",
      "codigo": "970",
-     "cantidad": 22
+     "cantidad": 24
     },
     {
      "formatoId": "R-12",
@@ -61,7 +61,7 @@
     0,
     -182,
     104,
-    210,
+    212,
     -137
    ]
   }
@@ -76,12 +76,12 @@
    {
     "formatoId": "R-5",
     "codigo": "806",
-    "cantidad": 18
+    "cantidad": 20
    },
    {
     "formatoId": "R-5",
     "codigo": "970",
-    "cantidad": 8
+    "cantidad": 6
    },
    {
     "formatoId": "R-9",
@@ -91,12 +91,12 @@
    {
     "formatoId": "R-9",
     "codigo": "806",
-    "cantidad": 22
+    "cantidad": 20
    },
    {
     "formatoId": "R-9",
     "codigo": "970",
-    "cantidad": 22
+    "cantidad": 24
    },
    {
     "formatoId": "R-12",
@@ -121,7 +121,7 @@
   0,
   -182,
   104,
-  210,
+  212,
   -137
  ],
  "referenciaPython": {

@@ -17,6 +17,9 @@ export type BackendPlan = "next" | "python" | "globos3d";
 
 export type EntradaAllowlistPlan = { product_id: string; variant_ids: string[] };
 
+import { ContextoOrdenColorSchema, type ContextoOrdenColor } from "./orden-color";
+
+
 /**
  * Commercial provenance of a plan proposal, captured server-side when the plan
  * was resolved and returned signed so later requests can restate it without the
@@ -60,6 +63,11 @@ export type ContextoPlan = {
    * alarga la vida de la línea. Un token sin el campo cuenta desde su propia emisión (`expiresAt` − 24 h).
    */
   origenEn: number;
+  /**
+   * Contexto de la última orden de color (REQ-016 T2, D-046; solo planes del motor 3D en payload v3).
+   * `undefined` para tokens v1/v2 (historial desconocido, con comportamiento conservador).
+   */
+  colorOrder?: ContextoOrdenColor;
 };
 
 const TTL_POR_DEFECTO_MS = 24 * 60 * 60 * 1000;
@@ -96,7 +104,22 @@ const PayloadV2Schema = z.object({
   origenEn: z.number().int().positive().optional(),
 }).strict();
 
-const PayloadSchema = z.union([PayloadV2Schema, PayloadV1Schema]);
+const PayloadV3Schema = z.object({
+  v: z.literal(3),
+  planHash: z.string().min(1),
+  requestId: z.string().min(1),
+  expiresAt: z.number().int().positive(),
+  backend: z.enum(["next", "python", "globos3d"]),
+  catalogSnapshotId: z.string().min(1).nullable(),
+  allowlist: z.array(EntradaAllowlistSchema),
+  creatividad: z.number().int().min(0).max(5).optional(),
+  medidasDelCliente: z.literal(true).optional(),
+  navegador: z.string().regex(/^[0-9a-f]{64}$/).optional(),
+  origenEn: z.number().int().positive().optional(),
+  colorOrder: ContextoOrdenColorSchema,
+}).strict();
+
+const PayloadSchema = z.union([PayloadV3Schema, PayloadV2Schema, PayloadV1Schema]);
 
 type Payload = z.infer<typeof PayloadSchema>;
 
@@ -147,6 +170,21 @@ function abrir(token: string | undefined): Payload | null {
 }
 
 function contextoDesdePayload(payload: Payload): ContextoPlan {
+  if (payload.v === 3) {
+    return {
+      planHash: payload.planHash,
+      requestId: payload.requestId,
+      expiresAt: payload.expiresAt,
+      backend: payload.backend,
+      catalogSnapshotId: payload.catalogSnapshotId,
+      allowlist: payload.allowlist,
+      creatividad: payload.creatividad ?? null,
+      medidasDelCliente: payload.medidasDelCliente === true,
+      navegador: payload.navegador ?? null,
+      origenEn: payload.origenEn ?? payload.expiresAt - TTL_POR_DEFECTO_MS,
+      colorOrder: payload.colorOrder,
+    };
+  }
   if (payload.v === 2) {
     return {
       planHash: payload.planHash,
@@ -198,9 +236,30 @@ export function crearTokenPlan(
     navegador?: string;
     /** La hora del primer plan de la línea (solo planes del motor 3D): la de su plan base, o ahora si es nuevo. */
     origenEn?: number;
+    /** Contexto de orden de color (solo planes del motor 3D en v3). */
+    colorOrder?: ContextoOrdenColor;
   },
   ttlMs = TTL_POR_DEFECTO_MS,
 ): string {
+  // D-035: ship the v3 reader before enabling issuance. Unknown legacy history stays v2.
+  // Never sign a context the reader would reject (e.g. a colour name that folds to ""): fall back to v2, the conservative unknown-history token.
+  const ordenValido = input.colorOrder !== undefined && ContextoOrdenColorSchema.safeParse(input.colorOrder).success;
+  if (process.env.PLAN_COLOR_ORDER_V3 === "true" && input.backend === "globos3d" && ordenValido && input.colorOrder !== undefined) {
+    return firmar({
+      v: 3,
+      planHash: input.planHash,
+      requestId: input.requestId,
+      expiresAt: Date.now() + ttlMs,
+      backend: input.backend,
+      catalogSnapshotId: input.catalogSnapshotId,
+      allowlist: input.allowlist,
+      ...(input.creatividad === undefined ? {} : { creatividad: input.creatividad }),
+      ...(input.medidasDelCliente === true ? { medidasDelCliente: true as const } : {}),
+      ...(input.navegador ? { navegador: input.navegador } : {}),
+      ...(input.origenEn === undefined ? {} : { origenEn: input.origenEn }),
+      colorOrder: input.colorOrder,
+    });
+  }
   return firmar({
     v: 2,
     planHash: input.planHash,

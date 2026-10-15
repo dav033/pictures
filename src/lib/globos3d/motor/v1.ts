@@ -17,7 +17,7 @@ import type { ResultadoMotorV1 } from "./resultado-motor-v1";
  * doradas de `contracts/domain/v1/golden/motor-guiada/` guardan la versión con que se tomaron y fallan si el motor
  * cambia sin subirla.
  */
-export const VERSION_MOTOR = "1.2.3";
+export const VERSION_MOTOR = "1.2.6";
 
 export type { EspecClienteV1, PiezaEspec } from "./espec-cliente-v1";
 export type { BomLinea, ResultadoMotorV1 } from "./resultado-motor-v1";
@@ -28,6 +28,11 @@ export { especDesdePlan } from "./espec-desde-plan";
 export { especDesdeIdeaGuardada, sumarIdeaAEspec, type SumaDeIdea } from "./espec-desde-idea";
 export { especHashDe } from "./hash-espec";
 export type { ResultadoEspec } from "./espec-desde-propuesta";
+export {
+  ContextoOrdenColorSchema, RegistroReemplazoColorSchema, VERSION_ORDEN_COLOR,
+  crearContextoOrdenColorVacio, esReplayProbado, identidadesDeColores, mismasIdentidades, podarContextoOrdenColor,
+  type CambioPiezaReemplazo, type ContextoOrdenColor, type IdentidadColor, type RegistroReemplazoColor,
+} from "./orden-color";
 // Precio (fase 2): la merma, el cruce con la tienda, la cotización de la lista y el sobre del plan para la vista guiada.
 export { MERMA, MERMA_PORCENTAJE, cantidadConMerma } from "./merma";
 export { crosswalkEnVivo, crosswalkIncluido, presentacionesDeVariantes, snapshotPublicado } from "./crosswalk-vigente";
@@ -36,6 +41,7 @@ export type { FilaDePresentaciones } from "./crosswalk-consulta";
 export type { Crosswalk } from "./crosswalk-variantes";
 export { POLITICA_PAQUETES, POLITICAS_PAQUETES, planearCompra, type PoliticaPaquetes, type ReservaPlan } from "./plan-de-compra";
 export { cotizarBom, cotizarLoQueSeVende, type CompraMotor, type CotizacionDelMotor, type DependenciasCotizacion, type FaltanteConCantidad, type FalloCotizacion, type ResultadoCotizacionBom } from "./cotizar-bom";
+
 // La lista de materiales sumada por formato y código, para quien cotiza una lista que no armó el motor (el Taller, D-038).
 export { sumarLineas } from "./bom";
 export { sobreDelMotor, SobreMotorSchema, type EntradaSobre, type PlanGuiadoMotor, type SobreDelMotor } from "./plan-guiado-desde-motor";

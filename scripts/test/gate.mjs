@@ -10,6 +10,7 @@ const SUITES = [
   "globos3d:test",
   "motor3d:test",
   "escena:test",
+  "guiada:test",
   "topes:test",
   "test-cotizacion-unica",
   "test-guardia-prerender",

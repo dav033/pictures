@@ -62,13 +62,13 @@ export function opcionesAroOrganico(a: OpcionesAroOrganico): OpcionesOrganico {
     id: "anillo_exterior", nombre: "Anillo de fuera", recorrido: circulo(rFuera, R, 0),
     grosor: [{ t: 0, radioCm: a.exterior.radioCm }, { t: 1, radioCm: a.exterior.radioCm }],
     mezcla: [{ t: 0, pesos: { [a.exterior.formatoId]: 1 } }, { t: 1, pesos: { [a.exterior.formatoId]: 1 } }],
-    irregularidad: 0.04, tapas: {},
+    irregularidad: 0.04, tapas: {}, cerrado: true,
   };
   const dentro: TramoOrganico = {
     id: ANILLO_INTERIOR, nombre: "Anillo de dentro", recorrido: circulo(rDentro, R, a.interior.adelanteCm),
     grosor: [{ t: 0, radioCm: a.interior.radioCm }, { t: 1, radioCm: a.interior.radioCm }],
     mezcla: [{ t: 0, pesos: a.interior.pesos }, { t: 1, pesos: a.interior.pesos }],
-    irregularidad: 0.16, tapas: {},
+    irregularidad: 0.16, tapas: {}, cerrado: true,
   };
   return opciones([fuera, dentro], a.colores, a.semilla, false);
 }

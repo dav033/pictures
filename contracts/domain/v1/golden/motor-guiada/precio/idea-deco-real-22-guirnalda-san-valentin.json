@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-22-guirnalda-san-valentin",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.3"
+  "version": "1.2.6"
  },
- "especHash": "5a0c46bd6cc9bc1621c87301fc135daa3d5ff19702faacba78b612ad698a87a3",
+ "especHash": "483f111ab7ee0e2c52181ae0bc68e5f44d68f6ff957bf3d2914c220c5213cd26",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

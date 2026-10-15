@@ -205,7 +205,7 @@ const SIN_TAMANOS_DEL_REEMPLAZO = "El catálogo no tiene ese globo en todos los 
 /**
  * Cambia UN color del plan por otro globo del catálogo («Cambiar» de «Ajustar mi plan»), en todas sus medidas: cada
  * material de ese color pasa a ser el producto elegido en su mismo lugar, con su misma parte (`planConColorReemplazado`).
- * Medidas, armados, nombres y los demás colores no se tocan; Python vuelve a contar y a firmar. Si el globo nuevo no
+ * Medidas, armados, nombres y la parte de los demás colores no se tocan; Python vuelve a contar (y puede mover sus cifras) y firma. Si el globo nuevo no
  * cubre algún tamaño que ese color necesita, no se cambia nada (el plan quedaría con globos sin comprar).
  */
 export async function reemplazarColorPlan(input: Entrada & { color: string; productIdAnterior?: string; estructuraIds?: readonly string[]; colorNuevo: string; productId: string; variantIds: readonly string[] }): Promise<AplicarEdicionResultado & { piezas: string[] }> {
@@ -223,7 +223,7 @@ export async function reemplazarColorPlan(input: Entrada & { color: string; prod
   const resolucion = await resolver(input.base, verificado, planValido(cambio.plan, "No pude cambiar ese color en tus piezas."), allowlist, input.signal);
   const faltan = piezasSinCobertura(verificado.antes.resuelto, resolucion.resuelto, input.productId);
   if (faltan.size) throw new PlanEditError(422, SIN_TAMANOS_DEL_REEMPLAZO);
-  decidir("regla:reemplazar_color", "cambiar un color del plan por otro globo del catálogo sin tocar medidas ni los demás colores", { color: normal(input.color), colorNuevo: globo.color, product_id: input.productId, titulo: admitidas.titulo, variantes: admitidas.variantIds, acabadoMotor: globo.acabadoMotor, piezas: cambio.piezas, omitidas: cambio.omitidas }, {
+  decidir("regla:reemplazar_color", "cambiar un color del plan por otro globo del catálogo sin tocar medidas ni la parte de los demás colores", { color: normal(input.color), colorNuevo: globo.color, product_id: input.productId, titulo: admitidas.titulo, variantes: admitidas.variantIds, acabadoMotor: globo.acabadoMotor, piezas: cambio.piezas, omitidas: cambio.omitidas }, {
     entrada: { plan_hash: input.base.plan_hash, color: input.color, productIdAnterior: input.productIdAnterior ?? null, estructuras: input.estructuraIds ?? null, variantesPedidas: input.variantIds.length },
   });
   return { ...firmar(verificado, resolucion, allowlist, { accion: "reemplazar_color", color: normal(input.color), colorNuevo: globo.color, product_id: input.productId, piezas: cambio.piezas }, pool), piezas: cambio.piezas };

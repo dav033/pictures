@@ -115,6 +115,63 @@ function probarCompatibilidadV1(): void {
   assert.equal(sinContexto.backend, "next");
   assert.equal(sinContexto.catalogSnapshotId, null);
   assert.deepStrictEqual(sinContexto.allowlist, []);
+  assert.equal(sinContexto.colorOrder, undefined, "un token v1/v2 tiene historial de color desconocido");
+}
+
+function probarCompatibilidadV3(): void {
+  const previousWriter = process.env.PLAN_COLOR_ORDER_V3;
+  process.env.PLAN_COLOR_ORDER_V3 = "true";
+  // Only an explicitly known history can issue v3.
+  const tokenV3Vacio = crearTokenPlan({
+    planHash: PLAN_HASH,
+    requestId: REQUEST_ID,
+    backend: "globos3d",
+    catalogSnapshotId: SNAPSHOT,
+    allowlist: ALLOWLIST,
+    colorOrder: { v: "colour-order.v1", lastReplacement: null },
+  });
+  const ctxV3Vacio = abrirContextoPlan(tokenV3Vacio);
+  assert.ok(ctxV3Vacio, "el token v3 debe abrirse");
+  assert.equal(ctxV3Vacio.backend, "globos3d");
+  assert.deepEqual(ctxV3Vacio.colorOrder, { v: "colour-order.v1", lastReplacement: null });
+  assert.ok(verificarTokenAprobacion(tokenV3Vacio, PLAN_HASH));
+
+  // Con un reemplazo guardado conocido
+  const tokenConOrden = crearTokenPlan({
+    planHash: PLAN_HASH,
+    requestId: REQUEST_ID,
+    backend: "globos3d",
+    catalogSnapshotId: SNAPSHOT,
+    allowlist: ALLOWLIST,
+    colorOrder: {
+      v: "colour-order.v1",
+      lastReplacement: {
+        fraseOrigenPlegada: "rosa",
+        piezasSolicitadas: ["EST_01_ARCO"],
+        piezasCambiadas: ["EST_01_ARCO"],
+        cambiosPorPieza: [{
+          piezaId: "EST_01_ARCO",
+          codigosOrigen: ["011"],
+          destinosEfectivos: ["081"],
+          coloresResultantes: [{ codigo: "081", nombrePlegado: "gris" }],
+        }],
+      },
+    },
+  });
+  const ctxConOrden = abrirContextoPlan(tokenConOrden);
+  assert.ok(ctxConOrden);
+  assert.equal(ctxConOrden.colorOrder?.lastReplacement?.fraseOrigenPlegada, "rosa");
+  assert.equal(ctxConOrden.colorOrder?.lastReplacement?.cambiosPorPieza[0]?.piezaId, "EST_01_ARCO");
+
+  // Contexto corrupto o malformado en v3 NO se degrada a vacío silenciosamente: el token se rechaza entero
+  const [payload] = tokenV3Vacio.split(".");
+  const data = JSON.parse(Buffer.from(payload!, "base64url").toString("utf8")) as Record<string, unknown>;
+  const corruptoPayload = Buffer.from(JSON.stringify({ ...data, colorOrder: { v: "invalido", lastReplacement: null } }), "utf8").toString("base64url");
+  const firmaCorrupta = createHmac("sha256", process.env.PLAN_APPROVAL_SECRET!).update(corruptoPayload).digest("base64url");
+  assert.equal(abrirContextoPlan(`${corruptoPayload}.${firmaCorrupta}`), null, "colorOrder malformado no puede abrirse");
+  assert.equal(verificarTokenAprobacion(`${corruptoPayload}.${firmaCorrupta}`, PLAN_HASH), null, "colorOrder malformado no aprueba");
+  if (previousWriter === undefined) delete process.env.PLAN_COLOR_ORDER_V3;
+  else process.env.PLAN_COLOR_ORDER_V3 = previousWriter;
 }
 
 function probarConversionAllowlist(): void {
@@ -245,6 +302,7 @@ function probarMapeoCotizacion(): void {
 function main(): void {
   probarContextoFirmado();
   probarCompatibilidadV1();
+  probarCompatibilidadV3();
   probarConversionAllowlist();
   probarMapeoPlan();
   probarMapeoCotizacion();

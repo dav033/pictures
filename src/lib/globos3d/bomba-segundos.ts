@@ -159,18 +159,19 @@ export function textoTiempo(segundos: number): string {
   return `${horas} h ${minutos} min ${nf(redondearSegundos(resto - minutos * 60))} s`;
 }
 
-/** Una fila en texto: «23 × R-5 · 8–12 cm · ~0,6 s c/u · 13,8 s»; el tubito no lleva tamaño: «8 × T-260 · ~0,7 s c/u · 5,6 s». */
-export function textoFilaBomba(f: FilaBomba): string {
-  const total = `${nf(f.segundosTotal)} s`;
-  if (f.unidad === "tubito") return `${f.cantidad} × ${f.formatoId} · ~${nf(f.segundosPorGlobo)} s c/u · ${total}`;
-  const rango = f.cmMin === f.cmMax ? `${f.cmMin} cm` : `${f.cmMin}–${f.cmMax} cm`;
-  return `${f.cantidad} × ${f.formatoId} · ${rango} · ~${nf(f.segundosPorGlobo)} s c/u · ${total}`;
+/** «Inflar a 25 cm» o «Inflar a 24–26 cm». */
+export const textoInflarA = (f: Pick<FilaBomba, "cmMin" | "cmMax">): string => (f.cmMin === f.cmMax ? `Inflar a ${f.cmMin} cm` : `Inflar a ${f.cmMin}–${f.cmMax} cm`);
+
+/** Una fila de bomba para quien infla: «23 × R-5 · Inflar a 8–12 cm · ~0,6 s c/u · 13,8 s (estimación)»; el tubito se infla entero, sin tamaño. */
+export function textoFilaInflado(f: FilaBomba): string {
+  const tamano = f.unidad === "tubito" ? "" : ` · ${textoInflarA(f)}`;
+  return `${f.cantidad} × ${f.formatoId}${tamano} · ~${nf(f.segundosPorGlobo)} s c/u · ${nf(f.segundosTotal)} s (estimación)`;
 }
 
 /** Las líneas de bomba para el texto copiado, con su aviso de estimación (vacío si no hay globos que inflar con bomba). */
 export function lineasBomba(filas: readonly FilaBomba[]): string[] {
   if (!filas.length) return [];
-  return ["", "BOMBA (estimación; el taller puede calibrarla)", ...filas.map(textoFilaBomba), `Tiempo total de bomba: ${textoTiempo(tiempoTotalBomba(filas))}`];
+  return ["", "BOMBA (estimación; el taller puede calibrarla)", ...filas.map(textoFilaInflado), `Tiempo total de bomba: ${textoTiempo(tiempoTotalBomba(filas))}`];
 }
 
 /** El `localStorage` del navegador, o `undefined` si no hay o el navegador lo bloquea (nunca lanza). */

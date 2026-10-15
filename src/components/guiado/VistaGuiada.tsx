@@ -15,16 +15,21 @@ import { PreguntaUso } from "./PreguntaUso";
 import { RespuestasRapidas, dedupeOpciones, separarOpciones } from "./RespuestasRapidas";
 import { TarjetaEleccion } from "./TarjetaEleccion";
 import type { DatosAgregarIdea, EstadoAgregarIdea } from "./AgregarIdea";
-import { estadoAgregarIdea, ideasQueSiguenEnPlan, propuestaAgregarIdea } from "./agregar-idea";
+import { estadoAgregarIdea, propuestaAgregarIdea } from "./agregar-idea";
 import { TarjetasProveedores } from "./TarjetasProveedores";
 import { ReferenciaInspiracion } from "./ReferenciaInspiracion";
 import { acabadosFotoSinComprar } from "./acabados-foto-plan";
 import { avisosFloresFotoSinComprar } from "@/lib/plan/flores-pieza";
 import { lecturaFoto } from "./lectura-foto";
 import { TarjetaPlan, type AccionPlan, type EstadoImagen } from "./TarjetaPlan";
+import { cancelarPrecioIdea, empezarPrecioIdea, fijarPrecioIdea, precioIdeaDesdePlanVigente, resolverPrecioIdea, reutilizarPlanIdea, vistaPrecioIdea, type EstadoPrecioIdea, type PlanIdeaGuardado } from "./precio-idea-elegida";
+import { accionIdeaAlElegirUso, avanzarOpcionIdea, estadoDelTurnoDeIdea, ideasTrasArmarIdea, marcarChipAlElegir, resultadoPlanIdea, rutaOpcionIdea, TEXTO_OPCION_IDEA, type AccionIdea, type EsperaOpcionIdea, type EventoOpcionIdea, type PasoOpcionIdea, type ResultadoPlanIdea } from "./opcion-idea";
 import { respuestaPrecioPlan, SELECTOR_PRECIO_TOTAL } from "./precio-chat";
 import { contenidoPlanAjustado } from "./ajuste/ajuste-plan-guiado";
+import { usePublicarAjustePlan } from "./ajuste/publicar-ajuste-plan";
+import { planDelMensaje, totalDePlan } from "./plan-del-mensaje";
 import type { AjustePublicado } from "./ajuste/usarAjustePlanGuiado";
+import { useDeshacerAjuste } from "./usarDeshacerAjuste";
 import { agregarPiezaEnServidor, avisoEdicionChat, editarPiezaEnServidor, ejecutarEdicionChat, type DependenciasEdicionChat } from "./ajuste/edicion-chat-guiada";
 import { agregarColorEnServidor, aplicarEnServidor, mensajeAjuste, quitarPiezaEnServidor, reemplazarColorEnServidor } from "./ajuste/ejecutar-ajuste";
 import { armarBusqueda, LIMITE_MAXIMO } from "@/components/plan/ajuste/ajuste-propuesta";
@@ -44,7 +49,7 @@ import { CalificacionGuiada } from "./CalificacionGuiada";
 import { IndicadorEscribiendo } from "./IndicadorEscribiendo";
 import type { EtapaPlan } from "./Esqueletos";
 import { EsqueletoPlan } from "./Esqueletos";
-import { claveTexto, conMayuscula, fraseAjuste, nombreLineaCliente } from "./formato";
+import { claveTexto, conMayuscula, nombreLineaCliente } from "./formato";
 import { BotonIrAlFinal, useSeguirFinal } from "./animacion/useSeguirFinal";
 import { DUR, EASE_SALIDA, entradaMensaje, entradaUsuario, grupoConRitmo, hijoEscalonado } from "./animacion/movimiento";
 import { useModoVista } from "@/lib/estado/modo-vista";
@@ -58,7 +63,7 @@ import { prepararHistorialGuiado, sinUltimoTurnoGuiado } from "@/lib/ia/guiado/u
 import { adaptarAnalisisReferencia } from "@/lib/ia/guiado/adaptar-analisis-referencia";
 import { prepararFotoReferencia } from "@/lib/imagen-cliente/preparar-foto";
 import type { WidgetGuiado } from "@/lib/ia/guiado/widgets";
-import { EstadoGuardadoSchema, MAX_MENSAJES_GUARDADOS, ReferenciaSchema, type Mensaje } from "./estado-guardado";
+import { CLAVE_ACCIONES_IDEA, EstadoGuardadoSchema, juntarAccionesIdea, MAX_MENSAJES_GUARDADOS, PREPARANDO_PLAN_IDEA, ReferenciaSchema, separarAccionesIdea, sinEsperaTransitoria, type Mensaje } from "./estado-guardado";
 import { generarPasosPlan } from "@/lib/ia/guiado/generar-pasos-plan";
 import { coloresFaltantesPlanGuiado, cuerpoPlanGuiado, defectoPlanGuiado, referenciaDelPlan, resumenPlanGuiado, type ReferenciaDelPlan } from "@/lib/ia/guiado/instruccion-plan";
 import { cuerpoPlanFoto, lecturaConPiezaNueva, planLlevaPiezaPedida } from "@/lib/ia/guiado/foto-con-pieza";
@@ -92,7 +97,7 @@ import { planActualDelPlan } from "./plan-actual";
 import { NoIncluidosSchema } from "@/lib/guiada-motor/no-incluidos";
 import type { MotorGuiada } from "@/lib/guiada-motor/tipos";
 import { ConfirmarEmpezarDeNuevo } from "./ConfirmarEmpezarDeNuevo";
-import { borrarImagenesNavegador, guardarImagenNavegador, leerImagenesNavegador } from "./imagenes-navegador";
+import { borrarImagenesNavegador, borrarImagenNavegador, guardarImagenNavegador, leerImagenesNavegador } from "./imagenes-navegador";
 import { marcarProducido } from "@/components/feedback-ia/producidos";
 
 /**
@@ -108,7 +113,7 @@ type PlanGuiado = z.infer<typeof PlanGuiadoSchema>;
 type Uso = "negocio" | "personal";
 type FotoInspiracion = { base64: string; mime: "image/jpeg" | "image/png" | "image/webp" };
 type PreguntaCiudad = "ciudad-decorador" | "ciudad-distribuidor";
-type OpcionesEnvio = { uso?: Uso; reintentar?: boolean; alcance?: "completa" | "individual"; pieza?: EstructuraOficialId };
+type OpcionesEnvio = { uso?: Uso; reintentar?: boolean; alcance?: "completa" | "individual"; pieza?: EstructuraOficialId; accionIdea?: AccionIdea };
 
 /** La idea de la biblioteca que trae un plan («Agregar al plan»): queda en el widget y dice «Está en tu plan». `sumada`: había plan. */
 /** `avisos`: si el plan exacto de la idea no salió exacto, por qué (en palabras de cliente, de `/api/plan-idea`). */
@@ -120,6 +125,8 @@ type AccionFallo =
   | { tipo: "foto"; referenciaId: string; mensajeId: string; sinRemate?: boolean; piezaNueva?: PiezaNuevaChat }
   /** Un cambio del plan pedido por chat (`edicion-chat-guiada.ts`) que no salió: se repite ESE cambio, sin el modelo. */
   | { tipo: "edicion"; pedido: PedidoEdicionPlan; mensajeId: string }
+  /** «Cuánto cuesta» / «Aprender» de una idea cuyo plan exacto no llegó: se pide ESE plan otra vez, sin el modelo. */
+  | { tipo: "opcion-idea"; accion: AccionIdea; ideaId: string; usuarioId: string; mensajeId: string; opcionesId: string | null }
   /** «Recalcular mi plan» del aviso de corte del 3D (P-049): da el consentimiento y pide el plan de nuevo (Python, sin preguntar otra vez). */
   | { tipo: typeof TIPO_ACCION_RECALCULAR_3D; planHash: string; mensajeId: string }
   | { tipo: "subir-foto" }
@@ -209,10 +216,15 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const [cargando, setCargandoEstado] = useState(false);
   const [fallo, setFallo] = useState<Fallo | null>(null);
   const [seleccionada, setSeleccionada] = useState<DecoracionSempertex | null>(null);
+  const [precioIdea, setPrecioIdea] = useState<EstadoPrecioIdea | null>(null);
   const [uso, setUso] = useState<Uso | null>(null);
   const [imagenEnCurso, setImagenEnCurso] = useState<string | null>(null);
   /** Imágenes ya pagadas, en memoria, por id del mensaje del plan: se ven en el acto aunque guardarlas falle. */
   const [imagenesLocales, setImagenesLocales] = useState<Readonly<Record<string, string>>>({});
+  /** Los planes de antes de cada ajuste de un plan del 3D (solo en memoria), para «Deshacer» (REQ-016, P-042). */
+  const deshacerAjuste = useDeshacerAjuste();
+  const limpiarDeshacer = deshacerAjuste.limpiar;
+
   // Las imágenes guardadas en este navegador vuelven tras una recarga (el servidor no guarda ninguna).
   useEffect(() => {
     void cargarFactorPlazoCliente();
@@ -228,6 +240,10 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const [placeholderForzado, setPlaceholderForzado] = useState<string | null>(null);
   const [sugerenciasCambio, setSugerenciasCambio] = useState<string[] | null>(null);
   const [anuncio, setAnuncio] = useState("");
+  const ajustarPlan = usePublicarAjustePlan({
+    mensajes, setMensajes, setImagenesLocales, setAnuncio,
+    recordar: deshacerAjuste.recordar, decoracionDeLaConversacion,
+  });
   /** La idea que se está sumando al plan («Agregar al plan»): su botón dice «Agregando a tu plan…». */
   const [agregandoId, setAgregandoId] = useState<string | null>(null);
   /** El plan (id de su mensaje) que se está cambiando por chat: su tarjeta muestra el esqueleto del recálculo. */
@@ -254,6 +270,10 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const imagenEnCursoRef = useRef<string | null>(null);
   /** «Genera la imagen» sin plan: el plan que había (o ninguno); al llegar uno distinto se dibuja su imagen. */
   const imagenTrasPlanRef = useRef<{ planPrevio: string | null } | null>(null);
+  /** «Cuánto cuesta» / «Aprender» elegidos con una idea y sin plan: esperan el plan exacto de la idea en SU mensaje (opcion-idea.ts). */
+  const esperaOpcionIdeaRef = useRef<EsperaOpcionIdea | null>(null);
+  /** El plan exacto ya resuelto de la idea elegida (sin plan base): la tarjeta y el chip «Cuánto cuesta» dicen la misma cifra. */
+  const planIdeaRef = useRef<PlanIdeaGuardado<Extract<Awaited<ReturnType<typeof planDeIdeaMotor>>, { ok: true }>> | null>(null);
   const fotosRef = useRef(new Map<string, FotoInspiracion>());
   const restauradoRef = useRef(false);
   const flujoRef = useRef<{ id: string; texto: string } | null>(null);
@@ -361,7 +381,11 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   useEffect(() => {
     // Durante la transmisión no se guarda en cada fotograma: se guarda al terminar.
     if (!restaurado || transmitiendoId) return;
-    try { sessionStorage.setItem(CLAVE_SESION, JSON.stringify({ mensajes: mensajes.slice(-MAX_MENSAJES_GUARDADOS), brief, seleccionadaId: seleccionada?.id ?? null, uso })); }
+    try {
+      const { mensajes: guardables, acciones } = separarAccionesIdea(sinEsperaTransitoria(mensajes, esperaOpcionIdeaRef.current?.mensajeId ?? null).slice(-MAX_MENSAJES_GUARDADOS));
+      sessionStorage.setItem(CLAVE_SESION, JSON.stringify({ mensajes: guardables, brief, seleccionadaId: seleccionada?.id ?? null, uso }));
+      if (Object.keys(acciones).length) sessionStorage.setItem(CLAVE_ACCIONES_IDEA, JSON.stringify(acciones)); else sessionStorage.removeItem(CLAVE_ACCIONES_IDEA);
+    }
     catch (cause) { console.warn("[asistente-guiado] no se pudo guardar la conversación.", cause); }
   }, [restaurado, transmitiendoId, mensajes, brief, seleccionada, uso]);
 
@@ -442,6 +466,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   const vaciar = useCallback(() => {
     turnoRef.current += 1;
     sesionRef.current += 1;
+    esperaOpcionIdeaRef.current = avanzarOpcionIdea(esperaOpcionIdeaRef.current, { tipo: "reinicio" }).espera;
     controlRef.current?.abort("usuario");
     imagenControlRef.current?.abort("usuario");
     controlRef.current = null;
@@ -453,11 +478,12 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     fotosRef.current.clear();
     setMensajes([]); setBrief({}); setSeleccionada(null); setUso(null); setFoto(null); setFallo(null); setEntrada("");
     void borrarImagenesNavegador();
+    limpiarDeshacer();
     setImagenEnCurso(null); setImagenesLocales({}); setEtapaPlan({}); setAnalizandoFoto(false); setTransmitiendoId(null);
     setPlaceholderForzado(null); setSugerenciasCambio(null); setAnuncio(""); setEditandoPlanId(null); setAgregandoId(null);
     marcarCargando(false);
     setConfirmandoReinicio(false);
-    try { sessionStorage.removeItem(CLAVE_SESION); } catch (cause) { console.warn("[asistente-guiado] no se pudo limpiar la sesión.", cause); }
+    try { sessionStorage.removeItem(CLAVE_SESION); sessionStorage.removeItem(CLAVE_ACCIONES_IDEA); } catch (cause) { console.warn("[asistente-guiado] no se pudo limpiar la sesión.", cause); }
     // Como una pestaña nueva: también los borradores del precio de negocio de esta vista (un plan con el mismo hash, como
     // el plan exacto de una idea, recuperaba el montaje y la ganancia de la conversación borrada).
     try { borrarEstadoGuiado(sessionStorage); } catch (cause) { console.warn("[asistente-guiado] no se pudieron limpiar los borradores del precio.", cause); }
@@ -465,7 +491,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     // (verificador, 2026-10-06).
     contenedorRef.current?.scrollTo({ top: 0, behavior: "auto" });
     vaciarConversacionGuiada();
-  }, [marcarCargando]);
+  }, [marcarCargando, limpiarDeshacer]);
 
   // ── Registro de acciones y fallos (auditoría del servidor; con la instantánea del estado, sin fotos) ─────────────
   function estadoRegistro(): EstadoParaInstantanea {
@@ -498,6 +524,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     let limpio = texto.trim();
     if ((!limpio && !archivo) || cargandoRef.current) return;
     registrarAccion("turno.enviar", { texto: limpio, opciones: opcionesEnvio, conFoto: Boolean(archivo) });
+    avanzarEspera({ tipo: "otra-accion" });
     limpiarAvisos();
     if (!limpio) limpio = "Mira esta foto de inspiración.";
 
@@ -517,7 +544,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
 
     // CRUD por chat (dueño, 2026-10-07). R · «¿qué lleva mi plan?», «¿cuántos globos tiene la columna izquierda?»: se
     // responde con el plan que se ve (las cifras que contó Python), sin modelo y sin cambiar nada.
-    if (!archivo && planVigente && !opcionesEnvio.alcance && !opcionesEnvio.reintentar) {
+    if (!archivo && planVigente && !opcionesEnvio.accionIdea && !opcionesEnvio.alcance && !opcionesEnvio.reintentar) {
       const respuesta = responderConsultaPlan(limpio, planVigente.widget.plan, planActualDelPlan(planVigente.widget.plan, planVigente.widget.motor));
       if (respuesta) {
         setEntrada("");
@@ -593,6 +620,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     }
 
     const turno = ++turnoRef.current;
+    const sesionTurno = sesionRef.current;
     const control = new AbortController();
     controlRef.current = control;
     const reloj = window.setTimeout(() => control.abort("tiempo"), LIMITE_TURNO_MS * factorPlazoCliente());
@@ -601,7 +629,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const idUsuario = (opciones.reintentar ? idParaReintento(mensajes, contenido) : null) ?? nuevoId();
     const idAsistente = nuevoId();
     // Lo que viaja con el texto (uso, alcance, pieza): queda en el mensaje para repetirlo igual tras recargar.
-    const envio: NonNullable<Mensaje["envio"]> = { ...(opciones.uso ? { uso: opciones.uso } : {}), ...(opciones.alcance ? { alcance: opciones.alcance } : {}), ...(opciones.pieza ? { pieza: opciones.pieza } : {}) };
+    const accionIdea = seleccionada ? opciones.accionIdea : undefined;
+    const envio: NonNullable<Mensaje["envio"]> = { ...(opciones.uso ? { uso: opciones.uso } : {}), ...(opciones.alcance ? { alcance: opciones.alcance } : {}), ...(opciones.pieza ? { pieza: opciones.pieza } : {}), ...(accionIdea ? { accionIdea } : {}) };
     const base = (opciones.reintentar ? sinUltimoTurnoGuiado(mensajes) : mensajes).filter((mensaje) => mensaje.content.trim().length > 0 || mensaje.widgets?.length || mensaje.referencia);
     const historial = prepararHistorialGuiado(base, `${contenido}${archivo ? "\nAdjunté una foto de inspiración." : ""}`);
     const usoEnvio = opciones.uso ?? uso ?? undefined;
@@ -609,15 +638,17 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const planAnterior = planActual ?? undefined;
     // Las ideas del último carrusel, en orden: «me quedo con la primera» la elige como «Me gusta esta» (elegir_idea).
     const ideasMostradas = ideasALaVista(mensajes);
-    const estadoGuiado = {
+    const estadoGuiado = estadoDelTurnoDeIdea({
       ...(seleccionada && !planVigente ? { decoracionId: seleccionada.id } : {}),
       ...(usoEnvio ? { uso: usoEnvio } : {}),
       ...(opciones.alcance ? { alcancePropuesta: opciones.alcance } : {}),
       ...(opciones.alcance === "individual" && opciones.pieza ? { piezaPedida: opciones.pieza } : {}),
       ...(planActual ? { planActual, ...(planVigente?.widget.motor === "3d" ? { motorPlan: "3d" as const } : {}) } : {}),
       ...(ideasMostradas.length ? { ideasMostradas } : {}),
-    };
-    const elegida = seleccionada && !planVigente ? seleccionada : null;
+      // El chip de la idea (o el uso elegido tras él): el servidor lo responde por reglas, sin modelo (D-043).
+      ...(accionIdea ? { accionIdea } : {}),
+    }, accionIdea, seleccionada?.id);
+    const elegida = seleccionada && (accionIdea || !planVigente) ? seleccionada : null;
     // Funcional: conserva lo que la acción que llamó acaba de marcar (la opción elegida en su widget).
     setMensajes((actuales) => [
       ...(opciones.reintentar ? sinUltimoTurnoGuiado(actuales) : actuales).filter((mensaje) => mensaje.content.trim().length > 0 || mensaje.widgets?.length || mensaje.referencia),
@@ -701,6 +732,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
           const valida = datos.cotizacion == null ? null : CotizacionGuiadaSchema.safeParse(datos.cotizacion);
           if (valida && !valida.success) throw new RespuestaIncompatibleError("contrato", "La cotización recibida no cumple el contrato.", versionServidor, { campos: camposInvalidos(valida.error).map((campo) => `cotizacion.${campo}`) });
           widgets.push({ tipo: "cotizacion", cotizacion: valida ? valida.data : null, uso: usoCotizado, decoracion: elegida });
+          if (accionIdea === "costear") planIdeaRef.current = null;
+          setPrecioIdea((actual) => fijarPrecioIdea(actual, { ideaId: elegida.id, sesion: sesionTurno, sesionVigente: sesionRef.current, cotizacion: datos.cotizacion }));
           registrarNoIncluidos(claveDeWidget(idAsistente, widgets.length - 1), datos.noIncluidos);
         }
         if (datos.pasos && elegida) widgets.push({ tipo: "pasos", decoracion: elegida });
@@ -913,7 +946,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       const previo = buscarPlanVigente(actuales.filter((mensaje) => mensaje.id !== mensajeId));
       const totalAnterior = previo ? totalDePlan(previo.widget.plan) : undefined;
       // Las ideas solo se heredan al agregar otra: un plan rehecho por «Cambiar algo» ya no sabe qué ideas lleva.
-      const ideas = idea ? [...new Set([...(previo?.widget.ideas ?? []), idea.id])].slice(-12) : [];
+      const ideas = ideasTrasArmarIdea(idea, previo?.widget.ideas ?? []);
       const nuevo: WidgetPlan = {
         tipo: "plan", plan, pasos: armado.pasos, motor,
         ...(propuestaGuardada ? { propuesta: propuestaGuardada } : {}),
@@ -936,42 +969,34 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     setAnuncio(idea ? [textoIdeaAgregada(idea.titulo, total, idea.sumada), ...(idea.avisos ?? [])].join(" ") : "Tu plan está listo");
   }
 
+
   /**
-   * «Ajustar mi plan»: el plan que Python rehizo queda en la MISMA tarjeta (no es una versión nueva) y su mensaje, que
-   * viaja en el historial, dice el ajuste («Ajusté: más rosado…») para que «Cambiar algo» parta de lo que se ve. Solo
-   * se publica sobre el plan en que se hizo: si entretanto llegó otro, el ajuste no lo pisa.
+   * «Deshacer» el último ajuste de un plan del 3D (REQ-016, P-042): la tarjeta vuelve al plan que tenía antes de ese ajuste —su
+   * espec, su firma y su precio tal como estaban—, sin pedirle al servidor un ajuste inverso (agrandar y achicar un paso no
+   * deja la medida de antes). Si ya no hay plan de antes (se recargó la página, o el plan cambió) lo dice y no toca nada.
    */
-  function ajustarPlan(mensajeId: string, plan: PlanGuiado, cotizacionCruda: unknown, { descripcion, baseHash }: AjustePublicado): boolean {
+  function deshacerUltimoAjuste(mensajeId: string): string | null {
     const vigente = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
-    if (!vigente || vigente.reemplazado || vigente.plan.plan_hash !== baseHash) return false;
-    const precio = CotizacionPlanGuiadoSchema.safeParse(cotizacionCruda);
-    const cotizacion = precio.success ? { ...precio.data, lineas: precio.data.lineas.map((linea) => ({ ...linea, nombre: nombreLineaCliente(linea) })) } : undefined;
-    const armado = generarPasosPlan(plan);
-    const resumen = resumenPlanGuiado(plan);
+    if (!vigente || vigente.reemplazado) return "No pude deshacer: ese plan ya no es el que ves. Tu plan sigue como está.";
+    const resultado = deshacerAjuste.deshacer(mensajeId, vigente);
+    if (!resultado.ok) {
+      registrarAccion("plan.ajuste.deshacer_rechazado", { mensajeId, codigo: resultado.codigo, plan_hash: vigente.plan.plan_hash });
+      setAnuncio(resultado.mensaje);
+      return resultado.mensaje;
+    }
+    const restaurado = resultado.widget;
+    const resumen = resumenPlanGuiado(restaurado.plan);
     setMensajes((actuales) => actuales.map((mensaje) => {
       const actual = mensaje.id === mensajeId ? planDelMensaje(mensaje) : undefined;
-      if (!actual || actual.reemplazado || actual.plan.plan_hash !== baseHash) return mensaje;
-      // Ningún ajuste rehace el plan con el modelo (quitar una pieza o añadir un color tampoco): los de antes siguen en él.
-      const ajustes = [...(actual.ajustes ?? []), descripcion.slice(0, 160)].slice(-4);
-      // Las ideas sumadas siguen en el plan mientras quede alguna de sus piezas: al quitar UNA de las dos columnas de una
-      // idea, el carrusel volvía a ofrecer «Agregar a mi plan» y la duplicaba (probador 124, hallazgo 11).
-      const ideas = ideasQueSiguenEnPlan(actual.ideas ?? [], actual.plan, plan, (id) => decoracionDeLaConversacion(actuales, id));
-      const nuevo: WidgetPlan = {
-        tipo: "plan", plan, pasos: armado.pasos, motor: actual.motor, ajustes, totalAnterior: totalDePlan(actual.plan),
-        ...(cotizacion ? { cotizacion } : {}),
-        ...(actual.fotoInspiracion ? { fotoInspiracion: true, ...(actual.referenciaId ? { referenciaId: actual.referenciaId } : {}) } : {}),
-        ...(actual.usoCosteo ? { usoCosteo: actual.usoCosteo } : {}),
-        ...(actual.compraAbierta ? { compraAbierta: true } : {}),
-        // El aviso «Agregué… ahora tiene N globos» no se hereda: el total ya cambió.
-        ...(ideas.length ? { ideas } : {}),
-        // La imagen era del plan de antes: «Ver cómo quedaría» vuelve a ser la acción principal.
-        hechas: (actual.hechas ?? []).filter((hecha) => hecha !== "ver"),
-      };
-      return { ...mensaje, content: contenidoPlanAjustado(resumen, ajustes), widgets: mensaje.widgets?.map((widget): Widget => (widget.tipo === "plan" ? nuevo : widget)) };
+      if (!actual || actual.reemplazado || actual.plan.plan_hash !== vigente.plan.plan_hash) return mensaje;
+      return { ...mensaje, content: contenidoPlanAjustado(resumen, restaurado.ajustes ?? []), widgets: mensaje.widgets?.map((widget): Widget => (widget.tipo === "plan" ? restaurado : widget)) };
     }));
     setImagenesLocales((actuales) => (mensajeId in actuales ? Object.fromEntries(Object.entries(actuales).filter(([id]) => id !== mensajeId)) : actuales));
-    setAnuncio(`Listo: ${fraseAjuste(descripcion)}. Tu plan tiene ${totalDePlan(plan)} globos.`);
-    return true;
+    // La imagen guardada en el navegador es por mensaje y puede ser de otro plan que el que vuelve: una recarga no debe traerla.
+    void borrarImagenNavegador(mensajeId);
+    registrarAccion("plan.ajuste.deshacer", { mensajeId, plan_hash_antes: vigente.plan.plan_hash, plan_hash: restaurado.plan.plan_hash });
+    setAnuncio(`Listo: volví a tu plan de antes. Tiene ${totalDePlan(restaurado.plan)} globos.`);
+    return null;
   }
 
   /**
@@ -1005,14 +1030,15 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   async function aplicarEdicionChat(pedido: PedidoEdicionPlan, destino: { planMensajeId: string; base: PlanGuiado; mensajeId: string; signal?: AbortSignal }): Promise<void> {
     const { planMensajeId, base, mensajeId, signal } = destino;
     // Un plan del motor 3D se cambia en el servidor del 3D (no pasa por Python); el turno lleva el id de este mensaje para calificarlo.
-    const del3d = planDelMensaje(mensajes.find((mensaje) => mensaje.id === planMensajeId))?.motor === "3d";
+    const vigente = planDelMensaje(mensajes.find((mensaje) => mensaje.id === planMensajeId));
+    const del3d = vigente?.motor === "3d";
     const transcurrido = cronometro();
     registrarAccion("plan.edicion_chat.pedir", { pedido, mensajeId, planMensajeId, plan_hash: base.plan_hash });
     setFallo(null);
     setEditandoPlanId(planMensajeId);
     setAnuncio(avisoEdicionChat(pedido));
     try {
-      const hecha = await ejecutarEdicionChat(base, pedido, dependenciasEdicionChat(signal, del3d ? { turnoId: mensajeId } : undefined));
+      const hecha = await ejecutarEdicionChat(base, pedido, dependenciasEdicionChat(signal, del3d ? { turnoId: mensajeId } : undefined), { cotizacionAntes: vigente?.cotizacion, uso: vigente?.usoCosteo ?? uso ?? null });
       const publicado = ajustarPlan(planMensajeId, hecha.plan, hecha.cotizacion, { descripcion: hecha.descripcion, baseHash: base.plan_hash });
       actualizarMensaje(mensajeId, (mensaje) => ({
         ...mensaje,
@@ -1280,12 +1306,13 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
   }, [idPlanVigente]);
 
   // ── Acciones del plan (tarjeta, barra o pedidas al modelo) ───────────────────────────────────────────────────
-  function accionPlan(accion: AccionPlan, mensajeId: string, origen: "tarjeta" | "barra" | "modelo" = "tarjeta"): void {
+  /** `origen` «opcion»: el chip de una idea elegida, cuya petición ya está en el chat (no se repite). */
+  function accionPlan(accion: AccionPlan, mensajeId: string, origen: "tarjeta" | "barra" | "modelo" | "opcion" = "tarjeta"): void {
     const widget = planDelMensaje(mensajes.find((mensaje) => mensaje.id === mensajeId));
     if (!widget || widget.reemplazado) return;
     registrarAccion("plan.accion", { accion, origen, mensajeId, plan_hash: widget.plan.plan_hash });
     if (accion !== "costear" && accion !== "comprar") limpiarAvisos();
-    const delCliente = origen !== "modelo";
+    const delCliente = origen === "tarjeta" || origen === "barra";
     switch (accion) {
       case "ver":
         void verComoQuedaria(mensajeId);
@@ -1363,9 +1390,10 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
    * El plan EXACTO de la idea (`/api/plan-idea`): sus piezas, medidas, productos Sempertex y tamaños, que Python cuenta y
    * firma sin modelo; con `base`, sumadas a las del plan vigente. Verificador (2026-10-06, v43qux): por /api/chat la
    * guirnalda de 51 globos de 12″ y 18″ volvía como 77 globos de otros productos, y las columnas negras y doradas perdían
-   * la bola negra de 36″. «fallo» = la idea no tiene plan guardado o no cabe: se sigue por el camino de siempre.
+   * la bola negra de 36″. Quien llama decide qué hacer si no llega (`trasFallo` lo dice en el registro): «Agregar al plan»
+   * sigue por el camino de siempre; los chips de la idea, nunca por el modelo (`opcion-idea.ts`).
    */
-  async function planExactoDeIdea(mensajeId: string, decoracion: DecoracionSempertex, base: PlanGuiado | null, idea: IdeaAgregada, propuesta: Propuesta, planAnterior: PlanActualGuiado | null): Promise<"ok" | "fallo" | "detenido" | "obsoleto"> {
+  async function planExactoDeIdea(mensajeId: string, decoracion: DecoracionSempertex, base: PlanGuiado | null, idea: IdeaAgregada, trasFallo: string): Promise<ResultadoPlanIdea> {
     const turno = ++turnoRef.current;
     const control = new AbortController();
     controlRef.current = control;
@@ -1374,24 +1402,26 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     let porTiempo = false;
     const reloj = window.setTimeout(() => { porTiempo = true; control.abort("tiempo"); }, LIMITE_PLAN_IDEA_MS);
     try {
-      const resultado = await planDeIdeaMotor({
+      const sesion = sesionRef.current;
+      const yaResuelto = base ? null : reutilizarPlanIdea(planIdeaRef.current, decoracion.id, sesion);
+      const resultado = yaResuelto ?? await planDeIdeaMotor({
         ideaId: decoracion.id, base: base ? { plan: base, motor: planVigente?.widget.motor ?? "python" } : null, signal: control.signal,
         alFallback: (fallo) => registrarFallo("plan.motor_3d_fallback", fallo.detalle, { razon: fallo.razon, estado: fallo.estado, idea: decoracion.id, accion: base ? "se sigue en el 3D (propuesta)" : "se arma con Python" }, "warn"),
       });
       if (turno !== turnoRef.current) return "obsoleto";
+      if (resultado.ok && !base && !yaResuelto && sesion === sesionRef.current) {
+        planIdeaRef.current = { ideaId: decoracion.id, sesion, resultado };
+        setPrecioIdea((actual) => fijarPrecioIdea(actual, { ideaId: decoracion.id, sesion, sesionVigente: sesionRef.current, cotizacion: resultado.cotizacion }));
+      }
       if (resultado.ok) {
-        registrarAccion("idea.plan_exacto", { id: decoracion.id, plan_hash: resultado.plan.plan_hash, nuevas: resultado.nuevas, globosIdea: resultado.globosIdea, globosPlan: totalDePlan(resultado.plan), sumada: idea.sumada, exacto: resultado.exacto, avisos: resultado.avisos });
+        registrarAccion("idea.plan_exacto", { id: decoracion.id, plan_hash: resultado.plan.plan_hash, nuevas: resultado.nuevas, globosIdea: resultado.globosIdea, globosPlan: totalDePlan(resultado.plan), sumada: idea.sumada, exacto: resultado.exacto, avisos: resultado.avisos, reutilizado: Boolean(yaResuelto) });
         // Si no salió exacto, la tarjeta dice por qué en una línea discreta (antes el cliente no se enteraba).
         colocarPlan(mensajeId, resultado.plan, resultado.cotizacion, false, resultado.avisos.length ? { ...idea, avisos: resultado.avisos } : idea, undefined, resultado.motor);
         return "ok";
       }
-      if (resultado.detenido && !porTiempo) {
-        actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, widgets: [{ tipo: "propuesta", propuesta, estado: "fallo" }] }));
-        setFallo({ titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion: { tipo: "plan", propuesta, mensajeId, ...(planAnterior ? { planAnterior } : {}), idea }, mensajeId });
-        return "detenido";
-      }
-      registrarFallo("idea.plan_exacto_fallo", resultado.motivo, { id: decoracion.id, estado: resultado.estado, porTiempo, accion: "se arma por el camino de siempre (/api/chat)" }, "warn");
-      return "fallo";
+      const final = resultadoPlanIdea(resultado, porTiempo);
+      if (final !== "detenido") registrarFallo("idea.plan_exacto_fallo", resultado.motivo, { id: decoracion.id, estado: resultado.estado, porTiempo, resultado: final, accion: trasFallo }, "warn");
+      return final;
     } finally {
       window.clearTimeout(reloj);
       terminarPlan(turno, mensajeId);
@@ -1407,6 +1437,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
    */
   async function agregarIdeaAlPlan(decoracion: DecoracionSempertex, origen: "eleccion" | "carrusel", mensajeOrigenId: string): Promise<void> {
     if (cargandoRef.current) return;
+    avanzarEspera({ tipo: "otra-accion" });
     const vigente = planVigente;
     const resultado = propuestaAgregarIdea(decoracion, vigente?.widget.plan ?? null);
     const datos = { id: decoracion.id, titulo: decoracion.titulo, origen, mensajeId: mensajeOrigenId, plan_hash_base: vigente?.widget.plan.plan_hash ?? null };
@@ -1432,8 +1463,12 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     const idea: IdeaAgregada = { id: decoracion.id, titulo: decoracion.titulo, sumada: Boolean(vigente) };
     try {
       // Un plan que salió de una foto se rehace por el camino de siempre, que conserva la foto y su lectura.
-      const exacto = vigente?.widget.fotoInspiracion ? "fallo" : await planExactoDeIdea(idPlan, decoracion, vigente?.widget.plan ?? null, idea, resultado.propuesta, planAnterior);
-      if (exacto !== "fallo") {
+      const exacto = vigente?.widget.fotoInspiracion ? "fallo" : await planExactoDeIdea(idPlan, decoracion, vigente?.widget.plan ?? null, idea, "se arma por el camino de siempre (/api/chat)");
+      if (exacto === "detenido") {
+        actualizarMensaje(idPlan, (mensaje) => ({ ...mensaje, widgets: [{ tipo: "propuesta", propuesta: resultado.propuesta, estado: "fallo" }] }));
+        setFallo({ titulo: "Detuviste la respuesta", detalle: "Puedes pedir el plan otra vez cuando quieras.", etiqueta: "Preparar el plan", accion: { tipo: "plan", propuesta: resultado.propuesta, mensajeId: idPlan, ...(planAnterior ? { planAnterior } : {}), idea }, mensajeId: idPlan });
+      }
+      if (exacto !== "fallo" && exacto !== "sin-plan-guardado") {
         registrarAccion(exacto === "ok" ? "idea.agregada" : "idea.agregar_sin_plan", { id: decoracion.id, estado: exacto, exacto: true });
         return;
       }
@@ -1481,10 +1516,111 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     mostrarMensaje(planVigente.mensajeId);
   }
 
+  /**
+   * «Cuánto cuesta» / «Aprender» sobre el plan a la vista, por reglas: el precio dicho es el `cotizacion.total` de la tarjeta.
+   * `conPeticion`: false cuando el cliente ya dijo lo que quería al tocar el chip de la idea (una sola burbuja suya).
+   */
+  function resolverOpcionConPlan(accion: AccionIdea, plan: NonNullable<typeof planVigente>, conPeticion: boolean): void {
+    accionPlan(accion, plan.mensajeId, conPeticion ? "barra" : "opcion");
+    if (accion !== "costear") return;
+    agregar([
+      ...(conPeticion ? [{ id: nuevoId(), role: "user" as const, content: TEXTO_OPCION_IDEA.costear(null) }] : []),
+      { id: nuevoId(), role: "assistant", content: respuestaPrecioPlan(plan.widget, plan.widget.usoCosteo ?? uso ?? "personal") },
+    ]);
+  }
+
+  function avanzarEspera(evento: EventoOpcionIdea): PasoOpcionIdea {
+    const paso = avanzarOpcionIdea(esperaOpcionIdeaRef.current, evento);
+    esperaOpcionIdeaRef.current = paso.espera;
+    return paso;
+  }
+
+  function marcarChipOpcion(espera: EsperaOpcionIdea): void {
+    if (espera.opcionesId) actualizarWidget(espera.opcionesId, "opciones", (widget) => ({ ...widget, elegida: espera.accion }));
+  }
+
+  /**
+   * «Cuánto cuesta» / «Aprender» con una idea elegida y sin plan: UNA petición del cliente y el plan EXACTO guardado de la
+   * idea en el mensaje siguiente, sin modelo; con él a la vista, la acción se resuelve por reglas (efecto de abajo). No
+   * depende de que la idea se pueda sumar a un plan (las figuras también tienen precio). Si la idea no tiene plan guardado,
+   * esa misma petición va al servidor con `accionIdea`, que la responde por reglas sin modelo (D-043); si el plan no llega (red,
+   * plazo, «Detener»), se dice y se ofrece repetirlo, nunca un plan del modelo con otras cifras. `reintento`: los mensajes
+   * del intento anterior, que se reutilizan.
+   */
+  async function pedirOpcionDeIdea(accion: AccionIdea, decoracion: DecoracionSempertex, opcionesId: string | null, reintento?: { usuarioId: string; mensajeId: string }): Promise<void> {
+    if (cargandoRef.current) return;
+    limpiarAvisos();
+    const texto = TEXTO_OPCION_IDEA[accion](decoracion.titulo);
+    const usuarioId = reintento?.usuarioId ?? nuevoId();
+    const mensajeId = reintento?.mensajeId ?? nuevoId();
+    const preparando = `${PREPARANDO_PLAN_IDEA} «${decoracion.titulo}» con sus globos exactos.`;
+    if (reintento) actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: preparando }));
+    else agregar([{ id: usuarioId, role: "user", content: texto, envio: { accionIdea: accion } }, { id: mensajeId, role: "assistant", content: preparando }]);
+    pedirFinal();
+    esperaOpcionIdeaRef.current = { accion, ideaId: decoracion.id, mensajeId, sesion: sesionRef.current, opcionesId };
+    registrarAccion("opcion.plan_exacto", { accion, id: decoracion.id, mensajeId, reintento: Boolean(reintento) });
+    const resultado = await planExactoDeIdea(mensajeId, decoracion, null, { id: decoracion.id, titulo: decoracion.titulo, sumada: false }, "se dice y se ofrece repetirlo (sin modelo)");
+    const paso = avanzarEspera({ tipo: "resultado", mensajeId, resultado });
+    if (paso.turnoReglas) {
+      registrarAccion("opcion.sin_plan_guardado", { accion, id: decoracion.id });
+      marcarChipOpcion(paso.turnoReglas);
+      setMensajes((actuales) => actuales.filter((mensaje) => mensaje.id !== usuarioId && mensaje.id !== mensajeId));
+      void enviar(texto, { accionIdea: accion });
+      return;
+    }
+    if (paso.reintento) {
+      const detenido = resultado === "detenido";
+      actualizarMensaje(mensajeId, (mensaje) => ({ ...mensaje, content: detenido ? "Detuviste la respuesta." : `No pude preparar el plan de «${decoracion.titulo}» ahora.` }));
+      setFallo({
+        titulo: detenido ? "Detuviste la respuesta" : "No pude preparar el plan de esta idea",
+        detalle: detenido ? "Puedes pedirlo otra vez cuando quieras." : "Solo uso el plan de la idea para no darte cifras distintas. Inténtalo de nuevo en un momento.",
+        etiqueta: "Intentar de nuevo",
+        accion: { tipo: "opcion-idea", accion, ideaId: decoracion.id, usuarioId, mensajeId, opcionesId },
+        mensajeId,
+      });
+    }
+  }
+
+  // «Cuánto cuesta» / «Aprender» de una idea elegida: con el plan exacto de la idea ya en SU mensaje, se resuelven por reglas
+  // (la tarjeta del plan y su cotización única), sin turno de modelo ni otra burbuja del cliente.
+  useEffect(() => {
+    const paso = avanzarEspera({ tipo: "plan", mensajeId: idPlanVigente, ideas: planVigente?.widget.ideas ?? [], sesion: sesionRef.current });
+    if (!paso.resolver || !planVigente) return;
+    marcarChipOpcion(paso.resolver);
+    resolverOpcionConPlan(paso.resolver.accion, planVigente, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando aparece un plan nuevo
+  }, [idPlanVigente]);
+
+  // El precio de la tarjeta «Tu elección»: UN pedido del plan exacto por idea elegida (sin modelo), con el mismo motor que la
+  // cotización; si cambia la idea o se reinicia, el pedido de antes se cancela y su respuesta no cuenta (`precio-idea-elegida.ts`).
+  const ideaElegidaId = seleccionada?.id ?? null;
+  useEffect(() => {
+    if (!ideaElegidaId) return;
+    const sesion = sesionRef.current;
+    const precioDelPlan = precioIdeaDesdePlanVigente(ideaElegidaId, sesion, planVigente?.widget ?? null);
+    if (precioDelPlan) {
+      setPrecioIdea(precioDelPlan);
+      return;
+    }
+    const control = new AbortController();
+    const reloj = window.setTimeout(() => control.abort("tiempo"), LIMITE_PLAN_IDEA_MS);
+    setPrecioIdea(empezarPrecioIdea(ideaElegidaId, sesion));
+    const cerrar = (respuesta: { ok: true; cotizacion: unknown } | { ok: false }) => control.signal.reason === "cambio" ? undefined : setPrecioIdea((actual) => resolverPrecioIdea(actual, { ideaId: ideaElegidaId, sesion, sesionVigente: sesionRef.current, respuesta }));
+    planDeIdeaMotor({ ideaId: ideaElegidaId, base: null, signal: control.signal, alFallback: (fallo) => registrarFallo("plan.motor_3d_fallback", fallo.detalle, { razon: fallo.razon, estado: fallo.estado, idea: ideaElegidaId, accion: "precio de la tarjeta con Python" }, "warn") })
+      .then((resultado) => {
+        if (resultado.ok && control.signal.reason !== "cambio" && !reutilizarPlanIdea(planIdeaRef.current, ideaElegidaId, sesion)) planIdeaRef.current = { ideaId: ideaElegidaId, sesion, resultado };
+        cerrar(resultado.ok ? { ok: true, cotizacion: resultado.cotizacion } : { ok: false });
+      }, () => cerrar({ ok: false }));
+    return () => { window.clearTimeout(reloj); control.abort("cambio"); setPrecioIdea((actual) => cancelarPrecioIdea(actual, ideaElegidaId)); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo cuando cambia la idea elegida
+  }, [ideaElegidaId]);
+
   function elegirOpcion(opcion: OpcionGuiada, mensajeId?: string): void {
     if (cargandoRef.current) return;
     registrarAccion("opcion.elegir", { opcion, mensajeId: mensajeId ?? null });
-    if (mensajeId) actualizarWidget(mensajeId, "opciones", (widget) => ({ ...widget, elegida: opcion }));
+    avanzarEspera({ tipo: "otra-accion" });
+    const ruta = rutaOpcionIdea(opcion, { hayIdea: Boolean(seleccionada), hayPlan: Boolean(planVigente), ideaEnElPlan: Boolean(seleccionada && planVigente?.widget.ideas?.includes(seleccionada.id)) });
+    if (mensajeId && marcarChipAlElegir(ruta)) actualizarWidget(mensajeId, "opciones", (widget) => ({ ...widget, elegida: opcion }));
     if (opcion === "comprar" && seleccionada) {
       limpiarAvisos();
       agregar([
@@ -1495,10 +1631,24 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       return;
     }
     if (opcion === "contratar") { preguntarCiudad("ciudad-decorador", "Quiero contratar un decorador"); return; }
+    if (ruta === "accion-plan" && planVigente && (opcion === "costear" || opcion === "aprender")) {
+      resolverOpcionConPlan(opcion, planVigente, true);
+      return;
+    }
+    if (ruta === "plan-exacto-de-idea" && seleccionada && (opcion === "costear" || opcion === "aprender")) {
+      // Tras un fallo, tocar otra vez el mismo chip es «Intentar de nuevo»: reutiliza su burbuja y su mensaje.
+      const previo = fallo?.accion.tipo === "opcion-idea" && fallo.accion.accion === opcion && fallo.accion.ideaId === seleccionada.id ? fallo.accion : null;
+      void pedirOpcionDeIdea(opcion, seleccionada, mensajeId ?? null, previo ? { usuarioId: previo.usuarioId, mensajeId: previo.mensajeId } : undefined);
+      return;
+    }
+    if (ruta === "turno-reglas" && seleccionada && (opcion === "costear" || opcion === "aprender")) {
+      void enviar(TEXTO_OPCION_IDEA[opcion](seleccionada.titulo), { accionIdea: opcion });
+      return;
+    }
     const textos: Record<Exclude<OpcionGuiada, "contratar">, string> = {
-      costear: "Quiero saber cuánto cuestan los materiales.",
+      costear: TEXTO_OPCION_IDEA.costear(null),
       comprar: "Quiero saber dónde comprar los materiales.",
-      aprender: seleccionada ? `Quiero aprender a hacerlo: armar «${seleccionada.titulo}» paso a paso.` : "Quiero aprender a hacerlo paso a paso.",
+      aprender: TEXTO_OPCION_IDEA.aprender(seleccionada?.titulo ?? null),
     };
     void enviar(textos[opcion]);
   }
@@ -1508,7 +1658,8 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
     registrarAccion("uso.elegir", { uso: valor, mensajeId });
     actualizarWidget(mensajeId, "uso", (widget) => ({ ...widget, elegido: valor }));
     setUso(valor);
-    void enviar(valor === "negocio" ? "Es para mi negocio." : "Es para uso personal.", { uso: valor });
+    const accionIdea = accionIdeaAlElegirUso({ hayIdea: Boolean(seleccionada), hayPlan: Boolean(planVigente), ideaEnElPlan: Boolean(seleccionada && planVigente?.widget.ideas?.includes(seleccionada.id)) });
+    void enviar(valor === "negocio" ? "Es para mi negocio." : "Es para uso personal.", { uso: valor, ...(accionIdea ? { accionIdea } : {}) });
   }
 
   function elegirTipo(tipo: "completa" | "individual", mensajeId: string): void {
@@ -1636,6 +1787,22 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
       case "plan": void reintentarPlan(accion); return;
       case "foto": void aceptarPlanFoto(accion.referenciaId, { mensajeId: accion.mensajeId, ...(accion.sinRemate ? { sinRemate: true } : {}), ...(accion.piezaNueva ? { piezaNueva: accion.piezaNueva } : {}) }); return;
       case "edicion": void reintentarEdicion(accion); return;
+      case "opcion-idea": {
+        setFallo(null);
+        // Ya hay un plan con la idea: la acción se resuelve sobre él; si no, ese pedido quedó atrás y el mensaje lo dice.
+        if (planVigente?.widget.ideas?.includes(accion.ideaId)) {
+          marcarChipOpcion({ accion: accion.accion, ideaId: accion.ideaId, mensajeId: accion.mensajeId, sesion: sesionRef.current, opcionesId: accion.opcionesId });
+          resolverOpcionConPlan(accion.accion, planVigente, false);
+          return;
+        }
+        const decoracion = seleccionada?.id === accion.ideaId ? seleccionada : null;
+        if (!decoracion) {
+          actualizarMensaje(accion.mensajeId, (mensaje) => ({ ...mensaje, content: "Ese pedido quedó atrás: elige la idea otra vez y vuelve a tocar la opción." }));
+          return;
+        }
+        void pedirOpcionDeIdea(accion.accion, decoracion, accion.opcionesId, { usuarioId: accion.usuarioId, mensajeId: accion.mensajeId });
+        return;
+      }
       case "recalcular-3d": recalcularPlan3d(accion.planHash); return;
       case "subir-foto": setFallo(null); archivoRef.current?.click(); return;
       // La conversación ya está en la sesión (se guarda en cada cambio) y el mensaje sin respuesta vuelve con «Reintentar».
@@ -1692,6 +1859,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
           key={clave} decoracion={widget.decoracion} agregar={datosAgregar(widget.decoracion)}
           onAgregar={() => void agregarIdeaAlPlan(widget.decoracion, "eleccion", mensajeId)}
           onVerPlan={planVigente ? () => verPlanDesdeIdea(widget.decoracion.id) : undefined}
+          precio={vistaPrecioIdea(precioIdea, widget.decoracion.id, uso)}
         />;
       case "opciones":
         return <ChipsOpciones key={clave} activo={activo && !widget.elegida} elegida={widget.elegida ?? null} hechas={hechasOpciones} deshabilitado={cargando} onElegir={(opcion) => elegirOpcion(opcion, mensajeId)} />;
@@ -1765,6 +1933,7 @@ export function VistaGuiada({ versionPagina }: { versionPagina?: string } = {}) 
             {...(widget.ajustes?.length ? { ajustes: widget.ajustes } : {})}
             recalculandoPorChat={editandoPlanId === mensajeId}
             {...(widget.fotoInspiracion ? { avisosFoto: avisosFotoDelPlan(mensajes, mensajeId, widget.plan) } : {})}
+            {...(vigente && deshacerAjuste.puede(mensajeId, widget) ? { onDeshacer: () => deshacerUltimoAjuste(mensajeId) } : {})}
             {...(vigente ? {
               onPlanAjustado: (nuevo: PlanGuiado, cotizacionNueva: unknown, ajuste: AjustePublicado) => { ajustarPlan(mensajeId, nuevo, cotizacionNueva, ajuste); },
               // Los cambios rápidos que rehace el asistente, desde «Ajustar mi plan» (los mismos de antes como chips).
@@ -1948,10 +2117,6 @@ function buscarPlanVigente(lista: readonly Mensaje[]): { mensajeId: string; widg
   return null;
 }
 
-function planDelMensaje(mensaje: Mensaje | undefined): WidgetPlan | undefined {
-  return mensaje?.widgets?.find((item): item is WidgetPlan => item.tipo === "plan");
-}
-
 function ultimoIndiceConReferencia(lista: readonly Mensaje[]): number {
   for (let indice = lista.length - 1; indice >= 0; indice -= 1) if (lista[indice]!.referencia) return indice;
   return -1;
@@ -2019,10 +2184,6 @@ function textosDelCliente(lista: readonly Mensaje[]): string[] {
   return lista.filter((mensaje) => mensaje.role === "user").map((mensaje) => mensaje.content);
 }
 
-function totalDePlan(plan: PlanGuiado): number {
-  try { return generarPasosPlan(plan).total; } catch { return 0; }
-}
-
 /** El aviso de «Agregar al plan» (en la tarjeta y para el lector de pantalla). `sumada`: la idea se sumó a un plan que ya había. */
 function textoIdeaAgregada(titulo: string, total: number, sumada: boolean): string {
   return sumada ? `Agregué «${titulo}» a tu plan: ahora tiene ${total} globos.` : `Armé tu plan con «${titulo}»: tiene ${total} globos.`;
@@ -2047,7 +2208,9 @@ function leerSesion(): { mensajes: Mensaje[]; brief: BriefGuiado; seleccionada: 
     const parsed = EstadoGuardadoSchema.safeParse(JSON.parse(raw) as unknown);
     if (!parsed.success) { console.warn("[asistente-guiado] sesión guardada inválida; se inicia una conversación nueva."); return null; }
     // Un plan que estaba en camino al recargar ya no va a llegar: la propuesta queda como fallida, con su «Reintentar».
-    const mensajes = parsed.data.mensajes
+    let accionesCrudas: unknown = null;
+    try { accionesCrudas = JSON.parse(sessionStorage.getItem(CLAVE_ACCIONES_IDEA) ?? "null") as unknown; } catch { accionesCrudas = null; }
+    const mensajes = juntarAccionesIdea(parsed.data.mensajes, accionesCrudas)
       .filter((mensaje) => mensaje.content.trim() || mensaje.widgets?.length || mensaje.referencia)
       .map((mensaje) => (mensaje.widgets?.some((widget) => widget.tipo === "propuesta" && widget.estado !== "fallo")
         ? { ...mensaje, widgets: mensaje.widgets.map((widget): WidgetGuiado => (widget.tipo === "propuesta" ? { ...widget, estado: "fallo" } : widget)) }

@@ -9,6 +9,18 @@ const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP
 
 type Uso = "personal" | "negocio";
 
+export const formatoPesos = (total: number): string => pesos.format(total).replace(/\s/g, " ");
+
+/**
+ * «Materiales desde $X (uso personal, con IVA)» para la tarjeta del plan: el mismo `cotizacion.total` que dice
+ * `respuestaPrecioPlan` y que pinta el costeo, sin recalcular nada. Solo uso personal. Sin precio, `null` (no se inventa uno).
+ */
+export function textoMaterialesDesde(cotizacion: { total: number; incluyeIva?: boolean } | undefined, uso: Uso | null): string | null {
+  // En el negocio el precio al cliente lleva mano de obra y ganancia: la tarjeta no dice una cifra personal que no es la que verá.
+  if (uso === "negocio" || !cotizacion || !(cotizacion.total > 0)) return null;
+  return `Materiales desde ${formatoPesos(cotizacion.total)} (uso personal${cotizacion.incluyeIva === false ? "" : ", con IVA"})`;
+}
+
 /** El selector del total de la cotización abierta (personal o de negocio): a él va la vista. */
 export const SELECTOR_PRECIO_TOTAL = "[data-precio-total]";
 
@@ -19,7 +31,7 @@ export const SELECTOR_PRECIO_TOTAL = "[data-precio-total]";
 export function respuestaPrecioPlan(plan: { cotizacion?: { total: number; incluyeIva?: boolean } | undefined }, uso: Uso): string {
   const cotizacion = plan.cotizacion;
   if (!cotizacion || !(cotizacion.total > 0)) return "Todavía no tengo el precio de estos materiales. En tu plan, arriba, puedes buscar un proveedor cerca que te lo cotice.";
-  const total = pesos.format(cotizacion.total).replace(/\s/g, " ");
+  const total = formatoPesos(cotizacion.total);
   // En el negocio el precio lo calcula Python con la mano de obra y la ganancia del decorador (y los globos pueden ir a
   // granel): aquí no se repite una cifra que no es la que ve en la tarjeta; se le dice dónde está.
   if (uso === "negocio") return "Te abrí arriba, en tu plan, la cotización para tu negocio: el precio al cliente está resaltado y lo ajustas con tu mano de obra y tu ganancia.";

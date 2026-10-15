@@ -8,11 +8,11 @@ import { bytesDeBase64 } from "@sempertex/agente-core";
 import { registrarSegunProveedor, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { decidir } from "@/lib/registro/servidor";
 import {
-  analysisCacheKey,
   ReferenceBlueprintV2Schema,
   stableElementId,
   type ReferenceBlueprintV2,
 } from "@/lib/ia/referencia/reference-blueprint";
+import { analysisCacheKey } from "@/lib/ia/referencia/analysis-cache-key.server";
 import { LECTURA_UNICA_RULES, LECTURA_UNICA_TOOL_SCHEMA } from "@/lib/ia/referencia/lectura-unica";
 import {
   attachedStructureContainers,

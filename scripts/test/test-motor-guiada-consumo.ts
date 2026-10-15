@@ -11,7 +11,7 @@ import { z } from "zod";
 import { CONSUMO, type RutaHoja } from "../../src/lib/globos3d/motor/consumo";
 import { EspecClienteV1Schema, type EspecClienteV1, type PiezaEspec } from "../../src/lib/globos3d/motor/espec-cliente-v1";
 import { jsonEstable } from "../../src/lib/globos3d/motor/hash-espec";
-import { armarDesdeEspec } from "../../src/lib/globos3d/motor/v1";
+import { aplicarEdicion, armarDesdeEspec } from "../../src/lib/globos3d/motor/v1";
 import { CAMPOS_ESTRUCTURA_PLAN } from "../../src/lib/globos3d/motor/consumo-conversiones";
 
 // Compilación. `Faltan` es lo que el esquema tiene y el registro no: debe ser vacío.
@@ -58,7 +58,10 @@ const FLORES = { cantidad: 3, petalos: 4, codigo: "009", centro: "970" };
 type Mutacion = [EspecClienteV1, EspecClienteV1];
 const MUTACIONES: Record<keyof typeof CONSUMO, Mutacion> = {
   version: [ARCO, ARCO],
-  "origen.tipo": [ARCO, { ...ARCO, origen: { tipo: "idea" } }],
+  "origen.tipo": [
+    sobre(ARCO, { colores: [{ codigo: "009", nombre: "rosado", peso: 0.6 }, { codigo: "005", nombre: "blanco", peso: 0.4 }] }),
+    { ...sobre(ARCO, { colores: [{ codigo: "009", nombre: "rosado", peso: 0.6 }, { codigo: "005", nombre: "blanco", peso: 0.4 }] }), origen: { tipo: "edicion" } },
+  ],
   "origen.ideaIds": [ARCO, { ...ARCO, origen: { tipo: "idea", ideaIds: ["deco-real-01"] } }],
   "piezas.id": [ARCO, sobre(ARCO, { id: "EST_01_OTRO" })],
   "piezas.oficial": [ARCO, sobre(ARCO, { oficial: "arco" })],
@@ -93,6 +96,10 @@ for (const [ruta, destino] of Object.entries(CONSUMO) as Array<[keyof typeof CON
   if (ruta === "version") continue; // el literal solo lo mira el esquema: no hay con qué mutarlo
   if (destino === "escena" || destino === "bom") {
     assert.notEqual(huella(antes), huella(despues), `${ruta} dice que va a «${String(destino)}» pero cambiarlo no mueve ni la lista ni el dibujo: es una propiedad huérfana`);
+  } else if (destino === "resolutor") {
+    const edit = { op: "reemplazar_color", de: "rosa", a: "blanco" } as const;
+    assert.equal(aplicarEdicion(antes, edit).noAplicado, undefined, "a new plan has no previous order to repeat");
+    assert.match(aplicarEdicion(despues, edit).noAplicado ?? "", /puede ser/, "the legacy resolver must observe the edited origin");
   } else if (destino === "ui" || destino === "flux") {
     assert.notEqual(hash(antes), hash(despues), `${ruta}: ni el hash se entera`);
   }

@@ -3,17 +3,19 @@ import { z } from "zod";
 import { isAuthenticatedRequest } from "@/lib/auth/request";
 import { exigirEscritura } from "@/lib/feedback-ia/acceso";
 import {
-  aplicarEdiciones, CambioPanelV1Schema, edicionDesdeCambio, edicionDesdePedido, EdicionesEspecSchema, especDesdeIdeaGuardada, sobreDelMotor,
+  aplicarEdiciones, CambioPanelV1Schema, edicionDesdeCambio, edicionDesdePedido, EdicionesEspecSchema, especDesdeIdeaGuardada, sobreDelMotor, VERSION_MOTOR,
   type ConceptoPlan, type EdicionEspecV1, type EdicionesDePedido, type EspecClienteV1, type ResultadoCotizacionBom, type ResultadoMotorV1,
 } from "@/lib/globos3d/motor/v1";
 import type { TomaDeFoto } from "@/lib/globos3d/tope-fotos-hora";
 import { PlanGuiadoSchema } from "@/lib/ia/contracts/asistente-guiado-v1";
 import { PedidoEdicionPlanSchema } from "@/lib/ia/guiado/edicion-plan-chat";
+import { otrasCifrasIguales } from "@/lib/plan/cifras-conservadas";
 import type { PlanIdeaGuardado } from "@/lib/plan/plan-de-idea";
 import { codigoSeguro, hashSeguro, idsDePiezas, uuidSeguro, type FilaAuditoriaPlan3d } from "./auditoria-plan";
 import { RUTA_EDITAR_MOTOR, type CodigoFalloEditar, type RespuestaEditarMotor } from "./editar-contrato";
 import { noPudeDeMotivos, TEXTO_EDICION_RECALCULO, unirNoPude } from "./mensajes-cliente";
 import { planDel3dVencido } from "./continuidad";
+import { avisoMotorActualizado, totalGlobosDeBom, totalGlobosDelPlan } from "./aviso-motor-actualizado";
 import { huellaDeNavegador } from "./plan-motor";
 import type { RespuestaMotor } from "./tipos";
 import { verificarPlanConConcepto } from "./verificar-plan";
@@ -100,9 +102,11 @@ function acotarDescripcion(hechas: readonly string[]): string {
   return dicho.length > MAX_DESCRIPCION ? `${dicho.slice(0, MAX_DESCRIPCION - 1).trimEnd()}…` : dicho;
 }
 
-function confirmacionDe(hechas: readonly string[], noAplicadas: readonly string[]): string {
+/** «lo demás quedó igual» solo si, al rearmar, no se movió ninguna otra cifra (`otrasCifrasIguales`); si no, se dice menos. */
+function confirmacionDe(hechas: readonly string[], noAplicadas: readonly string[], demasIgual: boolean): string {
   const hecho = hechas.join("; ");
-  return noAplicadas.length ? `Listo: ${hecho}. ${noAplicadas.join(" ")}` : `Listo: ${hecho}; lo demás quedó igual.`;
+  if (noAplicadas.length) return `Listo: ${hecho}. ${noAplicadas.join(" ")}`;
+  return demasIgual ? `Listo: ${hecho}; lo demás quedó igual.` : `Listo: ${hecho}.`;
 }
 
 function aEdiciones(cuerpo: z.infer<typeof CuerpoSchema>, espec: EspecClienteV1): EdicionesDePedido {
@@ -114,6 +118,15 @@ function aEdiciones(cuerpo: z.infer<typeof CuerpoSchema>, espec: EspecClienteV1)
 }
 
 const resumenDe = (ediciones: readonly EdicionEspecV1[]): string[] => ediciones.map((e) => e.op);
+
+/** P-091: un plan armado con otra versión del motor se rearma ahora con la actual; si sus globos se movieron sin que el cambio pedido tenga que ver, el cliente lo lee. */
+function avisoDeVersion(plan: z.infer<typeof PlanGuiadoSchema>, base: { espec: EspecClienteV1; versionPlan: string }, deps: DependenciasEditarMotor): string | null {
+  if (base.versionPlan === VERSION_MOTOR) return null;
+  const sinCambio = deps.armar(base.espec);
+  if (sinCambio.noRepresentable.length) return null;
+  const antes = totalGlobosDelPlan(plan);
+  return antes === null ? null : avisoMotorActualizado(base.versionPlan, antes, totalGlobosDeBom(sinCambio.bom));
+}
 
 /** Lo técnico de un rechazo: al registro de la conversación entero; a la fila durable solo los ids de pieza, los códigos de la tienda y la hora (los motivos de una pieza que no se arma la nombran como la llamó el cliente). */
 type DetalleRechazo = { piezas?: ReadonlyArray<{ piezaId: string; motivo: string }>; faltantes?: string; origen_en?: number };
@@ -162,10 +175,13 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
   try {
     const mapeo = aEdiciones(cuerpo, base.espec);
     if (!mapeo.ok) return rechazar(mapeo.tipo === "no_soportado" ? "EDICION_NO_SOPORTADA" : "EDICION_NO_APLICADA", mapeo.mensaje, 422, mapeo.motivo, { noAplicadas: [mapeo.mensaje] });
-    const hecho = aplicarEdiciones(base.espec, mapeo.ediciones, { idea: (ideaId) => {
-      const guardado = deps.planGuardado(ideaId);
-      return guardado ? especDesdeIdeaGuardada(guardado.plan, ideaId).espec : null;
-    } });
+    const hecho = aplicarEdiciones(base.espec, mapeo.ediciones, {
+      idea: (ideaId) => {
+        const guardado = deps.planGuardado(ideaId);
+        return guardado ? especDesdeIdeaGuardada(guardado.plan, ideaId).espec : null;
+      },
+      ordenColor: base.colorOrder,
+    });
     if (!hecho.aplicadas) return rechazar("EDICION_NO_APLICADA", hecho.noAplicadas.length ? unirNoPude(hecho.noAplicadas) : "No pude: ese cambio no cambió nada en tu plan.", 422, "ninguna_edicion_aplicada", { noAplicadas: hecho.noAplicadas, avisos: hecho.avisos });
 
     const armado = deps.armar(hecho.espec);
@@ -182,16 +198,26 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
       return rechazar("PRECIO_FALLIDO", "No pude: no logré calcular el precio de ese cambio. Tu plan sigue como estaba.", 422, cotizada.razon, { noAplicadas: ["No pude: no logré calcular el precio de ese cambio."] });
     }
     const concepto: ConceptoPlan = base.concepto;
-    const sobre = sobreDelMotor({ espec: hecho.espec, resultado: armado, cotizacion: cotizada, concepto, requestId: requestId(), navegador, origenEn: base.origenEn });
+    const sobre = sobreDelMotor({
+      espec: hecho.espec,
+      resultado: armado,
+      cotizacion: cotizada,
+      concepto,
+      requestId: requestId(),
+      navegador,
+      origenEn: base.origenEn,
+      colorOrder: hecho.ordenColor !== undefined ? hecho.ordenColor : base.colorOrder,
+    });
     if (!sobre.ok) return rechazar("ERROR_DEL_MOTOR", "No pude: ese cambio no cabe en el plan. Tu plan sigue como estaba.", 422, sobre.motivo);
 
     const descripcion = acotarDescripcion(hecho.hechas);
+    const avisoVersion = avisoDeVersion(cuerpo.plan, base, deps);
     const respuesta: RespuestaEditarMotor = {
       plan: sobre.plan,
       cotizacion: sobre.cotizacion,
       descripcion,
-      confirmacion: mayuscula(confirmacionDe(hecho.hechas, hecho.noAplicadas)),
-      avisos: [...new Set([...mapeo.avisos, ...hecho.avisos].map(mayuscula))].slice(0, 6),
+      confirmacion: mayuscula(confirmacionDe(hecho.hechas, hecho.noAplicadas, otrasCifrasIguales(cuerpo.plan, sobre.plan, hecho.tocadas))),
+      avisos: [...new Set([...(avisoVersion ? [avisoVersion] : []), ...mapeo.avisos, ...hecho.avisos].map(mayuscula))].slice(0, 6),
       noAplicadas: hecho.noAplicadas,
       tocadas: hecho.tocadas,
       turno: {

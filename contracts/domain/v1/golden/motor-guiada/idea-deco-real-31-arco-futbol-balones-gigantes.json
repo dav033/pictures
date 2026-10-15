@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-31-arco-futbol-balones-gigantes",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.3"
+  "version": "1.2.6"
  },
- "especHash": "4eb388b371d7d6cdcd6d17fa1479c52fb72e745090e68d732220485fc8c148a9",
+ "especHash": "fc8572aa724635f6cab5b63ca715641aaa74be7ca9eebecd17f6e62036a580a4",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -12,47 +12,47 @@
     {
      "formatoId": "R-5",
      "codigo": "005",
-     "cantidad": 2
-    },
-    {
-     "formatoId": "R-5",
-     "codigo": "031",
-     "cantidad": 18
-    },
-    {
-     "formatoId": "R-5",
-     "codigo": "080",
-     "cantidad": 8
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "005",
-     "cantidad": 9
-    },
-    {
-     "formatoId": "R-9",
-     "codigo": "031",
      "cantidad": 7
     },
     {
-     "formatoId": "R-9",
+     "formatoId": "R-5",
+     "codigo": "031",
+     "cantidad": 12
+    },
+    {
+     "formatoId": "R-5",
      "codigo": "080",
-     "cantidad": 8
+     "cantidad": 10
     },
     {
-     "formatoId": "R-12",
+     "formatoId": "R-9",
      "codigo": "005",
-     "cantidad": 16
+     "cantidad": 9
     },
     {
-     "formatoId": "R-12",
+     "formatoId": "R-9",
      "codigo": "031",
      "cantidad": 9
     },
     {
+     "formatoId": "R-9",
+     "codigo": "080",
+     "cantidad": 9
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "005",
+     "cantidad": 13
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "031",
+     "cantidad": 16
+    },
+    {
      "formatoId": "R-12",
      "codigo": "080",
-     "cantidad": 16
+     "cantidad": 12
     },
     {
      "formatoId": "R-18",
@@ -62,12 +62,12 @@
     {
      "formatoId": "R-18",
      "codigo": "031",
-     "cantidad": 4
+     "cantidad": 1
     },
     {
      "formatoId": "R-18",
      "codigo": "080",
-     "cantidad": 1
+     "cantidad": 4
     },
     {
      "formatoId": "R-24",
@@ -76,18 +76,18 @@
     },
     {
      "formatoId": "R-24",
-     "codigo": "080",
+     "codigo": "031",
      "cantidad": 1
     }
    ],
-   "unidades": 105,
+   "unidades": 109,
    "caja": [
-    -130,
+    -129,
     0,
-    -192,
-    130,
-    289,
-    -128
+    -193,
+    129,
+    288,
+    -127
    ]
   }
  },
@@ -96,47 +96,47 @@
    {
     "formatoId": "R-5",
     "codigo": "005",
-    "cantidad": 2
-   },
-   {
-    "formatoId": "R-5",
-    "codigo": "031",
-    "cantidad": 18
-   },
-   {
-    "formatoId": "R-5",
-    "codigo": "080",
-    "cantidad": 8
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "005",
-    "cantidad": 9
-   },
-   {
-    "formatoId": "R-9",
-    "codigo": "031",
     "cantidad": 7
    },
    {
-    "formatoId": "R-9",
+    "formatoId": "R-5",
+    "codigo": "031",
+    "cantidad": 12
+   },
+   {
+    "formatoId": "R-5",
     "codigo": "080",
-    "cantidad": 8
+    "cantidad": 10
    },
    {
-    "formatoId": "R-12",
+    "formatoId": "R-9",
     "codigo": "005",
-    "cantidad": 16
+    "cantidad": 9
    },
    {
-    "formatoId": "R-12",
+    "formatoId": "R-9",
     "codigo": "031",
     "cantidad": 9
    },
    {
+    "formatoId": "R-9",
+    "codigo": "080",
+    "cantidad": 9
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "005",
+    "cantidad": 13
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "031",
+    "cantidad": 16
+   },
+   {
     "formatoId": "R-12",
     "codigo": "080",
-    "cantidad": 16
+    "cantidad": 12
    },
    {
     "formatoId": "R-18",
@@ -146,12 +146,12 @@
    {
     "formatoId": "R-18",
     "codigo": "031",
-    "cantidad": 4
+    "cantidad": 1
    },
    {
     "formatoId": "R-18",
     "codigo": "080",
-    "cantidad": 1
+    "cantidad": 4
    },
    {
     "formatoId": "R-24",
@@ -160,19 +160,19 @@
    },
    {
     "formatoId": "R-24",
-    "codigo": "080",
+    "codigo": "031",
     "cantidad": 1
    }
   ],
-  "unidades": 105
+  "unidades": 109
  },
  "caja": [
-  -130,
+  -129,
   0,
-  -192,
-  130,
-  289,
-  -128
+  -193,
+  129,
+  288,
+  -127
  ],
  "referenciaPython": {
   "globos": 75

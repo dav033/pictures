@@ -2,7 +2,9 @@ import { avisar } from "./avisos-usuario";
 import { FORMATOS_ORGANICOS, fallar, formatosOrganicosDe } from "./herramientas-escena-colores";
 import { INFLADOS_ORGANICOS } from "./estructuras-organicas";
 import { RELLENO_TUPIDO, type ColorOrganico, type OpcionesOrganico, type PuntoMezcla, type RellenoOrganico } from "./organico";
+import { formatoPorId } from "./formatos";
 import { medirTramos } from "./presupuesto-cuerpo";
+import { compensarRellenoMediano } from "./relleno-compensado";
 
 /**
  * **Los tamaños de globo de una pieza orgánica nueva** (columna, guirnalda, semiarco, aro, marco): cuáles se usan de verdad según los colores y el
@@ -46,6 +48,30 @@ export const medidaConTamanos = (opcionesDe: (grosorCm: number) => Pick<Opciones
   medirTramos((g) => { const o = opcionesDe(g); return { ...o, tramos: o.tramos.map((t) => ({ ...t, mezcla: mezclaCon(t.mezcla, permitidos) })) }; });
 /** Con lo que `piezaOrganica` arma un tramo suelto. */
 export const BASE_TRAMOS = { inflados: INFLADOS_ORGANICOS, densidad: 1 } as const;
+
+const infladoDe = (f: string) => INFLADOS_ORGANICOS[f] ?? 0;
+
+/**
+ * El relleno de una pieza cuyos colores no se fabrican en R-9 (13 de ~80 códigos: 056, 909, 932...): el hueco de 18 cm que tapaba el R-9 lo tapa, **después** de los
+ * tríos de R-5 (que siguen llenando primero, así que el conteo nunca baja), el R-12 desinflado a esos 18 cm, que sigue dentro del 40 % que admite el formato. Un R-18
+ * a 18 cm sería un globo medio vacío: si no hay R-12, queda el relleno de siempre. Si algún color sí se fabrica en R-9 (aunque la persona no lo pidiera o el grosor
+ * no lo deje), no se sustituye nada. P-087.
+ */
+export const rellenoCompensadoPara = (colores: readonly ColorOrganico[]) => {
+  const conR9 = colores.some((c) => (c.formatos ?? formatosOrganicosDe(c.codigo)).includes("R-9"));
+  const rellenoR9 = RELLENO_TUPIDO.find((item) => item.formatoId === "R-9");
+  return (permitidos: readonly string[]): RellenoOrganico[] => compensarRellenoMediano(
+    rellenoCon(permitidos),
+    conR9,
+    permitidos.map((formatoId) => ({
+      formatoId,
+      infladoCm: infladoDe(formatoId),
+      diametroMaxCm: formatoPorId(formatoId)?.diametroMaxCm ?? Infinity,
+    })),
+    infladoDe("R-9"),
+    rellenoR9,
+  );
+};
 
 export function rellenoCon(permitidos: readonly string[]): RellenoOrganico[] {
   const r = RELLENO_TUPIDO.filter((x) => permitidos.includes(x.formatoId)).map((x) => ({ ...x }));

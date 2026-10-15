@@ -3,11 +3,12 @@ import { createHash } from "node:crypto";
 import { isAuthenticatedRequest } from "@/lib/auth/request";
 import { exigirEscritura } from "@/lib/feedback-ia/acceso";
 import {
-  armarDesdeEspec, especDesdeIdeaGuardada, especDesdePropuesta, sobreDelMotor, sumarIdeaAEspec,
+  armarDesdeEspec, especDesdeIdeaGuardada, especDesdePropuesta, sobreDelMotor, sumarIdeaAEspec, VERSION_MOTOR,
   type ConceptoPlan, type EspecClienteV1, type ResultadoCotizacionBom, type ResultadoMotorV1,
 } from "@/lib/globos3d/motor/v1";
 import type { PlanIdeaGuardado } from "@/lib/plan/plan-de-idea";
 import { codigoSeguro, hashSeguro, idsDePiezas, type FilaAuditoriaPlan3d } from "./auditoria-plan";
+import { avisoMotorActualizado, totalGlobosDeBom, totalGlobosDelPlan } from "./aviso-motor-actualizado";
 import { planDel3dVencido } from "./continuidad";
 import { verificarPlanConConcepto } from "./verificar-plan";
 import { CuerpoBanderaFallidaSchema, CuerpoPlanMotorSchema, RUTA_PLAN_MOTOR, type CuerpoPlanMotor, type RazonBanderaFallida, type RazonFallback } from "./plan-contrato";
@@ -78,7 +79,9 @@ const RESPUESTA_NO_ARMABLE = { codigo: "PLAN_NO_ARMABLE_EN_3D", estado: 422 };
 /** Las razones cuyo detalle no trae nada del cliente: los huecos del catálogo, el servicio de precios y el tope de piezas. */
 const DETALLE_PROPIO: ReadonlySet<RazonFallback> = new Set<RazonFallback>(["sin_cobertura", "precio_fallido", "tope_de_piezas"]);
 
-type BaseVerificada = { espec: EspecClienteV1; concepto: ConceptoPlan; origenEn: number };
+import { crearContextoOrdenColorVacio, podarContextoOrdenColor, type ContextoOrdenColor } from "@/lib/globos3d/motor/v1";
+
+type BaseVerificada = { espec: EspecClienteV1; versionPlan: string; concepto: ConceptoPlan; origenEn: number; colorOrder?: ContextoOrdenColor };
 
 /** Huella (no reversible) del navegador al que se le dio el plan. */
 export const huellaDeNavegador = (usuarioId: string): string => createHash("sha256").update(`globos3d-navegador:${usuarioId}`).digest("hex");
@@ -113,6 +116,15 @@ function armarEspec(cuerpo: CuerpoPlanMotor, base: BaseVerificada | null, deps: 
   const suma = sumarIdeaAEspec(base.espec, deLaIdea, cuerpo.idea_id);
   if (!suma.ok) throw new FalloDelPlan("tope_de_piezas", `máximo ${suma.maximo} piezas`);
   return { espec: suma.espec, concepto: base.concepto, nuevas: suma.nuevas, globosIdea: guardado.globos, avisosConversion: avisos };
+}
+
+/** P-091: una base armada con otra versión del motor se rehace con la actual; si sus globos se movieron sin que lo pedido tenga que ver, el cliente lo lee. */
+function avisoDeVersion(planBase: CuerpoPlanMotor["base"], base: BaseVerificada | null): string | null {
+  if (!planBase || !base || base.versionPlan === VERSION_MOTOR) return null;
+  const sinCambio = armarDesdeEspec(base.espec);
+  if (sinCambio.noRepresentable.length) return null;
+  const antes = totalGlobosDelPlan(planBase);
+  return antes === null ? null : avisoMotorActualizado(base.versionPlan, antes, totalGlobosDeBom(sinCambio.bom));
 }
 
 export async function atenderPlanMotor(request: Request, deps: DependenciasPlanMotor): Promise<Response> {
@@ -189,13 +201,15 @@ async function atender(request: Request, deps: DependenciasPlanMotor, navegador:
     const { espec, concepto, nuevas, globosIdea, avisosConversion } = armarEspec(cuerpo, base, deps);
     const resultado = armarDesdeEspec(espec);
     if (resultado.noRepresentable.length) return fallo("no_representable", undefined, resultado.noRepresentable);
-    const avisos = [...new Set([...avisosConversion, ...resultado.avisos])];
+    const avisoVersion = avisoDeVersion(cuerpo.base, base);
+    const avisos = [...new Set([...(avisoVersion ? [avisoVersion] : []), ...avisosConversion, ...resultado.avisos])];
     const cotizada = await deps.cotizar(resultado.bom, { requestId: requestId(), signal: request.signal });
     if (!cotizada.ok) {
       if (cotizada.razon === "sin_cobertura") return fallo("sin_cobertura", cotizada.faltantes.map((f) => `${f.formatoId} ${f.codigo}: ${f.motivo}`).join("; "));
       return fallo(cotizada.razon === "material_no_disponible" ? "sin_cobertura" : "precio_fallido", cotizada.detalle);
     }
-    const sobre = sobreDelMotor({ espec, resultado: { ...resultado, avisos }, cotizacion: cotizada, concepto, requestId: requestId(), navegador, origenEn: base?.origenEn ?? Date.now() });
+    const colorOrder = base ? (base.colorOrder ? podarContextoOrdenColor(base.colorOrder, espec) : undefined) : crearContextoOrdenColorVacio();
+    const sobre = sobreDelMotor({ espec, resultado: { ...resultado, avisos }, cotizacion: cotizada, concepto, requestId: requestId(), navegador, origenEn: base?.origenEn ?? Date.now(), ...(colorOrder !== undefined ? { colorOrder } : {}) });
     if (!sobre.ok) return fallo("sobre_invalido", sobre.motivo);
     deps.auditar("regla:motor_guiada", "plan de la guiada armado por el motor 3D y cotizado con Python", {
       bandera: bandera.motor, fuente: bandera.fuente, efectivo: "3d", ...(base && bandera.motor !== "3d" ? { conserva_motor: "plan_3d_abierto" } : {}), plan_hash: resultado.especHash, motor: resultado.motor,

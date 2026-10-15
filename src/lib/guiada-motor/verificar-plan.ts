@@ -13,7 +13,17 @@ import { abrirContextoPlan, verificarTokenAprobacion } from "@/lib/plan/aprobaci
 export type PlanFirmado = { approval_token: string; plan_hash: string; espec?: unknown; motor?: { version?: unknown } };
 export type RechazoPlan = { codigo: "APROBACION_INVALIDA" | "PLAN_NO_ES_DEL_MOTOR_3D" | "ESPEC_INVALIDA" | "PLAN_ALTERADO"; mensaje: string; estado: number; motivo: string };
 
-export type PlanVerificado = { espec: EspecClienteV1; /** La hora del primer plan de su línea (`ContextoPlan.origenEn`). */ origenEn: number };
+import type { ContextoOrdenColor } from "@/lib/globos3d/motor/v1";
+
+export type PlanVerificado = {
+  espec: EspecClienteV1;
+  /** La versión del motor con la que se armó el plan (la que firma su hash): puede ser anterior a `VERSION_MOTOR`. */
+  versionPlan: string;
+  /** La hora del primer plan de su línea (`ContextoPlan.origenEn`). */
+  origenEn: number;
+  /** El contexto de la última orden de color (solo en tokens v3). `undefined` si es token legado. */
+  colorOrder?: ContextoOrdenColor;
+};
 
 export function verificarPlanFirmado(plan: PlanFirmado, navegador: string): PlanVerificado | RechazoPlan {
   const contexto = abrirContextoPlan(plan.approval_token);
@@ -25,7 +35,12 @@ export function verificarPlanFirmado(plan: PlanFirmado, navegador: string): Plan
   if (!espec.success || typeof version !== "string") return { codigo: "ESPEC_INVALIDA", mensaje: "El plan no trae su especificación.", estado: 400, motivo: "espec_ausente_o_invalida" };
   // El token firma el hash de la espec: si el navegador la cambió, el hash ya no coincide.
   if (especHashDe(espec.data, version) !== plan.plan_hash) return { codigo: "PLAN_ALTERADO", mensaje: "El plan no corresponde a su aprobación.", estado: 409, motivo: "hash_de_la_espec_distinto" };
-  return { espec: espec.data, origenEn: contexto.origenEn };
+  return {
+    espec: espec.data,
+    versionPlan: version,
+    origenEn: contexto.origenEn,
+    ...(contexto.colorOrder !== undefined ? { colorOrder: contexto.colorOrder } : {}),
+  };
 }
 
 /**
@@ -37,5 +52,11 @@ export function verificarPlanConConcepto(plan: z.infer<typeof PlanGuiadoSchema>,
   const firmado = verificarPlanFirmado({ approval_token: plan.approval_token, plan_hash: plan.plan_hash, espec: extra.espec, motor: extra.motor }, navegador);
   if ("codigo" in firmado) return firmado;
   const { concepto } = plan.plan;
-  return { espec: firmado.espec, origenEn: firmado.origenEn, concepto: { titulo: concepto.titulo, descripcion: concepto.descripcion, ...(concepto.estilo ? { estilo: concepto.estilo } : {}), ...(concepto.ocasion ? { ocasion: concepto.ocasion } : {}) } };
+  return {
+    espec: firmado.espec,
+    versionPlan: firmado.versionPlan,
+    origenEn: firmado.origenEn,
+    concepto: { titulo: concepto.titulo, descripcion: concepto.descripcion, ...(concepto.estilo ? { estilo: concepto.estilo } : {}), ...(concepto.ocasion ? { ocasion: concepto.ocasion } : {}) },
+    ...(firmado.colorOrder !== undefined ? { colorOrder: firmado.colorOrder } : {}),
+  };
 }

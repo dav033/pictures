@@ -106,6 +106,9 @@ function verificarFrase(espec: EspecClienteV1, edicion: EdicionDeColor, donde: s
   if ([...esperado.values()].some((nombrado) => nombrado.sinOrden)) cuentas.sinOrden += 1;
   if (!r.noAplicado) cuentas.aplicadas += 1;
   if (edicion.op === "reemplazar_color") assert.deepEqual(aplicarEdicion(r.espec, edicion).espec, r.espec, `${donde}: repetirla cambia otra cosa`);
+  if (edicion.op === "reemplazar_color" && r.ordenColor) {
+    assert.deepEqual(aplicarEdicion(r.espec, edicion, { ordenColor: r.ordenColor }).espec, r.espec, `${donde}: replay with returned signed history changes another colour`);
+  }
 
   for (const [id, nombrado] of coloresNombrados(espec, seleccion, dicho, entran)) {
     const pieza = seleccion.find((otra) => otra.id === id)!;

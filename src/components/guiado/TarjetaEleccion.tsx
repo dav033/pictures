@@ -16,10 +16,11 @@ import { DUR, EASE_REBOTE, EASE_SALIDA, grupoConRitmo, hijoEscalonado } from "./
 import { FilaPieza } from "./FilaPieza";
 import { FotoDecoracion } from "./FotoDecoracion";
 import { GloboMiniatura } from "./GloboMiniatura";
-import { lineasSinPiezaDeIdea, piezasVistaDeIdea, resumenIdea } from "./idea-vista";
+import { AVISO_CANTIDAD_APROXIMADA, lineasSinPiezaDeIdea, piezasVistaDeIdea, resumenIdea } from "./idea-vista";
 import { nombreGlobosCliente } from "./formato";
 import { globosPorColor, productoSempertex, rotuloGlobo, tablaGlobos, tamanoDeLinea, type LineaGlobo, type PiezaVista } from "./piezas-vista";
 import { PanelPlegable } from "./Plegable";
+import { TEXTO_PRECIO_AL_ELEGIR, type VistaPrecioIdea } from "./precio-idea-elegida";
 import { BotonVerDetalle, TablaGlobosPieza } from "./TablaGlobosPieza";
 
 /**
@@ -31,16 +32,16 @@ import { BotonVerDetalle, TablaGlobosPieza } from "./TablaGlobosPieza";
  * `agregar`: «Agregar a mi plan» / «Crear mi plan con esta idea» (pedido 3); sin él, la tarjeta es solo informativa.
  * Sus manejadores llegan aparte (`onAgregar`, `onVerPlan`): ver `DatosAgregarIdea`.
  */
-export function TarjetaEleccion({ decoracion, agregar: datosAgregar, onAgregar, onVerPlan }: { decoracion: DecoracionSempertex; agregar?: DatosAgregarIdea | undefined; onAgregar?: (() => void) | undefined; onVerPlan?: (() => void) | undefined }) {
+export function TarjetaEleccion({ decoracion, agregar: datosAgregar, onAgregar, onVerPlan, precio }: { decoracion: DecoracionSempertex; agregar?: DatosAgregarIdea | undefined; onAgregar?: (() => void) | undefined; onVerPlan?: (() => void) | undefined; precio?: VistaPrecioIdea | undefined }) {
   const agregar: AccionAgregarIdea | undefined = datosAgregar && onAgregar ? { ...datosAgregar, onAgregar, onVerPlan } : undefined;
   const detalle = detalleDeIdea(decoracion.id);
-  if (detalle) return <EleccionDetallada decoracion={decoracion} detalle={detalle} agregar={agregar} />;
-  return <EleccionSencilla decoracion={decoracion} agregar={agregar} />;
+  if (detalle) return <EleccionDetallada decoracion={decoracion} detalle={detalle} agregar={agregar} precio={precio} />;
+  return <EleccionSencilla decoracion={decoracion} agregar={agregar} precio={precio} />;
 }
 
 const NUMERO = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
 
-function EleccionDetallada({ decoracion, detalle, agregar }: { decoracion: DecoracionSempertex; detalle: DetalleIdea; agregar?: AccionAgregarIdea }) {
+function EleccionDetallada({ decoracion, detalle, agregar, precio }: { decoracion: DecoracionSempertex; detalle: DetalleIdea; agregar?: AccionAgregarIdea; precio?: VistaPrecioIdea | undefined }) {
   const piezas = useMemo(() => piezasVistaDeIdea(detalle), [detalle]);
   const sinPieza = useMemo(() => lineasSinPiezaDeIdea(detalle), [detalle]);
   const resumen = useMemo(() => resumenIdea(detalle), [detalle]);
@@ -74,9 +75,12 @@ function EleccionDetallada({ decoracion, detalle, agregar }: { decoracion: Decor
           </div>
           <h3 className="mt-1 text-lg font-semibold leading-snug text-texto">{decoracion.titulo}</h3>
           <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <abbr title="aproximadamente" className="text-sm text-texto-suave no-underline">aprox.</abbr>
             <span className="text-4xl font-semibold tracking-tight text-texto tabular-nums"><ContadorGlobos total={resumen.globos} /></span>
             <span className="text-base text-texto-suave">{resumen.globos === 1 ? "globo" : "globos"} Sempertex</span>
           </div>
+          <p className="text-xs text-texto-suave">{AVISO_CANTIDAD_APROXIMADA}</p>
+          <PrecioIdea precio={precio} />
           {resumen.otros.length > 0 && (
             <p className="text-xs text-texto-suave">y {listaNatural(resumen.otros.map((otro) => `${NUMERO.format(otro.unidades)} ${otro.producto}`))}</p>
           )}
@@ -142,6 +146,13 @@ function EleccionDetallada({ decoracion, detalle, agregar }: { decoracion: Decor
   );
 }
 
+/** El precio de los materiales de la idea: el del plan exacto (el mismo de la cotización), «Calculando…» mientras llega o «Precio al elegir». */
+function PrecioIdea({ precio }: { precio?: VistaPrecioIdea | undefined }) {
+  if (!precio || precio.tipo === "ninguno") return null;
+  const texto = precio.tipo === "precio" ? precio.texto : precio.tipo === "cargando" ? "Calculando el precio de los materiales…" : TEXTO_PRECIO_AL_ELEGIR;
+  return <p className="mt-1 text-sm font-medium text-texto" data-precio-idea={precio.tipo} role={precio.tipo === "cargando" ? "status" : undefined}>{texto}</p>;
+}
+
 /** El total que cuenta desde cero al aparecer (o salta directo con movimiento reducido). */
 function ContadorGlobos({ total }: { total: number }) {
   const reducido = useReducedMotion();
@@ -203,7 +214,7 @@ function DetalleTablas({ piezas, sinPieza, tituloSinPieza, globos, estimados, to
     <div className="space-y-4 pb-1 pt-2">
       {tablas.map((item, posicion) => <TablaGlobosPieza key={item.id} titulo={item.titulo} oficial={item.oficial} tabla={item.tabla} repeticiones={item.repeticiones} ayuda={posicion === 0} />)}
       {tablas.length > 1 && (
-        <p className="text-right text-sm font-semibold text-texto">Toda la idea: <span className="tabular-nums"><CifraAnimada valor={globos} /></span> {globos === 1 ? "globo" : "globos"}</p>
+        <p className="text-right text-sm font-semibold text-texto">Toda la idea, aprox.: <span className="tabular-nums"><CifraAnimada valor={globos} /></span> {globos === 1 ? "globo" : "globos"}</p>
       )}
       {nota && <p className="text-xs leading-relaxed text-texto-suave">{nota}</p>}
     </div>
@@ -211,7 +222,7 @@ function DetalleTablas({ piezas, sinPieza, tituloSinPieza, globos, estimados, to
 }
 
 /** Sin detalle precalculado: la lista de materiales de la biblioteca, cada uno con su producto Sempertex. */
-function EleccionSencilla({ decoracion, agregar }: { decoracion: DecoracionSempertex; agregar?: AccionAgregarIdea }) {
+function EleccionSencilla({ decoracion, agregar, precio }: { decoracion: DecoracionSempertex; agregar?: AccionAgregarIdea; precio?: VistaPrecioIdea | undefined }) {
   const piezas = decoracion.piezas.map((pieza) => `${pieza.cantidad} ${nombrePieza(pieza.estructura, pieza.cantidad)}`);
   return <section className="mt-4 flex flex-col overflow-hidden rounded-2xl border border-borde-suave bg-superficie shadow-[0_1px_2px_var(--sombra)] sm:flex-row" aria-label="Tu elección">
     <div className="relative aspect-[4/3] shrink-0 bg-superficie-2 sm:aspect-auto sm:w-48">
@@ -223,6 +234,7 @@ function EleccionSencilla({ decoracion, agregar }: { decoracion: DecoracionSempe
         {decoracion.origen === "referencia_real" && <span className="shrink-0 rounded-full border border-borde-suave px-2 py-0.5 text-[0.7rem] font-medium text-texto-suave">Referencia</span>}
       </div>
       {piezas.length > 0 && <p className="mt-1 text-sm text-texto-suave">{piezas.join(" · ")}</p>}
+      <PrecioIdea precio={precio} />
       {decoracion.materiales.length > 0 && <ul className="mt-3 space-y-1.5 text-sm">
         {decoracion.materiales.map((material) => <li key={material.variantId} className="flex gap-2"><span className="font-semibold tabular-nums">{textoCantidad(material)}</span><span>{nombreSempertex(material.nota) ?? minusculaInicial(nombreMaterial(material.nota) ?? "globos")}</span></li>)}
       </ul>}

@@ -92,6 +92,36 @@ async function main(): Promise<void> {
     assert.ok(!html.includes("plan-armado") && !html.includes("plan-dibujo"), "ninguna vista previa de Python");
   });
 
+  await caso("«Deshacer» (REQ-016): junto al último ajuste, solo si la vista guarda el plan de antes, y apagado mientras se recalcula", () => {
+    const s = sobreDe("idea-deco-real-07-eb12910e210c94b6184d025127acce95");
+    const plan = PlanGuiadoSchema.parse(s.plan);
+    const base = { cotizacion: CotizacionPlanGuiadoSchema.parse(s.cotizacion), motor: "3d", ajustes: ["el arco más grande"] };
+    const conBoton = renderToStaticMarkup(createElement(TarjetaPlan, propiedades(plan, { ...base, onDeshacer: sinAccion })));
+    assert.match(conBoton, /aria-label="Deshacer el último ajuste"/);
+    assert.ok(texto(conBoton).includes("Último ajuste: el arco más grande"), "el último ajuste sigue a la vista");
+    assert.doesNotMatch(botonCon(conBoton, "Deshacer"), /disabled=""/, "encendido");
+    assert.match(botonCon(conBoton, "Deshacer"), /min-h-11/, "mide al menos 44 px");
+    // Sin plan guardado (recarga, plan de Python, otro plan): sin botón; sin ajuste, tampoco hay qué deshacer.
+    assert.doesNotMatch(renderToStaticMarkup(createElement(TarjetaPlan, propiedades(plan, base))), /Deshacer el último ajuste/);
+    assert.doesNotMatch(renderToStaticMarkup(createElement(TarjetaPlan, propiedades(plan, { cotizacion: base.cotizacion, motor: "3d", onDeshacer: sinAccion }))), /Deshacer el último ajuste/);
+    // Mientras el plan se rehace (un cambio por chat) o la tarjeta está ocupada: apagado, no oculto.
+    for (const ocupada of [{ recalculandoPorChat: true }, { ocupado: true }]) {
+      assert.match(botonCon(renderToStaticMarkup(createElement(TarjetaPlan, propiedades(plan, { ...base, onDeshacer: sinAccion, ...ocupada }))), "Deshacer"), /disabled=""/, JSON.stringify(ocupada));
+    }
+    // En una versión anterior del plan (no vigente) no se deshace nada.
+    assert.doesNotMatch(renderToStaticMarkup(createElement(TarjetaPlan, propiedades(plan, { ...base, onDeshacer: sinAccion, vigente: false }))), /Deshacer el último ajuste/);
+    // La vista guarda el plan de antes en el único camino que publica un ajuste, y lo suelta al empezar de nuevo; solo se ofrece si lo tiene.
+    const fuente = readFileSync("src/components/guiado/VistaGuiada.tsx", "utf8");
+    // El plan de antes se recuerda al publicar un ajuste, pero solo cuando React confirma el plan ajustado (P-079): ver `publicar-ajuste-plan.ts`.
+    assert.match(fuente, /const ajustarPlan = usePublicarAjustePlan\(\{[\s\S]{0,300}recordar: deshacerAjuste\.recordar/, "la vista publica los ajustes por el hook que recuerda el widget de antes");
+    const hook = readFileSync("src/components/guiado/ajuste/publicar-ajuste-plan.ts", "utf8");
+    assert.match(hook, /if \(!vigente \|\| vigente\.reemplazado \|\| vigente\.plan\.plan_hash !== baseHash\) return false;/, "el ajuste solo se publica sobre el plan en que se hizo");
+    assert.match(hook, /if \(!actual \|\| actual\.reemplazado \|\| actual\.plan !== solicitud\.plan\) continue;[\s\S]{0,200}recordar\(solicitud\.mensajeId, solicitud\.vigente, solicitud\.plan\.plan_hash\);/, "el plan de antes se recuerda solo tras confirmarse el ajuste");
+    assert.match(fuente, /const vaciar = useCallback\(\(\) => \{[\s\S]{0,1800}limpiarDeshacer\(\);[\s\S]{0,1800}\}, \[marcarCargando, limpiarDeshacer\]\);/, "«Empezar de nuevo» (`vaciar`) suelta los planes de antes");
+    assert.match(fuente, /vigente && deshacerAjuste\.puede\(mensajeId, widget\) \? \{ onDeshacer: \(\) => deshacerUltimoAjuste\(mensajeId\) \}/, "la tarjeta solo recibe «Deshacer» si hay plan de antes");
+    assert.match(fuente, /function deshacerUltimoAjuste[\s\S]{0,1800}if \(!resultado\.ok\) \{[\s\S]{0,400}return resultado\.mensaje;\s*\}[\s\S]{0,1400}void borrarImagenNavegador\(mensajeId\)/, "la imagen guardada de otro plan se borra solo al deshacer (no en el rechazo), para que una recarga no la traiga");
+  });
+
   await caso("un plan 3D guardado sin su espec firmada (antes de la fase 3) conserva «Vista del plan en preparación»", () => {
     const s = sobreDe("idea-deco-real-07-eb12910e210c94b6184d025127acce95");
     const sinEspec = Object.fromEntries(Object.entries(PlanGuiadoSchema.parse(s.plan)).filter(([clave]) => clave !== "espec"));
@@ -374,7 +404,7 @@ async function main(): Promise<void> {
     const fuente = readFileSync("src/components/guiado/VistaGuiada.tsx", "utf8");
     assert.match(fuente, /async function verComoQuedaria[\s\S]{0,700}widget\.motor === "3d" && !firmaDePlan\(widget\.plan\)\)[\s\S]{0,200}return;/, "verComoQuedaria se detiene, antes de cualquier ruta, con un plan 3D sin espec firmada");
     assert.match(fuente, /widget\.motor === "3d"\) \{[\s\S]{0,400}pedirImagenPlan3D\(/, "y con espec firmada el plan 3D va por su propia ruta (test-motor3d-imagen-cliente.ts lo prueba entero)");
-    assert.match(fuente, /async function aplicarEdicionChat[\s\S]{0,500}const del3d = planDelMensaje\([^\n]*\?\.motor === "3d";/, "los cambios por chat saben si el plan es del 3D");
+    assert.match(fuente, /async function aplicarEdicionChat[\s\S]{0,700}const vigente = planDelMensaje\([^\n]*\);\s*const del3d = vigente\?\.motor === "3d";/, "los cambios por chat saben si el plan es del 3D");
     assert.match(fuente, /dependenciasEdicionChat\(signal, del3d \? \{ turnoId: mensajeId \} : undefined\)/, "…y entonces van al servidor del 3D con el id del turno, no a /api/plan-editar");
     assert.match(fuente, /motor=\{widget\.motor\}/, "la tarjeta recibe el motor del plan");
     assert.match(fuente, /colocarPlan\(mensajeId, resultado\.plan, resultado\.cotizacion, Boolean\(foto\), idea, foto\?\.referenciaId, resultado\.motor, propuesta\)/, "el plan guarda el motor con que se armó (y, si es del 3D, la propuesta que lo armó)");

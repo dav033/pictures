@@ -5,7 +5,7 @@
  *
  *   npx tsx scripts/test/test-ui-calificacion-chat.ts      (no va en CI: necesita Chrome)
  *
- * Lo que cuida (NC-5): una fila de calificación por respuesta de la IA y UNA sola escala abierta; cada turno producido se registra
+ * Lo que cuida (NC-5): una fila de calificación por respuesta de la IA y ninguna escala abierta hasta que se toca la fila (una línea «¿Te sirvió?» por respuesta); cada turno producido se registra
  * una sola vez con lo que tiene (nunca un POST vacío ni una segunda petición pegada, tampoco con StrictMode); calificar manda un
  * POST por gesto; y al recargar la página la nota guardada se ve marcada con una sola consulta, sin POST.
  */
@@ -13,6 +13,8 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { after, before, test } from "node:test";
 import { build } from "esbuild";
+import postcss from "postcss";
+import tailwind from "@tailwindcss/postcss";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 
 const RAIZ = path.resolve(__dirname, "..", "..");
@@ -116,7 +118,7 @@ const lineasCalificar = (page: Page) => page.getByRole("button", { name: "Califi
 for (const estricto of [false, true]) {
   const modo = estricto ? "con StrictMode (como next dev)" : "sin StrictMode";
 
-  test(`${modo}: tres turnos → una escala abierta, dos líneas «Calificar» y un registro por turno, cada uno con su contenido y sin consultas`, async () => {
+  test(`${modo}: tres turnos → ninguna escala abierta, tres líneas «¿Te sirvió?» plegadas y un registro por turno, cada uno con su contenido y sin consultas`, async () => {
     const { page, peticiones, errores, cerrar } = await abrirChat(estricto);
     await turno(page, "Quiero algo para un cumple de 7 años", "Te muestro cuatro ideas.");
     await turno(page, "Me gusta la guirnalda", "Excelente elección.");
@@ -130,12 +132,42 @@ for (const estricto of [false, true]) {
       assert.equal(registro.cuerpo.calificacion, undefined, "registrar no califica");
     }
     assert.equal(GETS(peticiones).length, 0, "un turno producido aquí no tiene nada guardado que consultar");
-    assert.equal(await escalas(page).count(), 1, "una sola escala abierta");
-    assert.equal(await lineasCalificar(page).count(), 2, "los turnos anteriores, en una línea");
+    assert.equal(await escalas(page).count(), 0, "ninguna escala abierta: no empuja los chips");
+    assert.equal(await lineasCalificar(page).count(), 3, "cada turno, en una línea");
     assert.deepEqual(errores, []);
     await cerrar();
   });
 }
+
+/** Las cajas de los diez radios con una hoja de Tailwind compilada solo con las clases de estos componentes (el arnés no carga la de la app). */
+async function cajasDeLaEscala(page: Page): Promise<{ nota: string | null; ancho: number; alto: number; arriba: number }[]> {
+  const css = (await postcss([tailwind({ base: RAIZ })]).process(`@import "tailwindcss" source(none);\n@source "${path.join(RAIZ, "src", "components", "feedback-ia")}";`, { from: path.join(RAIZ, "src", "app", "arnes.css") })).css;
+  await page.addStyleTag({ content: css });
+  await turno(page, "Uno", "Respuesta uno.");
+  await lineasCalificar(page).last().click();
+  return page.getByRole("radio").evaluateAll((botones) => botones.map((boton) => { const caja = boton.getBoundingClientRect(); return { nota: boton.getAttribute("aria-label"), ancho: caja.width, alto: caja.height, arriba: Math.round(caja.top) }; }));
+}
+
+test("en un teléfono de 390 px cada nota de la escala mide al menos 40 × 40 px (dos filas de cinco)", async () => {
+  const { page, cerrar } = await abrirChat(false);
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const cajas = await cajasDeLaEscala(page);
+    assert.equal(cajas.length, 10);
+    for (const caja of cajas) assert.ok(caja.ancho >= 40 && caja.alto >= 40, `${caja.nota}: ${caja.ancho} × ${caja.alto}`);
+    assert.equal(new Set(cajas.map((caja) => caja.arriba)).size, 2, "dos filas");
+  } finally { await cerrar(); }
+});
+
+test("con ancho de sobra la escala del cliente vuelve a una sola fila de diez", async () => {
+  const { page, cerrar } = await abrirChat(false);
+  try {
+    await page.setViewportSize({ width: 900, height: 844 });
+    const cajas = await cajasDeLaEscala(page);
+    assert.equal(new Set(cajas.map((caja) => caja.arriba)).size, 1, "una fila");
+    for (const caja of cajas) assert.ok(caja.ancho >= 40 && caja.alto >= 40, `${caja.nota}: ${caja.ancho} × ${caja.alto}`);
+  } finally { await cerrar(); }
+});
 
 test("calificar manda un POST por gesto; un turno anterior se abre desde su línea y se califica sin tocar los demás", async () => {
   const { page, peticiones, cerrar } = await abrirChat(false);
@@ -143,6 +175,11 @@ test("calificar manda un POST por gesto; un turno anterior se abre desde su lín
   await turno(page, "Dos", "Respuesta dos.");
   await turno(page, "Tres", "Respuesta tres.");
 
+  assert.equal(await escalas(page).count(), 0);
+  await lineasCalificar(page).last().click();
+  assert.equal(await escalas(page).count(), 1, "tocar la última fila abre su escala");
+  assert.equal(POSTS(peticiones).length, 3, "abrir no manda nada");
+  assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("role")), "radio", "el foco pasa a la escala al abrirla");
   await page.getByRole("radio", { name: "8 de 10" }).click();
   await asentar(page);
   let posts = POSTS(peticiones);
@@ -168,6 +205,7 @@ test("al recargar la página, la nota guardada se ve marcada con UNA consulta ag
   const { page, peticiones, cerrar } = await abrirChat(false);
   await turno(page, "Uno", "Respuesta uno.");
   await turno(page, "Dos", "Respuesta dos.");
+  await lineasCalificar(page).last().click();
   await page.getByRole("radio", { name: "9 de 10" }).click();
   await asentar(page);
   const antes = peticiones.length;
@@ -180,8 +218,8 @@ test("al recargar la página, la nota guardada se ve marcada con UNA consulta ag
   assert.equal(POSTS(nuevas).length, 0, "lo restaurado no se registra");
   assert.equal(GETS(nuevas).length, 1, `una sola consulta: ${JSON.stringify(GETS(nuevas))}`);
   assert.equal(new URL(`${ORIGEN}/x${GETS(nuevas)[0]!.consulta}`).searchParams.get("turnos")?.split(",").length, 2, "los dos turnos en la misma petición");
-  assert.equal(await page.getByRole("radio", { name: "9 de 10" }).getAttribute("aria-checked"), "true", "la nota sobrevive a F5");
-  assert.equal(await escalas(page).count(), 1);
+  assert.equal(await escalas(page).count(), 0);
+  assert.equal(await page.getByText("Tu nota: 9/10").count(), 1, "la nota sobrevive a F5 en la fila plegada");
   await cerrar();
 });
 
@@ -192,6 +230,7 @@ for (const estricto of [false, true]) {
     await asentar(page);
     assert.deepEqual(POSTS(peticiones).map((p) => p.cuerpo), [], "ningún POST sin contenido");
     assert.equal(GETS(peticiones).length, 0, "tampoco una consulta por un turno que no tiene nada guardado");
+    await lineasCalificar(page).last().click();
     await page.getByRole("radio", { name: "7 de 10" }).click();
     await asentar(page);
     const posts = POSTS(peticiones);
@@ -201,13 +240,13 @@ for (const estricto of [false, true]) {
   });
 }
 
-test("dos respuestas seguidas de la IA (sin mensaje de la persona en medio) llevan una fila cada una y una sola escala abierta", async () => {
+test("dos respuestas seguidas de la IA (sin mensaje de la persona en medio) llevan una fila plegada cada una", async () => {
   const { page, peticiones, cerrar } = await abrirChat(false);
   await turno(page, "Arma mi plan", "Tu plan está listo.");
   await page.evaluate(() => window.__respuestaSuelta("Recalculé tu plan.", [{ tipo: "plan" }]));
   await asentar(page);
-  assert.equal(await escalas(page).count(), 1);
-  assert.equal(await lineasCalificar(page).count(), 1);
+  assert.equal(await escalas(page).count(), 0);
+  assert.equal(await lineasCalificar(page).count(), 2);
   assert.equal(POSTS(peticiones).length, 2, "un registro por respuesta");
   await cerrar();
 });

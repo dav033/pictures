@@ -43,6 +43,14 @@ test("las piezas se cuentan por clase con su nombre en español y la técnica sa
   const r = recetaDeIdea(entrada({ piezas: [globoSuelto(), globoSuelto(), globoSuelto(true)] }));
   assert.deepEqual(r.piezas, [{ nombre: "Globo suelto", cantidad: 3 }]);
   assert.ok(r.tecnicas.includes("Helio"));
+  assert.ok(r.tecnicas.includes("Globos sueltos"));
+  assert.ok(!r.tecnicas.includes("Globo suelto"));
+});
+
+test("un solo globo suelto dice «Globo suelto» en singular", () => {
+  const r = recetaDeIdea(entrada({ piezas: [globoSuelto()] }));
+  assert.ok(r.tecnicas.includes("Globo suelto"));
+  assert.ok(!r.tecnicas.includes("Globos sueltos"));
 });
 
 test("un arco se dice «Armazón en arco», no «Armazón recto»", () => {

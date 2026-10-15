@@ -1,3 +1,4 @@
+import type { TurnoChat } from "@sempertex/agente-core";
 import type { UsoAnthropic } from "./tipos";
 
 /**
@@ -27,4 +28,15 @@ export function costeClaudeUsd(modelo: string, uso: UsoAnthropic): number | unde
   const prompt = uso.input_tokens + leidos + escritos;
   const tarifa = prompt > UMBRAL_PROMPT_LARGO ? precios.largo : precios.normal;
   return (uso.input_tokens * tarifa.entrada + escritos * tarifa.cacheEscritura + leidos * tarifa.cacheLectura + uso.output_tokens * tarifa.salida) / 1e6;
+}
+
+/** El coste de un turno neutral del ChatPort: reconstruye lo que cobró la API (`usoDeAnthropic` en sentido inverso). */
+export function costeDeTurnoClaudeUsd(turno: TurnoChat): number | undefined {
+  const { entrada, salida, cacheados = 0, cacheEscritos = 0, pensamiento = 0 } = turno.uso;
+  return costeClaudeUsd(turno.modelo, {
+    input_tokens: entrada - cacheados - cacheEscritos,
+    output_tokens: salida + pensamiento,
+    cache_read_input_tokens: cacheados,
+    cache_creation_input_tokens: cacheEscritos,
+  });
 }

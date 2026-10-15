@@ -2,9 +2,9 @@
  "caso": "oficial-techo_globos",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.3"
+  "version": "1.2.6"
  },
- "especHash": "de63904e197aba0340d8a69ca82b0895ba3e8e59f39cbcf8f823c7c7ce28b9d1",
+ "especHash": "8a920ff23a37ade180b28af4fa9705cbd9ebcb4c061f7d7a37931a1e7eacf5bf",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

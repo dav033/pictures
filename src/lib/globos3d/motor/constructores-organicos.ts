@@ -4,7 +4,7 @@ import { opcionesArcoOrganico } from "../formas-escena";
 import { formaSemiarco, RELLENO_TUPIDO, type OpcionesOrganico } from "../organico";
 import type { Pieza } from "../piezas";
 import type { PiezaEspec, TamanosEspec } from "./espec-cliente-v1";
-import { enCm, GROSOR_ORGANICO_POR_DEFECTO_M, RANGO_GROSOR_GUIADA_CM, type MedidasEspec } from "./medidas-espec";
+import { ejeCuartoElipse, enCm, GROSOR_ORGANICO_POR_DEFECTO_M, RANGO_GROSOR_GUIADA_CM, type MedidasEspec } from "./medidas-espec";
 
 /**
  * Las piezas orgánicas (mezcla de tamaños, sin cuartetos): semiarco, arco, arco asimétrico, columna, guirnalda y aro.
@@ -55,12 +55,24 @@ export function espejarOrganico(pieza: Organico): Organico {
   };
 }
 
-export function construirSemiarco({ espec, medidas, avisos, notas }: EntradaOrganica): Construida {
+function dimensionesSemiarco(medidas: MedidasEspec, avisos: string[]) {
   const R = RANGOS_ESTRUCTURA.semiarco_organico;
+  const anchoCm = enCm(medidas.anchoM, undefined, R.ancho_cm, "El ancho", avisos);
+  const altoCm = enCm(medidas.altoM, undefined, R.alto_cm, "El alto", avisos);
+  return { anchoCm, altoCm, ejeContractualM: ejeCuartoElipse(anchoCm / 100, altoCm / 100) };
+}
+
+/** Contractual axis using the same rounded and clamped measures as the constructor. */
+export function ejeSemiarcoDesdeMedidas(medidas: MedidasEspec): number {
+  return dimensionesSemiarco(medidas, []).ejeContractualM;
+}
+
+export function construirSemiarco({ espec, medidas, avisos, notas }: EntradaOrganica): Construida {
   const { colores, pesos } = codigosYPesos(espec);
+  const { anchoCm, altoCm } = dimensionesSemiarco(medidas, avisos);
   const { pieza } = crearEstructura("semiarco_organico", {
-    ancho_cm: enCm(medidas.anchoM, undefined, R.ancho_cm, "El ancho", avisos),
-    alto_cm: enCm(medidas.altoM, undefined, R.alto_cm, "El alto", avisos),
+    ancho_cm: anchoCm,
+    alto_cm: altoCm,
     grosor_cm: grosorDe(medidas, espec.oficial === "semiarco_asimetrico" ? GROSOR_ORGANICO_POR_DEFECTO_M.semiarcoAsimetrico : GROSOR_ORGANICO_POR_DEFECTO_M.semiarco, RANGO_GROSOR_GUIADA_CM.semiarco, avisos),
     colores, pesos, tamanos: tamanosDe(espec),
   }, notas);

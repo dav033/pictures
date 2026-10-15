@@ -24,11 +24,12 @@ export type ResultadoEdicion = {
   noAplicado?: string;
   /** Los «No pude: …» de lo que la operación dejó sin hacer aunque cambió otras piezas (una pieza donde se pregunta cuál color). */
   sinHacer?: string[];
+  /** Contexto de orden de color resultante (REQ-016 T2, D-046). */
+  ordenColor?: import("./orden-color").ContextoOrdenColor;
 };
 
-
-export function noAplicado(espec: EspecClienteV1, motivo: string, avisos: string[] = []): ResultadoEdicion {
-  return { espec, avisos, descripcion: "", tocadas: [], noAplicado: `${PREFIJO_NO_PUDE}${motivo}` };
+export function noAplicado(espec: EspecClienteV1, motivo: string, avisos: string[] = [], ordenColor?: import("./orden-color").ContextoOrdenColor): ResultadoEdicion {
+  return { espec, avisos, descripcion: "", tocadas: [], noAplicado: `${PREFIJO_NO_PUDE}${motivo}`, ...(ordenColor !== undefined ? { ordenColor } : {}) };
 }
 
 /** Las piezas de la espec con ids nuevos (`cambios`), en su orden y con el origen puesto en «edición». */

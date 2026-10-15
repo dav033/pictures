@@ -165,7 +165,7 @@ prueba("el plan del mensaje es su «escena» (o la propuesta mientras no hay pla
 prueba("la fila sale bajo la respuesta terminada y no mientras llega", () => {
   const mensajes = [{ id: "u1", role: "user" as const, content: "Quiero un arco" }, guiado({ id: "a1" })];
   const con = html(createElement(CalificacionGuiada, { mensajes, indice: 1, listo: true }));
-  assert.ok(con.includes("¿Qué tal quedó?") && con.includes("pl-11"));
+  assert.ok(con.includes("¿Te sirvió?") && con.includes("pl-11"));
   assert.equal(html(createElement(CalificacionGuiada, { mensajes, indice: 1, listo: false })), "");
   assert.equal(html(createElement(CalificacionGuiada, { mensajes, indice: 0, listo: true })), "");
   assert.equal(html(createElement(CalificacionGuiada, { mensajes: [...mensajes, { id: "u2", role: "user" as const, content: "Gracias" }], indice: 3, listo: true })), "");
@@ -208,17 +208,23 @@ prueba("el cliente no ve los motivos del taller; la foto realista solo si el cha
   assert.ok(!h.includes("Quedó mal colocado") && !h.includes("La foto realista no coincide") && h.includes("Muy lento"));
   assert.ok(vistaCliente({ porQueAbierto: true }, { conImagen: true }).includes("La foto realista no coincide"));
 });
-prueba("en el chat guiado solo la última respuesta de la IA lleva la escala", () => {
+prueba("en el chat guiado ninguna respuesta abre la escala sola: todas son una fila «¿Te sirvió?» de al menos 40 px que se abre al tocarla", () => {
   const mensajes = [
     { id: "u1", role: "user" as const, content: "Quiero un arco" }, guiado({ id: "a1", content: "Primera idea" }),
     { id: "u2", role: "user" as const, content: "Más sencillo" }, guiado({ id: "a2", content: "Segunda idea" }),
   ];
   assert.equal(ultimoTurnoGuiadoCalificable(mensajes), 3);
-  const vieja = html(createElement(CalificacionGuiada, { mensajes, indice: 1, listo: true }));
-  const ultima = html(createElement(CalificacionGuiada, { mensajes, indice: 3, listo: true }));
-  assert.equal(botonesNota(vieja).length, 0);
-  assert.ok(vieja.includes("Calificar"));
-  assert.equal(botonesNota(ultima).length, 10);
+  for (const indice of [1, 3]) {
+    const fila = html(createElement(CalificacionGuiada, { mensajes, indice, listo: true }));
+    assert.equal(botonesNota(fila).length, 0, "la escala de diez casillas no ocupa lugar hasta que se pide");
+    assert.ok(fila.includes("¿Te sirvió?") && fila.includes("Calificar"));
+    assert.ok(fila.includes("min-h-10"), "el botón de abrir mide 40 px o más");
+    assert.ok(!fila.includes("¿Qué tal quedó?"));
+  }
+});
+prueba("la escala del cliente tiene casillas de 40 px; la del Taller sigue en 36", () => {
+  assert.ok(botonesNota(vistaCliente()).every((b) => b.includes("h-10")));
+  assert.ok(botonesNota(vista()).every((b) => b.includes("h-9")));
 });
 prueba("el estado de un mensaje guiado lleva todos sus widgets y una huella de la foto, nunca la foto; lo muy grande suelta primero lo más pesado", () => {
   const e = estadoGuiadoDelMensaje({

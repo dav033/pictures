@@ -206,7 +206,7 @@ export function AjustarPlan({ plan, ajuste, ocupado, onSugerencia, onModificarPi
         sesion={sesionSelector}
         titulo={seleccion?.modo === "cambiar" ? `Cambiar ${seleccion.etiqueta.toLocaleLowerCase("es")} por…` : "Añadir un color"}
         detalle={seleccion?.modo === "cambiar"
-          ? `El globo que elijas toma su lugar en todas sus medidas${seleccion.estructuraId ? "" : ", en todo el plan"}. Las medidas y los demás colores quedan igual.`
+          ? `El globo que elijas toma su lugar en todas sus medidas${seleccion.estructuraId ? "" : ", en todo el plan"}. Las medidas no cambian; al terminar te digo cuántos globos quedan de cada color.`
           : "Lo sumo a tus piezas con una parte pequeña; después ajustas cuántos lleva. Sus medidas quedan igual."}
         accion={(globo) => (seleccion?.modo === "cambiar" ? `Cambiar por ${globo.nombre}` : `Añadir ${globo.nombre}`)}
         approvalToken={plan.approval_token}
@@ -282,7 +282,7 @@ function ColoresDelPlan({ plan, piezas, ajuste, bloqueado, pista, onCerrarPista,
         {pista && (
           <motion.div key="pista" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: DUR.corta, ease: EASE_SALIDA }} className="overflow-hidden">
             <div className="mb-2 rounded-xl bg-acento-suave px-3 py-2.5 text-sm text-texto">
-              <p>Toca <span className="font-semibold">Cambiar</span> en un color para elegir otro globo del catálogo; lo demás queda igual.</p>
+              <p>Toca <span className="font-semibold">Cambiar</span> en un color para elegir otro globo del catálogo; al terminar te digo cuántos globos quedan de cada color.</p>
               <div className="mt-1.5 flex flex-wrap gap-2">
                 {onPaletaNueva && <button type="button" disabled={bloqueado} onClick={onPaletaNueva} className="min-h-11 rounded-xl bg-superficie px-3 text-sm font-medium text-acento ring-1 ring-acento/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50 disabled:opacity-50">Prefiero que me propongas otra paleta</button>}
                 <button type="button" onClick={onCerrarPista} className="min-h-11 rounded-xl px-2 text-sm text-texto-suave hover:text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/50">Entendido</button>

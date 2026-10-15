@@ -41,6 +41,20 @@ export function casosOficiales(): CasoMotor[] {
 
 export const todosLosCasos = (): CasoMotor[] => [...casosIdeas(), ...casosOficiales()];
 
+/**
+ * Casos que no son ni una idea ni una estructura oficial pero que el dorado debe cubrir: la guirnalda orgánica con un color que no se fabrica en R-9 (el 932: 13 de ~80
+ * códigos) llena distinto que la de 570 (P-087; `VERSION_MOTOR` 1.2.4), y ninguna idea ni estructura oficial usa un color así.
+ */
+export function casosAdicionales(): CasoMotor[] {
+  const { espec, avisosDeConversion } = casosOficiales().find((c) => c.id === "oficial-guirnalda")!;
+  const piezas = espec.piezas.map((p) => ({
+    ...p, tamanos: "organica_fina" as const, densidad: "sencilla" as const, medidas: { largoM: 3.66 }, colores: [{ codigo: "932", nombre: "Color 932", peso: 1 }],
+  }));
+  return [{ id: "adicional-guirnalda-organica-sin-r9", espec: { ...espec, piezas }, avisosDeConversion }];
+}
+
+export const casosDorados = (): CasoMotor[] => [...todosLosCasos(), ...casosAdicionales()];
+
 export type CajaCm = [number, number, number, number, number, number];
 export type RegistroDorado = {
   caso: string;

@@ -2,9 +2,9 @@
  "caso": "oficial-arco",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.3"
+  "version": "1.2.6"
  },
- "especHash": "4a820712ddae100a95ae317a1f50e37caa2e5f0ba17f2f468fbe25326faed7f6",
+ "especHash": "071de9ea76a7961da15868861870d67e8b419d59faf368e27c2740a6393b907e",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

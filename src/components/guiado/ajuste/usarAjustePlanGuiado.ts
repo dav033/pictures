@@ -6,7 +6,8 @@ import { registrarEventoCliente } from "@/lib/registro/cliente";
 import { armarBusqueda, type ColorCatalogo } from "@/components/plan/ajuste/ajuste-propuesta";
 import { pedirBusqueda, pedirColoresCatalogo } from "@/components/plan/ajuste/cliente-explorador";
 import { conversacionGuiada, VISTA_GUIADA } from "../registro-guiado";
-import { coloresParaAgregar, confirmacionDelCambio, describirCambio, avisoEnCurso, type CambioPlan, type PlanGuiado } from "./ajuste-plan-guiado";
+import { coloresParaAgregar, describirCambio, avisoEnCurso, type CambioPlan, type PlanGuiado } from "./ajuste-plan-guiado";
+import { confirmacionCambioHecho, type UsoPrecio } from "./diferencia-colores";
 import type { DependenciasEdicion3d } from "../edicion-motor3d";
 import { agregarColorEnServidor, aplicarEnServidor, ejecutarCambio, mensajeAjuste, quitarPiezaEnServidor, reemplazarColorEnServidor, type PlanFirmado } from "./ejecutar-ajuste";
 import { ejecutarCambio3d } from "./ejecutar-ajuste-3d";
@@ -26,6 +27,10 @@ export type ColoresCatalogo = { fase: "nada" | "cargando" } | { fase: "error"; m
 
 type Entrada = {
   plan: PlanGuiado;
+  /** La cotización del plan que se ve: la confirmación dice cuánto cambió el precio. */
+  cotizacion?: unknown;
+  /** El uso con que se ve el precio: en el negocio la confirmación no dice una cifra personal. */
+  uso?: UsoPrecio | null;
   /** Publica el plan nuevo en la misma tarjeta. */
   onPlanAjustado: (plan: PlanGuiado, cotizacion: unknown, ajuste: AjustePublicado) => void;
   /** Un plan del motor 3D: cada cambio va a `/api/guiada/motor/editar` en lugar de a `/api/plan-editar` (REQ-007, fase 5). */
@@ -66,9 +71,9 @@ export type CambioDelPanelHecho = {
  * Lleva a cabo UN cambio del panel y dice qué quedó: con `motor3d` (un plan del motor 3D) el servidor del 3D aplica, rearma y
  * cotiza y habla por sí mismo; sin él, Python rehace el plan firmado como siempre. Sin React: lo prueban los dobles de la red.
  */
-export async function hacerCambioDelPanel(cambio: CambioPlan, base: PlanGuiado, opciones: { motor3d?: DependenciasEdicion3d | undefined; alDescartarColor?: (color: string) => void }): Promise<CambioDelPanelHecho> {
+export async function hacerCambioDelPanel(cambio: CambioPlan, base: PlanGuiado, opciones: { motor3d?: DependenciasEdicion3d | undefined; alDescartarColor?: (color: string) => void; cotizacionAntes?: unknown; uso?: UsoPrecio | null }): Promise<CambioDelPanelHecho> {
   if (opciones.motor3d) {
-    const nuevo = await ejecutarCambio3d(cambio, base, opciones.motor3d);
+    const nuevo = await ejecutarCambio3d(cambio, base, opciones.motor3d, { antes: opciones.cotizacionAntes, uso: opciones.uso ?? null });
     return { nuevo, hecho: nuevo.descripcion, confirmacion: nuevo.confirmacion, extra: { turno_id: nuevo.turno.turnoId, espec_hash_antes: nuevo.turno.antes.especHash, espec_hash_despues: nuevo.turno.despues.especHash, avisos: nuevo.avisos } };
   }
   const nuevo = await ejecutarCambio(cambio, base, {
@@ -81,7 +86,7 @@ export async function hacerCambioDelPanel(cambio: CambioPlan, base: PlanGuiado, 
   });
   // «Último ajuste» dice lo que quedó en cada pieza (con el plan de Python), no la cifra pedida.
   const hecho = describirCambio(base, cambio, nuevo.plan);
-  return { nuevo, hecho, confirmacion: confirmacionDelCambio(base, cambio, nuevo.piezas, nuevo.plan), extra: {} };
+  return { nuevo, hecho, confirmacion: confirmacionCambioHecho(base, cambio, nuevo.piezas, nuevo.plan, { antes: opciones.cotizacionAntes, despues: nuevo.cotizacion, uso: opciones.uso ?? null }), extra: {} };
 }
 
 /**
@@ -89,17 +94,21 @@ export async function hacerCambioDelPanel(cambio: CambioPlan, base: PlanGuiado, 
  * pasa por el modelo). Mientras uno está en camino los mandos se apagan (la tarjeta muestra el esqueleto); si falla,
  * el plan no se toca y «Reintentar» repite ESE cambio.
  */
-export function useAjustePlanGuiado({ plan, onPlanAjustado, motor3d }: Entrada) {
+export function useAjustePlanGuiado({ plan, cotizacion, uso, onPlanAjustado, motor3d }: Entrada) {
   const [estado, setEstado] = useState<EstadoAjuste>({ fase: "quieto", ultimo: null });
   const [catalogo, setCatalogo] = useState<ColoresCatalogo>({ fase: "nada" });
   const [descartados, setDescartados] = useState<readonly string[]>([]);
   const planRef = useRef(plan);
+  const cotizacionRef = useRef(cotizacion);
+  const usoRef = useRef(uso);
   const montadoRef = useRef(true);
   const enCursoRef = useRef(false);
   const onPlanAjustadoRef = useRef(onPlanAjustado);
   const motor3dRef = useRef(motor3d);
 
   useEffect(() => { planRef.current = plan; }, [plan]);
+  useEffect(() => { cotizacionRef.current = cotizacion; }, [cotizacion]);
+  useEffect(() => { usoRef.current = uso; }, [uso]);
   useEffect(() => { onPlanAjustadoRef.current = onPlanAjustado; }, [onPlanAjustado]);
   useEffect(() => { motor3dRef.current = motor3d; }, [motor3d]);
   useEffect(() => {
@@ -116,7 +125,7 @@ export function useAjustePlanGuiado({ plan, onPlanAjustado, motor3d }: Entrada) 
     setEstado({ fase: "guardando", cambio, descripcion, aviso: avisoEnCurso(base, cambio) });
     registrarAjuste("ajuste.pedir", { ...resumenCambio(cambio), descripcion, plan_hash: base.plan_hash });
     try {
-      const { nuevo, hecho, confirmacion, extra } = await hacerCambioDelPanel(cambio, base, { motor3d: motor3dRef.current, alDescartarColor: (color) => { if (montadoRef.current) setDescartados((actuales) => [...actuales, color]); } });
+      const { nuevo, hecho, confirmacion, extra } = await hacerCambioDelPanel(cambio, base, { motor3d: motor3dRef.current, cotizacionAntes: cotizacionRef.current, uso: usoRef.current, alDescartarColor: (color) => { if (montadoRef.current) setDescartados((actuales) => [...actuales, color]); } });
       onPlanAjustadoRef.current(nuevo.plan, nuevo.cotizacion, { descripcion: hecho, baseHash: base.plan_hash });
       registrarAjuste("ajuste.listo", { tipo: cambio.tipo, descripcion: hecho, pedido: descripcion, confirmacion, plan_hash_base: base.plan_hash, plan_hash: nuevo.plan.plan_hash, ms: Math.round(performance.now() - inicio), ...(nuevo.piezas ? { piezas: nuevo.piezas } : {}), ...extra });
       if (montadoRef.current) setEstado({ fase: "quieto", ultimo: confirmacion });
