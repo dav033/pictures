@@ -347,7 +347,7 @@ async function main() {
     let fetchSignal: AbortSignal | null | undefined;
     globalThis.fetch = async (_url, init) => {
       fetchSignal = init?.signal;
-      return new Response('{"packages":[]}');
+      return Response.json({ status: "success", data: [], pagination: { totalItems: 0, totalPages: 0, currentPage: 1 } });
     };
     const client = new HappiaClient({ baseUrl: "https://happia.invalid/api", apiKey: "fake" });
     assert.deepEqual(await client.listarPackages(clientAbort.signal), { packages: [] });
@@ -358,9 +358,11 @@ async function main() {
 
     const originalTimeout = AbortSignal.timeout;
     const providerTimeout = new AbortController();
+    const plazos: number[] = [];
     AbortSignal.timeout = (ms: number) => {
-      assert.equal(ms, 10_000);
-      return providerTimeout.signal;
+      plazos.push(ms);
+      // 10 s is the per-request deadline under test; the 25 s whole-catalogue deadline keeps its real timer.
+      return ms === 10_000 ? providerTimeout.signal : originalTimeout.call(AbortSignal, ms);
     };
     try {
       globalThis.fetch = async (_url, init) => new Promise((_resolve, reject) => {
@@ -369,6 +371,7 @@ async function main() {
       const timedFetch = client.listarPackages();
       providerTimeout.abort(new DOMException("test timeout", "TimeoutError"));
       await assert.rejects(timedFetch, { name: "TimeoutError" });
+      assert.ok(plazos.includes(10_000), "each Happia request keeps its 10 s deadline");
     } finally { AbortSignal.timeout = originalTimeout; }
 
     let geminiBody = "";

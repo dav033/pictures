@@ -1,3 +1,4 @@
+import { registrarFalloHappie } from "@/lib/happie/registrar-fallo";
 import {
   HappiaClient,
   cargarConfigDesdeEnv,
@@ -68,7 +69,8 @@ async function atenderPOST(request: Request) {
         ...resultado,
       }),
     );
-  } catch {
+  } catch (error) {
+    registrarFalloHappie("recomendar-pasos-ui", error);
     return Response.json(
       HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error: "No se pudo generar la recomendación." }),
       { status: 502 },

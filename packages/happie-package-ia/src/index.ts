@@ -1,9 +1,19 @@
 export type { HappiaConfig } from "./config";
 export { cargarConfigDesdeEnv } from "./config";
 
-export { HappiaClient, HappiaApiError } from "./cliente";
+export { HappiaClient, HappiaApiError, HAPPIA_LIMITE_MAXIMO } from "./cliente";
 
-export type { HappiaPackage, HappiaPackageItem, ListarPackagesRespuesta } from "./tipos";
+export type {
+  HappiaPackage,
+  HappiaPackageItem,
+  ListarPackagesRespuesta,
+  HappiaServicio,
+  HappiaChargeMode,
+  HappiaSaleUnit,
+  HappiaPaginacion,
+  HappiaPagina,
+  HappiaConsultaPagina,
+} from "./tipos";
 
 export type {
   Recomendacion,

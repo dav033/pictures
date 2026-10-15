@@ -186,6 +186,7 @@ const RUTAS_EXCLUIDAS: Readonly<Record<string, string>> = {
   "src/app/api/rag/webhooks/shopify/route.ts": "sincronización de catálogo (servidor a servidor)",
   "src/app/api/shopify/sync/route.ts": "sincronización de catálogo (admin)",
   "src/app/api/happie/opciones/route.ts": "opciones estáticas de Happie",
+  "src/app/api/happie/prueba-api/route.ts": "comprobación manual de la API de catálogo de Happia con sesión (lee servicios/paquetes, sin IA)",
   "src/app/api/productos/route.ts": "CRUD admin",
   "src/app/api/productos/[id]/route.ts": "CRUD admin",
   "src/app/api/decoraciones/route.ts": "CRUD admin",
