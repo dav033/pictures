@@ -27,7 +27,7 @@ const METROS_POR_CAPA = 0.2;
 /** Las estructuras orgánicas que PARIDAD mide por densidad (las que tienen fila de conteo en el CSV). */
 const ORGANICAS: readonly EstructuraOficialId[] = ["semiarco", "semiarco_asimetrico", "guirnalda"];
 
-export type FilaBanda = {
+type FilaBandaBase = {
   estructuras: readonly EstructuraOficialId[];
   /** Solo las proporciones de tamaños que PARIDAD midió: la clásica (cuartetos) y la orgánica fina (la de las ideas). */
   tamanos: readonly TamanosEspec[];
@@ -41,15 +41,21 @@ export type FilaBanda = {
   margenBajoSinR9?: number;
   /** Lo que se mide: el eje en metros (por defecto), el área en m² (ancho × alto) o la pieza entera (1). */
   medida?: "eje" | "area" | "pieza";
-  /** Globos por unidad de `medida` (por metro, por m² o por pieza). */
+  /** Mínimo de globos por unidad de `medida` (por metro, por m² o por pieza). */
   minPorMetro: number;
-  maxPorMetro: number;
-  /** Margen de globos a cada lado, en lugar de `TOLERANCIA_GLOBOS` (lo que pesa el borde en una pieza pequeña). */
+  /** Margen bajo, y también alto si no se especifica `margenMaxGlobos`. */
   margenGlobos?: number;
+  /** Margen alto explícito cuando el máximo ya incluye un margen porcentual medido. */
+  margenMaxGlobos?: number;
   /** De dónde sale la fila: `paridad` (PARIDAD/foto), `medido` (barrido contra la fachada) o `motor` (el valor por defecto del motor repetido: fija una regresión, no mide cobertura). */
   origen: "paridad" | "medido" | "motor";
   fuente: string;
 };
+
+export type FilaBanda = FilaBandaBase & (
+  | { maxPorMetro: number; maxGlobosPorDiametro?: never }
+  | { maxPorMetro?: never; /** Solo aro: [diámetro m, máximo entero de globos ya marginado]. */ maxGlobosPorDiametro: readonly (readonly [diametroM: number, maxGlobos: number])[] }
+);
 
 /**
  * Estructuras que no tienen banda a propósito, con el motivo. Todo lo demás de `ESTRUCTURAS_OFICIALES_IDS` tiene que
@@ -120,7 +126,7 @@ export function ejeEnMetros(pieza: PiezaEspec): number | null {
       return pieza.medidas.altoM === undefined || Math.abs(pieza.medidas.altoM - porCapas) <= 2 * METROS_POR_CAPA ? porCapas : pieza.medidas.altoM;
     }
     case "guirnalda": return m.largoM ?? null;
-    case "aro_circular": return Math.PI * ancho;
+    case "aro_circular": return Math.PI * diametroDeAro(pieza);
     default: return null;
   }
 }
@@ -143,10 +149,19 @@ function grosorDeColumna(pieza: PiezaEspec): number {
   return Math.min(GROSOR_COLUMNA_MAX_M, Math.max(GROSOR_COLUMNA_MIN_M, m.grosorM ?? m.anchoM ?? GROSOR_ORGANICO_POR_DEFECTO_M.columna));
 }
 
-/** El diámetro del aro como lo arma `construirAro` (`anchoM`, si no `altoM`), acotado a lo medido. */
+/** El diámetro del aro como lo arma `construirAro`: redondeo al centímetro y límite superior del constructor, sin subir los menores de 1 m. */
 function diametroDeAro(pieza: PiezaEspec): number {
   const m = medidasDe(pieza);
-  return Math.min(DIAMETRO_ARO_MAX_M, Math.max(DIAMETRO_ARO_MIN_M, m.anchoM ?? m.altoM ?? 0));
+  const solicitado = m.anchoM ?? m.altoM ?? 0;
+  if (solicitado < DIAMETRO_ARO_MIN_M) return solicitado;
+  return Math.min(DIAMETRO_ARO_MAX_M, Math.round(solicitado * 100) / 100);
+}
+
+/** Busca el tope medido a la resolución en centímetros que utiliza el constructor. */
+function maximoAroEnDiametro(puntos: readonly (readonly [number, number])[], diametroM: number): number {
+  const punto = puntos.find(([diametro]) => diametro === diametroM);
+  if (!punto) throw new Error(`Falta el máximo medido del aro de ${diametroM} m`);
+  return punto[1];
 }
 
 /** Ningún color de la pieza se fabrica en R-9: el relleno de ese hueco queda corto (la regla de `tamanosPosibles`). */
@@ -165,9 +180,12 @@ export function bandaDePieza(pieza: PiezaEspec): BandaDePieza {
   if (ejeM === null || ejeM <= 0) return { tipo: "sin_banda", motivo: SIN_BANDA_MOTIVO };
   const margen = fila.margenGlobos ?? TOLERANCIA_GLOBOS;
   const minimo = Math.floor(fila.minPorMetro * ejeM);
+  const maxGlobos = fila.maxGlobosPorDiametro !== undefined
+    ? maximoAroEnDiametro(fila.maxGlobosPorDiametro, diametro)
+    : Math.ceil(fila.maxPorMetro * ejeM) + (fila.margenMaxGlobos ?? margen);
   return {
     tipo: "banda", minGlobos: Math.max(0, minimo - margen - Math.ceil((fila.margenBajoSinR9 ?? 0) * minimo * (sinR9(pieza) ? 1 : 0))),
-    maxGlobos: Math.ceil(fila.maxPorMetro * ejeM) + margen, ejeM, fuente: fila.fuente, densidad: fila.densidad ? densidad : null,
+    maxGlobos, ejeM, fuente: fila.fuente, densidad: fila.densidad ? densidad : null,
   };
 }
 

@@ -150,26 +150,62 @@ function pruebaColumnaOrganicaPorGrosor(): void {
 
 /** T60: el aro orgánico se compara con una banda que depende del diámetro: cada diámetro (bordes y medios de tramo) cae dentro de la suya y un aro ralo falla. */
 function pruebaAroPorDiametro(): void {
-  const aro = (d: number, densidad: PiezaEspec["densidad"], codigo = "570"): PiezaEspec =>
-    pieza("EST_01_ARO", "aro_circular", { medidas: { anchoM: d, altoM: d }, tamanos: "organica_fina", densidad, colores: [{ codigo, nombre: "Color", peso: 1 }] });
+  const perfiles = [["570"], ["056"], ["570", "056"], ["570", "056", "932"], ["570", "056", "932", "915"], ["570", "056", "932", "915", "912"], ["570", "056", "932", "915", "912", "909"]] as const;
+  const aro = (d: number, densidad: PiezaEspec["densidad"], codigos: readonly string[] = ["570"]): PiezaEspec =>
+    pieza("EST_01_ARO", "aro_circular", {
+      medidas: { anchoM: d, altoM: d }, tamanos: "organica_fina", densidad,
+      colores: codigos.map((codigo, index) => ({ codigo, nombre: codigo, peso: index === codigos.length - 1 ? 1 - (codigos.length - 1) / codigos.length : 1 / codigos.length })),
+    });
+  const intermedio = aro(1.05, "sencilla", ["056"]);
+  const intermedioObservado = observar(espec(intermedio));
+  const intermedioBanda = bandaDePieza(intermedio);
+  assert.ok(intermedioBanda.tipo === "banda" && intermedioBanda.maxGlobos >= intermedioObservado.geometria!.globos.get("EST_01_ARO")! && intermedioBanda.maxGlobos <= Math.floor(intermedioObservado.geometria!.globos.get("EST_01_ARO")! * 1.05), "el tope de 1,05 m debe cubrir el punto medido sin superar el 5 %");
+  const otroIntermedio = aro(2.45, "lujosa", ["056"]);
+  const otroIntermedioObservado = observar(espec(otroIntermedio));
+  const otroIntermedioBanda = bandaDePieza(otroIntermedio);
+  assert.ok(otroIntermedioBanda.tipo === "banda" && otroIntermedioBanda.maxGlobos >= otroIntermedioObservado.geometria!.globos.get("EST_01_ARO")! && otroIntermedioBanda.maxGlobos <= Math.floor(otroIntermedioObservado.geometria!.globos.get("EST_01_ARO")! * 1.05), "el tope de 2,45 m debe cubrir el salto medido sin superar el 5 %");
   for (const densidad of ["sencilla", "media", "lujosa"] as const) {
-    for (const d of [1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.5, 3] as const) {
-      const p = aro(d, densidad);
-      const o = observar(espec(p));
-      assert.deepEqual(clasesDe(o, "banda_conteo"), [], `aro ${densidad} de ${d} m: ${o.geometria!.globos.get("EST_01_ARO")} globos dentro de su banda`);
-      const banda = bandaDePieza(p);
+    for (let i = 0; i <= 20; i++) {
+      const d = Math.round((1 + i * 0.1) * 100) / 100;
+      const observaciones = perfiles.map((codigos) => {
+        const p = aro(d, densidad, codigos);
+        const o = observar(espec(p));
+        assert.deepEqual(clasesDe(o, "banda_conteo"), [], `aro ${densidad} de ${d} m con ${codigos.length} colores: ${o.geometria!.globos.get("EST_01_ARO")} globos dentro de su banda`);
+        return o;
+      });
+      const conteos = observaciones.map((o) => o.geometria!.globos.get("EST_01_ARO")!);
+      const banda = bandaDePieza(aro(d, densidad));
       assert.ok(banda.tipo === "banda");
       if (banda.tipo !== "banda") continue;
+      const menor = Math.min(...conteos), mayor = Math.max(...conteos);
+      assert.ok(banda.minGlobos <= menor, `aro ${densidad} de ${d} m: mínimo ${banda.minGlobos} no debe rechazar el motor (${menor})`);
+      assert.equal(banda.maxGlobos, Math.floor(mayor * 1.05), `aro ${densidad} de ${d} m: máximo ${banda.maxGlobos} debe cubrir ${mayor} sin superar el 5 %`);
+      const o = observaciones[0]!;
       const ralo = conGeometria(o, { globos: new Map([["EST_01_ARO", Math.floor(0.4 * banda.minGlobos)]]) });
       assert.deepEqual(clasesDe(ralo, "banda_conteo"), [`banda_conteo:aro_circular:${densidad}:bajo`], `aro ${densidad} de ${d} m: un aro ralo falla`);
     }
   }
+  for (const densidad of ["sencilla", "media", "lujosa"] as const) {
+    for (let cm = 100; cm <= 300; cm++) {
+      if (cm % 10 === 0) continue;
+      const d = cm / 100;
+      const observacionesCentimetro = (["570", "056"] as const).map((codigo) => {
+        const p = aro(d, densidad, [codigo]);
+        const o = observar(espec(p));
+        return { p, o, conteo: o.geometria!.globos.get("EST_01_ARO")! };
+      });
+      const mayor = Math.max(...observacionesCentimetro.map(({ conteo }) => conteo));
+      const banda = bandaDePieza(observacionesCentimetro[0]!.p);
+      assert.ok(banda.tipo === "banda" && banda.maxGlobos === Math.floor(mayor * 1.05), `aro ${densidad} de ${d} m: máximo de 570/056 (${mayor}) sin superar el 5 %`);
+    }
+  }
+  assert.equal(bandaDePieza(aro(0.8, "sencilla")).tipo, "sin_banda", "un aro menor de 1 m queda fuera de las bandas medidas");
   const chico = bandaDePieza(aro(1, "media")), grande = bandaDePieza(aro(3, "media"));
   assert.ok(chico.tipo === "banda" && grande.tipo === "banda" && grande.minGlobos / grande.ejeM > chico.minGlobos / chico.ejeM, "un aro grande exige más globos por metro que uno chico");
   const sencilla = bandaDePieza(aro(2, "sencilla"));
-  assert.ok(sencilla.tipo === "banda" && sencilla.fuente.includes("PARIDAD evidence"), "el aro dice que solo la sencilla de 2 m tiene evidencia de PARIDAD");
-  assert.ok(BANDAS.filter((f) => f.estructuras.includes("aro_circular")).every((f) => f.origen === "medido" && f.fuente.includes("only sencilla d=2 has PARIDAD evidence")), "las filas del aro son medidas y declaran su evidencia");
-  console.log("  aro orgánico: banda por diámetro (9 diámetros, 3 densidades), la rala falla: ok");
+  assert.ok(sencilla.tipo === "banda" && sencilla.fuente.includes("evidencia PARIDAD (idea 28)"), "el aro dice que solo la sencilla de 2 m tiene evidencia de PARIDAD");
+  assert.ok(BANDAS.filter((f) => f.estructuras.includes("aro_circular")).every((f) => f.origen === "medido" && f.fuente.includes("evidencia PARIDAD (idea 28)")), "las filas del aro son medidas y declaran su evidencia");
+  console.log("  aro orgánico: tope +5 % por centímetro, tres densidades, perfiles extremos y siete perfiles de color en cada décima; bajo 1 m sin banda: ok");
 }
 
 /** T63: toda estructura oficial tiene banda o una exención documentada, y las cuatro de T63 se comparan con la fachada real (racimo_pared y bouquet son solo pines de regresión del valor por defecto). */
