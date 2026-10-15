@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
 import { TAMANOS_ESPEC, type EspecClienteV1, type PiezaEspec } from "../../src/lib/globos3d/motor/espec-cliente-v1";
-import { BANDAS, bandaDePieza, ESTRUCTURAS_SIN_BANDA } from "../escenarios/bandas";
+import { BANDAS, bandaDePieza, ejeEnMetros, ESTRUCTURAS_SIN_BANDA } from "../escenarios/bandas";
 import { TOPE_MARGEN_SIN_R9 } from "../escenarios/bandas-columna";
 import { observar, type Geometria, type Observacion } from "../escenarios/ejecutar";
 import { evaluar, INVARIANTES, PRESUPUESTO_MS, piezasConBanda, type Invariante } from "../escenarios/invariantes";
@@ -109,6 +109,49 @@ function pruebaGuirnaldaSinR9LlegaALaBanda(): void {
   console.log("  guirnalda sin R-9: llega a la banda con el margen fijo: ok");
 }
 
+/** P-099: fill caps scale by the difference between the contractual axis and the built path. */
+function pruebaCalibracionSemiarcosPorEje(): void {
+  const casos = [
+    { id: "E-01637", piezaId: "EST_01_SEMIARCO", oficial: "semiarco", lugar: "fondo", anchoM: 2.2, altoM: 2.04, codigo: "944", densidad: "sencilla", ejeM: 3.331274, minimo: 40, maximo: 70 },
+    { id: "E-03398", piezaId: "EST_02_SEMIARCO", oficial: "semiarco", lugar: "izquierda", anchoM: 1.09, altoM: 1.53, codigo: "912", densidad: "lujosa", ejeM: 2.072278, minimo: 46, maximo: 86 },
+    { id: "E-03979", piezaId: "EST_02_SEMIARCO_ASIMETRICO", oficial: "semiarco_asimetrico", lugar: "centro", anchoM: 1.62, altoM: 1.56, codigo: "640", densidad: undefined, ejeM: 2.497788, minimo: 44, maximo: 68 },
+  ] as const;
+  for (const caso of casos) {
+    const p = pieza(caso.piezaId, caso.oficial, {
+      nombre: caso.id,
+      lugar: caso.lugar,
+      medidas: { anchoM: caso.anchoM, altoM: caso.altoM },
+      tamanos: "organica_fina",
+      colores: [{ codigo: caso.codigo, nombre: caso.codigo, peso: 1 }],
+      ...(caso.densidad ? { densidad: caso.densidad } : {}),
+    });
+    const banda = bandaDePieza(p);
+    assert.equal(banda.tipo, "banda", `${caso.id}: conserva banda de conteo`);
+    if (banda.tipo !== "banda") continue;
+    assert.deepEqual([banda.minGlobos, banda.maxGlobos], [caso.minimo, caso.maximo], `${caso.id}: sus límites siguen iguales`);
+    assert.ok(Math.abs(ejeEnMetros(p)! - caso.ejeM) < 0.000001, `${caso.id}: el eje contractual sigue en ${caso.ejeM} m`);
+    if (caso.id === "E-03979") assert.equal(banda.densidad, "media", "la densidad omitida sigue heredando media");
+    const o = observar(espec(p));
+    const conteo = o.geometria!.globos.get(p.id)!;
+    assert.ok(conteo >= banda.minGlobos && conteo <= banda.maxGlobos, `${caso.id}: ${conteo} globos cae dentro de [${banda.minGlobos}, ${banda.maxGlobos}]`);
+    assert.deepEqual(clasesDe(o, "banda_conteo"), [], `${caso.id}: no añade un fallo permitido`);
+    assert.ok(!o.avisos.some((aviso) => aviso.includes("globos de estructura no cupieron")), `${caso.id}: no genera aviso de estructura no colocada`);
+  }
+  const fueraDeRango = pieza("EST_01_SEMIARCO", "semiarco", {
+    nombre: "Fuera de rango",
+    medidas: { anchoM: 3.75, altoM: 0.55 },
+    tamanos: "organica_fina",
+    colores: [{ codigo: "944", nombre: "944", peso: 1 }],
+  });
+  const yaAcotada = { ...fueraDeRango, medidas: { anchoM: 3, altoM: 1 } };
+  const observacionFuera = observar(espec(fueraDeRango));
+  const observacionAcotada = observar(espec(yaAcotada));
+  assert.deepEqual(observacionFuera.geometria, observacionAcotada.geometria, "el relleno y la geometría usan las medidas redondeadas/acotadas por el constructor");
+  assert.ok(observacionFuera.avisos.some((aviso) => aviso.includes("El ancho: 375 cm") && aviso.includes("se usó 300 cm")), "the out-of-range width reports the actual value used");
+  assert.ok(observacionFuera.avisos.some((aviso) => aviso.includes("El alto: 55 cm") && aviso.includes("se usó 100 cm")), "the out-of-range height reports the actual value used");
+  console.log("  P-099: three repros are in band; out-of-range semiarch matches its clamped measures: ok");
+}
+
 /** T61: la columna orgánica se compara con una banda que depende del grosor: cada grosor medido cae dentro de la suya y una columna claramente rala falla. */
 function pruebaColumnaOrganicaPorGrosor(): void {
   const columna = (oficial: "columna" | "columna_asimetrica", grosorM: number, densidad: PiezaEspec["densidad"], codigo = "570"): PiezaEspec =>
@@ -192,11 +235,17 @@ function pruebaAroPorDiametro(): void {
       const observacionesCentimetro = (["570", "056"] as const).map((codigo) => {
         const p = aro(d, densidad, [codigo]);
         const o = observar(espec(p));
-        return { p, o, conteo: o.geometria!.globos.get("EST_01_ARO")! };
+        return { codigo, p, o, conteo: o.geometria!.globos.get("EST_01_ARO")! };
       });
       const mayor = Math.max(...observacionesCentimetro.map(({ conteo }) => conteo));
       const banda = bandaDePieza(observacionesCentimetro[0]!.p);
       assert.ok(banda.tipo === "banda" && banda.maxGlobos === Math.floor(mayor * 1.05), `aro ${densidad} de ${d} m: máximo de 570/056 (${mayor}) sin superar el 5 %`);
+      if (densidad === "lujosa" && cm >= 141 && cm <= 143) {
+        for (const { codigo, p, conteo } of observacionesCentimetro) {
+          const bandaPieza = bandaDePieza(p);
+          assert.ok(bandaPieza.tipo === "banda" && conteo >= bandaPieza.minGlobos, `aro lujoso de ${d} m con ${codigo}: ${conteo} no queda por debajo del mínimo de P-100 (${bandaPieza.tipo === "banda" ? bandaPieza.minGlobos : "sin banda"})`);
+        }
+      }
     }
   }
   assert.equal(bandaDePieza(aro(0.8, "sencilla")).tipo, "sin_banda", "un aro menor de 1 m queda fuera de las bandas medidas");
@@ -236,6 +285,7 @@ pruebaCadaInvarianteAtrapaSuFixture();
 pruebaFixtureDeSolapeToleradoPasa();
 pruebaTiempoSoloConFlag();
 pruebaGuirnaldaSinR9LlegaALaBanda();
+pruebaCalibracionSemiarcosPorEje();
 pruebaColumnaOrganicaPorGrosor();
 pruebaAroPorDiametro();
 pruebaTodaEstructuraTieneBanda();

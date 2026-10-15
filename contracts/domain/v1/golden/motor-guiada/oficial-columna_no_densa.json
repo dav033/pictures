@@ -2,9 +2,9 @@
  "caso": "oficial-columna_no_densa",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "dff0630218784ce7c0cdb62060047a54519368d2f980f0eaf3873b176a65359f",
+ "especHash": "05257dafec4e837dab50a10f1362693250cf11d8f345859bdee2908040766186",
  "noRepresentable": [],
  "piezas": {
   "EST_01_COLUMNA_NO_DENSA": {

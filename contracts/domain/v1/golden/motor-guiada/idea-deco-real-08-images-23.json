@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-08-images-23",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "f566051c3a7d1bf2256572cf9f349475b72dd8ce1daa04b4888192e49a0edfef",
+ "especHash": "68f6985b0d0b23d975d85af327aa01748d2bbe47452f6f9708161d20e0e43de6",
  "noRepresentable": [],
  "piezas": {
   "EST_01_COLUMNA": {

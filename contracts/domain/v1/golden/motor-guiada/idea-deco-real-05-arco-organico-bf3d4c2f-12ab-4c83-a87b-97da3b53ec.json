@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-05-arco-organico-bf3d4c2f-12ab-4c83-a87b-97da3b53ec",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "4109abd497a9d83d6ea3f9d3935e562a8391ba3c8e283da94a378ae9dd1841cf",
+ "especHash": "5a914bb94d16db1543d71f7c445f498589b3b3a108bd9359868bed97d07392a8",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -22,7 +22,7 @@
     {
      "formatoId": "R-5",
      "codigo": "014",
-     "cantidad": 5
+     "cantidad": 6
     },
     {
      "formatoId": "R-5",
@@ -32,7 +32,7 @@
     {
      "formatoId": "R-5",
      "codigo": "968",
-     "cantidad": 10
+     "cantidad": 11
     },
     {
      "formatoId": "R-9",
@@ -115,7 +115,7 @@
      "cantidad": 1
     }
    ],
-   "unidades": 115,
+   "unidades": 117,
    "caja": [
     -147,
     0,
@@ -141,7 +141,7 @@
    {
     "formatoId": "R-5",
     "codigo": "014",
-    "cantidad": 5
+    "cantidad": 6
    },
    {
     "formatoId": "R-5",
@@ -151,7 +151,7 @@
    {
     "formatoId": "R-5",
     "codigo": "968",
-    "cantidad": 10
+    "cantidad": 11
    },
    {
     "formatoId": "R-9",
@@ -234,7 +234,7 @@
     "cantidad": 1
    }
   ],
-  "unidades": 115
+  "unidades": 117
  },
  "caja": [
   -147,

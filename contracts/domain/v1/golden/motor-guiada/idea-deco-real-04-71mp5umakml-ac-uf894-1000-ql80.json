@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-04-71mp5umakml-ac-uf894-1000-ql80",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "6afa7c54030877680e66e8ed140789044683ef8f91c7787d6c0f0f25dd01d6a9",
+ "especHash": "5f7fed67300d368ff7724402162884ff9c6da78b8b6384c9e9073527792f06f9",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -12,12 +12,12 @@
     {
      "formatoId": "R-5",
      "codigo": "044",
-     "cantidad": 8
+     "cantidad": 9
     },
     {
      "formatoId": "R-5",
      "codigo": "530",
-     "cantidad": 9
+     "cantidad": 10
     },
     {
      "formatoId": "R-5",
@@ -105,7 +105,7 @@
      "cantidad": 1
     }
    ],
-   "unidades": 115,
+   "unidades": 117,
    "caja": [
     -147,
     0,
@@ -121,12 +121,12 @@
    {
     "formatoId": "R-5",
     "codigo": "044",
-    "cantidad": 8
+    "cantidad": 9
    },
    {
     "formatoId": "R-5",
     "codigo": "530",
-    "cantidad": 9
+    "cantidad": 10
    },
    {
     "formatoId": "R-5",
@@ -214,7 +214,7 @@
     "cantidad": 1
    }
   ],
-  "unidades": 115
+  "unidades": 117
  },
  "caja": [
   -147,

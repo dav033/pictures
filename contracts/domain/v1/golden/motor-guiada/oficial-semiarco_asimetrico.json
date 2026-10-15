@@ -2,9 +2,9 @@
  "caso": "oficial-semiarco_asimetrico",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "7eba4ca6eda31b88ad7c75c9c5d08340000f95f8823c2e3fb90a7808fb08c06f",
+ "especHash": "3e3a2b2af8dad3bb35b6b1c109c946ceebc76d0c974992ea60e4b0e9c3ef30ad",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO_ASIMETRICO": {
@@ -12,7 +12,7 @@
     {
      "formatoId": "R-5",
      "codigo": "005",
-     "cantidad": 7
+     "cantidad": 6
     },
     {
      "formatoId": "R-5",
@@ -22,12 +22,12 @@
     {
      "formatoId": "R-5",
      "codigo": "970",
-     "cantidad": 2
+     "cantidad": 5
     },
     {
      "formatoId": "R-9",
      "codigo": "005",
-     "cantidad": 6
+     "cantidad": 9
     },
     {
      "formatoId": "R-9",
@@ -37,7 +37,7 @@
     {
      "formatoId": "R-9",
      "codigo": "970",
-     "cantidad": 7
+     "cantidad": 5
     },
     {
      "formatoId": "R-12",
@@ -56,26 +56,21 @@
     },
     {
      "formatoId": "R-18",
-     "codigo": "005",
+     "codigo": "040",
      "cantidad": 2
     },
     {
      "formatoId": "R-18",
-     "codigo": "040",
-     "cantidad": 1
-    },
-    {
-     "formatoId": "R-18",
      "codigo": "970",
-     "cantidad": 1
+     "cantidad": 2
     },
     {
      "formatoId": "R-24",
-     "codigo": "970",
+     "codigo": "005",
      "cantidad": 1
     }
    ],
-   "unidades": 57,
+   "unidades": 60,
    "caja": [
     -85,
     0,
@@ -91,7 +86,7 @@
    {
     "formatoId": "R-5",
     "codigo": "005",
-    "cantidad": 7
+    "cantidad": 6
    },
    {
     "formatoId": "R-5",
@@ -101,12 +96,12 @@
    {
     "formatoId": "R-5",
     "codigo": "970",
-    "cantidad": 2
+    "cantidad": 5
    },
    {
     "formatoId": "R-9",
     "codigo": "005",
-    "cantidad": 6
+    "cantidad": 9
    },
    {
     "formatoId": "R-9",
@@ -116,7 +111,7 @@
    {
     "formatoId": "R-9",
     "codigo": "970",
-    "cantidad": 7
+    "cantidad": 5
    },
    {
     "formatoId": "R-12",
@@ -135,26 +130,21 @@
    },
    {
     "formatoId": "R-18",
-    "codigo": "005",
+    "codigo": "040",
     "cantidad": 2
    },
    {
     "formatoId": "R-18",
-    "codigo": "040",
-    "cantidad": 1
-   },
-   {
-    "formatoId": "R-18",
     "codigo": "970",
-    "cantidad": 1
+    "cantidad": 2
    },
    {
     "formatoId": "R-24",
-    "codigo": "970",
+    "codigo": "005",
     "cantidad": 1
    }
   ],
-  "unidades": 57
+  "unidades": 60
  },
  "caja": [
   -85,

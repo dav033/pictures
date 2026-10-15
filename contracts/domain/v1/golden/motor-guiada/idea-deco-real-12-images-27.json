@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-12-images-27",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "fc87165ed3f5859300d9e27175f33c22d53dfb5093e177d1370733d18192b888",
+ "especHash": "58cef978730ba94940a16c25c5bd0b1be140ac6c6abb804fbabb5c103dd1940e",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -17,7 +17,7 @@
     {
      "formatoId": "R-5",
      "codigo": "951",
-     "cantidad": 9
+     "cantidad": 10
     },
     {
      "formatoId": "R-5",
@@ -27,12 +27,12 @@
     {
      "formatoId": "R-9",
      "codigo": "650",
-     "cantidad": 23
+     "cantidad": 18
     },
     {
      "formatoId": "R-9",
      "codigo": "981",
-     "cantidad": 6
+     "cantidad": 10
     },
     {
      "formatoId": "R-12",
@@ -52,22 +52,17 @@
     {
      "formatoId": "R-18",
      "codigo": "650",
-     "cantidad": 1
+     "cantidad": 6
     },
     {
      "formatoId": "R-18",
      "codigo": "981",
-     "cantidad": 8
-    },
-    {
-     "formatoId": "R-24",
-     "codigo": "650",
-     "cantidad": 1
+     "cantidad": 3
     },
     {
      "formatoId": "R-24",
      "codigo": "981",
-     "cantidad": 1
+     "cantidad": 2
     }
    ],
    "unidades": 102,
@@ -154,7 +149,7 @@
    {
     "formatoId": "R-5",
     "codigo": "951",
-    "cantidad": 11
+    "cantidad": 12
    },
    {
     "formatoId": "R-5",
@@ -164,12 +159,12 @@
    {
     "formatoId": "R-9",
     "codigo": "650",
-    "cantidad": 28
+    "cantidad": 23
    },
    {
     "formatoId": "R-9",
     "codigo": "981",
-    "cantidad": 10
+    "cantidad": 14
    },
    {
     "formatoId": "R-12",
@@ -189,22 +184,17 @@
    {
     "formatoId": "R-18",
     "codigo": "650",
-    "cantidad": 2
+    "cantidad": 7
    },
    {
     "formatoId": "R-18",
     "codigo": "981",
-    "cantidad": 9
-   },
-   {
-    "formatoId": "R-24",
-    "codigo": "650",
-    "cantidad": 1
+    "cantidad": 4
    },
    {
     "formatoId": "R-24",
     "codigo": "981",
-    "cantidad": 1
+    "cantidad": 2
    }
   ],
   "unidades": 127

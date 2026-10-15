@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-06-columna-globos-alta-colorida-cinta-dorada-sobre-",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "4722ee354be3cb6fcbd5dc6fd7189c60784a271c71fce8822628794b2cd67cee",
+ "especHash": "a5989e943780a3ac073f68ce89515086a6d9dfa11323a230ade361839b0ea7b9",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

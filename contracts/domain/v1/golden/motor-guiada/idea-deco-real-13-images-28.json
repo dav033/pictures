@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-13-images-28",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "fc8b845d99a9bcd10473a6895d46344190b1a33f64a6dde42bc939186a4924d2",
+ "especHash": "5f618249a7593f849498e5cd19d2e5b6998a0cd03f5808fd3e0e3f46d3a3b473",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -12,7 +12,7 @@
     {
      "formatoId": "R-5",
      "codigo": "406",
-     "cantidad": 12
+     "cantidad": 13
     },
     {
      "formatoId": "R-5",
@@ -55,7 +55,7 @@
      "cantidad": 2
     }
    ],
-   "unidades": 111,
+   "unidades": 112,
    "caja": [
     -146,
     0,
@@ -71,7 +71,7 @@
    {
     "formatoId": "R-5",
     "codigo": "406",
-    "cantidad": 12
+    "cantidad": 13
    },
    {
     "formatoId": "R-5",
@@ -114,7 +114,7 @@
     "cantidad": 2
    }
   ],
-  "unidades": 111
+  "unidades": 112
  },
  "caja": [
   -146,

@@ -2,9 +2,9 @@
  "caso": "oficial-arco_no_denso",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "35909d0fd90eda5ef3cb7407f77f19a3a9662b70c404493de5a3178348659d26",
+ "especHash": "2ddc230bb271fdf64a500897c891f3b9fb82b21d4cfa0e687f875ce562f46b9e",
  "noRepresentable": [],
  "piezas": {
   "EST_01_ARCO_NO_DENSO": {

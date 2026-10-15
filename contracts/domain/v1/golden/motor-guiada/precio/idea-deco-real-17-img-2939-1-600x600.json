@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-17-img-2939-1-600x600",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "e648fd3a06455955d0bb7f03c7098d49df02137872bfd8d18ed5245f2c61b5fd",
+ "especHash": "781b1d186d1deb39ada4a4a400bf0e4a2d87c78ee5ce42c292e9bec69c6daf13",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
@@ -17,7 +17,7 @@
   {
    "formatoId": "R-5",
    "codigo": "009",
-   "cantidad": 6,
+   "cantidad": 7,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634239844647",
@@ -89,7 +89,7 @@
   {
    "formatoId": "R-5",
    "codigo": "620",
-   "cantidad": 6,
+   "cantidad": 7,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634249937191",

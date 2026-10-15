@@ -4,6 +4,7 @@ import { INFLADOS_ORGANICOS } from "./estructuras-organicas";
 import { RELLENO_TUPIDO, type ColorOrganico, type OpcionesOrganico, type PuntoMezcla, type RellenoOrganico } from "./organico";
 import { formatoPorId } from "./formatos";
 import { medirTramos } from "./presupuesto-cuerpo";
+import { compensarRellenoMediano } from "./relleno-compensado";
 
 /**
  * **Los tamaños de globo de una pieza orgánica nueva** (columna, guirnalda, semiarco, aro, marco): cuáles se usan de verdad según los colores y el
@@ -48,11 +49,6 @@ export const medidaConTamanos = (opcionesDe: (grosorCm: number) => Pick<Opciones
 /** Con lo que `piezaOrganica` arma un tramo suelto. */
 export const BASE_TRAMOS = { inflados: INFLADOS_ORGANICOS, densidad: 1 } as const;
 
-/** El inflado del relleno mediano que tapa el hueco grande (R-9, 18 cm). */
-const INFLADO_RELLENO_MEDIANO_CM = 18;
-/** Lo mínimo que se infla un globo respecto de su diámetro máximo (el 40 % que admite el formato). */
-const INFLADO_MINIMO_RELATIVO = 0.4;
-
 const infladoDe = (f: string) => INFLADOS_ORGANICOS[f] ?? 0;
 
 /**
@@ -63,16 +59,18 @@ const infladoDe = (f: string) => INFLADOS_ORGANICOS[f] ?? 0;
  */
 export const rellenoCompensadoPara = (colores: readonly ColorOrganico[]) => {
   const conR9 = colores.some((c) => (c.formatos ?? formatosOrganicosDe(c.codigo)).includes("R-9"));
-  return (permitidos: readonly string[]): RellenoOrganico[] => {
-    const relleno = rellenoCon(permitidos);
-    if (conR9) return relleno;
-    const sustituto = RELLENO_TUPIDO.find((x) => x.formatoId === "R-9");
-    const siguiente = permitidos
-      .filter((f) => f !== "R-5" && infladoDe(f) > infladoDe("R-9") && (formatoPorId(f)?.diametroMaxCm ?? Infinity) * INFLADO_MINIMO_RELATIVO <= INFLADO_RELLENO_MEDIANO_CM)
-      .sort((a, b) => infladoDe(a) - infladoDe(b))[0];
-    if (!sustituto || !siguiente) return relleno;
-    return [...relleno.filter((x) => x.formatoId !== siguiente), { ...sustituto, formatoId: siguiente }];
-  };
+  const rellenoR9 = RELLENO_TUPIDO.find((item) => item.formatoId === "R-9");
+  return (permitidos: readonly string[]): RellenoOrganico[] => compensarRellenoMediano(
+    rellenoCon(permitidos),
+    conR9,
+    permitidos.map((formatoId) => ({
+      formatoId,
+      infladoCm: infladoDe(formatoId),
+      diametroMaxCm: formatoPorId(formatoId)?.diametroMaxCm ?? Infinity,
+    })),
+    infladoDe("R-9"),
+    rellenoR9,
+  );
 };
 
 export function rellenoCon(permitidos: readonly string[]): RellenoOrganico[] {

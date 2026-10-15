@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "81b0067aa85b475fa6ccbd2f53ae7f15a93fb6e1e7506ffb937b08de80e61631",
+ "especHash": "d9cbb9ffe6dcc42443929228be222a5c5c823d0af435b0bd93a1d72f71b79b6b",
  "noRepresentable": [
   {
    "piezaId": "EST_03_CENTRO_MESA",
@@ -27,12 +27,12 @@
     {
      "formatoId": "R-5",
      "codigo": "640",
-     "cantidad": 9
+     "cantidad": 10
     },
     {
      "formatoId": "R-5",
      "codigo": "940",
-     "cantidad": 6
+     "cantidad": 7
     },
     {
      "formatoId": "R-5",
@@ -52,7 +52,7 @@
     {
      "formatoId": "R-9",
      "codigo": "640",
-     "cantidad": 16
+     "cantidad": 14
     },
     {
      "formatoId": "R-9",
@@ -121,7 +121,7 @@
     0,
     -196,
     108,
-    203,
+    204,
     -124
    ]
   },
@@ -174,12 +174,12 @@
    {
     "formatoId": "R-5",
     "codigo": "640",
-    "cantidad": 9
+    "cantidad": 10
    },
    {
     "formatoId": "R-5",
     "codigo": "940",
-    "cantidad": 6
+    "cantidad": 7
    },
    {
     "formatoId": "R-5",
@@ -199,7 +199,7 @@
    {
     "formatoId": "R-9",
     "codigo": "640",
-    "cantidad": 16
+    "cantidad": 14
    },
    {
     "formatoId": "R-9",
@@ -269,7 +269,7 @@
   0,
   -196,
   108,
-  203,
+  204,
   67
  ],
  "referenciaPython": {

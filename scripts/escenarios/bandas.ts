@@ -1,6 +1,6 @@
 import type { EstructuraOficialId } from "@/lib/plan/estructuras-oficiales";
 import { formatosOrganicosDe } from "../../src/lib/globos3d/herramientas-escena-colores";
-import { DENSIDAD_POR_DEFECTO, GROSOR_ORGANICO_POR_DEFECTO_M, medidasDe } from "../../src/lib/globos3d/motor/medidas-espec";
+import { DENSIDAD_POR_DEFECTO, ejeCuartoElipse, GROSOR_ORGANICO_POR_DEFECTO_M, medidasDe, perimetroElipse } from "../../src/lib/globos3d/motor/medidas-espec";
 import { DIAMETRO_ARO_MAX_M, DIAMETRO_ARO_MIN_M, FILAS_ARO_ORGANICO } from "./bandas-aro";
 import { FILAS_COLUMNA_ORGANICA, GROSOR_COLUMNA_MAX_M, GROSOR_COLUMNA_MIN_M } from "./bandas-columna";
 import { TAMANOS_ESPEC, type DensidadEspec, type PiezaEspec, type TamanosEspec } from "../../src/lib/globos3d/motor/espec-cliente-v1";
@@ -106,18 +106,12 @@ export const BANDAS: readonly FilaBanda[] = [
 /** Por qué una estructura queda sin banda: lo que la matriz registra en vez de contar como fallo. */
 export const SIN_BANDA_MOTIVO = "Sin dato de conteo por metro para esta estructura y proporción de tamaños en PARIDAD-2026-10-09: no se acepta ni se rechaza.";
 
-/** Longitud del eje (m) como la mide Python en `plan.py::_eje`: el arco es media elipse, el semiarco un cuarto, el aro la vuelta. */
-function elipsePerimetro(a: number, b: number): number {
-  const h = ((a - b) / (a + b)) ** 2;
-  return Math.PI * (a + b) * (1 + (3 * h) / (10 + Math.sqrt(4 - 3 * h)));
-}
-
 export function ejeEnMetros(pieza: PiezaEspec): number | null {
   const m = medidasDe(pieza);
   const ancho = m.anchoM ?? 0, alto = m.altoM ?? 0;
   switch (pieza.oficial) {
-    case "arco": case "arco_asimetrico": case "arco_no_denso": return elipsePerimetro(ancho / 2, alto) / 2;
-    case "semiarco": case "semiarco_asimetrico": return elipsePerimetro(ancho, alto) / 4;
+    case "arco": case "arco_asimetrico": case "arco_no_denso": return perimetroElipse(ancho / 2, alto) / 2;
+    case "semiarco": case "semiarco_asimetrico": return ejeCuartoElipse(ancho, alto);
     case "columna": case "columna_asimetrica": case "columna_no_densa": {
       // La regla de `constructores-clasicos.ts::alturaDeColumna`: las capas mandan si el alto pedido cae a dos niveles de ellas.
       // Solo la columna clásica (cuartetos) las lee: la orgánica se arma por su alto y ignora `capas` (T61: E-01214, E-01910).

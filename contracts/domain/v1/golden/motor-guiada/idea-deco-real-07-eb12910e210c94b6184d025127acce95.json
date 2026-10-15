@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-07-eb12910e210c94b6184d025127acce95",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "912bdd09a04804b3ddf5e9a5ced30a2b9ee2b744d3ad78162bfd697732d3da2f",
+ "especHash": "6d35a017e34bf04254971143f168118c3667045ac9c727fe3e0841334c122f3a",
  "noRepresentable": [],
  "piezas": {
   "EST_01_COLUMNA_ASIMETRICA": {

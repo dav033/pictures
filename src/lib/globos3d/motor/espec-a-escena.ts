@@ -6,6 +6,7 @@ import { florDeGlobos, lineasDeFlores } from "./flores-espec";
 import type { BomLinea } from "./resultado-motor-v1";
 import {
   construirArcoAsimetrico, construirArcoOrganico, construirAro, construirColumnaOrganica, construirGuirnaldaOrganica, construirSemiarco,
+  ejeSemiarcoDesdeMedidas,
   type Construida, type EntradaOrganica,
 } from "./constructores-organicos";
 import { construirArco, construirColumna, construirGuirnalda, construirPared, construirRacimoPared, construirRamo, construirTecho } from "./constructores-clasicos";
@@ -70,8 +71,9 @@ function constructorDe(pieza: PiezaEspec): (e: EntradaOrganica) => Construida {
 function construirPieza(pieza: PiezaEspec, avisos: string[]): Construida {
   const entrada: EntradaOrganica = { espec: pieza, medidas: medidasDe(pieza), avisos, notas: avisos };
   const construida = constructorDe(pieza)(entrada);
+  const ejeContractualM = pieza.oficial === "semiarco" || pieza.oficial === "semiarco_asimetrico" ? ejeSemiarcoDesdeMedidas(entrada.medidas) : undefined;
   if (construida.pieza.tipo !== "organico" && pieza.densidad === "sencilla") avisos.push(`La densidad ligera de «${pieza.nombre}» no cambia este armado de cuartetos: solo afecta a las piezas orgánicas.`);
-  const densa = calibrarOrganico(construida.pieza, pieza.densidad ?? DENSIDAD_POR_DEFECTO[pieza.oficial] ?? "media", perfilDe(pieza.oficial));
+  const densa = calibrarOrganico(construida.pieza, pieza.densidad ?? DENSIDAD_POR_DEFECTO[pieza.oficial] ?? "media", perfilDe(pieza.oficial), pieza, ejeContractualM);
   return { ...construida, pieza: conRemate(conHuecosParaFlores(densa, pieza.flores?.cantidad ?? 0), pieza, avisos) };
 }
 

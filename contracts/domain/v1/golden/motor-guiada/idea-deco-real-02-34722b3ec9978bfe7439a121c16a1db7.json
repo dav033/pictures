@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-02-34722b3ec9978bfe7439a121c16a1db7",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "d99fca0e6048933e6145cce558bf879636eae160d972c657899a2bc41ddd2874",
+ "especHash": "5e21cef90e7549ca592b3d30f157cf6db3e7ffa2075d9a25e9d77652c07f73ee",
  "noRepresentable": [],
  "piezas": {
   "EST_01_ARCO": {

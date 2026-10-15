@@ -2,9 +2,9 @@
  "caso": "oficial-aro_circular",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "294b450000e58f722459f86411783e25e44e475f1962ab8f2539f47ca7714a0b",
+ "especHash": "d47ec944b4a013c53d44bfad85710d050b24a93265a125769dbaeadd30336b25",
  "noRepresentable": [],
  "piezas": {
   "EST_01_ARO_CIRCULAR": {
@@ -12,12 +12,12 @@
     {
      "formatoId": "R-5",
      "codigo": "005",
-     "cantidad": 3
+     "cantidad": 5
     },
     {
      "formatoId": "R-5",
      "codigo": "040",
-     "cantidad": 7
+     "cantidad": 5
     },
     {
      "formatoId": "R-5",
@@ -27,41 +27,41 @@
     {
      "formatoId": "R-9",
      "codigo": "005",
-     "cantidad": 22
+     "cantidad": 19
     },
     {
      "formatoId": "R-9",
      "codigo": "040",
-     "cantidad": 17
+     "cantidad": 18
     },
     {
      "formatoId": "R-9",
      "codigo": "970",
-     "cantidad": 16
+     "cantidad": 18
     },
     {
      "formatoId": "R-12",
      "codigo": "005",
-     "cantidad": 3
-    },
-    {
-     "formatoId": "R-12",
-     "codigo": "040",
      "cantidad": 4
     },
     {
      "formatoId": "R-12",
+     "codigo": "040",
+     "cantidad": 5
+    },
+    {
+     "formatoId": "R-12",
      "codigo": "970",
-     "cantidad": 9
+     "cantidad": 7
     }
    ],
    "unidades": 84,
    "caja": [
-    -81,
+    -80,
     0,
     -181,
-    81,
-    161,
+    80,
+    165,
     -139
    ]
   }
@@ -71,12 +71,12 @@
    {
     "formatoId": "R-5",
     "codigo": "005",
-    "cantidad": 3
+    "cantidad": 5
    },
    {
     "formatoId": "R-5",
     "codigo": "040",
-    "cantidad": 7
+    "cantidad": 5
    },
    {
     "formatoId": "R-5",
@@ -86,42 +86,42 @@
    {
     "formatoId": "R-9",
     "codigo": "005",
-    "cantidad": 22
+    "cantidad": 19
    },
    {
     "formatoId": "R-9",
     "codigo": "040",
-    "cantidad": 17
+    "cantidad": 18
    },
    {
     "formatoId": "R-9",
     "codigo": "970",
-    "cantidad": 16
+    "cantidad": 18
    },
    {
     "formatoId": "R-12",
     "codigo": "005",
-    "cantidad": 3
-   },
-   {
-    "formatoId": "R-12",
-    "codigo": "040",
     "cantidad": 4
    },
    {
     "formatoId": "R-12",
+    "codigo": "040",
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-12",
     "codigo": "970",
-    "cantidad": 9
+    "cantidad": 7
    }
   ],
   "unidades": 84
  },
  "caja": [
-  -81,
+  -80,
   0,
   -181,
-  81,
-  161,
+  80,
+  165,
   -139
  ]
 }

@@ -8,6 +8,17 @@ import type { PiezaEspec, TamanosEspec } from "./espec-cliente-v1";
  */
 export type MedidasEspec = PiezaEspec["medidas"];
 
+/** Perímetro aproximado de una elipse, compartido con el eje contractual de las bandas. */
+export function perimetroElipse(a: number, b: number): number {
+  const h = ((a - b) / (a + b)) ** 2;
+  return Math.PI * (a + b) * (1 + (3 * h) / (10 + Math.sqrt(4 - 3 * h)));
+}
+
+/** Eje contractual de cuarto de elipse para semiarcos, en metros. */
+export function ejeCuartoElipse(anchoM: number, altoM: number): number {
+  return perimetroElipse(anchoM, altoM) / 4;
+}
+
 export const MEDIDAS_POR_DEFECTO: Readonly<Record<EstructuraOficialId, MedidasEspec>> = {
   arco: { anchoM: 3, altoM: 2.4 },
   arco_asimetrico: { anchoM: 3, altoM: 2.4 },

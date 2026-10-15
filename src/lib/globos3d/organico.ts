@@ -4,6 +4,7 @@ import { asignarColores, type ColorAsignado } from "./organico-color";
 import { colocarFijos } from "./organico-fijos";
 import { anotarEmpaque } from "./organico-empaques";
 import { infladoNominal, perfilDeEstructura } from "./organico-estructura";
+import { crearRejillaOrganica, type PuntoRejillaOrganica } from "./organico-rejilla";
 import { centroCuerpo } from "./geometria";
 import type { GloboColocado, Vec3 } from "./modulos";
 import { crearAzar, vec, suma, resta, escala, punto, cruz, norma, distancia, unitario, limitar, aplastamiento, muestrear, muestraEn, proyectar, interpolarGrosor, radioEnvoltura, profundidad, rangoS, superficie, type TramoPreparado } from "./organico-geometria";
@@ -81,6 +82,8 @@ export type TramoOrganico = {
   irregularidad: number;
   /** Remate redondo (media esfera de globos) al inicio o al final; sin él, el extremo queda abierto (al piso o a otro tramo). */
   tapas?: { inicio?: boolean; fin?: boolean };
+  /** El eje regresa al inicio; su rejilla de relleno necesita mayor resolución para buscar huecos entre ambos lados. */
+  cerrado?: boolean;
   /** Multiplica los globos de estructura de este tramo (además de `densidad` de las opciones). */
   densidad?: number;
 };
@@ -886,24 +889,13 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
   if (sinCupo > 0) avisos.push(`${sinCupo} globos de estructura no cupieron sin montarse: sus huecos los tapa el relleno.`);
   apretar(14);
 
-  // Rejilla de puntos sobre la envoltura de todos los tramos (para huecos de flores y relleno).
-  type PuntoRejilla = { tramo: number; s: number; phi: number };
-  const rejilla: PuntoRejilla[] = [];
-  tramos.forEach((tp, it) => {
-    let fila = 0;
-    const rango = rangoS(tp);
-    for (let s = rango.min + 2; s < rango.max; s += 4, fila++) {
-      const R = interpolarGrosor(tp.def.grosor, limitar(s / tp.largo, 0, 1));
-      const fuera = s > tp.largo ? s - tp.largo : s < 0 ? -s : 0;
-      const n = Math.max(4, Math.round((2 * Math.PI * Math.sqrt(Math.max(0, R * R - fuera * fuera))) / 5));
-      for (let j = 0; j < n; j++) rejilla.push({ tramo: it, s, phi: ((j + (fila % 2) * 0.5) / n) * Math.PI * 2 });
-    }
-  });
+  // Rejilla de puntos sobre la envoltura para huecos de flores y relleno.
+  const rejilla: PuntoRejillaOrganica[] = crearRejillaOrganica(tramos);
 
   // 3. Huecos para flores: los más hondos de la cara que se ve, separados entre sí.
   if (opciones.huecosFlores > 0) {
     const vista = opciones.vista ? unitario(opciones.vista) : null;
-    const candidatos: Array<{ p: PuntoRejilla; superficie: Vec3; normal: Vec3; holgura: number }> = [];
+    const candidatos: Array<{ p: PuntoRejillaOrganica; superficie: Vec3; normal: Vec3; holgura: number }> = [];
     for (const p of rejilla) {
       const sup = superficie(tramos[p.tramo]!, p.s, p.phi);
       const normal = sup.normal;
@@ -953,7 +945,7 @@ function empacarOrganico(opciones: OpcionesOrganico): GeometriaOrganica {
     if (!formatoValido(relleno.formatoId)) continue;
     const base = infladoValido(formatoPorId(relleno.formatoId)!, relleno.infladoCm);
     const r0 = base / 2;
-    const candidatos: Array<{ p: PuntoRejilla; holgura: number }> = [];
+    const candidatos: Array<{ p: PuntoRejillaOrganica; holgura: number }> = [];
     for (const p of rejilla) {
       // Lo que queda a ras de piso no se ve: no se rellena.
       if (opciones.suelo && superficie(tramos[p.tramo]!, p.s, p.phi).punto.y < 10) continue;

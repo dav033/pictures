@@ -2,9 +2,9 @@
  "caso": "oficial-aro_circular",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.4"
+  "version": "1.2.5"
  },
- "especHash": "294b450000e58f722459f86411783e25e44e475f1962ab8f2539f47ca7714a0b",
+ "especHash": "d47ec944b4a013c53d44bfad85710d050b24a93265a125769dbaeadd30336b25",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
@@ -17,7 +17,7 @@
   {
    "formatoId": "R-5",
    "codigo": "005",
-   "cantidad": 3,
+   "cantidad": 5,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634235781415",
@@ -26,7 +26,7 @@
   {
    "formatoId": "R-9",
    "codigo": "005",
-   "cantidad": 22,
+   "cantidad": 19,
    "reserva": 2,
    "paquetes": 2,
    "productId": "8634235781415",
@@ -35,7 +35,7 @@
   {
    "formatoId": "R-12",
    "codigo": "005",
-   "cantidad": 3,
+   "cantidad": 4,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634235781415",
@@ -44,7 +44,7 @@
   {
    "formatoId": "R-5",
    "codigo": "040",
-   "cantidad": 7,
+   "cantidad": 5,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -53,7 +53,7 @@
   {
    "formatoId": "R-9",
    "codigo": "040",
-   "cantidad": 17,
+   "cantidad": 18,
    "reserva": 2,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -62,7 +62,7 @@
   {
    "formatoId": "R-12",
    "codigo": "040",
-   "cantidad": 4,
+   "cantidad": 5,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -80,7 +80,7 @@
   {
    "formatoId": "R-12",
    "codigo": "970",
-   "cantidad": 9,
+   "cantidad": 7,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",
@@ -89,7 +89,7 @@
   {
    "formatoId": "R-9",
    "codigo": "970",
-   "cantidad": 16,
+   "cantidad": 18,
    "reserva": 2,
    "paquetes": 1,
    "productId": "8634255638823",
