@@ -166,6 +166,8 @@ export const postgresWebhookStore: WebhookStore = {
 export async function ejecutarWebhook(
   request: Request, operation: string, auth: Response | null, schema: ZodType,
   work: (request: Request) => Promise<Result>, store = postgresWebhookStore,
+  /** Who the rate limit counts: by default the digest of the caller's `x-api-key`; session callers pass their own (the header is then ignored). */
+  ambito?: string,
 ): Promise<Response> {
   const correlationId = randomUUID();
   const controller = new AbortController();
@@ -201,7 +203,7 @@ export async function ejecutarWebhook(
   const digest = (text: string) => createHash("sha256").update(text).digest("hex");
   let claimed = false;
   let key = "";
-  const scope = `${digest(request.headers.get("x-api-key") ?? "")}:${operation}`;
+  const scope = `${digest(ambito ?? request.headers.get("x-api-key") ?? "")}:${operation}`;
   try {
     if (auth) return respond({ status: auth.status, body: await auth.json() });
     const raw = await leerBodyLimitado(request, signal);

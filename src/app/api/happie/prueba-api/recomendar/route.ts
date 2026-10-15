@@ -1,5 +1,5 @@
 import { CuerpoSolicitudSchema, generarRecomendacion } from "@/lib/happie/generar-recomendacion";
-import { panelPruebaActivo, rechazoDePanel } from "@/lib/happie/panel-prueba";
+import { ambitoDeSesion, panelPruebaActivo, rechazoDePanel } from "@/lib/happie/panel-prueba";
 import { ejecutarWebhook } from "@/lib/happie/webhook-control";
 import { conRegistro } from "@/lib/registro/servidor";
 import { HAPPIE_CONTRACT_VERSION, HappieErrorV1Schema } from "@/lib/ia/contracts/happie-v1";
@@ -17,6 +17,6 @@ async function atenderPOST(request: Request) {
     return Response.json(HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error: "No disponible." }), { status: 404 });
   }
   return ejecutarWebhook(request, "panel-prueba", rechazoDePanel(request, { mutacion: true }), CuerpoSolicitudSchema, (acotada) =>
-    generarRecomendacion(acotada, 3),
+    generarRecomendacion(acotada, 3), undefined, ambitoDeSesion(request),
   );
 }
