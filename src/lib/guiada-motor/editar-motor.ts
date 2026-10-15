@@ -3,7 +3,7 @@ import { z } from "zod";
 import { isAuthenticatedRequest } from "@/lib/auth/request";
 import { exigirEscritura } from "@/lib/feedback-ia/acceso";
 import {
-  aplicarEdiciones, CambioPanelV1Schema, edicionDesdeCambio, edicionDesdePedido, EdicionesEspecSchema, especDesdeIdeaGuardada, sobreDelMotor,
+  aplicarEdiciones, CambioPanelV1Schema, edicionDesdeCambio, edicionDesdePedido, EdicionesEspecSchema, especDesdeIdeaGuardada, sobreDelMotor, VERSION_MOTOR,
   type ConceptoPlan, type EdicionEspecV1, type EdicionesDePedido, type EspecClienteV1, type ResultadoCotizacionBom, type ResultadoMotorV1,
 } from "@/lib/globos3d/motor/v1";
 import type { TomaDeFoto } from "@/lib/globos3d/tope-fotos-hora";
@@ -15,6 +15,7 @@ import { codigoSeguro, hashSeguro, idsDePiezas, uuidSeguro, type FilaAuditoriaPl
 import { RUTA_EDITAR_MOTOR, type CodigoFalloEditar, type RespuestaEditarMotor } from "./editar-contrato";
 import { noPudeDeMotivos, TEXTO_EDICION_RECALCULO, unirNoPude } from "./mensajes-cliente";
 import { planDel3dVencido } from "./continuidad";
+import { avisoMotorActualizado, totalGlobosDeBom, totalGlobosDelPlan } from "./aviso-motor-actualizado";
 import { huellaDeNavegador } from "./plan-motor";
 import type { RespuestaMotor } from "./tipos";
 import { verificarPlanConConcepto } from "./verificar-plan";
@@ -118,6 +119,15 @@ function aEdiciones(cuerpo: z.infer<typeof CuerpoSchema>, espec: EspecClienteV1)
 
 const resumenDe = (ediciones: readonly EdicionEspecV1[]): string[] => ediciones.map((e) => e.op);
 
+/** P-091: un plan armado con otra versión del motor se rearma ahora con la actual; si sus globos se movieron sin que el cambio pedido tenga que ver, el cliente lo lee. */
+function avisoDeVersion(plan: z.infer<typeof PlanGuiadoSchema>, base: { espec: EspecClienteV1; versionPlan: string }, deps: DependenciasEditarMotor): string | null {
+  if (base.versionPlan === VERSION_MOTOR) return null;
+  const sinCambio = deps.armar(base.espec);
+  if (sinCambio.noRepresentable.length) return null;
+  const antes = totalGlobosDelPlan(plan);
+  return antes === null ? null : avisoMotorActualizado(base.versionPlan, antes, totalGlobosDeBom(sinCambio.bom));
+}
+
 /** Lo técnico de un rechazo: al registro de la conversación entero; a la fila durable solo los ids de pieza, los códigos de la tienda y la hora (los motivos de una pieza que no se arma la nombran como la llamó el cliente). */
 type DetalleRechazo = { piezas?: ReadonlyArray<{ piezaId: string; motivo: string }>; faltantes?: string; origen_en?: number };
 
@@ -201,12 +211,13 @@ async function atender(request: Request, deps: DependenciasEditarMotor, navegado
     if (!sobre.ok) return rechazar("ERROR_DEL_MOTOR", "No pude: ese cambio no cabe en el plan. Tu plan sigue como estaba.", 422, sobre.motivo);
 
     const descripcion = acotarDescripcion(hecho.hechas);
+    const avisoVersion = avisoDeVersion(cuerpo.plan, base, deps);
     const respuesta: RespuestaEditarMotor = {
       plan: sobre.plan,
       cotizacion: sobre.cotizacion,
       descripcion,
       confirmacion: mayuscula(confirmacionDe(hecho.hechas, hecho.noAplicadas, otrasCifrasIguales(cuerpo.plan, sobre.plan, hecho.tocadas))),
-      avisos: [...new Set([...mapeo.avisos, ...hecho.avisos].map(mayuscula))].slice(0, 6),
+      avisos: [...new Set([...(avisoVersion ? [avisoVersion] : []), ...mapeo.avisos, ...hecho.avisos].map(mayuscula))].slice(0, 6),
       noAplicadas: hecho.noAplicadas,
       tocadas: hecho.tocadas,
       turno: {

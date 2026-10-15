@@ -22,7 +22,7 @@ import { atenderEditarMotor, type DependenciasEditarMotor } from "../../src/lib/
 import { crearTopePorNavegador } from "../../src/lib/guiada-motor/tope-imagenes-navegador";
 import { TEXTO_EDICION_RECALCULO, unirNoPude } from "../../src/lib/guiada-motor/mensajes-cliente";
 import { FalloEditarMotorSchema, RespuestaEditarMotorSchema, type CuerpoEditarMotor } from "../../src/lib/guiada-motor/editar-contrato";
-import { armarDesdeEspec, cotizarBom, crearCachePiezas, crosswalkIncluido, especHashDe, EspecClienteV1Schema, type EspecClienteV1, type ResultadoCotizacionBom } from "../../src/lib/globos3d/motor/v1";
+import { armarDesdeEspec, cotizarBom, crearCachePiezas, crosswalkIncluido, especHashDe, EspecClienteV1Schema, sobreDelMotor, VERSION_MOTOR, type EspecClienteV1, type ResultadoCotizacionBom } from "../../src/lib/globos3d/motor/v1";
 import { pythonDoble } from "../lib/python-doble-precio";
 
 const CLAVE_APP = "clave-app-de-prueba";
@@ -392,4 +392,75 @@ test("una tanda que no se hizo entera dice todas las razones, no solo la primera
   assert.equal(fallo.noAplicadas?.length, 2, "las dos razones vienen en la respuesta");
   assert.equal(fallo.error, unirNoPude(fallo.noAplicadas ?? []));
   for (const frase of fallo.noAplicadas ?? []) assert.ok(fallo.error.toLowerCase().includes(frase.replace("No pude: ", "").toLowerCase()), frase);
+});
+
+/**
+ * P-091: un plan armado con otra versión del motor. Lo que se guardó con la 1.2.3 es la espec de una guirnalda 932 de 3,66 m sencilla (sin R-9, 38 globos
+ * antes del relleno R-12, 50 ahora) más una columna; su hash y su token firman la versión vieja, y `totales.total_unidades` dice lo que entonces se contó.
+ */
+const GLOBOS_DE_LA_GUIRNALDA_EN_1_2_3 = 38;
+const GLOBOS_DE_LA_GUIRNALDA_AHORA = 50;
+const globosDelEspec = (): number => armarDesdeEspec(ESPEC_CON_GUIRNALDA_932).bom.total.reduce((suma, linea) => suma + linea.cantidad, 0);
+const globosDeLaGuirnalda = (): number => (armarDesdeEspec(ESPEC_CON_GUIRNALDA_932).bom.porPieza.EST_01_GUIRNALDA ?? []).reduce((suma, linea) => suma + linea.cantidad, 0);
+const DIFERENCIA_DE_LA_VERSION = GLOBOS_DE_LA_GUIRNALDA_AHORA - GLOBOS_DE_LA_GUIRNALDA_EN_1_2_3;
+const ESPEC_CON_GUIRNALDA_932: EspecClienteV1 = EspecClienteV1Schema.parse({
+  version: "espec-cliente.v1", origen: { tipo: "propuesta" },
+  piezas: [
+    { id: "EST_01_GUIRNALDA", oficial: "guirnalda", nombre: "Guirnalda", lugar: "centro", medidas: { largoM: 3.66 }, colores: [{ codigo: "932", nombre: "Dorado", peso: 1 }], tamanos: "organica_fina", densidad: "sencilla" },
+    { id: "EST_02_COLUMNA", oficial: "columna", nombre: "Columna", lugar: "derecha", medidas: { altoM: 1.8 }, colores: [{ codigo: "570", nombre: "Dorado", peso: 1 }], tamanos: "clasica" },
+  ],
+});
+
+async function planConVersion(versionPlan: string, globosEntonces: number): Promise<{ plan: Plan; globosAhora: number }> {
+  const armado = armarDesdeEspec(ESPEC_CON_GUIRNALDA_932);
+  const e = entorno();
+  const cotizada = await e.cotizarPorDefecto(armado.bom, { requestId: "r", signal: new AbortController().signal });
+  assert.ok(cotizada.ok);
+  const resultado = { ...armado, motor: { id: "globos3d" as const, version: versionPlan }, especHash: especHashDe(ESPEC_CON_GUIRNALDA_932, versionPlan) };
+  const sobre = sobreDelMotor({ espec: ESPEC_CON_GUIRNALDA_932, resultado, cotizacion: cotizada, concepto: { titulo: "Guirnalda", descripcion: "Una guirnalda dorada." }, requestId: "00000000-0000-4000-8000-000000000999", navegador: huellaDeNavegador(`nav-${"a1".repeat(16)}`) });
+  assert.ok(sobre.ok);
+  const globosAhora = armado.bom.total.reduce((suma, linea) => suma + linea.cantidad, 0);
+  assert.equal((sobre.plan as unknown as Plan & { totales: { total_unidades: number } }).totales.total_unidades, globosAhora, "el total del plan es el de la lista de materiales");
+  const plan = PlanGuiadoSchema.parse(structuredClone(sobre.plan)) as Plan & { totales: { total_unidades: number } };
+  plan.totales.total_unidades = globosEntonces;
+  return { plan, globosAhora };
+}
+
+const pedidoColumna: CuerpoEditarMotor["edicion"] = { tipo: "pedido", pedido: { tipo: "reemplazar_color", color: "dorado", colorNuevo: "azul", piezas: ["Columna"] } };
+
+test("P-091: un plan de una versión anterior del motor que se edita avisa con las dos cifras de globos", async () => {
+  const globosAhora = globosDelEspec();
+  assert.equal(globosDeLaGuirnalda(), GLOBOS_DE_LA_GUIRNALDA_AHORA, "la guirnalda 932 de 3,66 m sencilla lleva el relleno R-12 (38 en la 1.2.3)");
+  const { plan } = await planConVersion("1.2.3", globosAhora - DIFERENCIA_DE_LA_VERSION);
+  const e = entorno();
+  const { respuesta, cuerpo } = await editar(e, plan, pedidoColumna);
+  assert.equal(respuesta.status, 200, JSON.stringify(cuerpo));
+  const hecho = RespuestaEditarMotorSchema.parse(cuerpo);
+  const aviso = `El motor se actualizó desde que armaste este plan: lo recalculé con la versión nueva (antes ${globosAhora - DIFERENCIA_DE_LA_VERSION} globos, ahora ${globosAhora}).`;
+  assert.deepEqual(hecho.avisos.filter((a) => a.startsWith("El motor se actualizó")), [aviso]);
+  assert.equal((PlanGuiadoSchema.parse(hecho.plan) as Plan).motor.version, VERSION_MOTOR, "el plan nuevo ya es de la versión actual");
+  assert.ok((e.auditorias.find((a) => a.que.startsWith("edición del plan 3D hecha"))!.resultado.avisos as string[]).includes(aviso), "el aviso queda en la auditoría");
+});
+
+test("P-091: sin aviso si el plan es de la versión actual, o si es de otra versión pero los globos no se movieron", async () => {
+  const globosAhora = globosDelEspec();
+  for (const [version, entonces] of [[VERSION_MOTOR, globosAhora], ["1.2.3", globosAhora]] as const) {
+    const { plan } = await planConVersion(version, entonces);
+    const { respuesta, cuerpo } = await editar(entorno(), plan, pedidoColumna);
+    assert.equal(respuesta.status, 200, JSON.stringify(cuerpo));
+    assert.deepEqual(RespuestaEditarMotorSchema.parse(cuerpo).avisos.filter((a) => a.includes("motor se actualizó")), [], `versión ${version}`);
+  }
+});
+
+test("P-091: rehacer un plan de una versión anterior (suma de una idea) avisa igual", async () => {
+  const globosAhora = globosDelEspec();
+  const { plan } = await planConVersion("1.2.3", globosAhora - DIFERENCIA_DE_LA_VERSION);
+  const e = entorno();
+  const deps: DependenciasPlanMotor = { leerBandera: e.deps.leerBandera, auditar: e.deps.auditar, planGuardado: planGuardadoDeIdea, cotizar: e.deps.cotizar, nuevoId: e.deps.nuevoId, registrarPlan: e.deps.registrarPlan };
+  const rehacer = async (base: Plan) => (await atenderPlanMotor(new Request("https://app.test/api/guiada/motor/plan", { method: "POST", headers: { "content-type": "application/json", cookie: [SESION, NAVEGADOR].join("; ") }, body: JSON.stringify({ desde: "propuesta", propuesta: PROPUESTA, brief: { evento: "boda", tematica: "boda azul y dorada" }, base }) }), deps)).json() as Promise<{ avisos: string[]; exacto: boolean }>;
+  const viejo = await rehacer(plan);
+  assert.ok(viejo.avisos[0]!.startsWith("El motor se actualizó desde que armaste este plan"), JSON.stringify(viejo.avisos));
+  assert.ok(viejo.avisos[0]!.includes(`antes ${globosAhora - DIFERENCIA_DE_LA_VERSION} globos`));
+  const actual = await rehacer((await planConVersion(VERSION_MOTOR, globosAhora)).plan);
+  assert.ok(!actual.avisos.some((a) => a.includes("motor se actualizó")));
 });

@@ -17,6 +17,8 @@ import type { ContextoOrdenColor } from "@/lib/globos3d/motor/v1";
 
 export type PlanVerificado = {
   espec: EspecClienteV1;
+  /** La versión del motor con la que se armó el plan (la que firma su hash): puede ser anterior a `VERSION_MOTOR`. */
+  versionPlan: string;
   /** La hora del primer plan de su línea (`ContextoPlan.origenEn`). */
   origenEn: number;
   /** El contexto de la última orden de color (solo en tokens v3). `undefined` si es token legado. */
@@ -35,6 +37,7 @@ export function verificarPlanFirmado(plan: PlanFirmado, navegador: string): Plan
   if (especHashDe(espec.data, version) !== plan.plan_hash) return { codigo: "PLAN_ALTERADO", mensaje: "El plan no corresponde a su aprobación.", estado: 409, motivo: "hash_de_la_espec_distinto" };
   return {
     espec: espec.data,
+    versionPlan: version,
     origenEn: contexto.origenEn,
     ...(contexto.colorOrder !== undefined ? { colorOrder: contexto.colorOrder } : {}),
   };
@@ -51,6 +54,7 @@ export function verificarPlanConConcepto(plan: z.infer<typeof PlanGuiadoSchema>,
   const { concepto } = plan.plan;
   return {
     espec: firmado.espec,
+    versionPlan: firmado.versionPlan,
     origenEn: firmado.origenEn,
     concepto: { titulo: concepto.titulo, descripcion: concepto.descripcion, ...(concepto.estilo ? { estilo: concepto.estilo } : {}), ...(concepto.ocasion ? { ocasion: concepto.ocasion } : {}) },
     ...(firmado.colorOrder !== undefined ? { colorOrder: firmado.colorOrder } : {}),
