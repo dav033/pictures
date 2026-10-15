@@ -6,7 +6,7 @@
  * - un R-18 nunca hace de relleno (a 18 cm sería un globo medio vacío).
  */
 import assert from "node:assert/strict";
-import { crearEstructura } from "../../src/lib/globos3d/herramientas-escena-estructuras";
+import { ajustarOrganico, crearEstructura } from "../../src/lib/globos3d/herramientas-escena-estructuras";
 import { armarOrganico, type OpcionesOrganico } from "../../src/lib/globos3d/organico";
 
 const guirnalda = (codigo: string, largoCm: number, grosorCm: number, tamanos?: string[]): OpcionesOrganico => {
@@ -49,4 +49,20 @@ const grandes = guirnalda("932", 300, 45, ["R-18", "R-24", "R-5"]);
 assert.deepEqual(relleno(grandes), ["R-5@12"], "con R-18 y R-24 no hay sustituto válido: queda el relleno de siempre");
 assert.equal(globos(grandes), globos(comoAntes(grandes)));
 
-console.log(`test-guirnalda-sin-r9: ok (${celdas} celdas de la herramienta, 5 casos de relleno)`);
+// Size edits preserve compensated fill, and each palette resolves it from the resulting colours.
+const ajustar = (o: OpcionesOrganico, pedido: Parameters<typeof ajustarOrganico>[1]) => ajustarOrganico({ tipo: "organico", opciones: o, flores: null }, pedido, []).opciones;
+const sinR9Ajustada = ajustar(guirnalda("932", 300, 45), { tamanos: ["R-12", "R-5"] });
+assert.deepEqual(relleno(sinR9Ajustada), ["R-5@12", "R-12@18"], "932 editada con tamanos R-12 y R-5 conserva el R-12 de relleno");
+assert.ok(globos(sinR9Ajustada) >= globos(comoAntes(sinR9Ajustada)), "y nunca da menos globos que sin él");
+assert.deepEqual(relleno(ajustar(guirnalda("932", 300, 45), { colores: ["570"], tamanos: ["R-12", "R-9", "R-5"] })), ["R-9@18", "R-5@12"], "932 pasada a 570 con tamanos: el relleno de un color con R-9, no el R-12 de 18 cm");
+assert.deepEqual(relleno(ajustar(guirnalda("570", 300, 45), { colores: ["932"], tamanos: ["R-12", "R-9", "R-5"] })), ["R-5@12", "R-12@18"], "570 pasada a 932 con tamanos: el R-12 sustituye al R-9 que ya no se fabrica");
+assert.deepEqual(relleno(ajustar(guirnalda("932", 300, 45), { colores: ["570"] })), ["R-5@12"], "un cambio solo de color quita el R-12 compensado y conserva los tamaños de la pieza");
+assert.deepEqual(relleno(ajustar(guirnalda("570", 300, 45), { colores: ["932"] })), ["R-5@12", "R-12@18"], "un cambio solo de color sustituye el R-9 por R-12 cuando ningún color lo fabrica");
+// An organic column without R-9 is not a garland: its filler is unchanged.
+const columna = crearEstructura("columna_organica", { colores: ["932"], alto_cm: 200 }, []).pieza;
+assert.equal(columna.tipo, "organico");
+assert.deepEqual(relleno(ajustarOrganico(columna as Extract<typeof columna, { tipo: "organico" }>, { tamanos: ["R-12", "R-5"] }, []).opciones), ["R-5@12"], "la columna sin R-9 no recibe el relleno de la guirnalda");
+const columnaSinCambios = ajustarOrganico(columna as Extract<typeof columna, { tipo: "organico" }>, { colores: ["570"] }, []);
+assert.deepEqual(relleno(columnaSinCambios.opciones), relleno((columna as Extract<typeof columna, { tipo: "organico" }>).opciones), "un cambio de color en una columna no usa el relleno especial de las guirnaldas");
+
+console.log(`test-guirnalda-sin-r9: ok (${celdas} celdas de la herramienta, 12 casos de relleno)`);

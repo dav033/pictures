@@ -281,6 +281,9 @@ export function escalarOrganico(pieza: Organico, p: { altoCm?: number; anchoCm?:
   };
 }
 
+/** Identifies the single non-generated tramo created by `crearEstructura("guirnalda_organica")`. */
+const esGuirnaldaOrganica = (o: Organico): boolean => !o.generador && o.opciones.tramos.length === 1 && o.opciones.tramos[0]!.id === "guirnalda";
+
 /** Cambia lo pedido de un orgánico: medidas, grosor, colores con pesos (o solo pesos), tamaños de globo y flores. */
 export function ajustarOrganico(pieza: Organico, p: PedidoEstructura, notas: string[]): Organico {
   // Con generador se cambia por sus parámetros (la silueta del trazo no se deforma).
@@ -314,9 +317,22 @@ export function ajustarOrganico(pieza: Organico, p: PedidoEstructura, notas: str
   }
   if (p.tamanos?.length) {
     const permitidos = tamanosPosibles(o.opciones.colores, p.tamanos, Infinity, notasDeTamanos(p, notas));
-    o = { ...o, opciones: { ...o.opciones, tramos: o.opciones.tramos.map((t) => ({ ...t, mezcla: mezclaCon(t.mezcla, permitidos) })), relleno: rellenoCon(permitidos) } };
+    // Keep P-087's R-12 filler for a garland whose selected colours do not manufacture R-9.
+    const rellenar = esGuirnaldaOrganica(o) ? rellenoCompensadoPara(o.opciones.colores) : rellenoCon;
+    o = { ...o, opciones: { ...o.opciones, tramos: o.opciones.tramos.map((t) => ({ ...t, mezcla: mezclaCon(t.mezcla, permitidos) })), relleno: rellenar(permitidos) } };
     // Los tamaños cambian cuántos globos lleva el cuerpo (solo R-5 lleva varias veces los de la mezcla de siempre): también cuentan para el presupuesto.
     comprobarCambioDeCuerpo(antes, cuerpoDeOrganico(o.opciones), medirConGrosor(o), 2 * radioMayor(o.opciones));
+  } else if (pedidos && esGuirnaldaOrganica(o)) {
+    // Re-resolve derived fill for the new palette while preserving the sizes already used by the garland.
+    const maxInfladoCm = 2 * radioMayor(o.opciones) * 0.8;
+    const tamanosActuales = new Set([
+      ...o.opciones.tramos.flatMap((tramo) => tramo.mezcla.flatMap((punto) => Object.entries(punto.pesos).filter(([, peso]) => peso > 0).map(([formato]) => formato))),
+      ...o.opciones.relleno.map((relleno) => relleno.formatoId),
+    ]);
+    const disponibles = tamanosPosibles(o.opciones.colores, undefined, maxInfladoCm);
+    const permitidosPorCambio = disponibles.filter((formato) => tamanosActuales.has(formato));
+    const permitidos = permitidosPorCambio.length ? permitidosPorCambio : disponibles;
+    o = { ...o, opciones: { ...o.opciones, relleno: rellenoCompensadoPara(o.opciones.colores)(permitidos) } };
   }
   if (p.flores !== undefined) o = { ...o, flores: p.flores ? (o.flores ?? FLORES()) : null, opciones: { ...o.opciones, huecosFlores: p.flores ? Math.max(14, o.opciones.huecosFlores) : 0 } };
   return o;
