@@ -2,22 +2,22 @@
  "caso": "oficial-semiarco",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.5"
+  "version": "1.2.6"
  },
- "especHash": "04229bafe2c3b86a8efaa2dd22fad39165717b89b83877d69c5f115e9a31ba3c",
+ "especHash": "fb299f391f83226041c04984b20809af54df6e226ed08a34760ff1f69991fed4",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 13,
-  "cubierta": 13,
+  "objetivo": 12,
+  "cubierta": 12,
   "sinCubrir": 0
  },
  "pedido": [
   {
    "formatoId": "R-5",
    "codigo": "005",
-   "cantidad": 3,
+   "cantidad": 5,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634235781415",
@@ -26,7 +26,7 @@
   {
    "formatoId": "R-9",
    "codigo": "005",
-   "cantidad": 8,
+   "cantidad": 6,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634235781415",
@@ -35,25 +35,25 @@
   {
    "formatoId": "R-12",
    "codigo": "005",
-   "cantidad": 7,
+   "cantidad": 6,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634235781415",
    "variantId": "46594221277479"
   },
   {
-   "formatoId": "R-18",
+   "formatoId": "R-24",
    "codigo": "005",
    "cantidad": 1,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634235781415",
-   "variantId": "46594221474087"
+   "variantId": "46594221539623"
   },
   {
    "formatoId": "R-5",
    "codigo": "040",
-   "cantidad": 8,
+   "cantidad": 4,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -62,7 +62,7 @@
   {
    "formatoId": "R-9",
    "codigo": "040",
-   "cantidad": 7,
+   "cantidad": 6,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -71,7 +71,7 @@
   {
    "formatoId": "R-12",
    "codigo": "040",
-   "cantidad": 3,
+   "cantidad": 7,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -98,7 +98,7 @@
   {
    "formatoId": "R-12",
    "codigo": "970",
-   "cantidad": 7,
+   "cantidad": 4,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",
@@ -107,25 +107,16 @@
   {
    "formatoId": "R-18",
    "codigo": "970",
-   "cantidad": 1,
+   "cantidad": 2,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264727847"
   },
   {
-   "formatoId": "R-24",
-   "codigo": "970",
-   "cantidad": 1,
-   "reserva": 1,
-   "paquetes": 1,
-   "productId": "8634255638823",
-   "variantId": "46594264793383"
-  },
-  {
    "formatoId": "R-9",
    "codigo": "970",
-   "cantidad": 5,
+   "cantidad": 7,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",

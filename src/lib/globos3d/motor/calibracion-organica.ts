@@ -59,6 +59,8 @@ export function superficieOrganica(opciones: OpcionesOrganico): number {
 }
 
 const esSemiarco = (oficial: EstructuraOficialId): boolean => oficial === "semiarco" || oficial === "semiarco_asimetrico";
+/** Empirical cap selected from sampled P-099 repros and the existing 46-case ±10% price check. */
+const FACTOR_GEOMETRICO_MAXIMO_SEMIARCO = 1.04;
 
 /** Scale only the fill caps by the constructor's rounded/clamped axis versus the path after height adjustment. */
 function factorEjeContractual(ejeContractualM: number | undefined, opciones: OpcionesOrganico): number {
@@ -129,7 +131,7 @@ export function calibrarOrganico(pieza: Pieza, densidad: DensidadEspec, perfil: 
   if (pieza.tipo !== "organico") return pieza;
   const { opciones } = pieza;
   const semiarco = esSemiarco(espec.oficial);
-  const factorGeometrico = semiarco ? factorEjeContractual(ejeContractualM, opciones) : 1;
+  const factorGeometrico = semiarco ? Math.min(FACTOR_GEOMETRICO_MAXIMO_SEMIARCO, factorEjeContractual(ejeContractualM, opciones)) : 1;
   const calibradas: OpcionesOrganico = {
     ...opciones,
     densidad: (opciones.densidad ?? 1) * FACTOR_ESTRUCTURA[densidad],

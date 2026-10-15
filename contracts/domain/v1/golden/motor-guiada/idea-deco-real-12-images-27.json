@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-12-images-27",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.5"
+  "version": "1.2.6"
  },
- "especHash": "58cef978730ba94940a16c25c5bd0b1be140ac6c6abb804fbabb5c103dd1940e",
+ "especHash": "280a6f02028c8ef9c428c9665136aebb250b8cad8b6f0a0b5d55e8f5995712f2",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -17,7 +17,7 @@
     {
      "formatoId": "R-5",
      "codigo": "951",
-     "cantidad": 10
+     "cantidad": 9
     },
     {
      "formatoId": "R-5",
@@ -52,26 +52,31 @@
     {
      "formatoId": "R-18",
      "codigo": "650",
-     "cantidad": 6
+     "cantidad": 5
     },
     {
      "formatoId": "R-18",
      "codigo": "981",
-     "cantidad": 3
+     "cantidad": 4
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "650",
+     "cantidad": 1
     },
     {
      "formatoId": "R-24",
      "codigo": "981",
-     "cantidad": 2
+     "cantidad": 1
     }
    ],
-   "unidades": 102,
+   "unidades": 101,
    "caja": [
     -126,
     0,
     -192,
     126,
-    258,
+    259,
     -128
    ]
   },
@@ -149,7 +154,7 @@
    {
     "formatoId": "R-5",
     "codigo": "951",
-    "cantidad": 12
+    "cantidad": 11
    },
    {
     "formatoId": "R-5",
@@ -184,27 +189,32 @@
    {
     "formatoId": "R-18",
     "codigo": "650",
-    "cantidad": 7
+    "cantidad": 6
    },
    {
     "formatoId": "R-18",
     "codigo": "981",
-    "cantidad": 4
+    "cantidad": 5
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "650",
+    "cantidad": 1
    },
    {
     "formatoId": "R-24",
     "codigo": "981",
-    "cantidad": 2
+    "cantidad": 1
    }
   ],
-  "unidades": 127
+  "unidades": 126
  },
  "caja": [
   -248,
   0,
   -192,
   126,
-  258,
+  259,
   -128
  ],
  "referenciaPython": {

@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-04-71mp5umakml-ac-uf894-1000-ql80",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.5"
+  "version": "1.2.6"
  },
- "especHash": "5f7fed67300d368ff7724402162884ff9c6da78b8b6384c9e9073527792f06f9",
+ "especHash": "a84dc584c94b2f6f08b7f8ca8f931df81fc54212a5b0c9d67a9aa8c148ba6764",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
@@ -17,7 +17,7 @@
   {
    "formatoId": "R-5",
    "codigo": "530",
-   "cantidad": 10,
+   "cantidad": 9,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634246201639",
@@ -80,7 +80,7 @@
   {
    "formatoId": "R-5",
    "codigo": "970",
-   "cantidad": 5,
+   "cantidad": 4,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",
@@ -152,7 +152,7 @@
   {
    "formatoId": "R-5",
    "codigo": "044",
-   "cantidad": 9,
+   "cantidad": 8,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8869949341991",
@@ -161,7 +161,7 @@
   {
    "formatoId": "R-9",
    "codigo": "044",
-   "cantidad": 10,
+   "cantidad": 11,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8869949341991",

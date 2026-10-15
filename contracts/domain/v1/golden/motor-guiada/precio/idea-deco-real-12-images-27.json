@@ -2,15 +2,15 @@
  "caso": "idea-deco-real-12-images-27",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.5"
+  "version": "1.2.6"
  },
- "especHash": "58cef978730ba94940a16c25c5bd0b1be140ac6c6abb804fbabb5c103dd1940e",
+ "especHash": "280a6f02028c8ef9c428c9665136aebb250b8cad8b6f0a0b5d55e8f5995712f2",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 16,
-  "cubierta": 16,
+  "objetivo": 17,
+  "cubierta": 17,
   "sinCubrir": 0
  },
  "pedido": [
@@ -35,7 +35,7 @@
   {
    "formatoId": "R-18",
    "codigo": "981",
-   "cantidad": 4,
+   "cantidad": 5,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634257211687",
@@ -44,7 +44,7 @@
   {
    "formatoId": "R-24",
    "codigo": "981",
-   "cantidad": 2,
+   "cantidad": 1,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634257211687",
@@ -89,16 +89,25 @@
   {
    "formatoId": "R-18",
    "codigo": "650",
-   "cantidad": 7,
+   "cantidad": 6,
    "reserva": 1,
    "paquetes": 2,
    "productId": "8634258424103",
    "variantId": "46594271183143"
   },
   {
+   "formatoId": "R-24",
+   "codigo": "650",
+   "cantidad": 1,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634258424103",
+   "variantId": "46594271281447"
+  },
+  {
    "formatoId": "R-5",
    "codigo": "951",
-   "cantidad": 12,
+   "cantidad": 11,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634269008167",

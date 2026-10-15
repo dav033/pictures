@@ -2,22 +2,22 @@
  "caso": "oficial-semiarco_asimetrico",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.5"
+  "version": "1.2.6"
  },
- "especHash": "3e3a2b2af8dad3bb35b6b1c109c946ceebc76d0c974992ea60e4b0e9c3ef30ad",
+ "especHash": "6740049df8dd4483e0f05a7cadf9ca180baf712d7bb660621b4dd63e97475faf",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 12,
-  "cubierta": 12,
+  "objetivo": 13,
+  "cubierta": 13,
   "sinCubrir": 0
  },
  "pedido": [
   {
    "formatoId": "R-5",
    "codigo": "005",
-   "cantidad": 6,
+   "cantidad": 7,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634235781415",
@@ -26,7 +26,7 @@
   {
    "formatoId": "R-9",
    "codigo": "005",
-   "cantidad": 9,
+   "cantidad": 6,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634235781415",
@@ -42,13 +42,13 @@
    "variantId": "46594221277479"
   },
   {
-   "formatoId": "R-24",
+   "formatoId": "R-18",
    "codigo": "005",
-   "cantidad": 1,
+   "cantidad": 2,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634235781415",
-   "variantId": "46594221539623"
+   "variantId": "46594221474087"
   },
   {
    "formatoId": "R-5",
@@ -80,7 +80,7 @@
   {
    "formatoId": "R-18",
    "codigo": "040",
-   "cantidad": 2,
+   "cantidad": 1,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -89,7 +89,7 @@
   {
    "formatoId": "R-5",
    "codigo": "970",
-   "cantidad": 5,
+   "cantidad": 2,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",
@@ -107,16 +107,25 @@
   {
    "formatoId": "R-18",
    "codigo": "970",
-   "cantidad": 2,
+   "cantidad": 1,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",
    "variantId": "46594264727847"
   },
   {
+   "formatoId": "R-24",
+   "codigo": "970",
+   "cantidad": 1,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634255638823",
+   "variantId": "46594264793383"
+  },
+  {
    "formatoId": "R-9",
    "codigo": "970",
-   "cantidad": 5,
+   "cantidad": 7,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634255638823",

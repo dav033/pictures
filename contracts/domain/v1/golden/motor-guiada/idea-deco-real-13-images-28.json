@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-13-images-28",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.5"
+  "version": "1.2.6"
  },
- "especHash": "5f618249a7593f849498e5cd19d2e5b6998a0cd03f5808fd3e0e3f46d3a3b473",
+ "especHash": "581cbab1fc7f650c862e8c1afd81690bc5ac1cd4b12713ee8112b4a4f98c46e6",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -57,11 +57,11 @@
    ],
    "unidades": 112,
    "caja": [
-    -146,
+    -145,
     0,
     -196,
-    146,
-    287,
+    145,
+    288,
     -124
    ]
   }
@@ -117,11 +117,11 @@
   "unidades": 112
  },
  "caja": [
-  -146,
+  -145,
   0,
   -196,
-  146,
-  287,
+  145,
+  288,
   -124
  ],
  "referenciaPython": {

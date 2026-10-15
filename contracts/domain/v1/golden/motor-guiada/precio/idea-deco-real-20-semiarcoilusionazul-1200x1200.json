@@ -2,22 +2,22 @@
  "caso": "idea-deco-real-20-semiarcoilusionazul-1200x1200",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.5"
+  "version": "1.2.6"
  },
- "especHash": "b09a678963058712d37dbb0edef99eb1acfd79d82e27d0bdd8390080752345ca",
+ "especHash": "fb5a8f4494811fdc6219ba30f89154e3bd8d63230a25521983a6dc30d8d54add",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],
  "reserva": {
-  "objetivo": 11,
-  "cubierta": 11,
+  "objetivo": 12,
+  "cubierta": 12,
   "sinCubrir": 0
  },
  "pedido": [
   {
    "formatoId": "R-5",
    "codigo": "040",
-   "cantidad": 4,
+   "cantidad": 5,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -26,7 +26,7 @@
   {
    "formatoId": "R-9",
    "codigo": "040",
-   "cantidad": 6,
+   "cantidad": 4,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -35,7 +35,7 @@
   {
    "formatoId": "R-12",
    "codigo": "040",
-   "cantidad": 4,
+   "cantidad": 5,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -44,7 +44,7 @@
   {
    "formatoId": "R-18",
    "codigo": "040",
-   "cantidad": 2,
+   "cantidad": 1,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634239385895",
@@ -53,7 +53,7 @@
   {
    "formatoId": "R-5",
    "codigo": "640",
-   "cantidad": 5,
+   "cantidad": 3,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634259374375",
@@ -62,16 +62,25 @@
   {
    "formatoId": "R-9",
    "codigo": "640",
-   "cantidad": 4,
+   "cantidad": 2,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634259374375",
    "variantId": "46594272887079"
   },
   {
+   "formatoId": "R-12",
+   "codigo": "640",
+   "cantidad": 3,
+   "reserva": 1,
+   "paquetes": 1,
+   "productId": "8634259374375",
+   "variantId": "46594272952615"
+  },
+  {
    "formatoId": "R-18",
    "codigo": "640",
-   "cantidad": 1,
+   "cantidad": 2,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8634259374375",
@@ -80,7 +89,7 @@
   {
    "formatoId": "R-12",
    "codigo": "044",
-   "cantidad": 10,
+   "cantidad": 6,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8869949341991",
@@ -98,7 +107,7 @@
   {
    "formatoId": "R-9",
    "codigo": "044",
-   "cantidad": 7,
+   "cantidad": 9,
    "reserva": 1,
    "paquetes": 1,
    "productId": "8869949341991",

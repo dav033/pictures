@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-04-71mp5umakml-ac-uf894-1000-ql80",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.5"
+  "version": "1.2.6"
  },
- "especHash": "5f7fed67300d368ff7724402162884ff9c6da78b8b6384c9e9073527792f06f9",
+ "especHash": "a84dc584c94b2f6f08b7f8ca8f931df81fc54212a5b0c9d67a9aa8c148ba6764",
  "noRepresentable": [],
  "piezas": {
   "EST_01_SEMIARCO": {
@@ -12,12 +12,12 @@
     {
      "formatoId": "R-5",
      "codigo": "044",
-     "cantidad": 9
+     "cantidad": 8
     },
     {
      "formatoId": "R-5",
      "codigo": "530",
-     "cantidad": 10
+     "cantidad": 9
     },
     {
      "formatoId": "R-5",
@@ -32,12 +32,12 @@
     {
      "formatoId": "R-5",
      "codigo": "970",
-     "cantidad": 5
+     "cantidad": 4
     },
     {
      "formatoId": "R-9",
      "codigo": "044",
-     "cantidad": 10
+     "cantidad": 11
     },
     {
      "formatoId": "R-9",
@@ -105,13 +105,13 @@
      "cantidad": 1
     }
    ],
-   "unidades": 117,
+   "unidades": 115,
    "caja": [
     -147,
     0,
     -196,
     147,
-    292,
+    293,
     -124
    ]
   }
@@ -121,12 +121,12 @@
    {
     "formatoId": "R-5",
     "codigo": "044",
-    "cantidad": 9
+    "cantidad": 8
    },
    {
     "formatoId": "R-5",
     "codigo": "530",
-    "cantidad": 10
+    "cantidad": 9
    },
    {
     "formatoId": "R-5",
@@ -141,12 +141,12 @@
    {
     "formatoId": "R-5",
     "codigo": "970",
-    "cantidad": 5
+    "cantidad": 4
    },
    {
     "formatoId": "R-9",
     "codigo": "044",
-    "cantidad": 10
+    "cantidad": 11
    },
    {
     "formatoId": "R-9",
@@ -214,14 +214,14 @@
     "cantidad": 1
    }
   ],
-  "unidades": 117
+  "unidades": 115
  },
  "caja": [
   -147,
   0,
   -196,
   147,
-  292,
+  293,
   -124
  ],
  "referenciaPython": {

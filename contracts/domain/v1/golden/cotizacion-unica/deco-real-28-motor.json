@@ -22,7 +22,7 @@
   {
    "formatoId": "R-5",
    "codigo": "806",
-   "cantidad": 18,
+   "cantidad": 20,
    "productId": "9661845995815",
    "color": "blanco",
    "diamPulg": 5,
@@ -42,7 +42,7 @@
   {
    "formatoId": "R-5",
    "codigo": "970",
-   "cantidad": 8,
+   "cantidad": 6,
    "productId": "8634255638823",
    "color": "dorado",
    "diamPulg": 5,
@@ -82,7 +82,7 @@
   {
    "formatoId": "R-9",
    "codigo": "806",
-   "cantidad": 22,
+   "cantidad": 20,
    "productId": "9661845995815",
    "color": "blanco",
    "diamPulg": 9,
@@ -107,7 +107,7 @@
   {
    "formatoId": "R-9",
    "codigo": "970",
-   "cantidad": 22,
+   "cantidad": 24,
    "productId": "8634255638823",
    "color": "dorado",
    "diamPulg": 9,
@@ -186,7 +186,7 @@
   }
  ],
  "esperado": {
-  "total": 66834,
+  "total": 71042,
   "reserva": {
    "objetivo": 13,
    "cubierta": 13,
@@ -197,7 +197,7 @@
    {
     "variantId": "46594264596775",
     "paquetes": 1,
-    "cantidad": 8,
+    "cantidad": 6,
     "reserva": 1,
     "paraReserva": false
    },
@@ -211,7 +211,7 @@
    {
     "variantId": "46594264858919",
     "paquetes": 2,
-    "cantidad": 22,
+    "cantidad": 24,
     "reserva": 2,
     "paraReserva": false
    },
@@ -239,16 +239,16 @@
    {
     "variantId": "49475777921319",
     "paquetes": 2,
-    "cantidad": 22,
+    "cantidad": 20,
     "reserva": 2,
-    "paraReserva": false
+    "paraReserva": true
    },
    {
     "variantId": "49475778085159",
-    "paquetes": 1,
-    "cantidad": 18,
+    "paquetes": 2,
+    "cantidad": 20,
     "reserva": 2,
-    "paraReserva": false
+    "paraReserva": true
    },
    {
     "variantId": "49475778183463",
