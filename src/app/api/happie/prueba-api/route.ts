@@ -5,14 +5,15 @@ import { panelPruebaActivo } from "@/lib/happie/panel-prueba";
 
 /**
  * Manual check of the Happia Integrations API from the running app:
- *   GET /api/happie/prueba-api?recurso=services&city=barranquilla&page=1&limit=5
- * Session required (same guard as the other /api/happie routes). Returns one page, never the key.
+ *   GET /api/happie/prueba-api?recurso=services&city=barranquilla            -> everything (no limit)
+ *   GET /api/happie/prueba-api?recurso=services&page=2&limit=50              -> one page
+ * Session required (same guard as the other /api/happie routes). Never returns the key.
  */
 const ConsultaSchema = z.object({
   recurso: z.enum(["services", "packages"]).default("services"),
   city: z.string().trim().regex(/^[a-z0-9-]{1,60}$/).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).default(5),
+  page: z.coerce.number().int().min(1).optional(),
+  limit: z.coerce.number().int().min(1).optional(),
 });
 
 export async function GET(request: Request) {
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
   }
   const { recurso, city, page, limit } = consulta.data;
   const maximo = HAPPIA_LIMITE_MAXIMO[recurso];
-  if (limit > maximo) {
+  if (limit !== undefined && limit > maximo) {
     return Response.json({ error: `limit debe ser un entero entre 1 y ${maximo}` }, { status: 400 });
   }
 
@@ -39,6 +40,13 @@ export async function GET(request: Request) {
 
   try {
     const cliente = new HappiaClient(config);
+    // No page and no limit: read every page (the client paginates, dedupes and bounds the read itself).
+    if (page === undefined && limit === undefined) {
+      const items = recurso === "services"
+        ? await cliente.listarServicios({ city, signal: request.signal })
+        : (await cliente.listarPackages(request.signal, { city })).packages;
+      return Response.json({ recurso, city: city ?? null, pagination: { totalItems: items.length, totalPages: 1, currentPage: 1 }, items });
+    }
     const argumentos = { page, limit, city, signal: request.signal };
     const resultado = recurso === "services"
       ? await cliente.listarServiciosPagina(argumentos)

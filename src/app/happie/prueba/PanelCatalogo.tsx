@@ -13,8 +13,9 @@ type Estado =
   | { tipo: "error"; mensaje: string }
   | { tipo: "listo"; datos: Respuesta; ms: number };
 
-const LIMITE_MAXIMO: Record<Recurso, number> = { services: 500, packages: 100 };
 const COBRO: Record<string, string> = { event: "por evento", unit: "por unidad", per_person: "por persona" };
+/** The table renders at most this many rows; the JSON below always has everything. */
+const FILAS_MAXIMAS = 500;
 const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
 function esRespuesta(cuerpo: unknown): cuerpo is Respuesta {
@@ -28,8 +29,6 @@ function esRespuesta(cuerpo: unknown): cuerpo is Respuesta {
 export function PanelCatalogo() {
   const [recurso, setRecurso] = useState<Recurso>("services");
   const [ciudad, setCiudad] = useState("");
-  const [pagina, setPagina] = useState("1");
-  const [limite, setLimite] = useState("5");
   const [estado, setEstado] = useState<Estado>({ tipo: "inactivo" });
   const abortar = useRef<AbortController | null>(null);
 
@@ -40,7 +39,7 @@ export function PanelCatalogo() {
     abortar.current?.abort();
     const control = new AbortController();
     abortar.current = control;
-    const consulta = new URLSearchParams({ recurso, page: pagina, limit: limite });
+    const consulta = new URLSearchParams({ recurso });
     if (ciudad.trim()) consulta.set("city", ciudad.trim().toLowerCase());
     setEstado({ tipo: "cargando" });
     const inicio = performance.now();
@@ -67,21 +66,13 @@ export function PanelCatalogo() {
     <section className="ui-card flex flex-col gap-4 p-4 sm:p-5" aria-labelledby="titulo-catalogo">
       <div>
         <h2 id="titulo-catalogo" className="text-base font-semibold">Catálogo de Happia</h2>
-        <p className="text-sm text-texto-suave">Lee <code>GET /api/services</code> y <code>/api/packages</code> con el cliente nuevo (sobre, paginación y validación).</p>
+        <p className="text-sm text-texto-suave">Trae todo el catálogo de <code>GET /api/services</code> o <code>/api/packages</code> (sin límite; el cliente lee todas las páginas y valida cada registro).</p>
       </div>
 
-      <form onSubmit={consultar} className="grid grid-cols-2 items-end gap-3 sm:grid-cols-5">
+      <form onSubmit={consultar} className="grid grid-cols-2 items-end gap-3 sm:grid-cols-3">
         <label className="flex flex-col gap-1 text-sm">
           Recurso
-          <select
-            className="ui-input"
-            value={recurso}
-            onChange={(e) => {
-              const siguiente = e.target.value as Recurso;
-              setRecurso(siguiente);
-              if (Number(limite) > LIMITE_MAXIMO[siguiente]) setLimite(String(LIMITE_MAXIMO[siguiente]));
-            }}
-          >
+          <select className="ui-input" value={recurso} onChange={(e) => setRecurso(e.target.value as Recurso)}>
             <option value="services">Servicios</option>
             <option value="packages">Paquetes</option>
           </select>
@@ -89,14 +80,6 @@ export function PanelCatalogo() {
         <label className="flex flex-col gap-1 text-sm">
           Ciudad (slug)
           <input className="ui-input" value={ciudad} onChange={(e) => setCiudad(e.target.value)} placeholder="barranquilla" pattern="[a-zA-Z0-9\-]{0,60}" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Página
-          <input className="ui-input" type="number" min={1} step={1} value={pagina} onChange={(e) => setPagina(e.target.value)} required />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Límite (máx. {LIMITE_MAXIMO[recurso]})
-          <input className="ui-input" type="number" min={1} max={LIMITE_MAXIMO[recurso]} step={1} value={limite} onChange={(e) => setLimite(e.target.value)} required />
         </label>
         <button type="submit" className="ui-button-primary rounded-lg px-3 py-2" disabled={estado.tipo === "cargando"}>
           {estado.tipo === "cargando" ? "Consultando…" : "Consultar"}
@@ -117,15 +100,16 @@ function Resultado({ datos, ms }: { datos: Respuesta; ms: number }) {
   return (
     <>
       <p className="text-sm text-texto-suave">
-        {p.totalItems} en total · página {p.currentPage} de {p.totalPages} · {datos.items.length} mostrados · {ms} ms
+        {p.totalItems} en total · {ms} ms
       </p>
       {datos.items.length === 0 ? (
         <p className="ui-alert">Sin resultados para esta consulta.</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-borde-suave">
-          {datos.recurso === "services" ? <TablaServicios items={datos.items} /> : <TablaPaquetes items={datos.items} />}
+          {datos.recurso === "services" ? <TablaServicios items={datos.items.slice(0, FILAS_MAXIMAS)} /> : <TablaPaquetes items={datos.items.slice(0, FILAS_MAXIMAS)} />}
         </div>
       )}
+      {datos.items.length > FILAS_MAXIMAS && <p className="ui-alert">Se muestran las primeras {FILAS_MAXIMAS} filas; el JSON incluye todo.</p>}
       <details className="text-sm">
         <summary className="cursor-pointer text-texto-suave">Ver JSON recibido</summary>
         <pre className="mt-2 max-h-96 overflow-auto rounded-lg bg-superficie-suave p-3 text-xs">{JSON.stringify(datos, null, 2)}</pre>
