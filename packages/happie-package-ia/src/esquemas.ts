@@ -3,12 +3,18 @@ import { z } from "zod";
 const chargeModeSchema = z.enum(["per_person", "unit", "event"]);
 const saleUnitSchema = z.object({ singular: z.string(), plural: z.string() });
 
+// A package that survives this client must survive the strict happie.v1 projection (src/lib/happie/paquete-v1.ts):
+// ids are 1-200 chars and names/charge types are non-blank after trimming. A record that breaks that is dropped
+// (and logged) by the client instead of turning every recommendation into a 502.
+const idSchema = z.string().min(1).max(200);
+const textoNoVacio = z.string().trim().min(1);
+
 export const packageItemSchema = z.object({
-  id: z.string().min(1),
+  id: idSchema,
   total: z.number().finite().nonnegative(),
   is_active: z.boolean(),
-  package_id: z.string().min(1),
-  charge_type: z.string(),
+  package_id: idSchema,
+  charge_type: textoNoVacio,
   // La API real de Happia devuelve `null` en la mayoría de los ítems — no es
   // un caso raro, es el estado normal de "sin descripción". Antes exigía
   // string y toda llamada a listarPackages() fallaba con un ZodError,
@@ -25,9 +31,9 @@ export const packageItemSchema = z.object({
 }).passthrough();
 
 export const packageSchema = z.object({
-  id: z.string().min(1),
-  event_type_id: z.string().min(1),
-  name: z.string().min(1),
+  id: idSchema,
+  event_type_id: idSchema,
+  name: textoNoVacio,
   base_guests: z.number().int().positive(),
   standard_duration_minutes: z.number().int().positive().nullable(),
   conditions: z.string().nullable(),

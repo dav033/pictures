@@ -10,10 +10,17 @@ import type {
 import { z } from "zod";
 
 /** Largest `limit` each endpoint accepts (a larger one answers 400, it is not capped). */
-export const HAPPIA_LIMITE_MAXIMO = { services: 500, packages: 100 } as const;
+// The guide raises /api/services to 500 (2026-10-14) but production Happia still answered 400 above 100 on 2026-10-15:
+// one effective maximum until they confirm it is live (then change it here and nowhere else).
+export const HAPPIA_LIMITE_MAXIMO = { services: 100, packages: 100 } as const;
 const LIMITE_POR_DEFECTO = 50;
-/** Bound for "read everything" so a misbehaving upstream can't loop forever. */
-const MAX_PAGINAS = 50;
+/**
+ * Page size when reading a whole catalogue. The guide raises /api/services to 500 (2026-10-14) but production Happia
+ * still answered 400 above 100 on 2026-10-15; 100 is accepted by both, so a deploy on their side changes nothing here.
+ */
+const LIMITE_LECTURA_COMPLETA = 100;
+/** Bound for "read everything" so a misbehaving upstream can't loop forever: 25,000 items at 100 per page. */
+const MAX_PAGINAS = 250;
 /** Whole-catalogue deadline (each request still has its own 10 s one). */
 const PLAZO_LECTURA_COMPLETA_MS = 25_000;
 /** A catalogue that changes while it is read is read again this many times at most. */
@@ -36,8 +43,8 @@ export class HappiaClient {
   constructor(private readonly config: HappiaConfig) {}
 
   /** Every package, reading all pages. Includes inactive packages and items: filter on `is_active`. */
-  async listarPackages(signal?: AbortSignal): Promise<ListarPackagesRespuesta> {
-    const packages = await this.leerTodo((consulta) => this.listarPackagesPagina(consulta), HAPPIA_LIMITE_MAXIMO.packages, signal);
+  async listarPackages(signal?: AbortSignal, opciones: { city?: string } = {}): Promise<ListarPackagesRespuesta> {
+    const packages = await this.leerTodo((consulta) => this.listarPackagesPagina(consulta), LIMITE_LECTURA_COMPLETA, signal, opciones.city);
     return { packages };
   }
 
@@ -45,7 +52,7 @@ export class HappiaClient {
   listarServicios(opciones: { city?: string; signal?: AbortSignal } = {}): Promise<HappiaServicio[]> {
     return this.leerTodo(
       (consulta) => this.listarServiciosPagina(consulta),
-      HAPPIA_LIMITE_MAXIMO.services,
+      LIMITE_LECTURA_COMPLETA,
       opciones.signal,
       opciones.city,
     );

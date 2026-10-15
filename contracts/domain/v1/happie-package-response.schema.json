@@ -84,9 +84,8 @@
                       "maxLength": 200
                     },
                     "total": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "maximum": 9007199254740991
+                      "type": "number",
+                      "minimum": 0
                     },
                     "is_active": {
                       "type": "boolean"
@@ -101,8 +100,15 @@
                       "minLength": 1
                     },
                     "description": {
-                      "type": "string",
-                      "minLength": 1
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "suggested_start_time": {
                       "anyOf": [

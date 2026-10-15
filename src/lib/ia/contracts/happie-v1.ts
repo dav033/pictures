@@ -7,11 +7,12 @@ const textSchema = z.string().trim().min(1);
 
 export const HappiePackageItemV1Schema = z.object({
   id: idSchema,
-  total: z.number().int().nonnegative(),
+  // Happia sends up to 2 decimals and `null` for "no description" on most items (guide 2026-10-14).
+  total: z.number().finite().nonnegative(),
   is_active: z.boolean(),
   package_id: idSchema,
   charge_type: textSchema,
-  description: textSchema,
+  description: textSchema.nullable(),
   suggested_start_time: z.string().nullable(),
   provider_name: textSchema.nullable(),
   category_name: textSchema.nullable(),

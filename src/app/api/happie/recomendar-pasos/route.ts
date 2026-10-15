@@ -1,3 +1,4 @@
+import { recomendacionesV1 } from "@/lib/happie/paquete-v1";
 import { registrarFalloHappie } from "@/lib/happie/registrar-fallo";
 import {
   HappiaClient,
@@ -67,6 +68,7 @@ async function atenderPOST(request: Request) {
       HappiePackageRecommendationResponseV1Schema.parse({
         schema_version: HAPPIE_CONTRACT_VERSION,
         ...resultado,
+        recomendaciones: recomendacionesV1(resultado.recomendaciones),
       }),
     );
   } catch (error) {

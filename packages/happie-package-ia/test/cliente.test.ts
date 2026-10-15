@@ -103,6 +103,25 @@ test("un paquete sucio se descarta y el resto del catálogo sigue disponible", a
   assert.ok(!JSON.stringify(avisos).includes("Paquete de prueba"), "el aviso no lleva valores del proveedor");
 });
 
+test("un paquete con charge_type vacío o id enorme se descarta: lo que sobrevive siempre cabe en happie.v1", async () => {
+  const sucios = [paqueteBase("blank-charge", { charge_type: "  " }), { ...paqueteBase("x".repeat(201)) }, paqueteBase("ok")];
+  mockFetch(() => Response.json(sobre(sucios, 1, 3, 100)));
+  const aviso = console.warn;
+  console.warn = () => {};
+  try {
+    const { packages } = await cliente().listarPackages();
+    assert.deepEqual(packages.map((p) => p.id), ["ok"]);
+  } finally {
+    console.warn = aviso;
+  }
+});
+
+test("listarPackages con city la manda a Happia en cada página", async () => {
+  const llamadas = mockFetch(() => Response.json(sobre([paqueteBase()], 1, 1, 100)));
+  await cliente().listarPackages(undefined, { city: "barranquilla" });
+  assert.equal(llamadas[0]?.searchParams.get("city"), "barranquilla");
+});
+
 test("si TODOS los ítems son inválidos es una ruptura de contrato y falla", async () => {
   mockFetch(() => Response.json(sobre([paqueteBase("pkg-1", { id: "" })], 1, 1, 100)));
   const aviso = console.warn;
@@ -155,12 +174,12 @@ test("listarPackages corta en la primera página si la API anuncia páginas sin 
   assert.equal(llamadas.length, 1);
 });
 
-test("listarServicios valida los 16 campos y manda city + limit 500", async () => {
+test("listarServicios valida los 16 campos y manda city + limit 100 (acepta la producción actual de Happia)", async () => {
   const llamadas = mockFetch(() => Response.json(sobre([servicioBase()], 1, 1, 500)));
   const servicios = await cliente().listarServicios({ city: "barranquilla" });
   assert.equal(servicios[0]?.sale_unit?.plural, "horas");
   assert.equal(llamadas[0]?.searchParams.get("city"), "barranquilla");
-  assert.equal(llamadas[0]?.searchParams.get("limit"), "500");
+  assert.equal(llamadas[0]?.searchParams.get("limit"), "100");
 });
 
 test("un servicio sin una de las claves del contrato se rechaza", async () => {
@@ -179,7 +198,7 @@ test("una página más allá de la última es 200 con data vacía, no un error",
 
 test("page y limit inválidos se rechazan antes de llamar a la red", async () => {
   const llamadas = mockFetch(() => Response.json(sobre([], 1, 0, 50)));
-  await assert.rejects(() => cliente().listarServiciosPagina({ limit: 501 }), RangeError);
+  await assert.rejects(() => cliente().listarServiciosPagina({ limit: 101 }), RangeError);
   await assert.rejects(() => cliente().listarPackagesPagina({ limit: 101 }), RangeError);
   await assert.rejects(() => cliente().listarPackagesPagina({ page: 0 }), RangeError);
   await assert.rejects(() => cliente().listarPackagesPagina({ limit: 1.5 }), RangeError);
