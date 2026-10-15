@@ -9,6 +9,18 @@ type Estado =
   | { tipo: "error"; mensaje: string }
   | { tipo: "listo"; recomendaciones: Recomendacion[]; resumen: string; ms: number };
 
+/** The panel renders whatever the server sent: check the shape instead of trusting a cast. */
+function leerRecomendaciones(cuerpo: unknown): { recomendaciones: Recomendacion[]; resumen: string } | null {
+  if (typeof cuerpo !== "object" || cuerpo === null || !("recomendaciones" in cuerpo) || !Array.isArray(cuerpo.recomendaciones)) return null;
+  const recomendaciones: Recomendacion[] = [];
+  for (const r of cuerpo.recomendaciones) {
+    if (typeof r !== "object" || r === null || typeof (r as Recomendacion).url !== "string" || typeof (r as Recomendacion).razon !== "string") return null;
+    recomendaciones.push({ url: (r as Recomendacion).url, razon: (r as Recomendacion).razon });
+  }
+  const resumen = "resumen" in cuerpo && typeof cuerpo.resumen === "string" ? cuerpo.resumen : "";
+  return { recomendaciones, resumen };
+}
+
 export function PanelRecomendacion() {
   const [tipoEvento, setTipoEvento] = useState("Cumpleaños");
   const [invitados, setInvitados] = useState("20");
@@ -40,12 +52,12 @@ export function PanelRecomendacion() {
         signal: control.signal,
       });
       const cuerpo: unknown = await respuesta.json().catch(() => null);
-      if (!respuesta.ok || typeof cuerpo !== "object" || !cuerpo || !("recomendaciones" in cuerpo)) {
+      const ok = leerRecomendaciones(cuerpo);
+      if (!respuesta.ok || !ok) {
         const mensaje = typeof cuerpo === "object" && cuerpo && "error" in cuerpo ? String(cuerpo.error) : "Respuesta inesperada.";
         setEstado({ tipo: "error", mensaje: `${respuesta.status}: ${mensaje}` });
         return;
       }
-      const ok = cuerpo as { recomendaciones: Recomendacion[]; resumen: string };
       setEstado({ tipo: "listo", recomendaciones: ok.recomendaciones, resumen: ok.resumen, ms: Math.round(performance.now() - inicio) });
     } catch (error) {
       if (control.signal.aborted) return;
@@ -86,19 +98,23 @@ export function PanelRecomendacion() {
       </form>
 
       <div aria-live="polite" className="flex flex-col gap-3">
-        {estado.tipo === "error" && <p role="alert" className="ui-alert">{estado.mensaje}</p>}
+        {estado.tipo === "cargando" && <p className="text-sm text-texto-suave">Pensando…</p>}
+        {estado.tipo === "error" && <p className="ui-alert">{estado.mensaje}</p>}
         {estado.tipo === "listo" && (
           <>
             <p className="text-sm text-texto-suave">{estado.recomendaciones.length} recomendación(es) · {estado.ms} ms</p>
-            {estado.recomendaciones.length === 0 && <p className="ui-alert">La IA no encontró un paquete que encaje.</p>}
-            <ol className="flex flex-col gap-2">
-              {estado.recomendaciones.map((r) => (
-                <li key={r.url} className="rounded-lg border border-borde-suave p-3 text-sm">
-                  <a href={r.url} target="_blank" rel="noreferrer" className="font-medium text-acento underline-offset-2 hover:underline">{r.url}</a>
-                  <p className="mt-1 text-texto-suave">{r.razon}</p>
-                </li>
-              ))}
-            </ol>
+            {estado.recomendaciones.length === 0 ? (
+              <p className="ui-alert">La IA no encontró un paquete que encaje.</p>
+            ) : (
+              <ol className="flex flex-col gap-2">
+                {estado.recomendaciones.map((r, indice) => (
+                  <li key={indice} className="rounded-lg border border-borde-suave p-3 text-sm">
+                    <a href={r.url} target="_blank" rel="noreferrer" className="font-medium text-acento underline-offset-2 hover:underline">{r.url}</a>
+                    <p className="mt-1 text-texto-suave">{r.razon}</p>
+                  </li>
+                ))}
+              </ol>
+            )}
             {estado.resumen && <p className="text-sm">{estado.resumen}</p>}
           </>
         )}

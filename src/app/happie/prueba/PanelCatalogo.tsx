@@ -17,6 +17,14 @@ const LIMITE_MAXIMO: Record<Recurso, number> = { services: 500, packages: 100 };
 const COBRO: Record<string, string> = { event: "por evento", unit: "por unidad", per_person: "por persona" };
 const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
+function esRespuesta(cuerpo: unknown): cuerpo is Respuesta {
+  if (typeof cuerpo !== "object" || cuerpo === null) return false;
+  const c = cuerpo as Record<string, unknown>;
+  const p = c.pagination as Record<string, unknown> | undefined;
+  return (c.recurso === "services" || c.recurso === "packages") && Array.isArray(c.items)
+    && typeof p?.totalItems === "number" && typeof p.totalPages === "number" && typeof p.currentPage === "number";
+}
+
 export function PanelCatalogo() {
   const [recurso, setRecurso] = useState<Recurso>("services");
   const [ciudad, setCiudad] = useState("");
@@ -44,7 +52,11 @@ export function PanelCatalogo() {
         setEstado({ tipo: "error", mensaje: `${respuesta.status}: ${mensaje}` });
         return;
       }
-      setEstado({ tipo: "listo", datos: cuerpo as Respuesta, ms: Math.round(performance.now() - inicio) });
+      if (!esRespuesta(cuerpo)) {
+        setEstado({ tipo: "error", mensaje: "Respuesta inesperada del servidor." });
+        return;
+      }
+      setEstado({ tipo: "listo", datos: cuerpo, ms: Math.round(performance.now() - inicio) });
     } catch (error) {
       if (control.signal.aborted) return;
       setEstado({ tipo: "error", mensaje: error instanceof Error ? error.message : "No se pudo consultar." });
@@ -92,7 +104,8 @@ export function PanelCatalogo() {
       </form>
 
       <div aria-live="polite" className="flex flex-col gap-3">
-        {estado.tipo === "error" && <p role="alert" className="ui-alert">{estado.mensaje}</p>}
+        {estado.tipo === "cargando" && <p className="text-sm text-texto-suave">Consultando…</p>}
+        {estado.tipo === "error" && <p className="ui-alert">{estado.mensaje}</p>}
         {estado.tipo === "listo" && <Resultado datos={estado.datos} ms={estado.ms} />}
       </div>
     </section>

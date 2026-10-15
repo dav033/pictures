@@ -1,27 +1,13 @@
-"use client";
+import { notFound } from "next/navigation";
+import { connection } from "next/server";
+import { panelPruebaActivo } from "@/lib/happie/panel-prueba";
+import { PanelesPrueba } from "./PanelesPrueba";
 
-import Link from "next/link";
-import { InterruptorTema } from "@/components/ui/interruptor-tema";
-import { PanelCatalogo } from "./PanelCatalogo";
-import { PanelRecomendacion } from "./PanelRecomendacion";
+// The kill switch (env) is read on every visit: without connection() `cacheComponents` would freeze it into the build.
+export const instant = false;
 
-/** Panel para probar la integración con Happia en el despliegue: catálogo (API de integraciones) y recomendación (webhook). */
-export default function PruebaHappiePage() {
-  return (
-    <div className="flex min-h-screen flex-col bg-fondo text-texto">
-      <header className="flex items-center justify-between gap-3 border-b border-borde-suave px-4 py-2 sm:px-5">
-        <span className="text-sm font-semibold">Prueba de integración con Happia</span>
-        <div className="flex items-center gap-1">
-          <Link href="/happie" className="ui-button-ghost rounded-lg px-2 py-1.5">
-            ← Happie IA
-          </Link>
-          <InterruptorTema />
-        </div>
-      </header>
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-5">
-        <PanelCatalogo />
-        <PanelRecomendacion />
-      </main>
-    </div>
-  );
+export default async function PruebaHappiePage() {
+  await connection();
+  if (!panelPruebaActivo()) notFound();
+  return <PanelesPrueba />;
 }

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { HAPPIA_LIMITE_MAXIMO, HappiaApiError, HappiaClient, cargarConfigDesdeEnv } from "@sempertex/happie-package-ia";
 import { isAuthenticatedRequest } from "@/lib/auth/request";
+import { panelPruebaActivo } from "@/lib/happie/panel-prueba";
 
 /**
  * Manual check of the Happia Integrations API from the running app:
@@ -15,6 +16,7 @@ const ConsultaSchema = z.object({
 });
 
 export async function GET(request: Request) {
+  if (!panelPruebaActivo()) return Response.json({ error: "No disponible." }, { status: 404 });
   if (!isAuthenticatedRequest(request)) return Response.json({ error: "Sesión requerida." }, { status: 401 });
 
   const params = Object.fromEntries(new URL(request.url).searchParams);
@@ -44,7 +46,11 @@ export async function GET(request: Request) {
     return Response.json({ recurso, city: city ?? null, pagination: resultado.pagination, items: resultado.items });
   } catch (error) {
     if (error instanceof HappiaApiError) {
-      return Response.json({ error: error.message, upstreamStatus: error.status }, { status: 502 });
+      // Fixed text per family: the upstream's own message stays out of the browser.
+      const texto = error.status === 401 ? "Happia rechazó la API key (¿caducada?)."
+        : error.status === 400 ? "Happia rechazó los parámetros."
+        : "Happia no respondió correctamente.";
+      return Response.json({ error: texto, upstreamStatus: error.status }, { status: 502 });
     }
     // Includes schema drift (ZodError): the upstream answered, but not with the documented contract.
     return Response.json({ error: "Happia respondió algo fuera del contrato documentado o no respondió." }, { status: 502 });
