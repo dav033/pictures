@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { procesarTurnoCatalogo } from "../../src/lib/happie/conversacion-catalogo";
-import { HappieConversationRequestV2Schema, HappieRecommendationRequestV2Schema, HappieRecommendationResponseV2Schema, catalogOptions } from "../../src/lib/ia/contracts/happie-v2";
+import { HappieConversationRequestV2Schema, HappieConversationResponseV2Schema, HappieRecommendationRequestV2Schema, HappieRecommendationResponseV2Schema, catalogOptions } from "../../src/lib/ia/contracts/happie-v2";
 import { HappieRecommendationRequestV1Schema } from "../../src/lib/ia/contracts/happie-v1";
 import type { Extraccion } from "../../src/lib/happie/conversacion-webhook";
 
@@ -20,7 +20,9 @@ test("v2 quotas support more than three, reject invalid values and preserve v1",
 
 test("confirmed v2 turn passes per-type quotas, city and specific needs and returns grouped data", async () => {
   let calls = 0;
-  const result = await procesarTurnoCatalogo({ schema_version: "happie.v2", mensaje: "sí", estado: state }, request(), async () => extracted, async (_, input) => {
+  const result = await procesarTurnoCatalogo({ schema_version: "happie.v2", mensaje: "sí", estado: state }, request(), async () => ({
+    ...extracted, servicios: [], preferencias: [], serviciosDeseados: [], respondioDetalles: true,
+  }), async (_, input) => {
     calls++;
     assert.deepEqual(input.cantidad, { servicios: 5, paquetes: 2 });
     assert.equal(input.city, "barranquilla");
@@ -49,6 +51,43 @@ test("mode and count changes require a fresh confirmation", async () => {
 test("chat asks for city instead of recommending services in an unknown location", async () => {
   const result = await procesarTurnoCatalogo({ schema_version: "happie.v2", mensaje: "cumpleaños", modo: "servicios", cantidad: { servicios: 2, paquetes: 0 } }, request(), async () => ({ ...extracted, city: null }));
   assert.match((result.body as { mensaje: string }).mensaje, /ciudad/);
+});
+
+test("chat acknowledges a concrete service, guides the occasion, and keeps it across turns", async () => {
+  const first = await procesarTurnoCatalogo({ schema_version: "happie.v2", mensaje: "quiero unas pizzas" }, request(), async () => ({
+    ...extracted,
+    tipoEvento: null,
+    invitados: null,
+    presupuesto: null,
+    servicios: ["comida"],
+    preferencias: ["pizzas"],
+    serviciosDeseados: ["pizzas"],
+    respondioDetalles: false,
+    confirmacion: "incierta",
+    acuse: "Anoto las pizzas.",
+  }));
+  const firstBody = HappieConversationResponseV2Schema.parse(first.body);
+  assert.equal(firstBody.estado.fase, "descubrimiento");
+  assert.ok(firstBody.estado.serviciosDeseados?.includes("pizzas"));
+  assert.match(firstBody.mensaje, /Anoto las pizzas/);
+  assert.match(firstBody.mensaje, /para una celebración, una reunión o una comida informal/);
+
+  const second = await procesarTurnoCatalogo({ schema_version: "happie.v2", mensaje: "para un cumpleaños", estado: firstBody.estado }, request(), async () => ({
+    ...extracted,
+    tipoEvento: "cumpleaños",
+    invitados: null,
+    presupuesto: null,
+    servicios: [],
+    preferencias: [],
+    serviciosDeseados: [],
+    respondioDetalles: false,
+    confirmacion: "incierta",
+    acuse: "Anoto que es un cumpleaños.",
+  }));
+  const secondBody = HappieConversationResponseV2Schema.parse(second.body);
+  assert.ok(secondBody.estado.serviciosDeseados?.includes("pizzas"));
+  assert.match(secondBody.mensaje, /cuántas personas/i);
+  assert.doesNotMatch(secondBody.mensaje, /qué servicios concretos/i);
 });
 
 test("invalid mixed counts fail before paid extraction; cancelled turns cannot recommend", async () => {

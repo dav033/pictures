@@ -7,6 +7,15 @@ import { generarRecomendacionCatalogo } from "./recomendar-catalogo";
 type Input = z.infer<typeof HappieConversationRequestV2Schema>;
 type Extract = (message: string, state: EstadoConversacion, signal?: AbortSignal, telemetry?: ContextoTelemetriaIA) => Promise<Extraccion>;
 
+const SERVICE_LABELS_ES = { comida: "comida", bebida: "bebidas", decoracion: "decoración", fotografia: "fotografía" } as const;
+
+function eventQuestion(state: HappieConversationStateV2): string {
+  const requestedService = state.serviciosDeseados?.[0] ?? state.servicios.map((item) => SERVICE_LABELS_ES[item]).join(", ");
+  return requestedService
+    ? `¿Buscas ${requestedService} para una celebración, una reunión o una comida informal? Así te recomiendo opciones que encajen.`
+    : "¿Qué tienes en mente? Puede ser una celebración, una reunión informal o la contratación de un servicio concreto.";
+}
+
 export async function procesarTurnoCatalogo(input: Input, request: Request, extract: Extract, recommend = generarRecomendacionCatalogo): Promise<{ status: number; body: unknown }> {
   const previous: HappieConversationStateV2 = input.estado ?? { fase: "descubrimiento", servicios: [], preferencias: [] };
   const initialMode = input.modo ?? previous.modo ?? "mixto";
@@ -25,19 +34,27 @@ export async function procesarTurnoCatalogo(input: Input, request: Request, extr
   try { options = catalogOptions({ modo: mode, cantidad: counts }); }
   catch { return { status: 400, body: { schema_version: HAPPIE_V2, error: "Pide de 0 a 20 resultados por tipo y cantidades compatibles con el modo." } }; }
   const confirming = previous.fase === "confirmacion" && extracted.confirmacion === "si";
+  const mergeDetails = !confirming && !extracted.respondioDetalles;
+  const capturedDetails = confirming
+    ? { servicios: previous.servicios, preferencias: previous.preferencias, serviciosDeseados: previous.serviciosDeseados }
+    : mergeDetails
+      ? {
+        servicios: [...new Set([...previous.servicios, ...extracted.servicios])],
+        preferencias: [...new Set([...previous.preferencias, ...extracted.preferencias])],
+        serviciosDeseados: [...new Set([...(previous.serviciosDeseados ?? []), ...(extracted.serviciosDeseados ?? [])])],
+      }
+      : { servicios: extracted.servicios, preferencias: extracted.preferencias, serviciosDeseados: extracted.serviciosDeseados ?? previous.serviciosDeseados };
   let state: HappieConversationStateV2 = {
     ...previous, ...options,
     city: input.city ?? extracted.city ?? previous.city,
     tipoEvento: extracted.tipoEvento ?? previous.tipoEvento,
     invitados: extracted.invitados ?? previous.invitados,
     presupuesto: extracted.presupuesto ?? previous.presupuesto,
-    servicios: confirming ? previous.servicios : extracted.servicios,
-    preferencias: confirming ? previous.preferencias : extracted.preferencias,
-    serviciosDeseados: confirming ? previous.serviciosDeseados : extracted.serviciosDeseados ?? previous.serviciosDeseados,
+    ...capturedDetails,
   };
   const question = (message: string, fase: HappieConversationStateV2["fase"]) => ({ status: 200,
-    body: HappieConversationResponseV2Schema.parse({ schema_version: HAPPIE_V2, tipo: "pregunta", mensaje: message, estado: { ...state, fase } }) });
-  if (!state.tipoEvento) return question("¿Qué evento quieres celebrar y qué servicios estás buscando?", "descubrimiento");
+    body: HappieConversationResponseV2Schema.parse({ schema_version: HAPPIE_V2, tipo: "pregunta", mensaje: extracted.acuse ? `${extracted.acuse} ${message}` : message, estado: { ...state, fase } }) });
+  if (!state.tipoEvento) return question(eventQuestion(state), "descubrimiento");
   if (!state.invitados) return question("¿Para cuántas personas será el evento?", "descubrimiento");
   if (!state.presupuesto) return question("¿Qué presupuesto tienes en pesos colombianos?", "descubrimiento");
   if (!state.city) return question("¿En qué ciudad será el evento?", "descubrimiento");
@@ -59,7 +76,8 @@ export async function procesarTurnoCatalogo(input: Input, request: Request, extr
     state = { ...state, fase: "finalizado" };
     return { status: 200, body: HappieConversationResponseV2Schema.parse({ ...body, tipo: "recomendaciones", mensaje: body.resumen, estado: state }) };
   }
-  if (previous.fase === "descubrimiento" && !extracted.respondioDetalles) {
+  const hasCapturedDetails = state.servicios.length > 0 || state.preferencias.length > 0 || (state.serviciosDeseados?.length ?? 0) > 0;
+  if ((previous.fase === "descubrimiento" || previous.fase === "detalles") && !extracted.respondioDetalles && !hasCapturedDetails) {
     return question("¿Qué servicios concretos o estilo buscas? Puedes pedir animación, magia, DJ, comida, decoración u otros; también puedes decir que no tienes preferencias.", "detalles");
   }
   const requested = [options.cantidad.servicios ? `${options.cantidad.servicios} servicios` : "", options.cantidad.paquetes ? `${options.cantidad.paquetes} paquetes` : ""].filter(Boolean).join(" y ");

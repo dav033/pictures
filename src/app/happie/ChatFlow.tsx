@@ -8,7 +8,7 @@ import { CatalogResults } from "./CatalogResults";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 
 type Mensaje = { rol: "asistente" | "usuario"; texto: string };
-const SALUDO = "¡Hola! Soy Happie. Cuéntame qué evento quieres celebrar y te voy haciendo las preguntas que necesito para encontrar servicios, paquetes o una mezcla que encaje contigo.";
+const SALUDO = "¡Hola! Soy Happie. Cuéntame qué tienes en mente: una celebración, una reunión o un servicio concreto. Te haré las preguntas necesarias para encontrar servicios, paquetes o ambos.";
 
 function IconoIA({ className }: { className?: string }) {
   return (
