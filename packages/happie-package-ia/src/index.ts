@@ -47,3 +47,12 @@ export { derivarTemaId } from "./temas";
 
 export type { NecesidadCurada } from "./necesidades";
 export { necesidadesCuradas } from "./necesidades";
+
+export { recomendarCatalogo } from "./recomendador-catalogo";
+export type {
+  ModoCatalogo,
+  EstimacionPrecioCatalogo,
+  RecomendacionCatalogo,
+  RecomendacionCatalogoResultado,
+  RecomendarCatalogoInput,
+} from "./recomendador-catalogo";

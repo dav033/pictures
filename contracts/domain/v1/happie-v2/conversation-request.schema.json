@@ -1,0 +1,152 @@
+{
+  "$id": "happie-conversation-request.v2",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "happie.v2"
+    },
+    "mensaje": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "estado": {
+      "type": "object",
+      "properties": {
+        "fase": {
+          "type": "string",
+          "enum": [
+            "descubrimiento",
+            "detalles",
+            "confirmacion",
+            "finalizado"
+          ]
+        },
+        "tipoEvento": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "invitados": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 100000
+        },
+        "presupuesto": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "servicios": {
+          "maxItems": 4,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "comida",
+              "bebida",
+              "decoracion",
+              "fotografia"
+            ]
+          }
+        },
+        "preferencias": {
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "modo": {
+          "type": "string",
+          "enum": [
+            "servicios",
+            "paquetes",
+            "mixto"
+          ]
+        },
+        "cantidad": {
+          "type": "object",
+          "properties": {
+            "servicios": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20
+            },
+            "paquetes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20
+            }
+          },
+          "required": [
+            "servicios",
+            "paquetes"
+          ],
+          "additionalProperties": false
+        },
+        "city": {
+          "type": "string",
+          "maxLength": 100,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "serviciosDeseados": {
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        }
+      },
+      "required": [
+        "fase",
+        "servicios",
+        "preferencias"
+      ],
+      "additionalProperties": false
+    },
+    "modo": {
+      "type": "string",
+      "enum": [
+        "servicios",
+        "paquetes",
+        "mixto"
+      ]
+    },
+    "cantidad": {
+      "type": "object",
+      "properties": {
+        "servicios": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "paquetes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        }
+      },
+      "required": [
+        "servicios",
+        "paquetes"
+      ],
+      "additionalProperties": false
+    },
+    "city": {
+      "type": "string",
+      "maxLength": 100,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "mensaje"
+  ],
+  "additionalProperties": false
+}

@@ -12,7 +12,7 @@ import { Carrito, type ItemCarrito } from "./Carrito";
 type Modo = "chat" | "pasos";
 
 export default function HappiePage() {
-  const [modo, setModo] = useState<Modo>("pasos");
+  const [modo, setModo] = useState<Modo>("chat");
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
 
   const idsEnCarrito = useMemo(() => new Set(carrito.map((item) => item.paquete.id)), [carrito]);
@@ -77,11 +77,11 @@ export default function HappiePage() {
           </div>
 
           <h1 className="max-w-[560px] text-[32px] font-bold leading-[1.1] tracking-tight text-white text-pretty sm:text-[40px]">
-            Cuéntanos tu celebración. Nosotros armamos el paquete.
+            Cuéntanos tu celebración. Encuentra servicios y paquetes.
           </h1>
 
           <p className="max-w-[440px] text-[14px] leading-relaxed text-white/70">
-            Describe tu evento o respóndenos tres preguntas. Te mostramos los paquetes que mejor encajan.
+            Elige servicios, paquetes o ambos y cuántas opciones quieres recibir. Cuéntanos tu evento para encontrar lo que necesitas.
           </p>
 
           <div className="mt-1 flex w-fit max-w-full flex-wrap gap-1 rounded-xl bg-white/10 p-1">

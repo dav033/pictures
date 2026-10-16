@@ -33,6 +33,7 @@ export interface HappiaPackage {
   is_active: boolean;
   is_featured: boolean;
   package_items: HappiaPackageItem[];
+  city_id?: string;
   city?: string;
   city_slug?: string;
 }
@@ -76,6 +77,7 @@ export interface HappiaConsultaPagina {
   page?: number;
   limit?: number;
   /** City slug (lowercase, no accents), e.g. `barranquilla`. */
+  city_id?: string;
   city?: string;
   signal?: AbortSignal;
 }

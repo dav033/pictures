@@ -85,7 +85,7 @@
     "rag:test-db-reintento": "tsx --conditions=react-server scripts/test/test-rag-db-reintento.ts",
     "rag:test-url-conexion": "tsx scripts/test/test-rag-url-conexion.ts",
     "rag:test-webhook": "tsx scripts/test/test-webhook.ts",
-    "happie:test-webhook": "npm run build --workspace=@sempertex/happie-package-ia && tsx --conditions=react-server scripts/test/test-happie-webhook.ts && tsx --conditions=react-server scripts/test/test-happie-controls.ts && tsx --conditions=react-server scripts/test/test-happie-panel-prueba.ts && tsx --conditions=react-server scripts/test/test-happie-paquete-v1.ts",
+    "happie:test-webhook": "npm run build --workspace=@sempertex/happie-package-ia && tsx --conditions=react-server scripts/test/test-happie-webhook.ts && tsx --conditions=react-server scripts/test/test-happie-controls.ts && tsx --conditions=react-server scripts/test/test-happie-panel-prueba.ts && tsx --conditions=react-server scripts/test/test-happie-paquete-v1.ts && tsx --conditions=react-server --test scripts/test/test-happie-catalogo-v2.ts && tsx --test packages/happie-package-ia/test/recomendador-catalogo.test.ts",
     "rag:metrics": "tsx scripts/catalogo/rag-metrics.ts",
     "rag:regression": "tsx scripts/test/regression-anti-alucinacion.ts",
     "catalog:enrich": "tsx scripts/catalogo/enrich-shopify-catalog.ts",

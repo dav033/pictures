@@ -1,3 +1,5 @@
+import { HappieRecommendationRequestV2Schema } from "@/lib/ia/contracts/happie-v2";
+import { generarRecomendacionCatalogo } from "./recomendar-catalogo";
 import { registrarFalloHappie } from "./registrar-fallo";
 import {
   HappiaClient,
@@ -23,7 +25,7 @@ import { iaRecomendacionHappie } from "./ia-recomendacion";
  * acepta `schema_version`. Se exporta porque `ejecutarWebhook` lo recibe como
  * parámetro.
  */
-export const CuerpoSolicitudSchema = HappieRecommendationRequestV1Schema;
+export const CuerpoSolicitudSchema = z.union([HappieRecommendationRequestV1Schema, HappieRecommendationRequestV2Schema]);
 
 type CuerpoSolicitud = z.infer<typeof CuerpoSolicitudSchema> & ServiciosSolicitados;
 
@@ -79,6 +81,8 @@ export async function generarRecomendacion(
 ): Promise<ResultadoGeneracion> {
   const solicitud = await leerSolicitud(request);
   if ("status" in solicitud) return solicitud;
+
+  if (solicitud.schema_version === "happie.v2") return generarRecomendacionCatalogo(request, solicitud);
 
   const { tipoEvento, invitados, presupuesto, preferencias, url, comida, bebida, decoracion, fotografia } = solicitud;
 

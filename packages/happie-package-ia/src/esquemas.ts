@@ -41,6 +41,7 @@ export const packageSchema = z.object({
   is_active: z.boolean(),
   is_featured: z.boolean(),
   package_items: z.array(packageItemSchema),
+  city_id: z.string().optional(),
   city: z.string().optional(),
   city_slug: z.string().optional(),
 }).passthrough();

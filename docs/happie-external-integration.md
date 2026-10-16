@@ -66,6 +66,81 @@ Errors always look like `{ "schema_version": "happie.v1", "error": "..." }`, wit
 Send an `Idempotency-Key` (1–128 printable ASCII characters) on every call: a retry with the same key and body
 replays the stored result instead of paying for a second AI call.
 
+## V2: services, packages or mixed recommendations
+
+Opt in on the same recommendation and chat endpoints with `"schema_version": "happie.v2"`.
+Omitting the version (or sending `happie.v1`) retains the existing package-only contract.
+
+```json
+{
+  "schema_version": "happie.v2",
+  "tipoEvento": "Cumpleaños infantil",
+  "invitados": 20,
+  "presupuesto": 2000000,
+  "city": "barranquilla",
+  "modo": "mixto",
+  "cantidad": { "servicios": 5, "paquetes": 2 },
+  "preferencias": ["show de magia", "decoración acuarela"]
+}
+```
+
+`modo` is `servicios`, `paquetes` or `mixto` (default). `cantidad` contains independent recommendation
+counts, each an integer from 0 to 20, at least one nonzero. For `servicios`, set `paquetes: 0`;
+for `paquetes`, set `servicios: 0`. When omitted, counts default to 3 per enabled type.
+These are counts of **recommendations**, not guests or booking units. The legacy endpoint names
+`recommend-package` / `recommend-packages` impose their one/three limits only for v1; v2 uses `cantidad`.
+The result may contain fewer matches, with an explanation, when the catalogue has insufficient relevant options.
+`city` is an optional lowercase city slug; the chat asks for a city before recommending.
+
+The response has `schema_version`, `modo`, requested `cantidad`, `resumen`, and three arrays:
+
+- `recomendaciones`: a ranked list whose `tipo` is `servicio` or `paquete`.
+- `servicios`: the service recommendations, so consumers do not need to split the ranked list.
+- `paquetes`: the package recommendations.
+
+Each recommendation has `razon`, `precio` and its complete **public** catalogue record (`servicio` or `paquete`).
+A package also has the existing booking `url`. Services are identified by their real catalogue `id`; no service
+booking URL is invented because the Happia guide does not define one. Only active packages and active package
+items are offered. Service records come from Happia's bookable-services endpoint. New upstream/private fields
+are excluded by an explicit projection.
+
+`precio` has `moneda: "COP"`, `subtotal: number | null`, `es_final: false`, `invitados`, `cantidad: 1`, and
+`advertencia`. `total` stays the public price per unit, never the provider's own price. Estimates use the requested
+guests for per-person charging and assume one unit for editable quantities, including one per guest when applicable.
+Unknown legacy charging yields a null estimate. IVA, Happia's fee and delivery are excluded; the checkout total
+cannot be inferred from these endpoints. Mixed results are individual alternatives, not a combined cart or a claim
+that their services do not overlap.
+
+For multi-turn chat use the same options on `POST /api/happie/webhook/chat`:
+
+```json
+{
+  "schema_version": "happie.v2",
+  "mensaje": "Quiero un cumpleaños infantil en Barranquilla para 20 personas, tengo dos millones y busco magia",
+  "modo": "mixto",
+  "cantidad": { "servicios": 5, "paquetes": 2 }
+}
+```
+
+Send the returned `estado` with every next message and keep `schema_version: "happie.v2"`. Mode, city and counts
+persist in that state. Explicit request options take precedence; users can also change mode or counts in natural
+language (for example, “mejor solo 7 servicios”). A changed request is summarized again before recommendations.
+A question has `tipo: "pregunta"`, `mensaje`, `estado`; final results have `tipo: "recomendaciones"`, those same
+fields and all the arrays/metadata described above. The authenticated `/happie` UI uses this contract too.
+Control/authentication errors retain the existing v1 error envelope; successful v2 results always identify v2.
+
+Machine-readable schemas: `contracts/domain/v1/happie-v2/*.schema.json`; validate drift with `npm run contracts:check`.
+The nested directory keeps these TypeScript catalogue contracts outside the Python v1 model generator's input set.
+
+### Compatibility decision and rollback
+
+Existing strict v1 readers cannot accept service records or extra response fields. A new explicit version was
+chosen over changing v1 in place or adding separate services-only chat endpoints, which would duplicate state,
+authentication and idempotency. Consumers affected are the session chat UI, server webhook integrations and external
+CORS recommenders. All retain the same authentication/limits; v2 opts into its new shape. Python remains the generic
+structured-generation adapter; it does not own these catalogue selection contracts. Rollback: deploy the prior
+checked revision; existing v1 clients need no migration, and the UI keeps transient conversation state in memory.
+
 ## Browser endpoints
 
 Same request body and success response as the webhook, with `x-api-key: $HAPPIE_EXTERNO_API_KEY`, called from a

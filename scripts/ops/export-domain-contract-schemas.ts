@@ -1,3 +1,4 @@
+import { HappieRecommendationRequestV2Schema, HappieRecommendationResponseV2Schema, HappieConversationRequestV2Schema, HappieConversationResponseV2Schema } from "../../src/lib/ia/contracts/happie-v2";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
@@ -78,6 +79,15 @@ const schemas: Record<string, { id: string; schema: z.ZodType }> = Object.fromEn
 // Los contratos del motor 3D de la vista guiada (src/lib/globos3d/motor): los lee TypeScript, no Python; se guardan aquí para que `contracts:check` los vigile.
 for (const [id, schema] of [["lista-materiales.v1", ListaMaterialesRequestSchema], ["lista-materiales-result.v1", ListaMaterialesResultadoSchema], ["espec-cliente.v1", EspecClienteV1Schema], ["resultado-motor.v1", ResultadoMotorV1Schema]] as const) {
   schemas[filenames[id]!] = { id, schema };
+}
+
+for (const [name, schema] of Object.entries({
+  "recommendation-request": HappieRecommendationRequestV2Schema,
+  "recommendation-response": HappieRecommendationResponseV2Schema,
+  "conversation-request": HappieConversationRequestV2Schema,
+  "conversation-response": HappieConversationResponseV2Schema,
+})) {
+  schemas[`happie-v2/${name}.schema.json`] = { id: `happie-${name}.v2`, schema };
 }
 
 async function main(): Promise<void> {

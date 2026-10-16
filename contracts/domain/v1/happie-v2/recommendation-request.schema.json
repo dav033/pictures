@@ -1,0 +1,90 @@
+{
+  "$id": "happie-recommendation-request.v2",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "tipoEvento": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "invitados": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 100000
+    },
+    "presupuesto": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "comida": {
+      "type": "boolean"
+    },
+    "bebida": {
+      "type": "boolean"
+    },
+    "decoracion": {
+      "type": "boolean"
+    },
+    "fotografia": {
+      "type": "boolean"
+    },
+    "preferencias": {
+      "maxItems": 40,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+      }
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "happie.v2"
+    },
+    "modo": {
+      "type": "string",
+      "enum": [
+        "servicios",
+        "paquetes",
+        "mixto"
+      ]
+    },
+    "cantidad": {
+      "type": "object",
+      "properties": {
+        "servicios": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "paquetes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        }
+      },
+      "required": [
+        "servicios",
+        "paquetes"
+      ],
+      "additionalProperties": false
+    },
+    "city": {
+      "type": "string",
+      "maxLength": 100,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    }
+  },
+  "required": [
+    "tipoEvento",
+    "invitados",
+    "presupuesto",
+    "schema_version"
+  ],
+  "additionalProperties": false
+}
