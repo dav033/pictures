@@ -9,11 +9,24 @@ type Extract = (message: string, state: EstadoConversacion, signal?: AbortSignal
 
 const SERVICE_LABELS_ES = { comida: "comida", bebida: "bebidas", decoracion: "decoración", fotografia: "fotografía" } as const;
 
+function normalizeChatText(text: string): string {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
 function eventQuestion(state: HappieConversationStateV2): string {
   const requestedService = state.serviciosDeseados?.[0] ?? state.servicios.map((item) => SERVICE_LABELS_ES[item]).join(", ");
   return requestedService
     ? `¿Buscas ${requestedService} para una celebración, una reunión o una comida informal? Así te recomiendo opciones que encajen.`
     : "¿Qué tienes en mente? Puede ser una celebración, una reunión informal o la contratación de un servicio concreto.";
+}
+
+function inferContextualEvent(message: string, previous: HappieConversationStateV2): string | undefined {
+  const hasRequestedService = (previous.serviciosDeseados?.length ?? 0) > 0 || previous.servicios.length > 0;
+  if (previous.tipoEvento || previous.fase !== "descubrimiento" || !hasRequestedService) return undefined;
+
+  const normalized = normalizeChatText(message);
+  if (/\b(?:comida|almuerzo|cena)\s+(?:informal|casual)\b/.test(normalized)) return "Comida informal";
+  return undefined;
 }
 
 export async function procesarTurnoCatalogo(input: Input, request: Request, extract: Extract, recommend = generarRecomendacionCatalogo): Promise<{ status: number; body: unknown }> {
@@ -34,20 +47,24 @@ export async function procesarTurnoCatalogo(input: Input, request: Request, extr
   try { options = catalogOptions({ modo: mode, cantidad: counts }); }
   catch { return { status: 400, body: { schema_version: HAPPIE_V2, error: "Pide de 0 a 20 resultados por tipo y cantidades compatibles con el modo." } }; }
   const confirming = previous.fase === "confirmacion" && extracted.confirmacion === "si";
-  const mergeDetails = !confirming && !extracted.respondioDetalles;
+  const contextualEvent = inferContextualEvent(input.mensaje, previous);
+  const mergeDetails = !confirming && (!extracted.respondioDetalles || contextualEvent !== undefined);
+  const extractedPreferences = contextualEvent
+    ? extracted.preferencias.filter((preference) => normalizeChatText(preference) !== normalizeChatText(contextualEvent))
+    : extracted.preferencias;
   const capturedDetails = confirming
     ? { servicios: previous.servicios, preferencias: previous.preferencias, serviciosDeseados: previous.serviciosDeseados }
     : mergeDetails
       ? {
         servicios: [...new Set([...previous.servicios, ...extracted.servicios])],
-        preferencias: [...new Set([...previous.preferencias, ...extracted.preferencias])],
+        preferencias: [...new Set([...previous.preferencias, ...extractedPreferences])],
         serviciosDeseados: [...new Set([...(previous.serviciosDeseados ?? []), ...(extracted.serviciosDeseados ?? [])])],
       }
-      : { servicios: extracted.servicios, preferencias: extracted.preferencias, serviciosDeseados: extracted.serviciosDeseados ?? previous.serviciosDeseados };
+      : { servicios: extracted.servicios, preferencias: extractedPreferences, serviciosDeseados: extracted.serviciosDeseados ?? previous.serviciosDeseados };
   let state: HappieConversationStateV2 = {
     ...previous, ...options,
     city: input.city ?? extracted.city ?? previous.city,
-    tipoEvento: extracted.tipoEvento ?? previous.tipoEvento,
+    tipoEvento: extracted.tipoEvento ?? contextualEvent ?? previous.tipoEvento,
     invitados: extracted.invitados ?? previous.invitados,
     presupuesto: extracted.presupuesto ?? previous.presupuesto,
     ...capturedDetails,

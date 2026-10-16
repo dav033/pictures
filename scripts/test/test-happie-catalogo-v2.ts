@@ -90,6 +90,43 @@ test("chat acknowledges a concrete service, guides the occasion, and keeps it ac
   assert.doesNotMatch(secondBody.mensaje, /qué servicios concretos/i);
 });
 
+test("chat accepts an informal meal as context and keeps the requested pizza", async () => {
+  const first = await procesarTurnoCatalogo({ schema_version: "happie.v2", mensaje: "quiero unas pizzas" }, request(), async () => ({
+    ...extracted,
+    tipoEvento: null,
+    invitados: null,
+    presupuesto: null,
+    servicios: ["comida"],
+    preferencias: ["pizzas"],
+    serviciosDeseados: ["pizzas"],
+    respondioDetalles: false,
+    confirmacion: "incierta",
+    acuse: "Anoto las pizzas.",
+  }));
+  const firstBody = HappieConversationResponseV2Schema.parse(first.body);
+
+  const second = await procesarTurnoCatalogo({ schema_version: "happie.v2", mensaje: "comida informal", estado: firstBody.estado }, request(), async () => ({
+    ...extracted,
+    tipoEvento: null,
+    invitados: null,
+    presupuesto: null,
+    servicios: [],
+    preferencias: ["comida informal"],
+    serviciosDeseados: [],
+    respondioDetalles: true,
+    confirmacion: "incierta",
+    acuse: "Anoto que prefieres comida informal.",
+  }));
+  const secondBody = HappieConversationResponseV2Schema.parse(second.body);
+
+  assert.equal(secondBody.estado.tipoEvento, "Comida informal");
+  assert.ok(secondBody.estado.serviciosDeseados?.includes("pizzas"));
+  assert.ok(secondBody.estado.servicios.includes("comida"));
+  assert.doesNotMatch(secondBody.mensaje, /¿Buscas pizzas?/i);
+  assert.match(secondBody.mensaje, /¿Para cuántas personas será el evento\?/i);
+  assert.ok(!secondBody.estado.preferencias.some((preference) => /comida informal/i.test(preference)));
+});
+
 test("invalid mixed counts fail before paid extraction; cancelled turns cannot recommend", async () => {
   let extracts = 0;
   const result = await procesarTurnoCatalogo({ schema_version: "happie.v2", mensaje: "sí", modo: "servicios", cantidad: { servicios: 1, paquetes: 1 } }, request(), async () => { extracts++; return extracted; });
