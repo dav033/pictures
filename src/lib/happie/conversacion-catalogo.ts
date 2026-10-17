@@ -49,6 +49,15 @@ export async function procesarTurnoCatalogo(input: Input, request: Request, extr
     superficie: "/api/happie/webhook/chat",
   });
   request.signal.throwIfAborted();
+  if (extracted.respuestaConversacional) {
+    // A social or unrelated turn never changes event facts, advances the phase or buys recommendations.
+    const preserved = { ...previous, ...catalogOptions({ modo: initialMode,
+      cantidad: input.cantidad ?? (initialMode === previous.modo ? previous.cantidad : undefined) }),
+      ...(input.city ? { city: input.city } : {}) };
+    return { status: 200, body: HappieConversationResponseV2Schema.parse({
+      schema_version: HAPPIE_V2, tipo: "pregunta", mensaje: extracted.respuestaConversacional, estado: preserved,
+    }) };
+  }
   const mode = input.modo ?? extracted.modo ?? initialMode;
   // A changed mode resets previous counts unless the caller explicitly supplies new ones.
   const counts = input.cantidad ?? extracted.cantidad ?? (mode === previous.modo ? previous.cantidad : undefined);

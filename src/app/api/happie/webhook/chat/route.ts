@@ -1,4 +1,4 @@
-import { manejarChatWebhook } from "@/lib/happie/conversacion-webhook";
+import { manejarChatWebhookExterno } from "@/lib/happie/conversacion-webhook";
 import { conRegistro } from "@/lib/registro/servidor";
 
 /** Chat multi-turno server-to-server para una aplicación externa. */
@@ -6,5 +6,5 @@ import { conRegistro } from "@/lib/registro/servidor";
 export const POST = conRegistro("/api/happie/webhook/chat", atenderPOST, { vista: "happie" });
 
 async function atenderPOST(request: Request) {
-  return manejarChatWebhook(request);
+  return manejarChatWebhookExterno(request);
 }
