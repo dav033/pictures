@@ -37,14 +37,14 @@ async function main(): Promise<void> {
   const sinPlan = deLasIdeas.filter((id) => planGuardadoDeIdea(id) === null);
   assert.deepEqual(fuera.filter((f) => /^sin plan guardado/.test(f.razon)).map((f) => f.ideaId).sort(), [...sinPlan].sort(), "fuera del Taller: las 18 ideas sin plan guardado (su lista curada no trae geometría)");
   assert.equal(sinPlan.length, 18);
-  assert.deepEqual(fuera.filter((f) => !/^sin plan guardado/.test(f.razon)).map((f) => f.ideaId), ["deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1", "deco-real-27-aro-navideno-verde-salvia"], "fuera del Taller: las 2 que el motor no arma (centro de mesa con bouquet y aro parcial)");
+  assert.deepEqual(fuera.filter((f) => !/^sin plan guardado/.test(f.razon)).map((f) => f.ideaId), ["deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1", "deco-real-27-aro-navideno-verde-salvia", "deco-real-30-columna-balon-futbol"], "fuera del Taller: las 3 que el motor no arma (centro de mesa con bouquet, aro parcial y figura de fútbol)");
   assert.ok(fuera.every((f) => !/la escena del Taller no lleva/.test(f.razon)), "ninguna idea que el motor arma se queda fuera por lista distinta en el Taller");
-  assert.equal(Object.keys(archivo.ideas).length, 26);
+  assert.equal(Object.keys(archivo.ideas).length, 25);
   assert.equal(archivo.motor, VERSION_MOTOR, "las escenas son de esta versión del motor");
   console.log(`[PASS] escenas.json al día: ${Object.keys(archivo.ideas).length} ideas en el Taller; ${fuera.length} fuera (${sinPlan.length} sin plan guardado, ${fuera.length - sinPlan.length} que el motor no arma)`);
 
   // 2. Están en la biblioteca de fábrica, de Sempertex, con la escena del motor.
-  assert.equal(IDEAS_ASISTENTE.length, 26);
+  assert.equal(IDEAS_ASISTENTE.length, 25);
   const porId = new Map(BIBLIOTECA_FABRICA.map((item) => [item.id, item]));
   assert.equal(porId.size, BIBLIOTECA_FABRICA.length, "ningún id repetido en la biblioteca");
   for (const [ideaId, datos] of Object.entries(archivo.ideas)) {
@@ -58,7 +58,7 @@ async function main(): Promise<void> {
   for (const { ideaId } of fuera) assert.equal(porId.has(`${PREFIJO_IDEA_ASISTENTE}${ideaId}`), false, `${ideaId}: no se ofrece lo que el Taller no puede armar`);
   const ideas = BIBLIOTECA_FABRICA.filter((item) => item.tipo === "escena");
   const { delAsistente, resto } = separarIdeasDelAsistente(ideas);
-  assert.deepEqual(delAsistente.map((item) => item.id), IDEAS_ASISTENTE.map((idea) => idea.id), `el grupo «${GRUPO_IDEAS_ASISTENTE}» son sus 26 ideas, en orden`);
+  assert.deepEqual(delAsistente.map((item) => item.id), IDEAS_ASISTENTE.map((idea) => idea.id), `el grupo «${GRUPO_IDEAS_ASISTENTE}» son sus 25 ideas, en orden`);
   assert.equal(resto.length + delAsistente.length, ideas.length);
   const primera = porId.get(IDEAS_ASISTENTE[0]!.id)!;
   const gemela = copiarItem(primera, { id: `${PREFIJO_IDEA_ASISTENTE}gemela` });

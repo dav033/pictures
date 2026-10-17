@@ -58,13 +58,15 @@ const DORADO_DE_LA_MARCHA_ATRAS: Readonly<Record<"escritorio" | "movil", Readonl
     ["Estructuras", "10fa909933cc343240186362e18dbb3f16be180964574cb52869340b3d7cf41e"],
     ["Decoraciones", "f2f01adccd5728e3724389d502b9a6453de0fe1d4f8a6499bb315c8a653d612f"],
     ["Utilería", "51cafc401f43eeef6201671b2635bb4fa380fead30a59e7605081940f30771db"],
-    ["Ideas", "6d199c7ae9fe0c356987c2403444d51c7009faa22c1cda45f98e20420b1ffa8d"],
+    // REQ-014 T12 removes the football scene unsupported by motor 1.2.6; the panel structure is unchanged, with 25 ideas.
+    ["Ideas", "e459753613b209f2ff18dae0495ed4bb8cdffa16fc55fe4316c6c95e05d0e440"],
   ],
   movil: [
     ["Estructuras", "583e7ea0a98c4f2dd9bfdebaf2258f4880fa047ef048bb87a06db6db74af0021"],
     ["Decoraciones", "00a2e204e1f97a8f4478e222960acd0e40f01ce5b14678a711fbca62aac5efbf"],
     ["Utilería", "9c5abf20b0ab8112f9a5e98f8d9db996b465bd124ca3530d9f79b89913011e6a"],
-    ["Ideas", "6ab301527ea4b2a458e7d6cb066460dbae9941a6bc823413f3d73126c2090075"],
+    // Same T12 catalog update as the desktop hash above.
+    ["Ideas", "01eb9bacdad7b1c8024c6c39b02994d1cf84aad21b9ea1009650acd3af69085b"],
   ],
 };
 

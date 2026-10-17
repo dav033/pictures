@@ -120,7 +120,8 @@ async function main(): Promise<void> {
   console.log(`[PASS] ${comparadas.length} ideas: la tarjeta y el «Precio en la tienda» del Taller dan el mismo total al peso (8 con los impresos que solo la tarjeta compra)`);
 
   // Lo que no se compara está dicho: si una idea cambia de camino, esta prueba lo avisa.
-  assert.deepEqual(resultados.filter((r) => r.camino === "python").map((r) => r.id), ["deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1", "deco-real-27-aro-navideno-verde-salvia"], "las ideas que el motor no arma y caen a Python");
+  // REQ-014 T12 adds a football figure to idea 30; the 3D motor must send it through the saved Python plan.
+  assert.deepEqual(resultados.filter((r) => r.camino === "python").map((r) => r.id), ["deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1", "deco-real-27-aro-navideno-verde-salvia", "deco-real-30-columna-balon-futbol"], "las ideas que el motor no arma y caen a Python");
   assert.deepEqual(resultados.filter((r) => r.camino === "curada").map((r) => r.id).sort(), decoracionesSempertex.filter((d) => planGuardadoDeIdea(d.id) === null).map((d) => d.id).sort(), "la lista curada es solo de las ideas sin plan guardado");
   console.log(`[INFO] ${resultados.filter((r) => r.camino === "python").length} idea(s) caen al plan de Python y no tienen lista del Taller que comparar`);
   console.log("\ntest-paridad-tarjeta-taller: ok");
