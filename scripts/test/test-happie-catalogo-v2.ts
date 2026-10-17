@@ -125,6 +125,26 @@ test("chat accepts an informal meal as context and keeps the requested pizza", a
   assert.doesNotMatch(secondBody.mensaje, /¿Buscas pizzas?/i);
   assert.match(secondBody.mensaje, /¿Para cuántas personas será el evento\?/i);
   assert.ok(!secondBody.estado.preferencias.some((preference) => /comida informal/i.test(preference)));
+
+  const third = await procesarTurnoCatalogo({ schema_version: "happie.v2", mensaje: "12", estado: secondBody.estado }, request(), async () => ({
+    ...extracted,
+    tipoEvento: null,
+    invitados: null,
+    presupuesto: null,
+    servicios: [],
+    preferencias: [],
+    serviciosDeseados: [],
+    respondioDetalles: true,
+    confirmacion: "incierta",
+    acuse: "Anoto el dato.",
+  }));
+  const thirdBody = HappieConversationResponseV2Schema.parse(third.body);
+
+  assert.equal(thirdBody.estado.invitados, 12);
+  assert.ok(thirdBody.estado.serviciosDeseados?.includes("pizzas"));
+  assert.ok(thirdBody.estado.servicios.includes("comida"));
+  assert.match(thirdBody.mensaje, /presupuesto/i);
+  assert.doesNotMatch(thirdBody.mensaje, /cuántas personas/i);
 });
 
 test("invalid mixed counts fail before paid extraction; cancelled turns cannot recommend", async () => {

@@ -29,6 +29,15 @@ function inferContextualEvent(message: string, previous: HappieConversationState
   return undefined;
 }
 
+function inferGuestCount(message: string, previous: HappieConversationStateV2): number | undefined {
+  if (!previous.tipoEvento || previous.invitados || previous.fase !== "descubrimiento") return undefined;
+
+  const normalized = normalizeChatText(message).replace(/\s+/g, " ");
+  const match = normalized.match(/^(?:(?:somos|seremos|vamos a ser|van a ser|para|habra)\s+)?(\d+)(?:\s+(?:personas?|invitados?|asistentes))?[.!]?$/);
+  const count = Number(match?.[1]);
+  return Number.isSafeInteger(count) && count > 0 ? count : undefined;
+}
+
 export async function procesarTurnoCatalogo(input: Input, request: Request, extract: Extract, recommend = generarRecomendacionCatalogo): Promise<{ status: number; body: unknown }> {
   const previous: HappieConversationStateV2 = input.estado ?? { fase: "descubrimiento", servicios: [], preferencias: [] };
   const initialMode = input.modo ?? previous.modo ?? "mixto";
@@ -48,7 +57,8 @@ export async function procesarTurnoCatalogo(input: Input, request: Request, extr
   catch { return { status: 400, body: { schema_version: HAPPIE_V2, error: "Pide de 0 a 20 resultados por tipo y cantidades compatibles con el modo." } }; }
   const confirming = previous.fase === "confirmacion" && extracted.confirmacion === "si";
   const contextualEvent = inferContextualEvent(input.mensaje, previous);
-  const mergeDetails = !confirming && (!extracted.respondioDetalles || contextualEvent !== undefined);
+  const guestCount = inferGuestCount(input.mensaje, previous);
+  const mergeDetails = !confirming && (!extracted.respondioDetalles || contextualEvent !== undefined || guestCount !== undefined);
   const extractedPreferences = contextualEvent
     ? extracted.preferencias.filter((preference) => normalizeChatText(preference) !== normalizeChatText(contextualEvent))
     : extracted.preferencias;
@@ -65,7 +75,7 @@ export async function procesarTurnoCatalogo(input: Input, request: Request, extr
     ...previous, ...options,
     city: input.city ?? extracted.city ?? previous.city,
     tipoEvento: extracted.tipoEvento ?? contextualEvent ?? previous.tipoEvento,
-    invitados: extracted.invitados ?? previous.invitados,
+    invitados: guestCount ?? extracted.invitados ?? previous.invitados,
     presupuesto: extracted.presupuesto ?? previous.presupuesto,
     ...capturedDetails,
   };
