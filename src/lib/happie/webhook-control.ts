@@ -210,7 +210,7 @@ export async function ejecutarWebhook(
     let json: unknown;
     try { json = JSON.parse(raw); } catch { throw new WebhookError(400, "El body debe ser JSON valido."); }
     const parsed = schema.safeParse(json);
-    if (!parsed.success) return respond({ status: 400, body: { error: "Solicitud invalida.", campos: parsed.error.issues.map(i => i.path.join(".")) } });
+    if (!parsed.success) return respond({ status: 400, body: { error: "Solicitud invalida.", campos: parsed.error.issues.map(i => i.path.join(".")).filter(Boolean) } });
     const header = request.headers.get("idempotency-key");
     if (header !== null && !/^[\x21-\x7e]{1,128}$/.test(header)) throw new WebhookError(400, "Idempotency-Key invalida.");
     if (!await esperarConSignal(store.rate(scope.split(":")[0], signal), signal)) return respond({ status: 429, body: { error: "Limite de solicitudes excedido." } }, "60");

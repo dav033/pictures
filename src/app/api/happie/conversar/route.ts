@@ -40,6 +40,7 @@ async function atenderPOST(request: Request) {
   if (respuesta.status !== 200) return respuesta;
 
   const cuerpo: unknown = await respuesta.clone().json().catch(() => null);
+  if (typeof cuerpo === "object" && cuerpo !== null && "schema_version" in cuerpo && cuerpo.schema_version === "happie.v2") return respuesta;
   if (typeof cuerpo !== "object" || cuerpo === null || !("tipo" in cuerpo) || cuerpo.tipo !== "recomendaciones" || !("recomendaciones" in cuerpo) || !Array.isArray(cuerpo.recomendaciones)) {
     return respuesta;
   }

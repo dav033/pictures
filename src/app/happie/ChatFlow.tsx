@@ -3,17 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Loader2, RotateCcw } from "lucide-react";
 import type { HappiaPackage } from "@sempertex/happie-package-ia";
-import type { HappieConversationStateV1 } from "@/lib/ia/contracts/happie-v1";
-import { ListaRecomendaciones } from "./PaqueteCard";
+import { HappieConversationResponseV2Schema, type HappieConversationStateV2, type HappieMode, type HappieCatalogRecommendation } from "@/lib/ia/contracts/happie-v2";
+import { CatalogResults } from "./CatalogResults";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 
 type Mensaje = { rol: "asistente" | "usuario"; texto: string };
-type Recomendacion = { url: string; razon: string; paquete?: HappiaPackage };
-type Turno =
-  | { tipo: "pregunta"; mensaje: string; estado: HappieConversationStateV1 }
-  | { tipo: "recomendaciones"; mensaje: string; estado: HappieConversationStateV1; recomendaciones: Recomendacion[]; resumen: string };
-
-const SALUDO = "¡Hola! Soy Happie. Cuéntame qué evento quieres celebrar y te voy haciendo las preguntas que necesito para encontrar el paquete ideal.";
+const SALUDO = "¡Hola! Soy Happie. Cuéntame qué tienes en mente: una celebración, una reunión o un servicio concreto. Te haré las preguntas necesarias para encontrar servicios, paquetes o ambos.";
 
 function IconoIA({ className }: { className?: string }) {
   return (
@@ -27,19 +22,9 @@ function IconoIA({ className }: { className?: string }) {
 }
 
 /** Reads the server's turn without trusting its shape: a malformed answer is an error, not a crash while rendering. */
-function leerTurno(cuerpo: unknown): Turno | null {
-  if (typeof cuerpo !== "object" || cuerpo === null) return null;
-  const c = cuerpo as Record<string, unknown>;
-  if (typeof c.mensaje !== "string" || typeof c.estado !== "object" || c.estado === null) return null;
-  const estado = c.estado as HappieConversationStateV1;
-  if (c.tipo === "pregunta") return { tipo: "pregunta", mensaje: c.mensaje, estado };
-  if (c.tipo === "recomendaciones" && Array.isArray(c.recomendaciones)) {
-    const recomendaciones = c.recomendaciones.filter(
-      (r): r is Recomendacion => typeof r === "object" && r !== null && typeof (r as Recomendacion).url === "string" && typeof (r as Recomendacion).razon === "string",
-    );
-    return { tipo: "recomendaciones", mensaje: c.mensaje, estado, recomendaciones, resumen: typeof c.resumen === "string" ? c.resumen : c.mensaje };
-  }
-  return null;
+function leerTurno(cuerpo: unknown) {
+  const parsed = HappieConversationResponseV2Schema.safeParse(cuerpo);
+  return parsed.success ? parsed.data : null;
 }
 
 export function ChatFlow({
@@ -50,11 +35,14 @@ export function ChatFlow({
   onAgregar: (paquete: HappiaPackage) => void;
 }) {
   const [mensajes, setMensajes] = useState<Mensaje[]>([{ rol: "asistente", texto: SALUDO }]);
-  const [estado, setEstado] = useState<HappieConversationStateV1 | undefined>(undefined);
+  const [estado, setEstado] = useState<HappieConversationStateV2 | undefined>(undefined);
   const [entrada, setEntrada] = useState("");
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [recomendaciones, setRecomendaciones] = useState<Recomendacion[]>([]);
+  const [recomendaciones, setRecomendaciones] = useState<HappieCatalogRecommendation[]>([]);
+  const [modo, setModo] = useState<HappieMode>("mixto");
+  const [cantidadServicios, setCantidadServicios] = useState(3);
+  const [cantidadPaquetes, setCantidadPaquetes] = useState(3);
   const fin = useRef<HTMLDivElement | null>(null);
   const abortar = useRef<AbortController | null>(null);
 
@@ -74,7 +62,9 @@ export function ChatFlow({
       const respuesta = await fetch("/api/happie/conversar", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mensaje: texto, ...(estado ? { estado } : {}) }),
+        body: JSON.stringify({ schema_version: "happie.v2", mensaje: texto,
+          estado: estado ?? { fase: "descubrimiento", servicios: [], preferencias: [], modo,
+            cantidad: { servicios: modo === "paquetes" ? 0 : cantidadServicios, paquetes: modo === "servicios" ? 0 : cantidadPaquetes } } }),
         signal: control.signal,
       });
       const cuerpo: unknown = await respuesta.json().catch(() => null);
@@ -86,6 +76,11 @@ export function ChatFlow({
       const turno = leerTurno(cuerpo);
       if (!turno) throw new Error("Respuesta inesperada del servidor.");
       setEstado(turno.estado);
+      if (turno.estado.modo) setModo(turno.estado.modo);
+      if (turno.estado.cantidad) {
+        setCantidadServicios(turno.estado.cantidad.servicios || 3);
+        setCantidadPaquetes(turno.estado.cantidad.paquetes || 3);
+      }
       setMensajes((actuales) => [...actuales, { rol: "asistente", texto: turno.mensaje }]);
       setRecomendaciones(turno.tipo === "recomendaciones" ? turno.recomendaciones : []);
     } catch (err) {
@@ -108,11 +103,23 @@ export function ChatFlow({
     setCargando(false);
   }
 
-  const conPaquete = recomendaciones.filter((r): r is Recomendacion & { paquete: HappiaPackage } => r.paquete !== undefined);
-  const soloEnlace = recomendaciones.filter((r) => r.paquete === undefined);
-
   return (
     <div className="flex flex-col gap-5">
+      <fieldset disabled={cargando} className="flex flex-wrap items-end gap-3 rounded-xl border border-borde p-4">
+        <legend className="px-1 text-sm font-semibold text-texto">Qué quieres recibir</legend>
+        <label className="flex flex-col gap-1 text-sm">Tipo de recomendaciones
+          <select value={modo} onChange={(event) => { reiniciar(); setModo(event.target.value === "servicios" ? "servicios" : event.target.value === "paquetes" ? "paquetes" : "mixto"); }} className="rounded-lg border border-borde bg-superficie p-2">
+            <option value="mixto">Servicios y paquetes</option><option value="servicios">Solo servicios</option><option value="paquetes">Solo paquetes</option>
+          </select>
+        </label>
+        {modo !== "paquetes" && <label className="flex flex-col gap-1 text-sm">Cuántos servicios
+          <input type="number" min={1} max={20} value={cantidadServicios} onChange={(event) => { reiniciar(); setCantidadServicios(Math.max(1, Math.min(20, Number(event.target.value) || 1))); }} className="w-24 rounded-lg border border-borde bg-superficie p-2" />
+        </label>}
+        {modo !== "servicios" && <label className="flex flex-col gap-1 text-sm">Cuántos paquetes
+          <input type="number" min={1} max={20} value={cantidadPaquetes} onChange={(event) => { reiniciar(); setCantidadPaquetes(Math.max(1, Math.min(20, Number(event.target.value) || 1))); }} className="w-24 rounded-lg border border-borde bg-superficie p-2" />
+        </label>}
+        <p className="w-full text-xs text-texto-suave">Hasta 20 de cada tipo, según disponibilidad. También puedes cambiar el tipo o la cantidad escribiéndolo en el chat. Cambiar estos controles inicia una conversación nueva.</p>
+      </fieldset>
       <div role="log" aria-live="polite" aria-label="Conversación con Happie" className="flex flex-col gap-3">
         {mensajes.map((m, indice) => (
           <div key={indice} className={m.rol === "usuario" ? "flex justify-end" : "happie-entra flex items-start gap-3"}>
@@ -141,17 +148,7 @@ export function ChatFlow({
 
       {error && <p role="alert" className="text-sm text-error">{error}</p>}
 
-      <ListaRecomendaciones recomendaciones={conPaquete} idsEnCarrito={idsEnCarrito} onAgregar={onAgregar} />
-      {soloEnlace.length > 0 && (
-        <ul className="flex flex-col gap-2">
-          {soloEnlace.map((r) => (
-            <li key={r.url} className="rounded-xl border border-borde-suave p-3 text-sm">
-              <a href={r.url} target="_blank" rel="noreferrer" className="font-medium text-acento hover:underline">Ver paquete</a>
-              <p className="mt-1 text-texto-suave">{r.razon}</p>
-            </li>
-          ))}
-        </ul>
-      )}
+      <CatalogResults recommendations={recomendaciones} idsEnCarrito={idsEnCarrito} onAgregar={onAgregar} />
 
       <div className="flex items-start gap-3 rounded-2xl border border-borde bg-superficie p-4 focus-within:border-acento">
         <IconoIA className="mt-0.5 flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-acento-suave text-acento" />
