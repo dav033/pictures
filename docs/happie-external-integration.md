@@ -141,6 +141,15 @@ CORS recommenders. All retain the same authentication/limits; v2 opts into its n
 structured-generation adapter; it does not own these catalogue selection contracts. Rollback: deploy the prior
 checked revision; existing v1 clients need no migration, and the UI keeps transient conversation state in memory.
 
+### External chat text
+
+The chat webhook keeps `resumen` in final recommendation responses as the empty string `""`.
+Render `mensaje` as the conversational text and use the recommendation arrays for option details. This avoids
+showing the same paragraph twice without removing or renaming fields. Shared internal/session generation retains
+its original summary; the existing schema files continue to describe that internal representation.
+Social or unrelated messages receive a brief contextual reply and retain the current event/phase. They do not
+trigger recommendations or replace event preferences with unrelated text.
+
 ## Browser endpoints
 
 Same request body and success response as the webhook, with `x-api-key: $HAPPIE_EXTERNO_API_KEY`, called from a
