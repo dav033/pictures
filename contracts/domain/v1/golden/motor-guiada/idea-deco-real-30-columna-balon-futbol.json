@@ -4,8 +4,13 @@
   "id": "globos3d",
   "version": "1.2.6"
  },
- "especHash": "8f1944333e28c914b665e266cf24be985468c8ce059f3ac177d70dd722991509",
- "noRepresentable": [],
+ "especHash": "a34c257fba59b16f20d4017edaf26504ca7a5d19454b950d0850c199c0f335e1",
+ "noRepresentable": [
+  {
+   "piezaId": "EST_02_FIGURA",
+   "motivo": "No hay un constructor genérico de figuras: solo existen las digitalizadas una a una."
+  }
+ ],
  "piezas": {
   "EST_01_COLUMNA": {
    "lineas": [
@@ -145,6 +150,6 @@
   -124
  ],
  "referenciaPython": {
-  "globos": 60
+  "globos": 164
  }
 }

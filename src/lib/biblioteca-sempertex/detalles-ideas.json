@@ -4485,139 +4485,103 @@
     },
     "deco-real-30-columna-balon-futbol": {
       "fuente": "estimado",
-      "planHash": "b2a1b931c0d306ebf28648be480ed1db99b4ac6d9a6b5724b1f530130a141a61",
       "total": 164,
       "piezas": [
         {
-          "id": "EST_01_COLUMNA",
+          "id": "PIEZA_01_COLUMNA",
           "nombre": "Columna",
           "estructura": "columna",
           "repeticiones": 1,
-          "medidas": {
-            "ancho_m": 0.75,
-            "alto_m": 2.18
-          },
-          "lineas": [
-            {
-              "variantId": "46594213118247",
-              "producto": "Fashion Verde Lima",
-              "titulo": "B2b Globo Latex Redondo Fashion Verde Lima",
-              "codigo": "R-5",
-              "color": "verde lima",
-              "paleta": "verde",
-              "liso": true,
-              "unidades": 10,
-              "estimado": false
-            },
-            {
-              "variantId": "46594235040039",
-              "producto": "Fashion Negro",
-              "titulo": "B2b Globo Latex Redondo Fashion Negro",
-              "codigo": "R-5",
-              "color": "negro",
-              "paleta": "negro",
-              "liso": true,
-              "unidades": 5,
-              "estimado": false
-            },
-            {
-              "variantId": "46594221146407",
-              "producto": "Fashion Blanco",
-              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
-              "codigo": "R-5",
-              "color": "blanco",
-              "paleta": "blanco",
-              "liso": true,
-              "unidades": 2,
-              "estimado": false
-            },
-            {
-              "variantId": "46594213314855",
-              "producto": "Fashion Verde Lima",
-              "titulo": "B2b Globo Latex Redondo Fashion Verde Lima",
-              "codigo": "R-12",
-              "color": "verde lima",
-              "paleta": "verde",
-              "liso": true,
-              "unidades": 27,
-              "estimado": false
-            },
-            {
-              "variantId": "46594235269415",
-              "producto": "Fashion Negro",
-              "titulo": "B2b Globo Latex Redondo Fashion Negro",
-              "codigo": "R-12",
-              "color": "negro",
-              "paleta": "negro",
-              "liso": true,
-              "unidades": 11,
-              "estimado": false
-            },
-            {
-              "variantId": "46594221343015",
-              "producto": "Fashion Blanco",
-              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
-              "codigo": "R-12",
-              "color": "blanco",
-              "paleta": "blanco",
-              "liso": true,
-              "unidades": 5,
-              "estimado": false
-            }
-          ],
-          "total": 60,
+          "medidas": {},
+          "lineas": [],
+          "total": 0,
           "colores": [
-            "verde",
             "negro",
-            "blanco"
+            "blanco",
+            "verde"
           ]
         },
         {
-          "id": "PIEZA_01_FIGURA",
+          "id": "PIEZA_02_FIGURA",
           "nombre": "Figura con globos",
           "estructura": "figura",
           "repeticiones": 1,
           "medidas": {},
-          "lineas": [
-            {
-              "variantId": "46594221146407",
-              "producto": "Fashion Blanco",
-              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
-              "codigo": "R-5",
-              "color": "blanco",
-              "paleta": "blanco",
-              "liso": true,
-              "unidades": 24,
-              "estimado": true
-            },
-            {
-              "variantId": "46594221343015",
-              "producto": "Fashion Blanco",
-              "titulo": "B2b Globo Latex Redondo Fashion Blanco",
-              "codigo": "R-12",
-              "color": "blanco",
-              "paleta": "blanco",
-              "liso": true,
-              "unidades": 20,
-              "estimado": true
-            },
-            {
-              "variantId": "46594235040039",
-              "producto": "Fashion Negro",
-              "titulo": "B2b Globo Latex Redondo Fashion Negro",
-              "codigo": "R-5",
-              "color": "negro",
-              "paleta": "negro",
-              "liso": true,
-              "unidades": 60,
-              "estimado": true
-            }
-          ],
-          "total": 104,
+          "lineas": [],
+          "total": 0,
           "colores": [
             "negro",
-            "blanco"
+            "blanco",
+            "verde"
           ]
+        }
+      ],
+      "lineasSinPieza": [
+        {
+          "variantId": "46594213118247",
+          "producto": "Fashion Verde Lima",
+          "titulo": "B2b Globo Latex Redondo Fashion Verde Lima",
+          "codigo": "R-5",
+          "color": "verde lima",
+          "paleta": "verde",
+          "liso": true,
+          "unidades": 10,
+          "estimado": false
+        },
+        {
+          "variantId": "46594213314855",
+          "producto": "Fashion Verde Lima",
+          "titulo": "B2b Globo Latex Redondo Fashion Verde Lima",
+          "codigo": "R-12",
+          "color": "verde lima",
+          "paleta": "verde",
+          "liso": true,
+          "unidades": 27,
+          "estimado": false
+        },
+        {
+          "variantId": "46594221146407",
+          "producto": "Fashion Blanco",
+          "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+          "codigo": "R-5",
+          "color": "blanco",
+          "paleta": "blanco",
+          "liso": true,
+          "unidades": 26,
+          "estimado": true
+        },
+        {
+          "variantId": "46594221343015",
+          "producto": "Fashion Blanco",
+          "titulo": "B2b Globo Latex Redondo Fashion Blanco",
+          "codigo": "R-12",
+          "color": "blanco",
+          "paleta": "blanco",
+          "liso": true,
+          "unidades": 25,
+          "estimado": true
+        },
+        {
+          "variantId": "46594235040039",
+          "producto": "Fashion Negro",
+          "titulo": "B2b Globo Latex Redondo Fashion Negro",
+          "codigo": "R-5",
+          "color": "negro",
+          "paleta": "negro",
+          "liso": true,
+          "unidades": 65,
+          "estimado": true
+        },
+        {
+          "variantId": "46594235269415",
+          "producto": "Fashion Negro",
+          "titulo": "B2b Globo Latex Redondo Fashion Negro",
+          "codigo": "R-12",
+          "color": "negro",
+          "paleta": "negro",
+          "liso": true,
+          "unidades": 11,
+          "estimado": false
         }
       ]
     },

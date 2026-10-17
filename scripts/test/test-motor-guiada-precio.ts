@@ -422,8 +422,12 @@ async function main(): Promise<void> {
       assert.equal(cot.lineas.reduce((s, l) => s + l.cantidadNecesaria, 0), r.globos, "las cantidades de la cotización son las del motor");
       for (const l of cot.lineas) assert.equal(l.cantidadNecesaria + l.sobrante, l.paquetes * l.unidadesPaquete);
     }
-    assert.equal(cotizadas.length, 26);
-    assert.deepEqual(curadas, ["deco-real-03 (no_representable)", "deco-real-27 (no_representable)"], "el centro de mesa con bouquet y el aro parcial caen al plan de Python; la columna de la 06 (ahora de R-12 por bandas) ya se cotiza con el motor");
+    assert.equal(cotizadas.length, 25);
+    assert.deepEqual(
+      curadas,
+      ["deco-real-03 (no_representable)", "deco-real-27 (no_representable)", "deco-real-30 (no_representable)"],
+      "el centro de mesa con bouquet, el aro parcial y la figura de la idea 30 caen al plan de Python; la columna de la 06 (ahora de R-12 por bandas) ya se cotiza con el motor",
+    );
     // Una idea sin plan guardado (las figuras 21, 23 y 26) y la lista curada de siempre (merma 0) siguen siendo válidas.
     assert.deepEqual(await cotizarIdeaConMotor("deco-real-21-figura", { planGuardado: planGuardadoDeIdea, crosswalk: async () => cruce, cotizarLista: pythonDoble(cruce).cotizarLista }), { ok: false, razon: "sin_plan_guardado" });
     assert.equal(CotizacionGuiadaSchema.safeParse({ lineas: [{ id: "1", tamano: "x", cantidadNecesaria: 1, disponible: true, varianteId: "1", nombre: "n", precioPaquete: 1, unidadesPaquete: 1, paquetes: 1, subtotal: 1, sobrante: 0 }], total: 1, mermaPorcentaje: 0, incluyeIva: true, complementosSoportados: false }).success, true);

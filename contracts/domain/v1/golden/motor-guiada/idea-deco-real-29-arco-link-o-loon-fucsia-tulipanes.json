@@ -4,42 +4,24 @@
   "id": "globos3d",
   "version": "1.2.6"
  },
- "especHash": "23eef85b20014452b8790506a27ff22339dd7d06b25fc8c684a47ec66b3de9db",
+ "especHash": "5810636f5caca948075dda7083b8b901eb25600d9c6912dc7685619c37591906",
  "noRepresentable": [],
  "piezas": {
-  "EST_01_COLUMNA": {
+  "EST_01_ARCO": {
    "lineas": [
     {
      "formatoId": "R-12",
      "codigo": "012",
-     "cantidad": 16
+     "cantidad": 100
     }
    ],
-   "unidades": 16,
+   "unidades": 100,
    "caja": [
-    -188,
+    -123,
     0,
     -183,
-    -142,
-    88,
-    -137
-   ]
-  },
-  "EST_01_COLUMNA_B": {
-   "lineas": [
-    {
-     "formatoId": "R-12",
-     "codigo": "012",
-     "cantidad": 16
-    }
-   ],
-   "unidades": 16,
-   "caja": [
-    142,
-    0,
-    -183,
-    188,
-    88,
+    123,
+    234,
     -137
    ]
   }
@@ -49,20 +31,20 @@
    {
     "formatoId": "R-12",
     "codigo": "012",
-    "cantidad": 32
+    "cantidad": 100
    }
   ],
-  "unidades": 32
+  "unidades": 100
  },
  "caja": [
-  -188,
+  -123,
   0,
   -183,
-  188,
-  88,
+  123,
+  234,
   -137
  ],
  "referenciaPython": {
-  "globos": 30
+  "globos": 75
  }
 }
