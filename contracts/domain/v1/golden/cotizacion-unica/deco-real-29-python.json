@@ -7,7 +7,7 @@
   {
    "formatoId": "R-12",
    "codigo": "012",
-   "cantidad": 30,
+   "cantidad": 75,
    "productId": "8634239451431",
    "color": "fucsia",
    "diamPulg": 12,
@@ -31,20 +31,34 @@
   }
  ],
  "esperado": {
-  "total": 11889,
+  "total": 23029,
   "reserva": {
-   "objetivo": 3,
-   "cubierta": 3,
+   "objetivo": 6,
+   "cubierta": 6,
    "sinCubrir": 0,
-   "excedenteNatural": 6
+   "excedenteNatural": 7
   },
   "compras": [
    {
     "variantId": "46594234548519",
-    "paquetes": 3,
-    "cantidad": 30,
-    "reserva": 3,
-    "paraReserva": true
+    "paquetes": 1,
+    "cantidad": 12,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594234581287",
+    "paquetes": 1,
+    "cantidad": 20,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594234614055",
+    "paquetes": 1,
+    "cantidad": 43,
+    "reserva": 6,
+    "paraReserva": false
    }
   ]
  }
