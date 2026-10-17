@@ -1,3 +1,4 @@
+import { registrarFalloHappie } from "./registrar-fallo";
 import {
   HappiaClient,
   cargarConfigDesdeEnv,
@@ -132,6 +133,7 @@ export async function generarRecomendacion(
     // Un abort del caller se propaga tal cual: `ejecutarWebhook` lo traduce a
     // 408 o 504 según quién canceló. Convertirlo aquí en 502 ocultaría la causa.
     if (request.signal.aborted) throw error;
+    registrarFalloHappie("recomendar", error, request.headers.get("x-correlation-id"));
     const esTimeout = error instanceof Error && error.name === "TimeoutError";
     return {
       status: esTimeout ? 504 : 502,

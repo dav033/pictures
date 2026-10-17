@@ -239,14 +239,20 @@ export async function procesarTurnoConversacion(
   return { status: 200, body: siguientePregunta(estado, extraccion.acuse) };
 }
 
-export async function manejarChatWebhook(request: Request): Promise<Response> {
-  return ejecutarWebhook(request, "chat", autenticarWebhook(request), EntradaConversacionSchema, async (bounded) => {
+/** `auth` is the rejection (or `null`) of whoever calls: the webhook key by default, the app session for the chat UI. */
+export async function manejarChatWebhook(
+  request: Request,
+  auth: Response | null = autenticarWebhook(request),
+  /** `ambito`: who the rate limit counts (session callers: their IP). `superficie`: how the telemetry labels the traffic. */
+  opciones: { ambito?: string; superficie?: string } = {},
+): Promise<Response> {
+  return ejecutarWebhook(request, "chat", auth, EntradaConversacionSchema, async (bounded) => {
     try {
       const correlationId = bounded.headers.get("x-correlation-id") ?? crypto.randomUUID();
-      return await procesarTurnoConversacion(EntradaConversacionSchema.parse(await bounded.json()), undefined, bounded.signal, { requestId: crypto.randomUUID(), correlationId, superficie: "/api/happie/webhook/chat" });
+      return await procesarTurnoConversacion(EntradaConversacionSchema.parse(await bounded.json()), undefined, bounded.signal, { requestId: crypto.randomUUID(), correlationId, superficie: opciones.superficie ?? "/api/happie/webhook/chat" });
     } catch (error) {
       if (bounded.signal.aborted || (error instanceof Error && error.name === "TimeoutError")) throw error;
       return { status: 502, body: { error: "No se pudo procesar la conversacion. Intenta de nuevo." } };
     }
-  });
+  }, undefined, opciones.ambito);
 }
