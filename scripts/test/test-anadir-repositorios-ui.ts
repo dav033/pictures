@@ -339,18 +339,19 @@ test("Sempertex → Ideas: «Ideas del asistente» es un grupo con las ideas del
   assert.equal(await ultima.count(), 0, "la última idea está en la segunda página del grupo (cada tarjeta lleva su id en data-item-id)");
   const titulos = (seccion: Locator) => seccion.locator("li > button span.line-clamp-2").allInnerTexts();
   assert.deepEqual(await titulos(grupo), nombres.slice(0, 24), "la primera página del grupo, en su orden");
-  // «Mostrar más» se activa solo al llegar a la vista (IntersectionObserver): llegar a él trae las otras 2.
+  // "Show more" is triggered by IntersectionObserver on scroll; reaching it reveals the final idea.
   await grupo.getByRole("button", { name: /^Mostrar más/ }).scrollIntoViewIfNeeded();
-  await page.waitForFunction(() => document.querySelectorAll("[aria-label='Ideas del asistente'] li > button span.line-clamp-2").length === 26);
+  await page.waitForFunction(() => document.querySelectorAll("[aria-label='Ideas del asistente'] li > button span.line-clamp-2").length === 25);
   assert.equal(await ultima.count(), 1, "y al llegar a «Mostrar más» aparece, para el paso de paridad de precio del humo e2e");
-  assert.deepEqual(await titulos(grupo), nombres, "las 26 ideas, cada una con el nombre de su tarjeta");
-  assert.match(await grupo.locator("h3").innerText(), /ideas del asistente\s*26/i);
+  assert.deepEqual(await titulos(grupo), nombres, "las 25 ideas, cada una con el nombre de su tarjeta");
+  assert.match(await grupo.locator("h3").innerText(), /ideas del asistente\s*25/i);
   const biblioteca = page.getByRole("region", { name: "De la biblioteca" });
   assert.deepEqual((await titulos(biblioteca)).filter((nombre) => nombres.includes(nombre)), [], "las demás ideas no repiten las del asistente");
   assert.ok((await titulos(biblioteca)).length > 0, "y siguen ahí");
   await capturar(page, "10-ideas-del-asistente");
   await page.locator("#anadir-buscar").fill("fútbol");
-  await page.waitForFunction(() => document.querySelectorAll("[aria-label='Ideas del asistente'] li > button span.line-clamp-2").length === 2);
+  const coincidenciasFutbol = nombres.filter((nombre) => /fútbol/i.test(nombre)).length;
+  await page.waitForFunction((esperado) => document.querySelectorAll("[aria-label='Ideas del asistente'] li > button span.line-clamp-2").length === esperado, coincidenciasFutbol);
   assert.deepEqual((await titulos(grupo)).sort(), nombres.filter((nombre) => /fútbol/i.test(nombre)).sort(), "la búsqueda filtra el grupo");
   // El nombre completo de la última idea (fuera de la primera página de 24) la trae al grupo: así la busca el paso de paridad de precio del humo e2e.
   await page.locator("#anadir-buscar").fill(nombres.at(-1)!);

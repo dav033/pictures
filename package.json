@@ -34,7 +34,7 @@
     "test-comparar-constante": "tsx scripts/test/test-comparar-constante.ts",
     "test-guardia-prerender": "tsx scripts/test/test-guardia-prerender.ts",
     "test-honestidad-forzada": "tsx --conditions=react-server scripts/test/test-honestidad-forzada.ts",
-    "test-columna-asimetrica-densa": "tsx --conditions=react-server scripts/test/test-columna-asimetrica-densa.ts",
+    "test-columna-asimetrica-densa": "tsx --conditions=react-server scripts/test/test-columna-asimetrica-densa.ts && tsx --conditions=react-server scripts/test/test-columna-asimetrica-densidad.ts",
     "test-sobrantes-compra": "tsx --conditions=react-server scripts/test/test-sobrantes-compra.ts",
     "ui:test-sobrantes-cotizacion": "tsx scripts/test/test-ui-sobrantes-cotizacion.ts",
     "test-cobertura-estructuras-guiada": "tsx --conditions=react-server scripts/test/test-cobertura-estructuras-guiada.ts",

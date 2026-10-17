@@ -32,9 +32,12 @@ const MEDIDAS = ["anchoM", "altoM", "largoM"] as const;
 
 type Foto = { globos: number; ratio: number | null; precio: number | string | null; noRep: boolean };
 /**
- * Medido el 2026-10-09 con el motor 1.2.2. `precio`: política `python`; `noRep`: el motor no arma el caso entero. Los precios
- * se volvieron a medir el 2026-10-10 con D-038: cada globo (talla y color) lleva su propia reserva, cubierta con su diseño en
- * una sola combinación si los repuestos no cuestan de más (`comprarGlobo`).
+ * Measured on 2026-10-09 with motor 1.2.2. Ideas 29–31 were remeasured on 2026-10-16 after REQ-014 T12 changed their
+ * saved plans. Idea 30 now includes a football figure: motor 1.2.6 declares it non-representable and retains only the
+ * column, so its price and ratio are null instead of claiming to cover the full design. `precio` uses the Python
+ * purchase policy; `noRep` means the motor does not build the whole case. Prices follow D-038: each size/color balloon
+ * has its own reserve, covered with its design in one combination when spare packages stay under the cost cap
+ * (`comprarGlobo`).
  */
 const FOTO: Record<string, Foto> = {
   "idea-deco-real-01-305": { globos: 112, ratio: 0.772, precio: 34000, noRep: false },
@@ -62,9 +65,9 @@ const FOTO: Record<string, Foto> = {
   "idea-deco-real-25-guirnalda-dia-de-la-madre": { globos: 52, ratio: 0.813, precio: 22323, noRep: false },
   "idea-deco-real-27-aro-navideno-verde-salvia": { globos: 0, ratio: null, precio: null, noRep: true },
   "idea-deco-real-28-aro-blanco-dorado-y-nude": { globos: 105, ratio: 1.117, precio: 66834, noRep: false },
-  "idea-deco-real-29-arco-link-o-loon-fucsia-tulipanes": { globos: 32, ratio: 1.067, precio: 11889, noRep: false },
-  "idea-deco-real-30-columna-balon-futbol": { globos: 72, ratio: 1.2, precio: 51554, noRep: false },
-  "idea-deco-real-31-arco-futbol-balones-gigantes": { globos: 105, ratio: 1.4, precio: 71558, noRep: false },
+  "idea-deco-real-29-arco-link-o-loon-fucsia-tulipanes": { globos: 100, ratio: 1.333, precio: 30037, noRep: false },
+  "idea-deco-real-30-columna-balon-futbol": { globos: 72, ratio: null, precio: null, noRep: true },
+  "idea-deco-real-31-arco-futbol-balones-gigantes": { globos: 177, ratio: 1.427, precio: 103525, noRep: false },
   "oficial-arco": { globos: 128, ratio: null, precio: 58035, noRep: false },
   "oficial-arco_asimetrico": { globos: 117, ratio: null, precio: 95656, noRep: false },
   "oficial-arco_no_denso": { globos: 96, ratio: null, precio: 102503, noRep: false },

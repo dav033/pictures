@@ -18,29 +18,37 @@
     },
     "estructuras": [
       {
-        "estructura_id": "EST_01_COLUMNA",
-        "nombre": "Bases del arco (dos torres de cuartetos)",
-        "tipo": "columna",
+        "estructura_id": "EST_01_ARCO",
+        "nombre": "Arco Link-O-Loon fucsia con bases",
+        "tipo": "arco",
         "rol_escena": "focal",
         "ubicacion": "arco_central",
         "medidas": {
-          "ancho_m": 0.7,
-          "alto_m": 0.7
+          "ancho_m": 2,
+          "alto_m": 2
         },
-        "repeticiones": 2,
+        "repeticiones": 1,
         "densidad": "media",
         "mezcla": "clasica",
         "materiales": [
           {
             "product_id": "8634239451431",
+            "variant_id": "46594234614055",
             "color": "fucsia",
-            "participacion": 1,
+            "participacion": 0.7317073170731707,
             "rol_material": "principal"
+          },
+          {
+            "product_id": "8634219561255",
+            "variant_id": "46594172027175",
+            "color": "fucsia",
+            "participacion": 0.2682926829268293,
+            "rol_material": "secundario"
           }
         ],
-        "porque": "Las dos bases del arco de la referencia REF_01_E01: tres cuartetos fucsia cada una.",
+        "porque": "Arco central Link-O-Loon fucsia con dos bases de globos redondos; materiales y proporción estimados desde la foto.",
         "referencia_element_id": "REF_01_E01",
-        "estructura_oficial": "columna",
+        "estructura_oficial": "arco",
         "colores_referencia": [
           "fucsia"
         ]
@@ -48,7 +56,8 @@
     ],
     "supuestos": [
       "Bases de unos 0,7 m de alto y de ancho medidos con el tamaño del eslabón de 12 pulgadas.",
-      "El arco de eslabones, las perlas, los tulipanes y el moño se cuentan en la foto: Python no modela eslabones ni modelables."
+      "El arco de eslabones, las perlas, los tulipanes y el moño se cuentan en la foto: Python no modela eslabones ni modelables.",
+      "Dimensiones aproximadas de 2 × 2 m, estimadas con el tamaño Link-O-Loon R-12; la foto no aporta escala física."
     ],
     "restricciones": {
       "estructuras": [],
@@ -83,29 +92,37 @@
       },
       "estructuras": [
         {
-          "estructura_id": "EST_01_COLUMNA",
-          "nombre": "Bases del arco (dos torres de cuartetos)",
-          "tipo": "columna",
+          "estructura_id": "EST_01_ARCO",
+          "nombre": "Arco Link-O-Loon fucsia con bases",
+          "tipo": "arco",
           "rol_escena": "focal",
           "ubicacion": "arco_central",
           "medidas": {
-            "ancho_m": 0.7,
-            "alto_m": 0.7
+            "ancho_m": 2,
+            "alto_m": 2
           },
-          "repeticiones": 2,
+          "repeticiones": 1,
           "densidad": "media",
           "mezcla": "clasica",
           "materiales": [
             {
               "product_id": "8634239451431",
+              "variant_id": "46594234614055",
               "color": "fucsia",
-              "participacion": 1,
+              "participacion": 0.7317073170731707,
               "rol_material": "principal"
+            },
+            {
+              "product_id": "8634219561255",
+              "variant_id": "46594172027175",
+              "color": "fucsia",
+              "participacion": 0.2682926829268293,
+              "rol_material": "secundario"
             }
           ],
-          "porque": "Las dos bases del arco de la referencia REF_01_E01: tres cuartetos fucsia cada una.",
+          "porque": "Arco central Link-O-Loon fucsia con dos bases de globos redondos; materiales y proporción estimados desde la foto.",
           "referencia_element_id": "REF_01_E01",
-          "estructura_oficial": "columna",
+          "estructura_oficial": "arco",
           "colores_referencia": [
             "fucsia"
           ]
@@ -113,7 +130,8 @@
       ],
       "supuestos": [
         "Bases de unos 0,7 m de alto y de ancho medidos con el tamaño del eslabón de 12 pulgadas.",
-        "El arco de eslabones, las perlas, los tulipanes y el moño se cuentan en la foto: Python no modela eslabones ni modelables."
+        "El arco de eslabones, las perlas, los tulipanes y el moño se cuentan en la foto: Python no modela eslabones ni modelables.",
+        "Dimensiones aproximadas de 2 × 2 m, estimadas con el tamaño Link-O-Loon R-12; la foto no aporta escala física."
       ],
       "restricciones": {
         "estructuras": [],
@@ -130,9 +148,89 @@
       },
       "referencia_omitida": []
     },
-    "plan_hash": "a390dd888bcb09fb4a3baf7f2537c5709f3e8ff3bf5051e1b3697dc0adfc49ae",
-    "request_id": "c2d8db32-aa83-5bb6-a380-4ce28ca12528",
+    "plan_hash": "c130f5bd76d0f7eb4a7cba081298f726b5175b53a5d7fa4eca4d58876fe813d5",
+    "request_id": "09331bce-5627-4f39-ac3e-ae79affac76c",
     "compras": [
+      {
+        "variant_id": "46594234548519",
+        "product_id": "8634239451431",
+        "sku": "B2B-20000727",
+        "sku_original": "B2B-20000727",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594234548519",
+        "inventory_quantity": 987565,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 12",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "fucsia",
+        "unidades_necesarias": 12,
+        "design_quantity": 12,
+        "waste_reserve": 0,
+        "required_quantity": 12,
+        "unidades_con_merma": 12,
+        "unidades_paquete": 12,
+        "paquetes": 1,
+        "purchase_quantity": 12,
+        "used": 12,
+        "leftover_inventory": 0,
+        "consumption_cost": 3963,
+        "purchase_cost": 3963,
+        "additional_package_for_waste": false,
+        "sobrante": 0,
+        "precio_paquete": 3963,
+        "subtotal": 3963,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fucsia_-_Fuchsia_012.jpg?v=1762967416"
+      },
+      {
+        "variant_id": "46594234581287",
+        "product_id": "8634239451431",
+        "sku": "B2B-20000728",
+        "sku_original": "B2B-20000728",
+        "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "source_variant_id": "gid://shopify/ProductVariant/46594234581287",
+        "inventory_quantity": 998867,
+        "unidades_inferidas": false,
+        "titulo": "B2b Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 20",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "fucsia",
+        "unidades_necesarias": 20,
+        "design_quantity": 20,
+        "waste_reserve": 0,
+        "required_quantity": 20,
+        "unidades_con_merma": 20,
+        "unidades_paquete": 20,
+        "paquetes": 1,
+        "purchase_quantity": 20,
+        "used": 20,
+        "leftover_inventory": 0,
+        "consumption_cost": 6029,
+        "purchase_cost": 6029,
+        "additional_package_for_waste": false,
+        "sobrante": 0,
+        "precio_paquete": 6029,
+        "subtotal": 6029,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ],
+        "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fucsia_-_Fuchsia_012.jpg?v=1762967416"
+      },
       {
         "variant_id": "46594234614055",
         "product_id": "8634239451431",
@@ -146,29 +244,29 @@
         "tamano_codigo": "R-12",
         "diam_pulg": 12,
         "color": "fucsia",
-        "unidades_necesarias": 30,
-        "design_quantity": 30,
-        "waste_reserve": 3,
-        "required_quantity": 33,
-        "unidades_con_merma": 33,
+        "unidades_necesarias": 43,
+        "design_quantity": 43,
+        "waste_reserve": 6,
+        "required_quantity": 49,
+        "unidades_con_merma": 49,
         "unidades_paquete": 50,
         "paquetes": 1,
         "purchase_quantity": 50,
-        "used": 30,
-        "leftover_inventory": 17,
-        "consumption_cost": 8604,
+        "used": 43,
+        "leftover_inventory": 1,
+        "consumption_cost": 12776,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "sobrante": 20,
+        "sobrante": 7,
         "precio_paquete": 13037,
         "subtotal": 13037,
         "estructuras": [
-          "EST_01_COLUMNA"
+          "EST_01_ARCO"
         ],
         "elementos_origen": [
           {
             "kind": "estructura",
-            "id": "EST_01_COLUMNA"
+            "id": "EST_01_ARCO"
           }
         ],
         "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fucsia_-_Fuchsia_012.jpg?v=1762967416"
@@ -176,18 +274,18 @@
     ],
     "totales": {
       "globos_por_tamano": {
-        "R-12": 30
+        "R-12": 75
       },
-      "total_unidades": 30,
-      "total_cop": 13037,
-      "design_quantity": 30,
-      "target_waste_reserve": 3,
-      "covered_waste_reserve": 3,
+      "total_unidades": 75,
+      "total_cop": 23029,
+      "design_quantity": 75,
+      "target_waste_reserve": 6,
+      "covered_waste_reserve": 6,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 20,
-      "purchase_cost": 13037,
-      "consumption_cost": 8604,
-      "waste_only_savings_cop": 0,
+      "natural_package_surplus": 7,
+      "purchase_cost": 23029,
+      "consumption_cost": 22768,
+      "waste_only_savings_cop": 9992,
       "additional_waste_packages": 0,
       "ahorro_paquetes_cop": 0,
       "incluye_iva": true,
@@ -197,36 +295,84 @@
       "estado": "APROBACION_REQUERIDA",
       "delta_cop": 0
     },
-    "alternativas": [
-      {
-        "familia_id": "8634239451431",
-        "titulo": "B2b Globo Latex Redondo Fashion Fucsia",
-        "total_cop": 13037,
-        "ahorro_cop": 0,
-        "etiqueta": "economica"
-      }
-    ],
+    "alternativas": [],
     "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
     "sustituciones": [],
-    "sin_cobertura": [],
+    "sin_cobertura": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "product_id": "8634219561255",
+        "tamano": "R-12"
+      }
+    ],
     "advertencias": [
-      "sobrante_alto:46594234614055"
+      "estructura_sin_cobertura:EST_01_ARCO"
     ],
     "estructuras": [
       {
-        "estructura_id": "EST_01_COLUMNA",
-        "nombre": "Bases del arco (dos torres de cuartetos)",
-        "tipo": "columna",
+        "estructura_id": "EST_01_ARCO",
+        "nombre": "Arco Link-O-Loon fucsia con bases",
+        "tipo": "arco",
         "ubicacion": "arco_central",
-        "repeticiones": 2,
-        "eje_m": 0.7,
-        "total_unidades": 30,
+        "repeticiones": 1,
+        "eje_m": 4.84,
+        "total_unidades": 75,
         "lineas": [
           {
-            "estructura_id": "EST_01_COLUMNA",
+            "estructura_id": "EST_01_ARCO",
             "origen": {
               "kind": "estructura",
-              "id": "EST_01_COLUMNA"
+              "id": "EST_01_ARCO"
+            },
+            "product_id": "8634239451431",
+            "variant_id": "46594234548519",
+            "sku": "B2B-20000727",
+            "sku_original": "B2B-20000727",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594234548519",
+            "inventory_quantity": 987565,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 12",
+            "color": "fucsia",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 12,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fucsia_-_Fuchsia_012.jpg?v=1762967416",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_ARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_ARCO"
+            },
+            "product_id": "8634239451431",
+            "variant_id": "46594234581287",
+            "sku": "B2B-20000728",
+            "sku_original": "B2B-20000728",
+            "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+            "source_variant_id": "gid://shopify/ProductVariant/46594234581287",
+            "inventory_quantity": 998867,
+            "unidades_inferidas": false,
+            "titulo": "B2b Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 20",
+            "color": "fucsia",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 20,
+            "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fucsia_-_Fuchsia_012.jpg?v=1762967416",
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_ARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_ARCO"
             },
             "product_id": "8634239451431",
             "variant_id": "46594234614055",
@@ -243,7 +389,7 @@
             "diam_cm": 30.5,
             "forma": "redondo",
             "acabado": "fashion",
-            "unidades": 30,
+            "unidades": 43,
             "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Fucsia_-_Fuchsia_012.jpg?v=1762967416",
             "sustitucion": null
           }
@@ -252,7 +398,7 @@
           {
             "diam_pulg": 12,
             "forma": "redondo",
-            "unidades": 30,
+            "unidades": 75,
             "pct": 100
           }
         ],
@@ -261,85 +407,223 @@
     ],
     "costes_por_estructura": [
       {
-        "estructura_id": "EST_01_COLUMNA",
-        "consumo_cop": 7822
+        "estructura_id": "EST_01_ARCO",
+        "consumo_cop": 21204
       }
     ]
   },
   "material_estimate": {
     "version": "design-material-estimate-v1",
     "design": {
-      "type": "columna",
+      "type": "arco",
       "shape": "clasica",
       "dimensions_m": {
-        "width": 0.7,
-        "height": 0.7,
+        "width": 2,
+        "height": 2,
         "length": null
       },
-      "installation_length_m": 1.4,
+      "installation_length_m": 4.84,
       "density": "media",
       "visual_density": "medium",
-      "visual_scale": "small",
-      "cluster_count": 2
+      "visual_scale": "large",
+      "cluster_count": 1
     },
     "balloons": [
       {
-        "structure_id": "EST_01_COLUMNA",
+        "structure_id": "EST_01_ARCO",
+        "product_id": "8634239451431",
+        "variant_id": "46594234548519",
+        "color": "fucsia",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 12,
+        "waste_reserve": 0,
+        "required_quantity": 12,
+        "waste_adjusted_quantity": 12
+      },
+      {
+        "structure_id": "EST_01_ARCO",
+        "product_id": "8634239451431",
+        "variant_id": "46594234581287",
+        "color": "fucsia",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 20,
+        "waste_reserve": 0,
+        "required_quantity": 20,
+        "waste_adjusted_quantity": 20
+      },
+      {
+        "structure_id": "EST_01_ARCO",
         "product_id": "8634239451431",
         "variant_id": "46594234614055",
         "color": "fucsia",
         "finish": "fashion",
         "size_inches": 12,
         "shape": "redondo",
-        "design_quantity": 30,
+        "design_quantity": 43,
         "waste_reserve": 0,
-        "required_quantity": 30,
-        "waste_adjusted_quantity": 30
+        "required_quantity": 43,
+        "waste_adjusted_quantity": 43
       }
     ],
     "special_elements": [],
     "purchases": [
       {
         "product_id": "8634239451431",
+        "variant_id": "46594234548519",
+        "design_quantity": 12,
+        "waste_reserve": 0,
+        "required_quantity": 12,
+        "waste_adjusted_quantity": 12,
+        "units_per_package": 12,
+        "package_count": 1,
+        "purchase_quantity": 12,
+        "used": 12,
+        "leftover_inventory": 0,
+        "consumption_cost": 3963,
+        "purchase_cost": 3963,
+        "additional_package_for_waste": false,
+        "operational_surplus": 0,
+        "potential_surplus": 0
+      },
+      {
+        "product_id": "8634239451431",
+        "variant_id": "46594234581287",
+        "design_quantity": 20,
+        "waste_reserve": 0,
+        "required_quantity": 20,
+        "waste_adjusted_quantity": 20,
+        "units_per_package": 20,
+        "package_count": 1,
+        "purchase_quantity": 20,
+        "used": 20,
+        "leftover_inventory": 0,
+        "consumption_cost": 6029,
+        "purchase_cost": 6029,
+        "additional_package_for_waste": false,
+        "operational_surplus": 0,
+        "potential_surplus": 0
+      },
+      {
+        "product_id": "8634239451431",
         "variant_id": "46594234614055",
-        "design_quantity": 30,
-        "waste_reserve": 3,
-        "required_quantity": 33,
-        "waste_adjusted_quantity": 33,
+        "design_quantity": 43,
+        "waste_reserve": 6,
+        "required_quantity": 49,
+        "waste_adjusted_quantity": 49,
         "units_per_package": 50,
         "package_count": 1,
         "purchase_quantity": 50,
-        "used": 30,
-        "leftover_inventory": 17,
-        "consumption_cost": 8604,
+        "used": 43,
+        "leftover_inventory": 1,
+        "consumption_cost": 12776,
         "purchase_cost": 13037,
         "additional_package_for_waste": false,
-        "operational_surplus": 17,
-        "potential_surplus": 20
+        "operational_surplus": 1,
+        "potential_surplus": 7
       }
     ],
     "totals": {
-      "design_quantity": 30,
-      "target_waste_reserve": 3,
-      "covered_waste_reserve": 3,
+      "design_quantity": 75,
+      "target_waste_reserve": 6,
+      "covered_waste_reserve": 6,
       "uncovered_waste_reserve": 0,
-      "natural_package_surplus": 20,
-      "required_quantity": 33,
-      "consumption_cost": 8604,
-      "purchase_cost": 13037,
-      "waste_only_savings_cop": 0,
+      "natural_package_surplus": 7,
+      "required_quantity": 81,
+      "consumption_cost": 22768,
+      "purchase_cost": 23029,
+      "waste_only_savings_cop": 9992,
       "additional_waste_packages": 0,
-      "waste_adjusted_quantity": 33,
-      "purchase_quantity": 50,
-      "operational_surplus": 17,
-      "potential_surplus": 20
+      "waste_adjusted_quantity": 81,
+      "purchase_quantity": 82,
+      "operational_surplus": 1,
+      "potential_surplus": 7
     },
     "warnings": [
-      "sobrante_alto:46594234614055"
+      "estructura_sin_cobertura:EST_01_ARCO"
     ]
   },
   "quote": {
     "lineas": [
+      {
+        "id": "46594234548519",
+        "productId": "8634239451431",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "fucsia",
+        "cantidadNecesaria": 12,
+        "designQuantity": 12,
+        "wasteReserve": 0,
+        "requiredQuantity": 12,
+        "purchaseQuantity": 12,
+        "used": 12,
+        "leftoverInventory": 0,
+        "consumptionCost": 3963,
+        "purchaseCost": 3963,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594234548519",
+        "nombre": "B2b Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 12",
+        "precioPaquete": 3963,
+        "unidadesPaquete": 12,
+        "paquetes": 1,
+        "subtotal": 3963,
+        "sobrante": 0
+      },
+      {
+        "id": "46594234581287",
+        "productId": "8634239451431",
+        "tamano": "R-12",
+        "tamanoCodigo": "R-12",
+        "diamPulg": 12,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementosOrigen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ],
+        "referenciaElementIds": [
+          "REF_01_E01"
+        ],
+        "color": "fucsia",
+        "cantidadNecesaria": 20,
+        "designQuantity": 20,
+        "wasteReserve": 0,
+        "requiredQuantity": 20,
+        "purchaseQuantity": 20,
+        "used": 20,
+        "leftoverInventory": 0,
+        "consumptionCost": 6029,
+        "purchaseCost": 6029,
+        "additionalPackageForWaste": false,
+        "disponible": true,
+        "varianteId": "46594234581287",
+        "nombre": "B2b Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 20",
+        "precioPaquete": 6029,
+        "unidadesPaquete": 20,
+        "paquetes": 1,
+        "subtotal": 6029,
+        "sobrante": 0
+      },
       {
         "id": "46594234614055",
         "productId": "8634239451431",
@@ -347,26 +631,26 @@
         "tamanoCodigo": "R-12",
         "diamPulg": 12,
         "estructuras": [
-          "EST_01_COLUMNA"
+          "EST_01_ARCO"
         ],
         "elementosOrigen": [
           {
             "kind": "estructura",
-            "id": "EST_01_COLUMNA"
+            "id": "EST_01_ARCO"
           }
         ],
         "referenciaElementIds": [
           "REF_01_E01"
         ],
         "color": "fucsia",
-        "cantidadNecesaria": 30,
-        "designQuantity": 30,
-        "wasteReserve": 3,
-        "requiredQuantity": 33,
+        "cantidadNecesaria": 43,
+        "designQuantity": 43,
+        "wasteReserve": 6,
+        "requiredQuantity": 49,
         "purchaseQuantity": 50,
-        "used": 30,
-        "leftoverInventory": 17,
-        "consumptionCost": 8604,
+        "used": 43,
+        "leftoverInventory": 1,
+        "consumptionCost": 12776,
         "purchaseCost": 13037,
         "additionalPackageForWaste": false,
         "disponible": true,
@@ -376,19 +660,19 @@
         "unidadesPaquete": 50,
         "paquetes": 1,
         "subtotal": 13037,
-        "sobrante": 20
+        "sobrante": 7
       }
     ],
-    "total": 13037,
+    "total": 23029,
     "mermaPorcentaje": 8,
-    "purchaseCost": 13037,
-    "consumptionCost": 8604,
-    "targetWasteReserve": 3,
-    "coveredWasteReserve": 3,
-    "leftoverInventory": 17,
+    "purchaseCost": 23029,
+    "consumptionCost": 22768,
+    "targetWasteReserve": 6,
+    "coveredWasteReserve": 6,
+    "leftoverInventory": 1,
     "incluyeIva": true,
     "complementosSoportados": false,
-    "plan_hash": "a390dd888bcb09fb4a3baf7f2537c5709f3e8ff3bf5051e1b3697dc0adfc49ae"
+    "plan_hash": "c130f5bd76d0f7eb4a7cba081298f726b5175b53a5d7fa4eca4d58876fe813d5"
   },
   "lista_materiales": {
     "operation_schema_version": "lista-materiales-result.v1",
@@ -396,17 +680,37 @@
     "incluye_iva": true,
     "lineas": [
       {
+        "variant_id": "46594234548519",
+        "nombre": "R-12 / PAQUETE X 12",
+        "cantidad_necesaria": 12,
+        "unidades_paquete": 12,
+        "paquetes": 1,
+        "precio_paquete": 3963,
+        "subtotal": 3963,
+        "sobrante": 0
+      },
+      {
+        "variant_id": "46594234581287",
+        "nombre": "R-12 / PAQUETE X 20",
+        "cantidad_necesaria": 20,
+        "unidades_paquete": 20,
+        "paquetes": 1,
+        "precio_paquete": 6029,
+        "subtotal": 6029,
+        "sobrante": 0
+      },
+      {
         "variant_id": "46594234614055",
         "nombre": "R-12 / PAQUETE X 50",
-        "cantidad_necesaria": 30,
+        "cantidad_necesaria": 43,
         "unidades_paquete": 50,
         "paquetes": 1,
         "precio_paquete": 13037,
         "subtotal": 13037,
-        "sobrante": 20
+        "sobrante": 7
       }
     ],
-    "total": 13037
+    "total": 23029
   },
   "descartadas": [
     "Arco de eslabones Link-O-Loon: el resolutor cuenta bandas orgánicas de globos redondos, no cadenas de eslabones; se contó en la foto.",

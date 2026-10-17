@@ -7,7 +7,7 @@
   {
    "formatoId": "R-5",
    "codigo": "005",
-   "cantidad": 7,
+   "cantidad": 5,
    "productId": "8634235781415",
    "color": "blanco",
    "diamPulg": 5,
@@ -32,7 +32,7 @@
   {
    "formatoId": "R-5",
    "codigo": "031",
-   "cantidad": 12,
+   "cantidad": 20,
    "productId": "8634233684263",
    "color": "verde",
    "diamPulg": 5,
@@ -57,7 +57,7 @@
   {
    "formatoId": "R-5",
    "codigo": "080",
-   "cantidad": 10,
+   "cantidad": 19,
    "productId": "8634239516967",
    "color": "negro",
    "diamPulg": 5,
@@ -82,7 +82,7 @@
   {
    "formatoId": "R-9",
    "codigo": "005",
-   "cantidad": 9,
+   "cantidad": 11,
    "productId": "8634235781415",
    "color": "blanco",
    "diamPulg": 9,
@@ -107,7 +107,7 @@
   {
    "formatoId": "R-9",
    "codigo": "031",
-   "cantidad": 9,
+   "cantidad": 21,
    "productId": "8634233684263",
    "color": "verde",
    "diamPulg": 9,
@@ -132,7 +132,7 @@
   {
    "formatoId": "R-9",
    "codigo": "080",
-   "cantidad": 9,
+   "cantidad": 25,
    "productId": "8634239516967",
    "color": "negro",
    "diamPulg": 9,
@@ -157,7 +157,7 @@
   {
    "formatoId": "R-12",
    "codigo": "005",
-   "cantidad": 13,
+   "cantidad": 30,
    "productId": "8634235781415",
    "color": "blanco",
    "diamPulg": 12,
@@ -182,7 +182,7 @@
   {
    "formatoId": "R-12",
    "codigo": "031",
-   "cantidad": 16,
+   "cantidad": 18,
    "productId": "8634233684263",
    "color": "verde",
    "diamPulg": 12,
@@ -207,7 +207,7 @@
   {
    "formatoId": "R-12",
    "codigo": "080",
-   "cantidad": 12,
+   "cantidad": 11,
    "productId": "8634239516967",
    "color": "negro",
    "diamPulg": 12,
@@ -232,7 +232,7 @@
   {
    "formatoId": "R-18",
    "codigo": "005",
-   "cantidad": 5,
+   "cantidad": 9,
    "productId": "8634235781415",
    "color": "blanco",
    "diamPulg": 18,
@@ -252,7 +252,7 @@
   {
    "formatoId": "R-18",
    "codigo": "031",
-   "cantidad": 1,
+   "cantidad": 4,
    "productId": "8634233684263",
    "color": "verde",
    "diamPulg": 18,
@@ -272,7 +272,7 @@
   {
    "formatoId": "R-18",
    "codigo": "080",
-   "cantidad": 4,
+   "cantidad": 1,
    "productId": "8634239516967",
    "color": "negro",
    "diamPulg": 18,
@@ -318,42 +318,57 @@
      "precio": 10124
     }
    ]
+  },
+  {
+   "formatoId": "R-24",
+   "codigo": "080",
+   "cantidad": 1,
+   "productId": "8634239516967",
+   "color": "negro",
+   "diamPulg": 24,
+   "presentaciones": [
+    {
+     "variantId": "46594235400487",
+     "unidadesPaq": 3,
+     "precio": 10124
+    }
+   ]
   }
  ],
  "esperado": {
-  "total": 73624,
+  "total": 103525,
   "reserva": {
-   "objetivo": 16,
-   "cubierta": 16,
+   "objetivo": 22,
+   "cubierta": 22,
    "sinCubrir": 0,
-   "excedenteNatural": 55
+   "excedenteNatural": 52
   },
   "compras": [
    {
-    "variantId": "46594213085479",
-    "paquetes": 1,
-    "cantidad": 12,
-    "reserva": 1,
+    "variantId": "46594213052711",
+    "paquetes": 2,
+    "cantidad": 20,
+    "reserva": 2,
     "paraReserva": true
    },
    {
     "variantId": "46594213151015",
-    "paquetes": 1,
-    "cantidad": 9,
-    "reserva": 1,
+    "paquetes": 2,
+    "cantidad": 21,
+    "reserva": 2,
     "paraReserva": false
    },
    {
     "variantId": "46594213282087",
     "paquetes": 1,
-    "cantidad": 16,
+    "cantidad": 18,
     "reserva": 2,
     "paraReserva": false
    },
    {
     "variantId": "46594213380391",
     "paquetes": 1,
-    "cantidad": 1,
+    "cantidad": 4,
     "reserva": 1,
     "paraReserva": false
    },
@@ -367,28 +382,28 @@
    {
     "variantId": "46594221080871",
     "paquetes": 1,
-    "cantidad": 7,
+    "cantidad": 5,
     "reserva": 1,
     "paraReserva": false
    },
    {
     "variantId": "46594221179175",
     "paquetes": 1,
-    "cantidad": 9,
+    "cantidad": 11,
     "reserva": 1,
     "paraReserva": false
    },
    {
-    "variantId": "46594221310247",
-    "paquetes": 1,
-    "cantidad": 13,
-    "reserva": 2,
-    "paraReserva": false
+    "variantId": "46594221277479",
+    "paquetes": 3,
+    "cantidad": 30,
+    "reserva": 3,
+    "paraReserva": true
    },
    {
     "variantId": "46594221474087",
-    "paquetes": 1,
-    "cantidad": 5,
+    "paquetes": 2,
+    "cantidad": 9,
     "reserva": 1,
     "paraReserva": false
    },
@@ -401,29 +416,43 @@
    },
    {
     "variantId": "46594234974503",
-    "paquetes": 1,
-    "cantidad": 10,
-    "reserva": 1,
-    "paraReserva": false
+    "paquetes": 2,
+    "cantidad": 19,
+    "reserva": 2,
+    "paraReserva": true
    },
    {
     "variantId": "46594235072807",
     "paquetes": 1,
-    "cantidad": 9,
+    "cantidad": 12,
+    "reserva": 0,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594235105575",
+    "paquetes": 1,
+    "cantidad": 13,
+    "reserva": 2,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594235171111",
+    "paquetes": 1,
+    "cantidad": 11,
     "reserva": 1,
     "paraReserva": false
    },
    {
-    "variantId": "46594235203879",
-    "paquetes": 1,
-    "cantidad": 12,
-    "reserva": 1,
-    "paraReserva": true
-   },
-   {
     "variantId": "46594235302183",
     "paquetes": 1,
-    "cantidad": 4,
+    "cantidad": 1,
+    "reserva": 1,
+    "paraReserva": false
+   },
+   {
+    "variantId": "46594235400487",
+    "paquetes": 1,
+    "cantidad": 1,
     "reserva": 1,
     "paraReserva": false
    }
