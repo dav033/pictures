@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-19-semiarco-organico-combinaciones-con-reflex-26bbc",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.6"
+  "version": "1.2.7"
  },
- "especHash": "1bd23df82d8618c6a69a11bb7074ac02340097dbc972dcf2fc3fcbcb5c85e833",
+ "especHash": "26bd53bbb6eae1a4b861a1aced804a5d2ba4b12c9167c164d8b74f7728921597",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

@@ -39,7 +39,15 @@ const TODAS = [...ZONAS_SALON];
 /** Nada de un grupo (mesa, zona o decoración adoptada del fondo) se encima con otro grupo. */
 function sinEncimar(e: Escena) {
   const c = cajas(e);
-  const grupo = (id: string) => { const i = e.salon?.piezas[id]; return !i ? `usuario:${id}` : i.zona === "mesas" ? id : i.zona; };
+  const grupo = (id: string) => {
+    const info = e.salon?.piezas[id];
+    if (!info) return `usuario:${id}`;
+    if (info.rol === "grupo_sillas") {
+      const padre = e.nodos.find((n) => n.id === id)?.colocacion;
+      return `mesa:${padre?.en === "sobre" ? padre.padreId : id}`;
+    }
+    return info.zona === "mesas" ? `mesa:${id}` : info.zona;
+  };
   const ids = [...c.keys()].filter((id) => e.salon?.piezas[id]);
   ids.forEach((a, i) => { for (const b of ids.slice(i + 1)) if (grupo(a) !== grupo(b)) assert.ok(!seCruzan(c.get(a)!, c.get(b)!), `${a} se encima con ${b}`); });
 }

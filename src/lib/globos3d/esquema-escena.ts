@@ -56,7 +56,7 @@ const RegistroSalonSchema = z.object({
   peticion: z.string().max(200).optional(),
   piezas: z.record(z.string().min(1).max(80), z.object({
     zona: z.enum([...ZONAS_SALON, "mesas"]),
-    rol: z.enum(["mesa", "ancla", "silla", "adorno", "adoptada"]),
+    rol: z.enum(["mesa", "ancla", "silla", "grupo_sillas", "adorno", "adoptada"]),
     ranura: z.number().int().min(1).max(1000).optional(),
     pos: z.object({ x: Numero, z: Numero }).optional(),
   })).refine((r) => Object.keys(r).length <= MAX_NODOS, "Demasiadas piezas anotadas"),

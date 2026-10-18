@@ -2,16 +2,18 @@ import { avisar } from "./avisos-usuario";
 import type { Escena, NodoEscena } from "./escena";
 import { fallar } from "./herramientas-escena-colores";
 import { MAX_NODOS, SALA_MAXIMA_CM } from "./limites-escena";
+import { grupoDeSillasDe } from "./mobiliario-asientos-mesa";
+import { esMesaParametrica } from "./mobiliario-conjunto";
 import { ALTO_SALON_CM, falloDeCapacidad, metros, rangoSala, resumenCapacidad, type ResultadoSalon } from "./salon-armar";
 import {
   distribuirSalon, MAX_INVITADOS_SALON, aforoDeMesas, falloDeMesas, falloDeSillas, mesasNecesarias, medidasDeMesa, MESAS_SALON, rectDeElemento, type Celda, type DistribucionSalon, type ElementoSalon, type ParamsSalon, type TipoMesaSalon,
 } from "./salon-evento";
-import { desplazarNodo, nodoDeElemento, paletaDeMesas, ponerElemento, quitarConLoSuyo, sinGruposSobreMesasDelSalon } from "./salon-nodos";
+import { desplazarNodo, paletaDeMesas, ponerElemento, quitarConLoSuyo, reemplazarMesaDelSalon, sinGruposSobreMesasDelSalon } from "./salon-nodos";
 import { anclaDeZona, conAnotacion, estaMovida, mesasVivas, miembrosDeZona, registroVivo, type PiezaViva } from "./salon-registro";
 import { resumenDeSalon } from "./salon-resumen";
 import { conSalaNueva } from "./salon-techos";
 import { piezasDeUsuarioEnElPiso } from "./salon-usuario";
-import { cajaDeMueble, cajaDeZona, dentroDe, inflar, seCruzan, ZONAS_SALON, zonasPresentes, type RectCm, type ZonaSalon } from "./salon-zonas";
+import { cajaDeMueble, cajaDeZona, dentroDe, inflar, rectDe, seCruzan, ZONAS_SALON, zonasPresentes, type RectCm, type ZonaSalon } from "./salon-zonas";
 
 /**
  * `ajustar_salon`: cambia un salón armado sin rehacerlo, y respeta lo que el usuario hizo (lo dice el registro, no los ids):
@@ -29,10 +31,16 @@ const elementoDeMesa = (mesa: TipoMesaSalon, sillas: number | undefined, c: Celd
   return { id: "salon-mesa", zona: null, rol: "mesa", mueble: m.mueble, anchoCm: m.anchoCm, fondoCm: m.fondoCm, altoCm: m.altoCm, ...(sillas !== undefined ? { sillas } : {}), xCm: c.xCm, zCm: c.zCm, giroGrados: 0 };
 };
 
-const cajaDe = (v: PiezaViva): RectCm => cajaDeMueble(v.nodo) ?? { x0: 0, x1: 0, z0: 0, z1: 0 };
+const cajaDe = (v: PiezaViva, mesa: TipoMesaSalon, sillas?: number): RectCm => {
+  const c = v.nodo.colocacion;
+  if (c.en !== "piso") return { x0: 0, x1: 0, z0: 0, z1: 0 };
+  const medidas = medidasDeMesa(mesa, sillas);
+  const girada = Math.abs(Math.round(c.giroGrados)) % 180 === 90;
+  return rectDe(c.xCm, c.zCm, girada ? medidas.fondoCm : medidas.anchoCm, girada ? medidas.anchoCm : medidas.fondoCm);
+};
 
 export function ajustarSalon(entrada: Escena, p: PedidoAjuste, notas: string[]): ResultadoSalon {
-  // Las mesas del salón traen sus sillas dentro: un grupo de sillas encima las dibujaría dos veces.
+  // Retira solo grupos duplicados sobre mesas fijas antiguas; las paramétricas conservan su grupo separado.
   const limpia = sinGruposSobreMesasDelSalon(entrada);
   const escena = limpia.escena;
   if (limpia.quitados) avisar(notas, `Quité ${limpia.quitados} grupo(s) de sillas que estaban encima de mesas del salón: el salón ya dibuja sus sillas (sillas_por_mesa).`, "grupo", "sillas que estaban");
@@ -58,10 +66,11 @@ export function ajustarSalon(entrada: Escena, p: PedidoAjuste, notas: string[]):
   const necesarias = mesasNecesarias(invitados, mesa, sillas), previas = mesasNecesarias(registro.invitados, registro.mesa, registro.sillas);
   const delSalon = mesasVivas(escena);
   const movidas = delSalon.filter(estaMovida);
+  const sinGrupo = delSalon.filter((v) => esMesaParametrica(v.nodo.pieza) && !grupoDeSillasDe(escena, v.nodo.id));
   const zonasMovidas = presentes.filter((z) => estaMovida(anclaDeZona(escena, z)!));
   const reservas: RectCm[] = [
     ...piezasDeUsuarioEnElPiso(escena, false).map((x) => x.caja),
-    ...movidas.map(cajaDe),
+    ...movidas.map((v) => cajaDe(v, mesa, sillas)),
     ...zonasMovidas.flatMap((z) => { const c = cajaDeZona(escena, z); return c ? [c] : []; }),
   ];
   const pista = anclaDeZona(escena, "pista");
@@ -70,7 +79,7 @@ export function ajustarSalon(entrada: Escena, p: PedidoAjuste, notas: string[]):
 
   let rehacer = actual.anchoCm !== escena.sala.anchoCm || actual.fondoCm !== escena.sala.fondoCm || !mismaMesa;
   let d: DistribucionSalon = distribuirSalon({ ...parametros, sala: actual });
-  const sitiosLibres = (dist: DistribucionSalon): Celda[] => dist.celdas.filter((c) => { const r = rectDeElemento(elementoDeMesa(mesa, sillas, c)); return !delSalon.some((v) => seCruzan(r, inflar(cajaDe(v), 40))); });
+  const sitiosLibres = (dist: DistribucionSalon): Celda[] => dist.celdas.filter((c) => { const r = rectDeElemento(elementoDeMesa(mesa, sillas, c)); return !delSalon.some((v) => seCruzan(r, inflar(cajaDe(v, mesa, sillas), 40))); });
   const faltaSitio = (dist: DistribucionSalon, redo: boolean) => (redo ? dist.celdas.length < necesarias - movidas.length : sitiosLibres(dist).length < Math.max(0, necesarias - previas));
   if (faltaSitio(d, rehacer)) {
     if (fija) falloDeCapacidad({ ...d, capacidad: d.celdas.length + movidas.length, mesasNecesarias: necesarias }, mesa, invitados, sillas);
@@ -111,20 +120,28 @@ export function ajustarSalon(entrada: Escena, p: PedidoAjuste, notas: string[]):
   // Las mesas de invitados.
   let quitadas = 0, quitar: string[] = [];
   let siguiente = Math.max(0, ...delSalon.map((v) => v.info.ranura ?? 0)) + 1;
-  const cambiarTipo = (n: NodoEscena, c: Celda): NodoEscena => ({ ...n, pieza: nodoDeElemento(elementoDeMesa(mesa, sillas, c), paleta, n.id).pieza });
   if (rehacer) {
     const sueltas = delSalon.filter((v) => !movidas.includes(v));
     const objetivo = Math.max(0, necesarias - movidas.length);
     const retocadas = new Map<string, NodoEscena>();
+    const celdasRetocadas = new Map<string, Celda>();
     sueltas.forEach((v, i) => {
       const celda = d.celdas[i];
       if (i >= objetivo || !celda) { quitar.push(v.nodo.id); return; }
       const movida = { ...v.nodo, colocacion: { en: "piso" as const, xCm: Math.round(celda.xCm), zCm: Math.round(celda.zCm), giroGrados: 0 } };
-      retocadas.set(v.nodo.id, mismaMesa ? movida : cambiarTipo(movida, celda));
+      retocadas.set(v.nodo.id, movida);
+      celdasRetocadas.set(v.nodo.id, celda);
     });
-    if (!mismaMesa) for (const v of movidas) retocadas.set(v.nodo.id, cambiarTipo(v.nodo, { xCm: 0, zCm: 0 }));
+    if (!mismaMesa) for (const v of movidas) retocadas.set(v.nodo.id, v.nodo);
     e = { ...e, nodos: e.nodos.map((n) => retocadas.get(n.id) ?? n) };
     for (const [id, n] of retocadas) { const c = n.colocacion; if (c.en === "piso" && !movidas.some((v) => v.nodo.id === id)) e = conAnotacion(e, id, { pos: { x: c.xCm, z: c.zCm } }); }
+    if (!mismaMesa) {
+      for (const v of sueltas) {
+        const celda = celdasRetocadas.get(v.nodo.id);
+        if (celda) e = reemplazarMesaDelSalon(e, elementoDeMesa(mesa, sillas, celda), paleta, v.nodo.id, v.info.ranura, p.sillas !== undefined);
+      }
+      for (const v of movidas) e = reemplazarMesaDelSalon(e, elementoDeMesa(mesa, sillas, { xCm: 0, zCm: 0 }), paleta, v.nodo.id, v.info.ranura, p.sillas !== undefined);
+    }
     for (let i = sueltas.length; i < objetivo && d.celdas[i]; i++) { e = ponerElemento(e, elementoDeMesa(mesa, sillas, d.celdas[i]!), paleta, inicial, siguiente++); }
   } else {
     const sobran = necesarias < previas ? Math.max(0, delSalon.length - necesarias) : 0;
@@ -132,6 +149,12 @@ export function ajustarSalon(entrada: Escena, p: PedidoAjuste, notas: string[]):
     for (const celda of sitiosLibres(d).slice(0, Math.max(0, necesarias - previas))) { e = ponerElemento(e, elementoDeMesa(mesa, sillas, celda), paleta, inicial, siguiente++); }
   }
   if (quitar.length) { const r = quitarConLoSuyo(e, quitar); e = r.escena; quitadas = r.deMas; }
+  if (mismaMesa && p.sillas !== undefined) {
+    for (const v of sinGrupo) {
+      if (!e.nodos.some((n) => n.id === v.nodo.id) || grupoDeSillasDe(e, v.nodo.id)) continue;
+      e = reemplazarMesaDelSalon(e, elementoDeMesa(mesa, sillas, { xCm: 0, zCm: 0 }), paleta, v.nodo.id, v.info.ranura, true);
+    }
+  }
   if (e.nodos.length > MAX_NODOS) fallar(`El ajuste dejaría ${e.nodos.length} piezas y el máximo es ${MAX_NODOS}.`);
   if (e.salon) { const { sillas: _antes, ...registroSinSillas } = e.salon; e = { ...e, salon: { ...registroSinSillas, invitados, mesa, ...(sillas !== undefined ? { sillas } : {}) } }; }
 

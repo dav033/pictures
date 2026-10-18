@@ -52,6 +52,7 @@ import { EtiquetasMedidas } from "./EtiquetasMedidas";
 import { useMedidasDePieza } from "./useMedidasDePieza";
 import { BarraHerramientas, BotonMedidas, EtiquetaElegida, ReglaAlturas, type Herramienta } from "./SobreVisor";
 import { SelectorAmbienteVisor } from "./SelectorAmbienteVisor";
+import { ExportarEscenaTaller } from "./ExportarEscenaTaller";
 import { medidaPrincipal, NOMBRE_TIPO } from "./tipos-pieza";
 import { leerGuardada, guardarEscena } from "./guardado-escena";
 import { conSalaNueva } from "@/lib/globos3d/salon-techos";
@@ -714,6 +715,8 @@ export function Taller3D() {
       </div>
       <div className="flex-1" />
       <button type="button" onClick={() => setDialogo("imagen")} disabled={!listo} className={BTN}><Camera className="size-[18px]" aria-hidden />Foto realista</button>
+      <ExportarEscenaTaller visor={visor} nombre={nombreEscena} cantidadGlobos={armadaEscena?.globos.length ?? 0} cantidadPiezas={escenaVista.nodos.length}
+        deshabilitado={!cargada || !armadaEscena || Boolean(todosLosGlobos)} />
       <button type="button" onClick={() => setDialogo("lista")} disabled={!armadaEscena} className={BTN_PRI}><ShoppingCart className="size-[18px]" aria-hidden />Lista de compra · <span className="font-mono">{totalGlobos}</span> {plural(totalGlobos, "globo", "globos")}</button>
     </header>
   );
@@ -861,6 +864,8 @@ export function Taller3D() {
             <button type="button" onClick={deshacerVista} disabled={!puedeDeshacerVista} aria-label={rotuloDeshacer} className={`grid size-11 shrink-0 place-items-center rounded-xl disabled:opacity-45 ${FLOTANTE}`}><Undo2 className="size-5" aria-hidden /></button>
             {puedeRehacerVista && <button type="button" onClick={rehacerVista} aria-label="Rehacer" className={`grid size-11 shrink-0 place-items-center rounded-xl ${FLOTANTE}`}><Redo2 className="size-5" aria-hidden /></button>}
             <button type="button" onClick={() => setDialogo("lista")} aria-label={`Lista de compra: ${textoGlobos(totalGlobos)}`} className="grid size-11 shrink-0 place-items-center rounded-xl border border-taller-primario bg-taller-primario text-taller-sobre-primario"><ShoppingCart className="size-5" aria-hidden /></button>
+            <ExportarEscenaTaller visor={visor} nombre={nombreEscena} cantidadGlobos={armadaEscena?.globos.length ?? 0} cantidadPiezas={escenaVista.nodos.length}
+              deshabilitado={!cargada || !armadaEscena || Boolean(todosLosGlobos)} compacto />
           </>
         )}
       </div>
@@ -969,7 +974,7 @@ export function Taller3D() {
       </ArrastreDecoracionContexto.Provider>
 
       <DialogoCompra abierto={dialogo === "lista"} onCerrar={() => setDialogo(null)} titulo={`Lista de compra · ${textoGlobos(totalGlobos)}`} nombre={nombreEscena} escena={escenaVista} armada={armadaEscena}
-        productosExactos={<ProductosEscena escena={escenaVista} nombre={nombreEscena} />} />
+        productosExactos={<ProductosEscena escena={escenaVista} nombre={nombreEscena} />} visor={visor} />
       <DialogoTaller abierto={dialogo === "imagen"} onCerrar={() => setDialogo(null)} titulo="Foto realista">
         <div className="p-4">
           <p className="mb-3 text-sm text-taller-suave">Convierte lo que se ve en el visor en una foto realista con IA (gíralo antes para elegir el ángulo). {solitario.activo ? "Solo la pieza que estás editando." : "La escena entera, como la ves."}</p>

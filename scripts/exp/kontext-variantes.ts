@@ -1,14 +1,13 @@
 /**
- * Las variantes del texto del experimento de color de Kontext y las escenas con las que se probaron. Idea 07 («Dos columnas rosa, lila y
- * dorado») es la del experimento; la idea 10 (azules con plata cromada) comprueba la frase de los metálicos en una escena de plata.
- *   base) el prompt de producción ANTES de la variante d (`promptImagenGuiada` con su frase de metálicos anterior);
- *   a)   hex exacto y nombre de acabado Sempertex por color, dentro de cada frase de color de la escena;
- *   b)   leyenda de colores por pieza («la columna 1 es…», «la columna 2 es…») antes de la fidelidad de color;
- *   c)   b + restricciones explícitas («mantén lila pastel, no gris; mantén oro, no plata»);
- *   d)   el prompt de producción de hoy (`promptImagenGuiada`): la frase de los metálicos conserva su tinte (`fraseMetalicos`). Ganó.
- * a, b y c arman su texto con la forma de la idea 07 (dos columnas): solo valen para esa escena.
+ * Kontext wording variants. Idea 07 is the paid gold/lilac comparison; idea 10 checks chrome-silver handling.
+ * - base: the Taller prompt without a metal-specific reflection clause;
+ * - a: exact hex and Sempertex finish beside every colour;
+ * - b: a per-piece colour legend;
+ * - c: the legend plus explicit gold/lilac/pink constraints;
+ * - d: the measured production wording that preserves each metal's own tint.
+ * Variants a-c are shaped for idea 07's two columns; the experiment calls the Taller prompt builder shared with guided photos.
  */
-import { fraseMetalicos, promptImagenGuiada } from "../../src/lib/guiada-motor/render-ia-guiada";
+import { fraseMetalicos, promptFotoDeLayout } from "../../src/lib/globos3d/render-ia";
 import type { ColorDeEscena } from "../lib/paleta-guiada";
 
 export const VARIANTES = ["base", "a", "b", "c", "d"] as const;
@@ -26,9 +25,6 @@ export const variantesDe = (escena: Escena): readonly Variante[] => (escena === 
 /** Los archivos de la escena 07 conservan los nombres con que nacieron; las demás llevan el prefijo `e<escena>-`. */
 export const prefijoDe = (escena: Escena): string => (escena === "07" ? "" : `e${escena}-`);
 
-/** La frase de los metálicos que tenía producción antes de la variante d: la que la imagen «base» del experimento usó. */
-const FRASE_METALICOS_ANTERIOR = "chrome balloons with mirror reflections";
-
 const FINISH_EN = (acabado: string) => (/chrome|cromad|metal|espejo/i.test(acabado) ? "metallic mirror" : /pastel/i.test(acabado) ? "matte pastel" : /mate/i.test(acabado) ? "matte" : acabado.toLowerCase());
 
 /** Las piezas de la descripción con los colores (nombre inglés y hex) de cada una, en orden. */
@@ -44,10 +40,10 @@ function piezasDe(descripcion: string): Array<{ numero: number; colores: Array<{
 
 /** El texto de cada variante para una escena; a, b y c salen de la forma de la idea 07 y en otra escena no se arman. */
 export function variantesDelPrompt(descripcion: string, paleta: ColorDeEscena[], escena: Escena): Partial<Record<Variante, string>> {
-  const actual = promptImagenGuiada(descripcion, "igual_visor");
+  const actual = promptFotoDeLayout(descripcion, "igual_visor");
   const clausulaActual = fraseMetalicos(actual);
   if (!clausulaActual) throw new Error("La escena no trae metales: no hay frase de metálicos que comparar.");
-  const base = actual.replace(clausulaActual, FRASE_METALICOS_ANTERIOR);
+  const base = actual.replace(`${clausulaActual}.`, "").replace(/\s{2,}/g, " ");
   if (escena !== "07") return { base, d: actual };
 
   const piezas = piezasDe(descripcion);

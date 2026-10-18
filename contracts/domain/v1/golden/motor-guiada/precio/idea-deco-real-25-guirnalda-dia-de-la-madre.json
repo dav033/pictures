@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-25-guirnalda-dia-de-la-madre",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.6"
+  "version": "1.2.7"
  },
- "especHash": "270db8f290d7c998c0b63e2187e84babe6cdf2cad6a7df690283e4cdf72f3343",
+ "especHash": "04f12c16ab9a2bf7b0c164edccd31214de14b25c566b7a229ef451f64a5bba3c",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

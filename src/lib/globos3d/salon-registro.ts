@@ -9,13 +9,13 @@ import type { ZonaSalon } from "./salon-zonas";
  * cuántos invitados se pidieron y cuánto se reservó al fondo de fotos. Una pieza del registro que ya no está en la escena es
  * una que el usuario quitó a mano: no se vuelve a poner. Duplicar una pieza no la copia al registro (la copia es del usuario).
  *
- * Roles: `mesa` (de invitados, con su `ranura` en el orden de llenado), `ancla` (la pieza principal de una zona: el panel,
- * la mesa principal, la pista, los postres, el tapete), `silla` (de la mesa principal), `adorno` (arco, columnas y guirnalda
- * de globos) y `adoptada` (una pieza del USUARIO que el salón corrió al fondo de fotos: sigue a su zona pero no es del salón y
- * nunca se quita con ella).
+ * Roles: `mesa` (de invitados, con su `ranura` en el orden de llenado), `grupo_sillas` (sillas paramétricas de esa mesa), `ancla`
+ * (la pieza principal de una zona: el panel, la mesa principal, la pista, los postres, el tapete), `silla` (de la mesa principal),
+ * `adorno` (arco, columnas y guirnalda de globos) y `adoptada` (una pieza del USUARIO que el salón corrió al fondo de fotos: sigue
+ * a su zona pero no es del salón y nunca se quita con ella).
  */
 
-export type RolSalon = "mesa" | "ancla" | "silla" | "adorno" | "adoptada";
+export type RolSalon = "mesa" | "ancla" | "silla" | "grupo_sillas" | "adorno" | "adoptada";
 
 export type PiezaSalon = {
   zona: ZonaSalon | "mesas";

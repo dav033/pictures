@@ -10,14 +10,17 @@
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { DIRECTORIO_DORADO, casosDorados, registroDe, todosLosCasos, type RegistroDorado } from "../lib/casos-motor-guiada";
+import { DIRECTORIO_DORADO, casosAdicionales, casosDorados, registroDe, todosLosCasos, type RegistroDorado } from "../lib/casos-motor-guiada";
 import { formatosOrganicosDe } from "../../src/lib/globos3d/herramientas-escena-colores";
 import { armarDesdeEspec, VERSION_MOTOR, type PiezaEspec } from "../../src/lib/globos3d/motor/v1";
 
 const TOLERANCIA_CAJA_CM = 5;
 const casos = casosDorados();
 assert.equal(todosLosCasos().length, 28 + 18, "28 ideas guardadas y 18 estructuras oficiales");
-assert.equal(casos.length, 28 + 18 + 1, "y la guirnalda orgánica sin R-9");
+assert.equal(casosAdicionales().length, 2, "la guirnalda y la columna orgánicas sin R-9");
+assert.equal(casos.length, 28 + 18 + 2, "más ambos casos de regresión de colores sin R-9");
+const columnaSinR9 = casos.find((c) => c.id === "adicional-columna-organica-sin-r9")!;
+assert.ok(registroDe(columnaSinR9).total.lineas.some((l) => l.formatoId === "R-12" && l.codigo === "932"), "P-089: el caso adicional de columna cubre el hueco de R-9 con R-12");
 
 const esperados = new Set(casos.map((c) => `${c.id}.json`));
 const sobrantes = readdirSync(DIRECTORIO_DORADO).filter((f) => f.endsWith(".json") && !esperados.has(f));

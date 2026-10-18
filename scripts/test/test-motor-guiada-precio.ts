@@ -3,7 +3,7 @@
  * (REQ-007). Sin coste: Python se sustituye por un doble que cotiza con los paquetes del cruce (nunca llama a la red,
  * ni a la base, ni a ninguna IA).
  * - la merma es una sola constante, igual a la de `services/ai-api/app/merma.py`, y redondea como Python;
- * - cobertura del cruce: cada (formato, color) de las 46 fixtures doradas se resuelve o está declarado `sin_cobertura`;
+ * - cobertura del cruce: cada (formato, color) de las 48 fixtures doradas se resuelve o está declarado `sin_cobertura`;
  *   la tabla oficial de color queda partida sin huecos entre «con variante» y «sin cobertura» (con su motivo);
  * - fixtures doradas con PRECIO: solo cantidades e ids de variante (los precios no son estables entre snapshots);
  * - `cotizarBom`: merma antes del paquete, variante repetida, pre-filtro con el cruce (sin llamar a Python), reintento
@@ -27,7 +27,7 @@ import { abrirContextoPlan, verificarTokenAprobacion } from "../../src/lib/plan/
 import { armarDesdeEspec, cantidadConMerma, cotizarBom, crosswalkIncluido, especHashDe, MERMA, MERMA_PORCENTAJE, planearCompra, POLITICA_PAQUETES, sobreDelMotor, type CotizacionDelMotor, type ResultadoMotorV1 } from "../../src/lib/globos3d/motor/v1";
 import { claveCruce, construirCrosswalk, CrosswalkSchema, elegirVariante, MOTIVOS_SIN_COBERTURA, normalizarTitulo, presentaciones, type Crosswalk, type FilaCatalogo } from "../../src/lib/globos3d/motor/crosswalk-variantes";
 import { optimizarCobertura, pulgadasDeFormato, colorDeCompra } from "../../src/lib/globos3d/motor/plan-de-compra";
-import { DIRECTORIO_DORADO, DIRECTORIO_DORADO_PRECIO, todosLosCasos, type CasoMotor, type RegistroDoradoPrecio } from "../lib/casos-motor-guiada";
+import { DIRECTORIO_DORADO, DIRECTORIO_DORADO_PRECIO, casosDorados, type CasoMotor, type RegistroDoradoPrecio } from "../lib/casos-motor-guiada";
 import { registroPrecio } from "../motor/generar-golden-precio";
 import { pythonDoble, type PythonDoble } from "../lib/python-doble-precio";
 import { cotizarIdeaConMotor } from "../../src/lib/guiada-motor/cotizar-idea";
@@ -52,7 +52,7 @@ const dependencias = (doble: PythonDoble, extra: { vivo?: Crosswalk } = {}) => (
   crosswalk: async () => cruce, cotizarLista: doble.cotizarLista, ...(extra.vivo ? { crosswalkEnVivo: async () => extra.vivo! } : {}),
 });
 
-const todos = todosLosCasos();
+const todos = casosDorados();
 const resultados = new Map<string, ResultadoMotorV1>(todos.map((c) => [c.id, armarDesdeEspec(c.espec)]));
 const ARMABLES = todos.filter((c) => resultados.get(c.id)!.noRepresentable.length === 0);
 
@@ -105,7 +105,7 @@ async function main(): Promise<void> {
     for (const entrada of Object.values(cruce.entradas)) assert.ok(entrada.variantes.every((v, k, lista) => k === 0 || lista[k - 1]!.unidadesPaq <= v.unidadesPaq), "variantes ordenadas por paquete");
   });
 
-  await caso("cobertura sobre las fixtures doradas: cada (formato, color) de las 46 se resuelve o está declarado sin_cobertura", () => {
+  await caso("cobertura sobre las fixtures doradas: cada (formato, color) de las 48 se resuelve o está declarado sin_cobertura", () => {
     const pares = new Set<string>();
     for (const archivo of readdirSync(DIRECTORIO_DORADO).filter((f) => f.endsWith(".json"))) {
       const dorado = JSON.parse(readFileSync(path.join(DIRECTORIO_DORADO, archivo), "utf8")) as { total: { lineas: Array<{ formatoId: string; codigo: string }> } };

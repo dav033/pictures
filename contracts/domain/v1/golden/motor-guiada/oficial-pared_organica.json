@@ -2,9 +2,9 @@
  "caso": "oficial-pared_organica",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.6"
+  "version": "1.2.7"
  },
- "especHash": "ed69396ca13faddf28c68ffbb2356b2534397babdac652687493cc0df0ce4798",
+ "especHash": "f9f6351ebdd01043a1098d3de34581b17fdb410fa2789dfb07f3b5152f210959",
  "noRepresentable": [
   {
    "piezaId": "EST_01_PARED_ORGANICA",

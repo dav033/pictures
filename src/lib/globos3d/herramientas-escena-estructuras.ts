@@ -11,6 +11,7 @@ import {
   type ColorOrganico, type OpcionesOrganico, type TramoOrganico,
 } from "./organico";
 import { BASE_TRAMOS, medidaConTamanos, mezclaCon, rellenoCompensadoPara, rellenoCon, tamanosPosibles } from "./mezcla-tamanos-organica";
+import { politicaRellenoCompensado } from "./politica-relleno-compensado";
 import { ANILLO_INTERIOR, INFLADOS_ORGANICOS, opcionesArcoRectangular, opcionesAroOrganico } from "./estructuras-organicas";
 import { COLUMNA_QUINCE_AZUL } from "./organico-presets";
 import { CONTORNOS_PREDEFINIDOS, type ColoresForma, type ContornoForma, type ContornoPredefinido, type OpcionesForma } from "./formas";
@@ -175,7 +176,7 @@ function crearOrganica(tipo: Exclude<Extract<TipoEstructura, `${string}_organic$
       const tramoDe = (g: number) => formaColumna({ altoCm: alto, radioBaseCm: g / 2, radioMedioCm: r1(g * 0.43), radioPuntaCm: r1(g * 0.36), inclinacionCm: inclinacion, serpenteoCm: 4, mezcla: MEZCLA_COLUMNA_GRUESA });
       const permitidos = tamanosPosibles(colores, p.tamanos, grosor * 0.75, notasDeTamanos(p, notas));
       comprobarCuerpo(medidaConTamanos((g) => ({ tramos: [tramoDe(g)], ...BASE_TRAMOS }), permitidos), grosor);
-      return { pieza: alAlto(piezaOrganica([tramoDe(grosor)], colores, permitidos, true, flores, semillaDe(alto, grosor, inclinacion)), alto, notas, techoCm), nombre: inclinacion ? "Columna orgánica inclinada" : "Columna orgánica", lugar: "piso" };
+      return { pieza: alAlto(piezaOrganica([tramoDe(grosor)], colores, permitidos, true, flores, semillaDe(alto, grosor, inclinacion), rellenoCompensadoPara(colores)), alto, notas, techoCm), nombre: inclinacion ? "Columna orgánica inclinada" : "Columna orgánica", lugar: "piso" };
     }
     case "guirnalda_organica": {
       const R = RANGOS_ESTRUCTURA.guirnalda_organica;
@@ -281,9 +282,6 @@ export function escalarOrganico(pieza: Organico, p: { altoCm?: number; anchoCm?:
   };
 }
 
-/** Identifies the single non-generated tramo created by `crearEstructura("guirnalda_organica")`. */
-const esGuirnaldaOrganica = (o: Organico): boolean => !o.generador && o.opciones.tramos.length === 1 && o.opciones.tramos[0]!.id === "guirnalda";
-
 /** Cambia lo pedido de un orgánico: medidas, grosor, colores con pesos (o solo pesos), tamaños de globo y flores. */
 export function ajustarOrganico(pieza: Organico, p: PedidoEstructura, notas: string[]): Organico {
   // Con generador se cambia por sus parámetros (la silueta del trazo no se deforma).
@@ -315,16 +313,17 @@ export function ajustarOrganico(pieza: Organico, p: PedidoEstructura, notas: str
     if (p.pesos.length !== o.opciones.colores.length) fallar(`pesos tiene ${p.pesos.length} valores y la pieza ${o.opciones.colores.length} colores (en el orden de ver_escena).`);
     o = { ...o, opciones: { ...o.opciones, colores: o.opciones.colores.map((c, i) => ({ ...c, peso: r0(p.pesos![i]!) })) } };
   }
+  const politicaRelleno = politicaRellenoCompensado(o);
   if (p.tamanos?.length) {
     const permitidos = tamanosPosibles(o.opciones.colores, p.tamanos, Infinity, notasDeTamanos(p, notas));
-    // Keep P-087's R-12 filler for a garland whose selected colours do not manufacture R-9.
-    const rellenar = esGuirnaldaOrganica(o) ? rellenoCompensadoPara(o.opciones.colores) : rellenoCon;
+    // Keep the P-087/P-089 filler for direct columns and garlands whose colours do not manufacture R-9.
+    const rellenar = politicaRelleno ? rellenoCompensadoPara(o.opciones.colores) : rellenoCon;
     o = { ...o, opciones: { ...o.opciones, tramos: o.opciones.tramos.map((t) => ({ ...t, mezcla: mezclaCon(t.mezcla, permitidos) })), relleno: rellenar(permitidos) } };
     // Los tamaños cambian cuántos globos lleva el cuerpo (solo R-5 lleva varias veces los de la mezcla de siempre): también cuentan para el presupuesto.
     comprobarCambioDeCuerpo(antes, cuerpoDeOrganico(o.opciones), medirConGrosor(o), 2 * radioMayor(o.opciones));
-  } else if (pedidos && esGuirnaldaOrganica(o)) {
-    // Re-resolve derived fill for the new palette while preserving the sizes already used by the garland.
-    const maxInfladoCm = 2 * radioMayor(o.opciones) * 0.8;
+  } else if (pedidos && politicaRelleno) {
+    // Re-resolve derived fill for the new palette while preserving the sizes already used by the piece.
+    const maxInfladoCm = 2 * radioMayor(o.opciones) * politicaRelleno.factorInfladoMaximo;
     const tamanosActuales = new Set([
       ...o.opciones.tramos.flatMap((tramo) => tramo.mezcla.flatMap((punto) => Object.entries(punto.pesos).filter(([, peso]) => peso > 0).map(([formato]) => formato))),
       ...o.opciones.relleno.map((relleno) => relleno.formatoId),

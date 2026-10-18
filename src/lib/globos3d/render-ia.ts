@@ -62,6 +62,23 @@ const NO_ANADIR = "Add nothing that is not in the input: no furniture, tables, d
 const NO_ANADIR_CON_MOBILIARIO = "Add nothing that is not in the input: no extra tables or chairs, desserts, cupcakes, gifts, plants, people, extra balloons, extra trees or extra figures.";
 const CONSERVAR_MOBILIARIO = "Keep every table, chair and centrepiece exactly as shown in the input: same number, same layout, same positions and sizes; the tables and chairs are main subjects of the photograph and must be clearly visible, not removed, merged or hidden.";
 
+/** The exact metal colours present in the catalogue, with their own reflection colour. */
+const ACABADOS_METALICOS: ReadonlySet<string> = new Set(["glossy chrome", "metallic sheen"]);
+
+/** The scene-specific metal rule is shared by Taller and guided-photo prompts. */
+export function fraseMetalicos(descripcion: string): string {
+  const metadatos = /Color finishes \(official Sempertex\): ([^.]+)/.exec(descripcion)?.[1];
+  if (!metadatos) return "";
+  const presentes = metadatos.split("; ").flatMap((entrada) => {
+    const detalle = /^(.+?) \(#[0-9A-F]{6}\) — (.+)$/.exec(entrada);
+    if (!detalle || !ACABADOS_METALICOS.has(detalle[2]!)) return [];
+    return [{ nombre: detalle[1]!, tono: detalle[1]!.replace(/^(?:chrome|metallic) /, "") }];
+  });
+  if (!presentes.length) return "";
+  const reflejos = presentes.map((metal) => metal.tono === "silver" ? `${metal.nombre} reflects silver` : `${metal.nombre} reflects ${metal.tono}, never silver`);
+  return `metallic balloons whose reflections keep their own colour (${reflejos.join("; ")})`;
+}
+
 /**
  * ¿Esta foto va por FLUX.1 Kontext max («camino fiel»)? Toda foto con el lugar de la captura («Igual al visor»): con otro lugar hay que rehacer paredes y luz.
  * Medido el 2026-10-09 con la boda de prueba (scripts/exp/render-boda.ts y render-boda2.ts, 12 imágenes): FLUX.1 imagen-a-imagen conserva todo pero sigue
@@ -124,12 +141,14 @@ export function textosDeRotulos(descripcion: string): string[] {
 export function promptFotoDeLayout(descripcion: string, ambiente: AmbienteRender = "igual_visor"): string {
   const decoracion = decoracionPara(descripcion, ambiente);
   const textos = textosDeRotulos(descripcion);
+  const metalicos = fraseMetalicos(decoracion);
   return [
     "Turn this 3D layout render into a real professional event photograph.",
     "Keep the exact camera position, lens, framing and perspective of the input, and the position, size and count of every object in it; do not add, remove, move, merge or recolor anything.",
     "Replace the flat CG materials with real ones: real linen tablecloths, real latex balloons with natural highlights and subtle texture, real wooden chairs, a real floor and real painted walls, soft natural lighting with soft shadows.",
     decoracion ? `The scene: ${decoracion}.` : "",
     textos.length ? `Every written text reads exactly as follows, spelled letter by letter, in the same script and color as in the input: ${textos.map((t) => `"${t}"`).join(", ")}.` : "",
+    metalicos ? `${metalicos}.` : "",
     COLOR_FIEL,
     "No collage, no close-up, no different viewpoint.",
   ].filter(Boolean).join(" ");
@@ -216,15 +235,8 @@ export function formatoEnIngles(formatoId: string): string {
   return formatoId;
 }
 
-/**
- * La descripción que viaja con la captura: la estructura, los colores por proporción («about 60% Pastel Matte
- * Blue, 20% Fashion White…», de más a menos) y los tamaños como rango. Las cantidades por formato no van: FLUX
- * no cuenta globos (la cantidad la da la captura) y una lista larga solo le quita peso a lo importante.
- * Cierra siempre con `NADA_MAS` (el inventario es cerrado) y respeta `MAX_DESCRIPCION` por prioridad: primero la
- * estructura (en una escena, el inventario pieza a pieza con su silueta), luego lo extra, los colores y los tamaños,
- * que solo entran si caben enteros.
- */
-export function descripcionRender3d(estructura: string, materiales: ReadonlyArray<{ cantidad: number; formatoId: string; colorEn: string }>, extra = ""): string {
+/** Builds the closed balloon inventory sent with the capture. Preserve structure first, then official colour/finish details, extras and sizes. */
+export function descripcionRender3d(estructura: string, materiales: ReadonlyArray<{ cantidad: number; formatoId: string; colorEn: string; hexGlobo?: string; acabado?: string }>, extra = ""): string {
   const total = materiales.reduce((suma, m) => suma + m.cantidad, 0);
   const porColor = new Map<string, number>();
   for (const m of materiales) porColor.set(m.colorEn, (porColor.get(m.colorEn) ?? 0) + m.cantidad);
@@ -238,13 +250,24 @@ export function descripcionRender3d(estructura: string, materiales: ReadonlyArra
   ].filter(Boolean);
   const nadaMas = traeMobiliario(estructura) ? NADA_MAS_CON_MOBILIARIO : estructura.includes(PREFIJO_UTILERIA) ? NADA_MAS_CON_UTILERIA : NADA_MAS;
   const cierre = `. ${nadaMas}`;
+  const porColorConAcabado = new Map<string, { color: string; hex: string; acabado: string }>();
+  for (const material of materiales) {
+    if (material.hexGlobo && material.acabado) {
+      const detalle = { color: material.colorEn, hex: material.hexGlobo.toUpperCase(), acabado: material.acabado };
+      porColorConAcabado.set(`${detalle.color}|${detalle.hex}|${detalle.acabado}`, detalle);
+    }
+  }
+  const acabados = [...porColorConAcabado.values()]
+    .map((detalle) => `${detalle.color} (#${detalle.hex.replace(/^#/, "")}) — ${detalle.acabado}`);
+  const textoAcabados = acabados.length ? `Color finishes (official Sempertex): ${acabados.join("; ")}` : "";
   const base = estructura.replace(nadaMas, "").replace(/\s+/g, " ").trim().replace(/[.\s]+$/, "");
   const cupo = MAX_DESCRIPCION - cierre.length;
+  const cupoBase = Math.max(0, cupo - (textoAcabados ? textoAcabados.length + 2 : 0));
   // Si no cabe, se corta en el último «;» (entre piezas del inventario) o, si no hay, en la última palabra.
-  const corte = base.slice(0, cupo - 1);
+  const corte = base.slice(0, Math.max(0, cupoBase - 1));
   const pieza = corte.lastIndexOf("; ");
-  let texto = base.length <= cupo ? base : `${pieza > cupo * 0.6 ? corte.slice(0, pieza) : corte.replace(/[,;\s]+\S*$/, "")}…`;
-  for (const parte of [extra.trim().replace(/[.\s]+$/, ""), colores.length && !/\(#[0-9A-F]{6}\)/.test(estructura) ? `Colors: about ${colores.join(", ")}` : "", tamanos.length ? `Sizes: ${tamanos.join(", ")}` : ""]) {
+  let texto = base.length <= cupoBase ? base : `${pieza > cupoBase * 0.6 ? corte.slice(0, pieza) : corte.replace(/[,;\s]+\S*$/, "")}…`;
+  for (const parte of [textoAcabados, extra.trim().replace(/[.\s]+$/, ""), colores.length && !/\(#[0-9A-F]{6}\)/.test(estructura) ? `Colors: about ${colores.join(", ")}` : "", tamanos.length ? `Sizes: ${tamanos.join(", ")}` : ""]) {
     if (parte && texto.length + 2 + parte.length <= cupo) texto = texto ? `${texto}. ${parte}` : parte;
   }
   return texto ? `${texto}${cierre}` : nadaMas;

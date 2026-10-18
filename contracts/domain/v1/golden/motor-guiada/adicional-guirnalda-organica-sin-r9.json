@@ -2,9 +2,9 @@
  "caso": "adicional-guirnalda-organica-sin-r9",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.6"
+  "version": "1.2.7"
  },
- "especHash": "a10e1a14ee326e8e254909d171fb8d3d31f794c886b7dd5c8a775de9909e64b9",
+ "especHash": "47640d33f9bb998bf51bdeab6828dca4518f790a791a67018ed8ff4d2626eaeb",
  "noRepresentable": [],
  "piezas": {
   "EST_01_GUIRNALDA": {

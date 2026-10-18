@@ -26,7 +26,15 @@ export function tuboAEscena(t: TuboDecoracion): TuboEnEscena {
 
 /** Materiales con el nombre del color en inglés, para la descripción que acompaña la captura a FLUX. */
 export function materialesEnIngles(materiales: ReadonlyArray<{ formatoId: string; codigo: string; cantidad: number }>) {
-  return materiales.map((m) => ({ cantidad: m.cantidad, formatoId: m.formatoId, colorEn: referenciaPorCodigo(m.codigo)?.nombreEn ?? m.codigo }));
+  return materiales.map((m) => {
+    const referencia = referenciaPorCodigo(m.codigo);
+    return {
+      cantidad: m.cantidad,
+      formatoId: m.formatoId,
+      colorEn: referencia?.nombreEn ?? m.codigo,
+      ...(referencia ? { hexGlobo: referencia.hexGlobo.toUpperCase(), acabado: referencia.acabado } : {}),
+    };
+  });
 }
 
 /** Lo que el visor dibuja de una escena armada. */

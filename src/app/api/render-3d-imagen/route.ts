@@ -8,6 +8,8 @@ import { CODIGO_SOLICITUD_KONTEXT_INVALIDA } from "@/lib/generacion/solicitud-ko
 import { aligerarImagenGenerada } from "@/lib/generacion/imagen-liviana";
 import { AMBIENTE_POR_DEFECTO, MAX_DESCRIPCION, promptFotoDeLayout, promptRender3d, usaCaminoFiel, type AmbienteRender } from "@/lib/globos3d/render-ia";
 import { tomarFotoDeLaHoraDurable } from "@/lib/globos3d/tope-fotos-hora";
+import { CajasLetreroFotoV1Schema } from "@/lib/globos3d/render-imagen-contrato-v1";
+import { composicionLetreroHabilitada, conservarLetrerosEnFoto, validarCapturaConLetreros } from "@/lib/globos3d/componer-letrero";
 
 /**
  * Taller 3D → foto con IA. Recibe la captura del visor (JPEG o PNG) y una descripción corta de la decoración, y
@@ -21,6 +23,7 @@ const CuerpoSchema = z.object({
   descripcion: z.string().max(MAX_DESCRIPCION * 2),
   ambiente: z.enum(["igual_visor", "salon_elegante", "fiesta_infantil", "boda_jardin", "estudio"]).default(AMBIENTE_POR_DEFECTO),
   aspecto: z.enum(["3:2", "1:1", "2:3", "16:9"]).default("3:2"),
+  cajasLetreroV1: CajasLetreroFotoV1Schema,
 }).strict();
 
 /** Con el plazo de 100 s de Kontext (`PLAZO_KONTEXT_MS`) quedan 20 s para aligerar la imagen y responder; la prueba de la ruta lo comprueba. */
@@ -28,17 +31,40 @@ export const maxDuration = 120;
 
 export const POST = conRegistro("/api/render-3d-imagen", atenderPOST, { vista: "3d" });
 
+type CuerpoSchemaOutput = z.infer<typeof CuerpoSchema>;
+
+async function respuestaDeFoto(imagen: { mime: string; base64: string }, prompt: string, captura: Buffer, cajas: CuerpoSchemaOutput["cajasLetreroV1"], composicionActiva: boolean) {
+  const compuesta = await conservarLetrerosEnFoto({ imagen, captura, cajas, habilitada: composicionActiva });
+  if (compuesta.estado === "compuesta") {
+    decidir("regla:render_3d_letrero", "rótulos 3D conservados en la foto del Taller", { cantidad: cajas.length });
+  }
+  const aviso = compuesta.estado === "fallo" ? "La foto se generó, pero no se pudo conservar el rótulo exacto." : undefined;
+  if (compuesta.estado === "fallo") decidir("regla:render_3d_letrero_fallo", "la foto se entrega sin la composición del rótulo", { causa: compuesta.causa, cantidad: cajas.length });
+  const liviana = await aligerarImagenGenerada(compuesta.imagen);
+  return Response.json({ imagen: `data:${liviana.mime};base64,${liviana.base64}`, prompt, ...(aviso ? { aviso } : {}) });
+}
+
 async function atenderPOST(request: Request) {
   let cuerpo: unknown;
   try { cuerpo = await request.json(); } catch { return Response.json({ error: "La captura no llegó en un formato válido." }, { status: 400 }); }
   const validado = CuerpoSchema.safeParse(cuerpo);
   if (!validado.success) return Response.json({ error: "La captura o la descripción no cumplen el formato." }, { status: 400 });
-  const { render, descripcion, ambiente, aspecto } = validado.data;
+  const { render, descripcion, ambiente, aspecto, cajasLetreroV1 } = validado.data;
 
   const partes = render.match(/^data:(image\/(?:png|jpeg));base64,([\s\S]*)$/);
   if (!partes) return Response.json({ error: "La captura no tiene formato válido." }, { status: 400 });
   const fiel = usaCaminoFiel(ambiente as AmbienteRender);
   const prompt = fiel ? promptFotoDeLayout(descripcion, ambiente as AmbienteRender) : promptRender3d(descripcion, ambiente as AmbienteRender);
+  const composicionActiva = composicionLetreroHabilitada();
+  const capturaParaComponer = composicionActiva && cajasLetreroV1.length > 0 ? Buffer.from(partes[2]!, "base64") : Buffer.alloc(0);
+  let medidasCaptura: { width: number; height: number } | null = null;
+  if (capturaParaComponer.length > 0) {
+    try {
+      medidasCaptura = await validarCapturaConLetreros(capturaParaComponer, cajasLetreroV1);
+    } catch {
+      return Response.json({ error: "La captura o el rótulo no cumplen el formato." }, { status: 400 });
+    }
+  }
 
   // Retomar una imagen de Kontext que sigue en curso no es otra imagen: no gasta cupo. Un token que no sirve se rechaza, nunca se envía otra solicitud en silencio.
   // El token queda atado al texto, al aspecto y a la captura: una vista distinta nunca recibe la imagen de la anterior.
@@ -59,14 +85,13 @@ async function atenderPOST(request: Request) {
 
   try {
     if (fiel) {
-      const medidas = await sharp(Buffer.from(partes[2]!, "base64")).metadata();
+      const medidas = medidasCaptura ?? await sharp(Buffer.from(partes[2]!, "base64")).metadata();
       const hecha = await generarConFluxKontext(prompt, {
         imagen: { base64: partes[2]!, mime: partes[1]!, ancho: medidas.width ?? 1536, alto: medidas.height ?? 1024 }, variante: "max",
         signal: request.signal, telemetria: { superficie: "taller-3d" },
         ...(previa.tipo === "retomar" ? { solicitudPrevia: previa.requestId } : {}),
       });
-      const liviana = await aligerarImagenGenerada(hecha);
-      return Response.json({ imagen: `data:${liviana.mime};base64,${liviana.base64}`, prompt });
+      return await respuestaDeFoto(hecha, prompt, capturaParaComponer, cajasLetreroV1, composicionActiva);
     }
     const imagen = await generarConSempertexFlux(prompt, aspecto, [], {
       loras: [],
@@ -78,8 +103,7 @@ async function atenderPOST(request: Request) {
         role: "previous_generated_result", priority: 1, allowed_use: "base que se conserva: forma, cantidades y colores de la decoración",
       }],
     });
-    const liviana = await aligerarImagenGenerada(imagen);
-    return Response.json({ imagen: `data:${liviana.mime};base64,${liviana.base64}`, prompt });
+    return await respuestaDeFoto(imagen, prompt, capturaParaComponer, cajasLetreroV1, composicionActiva);
   } catch (error) {
     if (error instanceof KontextEnCursoError) {
       decidir("regla:render_3d_en_curso", "fal sigue generando la foto del taller 3D: el navegador la retoma por su id, sin enviar otra", { solicitud: error.requestId });

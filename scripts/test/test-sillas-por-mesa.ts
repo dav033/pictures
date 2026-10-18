@@ -14,9 +14,10 @@ import { armarEscena, escenaEnIngles, SALA_INICIAL, type Escena } from "../../sr
 import { centrosDe, mesasDeEscena, padreDeCentro } from "../../src/lib/globos3d/centros-mesa";
 import { EscenaSchema } from "../../src/lib/globos3d/esquema-escena";
 import { aplicarHerramienta, DECLARACIONES_ESCENA } from "../../src/lib/globos3d/herramientas-escena";
+import { sillasDeMesaNodo } from "../../src/lib/globos3d/mobiliario-asientos-mesa";
 import { puestosAlrededor } from "../../src/lib/globos3d/mobiliario-disposicion";
 import { muebleDe } from "../../src/lib/globos3d/mobiliario-catalogo";
-import { elementosDeEscenografia, nombreDeMueble, sillasDeMueble } from "../../src/lib/globos3d/mobiliario-pieza";
+import { nombreDeMueble, sillasDeMueble } from "../../src/lib/globos3d/mobiliario-pieza";
 import { medidasDeMesa } from "../../src/lib/globos3d/salon-evento";
 import { mesasVivas } from "../../src/lib/globos3d/salon-registro";
 import { zonasDeEscena } from "../../src/lib/globos3d/salon-zonas";
@@ -37,19 +38,11 @@ const falla = (escena: Escena, nombre: string, args: Record<string, unknown>) =>
 const ingles = (e: Escena) => escenaEnIngles(e, armarEscena(e));
 const mesas = (e: Escena) => mesasVivas(e).map((v) => v.nodo);
 const opcionesDe = (n: { pieza: Escena["nodos"][number]["pieza"] }) => (n.pieza.tipo === "escenografia" ? n.pieza.mueble?.opciones : undefined);
-/** Los elementos de una mesa del catálogo con N sillas, armada como la arma el salón (con el ancho que le toca). */
-function elementosDeMesa(tipo: "redonda8" | "imperial", sillas: number): number {
-  const m = medidasDeMesa(tipo, sillas);
-  assert.ok(m.puestos > 0);
-  const nodo = herramienta(vacia(), "armar_salon", { invitados: sillas, mesa: tipo, sillas_por_mesa: sillas, zonas: ["fondo_fotos"] }).escena.nodos.find((n) => n.id === "salon-mesa-01")!;
-  return nodo.pieza.tipo === "escenografia" ? elementosDeEscenografia(nodo.pieza).length : -1;
-}
-/** Cuántas sillas lleva de verdad una mesa: lo que suma cada silla a los elementos de la mesa (se mide con la propia pieza). */
+/** Cuántas sillas lleva de verdad una mesa según sus piezas armadas. */
 function sillasReales(tipo: "redonda8" | "imperial", sillas: number): number {
-  const paso = tipo === "imperial" ? 2 : 1;
-  const base = tipo === "imperial" ? 4 : 2;
-  const porSilla = (elementosDeMesa(tipo, base + 2 * paso) - elementosDeMesa(tipo, base)) / (2 * paso);
-  return base + (elementosDeMesa(tipo, sillas) - elementosDeMesa(tipo, base)) / porSilla;
+  const e = herramienta(vacia(), "armar_salon", { invitados: sillas, mesa: tipo, sillas_por_mesa: sillas, zonas: ["fondo_fotos"] }).escena;
+  const mesa = e.nodos.find((n) => n.id === "salon-mesa-01")!;
+  return sillasDeMesaNodo(e, mesa).total;
 }
 
 prueba("sin pedir sillas todo queda como siempre: las sillas de siempre no se guardan", () => {
@@ -66,7 +59,7 @@ prueba("mesas de 4 personas: 40 invitados son 10 mesas de 4 sillas, y 41 son 11;
   assert.equal(mesas(r.escena).length, 10);
   assert.match(r.resumen, /10 mesas de 4/);
   assert.equal(r.escena.salon?.sillas, 4);
-  for (const n of mesas(r.escena)) assert.equal(opcionesDe(n)?.sillas, 4);
+  for (const n of mesas(r.escena)) assert.equal(sillasDeMesaNodo(r.escena, n).total, 4);
   assert.equal(mesas(herramienta(vacia(), "armar_salon", { invitados: 41, sillas_por_mesa: 4 }).escena).length, 11);
   assert.equal(mesas(herramienta(vacia(), "armar_salon", { invitados: 100, sillas_por_mesa: 6 }).escena).length, 17);
   assert.ok(EscenaSchema.safeParse(r.escena).success, "la escena con sillas pasa el esquema de la ruta");
@@ -124,7 +117,7 @@ prueba("ajustar_salon cambia las sillas de las mesas del salón: se recalculan l
   assert.equal(z.mesas.length, 20, "80 ÷ 4");
   assert.match(r.resumen, /20 mesas de 4/);
   assert.equal(e.salon?.sillas, 4);
-  for (const n of mesas(e)) assert.equal(opcionesDe(n)?.sillas, 4);
+  for (const n of mesas(e)) assert.equal(sillasDeMesaNodo(e, n).total, 4);
   for (const n of suyas) assert.deepEqual(e.nodos.find((x) => x.id === n.id), n, `${n.id} del usuario cambió`);
   assert.deepEqual(z.mesas.slice(0, 10), zonasDeEscena(antes).mesas, "las mesas de antes siguen siendo las mismas piezas");
   assert.deepEqual([...new Set(centrosDe(e).map((c) => padreDeCentro(c)))].sort(), [...z.mesas, z.mesaPrincipal!.id].sort(), "cada mesa, un centro, también las 10 nuevas");
@@ -137,7 +130,7 @@ prueba("ajustar_salon cambia las sillas de las mesas del salón: se recalculan l
   const ocho = herramienta(e, "ajustar_salon", { sillas_por_mesa: 8 }).escena;
   assert.equal(ocho.salon?.sillas, undefined);
   assert.equal(zonasDeEscena(ocho).mesas.length, 10);
-  assert.ok(mesas(ocho).every((n) => opcionesDe(n)?.sillas === undefined));
+  assert.ok(mesas(ocho).every((n) => sillasDeMesaNodo(ocho, n).total === 8));
   assert.equal(zonasDeEscena(herramienta(e, "ajustar_salon", { invitados: 120 }).escena).mesas.length, 30, "las sillas se conservan al cambiar invitados: 120 ÷ 4");
 });
 
@@ -160,15 +153,15 @@ prueba("la declaración de armar_salon y ajustar_salon trae sillas_por_mesa y el
 prueba("A2: ver_escena, el editor y la descripción para la imagen dicen las sillas REALES de la mesa, no las del catálogo", () => {
   const r4 = herramienta(vacia(), "armar_salon", { invitados: 16, sillas_por_mesa: 4, zonas: ["fondo_fotos"] });
   const vista = herramienta(r4.escena, "ver_escena", {}).resumen;
-  assert.match(vista, /Mesa redonda con 4 sillas/);
-  assert.doesNotMatch(vista, /Mesa redonda con 8 sillas/);
+  assert.match(vista, /Mesa redonda .*4 sillas Tiffany en el grupo/);
+  assert.doesNotMatch(vista, /8 sillas Tiffany en el grupo/);
   const imperial = herramienta(vacia(), "armar_salon", { invitados: 12, mesa: "imperial", sillas_por_mesa: 6, zonas: ["fondo_fotos"] });
-  assert.match(herramienta(imperial.escena, "ver_escena", {}).resumen, /Mesa imperial con 6 sillas/);
+  assert.match(herramienta(imperial.escena, "ver_escena", {}).resumen, /Mesa rectangular .*6 sillas Tiffany en el grupo/);
   const normal = herramienta(vacia(), "armar_salon", { invitados: 16, zonas: ["fondo_fotos"] });
-  assert.match(herramienta(normal.escena, "ver_escena", {}).resumen, /Mesa redonda con 8 sillas/, "sin pedir sillas dice las de siempre");
-  assert.match(ingles(r4.escena), /four Tiffany chairs/);
-  assert.doesNotMatch(ingles(r4.escena), /eight Tiffany chairs/);
-  assert.match(ingles(imperial.escena), /six Tiffany chairs/);
+  assert.match(herramienta(normal.escena, "ver_escena", {}).resumen, /Mesa redonda .*8 sillas Tiffany en el grupo/, "sin pedir sillas dice las de siempre");
+  assert.match(ingles(r4.escena), /Each table has 4 chairs evenly spaced around it/);
+  assert.doesNotMatch(ingles(r4.escena), /Each table has 8 chairs/);
+  assert.match(ingles(imperial.escena), /Each table has 6 chairs evenly spaced around it/);
   const m = muebleDe("mesa_redonda_sillas")!;
   assert.equal(nombreDeMueble(m, { sillas: 3 }), "Mesa redonda con 3 sillas");
   assert.equal(nombreDeMueble(m), m.nombre);

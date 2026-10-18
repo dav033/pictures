@@ -2,9 +2,9 @@
  "caso": "idea-deco-real-27-aro-navideno-verde-salvia",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.6"
+  "version": "1.2.7"
  },
- "especHash": "08cfd3ab125c99081dc213b60ee8103fcf452dc224f0794f2cdbb02cb8434dd1",
+ "especHash": "133a77d452781d86cc045afcf198c8324c078dcee8cdb48ccdd9df1c615a3dba",
  "noRepresentable": [
   {
    "piezaId": "EST_01_ARO_CIRCULAR",

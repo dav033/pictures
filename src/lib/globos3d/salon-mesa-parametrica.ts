@@ -8,7 +8,7 @@ import type { PaletaSalon } from "./salon-nodos";
  * `sobre` la mesa, así se mueven, giran, duplican y quitan juntas. Cada tipo de mesa del salón se traduce a una mesa paramétrica
  * cuyo conjunto (con sillas) ocupa lo mismo que `medidasDeMesa`: el salón sigue distribuyendo con esas medidas.
  *
- * Es el núcleo puro: todavía no lo usa `armar_salon` (ver `ponerElemento` en `salon-nodos.ts`, que sigue poniendo el mueble del catálogo).
+ * `ponerElemento` en `salon-nodos.ts` usa este constructor para armar las mesas de invitados del salón.
  */
 
 /** Lo que las sillas suman a cada lado de la mesa (cm): el mismo `ALREDEDOR_SILLAS_CM` del catálogo. */

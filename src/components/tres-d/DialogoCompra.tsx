@@ -3,10 +3,12 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { Escena, EscenaArmada } from "@/lib/globos3d/escena";
 import type { CalibracionBomba } from "@/lib/globos3d/bomba-segundos";
+import type { EscenaGlobos } from "./escena-globos";
 import { DialogoTaller } from "./DialogoTaller";
 import { HojaArmadoEscena } from "./HojaArmadoEscena";
 import { ListaCompra } from "./ListaCompra";
 import { useHojaArmadoActiva } from "./useHojaArmadoActiva";
+import { useSharedQuoteFlags } from "@/components/shared-quotes/SharedQuoteFlags";
 
 type Props = {
   abierto: boolean;
@@ -16,6 +18,7 @@ type Props = {
   escena: Escena;
   armada: EscenaArmada | null;
   productosExactos: ReactNode;
+  visor: EscenaGlobos | null;
 };
 
 /**
@@ -45,8 +48,9 @@ function useFocoDeQuienAbre(abierto: boolean): void {
  * no responde. Al pedir la hoja se cierra la lista y se abre la hoja con la calibración de la bomba que tenía la lista; al
  * cerrar la hoja se vuelve a la lista. El botón solo sale con la bandera `taller_hoja_armado` encendida.
  */
-export function DialogoCompra({ abierto, onCerrar, titulo, nombre, escena, armada, productosExactos }: Props) {
+export function DialogoCompra({ abierto, onCerrar, titulo, nombre, escena, armada, productosExactos, visor }: Props) {
   const hojaActiva = useHojaArmadoActiva();
+  const { readerEnabled, writerEnabled } = useSharedQuoteFlags();
   const [hoja, setHoja] = useState<CalibracionBomba | null>(null);
   useFocoDeQuienAbre(abierto);
   // Si el taller cierra la lista (otro diálogo, una tecla) con la hoja abierta, la hoja se cierra con ella.
@@ -55,7 +59,16 @@ export function DialogoCompra({ abierto, onCerrar, titulo, nombre, escena, armad
     <>
       <DialogoTaller abierto={abierto && hoja === null} onCerrar={onCerrar} titulo={titulo} forma="cajon">
         {armada && abierto && hoja === null && (
-          <ListaCompra nombre={nombre} escena={escena} armada={armada} productosExactos={productosExactos} onHojaDeArmado={hojaActiva ? setHoja : undefined} />
+          <ListaCompra
+            nombre={nombre}
+            escena={escena}
+            armada={armada}
+            productosExactos={productosExactos}
+            visor={visor}
+            readerEnabled={readerEnabled}
+            writerEnabled={writerEnabled}
+            onHojaDeArmado={hojaActiva ? setHoja : undefined}
+          />
         )}
       </DialogoTaller>
       {armada && <HojaArmadoEscena abierta={abierto && hoja !== null} onCerrar={() => setHoja(null)} nombre={nombre} escena={escena} armada={armada} calibracion={hoja ?? {}} />}

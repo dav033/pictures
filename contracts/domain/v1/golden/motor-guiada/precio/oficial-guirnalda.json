@@ -2,9 +2,9 @@
  "caso": "oficial-guirnalda",
  "motor": {
   "id": "globos3d",
-  "version": "1.2.6"
+  "version": "1.2.7"
  },
- "especHash": "37b5ed271585929dcb212c71d49d6bc146c0d2dbd9b62c8eaf39811d11dc7d93",
+ "especHash": "a81e8ec8f1f58146c349a6d2af71d851bfda2bcf625db828ec128c82aeabb76c",
  "crosswalk": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
  "politica": "python",
  "faltantes": [],

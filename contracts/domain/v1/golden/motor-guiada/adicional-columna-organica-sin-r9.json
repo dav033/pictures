@@ -1,0 +1,77 @@
+{
+ "caso": "adicional-columna-organica-sin-r9",
+ "motor": {
+  "id": "globos3d",
+  "version": "1.2.7"
+ },
+ "especHash": "d4dbe8ccf0b59cffd503a8e514e527f57aae1a198a128147a24e79dd0dde1929",
+ "noRepresentable": [],
+ "piezas": {
+  "EST_01_COLUMNA": {
+   "lineas": [
+    {
+     "formatoId": "R-5",
+     "codigo": "932",
+     "cantidad": 10
+    },
+    {
+     "formatoId": "R-12",
+     "codigo": "932",
+     "cantidad": 22
+    },
+    {
+     "formatoId": "R-18",
+     "codigo": "932",
+     "cantidad": 3
+    },
+    {
+     "formatoId": "R-24",
+     "codigo": "932",
+     "cantidad": 1
+    }
+   ],
+   "unidades": 36,
+   "caja": [
+    -36,
+    0,
+    -192,
+    36,
+    195,
+    -128
+   ]
+  }
+ },
+ "total": {
+  "lineas": [
+   {
+    "formatoId": "R-5",
+    "codigo": "932",
+    "cantidad": 10
+   },
+   {
+    "formatoId": "R-12",
+    "codigo": "932",
+    "cantidad": 22
+   },
+   {
+    "formatoId": "R-18",
+    "codigo": "932",
+    "cantidad": 3
+   },
+   {
+    "formatoId": "R-24",
+    "codigo": "932",
+    "cantidad": 1
+   }
+  ],
+  "unidades": 36
+ },
+ "caja": [
+  -36,
+  0,
+  -192,
+  36,
+  195,
+  -128
+ ]
+}

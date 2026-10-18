@@ -17,18 +17,25 @@ export type CapturadorSinCabeza = { capturar: (escena: Escena, encuadre: Encuadr
 const TIEMPO_MS = 120_000;
 
 async function abrirNavegador(): Promise<Browser> {
-  // Con la GPU (Direct3D 11) es varias veces más rápido que por software; si no está, SwiftShader. Primero el Chromium de Playwright.
-  const args = ["--ignore-gpu-blocklist", "--enable-gpu", "--use-angle=d3d11"];
+  // Prefer GPU acceleration on Windows; Linux can use its software renderer in headless mode.
+  const args = process.platform === "win32" ? ["--ignore-gpu-blocklist", "--enable-gpu", "--use-angle=d3d11"] : ["--disable-dev-shm-usage"];
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?.trim();
+  if (executablePath) return chromium.launch({ headless: true, executablePath, args });
   try { return await chromium.launch({ headless: true, args }); } catch { return chromium.launch({ headless: true, channel: "chrome", args }); }
 }
 
 export async function abrirCapturador(urlBase: string): Promise<CapturadorSinCabeza> {
+  const url = new URL(urlBase);
+  const hostLocal = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  if (!hostLocal || !["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash || !["", "/"].includes(url.pathname)) {
+    throw new Error("La captura solo admite una URL HTTP(S) local sin credenciales, ruta, consulta ni fragmento.");
+  }
   const navegador = await abrirNavegador();
   let pagina: Page | null = null;
   const abrirPagina = async (): Promise<Page> => {
     const nueva = await navegador.newPage({ viewport: { width: 1100, height: 1100 }, deviceScaleFactor: 1 });
     nueva.setDefaultTimeout(TIEMPO_MS);
-    await nueva.goto(`${urlBase.replace(/\/$/, "")}/3d/captura`, { waitUntil: "load", timeout: TIEMPO_MS });
+    await nueva.goto(`${url.origin}/3d/captura`, { waitUntil: "load", timeout: TIEMPO_MS });
     await nueva.waitForFunction(() => typeof (window as VentanaCaptura).__capturarFoto === "function", undefined, { timeout: TIEMPO_MS });
     return nueva;
   };

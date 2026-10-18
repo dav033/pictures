@@ -23,7 +23,15 @@ export type DescripcionImagen = {
 export function descripcionImagenDeEspec(espec: EspecClienteV1): DescripcionImagen {
   const { escena, cache, declaradas, noRepresentables } = escenaDesdeEspec(espec);
   const armada = armarEscena(escena, cache);
-  const materiales = armada.materiales.map((m) => ({ cantidad: m.cantidad, formatoId: m.formatoId, colorEn: referenciaPorCodigo(m.codigo)?.nombreEn ?? m.codigo }));
+  const materiales = armada.materiales.map((m) => {
+    const referencia = referenciaPorCodigo(m.codigo);
+    return {
+      cantidad: m.cantidad,
+      formatoId: m.formatoId,
+      colorEn: referencia?.nombreEn ?? m.codigo,
+      ...(referencia ? { hexGlobo: referencia.hexGlobo.toUpperCase(), acabado: referencia.acabado } : {}),
+    };
+  });
   return {
     descripcion: descripcionRender3d(escenaEnIngles(escena, armada), materiales, follajeEnIngles(armada.flores)),
     // Una pieza declarada (se cuenta de una lista, no se dibuja) quedaría fuera de la imagen que dice «nada más»: no se pide.

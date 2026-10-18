@@ -30,6 +30,7 @@ import { SeccionGastos, type FocoFila } from "./SeccionGastos";
 import { MaterialesGranel } from "./MaterialesGranel";
 import { ModoMateriales } from "./ModoMateriales";
 import { useGranel } from "./useGranel";
+import { ShareQuoteControl } from "@/components/shared-quotes/ShareQuoteControl";
 
 /** Espera tras la última tecla antes de pedirle los totales a Python. */
 const ESPERA_CALCULO_MS = 400;
@@ -43,6 +44,12 @@ type Props = {
   incrustada?: boolean;
   /** Clave del borrador en la sesión del navegador (el `plan_hash` o el id del mensaje). */
   clave: string;
+  sharing?: {
+    enabled: boolean;
+    sceneName: string;
+    sceneKey: string;
+    captureStill: () => Promise<Blob>;
+  };
 };
 
 type Calculo =
@@ -51,8 +58,13 @@ type Calculo =
   | { estado: "listo"; resultado: Resultado }
   | { estado: "error"; mensaje: string; previo: Resultado | null };
 
-/** El resultado de Python y las filas que lo produjeron, para poner cada subtotal en su fila. */
-type Resultado = { datos: CotizacionProfesionalResultado; enviadas: Record<SeccionCosto, string[]> };
+/** The server result and the exact input that produced it. */
+type Resultado = {
+  datos: CotizacionProfesionalResultado;
+  enviadas: Record<SeccionCosto, string[]>;
+  entrada: EntradaCotizacionProfesional;
+  peticion: string;
+};
 
 function leerGuardado(clave: string): BorradorProfesional | null {
   try {
@@ -100,7 +112,7 @@ const MARCO_SUELTO = "mt-3 w-full rounded-[20px] border border-borde-suave bg-su
  * Python calcula cada total (/api/cotizacion-profesional); aquí solo se escribe
  * y se muestra, y cuando lo que se ve ya no corresponde a lo escrito se dice.
  */
-export function CotizacionProfesional({ cotizacion, clave, incrustada = false }: Props) {
+export function CotizacionProfesional({ cotizacion, clave, incrustada = false, sharing }: Props) {
   // El borrador guardado de esta cotización: la tarjeta solo existe en el navegador
   // (los mensajes salen de sessionStorage), así que se lee al crear el estado.
   const [guardado] = useState(() => leerGuardado(clave));  // prerender-seguro: la tarjeta se monta desde el chat, que vive en el navegador (no en el prerender); `leerGuardado` además captura la ausencia de `window`
@@ -145,7 +157,7 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
       setCalculo({ estado: "calculando", previo: ultimoResultado.current });
       pedirCotizacionProfesional(entrada, { signal: control.signal })
         .then((datos) => {
-          const resultado = { datos, enviadas };
+          const resultado = { datos, enviadas, entrada, peticion: envio };
           ultimoResultado.current = resultado;
           setCalculo({ estado: "listo", resultado });
         })
@@ -172,6 +184,7 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
   if (materiales.length === 0) return <SinMateriales sinPrecio={sinPrecio} incrustada={incrustada} />;
 
   const resultado = calculo.estado === "listo" ? calculo.resultado : calculo.estado === "vacio" ? null : calculo.previo;
+  const resultadoActual = calculo.estado === "listo" && calculo.resultado.peticion === envio ? calculo.resultado : null;
   const datos = resultado?.datos ?? null;
   const estadoCalculo: EstadoCalculo = calculo.estado;
   const vigencia = vigenciaDe({ estado: estadoCalculo, hayResultado: resultado !== null, hayErroresEscritos: granel.envio === null });
@@ -254,6 +267,18 @@ export function CotizacionProfesional({ cotizacion, clave, incrustada = false }:
         onAlternar={() => setAbierta((valor) => !valor)}
         onReintentar={reintentar}
       />
+      {sharing && (
+        <div className="px-4 pt-3 @xl:px-5.5">
+          <ShareQuoteControl
+            enabled={sharing.enabled}
+            ready={resultadoActual !== null && !atenuar}
+            sceneName={sharing.sceneName}
+            sceneKey={sharing.sceneKey}
+            quoteInput={resultadoActual?.entrada ?? null}
+            captureStill={sharing.captureStill}
+          />
+        </div>
+      )}
 
       {granel.disponible && (
         <ModoMateriales

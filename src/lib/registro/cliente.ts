@@ -11,6 +11,7 @@
  * empezar de cero; `cabecerasConversacion(vista)` da {x-conversacion-id, x-vista} para cada fetch al servidor.
  */
 import type { CargaEventoCliente, NivelRegistro } from "./tipos";
+import { redactRouteForLogs } from "./ruta-segura";
 
 const RUTA = "/api/registro-cliente";
 const LIMITE_POR_MINUTO = 30;
@@ -230,7 +231,7 @@ export function registrarEventoCliente(
       ...(datos ? { datos } : {}),
       ...(conversacion ? { idConversacion: conversacion } : {}),
       ...(opciones.vista ? { vista: opciones.vista } : {}),
-      ruta: window.location.pathname.slice(0, 300),
+      ruta: redactRouteForLogs(window.location.pathname).slice(0, 300),
       sesion: idSesionPestana(),
       ts: new Date().toISOString(),
       ...(suprimidos ? { suprimidos } : {}),

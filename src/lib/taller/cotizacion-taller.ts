@@ -1,7 +1,7 @@
 import "server-only";
 import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
 import { cotizarLoQueSeVende, sumarLineas, type BomLinea, type ResultadoCotizacionBom } from "@/lib/globos3d/motor/v1";
-import { CotizacionTallerSchema, MAX_GLOBOS_LINEA_TALLER, PedidoCotizacionTallerSchema, type CotizacionTaller } from "./cotizacion-taller-tipos";
+import { CotizacionTallerSchema, CotizacionTallerV2Schema, MAX_GLOBOS_LINEA_TALLER, PedidoCotizacionTallerSchema } from "./cotizacion-taller-tipos";
 
 /**
  * Lógica de `POST /api/taller/cotizacion` (D-038, cotización única): el precio de la lista de compra del Taller 3D con el
@@ -22,7 +22,7 @@ function error(codigo: string, mensaje: string, estado: number, extra: Record<st
   return Response.json({ error: mensaje, codigo, ...extra }, { status: estado, headers: SIN_CACHE });
 }
 
-export async function atenderCotizacionTaller(request: Request, deps: DependenciasCotizacionTaller): Promise<Response> {
+export async function atenderCotizacionTaller(request: Request, deps: DependenciasCotizacionTaller, version: "v1" | "v2" = "v1"): Promise<Response> {
   if (!isAuthenticatedRequest(request)) return error("SESION_REQUERIDA", "Sesión requerida.", 401);
   if (!isSameOriginRequest(request)) return error("ORIGEN_INVALIDO", "Origen no permitido.", 403);
   const texto = await request.text().catch(() => "");
@@ -43,25 +43,58 @@ export async function atenderCotizacionTaller(request: Request, deps: Dependenci
     if (cotizada.razon === "material_no_disponible") return error("SIN_COBERTURA", "La tienda ya no vende alguna de las presentaciones de la lista.", 422);
     return error("PRECIO_FALLIDO", "No pude cotizar la lista ahora.", 502);
   }
-  const leida = CotizacionTallerSchema.safeParse({
+  const salidaV1 = {
     total: cotizada.total,
     mermaPorcentaje: cotizada.cotizacion.mermaPorcentaje,
-    incluyeIva: true,
+    incluyeIva: true as const,
     lineas: cotizada.compras.map((compra) => ({
       formatoId: compra.formatoId, codigo: compra.codigo, nombre: `${compra.variante.titulo} — ${compra.variante.tituloVariante}`,
       cantidad: compra.cantidad, reserva: compra.reserva, paquetes: compra.paquetes, unidadesPaquete: compra.unidadesPaquete,
       precioPaquete: compra.precioPaquete, subtotal: compra.subtotal,
     })),
     faltantes,
-  });
+  };
+  const salidaV2 = {
+    schema_version: "taller-cotizacion.v2" as const,
+    total: cotizada.total,
+    mermaPorcentaje: cotizada.cotizacion.mermaPorcentaje,
+    incluyeIva: true as const,
+    complementosSoportados: false as const,
+    lineas: cotizada.compras.map((compra) => ({
+      id: compra.variante.variantId,
+      productId: compra.variante.productId,
+      formatoId: compra.formatoId,
+      codigo: compra.codigo,
+      tamano: compra.formatoId,
+      tamanoCodigo: compra.formatoId,
+      ...(compra.variante.color ? { color: compra.variante.color } : {}),
+      nombre: `${compra.variante.titulo} — ${compra.variante.tituloVariante}`,
+      cantidad: compra.cantidad,
+      cantidadNecesaria: compra.cantidad,
+      disponible: true as const,
+      reserva: compra.reserva,
+      varianteId: compra.variante.variantId,
+      paquetes: compra.paquetes,
+      unidadesPaquete: compra.unidadesPaquete,
+      precioPaquete: compra.precioPaquete,
+      subtotal: compra.subtotal,
+      sobrante: compra.sobrante,
+    })),
+    faltantes,
+  };
+  const leida = version === "v2" ? CotizacionTallerV2Schema.safeParse(salidaV2) : CotizacionTallerSchema.safeParse(salidaV1);
   if (!leida.success) {
     deps.auditar("regla:cotizacion_taller", "lista de compra del taller sin precio", { razon: "precio_fallido", detalle: "la cotización no cumple el contrato del Taller" }, { entrada });
     return error("PRECIO_FALLIDO", "No pude cotizar la lista ahora.", 502);
   }
-  const cotizacion: CotizacionTaller = leida.data;
+  const cotizacion = leida.data;
   deps.auditar("regla:cotizacion_taller", "precio de la lista de compra del taller (la regla única, Python cotiza)", {
     total_cop: cotizacion.total, lineas: cotizacion.lineas.length, snapshot_precios: cotizada.snapshot, politica_paquetes: cotizada.politica, reserva: cotizada.reserva,
     ...(faltantes.length ? { faltantes } : {}),
   }, { entrada });
   return Response.json(cotizacion, { headers: SIN_CACHE });
+}
+
+export function atenderCotizacionTallerV2(request: Request, deps: DependenciasCotizacionTaller): Promise<Response> {
+  return atenderCotizacionTaller(request, deps, "v2");
 }

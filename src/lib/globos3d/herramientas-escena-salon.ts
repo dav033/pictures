@@ -66,7 +66,7 @@ const unir = (resumen: string, notas: readonly string[]) => [resumen, ...new Set
 export const HERRAMIENTAS_SALON: Readonly<Record<string, HerramientaExtra>> = {
   armar_salon: {
     esquema: ArmarSchema,
-    descripcion: "Arma el SALÓN de un evento (boda, XV, fiesta): las mesas de invitados con sus sillas en cuadrícula con pasillos (una pieza por mesa), la mesa principal, la pista de baile libre, la mesa de postres, el panel del fondo de fotos y el tapete de la entrada, todo dentro de la sala; la agranda a lo que necesite (hasta 30 × 30 m). Conserva lo que ya había (la decoración se corre al fondo de fotos). Con invitados = 0 y zonas arma solo esas zonas («solo un rincón de postres»). Para un evento completo con globos usa planificar_evento. Después: ajustar_salon, mover_zona, quitar_zona.",
+    descripcion: "Arma el SALÓN de un evento (boda, XV, fiesta): las mesas de invitados paramétricas con sus grupos de sillas, en cuadrícula con pasillos, la mesa principal, la pista de baile libre, la mesa de postres, el panel del fondo de fotos y el tapete de la entrada, todo dentro de la sala; la agranda a lo que necesite (hasta 30 × 30 m). Conserva lo que ya había (la decoración se corre al fondo de fotos). Con invitados = 0 y zonas arma solo esas zonas («solo un rincón de postres»). Para un evento completo con globos usa planificar_evento. Después: ajustar_salon, mover_zona, quitar_zona.",
     aplicar: (escena, argumentos) => {
       const a = ArmarSchema.parse(argumentos ?? {});
       const notas: string[] = [];

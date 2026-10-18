@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MaterialDecoracion } from "@/lib/globos3d/figuras";
 import { cabecerasConversacion } from "@/lib/registro/cliente";
-import { CotizacionTallerSchema, FalloCotizacionTallerSchema, MAX_GLOBOS_LINEA_TALLER, MAX_GLOBOS_LISTA_TALLER, MAX_LINEAS_COTIZACION_TALLER, RUTA_COTIZACION_TALLER, type CotizacionTaller } from "@/lib/taller/cotizacion-taller-tipos";
+import { CotizacionTallerV2Schema, FalloCotizacionTallerSchema, MAX_GLOBOS_LINEA_TALLER, MAX_GLOBOS_LISTA_TALLER, MAX_LINEAS_COTIZACION_TALLER, RUTA_COTIZACION_TALLER_V2, type CotizacionTallerV2 } from "@/lib/taller/cotizacion-taller-tipos";
 
 export type EstadoCotizacionTaller =
   | { estado: "inactivo" }
   | { estado: "cotizando" }
-  | { estado: "lista"; cotizacion: CotizacionTaller; vigente: boolean }
+  | { estado: "lista"; cotizacion: CotizacionTallerV2; vigente: boolean }
   | { estado: "error"; mensaje: string };
 
 /** La lista que se cotiza: solo lo que la tienda vende por paquete (formato, código y cantidad), en un orden fijo. */
@@ -21,10 +21,10 @@ function pedidoDe(materiales: ReadonlyArray<MaterialDecoracion>) {
  * escena (cada cotización llama al servicio de precios). Si la escena cambia después, la cotización queda marcada como
  * vieja hasta que se vuelva a pedir.
  */
-export function useCotizacionTaller(materiales: ReadonlyArray<MaterialDecoracion>): { estado: EstadoCotizacionTaller; cotizar: () => void; demasiadas: boolean } {
+export function useCotizacionTaller(materiales: ReadonlyArray<MaterialDecoracion>, revisionEscena: string): { estado: EstadoCotizacionTaller; cotizar: () => void; demasiadas: boolean } {
   const pedido = useMemo(() => pedidoDe(materiales), [materiales]);
-  const clave = useMemo(() => JSON.stringify(pedido), [pedido]);
-  const [resultado, setResultado] = useState<{ clave: string; estado: Exclude<EstadoCotizacionTaller, { estado: "lista" }> | { estado: "lista"; cotizacion: CotizacionTaller } }>({ clave: "", estado: { estado: "inactivo" } });
+  const clave = useMemo(() => JSON.stringify({ pedido, revisionEscena }), [pedido, revisionEscena]);
+  const [resultado, setResultado] = useState<{ clave: string; estado: Exclude<EstadoCotizacionTaller, { estado: "lista" }> | { estado: "lista"; cotizacion: CotizacionTallerV2 } }>({ clave: "", estado: { estado: "inactivo" } });
   const control = useRef<AbortController | null>(null);
   useEffect(() => () => control.current?.abort(), []);
 
@@ -33,10 +33,10 @@ export function useCotizacionTaller(materiales: ReadonlyArray<MaterialDecoracion
     const actual = new AbortController();
     control.current = actual;
     setResultado({ clave, estado: { estado: "cotizando" } });
-    fetch(RUTA_COTIZACION_TALLER, { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", ...cabecerasConversacion("3d") }, body: JSON.stringify({ materiales: pedido }), signal: actual.signal })
+    fetch(RUTA_COTIZACION_TALLER_V2, { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", ...cabecerasConversacion("3d") }, body: JSON.stringify({ materiales: pedido }), signal: actual.signal })
       .then(async (respuesta) => {
         const json: unknown = await respuesta.json().catch(() => null);
-        const cotizacion = CotizacionTallerSchema.safeParse(json);
+        const cotizacion = CotizacionTallerV2Schema.safeParse(json);
         if (respuesta.ok && cotizacion.success) return setResultado({ clave, estado: { estado: "lista", cotizacion: cotizacion.data } });
         const fallo = FalloCotizacionTallerSchema.safeParse(json);
         setResultado({ clave, estado: { estado: "error", mensaje: fallo.success ? fallo.data.error : "No pude cotizar la lista ahora." } });

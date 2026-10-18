@@ -52,7 +52,8 @@ function conteoArmado(estructura: Record<string, unknown>): { modelo: string; to
   return { modelo: "armado_columna", total: cuerpo + remate, detalle: `${armado.capas.length} capas x ${armado.cuerpo?.globos_capa ?? 4} R-${armado.capas[0]?.tamano} + ${remate ? `1 R-${armado.remate!.tamano}` : "sin remate"}` };
 }
 
-const salida = casosIdeas().map((caso) => {
+export function calcularParidadIdeas() {
+  return casosIdeas().map((caso) => {
   const ideaId = caso.id.replace(/^idea-/, "");
   const idea = planes.ideas[ideaId]!;
   const rutaAnalisis = path.join(RAIZ, "data", "biblioteca-real", "analisis", idea.archivo);
@@ -117,8 +118,12 @@ const salida = casosIdeas().map((caso) => {
     sinCruce,
   };
   return { id: ideaId, titulo: idea.plan.concepto.titulo, python, motor, precios };
-});
+  });
+}
 
-const destino = process.argv[2];
-if (destino) writeFileSync(destino, JSON.stringify(salida, null, 1), "utf8");
-else console.log(JSON.stringify(salida, null, 1));
+if (require.main === module) {
+  const salida = calcularParidadIdeas();
+  const destino = process.argv[2];
+  if (destino) writeFileSync(destino, JSON.stringify(salida, null, 1), "utf8");
+  else console.log(JSON.stringify(salida, null, 1));
+}

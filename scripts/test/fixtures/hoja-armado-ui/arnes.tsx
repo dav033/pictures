@@ -22,7 +22,7 @@ function Taller({ nombre, escena }: { nombre: string; escena: Escena }) {
     <div className="taller-3d min-h-dvh">
       <button type="button" onClick={() => setAbierto(true)}>Lista de compra</button>
       <DialogoCompra abierto={abierto} onCerrar={() => setAbierto(false)} titulo={`Lista de compra · ${textoGlobos(armada.globos.length)}`} nombre={nombre} escena={escena} armada={armada}
-        productosExactos={<p>Productos exactos de la tienda (no se calculan en la prueba).</p>} />
+        productosExactos={<p>Productos exactos de la tienda (no se calculan en la prueba).</p>} visor={null} />
     </div>
   );
 }

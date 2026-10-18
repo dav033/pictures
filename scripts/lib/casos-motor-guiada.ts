@@ -7,9 +7,9 @@ import { resolverProductoDeIdeas } from "../../src/lib/globos3d/motor/productos-
 import { representacionDe, type Representacion } from "../../src/lib/globos3d/motor/representable";
 
 /**
- * Los casos del motor 3D de la vista guiada: las 28 ideas guardadas de la biblioteca y una espec por defecto por cada
- * una de las 18 estructuras oficiales. Los comparten el generador de las fixtures doradas, su prueba y el informe de
- * cómo se representa cada idea. Sin red y sin coste.
+ * Los casos del motor 3D de la vista guiada: las 28 ideas guardadas de la biblioteca, una espec por defecto por cada
+ * una de las 18 estructuras oficiales y casos adicionales de regresión. Los comparten el generador de las fixtures
+ * doradas, su prueba y el informe de cómo se representa cada idea. Sin red y sin coste.
  */
 const RAIZ = path.resolve(__dirname, "..", "..");
 export const DIRECTORIO_DORADO = path.join(RAIZ, "contracts", "domain", "v1", "golden", "motor-guiada");
@@ -42,15 +42,24 @@ export function casosOficiales(): CasoMotor[] {
 export const todosLosCasos = (): CasoMotor[] => [...casosIdeas(), ...casosOficiales()];
 
 /**
- * Casos que no son ni una idea ni una estructura oficial pero que el dorado debe cubrir: la guirnalda orgánica con un color que no se fabrica en R-9 (el 932: 13 de ~80
- * códigos) llena distinto que la de 570 (P-087; `VERSION_MOTOR` 1.2.4), y ninguna idea ni estructura oficial usa un color así.
+ * Casos que no son ni una idea ni una estructura oficial pero que los goldens deben cubrir: la guirnalda y la columna
+ * orgánicas con un color que no se fabrica en R-9 (el 932: 13 de ~80 códigos). Ninguna idea ni estructura oficial
+ * usa un color así. La guirnalda cubre P-087; la columna, P-089.
  */
 export function casosAdicionales(): CasoMotor[] {
-  const { espec, avisosDeConversion } = casosOficiales().find((c) => c.id === "oficial-guirnalda")!;
-  const piezas = espec.piezas.map((p) => ({
+  const oficiales = casosOficiales();
+  const { espec: especGuirnalda, avisosDeConversion: avisosGuirnalda } = oficiales.find((c) => c.id === "oficial-guirnalda")!;
+  const { espec: especColumna, avisosDeConversion: avisosColumna } = oficiales.find((c) => c.id === "oficial-columna")!;
+  const piezasGuirnalda = especGuirnalda.piezas.map((p) => ({
     ...p, tamanos: "organica_fina" as const, densidad: "sencilla" as const, medidas: { largoM: 3.66 }, colores: [{ codigo: "932", nombre: "Color 932", peso: 1 }],
   }));
-  return [{ id: "adicional-guirnalda-organica-sin-r9", espec: { ...espec, piezas }, avisosDeConversion }];
+  const piezasColumna = especColumna.piezas.map((p) => ({
+    ...p, tamanos: "organica_fina" as const, densidad: "media" as const, medidas: { anchoM: 0.7, altoM: 2 }, colores: [{ codigo: "932", nombre: "Color 932", peso: 1 }],
+  }));
+  return [
+    { id: "adicional-guirnalda-organica-sin-r9", espec: { ...especGuirnalda, piezas: piezasGuirnalda }, avisosDeConversion: avisosGuirnalda },
+    { id: "adicional-columna-organica-sin-r9", espec: { ...especColumna, piezas: piezasColumna }, avisosDeConversion: avisosColumna },
+  ];
 }
 
 export const casosDorados = (): CasoMotor[] => [...todosLosCasos(), ...casosAdicionales()];

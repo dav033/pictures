@@ -20,6 +20,10 @@ import type { AmbienteSala } from "@/lib/globos3d/escena";
 import type { AjusteOpticoVisor } from "@/lib/globos3d/ambiente-visor";
 import { crearEscenografiaVisor } from "./escenografia-visor";
 import { letraParaCapturar } from "./fuente-rotulos";
+import { crearExportadoresEscena } from "./exportadores-escena-globos";
+import type { ExportadoresEscena } from "./tipos-exportacion-escena";
+import { cajaLetreroEnCaptura, proyectarLetreros } from "./caja-letrero-captura";
+import type { CajaLetreroFotoV1 } from "@/lib/globos3d/render-imagen-contrato-v1";
 
 /**
  * La escena de /3d con three.js, sin React: un globo (o la fila de todos los formatos) sobre un piso con
@@ -78,7 +82,7 @@ export type CajaEnEscena = { min: Punto3; max: Punto3 };
  */
 export type ExtrasEscena = { flores?: readonly FlorEnEscena[]; cilindros?: readonly CilindroEnEscena[]; solidos?: readonly SolidoEnEscena[]; sala?: SalaEnEscena; resaltado?: CajaEnEscena | null; encuadrar?: boolean };
 
-export type EscenaGlobos = {
+export type EscenaGlobos = ExportadoresEscena & {
   mostrar: (globos: readonly GloboEnEscena[]) => void;
   /** Un módulo armado (pareja, trío, cuarteto…): los globos colocados, si se piden sus anclas, y los tubitos. */
   mostrarModulo: (globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos?: readonly TuboEnEscena[], extras?: ExtrasEscena) => void;
@@ -95,7 +99,7 @@ export type EscenaGlobos = {
    * Con `escenaEntera` (la foto realista, siempre) no se recorta a la decoración ni se apunta la cámara a su esfera: se encuadra la sala entera con
    * su mobiliario desde el ángulo que se ve (lo que se ve es lo que FLUX debe conservar).
    */
-  capturar: (opciones?: { escenaEntera?: boolean }) => { datos: string; aspecto: AspectoCaptura };
+  capturar: (opciones?: { escenaEntera?: boolean }) => { datos: string; aspecto: AspectoCaptura; cajasLetreroV1?: CajaLetreroFotoV1[] };
   /**
    * Prepara la captura para la IA: con rótulos o neones en la escena, espera la letra y a que se dibujen con ella; lanza un error claro
    * si no carga (lo que se captura sin ella saldría con marcas). Llamarla antes de `capturar`.
@@ -1578,6 +1582,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const quitarMedicion = medible ? registrarVisor(medible) : () => {};
 
   const optica = crearOpticaVisor(escena, camara, lucesDeSala, () => pedirCuadro());
+  const esperarRotulosExportacion = () => letraParaCapturar([...nodos.values(), ...aparcados.values()].some((d) => d.conRotulo), rehacerRotulos);
+  const exportadores = crearExportadoresEscena({ renderer, escena, camara, contenido, sala, ayudas: [cuadricula, ayudas, lienzoAyudas], usarCalidad, dibujar, esperarRotulos: esperarRotulosExportacion });
   const api: EscenaGlobos = {
     mostrar: (globos) => cronometrar(medible, "mostrar", () => mostrar(globos)),
     mostrarModulo: (globos, anclas, tubos, extras) => cronometrar(medible, "mostrarModulo", () => mostrarModulo(globos, anclas, tubos, extras)),
@@ -1618,7 +1624,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       const r = lienzo.getBoundingClientRect();
       return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
     },
-    esperarRotulos: () => letraParaCapturar([...nodos.values(), ...aparcados.values()].some((d) => d.conRotulo), rehacerRotulos),
+    esperarRotulos: esperarRotulosExportacion,
     capturar(opciones) {
       // 1. Render cuadrado grande desde el mismo ángulo, con la decoración entera en cuadro y fondo transparente.
       const L = 2304;
@@ -1661,6 +1667,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
         pincel.drawImage(lienzo, 0, 0);
       }
 
+      const proyeccionesLetrero = proyectarLetreros(contenido, camara);
+
       // Volver al visor tal como estaba.
       usarCalidad("editor");
       cuadricula.visible = cuadriculaVisible;
@@ -1701,8 +1709,17 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       destino.fillRect(0, 0, ancho, alto);
       destino.imageSmoothingQuality = "high";
       const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-      destino.drawImage(cuadro, ancho / 2 - cx * escala, alto / 2 - cy * escala, L * escala, L * escala);
-      return { datos: salida.toDataURL("image/jpeg", 0.92), aspecto };
+      const desplazamientoX = ancho / 2 - cx * escala;
+      const desplazamientoY = alto / 2 - cy * escala;
+      destino.drawImage(cuadro, desplazamientoX, desplazamientoY, L * escala, L * escala);
+      const cajasLetreroV1 = proyeccionesLetrero
+        .map((puntos) => cajaLetreroEnCaptura(puntos, { ladoFuente: L, escala, desplazamientoX, desplazamientoY, anchoSalida: ancho, altoSalida: alto }))
+        .filter((caja): caja is CajaLetreroFotoV1 => caja !== null);
+      return {
+        datos: salida.toDataURL("image/jpeg", 0.92),
+        aspecto,
+        ...(cajasLetreroV1.length && cajasLetreroV1.length <= 50 ? { cajasLetreroV1 } : {}),
+      };
     },
     renderEstandar(vista, lado) {
       const caja = new THREE.Box3().setFromObject(contenido);
@@ -1769,6 +1786,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       renderer.setSize(antes.tamano.x, antes.tamano.y, false);
       return datos;
     },
+    ...exportadores,
     destruir() {
       vivo = false;
       oyentesCuadro.clear();

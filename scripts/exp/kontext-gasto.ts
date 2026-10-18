@@ -3,15 +3,18 @@
  * falla, cuenta como gasto (se reserva antes de llamar).
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
-export const CARPETA = "C:/Users/davidt/bitacora/pictures/research/kontext-color";
+export const CARPETA = process.env.KONTEXT_COLOR_DIR || join(homedir(), "bitacora", "pictures", "research", "kontext-color");
 
 // Tope total acordado: US$1,28 = US$0,48 de las 6 llamadas que fallaron o se cortaron + US$0,40 de a, b, c y las segundas semillas de b y c
 // + US$0,24 de la variante d + US$0,16 de la comprobación en una escena de plata cromada. 16 imágenes.
-export const TOPE_USD = 1.28;
+const topeConfigurado = process.env.KONTEXT_COLOR_TOPE_USD;
+export const TOPE_USD = topeConfigurado === undefined ? 1.28 : Number(topeConfigurado);
 export const TOPE_IMAGENES = 16;
 export const COSTO_IMAGEN = 0.08;
+if (!Number.isFinite(TOPE_USD) || TOPE_USD < COSTO_IMAGEN) throw new Error("KONTEXT_COLOR_TOPE_USD debe permitir al menos una llamada completa.");
 
 export type Llamada = {
   variante: string;
