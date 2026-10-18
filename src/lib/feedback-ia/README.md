@@ -35,9 +35,8 @@ Calificación 1 a 10 de cada turno de la IA (Taller 3D y chat del cliente) con e
 
 ## Administrador
 
-Todo lo de abajo exige la sesión de la app **y** la clave `ADMIN_PASSWORD` (cookie `feedback_admin`, 8 h, SameSite=Strict).
-Sin `ADMIN_PASSWORD` configurada el administrador está cerrado (`403 ADMIN_NO_CONFIGURADO`); sin la cookie, `401 SOLO_ADMINISTRADOR`.
-El panel (`/admin` → «Feedback IA») pide la clave y la entrega a `POST /api/feedback-ia/admin/sesion` (`{ clave }`, 10 intentos/min).
+Todo lo de abajo exige solo la sesión de la app (sin clave de administrador aparte, D-056; antes `ADMIN_PASSWORD` y
+`POST /api/feedback-ia/admin/sesion`). Sin sesión: `401 SESION_REQUERIDA`.
 
 | Ruta | Qué |
 |---|---|
@@ -49,12 +48,12 @@ El panel (`/admin` → «Feedback IA») pide la clave y la entrega a `POST /api/
 | `GET/POST /api/feedback-ia/analisis` | Últimos análisis / ejecutar uno (`{ dias, conResumen }`; con resumen de IA, 5 por hora). |
 | `GET /api/feedback-ia/analisis-cron` | Análisis semanal **y retención** con `Authorization: Bearer $CRON_SECRET`. También `npm run feedback:analizar`. |
 
-REQ-004 (usuarios admin|staff) reemplazará la clave compartida de administrador.
+REQ-004 (usuarios admin|staff) volverá a distinguir al administrador.
 
 ## Variables de entorno
 
 `ALMACEN_S3_ENDPOINT`, `ALMACEN_S3_BUCKET`, `ALMACEN_S3_ACCESS_KEY_ID`, `ALMACEN_S3_SECRET_ACCESS_KEY`, `ALMACEN_S3_REGION`
-(módulo compartido `src/lib/almacen/objetos-s3.ts`, prefijo de clave `feedback/`), **`ADMIN_PASSWORD`**, `CRON_SECRET`,
+(módulo compartido `src/lib/almacen/objetos-s3.ts`, prefijo de clave `feedback/`), `CRON_SECRET`,
 `FEEDBACK_IA_RESUMEN_GEMINI`, `DATABASE_URL` (migración `030_ai_feedback.sql`).
 
 ## Pruebas

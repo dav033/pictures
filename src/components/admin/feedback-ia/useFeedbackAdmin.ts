@@ -32,11 +32,8 @@ async function pedirUltimoAnalisis(): Promise<AnalisisFeedback | null> {
   return datos.analisis[0] ?? null;
 }
 
-export type AccesoAdmin = "abierto" | "pedir_clave" | "no_configurado";
-
-/** Estado del panel: acceso de administrador, filtros, página de resultados y último análisis. Toda la red del panel pasa por aquí. */
+/** Estado del panel: filtros, página de resultados y último análisis. Toda la red del panel pasa por aquí. */
 export function useFeedbackAdmin() {
-  const [acceso, setAcceso] = useState<AccesoAdmin>("abierto");
   const [filtros, setFiltros] = useState<FiltrosPanel>(FILTROS_INICIALES);
   const [items, setItems] = useState<ItemListadoFeedback[]>([]);
   const [total, setTotal] = useState(0);
@@ -46,14 +43,11 @@ export function useFeedbackAdmin() {
   const [analizando, setAnalizando] = useState(false);
 
   const aplicarPagina = useCallback((pagina: RespuestaListadoFeedback, desplazamiento: number) => {
-    setAcceso("abierto");
     setTotal(pagina.total);
     setItems((previos) => (desplazamiento === 0 ? pagina.items : [...previos, ...pagina.items]));
   }, []);
 
   const mostrarFallo = useCallback((causa: unknown, respaldo: string) => {
-    if (causa instanceof ErrorApi && causa.codigo === "SOLO_ADMINISTRADOR") return setAcceso("pedir_clave");
-    if (causa instanceof ErrorApi && causa.codigo === "ADMIN_NO_CONFIGURADO") return setAcceso("no_configurado");
     setError(mensajeErrorCliente(causa, respaldo));
   }, []);
 
@@ -77,21 +71,6 @@ export function useFeedbackAdmin() {
     pedirUltimoAnalisis().then(setAnalisis).catch(() => setAnalisis(null));
   }, [aplicarPagina, mostrarFallo]);
 
-  const ingresar = useCallback(async (clave: string) => {
-    setError(null);
-    try {
-      await leerJson<{ ok: true }>(await fetch("/api/feedback-ia/admin/sesion", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ clave }),
-      }));
-      await cargar(FILTROS_INICIALES, 0);
-      setAnalisis(await pedirUltimoAnalisis().catch(() => null));
-    } catch (causa) {
-      setError(mensajeErrorCliente(causa, "No se pudo ingresar."));
-    }
-  }, [cargar]);
-
   const analizarAhora = useCallback(async (dias: number, conResumen: boolean) => {
     setAnalizando(true);
     setError(null);
@@ -110,8 +89,6 @@ export function useFeedbackAdmin() {
   }, []);
 
   return {
-    acceso,
-    ingresar,
     filtros,
     setFiltros,
     items,

@@ -4,23 +4,19 @@ import { ENCABEZADO_CSV, filasACsv } from "./csv";
 import type { RespuestaListadoFeedback } from "./contrato";
 import { atenderAnalisisCron, atenderAnalisisManual, atenderUltimosAnalisis } from "./manejadores-analisis";
 import { crearLimitador } from "./acceso";
-import { atenderDetalle, atenderImagen, atenderListado, atenderSesionAdmin } from "./manejadores-admin";
+import { atenderDetalle, atenderImagen, atenderListado } from "./manejadores-admin";
 import { construirFiltros, type FilaListado } from "./repositorio";
-import { CLAVE_ADMIN, CONTRASENA, almacenFalso, baseFalsa, dependenciasFalsas, peticion as peticionBase, peticionJson as peticionJsonBase } from "./pruebas-comunes";
+import { CONTRASENA, almacenFalso, baseFalsa, dependenciasFalsas, peticion as peticionBase, peticionJson as peticionJsonBase } from "./pruebas-comunes";
 
-/** Por defecto las peticiones llevan la cookie de administrador; `admin: false` la quita. */
-const peticion = (url: string, init: Parameters<typeof peticionBase>[1] = {}) => peticionBase(url, { admin: true, ...init });
-const peticionJson = (url: string, cuerpo: unknown, init: Parameters<typeof peticionJsonBase>[2] = {}) => peticionJsonBase(url, cuerpo, { admin: true, ...init });
+const peticion = peticionBase;
+const peticionJson = (url: string, cuerpo: unknown, init: Parameters<typeof peticionJsonBase>[2] = {}) => peticionJsonBase(url, cuerpo, init);
 
 let contrasenaAnterior: string | undefined;
 let cronAnterior: string | undefined;
-let adminAnterior: string | undefined;
 beforeEach(() => {
   contrasenaAnterior = process.env.APP_PASSWORD;
   cronAnterior = process.env.CRON_SECRET;
-  adminAnterior = process.env.ADMIN_PASSWORD;
   process.env.APP_PASSWORD = CONTRASENA;
-  process.env.ADMIN_PASSWORD = CLAVE_ADMIN;
   delete process.env.CRON_SECRET;
 });
 afterEach(() => {
@@ -28,8 +24,6 @@ afterEach(() => {
   else process.env.APP_PASSWORD = contrasenaAnterior;
   if (cronAnterior === undefined) delete process.env.CRON_SECRET;
   else process.env.CRON_SECRET = cronAnterior;
-  if (adminAnterior === undefined) delete process.env.ADMIN_PASSWORD;
-  else process.env.ADMIN_PASSWORD = adminAnterior;
 });
 
 const FILA_LISTADO = {
@@ -243,66 +237,24 @@ test("el último análisis se lee con la sesión de administrador", async () => 
 
 /* ---------- Acceso de administrador ---------- */
 
-test("con la sesión de la app pero sin la clave de administrador todo el panel responde 401 SOLO_ADMINISTRADOR", async () => {
+test("sin la sesión de la app todo el panel responde 401 SESION_REQUERIDA; con ella, sin clave aparte, abre", async () => {
   const db = baseFalsa(() => []);
   const deps = dependenciasFalsas(db, { almacen: () => almacenFalso() });
-  const sinClave = { admin: false };
+  const sinSesion = { conSesion: false };
   const respuestas = [
-    await atenderListado(peticion("/api/feedback-ia/admin?formato=csv", sinClave), deps),
-    await atenderListado(peticion("/api/feedback-ia/admin?completo=1", sinClave), deps),
-    await atenderDetalle(peticion("/api/feedback-ia/admin/7", sinClave), "7", deps),
-    await atenderImagen(peticion("/api/feedback-ia/admin/imagen?id=7&momento=antes", sinClave), deps),
-    await atenderUltimosAnalisis(peticion("/api/feedback-ia/analisis", sinClave), deps),
-    await atenderAnalisisManual(peticionJson("/api/feedback-ia/analisis", {}, sinClave), deps),
+    await atenderListado(peticion("/api/feedback-ia/admin?formato=csv", sinSesion), deps),
+    await atenderListado(peticion("/api/feedback-ia/admin?completo=1", sinSesion), deps),
+    await atenderDetalle(peticion("/api/feedback-ia/admin/7", sinSesion), "7", deps),
+    await atenderImagen(peticion("/api/feedback-ia/admin/imagen?id=7&momento=antes", sinSesion), deps),
+    await atenderUltimosAnalisis(peticion("/api/feedback-ia/analisis", sinSesion), deps),
+    await atenderAnalisisManual(peticionJson("/api/feedback-ia/analisis", {}, sinSesion), deps),
   ];
   assert.deepEqual(respuestas.map((r) => r.status), [401, 401, 401, 401, 401, 401]);
-  assert.equal(((await respuestas[0].json()) as { codigo: string }).codigo, "SOLO_ADMINISTRADOR");
+  assert.equal(((await respuestas[0].json()) as { codigo: string }).codigo, "SESION_REQUERIDA");
   assert.equal(db.consultas.length, 0);
-});
 
-test("sin ADMIN_PASSWORD configurada el administrador está CERRADO, aunque traiga una cookie", async () => {
-  delete process.env.ADMIN_PASSWORD;
-  const db = baseFalsa(() => []);
-  const deps = dependenciasFalsas(db);
-  const respuesta = await atenderListado(peticion("/api/feedback-ia/admin"), deps);
-  assert.equal(respuesta.status, 403);
-  assert.equal(((await respuesta.json()) as { codigo: string }).codigo, "ADMIN_NO_CONFIGURADO");
-  assert.equal((await atenderSesionAdmin(peticionJsonBase("/api/feedback-ia/admin/sesion", { clave: CLAVE_ADMIN }))).status, 403);
-  assert.equal(db.consultas.length, 0);
-});
-
-test("una cookie de administrador fabricada o de otra clave no abre nada", async () => {
-  const deps = dependenciasFalsas(baseFalsa(() => []));
-  const falsa = peticionBase("/api/feedback-ia/admin", { cabeceras: { cookie: `feedback_admin=${"0".repeat(64)}` } });
-  assert.equal((await atenderListado(falsa, deps)).status, 401);
-  process.env.ADMIN_PASSWORD = "otra-clave";
-  assert.equal((await atenderListado(peticion("/api/feedback-ia/admin"), deps)).status, 401);
-});
-
-test("la clave de administrador entrega una cookie httpOnly SameSite=Strict que luego abre el panel", async () => {
-  const mala = await atenderSesionAdmin(peticionJsonBase("/api/feedback-ia/admin/sesion", { clave: "equivocada" }));
-  assert.equal(mala.status, 401);
-  assert.equal(((await mala.json()) as { codigo: string }).codigo, "CLAVE_INCORRECTA");
-  assert.equal(mala.headers.get("set-cookie"), null);
-
-  const buena = await atenderSesionAdmin(peticionJsonBase("/api/feedback-ia/admin/sesion", { clave: CLAVE_ADMIN }));
-  assert.equal(buena.status, 200);
-  const cookie = buena.headers.get("set-cookie") ?? "";
-  assert.match(cookie, /^feedback_admin=[0-9a-f]{64}; Path=\/; HttpOnly; SameSite=Strict; Max-Age=28800/);
-
-  const db = baseFalsa(({ sql }) => (sql.includes("count(*)") ? [{ total: "0" }] : []));
-  const abierta = await atenderListado(peticionBase("/api/feedback-ia/admin", { cabeceras: { cookie: cookie.split(";")[0] } }), dependenciasFalsas(db));
+  const abierta = await atenderListado(peticion("/api/feedback-ia/admin"), dependenciasFalsas(baseFalsa(({ sql }) => (sql.includes("count(*)") ? [{ total: "0" }] : []))));
   assert.equal(abierta.status, 200);
-});
-
-test("el login de administrador exige sesión y mismo origen, valida el cuerpo y frena los intentos", async () => {
-  assert.equal((await atenderSesionAdmin(peticionJsonBase("/api/feedback-ia/admin/sesion", { clave: CLAVE_ADMIN }, { conSesion: false }))).status, 401);
-  assert.equal((await atenderSesionAdmin(peticionJsonBase("/api/feedback-ia/admin/sesion", { clave: CLAVE_ADMIN }, { cabeceras: { origin: "https://malo.test" } }))).status, 403);
-  assert.equal((await atenderSesionAdmin(peticionJsonBase("/api/feedback-ia/admin/sesion", { otra: 1 }))).status, 400);
-  const ip = { "x-forwarded-for": "203.0.113.9" };
-  let ultimo = 0;
-  for (let i = 0; i < 12; i++) ultimo = (await atenderSesionAdmin(peticionJsonBase("/api/feedback-ia/admin/sesion", { clave: `mala-${i}` }, { cabeceras: ip }))).status;
-  assert.equal(ultimo, 429);
 });
 
 /* ---------- Análisis: tope de Gemini ---------- */

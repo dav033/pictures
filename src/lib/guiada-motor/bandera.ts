@@ -9,7 +9,7 @@ import { MOTOR_POR_DEFECTO, MotorGuiadaSchema, type MotorGuiada, type RespuestaM
  * La bandera de ejecución `GUIADA_MOTOR` (REQ-007, D-024): decide con qué motor se crea un plan NUEVO de la guiada. Un plan
  * ya creado conserva su motor (su token lo dice) aunque la bandera cambie: la marcha atrás de la bandera no le cambia el
  * precio a ningún plan abierto (P-045). Orden, de mayor a menor prioridad:
- *   1. cookie `guiada_motor` (3d|python), SOLO si quien llama tiene la sesión de administrador (`ADMIN_PASSWORD`): el
+ *   1. cookie `guiada_motor` (3d|python), SOLO si quien llama tiene la sesión de la app (D-056), y con el corte puesto solo si `GUIADA_MOTOR_COOKIE_VALE_CON_CORTE=1` (D-058): el
  *      dueño prueba en producción sin cambiar nada para los clientes (también con el corte puesto, para probar un arreglo);
  *   2. el corte del 3D: fila `guiada_motor_corte` de `ajustes_runtime`, si no la hay variable `GUIADA_MOTOR_CORTE`
  *      (`activo`|`inactivo`). Activo = `python` con la fuente `corte`: además de los planes nuevos, frena los del 3D ya
@@ -44,6 +44,8 @@ export type DependenciasBandera = {
   leerCorte: () => Promise<string | null>;
   envCorte: () => string | undefined;
   ahora: () => number;
+  /** D-058: si la cookie de una sesión gana también al corte (solo con GUIADA_MOTOR_COOKIE_VALE_CON_CORTE=1). */
+  cookieGanaAlCorte?: () => boolean;
 };
 
 function motorValido(valor: string | null | undefined): MotorGuiada | null {
@@ -63,10 +65,13 @@ export function crearLectorBandera(deps: DependenciasBandera): (request: Request
   const corteVigente = crearAjusteConCache(deps.leerCorte, deps.ahora);
 
   return async (request) => {
-    const delAdmin = deps.esAdministrador(request) ? motorValido(cookieValue(request, COOKIE_MOTOR)) : null;
-    if (delAdmin) return { motor: delAdmin, fuente: "cookie" };
     const [filaCorte, filaMotor] = await Promise.all([corteVigente(), ajusteVigente()]);
-    if (corteValido(filaCorte) ?? corteValido(deps.envCorte()) ?? false) return { motor: "python", fuente: "corte" };
+    const cortado = corteValido(filaCorte) ?? corteValido(deps.envCorte()) ?? false;
+    // Con el corte puesto la cookie no lo salta, salvo con la variable explícita (D-058): es el freno de emergencia del 3D.
+    const cookieVigente = deps.esAdministrador(request) && (!cortado || (deps.cookieGanaAlCorte?.() ?? false));
+    const delAdmin = cookieVigente ? motorValido(cookieValue(request, COOKIE_MOTOR)) : null;
+    if (delAdmin) return { motor: delAdmin, fuente: "cookie" };
+    if (cortado) return { motor: "python", fuente: "corte" };
     const ajuste = motorValido(filaMotor);
     if (ajuste) return { motor: ajuste, fuente: "ajuste" };
     const delEntorno = motorValido(deps.env());
@@ -87,5 +92,6 @@ export const leerMotorGuiada = crearLectorBandera({
   env: () => process.env.GUIADA_MOTOR,
   leerCorte: () => leerAjuste(CLAVE_AJUSTE_CORTE),
   envCorte: () => process.env.GUIADA_MOTOR_CORTE,
+  cookieGanaAlCorte: () => process.env.GUIADA_MOTOR_COOKIE_VALE_CON_CORTE === "1",
   ahora: () => Date.now(),
 });

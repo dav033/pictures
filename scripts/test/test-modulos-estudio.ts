@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { coloresPorAcabado, resolverConfig, acabadoDe, nombreTipo, FORMATO_POR_DEFECTO, TIPOS_ESTUDIO, type ConfigModulo } from "../../src/lib/modulos-estudio/configuracion";
 import { puedeEscribirCacheModulos } from "../../src/lib/modulos-estudio/puede-escribir";
 import { huellaDeSesion } from "../../src/lib/modulos-estudio/sesion";
-import { cookieDeAdministrador, crearLimitador, ipDe } from "../../src/lib/feedback-ia/acceso";
+import { crearLimitador, ipDe } from "../../src/lib/feedback-ia/acceso";
 import { sessionToken } from "../../src/lib/auth/session";
 import { huellaCaptura, huellaGeometria, huellaTexto, versionPipeline } from "../../src/lib/modulos-estudio/huella-pipeline";
 import { claveObjeto, claveRender, configCanonica, VERSION_PIPELINE } from "../../src/lib/modulos-estudio/clave-render";
@@ -416,32 +416,22 @@ async function principal() {
       entorno.NODE_ENV = nodo;
       return puedeEscribirCacheModulos(peticion);
     };
-    assert.equal(con(undefined, "production"), false, "en producción, sin variable ni sesión de administración: CERRADA");
+    assert.equal(con(undefined, "production"), false, "en producción, sin variable: CERRADA");
     assert.equal(con("cerrada", "production"), false);
     assert.equal(con("abierta", "production"), true);
     assert.equal(con(undefined, "development"), true, "en desarrollo, abierta por defecto");
     assert.equal(con("cerrada", "development"), false, "y se puede cerrar");
     assert.equal(con("otra-cosa", "production"), false, "solo abierta abre");
-    // La sesión de administración del panel de la IA (la MISMA función, cookie `feedback_admin` + sesión de la app) abre la puerta
-    // aunque en producción no haya variable; sin ADMIN_PASSWORD, con otra clave o sin la sesión de la app no abre.
-    const previo = { app: entorno.APP_PASSWORD, admin: entorno.ADMIN_PASSWORD };
+    // D-056: la sesión de la app es la administración y abre la escritura del caché (decisión del dueño, 2026-10-18).
+    const previo = { app: entorno.APP_PASSWORD };
     entorno.APP_PASSWORD = "clave-de-la-app";
-    entorno.ADMIN_PASSWORD = "clave-del-panel";
-    const cookieAdmin = cookieDeAdministrador().split(";")[0]!;
     const sesionApp = `session=${sessionToken("clave-de-la-app")}`;
     const conCookies = (cookie: string, extra: Record<string, string> = {}) => new Request("http://localhost/api/modulos-render", { headers: { cookie, ...extra } });
     entornoDe(undefined, "production");
-    assert.equal(puedeEscribirCacheModulos(conCookies(`${sesionApp}; ${cookieAdmin}`)), true, "el administrador del panel puede");
-    assert.equal(puedeEscribirCacheModulos(conCookies(sesionApp)), false, "la sesión del equipo sola no");
-    assert.equal(puedeEscribirCacheModulos(conCookies(cookieAdmin)), false, "la cookie de administrador sin la sesión de la app no");
-    assert.equal(puedeEscribirCacheModulos(conCookies(`${sesionApp}; feedback_admin=${"0".repeat(64)}`)), false, "una cookie de administrador falsa no");
-    assert.equal(puedeEscribirCacheModulos(conCookies(`${sesionApp}; ${cookieAdmin}`, { origin: "https://otro.sitio" })), false, "de otro origen no (CSRF)");
-    delete entorno.ADMIN_PASSWORD;
-    assert.equal(puedeEscribirCacheModulos(conCookies(`${sesionApp}; ${cookieAdmin}`)), false, "sin ADMIN_PASSWORD el administrador queda cerrado");
+    assert.equal(puedeEscribirCacheModulos(conCookies(sesionApp)), true, "la sesión de la app abre la escritura (D-056)");
     entornoDe("abierta", "production");
     assert.equal(puedeEscribirCacheModulos(conCookies(sesionApp, { origin: "https://otro.sitio" })), false, "ni abierta deja escribir desde otro origen");
     if (previo.app === undefined) delete entorno.APP_PASSWORD; else entorno.APP_PASSWORD = previo.app;
-    if (previo.admin === undefined) delete entorno.ADMIN_PASSWORD; else entorno.ADMIN_PASSWORD = previo.admin;
     if (guardado.modo === undefined) delete entorno.MODULOS_ESCRITURA; else entorno.MODULOS_ESCRITURA = guardado.modo;
     if (guardado.nodo === undefined) delete entorno.NODE_ENV; else entorno.NODE_ENV = guardado.nodo;
     // La huella de la sesión no es la cookie.

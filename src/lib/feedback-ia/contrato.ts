@@ -107,15 +107,12 @@ export type RespuestaCaptura = {
 export type CodigoErrorFeedback =
   | "SESION_REQUERIDA"
   | "ORIGEN_NO_PERMITIDO"
-  | "SOLO_ADMINISTRADOR"
   | "DEMASIADAS_PETICIONES"
   | "CUERPO_INVALIDO"
   | "CUERPO_DEMASIADO_GRANDE"
   | "IMAGEN_INVALIDA"
   | "ALMACEN_NO_CONFIGURADO"
   | "ALMACEN_NO_DISPONIBLE"
-  | "ADMIN_NO_CONFIGURADO"
-  | "CLAVE_INCORRECTA"
   | "CONVERSACION_LLENA"
   | "BASE_NO_DISPONIBLE"
   | "NO_ENCONTRADO"
@@ -212,7 +209,7 @@ export type DetalleFeedback = ItemListadoFeedback & {
   diferencia: DiferenciaEscena | null;
   escenaAntes: Record<string, unknown> | null;
   escenaDespues: Record<string, unknown> | null;
-  /** Rutas servidas por GET /api/feedback-ia/admin/imagen (solo administrador); `null` si no hay captura. */
+  /** Rutas servidas por GET /api/feedback-ia/admin/imagen (solo sesión de la app); `null` si no hay captura. */
   imagenAntesUrl: string | null;
   imagenDespuesUrl: string | null;
 };
@@ -255,8 +252,6 @@ export type AnalisisFeedback = {
   resumenModelo: string | null;
   resumenCosteUsd: number | null;
 };
-
-export const ClaveAdminSchema = z.object({ clave: z.string().min(1).max(200) }).strict();
 
 export const PedidoAnalisisSchema = z.object({
   dias: z.number().int().min(1).max(365).default(7),

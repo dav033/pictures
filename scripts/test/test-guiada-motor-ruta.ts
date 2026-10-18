@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test, { afterEach, beforeEach } from "node:test";
 import { sessionToken, SESSION_COOKIE } from "../../src/lib/auth/session";
-import { cookieDeAdministrador } from "../../src/lib/feedback-ia/acceso";
 import { PlanGuiadoSchema } from "../../src/lib/ia/contracts/asistente-guiado-v1";
 import { WidgetGuiadoSchema } from "../../src/lib/ia/guiado/widgets";
 import { atenderFijarMotor, atenderLecturaMotor, type DependenciasMotor } from "../../src/lib/guiada-motor/manejadores";
@@ -13,15 +12,12 @@ import { TIMEOUT_BANDERA_MS, pedirMotorGuiada } from "../../src/components/guiad
 /** /api/guiada/motor (GET y POST), el cliente que la lee y el upcast del widget del plan, sin red ni Neon. */
 
 const CLAVE_APP = "clave-app-de-prueba";
-const CLAVE_ADMIN = "clave-admin-de-prueba";
 const SESION = `${SESSION_COOKIE}=${sessionToken(CLAVE_APP)}`;
-const COOKIE_ADMIN = cookieDeAdministrador(CLAVE_ADMIN).split(";")[0]!;
 
 let anterior: Record<string, string | undefined> = {};
 beforeEach(() => {
-  anterior = { APP_PASSWORD: process.env.APP_PASSWORD, ADMIN_PASSWORD: process.env.ADMIN_PASSWORD, DATABASE_URL: process.env.DATABASE_URL, GUIADA_MOTOR: process.env.GUIADA_MOTOR, GUIADA_MOTOR_CORTE: process.env.GUIADA_MOTOR_CORTE };
+  anterior = { APP_PASSWORD: process.env.APP_PASSWORD, DATABASE_URL: process.env.DATABASE_URL, GUIADA_MOTOR: process.env.GUIADA_MOTOR, GUIADA_MOTOR_CORTE: process.env.GUIADA_MOTOR_CORTE };
   process.env.APP_PASSWORD = CLAVE_APP;
-  process.env.ADMIN_PASSWORD = CLAVE_ADMIN;
   delete process.env.DATABASE_URL;
   delete process.env.GUIADA_MOTOR;
   delete process.env.GUIADA_MOTOR_CORTE;
@@ -42,7 +38,7 @@ function dependencias(motor: "3d" | "python" = "python", fuente: "cookie" | "aju
 }
 
 const get = (ruta = "/api/guiada/motor", cookies: string[] = [SESION]) => new Request(`https://app.test${ruta}`, { headers: cookies.length ? { cookie: cookies.join("; ") } : {} });
-const post = (cuerpo: unknown, cookies: string[] = [SESION, COOKIE_ADMIN], cabeceras: Record<string, string> = {}) =>
+const post = (cuerpo: unknown, cookies: string[] = [SESION], cabeceras: Record<string, string> = {}) =>
   new Request("https://app.test/api/guiada/motor", { method: "POST", headers: { "content-type": "application/json", cookie: cookies.join("; "), ...cabeceras }, body: typeof cuerpo === "string" ? cuerpo : JSON.stringify(cuerpo) });
 
 test("GET devuelve {motor, fuente} sin caché", async () => {
@@ -91,14 +87,9 @@ test("POST defecto borra la cookie", async () => {
   assert.match(respuesta.headers.get("set-cookie") ?? "", /^guiada_motor=;.*Max-Age=0/);
 });
 
-test("POST rechaza: sin sesión (401), cliente normal (401), otro origen (403), ADMIN_PASSWORD ausente (403)", async () => {
+test("POST rechaza: sin sesión (401) y otro origen (403)", async () => {
   assert.equal((await atenderFijarMotor(post({ motor: "3d" }, []))).status, 401);
-  const normal = await atenderFijarMotor(post({ motor: "3d" }, [SESION]));
-  assert.equal(normal.status, 401);
-  assert.equal(normal.headers.get("set-cookie"), null, "un cliente normal no recibe la cookie");
-  assert.equal((await atenderFijarMotor(post({ motor: "3d" }, [SESION, COOKIE_ADMIN], { origin: "https://otro.test" }))).status, 403);
-  delete process.env.ADMIN_PASSWORD;
-  assert.equal((await atenderFijarMotor(post({ motor: "3d" }))).status, 403);
+  assert.equal((await atenderFijarMotor(post({ motor: "3d" }, [SESION], { origin: "https://otro.test" }))).status, 403);
 });
 
 test("POST valida el cuerpo", async () => {
@@ -109,23 +100,23 @@ test("POST valida el cuerpo", async () => {
   }
 });
 
-test("la ruta real: GET responde python por defecto y con la variable de entorno; POST sin administrador no fija nada", async () => {
+test("la ruta real: GET responde python por defecto y con la variable de entorno; POST sin sesión no fija nada", async () => {
   let respuesta = await GET(get());
   assert.deepEqual(await respuesta.json(), { motor: "python", fuente: "defecto" });
   assert.equal(respuesta.headers.get("cache-control"), "no-store");
   process.env.GUIADA_MOTOR = "3d";
   respuesta = await GET(get());
   assert.deepEqual(await respuesta.json(), { motor: "3d", fuente: "env" });
-  respuesta = await GET(get("/api/guiada/motor", [SESION, COOKIE_ADMIN, "guiada_motor=python"]));
-  assert.deepEqual(await respuesta.json(), { motor: "python", fuente: "cookie" });
   respuesta = await GET(get("/api/guiada/motor", [SESION, "guiada_motor=python"]));
-  assert.deepEqual(await respuesta.json(), { motor: "3d", fuente: "env" }, "la cookie de un cliente no cuenta");
+  assert.deepEqual(await respuesta.json(), { motor: "python", fuente: "cookie" });
+  respuesta = await GET(get("/api/guiada/motor", ["guiada_motor=python"]));
+  assert.equal(((await respuesta.json()) as { codigo?: string }).codigo, "SESION_REQUERIDA", "sin la sesión de la app no se lee nada");
   // El corte del 3D (P-045) se comprueba con la misma lectura: el paso «Verificar» de la marcha atrás de emergencia.
   process.env.GUIADA_MOTOR_CORTE = "activo";
   respuesta = await GET(get());
   assert.deepEqual(await respuesta.json(), { motor: "python", fuente: "corte" });
   delete process.env.GUIADA_MOTOR_CORTE;
-  assert.equal((await POST(post({ motor: "3d" }, [SESION]))).status, 401);
+  assert.equal((await POST(post({ motor: "3d" }, []))).status, 401);
   assert.equal((await POST(post({ motor: "3d" }))).status, 200);
 });
 

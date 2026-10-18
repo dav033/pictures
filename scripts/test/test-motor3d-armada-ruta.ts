@@ -168,7 +168,7 @@ test("con el corte, el 409 consume el cuerpo original (el registro apagado no lo
   assert.equal(e.armados(), 0);
 });
 
-test("la cookie de administrador (fuente cookie) no se corta: la armada sigue dando el plan con el corte puesto", async () => {
+test("la cookie guiada_motor (fuente cookie) no se corta: la armada sigue dando el plan con el corte puesto", async () => {
   const r = await atenderArmadaMotor(pedir(plan(ESPEC)), entorno(48, { motor: "3d", fuente: "cookie" }).deps);
   assert.equal(r.status, 200);
 });
