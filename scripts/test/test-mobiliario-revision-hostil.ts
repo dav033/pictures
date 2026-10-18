@@ -16,10 +16,10 @@ import { armarEscena, escenaEnIngles, SALA_INICIAL, type Escena, type NodoEscena
 import { aplicarHerramienta, type ResultadoHerramienta } from "../../src/lib/globos3d/herramientas-escena";
 import { centrosDe } from "../../src/lib/globos3d/centros-mesa";
 import { conHonestidad, fallosPendientes, objetivoDe } from "../../src/lib/globos3d/honestidad-respuesta";
-import { contarMobiliario, esMesa, sillasDeMesaNodo } from "../../src/lib/globos3d/mobiliario-asientos-mesa";
+import { contarMobiliario, esMesa, grupoDeSillasDe, sillasDeMesaNodo } from "../../src/lib/globos3d/mobiliario-asientos-mesa";
 import { muebleDe } from "../../src/lib/globos3d/mobiliario-catalogo";
 import { armarConjuntoMesa, colocacionDeSillas, esGrupoDeSillas } from "../../src/lib/globos3d/mobiliario-conjunto";
-import { piezaDeMueble } from "../../src/lib/globos3d/mobiliario-pieza";
+import { opcionesDeMueble, piezaDeMueble } from "../../src/lib/globos3d/mobiliario-pieza";
 import { puntoEnSuperficie, superficieSuperior } from "../../src/lib/globos3d/mobiliario-superficie";
 import { problemasDeEscena } from "../../src/lib/globos3d/problemas-escena";
 import { resumenDeSalon } from "../../src/lib/globos3d/salon-resumen";
@@ -44,15 +44,29 @@ prueba("salón con 8: cambiar_sillas 6 se rechaza; una escena vieja con un grupo
   assert.ok(delSalon.length >= 4);
   for (const m of delSalon) assert.equal(sillasDeMesaNodo(salon, m).total, 8);
   assert.equal(aplicarHerramienta(salon, "cambiar_sillas", { ids: [delSalon[0]!.id], cantidad: 6 }).ok, false);
-  // Una escena guardada antes de la guarda: un grupo de 6 sillas encima de una mesa del salón (se dibujarían las 8 y las 6).
+  // Una escena guardada antes de la guarda: la mesa del salón era un mueble fijo con sus 8 sillas dentro (REQ-014 T54 las hizo paramétricas)
+  // y un grupo de 6 sillas encima (se dibujarían las 8 y las 6).
   const grupo = armarConjuntoMesa({ ids: { mesa: "x", sillas: "sillas-vieja" }, mesa: { tipo: "redonda" }, sillas: { cantidad: 6 }, colocacion: { en: "piso", xCm: 0, zCm: 0, giroGrados: 0 } }).sillas!;
-  const vieja: Escena = { ...salon, nodos: [...salon.nodos, { ...grupo, colocacion: colocacionDeSillas(delSalon[0]!.id) }] };
-  assert.equal(sillasDeMesaNodo(vieja, delSalon[0]!).total, 14, "cuenta lo dibujado: 8 + 6");
+  const mueble = muebleDe("mesa_redonda_sillas")!;
+  const fija = piezaDeMueble(mueble, opcionesDeMueble(mueble, { sillas: 8 }));
+  const propias = grupoDeSillasDe(salon, delSalon[0]!.id)!.id;
+  const vieja: Escena = {
+    ...salon,
+    nodos: [
+      ...salon.nodos.filter((n) => n.id !== propias).map((n) => (n.id === delSalon[0]!.id ? { ...n, pieza: fija } : n)),
+      { ...grupo, colocacion: colocacionDeSillas(delSalon[0]!.id) },
+    ],
+  };
+  assert.equal(sillasDeMesaNodo(vieja, nodo(vieja, delSalon[0]!.id)).total, 14, "cuenta lo dibujado: 8 + 6");
   assert.equal(contarMobiliario(vieja).sillas, contarMobiliario(salon).sillas + 6, "contarMobiliario y sillasDeMesaNodo coinciden");
   assert.match(resumenDeSalon(vieja), /con \d+ sillas en total \(de 8 a 14 por mesa\)/, "el resumen sale de la escena, no de lo pedido");
   const r = ok(aplicarHerramienta(vieja, "ajustar_salon", { sillas_por_mesa: 6 }));
   assert.match(r.resumen, /Quité 1 grupo\(s\) de sillas/);
-  assert.ok(!r.escena.nodos.some((n) => esGrupoDeSillas(n.pieza)), "ya no queda ningún grupo sobre las mesas del salón");
+  assert.ok(!r.escena.nodos.some((n) => n.id === "sillas-vieja"), "el grupo de sillas añadido encima ya no está");
+  // Desde REQ-014 T54 las mesas del salón son conjuntos paramétricos: cada una conserva su propio grupo, y solo ese.
+  for (const m of r.escena.nodos.filter((n) => /^Mesa \d+$/.test(n.nombre))) {
+    assert.equal(r.escena.nodos.filter((n) => esGrupoDeSillas(n.pieza) && n.colocacion.en === "sobre" && n.colocacion.padreId === m.id).length, 1, `${m.id}: un solo grupo de sillas`);
+  }
   const ahora = r.escena.nodos.filter((n) => /^Mesa \d+$/.test(n.nombre));
   assert.ok(ahora.length >= delSalon.length, "con menos sillas por mesa el aforo pide las mismas mesas o más");
   for (const m of ahora) assert.equal(sillasDeMesaNodo(r.escena, m).total, 6, m.id);

@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { CustomerSharedQuote } from "@/components/shared-quotes/CustomerSharedQuote";
 import { sharedQuoteDependencies } from "@/lib/shared-quotes/dependencies.server";
 import { getPublicSharedQuote } from "@/lib/shared-quotes/service";
+import { connection } from "next/server";
 
-export const dynamic = "force-dynamic";
+// Token lookups must run per request: without connection() `cacheComponents` would freeze them into the build.
+export const instant = false;
 
 export const metadata: Metadata = {
   title: "Cotización compartida · Sempertex",
@@ -17,6 +19,7 @@ export default async function SharedQuotePage({
 }: {
   params: Promise<{ token: string }>;
 }) {
+  await connection();
   const { token } = await params;
   const dependencies = sharedQuoteDependencies();
   const quote = await getPublicSharedQuote(dependencies, token);

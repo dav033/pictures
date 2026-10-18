@@ -122,6 +122,7 @@ const DETECTORES: ReadonlyArray<{ id: string; re: RegExp }> = [
 
 /** Rutas /api del flujo (entrada/salida auditadas con conRegistro). */
 const RUTAS_FLUJO: Readonly<Record<string, string>> = {
+  "src/app/api/taller/cotizacion/v2/route.ts": "cotización del Taller v2 (plan a cotización, con registro)",
   "src/app/api/chat/route.ts": "chat clásico (y consultas de la vista guiada a /api/chat)",
   "src/app/api/asistente-guiado/route.ts": "turno de la vista guiada",
   "src/app/api/generate/route.ts": "imagen FLUX, venue, guía de escena",
@@ -178,6 +179,10 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
 
 /** Rutas /api fuera del flujo de decisiones, con el motivo. Una ruta nueva debe clasificarse aquí o arriba. */
 const RUTAS_EXCLUIDAS: Readonly<Record<string, string>> = {
+  "src/app/api/cotizacion-compartida/[token]/route.ts": "cotización compartida pública por token, sin registro de la app todavía (pendiente: envolver con conRegistro)",
+  "src/app/api/cotizacion-compartida/[token]/imagen/route.ts": "imagen de la cotización compartida pública por token, sin registro todavía (pendiente)",
+  "src/app/api/cotizacion-compartida/[token]/decision/route.ts": "decisión del cliente sobre la cotización compartida por token, sin registro todavía (pendiente)",
+  "src/app/api/taller/cotizaciones-compartidas/route.ts": "listado de cotizaciones compartidas del taller, sin registro todavía (pendiente)",
   "src/app/api/registro-cliente/route.ts": "es el propio registro",
   "src/app/api/login/route.ts": "autenticación (no registrar credenciales)",
   "src/app/api/ia/salud/route.ts": "estado de configuración, sin decisiones",
