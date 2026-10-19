@@ -206,13 +206,14 @@ async function ponerAltura(page: Page, objetivo: Altura): Promise<number> {
 const SELECTOR_HOJA = 'section[aria-label="Paneles del taller"]';
 const SELECTOR_ASA = `${SELECTOR_HOJA} [role=button][tabindex="0"]`;
 
-async function arrastrarTactil(page: Page, movimientos: { dy: number; espera: number }[], alMover?: () => Promise<void>): Promise<void> {
+async function arrastrarTactil(page: Page, movimientos: { dy: number; espera: number }[], alIniciar?: () => Promise<void>, alMover?: () => Promise<void>): Promise<void> {
   const caja = await page.locator(SELECTOR_ASA).boundingBox();
   if (!caja) throw new Error("El asa de la hoja no tiene caja táctil.");
   const x = caja.x + caja.width / 2, inicioY = caja.y + caja.height / 2;
   const sesion = await page.context().newCDPSession(page);
   try {
     await sesion.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y: inicioY }] });
+    await alIniciar?.();
     let acumulado = 0;
     for (const [indice, movimiento] of movimientos.entries()) {
       acumulado += movimiento.dy;
@@ -234,9 +235,11 @@ async function auditarArrastre(page: Page): Promise<Violacion[]> {
   const violaciones: Violacion[] = [];
   await ponerAltura(page, "media");
   const hoja = page.locator(SELECTOR_HOJA);
-  const antesLento = (await hoja.boundingBox())!.height;
+  let antesLento = 0;
   let durante = antesLento;
-  await arrastrarTactil(page, [{ dy: -40, espera: 0 }, { dy: 0, espera: 320 }], async () => {
+  await arrastrarTactil(page, [{ dy: -40, espera: 0 }, { dy: -1, espera: 320 }], async () => {
+    antesLento = (await hoja.boundingBox())!.height;
+  }, async () => {
     await page.waitForTimeout(30);
     durante = (await hoja.boundingBox())!.height;
   });

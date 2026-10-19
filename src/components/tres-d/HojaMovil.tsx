@@ -76,7 +76,8 @@ export function HojaMovil<P extends string>({ hoja, alCambiarAltura, alFijarAltu
     const ultima = m[m.length - 1];
     const primera = m.find((x) => ultima && ultima.t - x.t <= 120) ?? ultima;
     const velocidad = ultima && primera && ultima.t > primera.t ? (ultima.y - primera.y) / (ultima.t - primera.t) : 0;
-    const altoFinal = g.inicioAlto - (e.clientY - g.inicioY);
+    const ultimaY = m[m.length - 1]?.y ?? e.clientY;
+    const altoFinal = g.inicioAlto - (ultimaY - g.inicioY);
     alFijarAltura(escalonAlSoltar(altoFinal, velocidad, window.innerHeight));
   };
   return (
