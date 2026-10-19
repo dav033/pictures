@@ -635,6 +635,8 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   escena.add(cuadricula);
 
   const camara = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
+  // OrbitControls parte del origen; deja una vista válida incluso antes del primer encuadre de la escena.
+  camara.position.set(0.35, 0.25, 1);
   const controles = new OrbitControls(camara, lienzo);
   controles.enableDamping = true;
   controles.maxPolarAngle = Math.PI * 0.495;

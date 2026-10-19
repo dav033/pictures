@@ -236,6 +236,9 @@ export function Taller3D() {
       observador?.disconnect();
       escenaRef.current?.destruir();
       escenaRef.current = null;
+      setVisor(null);
+      encuadradoRef.current = null;
+      vistaFotoPendiente.current = null;
     };
   }, []);
 
