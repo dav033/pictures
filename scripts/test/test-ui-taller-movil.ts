@@ -198,7 +198,7 @@ async function ponerAltura(page: Page, objetivo: Altura): Promise<number> {
     if (actualNombre === objetivo) return actual;
     await asa.focus();
     await page.keyboard.press(ALTURAS.indexOf(objetivo) > ALTURAS.indexOf(actualNombre) ? "ArrowUp" : "ArrowDown");
-    await page.waitForTimeout(250);
+    await page.waitForTimeout(450);
   }
   return alto();
 }

@@ -6,7 +6,7 @@ import { useReducedMotionPreference } from "./useReducedMotionPreference";
 type AnimatedListProps<T> = {
   items: readonly T[];
   getKey: (item: T) => Key;
-  getItemAttributes?: (item: T) => HTMLAttributes<HTMLLIElement>;
+  getItemAttributes?: (item: T) => HTMLAttributes<HTMLLIElement> & { [attribute: `data-${string}`]: string | number | undefined };
   renderItem: (item: T, index: number) => ReactNode;
   className?: string;
   footer?: ReactNode;
