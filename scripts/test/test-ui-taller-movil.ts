@@ -40,6 +40,9 @@ const CHECKS = [
   ["desborde", "Nada se sale del ancho del teléfono ni hay desplazamiento horizontal."],
   ["lienzo", "El lienzo conserva una parte mínima de la pantalla sobre la hoja en cada altura."],
   ["texto", `Texto de al menos ${TEXTO_MIN} px y campos de al menos ${CAMPO_MIN} px (sin zoom automático).`],
+  ["arrastre", "El asa sigue el dedo y el gesto ajusta por velocidad o por la altura más cercana."],
+  ["movimiento-reducido", "La hoja cambia de altura sin transición cuando se prefiere movimiento reducido."],
+  ["desplazamiento-camara", "La cámara centra la escena en el área visible sobre la hoja en cada altura."],
 ] as const;
 type Check = (typeof CHECKS)[number][0];
 type Ruta = "taller" | "asistente" | "cotizacion";
@@ -127,6 +130,19 @@ async function crearBundle(ruta: Ruta): Promise<{ javascript: string; css: strin
     banner: { js: 'globalThis.process ??= { env: { NODE_ENV: "development" } };' },
     alias: { "@": path.join(ROOT, "src") },
     define: { "process.env.NODE_ENV": '"development"' },
+    plugins: [{
+      name: "movil-camera-observation",
+      setup(buildApi) {
+        buildApi.onLoad({ filter: /[\\/]escena-globos\.ts$/ }, (args) => {
+          const original = readFileSync(args.path, "utf8");
+          const target = "    camara.updateProjectionMatrix();\n  }\n  function tapadoAbajo(px: number)";
+          if (!original.includes(target)) throw new Error("No se encontró el punto de observación del desplazamiento de cámara.");
+          const instrumentado = original.replace(target,
+            "    camara.updateProjectionMatrix();\n    ;(globalThis as typeof globalThis & { __tallerMovilCapturarCamara?: (tapado: number, vista: unknown) => void }).__tallerMovilCapturarCamara?.(tapado, camara.view);\n  }\n  function tapadoAbajo(px: number)");
+          return { contents: instrumentado, loader: "tsx" };
+        });
+      },
+    }],
   });
   const globals = path.join(ROOT, "src", "app", "globals.css");
   const cssUi = path.join(ROOT, "src", "components", "ui", "icon-button.css");
@@ -155,6 +171,14 @@ async function abrirRuta(browser: Browser, ruta: Ruta, javascript: string, css: 
   await page.goto(`${ORIGEN}${rutaPagina}`);
   await page.waitForFunction(() => typeof (window as unknown as { __montarMovil?: unknown }).__montarMovil === "function", undefined, { timeout: 5_000 })
     .catch(() => { throw new Error(`El arnés no cargó: ${errores.join("; ") || "sin errores de página"}`); });
+  await page.evaluate(() => {
+    const w = window as typeof window & { __tallerMovilObservaciones?: { tapado: number; vista: { enabled: boolean; fullWidth: number; fullHeight: number; offsetY: number; width: number; height: number } | null }[]; __tallerMovilCapturarCamara?: (tapado: number, vista: unknown) => void };
+    w.__tallerMovilObservaciones = [];
+    w.__tallerMovilCapturarCamara = (tapado, vista) => {
+      const v = vista as { enabled?: boolean; fullWidth?: number; fullHeight?: number; offsetY?: number; width?: number; height?: number } | null;
+      w.__tallerMovilObservaciones?.push({ tapado, vista: v ? { enabled: v.enabled === true, fullWidth: v.fullWidth ?? 0, fullHeight: v.fullHeight ?? 0, offsetY: v.offsetY ?? 0, width: v.width ?? 0, height: v.height ?? 0 } : null });
+    };
+  });
   await page.evaluate(() => (window as unknown as { __montarMovil: () => void }).__montarMovil());
   if (ruta === "taller") {
     await page.locator("canvas").first().waitFor({ state: "attached" });
@@ -177,6 +201,101 @@ async function ponerAltura(page: Page, objetivo: Altura): Promise<number> {
     await page.waitForTimeout(250);
   }
   return alto();
+}
+
+const SELECTOR_HOJA = 'section[aria-label="Paneles del taller"]';
+const SELECTOR_ASA = `${SELECTOR_HOJA} [role=button][tabindex="0"]`;
+
+async function arrastrarTactil(page: Page, movimientos: { dy: number; espera: number }[], alMover?: () => Promise<void>): Promise<void> {
+  const caja = await page.locator(SELECTOR_ASA).boundingBox();
+  if (!caja) throw new Error("El asa de la hoja no tiene caja táctil.");
+  const x = caja.x + caja.width / 2, inicioY = caja.y + caja.height / 2;
+  const sesion = await page.context().newCDPSession(page);
+  try {
+    await sesion.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y: inicioY }] });
+    let acumulado = 0;
+    for (const [indice, movimiento] of movimientos.entries()) {
+      acumulado += movimiento.dy;
+      if (movimiento.espera > 0) await page.waitForTimeout(movimiento.espera);
+      await sesion.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x, y: inicioY + acumulado }] });
+      if (indice === 0) await alMover?.();
+    }
+    await sesion.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  } finally {
+    await sesion.detach();
+  }
+}
+
+function fallo(check: Check, altura: Altura | "fixture", detalle: string): Violacion {
+  return { check, altura, selector: SELECTOR_HOJA, detalle };
+}
+
+async function auditarArrastre(page: Page): Promise<Violacion[]> {
+  const violaciones: Violacion[] = [];
+  await ponerAltura(page, "media");
+  const hoja = page.locator(SELECTOR_HOJA);
+  const antesLento = (await hoja.boundingBox())!.height;
+  let durante = antesLento;
+  await arrastrarTactil(page, [{ dy: -40, espera: 0 }, { dy: 0, espera: 320 }], async () => {
+    await page.waitForTimeout(30);
+    durante = (await hoja.boundingBox())!.height;
+  });
+  if (Math.abs(durante - (antesLento + 40)) > 5) violaciones.push(fallo("arrastre", "media", `el dedo subió 40px pero la hoja cambió ${Math.round(durante - antesLento)}px`));
+  await page.waitForTimeout(450);
+  const lento = (await hoja.boundingBox())!.height;
+  if (!esperadoAlto("media")(lento)) violaciones.push(fallo("arrastre", "media", `la suelta lenta terminó en ${Math.round(lento)}px; debía elegir el escalón más cercano (media)`));
+
+  await ponerAltura(page, "media");
+  await arrastrarTactil(page, [{ dy: -30, espera: 15 }, { dy: -60, espera: 15 }]);
+  await page.waitForTimeout(450);
+  const rapido = (await hoja.boundingBox())!.height;
+  if (!esperadoAlto("alta")(rapido)) violaciones.push(fallo("arrastre", "alta", `el flick hacia arriba terminó en ${Math.round(rapido)}px; debía avanzar al escalón alto`));
+  return violaciones;
+}
+
+async function auditarMovimientoReducido(page: Page): Promise<Violacion[]> {
+  const violaciones: Violacion[] = [];
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await ponerAltura(page, "media");
+  await page.locator(SELECTOR_ASA).focus();
+  await page.keyboard.press("ArrowUp");
+  const muestras = await page.evaluate(async (selector) => {
+    const hoja = document.querySelector(selector);
+    if (!(hoja instanceof HTMLElement)) throw new Error("No se encontró la hoja al muestrear movimiento reducido.");
+    const alto: number[] = [];
+    for (let i = 0; i < 20; i++) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      alto.push(hoja.getBoundingClientRect().height);
+    }
+    return { alto, transicion: getComputedStyle(hoja).transitionProperty, reduccion: matchMedia("(prefers-reduced-motion: reduce)").matches };
+  }, SELECTOR_HOJA);
+  const rango = Math.max(...muestras.alto) - Math.min(...muestras.alto);
+  if (!muestras.reduccion || muestras.transicion !== "none" || rango > 0.5 || !esperadoAlto("alta")(muestras.alto.at(-1) ?? 0)) {
+    violaciones.push(fallo("movimiento-reducido", "alta", `prefers-reduced-motion=${muestras.reduccion}, transition-property=${muestras.transicion}, rango muestreado=${rango.toFixed(1)}px en ${muestras.alto.length} cuadros`));
+  }
+  return violaciones;
+}
+
+async function auditarDesplazamientoCamara(page: Page): Promise<Violacion[]> {
+  const violaciones: Violacion[] = [];
+  for (const altura of ALTURAS) {
+    await ponerAltura(page, altura);
+    await page.waitForTimeout(100);
+    const estadoHandle = await page.waitForFunction<{ tapado: number; vista: { enabled: boolean; fullWidth: number; fullHeight: number; offsetY: number; width: number; height: number } | null; ancho: number; alto: number }, string>((selector) => {
+      const hoja = document.querySelector(selector)?.getBoundingClientRect();
+      const canvas = document.querySelector("canvas")?.getBoundingClientRect();
+      const observaciones = (window as typeof window & { __tallerMovilObservaciones?: { tapado: number; vista: { enabled: boolean; fullWidth: number; fullHeight: number; offsetY: number; width: number; height: number } | null }[] }).__tallerMovilObservaciones ?? [];
+      if (!hoja || !canvas) return null;
+      const tapado = Math.max(0, window.innerHeight - hoja.top);
+      const ultima = observaciones.at(-1);
+      return ultima && Math.abs(ultima.tapado - tapado) < 1 ? { tapado, vista: ultima.vista, ancho: canvas.width, alto: canvas.height } : null;
+    }, SELECTOR_HOJA, { timeout: 2_000 });
+    const estado = await estadoHandle.jsonValue();
+    const vista = estado.vista;
+    const coincide = vista?.enabled && Math.abs(vista.offsetY - estado.tapado / 2) < 1 && Math.abs(vista.fullWidth - estado.ancho) < 1 && Math.abs(vista.fullHeight - estado.alto) < 1 && Math.abs(vista.width - estado.ancho) < 1 && Math.abs(vista.height - estado.alto) < 1;
+    if (!coincide) violaciones.push(fallo("desplazamiento-camara", altura, `hoja tapa ${Math.round(estado.tapado)}px; viewOffset observado ${vista ? `y=${vista.offsetY}, ${vista.width}x${vista.height}/${vista.fullWidth}x${vista.fullHeight}` : "desactivado"}`));
+  }
+  return violaciones;
 }
 
 function esperadoAlto(a: Altura): ((h: number) => boolean) {
@@ -219,6 +338,18 @@ async function auditarRuta(ruta: Ruta, solo: Check | null, salida: string): Prom
         if (ruta === "taller" && corre("hoja") && !esperadoAlto(altura)(alto)) violaciones.push({ check: "hoja", altura, selector: 'section[aria-label="Paneles del taller"]', detalle: `alto ${alto}px no corresponde a «${altura}»` });
         const datos = await page.evaluate(medirPagina);
         for (const x of evaluar(datos, ruta === "taller" ? altura : "fixture")) if (corre(x.check) && (ruta === "taller" || (x.check !== "lienzo" && x.check !== "hoja"))) violaciones.push(x);
+      }
+      if (ruta === "taller" && corre("arrastre")) {
+        violaciones.push(...await auditarArrastre(page));
+        resumen.push("taller: asa táctil comprobada durante el gesto, tras la suelta lenta y tras el flick rápido");
+      }
+      if (ruta === "taller" && corre("movimiento-reducido")) {
+        violaciones.push(...await auditarMovimientoReducido(page));
+        resumen.push("taller: 20 cuadros muestreados con prefers-reduced-motion");
+      }
+      if (ruta === "taller" && corre("desplazamiento-camara")) {
+        violaciones.push(...await auditarDesplazamientoCamara(page));
+        resumen.push("taller: viewOffset comparado con la obstrucción real de la hoja en sus tres alturas");
       }
     } finally {
       await cerrar();
