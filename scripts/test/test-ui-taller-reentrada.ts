@@ -12,7 +12,7 @@ const DISTANCIA_MINIMA = 0.05;
 const ASSERTIONS = [
   "Primera montura: la cámara queda encuadrada, a más de 0.05 unidades del objetivo.",
   "Reentrada: tras ocultar y mostrar el Taller3D dentro de React Activity, la cámara conserva un encuadre válido.",
-  "Órbita: arrastrar sobre el lienzo cambia la posición de la cámara.",
+  "Órbita: un arrastre cambia la cámara; en viewport táctil usa un dedo.",
   "Cobertura: escritorio y viewport táctil 390x844.",
 ];
 
@@ -84,17 +84,33 @@ async function esperarCamara(page: import("playwright").Page, presente: boolean)
   return page.evaluate(() => (window as HarnessWindow).__visor3d?.camara() ?? null);
 }
 
-async function arrastrarCamara(page: import("playwright").Page): Promise<CameraReading> {
+async function arrastrarCamara(page: import("playwright").Page, tactil: boolean): Promise<CameraReading> {
   const canvas = page.locator("canvas").first();
   await canvas.waitFor({ state: "visible" });
   const bounds = await canvas.boundingBox();
   assert.ok(bounds && bounds.width > 20 && bounds.height > 20, "el lienzo real del visor tiene tamaño para interactuar");
   const x = bounds.x + bounds.width * 0.5;
   const y = bounds.y + bounds.height * 0.5;
-  await page.mouse.move(x, y);
-  await page.mouse.down();
-  await page.mouse.move(x + 100, y + 65, { steps: 8 });
-  await page.mouse.up();
+  if (tactil) {
+    const sesion = await page.context().newCDPSession(page);
+    try {
+      await sesion.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y, id: 0 }] });
+      for (let paso = 1; paso <= 8; paso += 1) {
+        await sesion.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [{ x: x + (100 * paso) / 8, y: y + (65 * paso) / 8, id: 0 }],
+        });
+      }
+      await sesion.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    } finally {
+      await sesion.detach();
+    }
+  } else {
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 100, y + 65, { steps: 8 });
+    await page.mouse.up();
+  }
   await page.waitForTimeout(150);
   return (await page.evaluate(() => (window as HarnessWindow).__visor3d?.camara() ?? null))!;
 }
@@ -114,7 +130,7 @@ async function probar(browser: Browser, mode: Mode, viewport: typeof fixtures[nu
       assert.ok(reentrada.distancia <= DISTANCIA_MINIMA, `${viewport.nombre}: el modo base reproduce el radio casi cero (${reentrada.distancia})`);
       console.log(`${viewport.nombre}: inicial=${inicio.distancia.toFixed(4)}, reentrada=${reentrada.distancia.toFixed(6)} (fallo base reproducido)`);
     } else {
-      const despuesDelArrastre = await arrastrarCamara(page);
+      const despuesDelArrastre = await arrastrarCamara(page, viewport.hasTouch);
       const delta = Math.hypot(
         despuesDelArrastre.posicion.x - reentrada.posicion.x,
         despuesDelArrastre.posicion.y - reentrada.posicion.y,
