@@ -12,6 +12,7 @@ import { SeccionHelio } from "./SeccionHelio";
 import { SeccionBomba } from "./SeccionBomba";
 import { SeccionPrecio } from "./SeccionPrecio";
 import type { EscenaGlobos } from "./escena-globos";
+import { CountUp } from "@/components/ui/reactbits/CountUp";
 import { almacenDelNavegador, filasBomba, guardarCalibracionBomba, inflablesDeEscena, leerCalibracionBomba, lineasBomba, type CalibracionBomba } from "@/lib/globos3d/bomba-segundos";
 import { avisoMetalizados, contarMetalizados, gruposDeHelio, resumenHelio } from "@/lib/globos3d/helio-cinta";
 import { lineasHelio } from "@/lib/globos3d/helio-bom";
@@ -100,7 +101,7 @@ export function ListaCompra({ nombre, escena, armada, productosExactos, visor, r
     <div className="flex flex-col gap-5 p-4">
       <section className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[15px] font-semibold">Escena · <span className="font-mono">{escena.nodos.length}</span> {escena.nodos.length === 1 ? "pieza" : "piezas"} · <span className="font-mono">{armada.globos.length}</span> {plural(armada.globos.length, "globo", "globos")}{armada.flores.length ? ` · ${armada.flores.length} ${plural(armada.flores.length, "flor", "flores")}` : ""}</p>
+          <p className="text-[15px] font-semibold">Escena · <CountUp value={escena.nodos.length} className="font-mono" /> {escena.nodos.length === 1 ? "pieza" : "piezas"} · <CountUp value={armada.globos.length} className="font-mono" /> {plural(armada.globos.length, "globo", "globos")}{armada.flores.length ? ` · ${armada.flores.length} ${plural(armada.flores.length, "flor", "flores")}` : ""}</p>
           <p className="font-mono text-xs text-taller-suave">Sala {m(escena.sala.anchoCm)} × {m(escena.sala.fondoCm)} × {m(escena.sala.altoCm)} m</p>
         </div>
         <div className="flex flex-wrap gap-2">

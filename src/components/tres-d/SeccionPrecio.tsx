@@ -12,7 +12,7 @@ import { BTN } from "./ui-taller";
 import { useCotizacionTaller } from "./useCotizacionTaller";
 import { CotizacionProfesionalDesdeTaller } from "./CotizacionProfesionalDesdeTaller";
 
-const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+import { CountUp } from "@/components/ui/reactbits/CountUp";
 
 /**
  * El precio de la lista de compra en la tienda en línea (D-038): el mismo cotizador que el plan y el «¿cuánto cuesta?» de
@@ -41,12 +41,12 @@ export function SeccionPrecio({ nombre, escena, materiales, helio, visor, reader
       {estado.estado === "error" && <p className="text-sm text-red-600" role="alert">{estado.mensaje}</p>}
       {estado.estado === "lista" && (
         <div aria-live="polite">
-          <p className="text-[15px] font-semibold">Total: <span className="font-mono">{pesos.format(estado.cotizacion.total)}</span>{!estado.vigente && <span className="ml-2 text-xs font-normal text-taller-suave">(la escena cambió: vuelve a cotizar)</span>}</p>
+          <p className="text-[15px] font-semibold">Total: <CountUp value={estado.cotizacion.total} format={{ style: "currency", currency: "COP", maximumFractionDigits: 0 }} className="font-mono" />{!estado.vigente && <span className="ml-2 text-xs font-normal text-taller-suave">(la escena cambió: vuelve a cotizar)</span>}</p>
           <ul className="text-sm">
             {estado.cotizacion.lineas.map((l) => (
               <li key={`${l.formatoId}|${l.codigo}|${l.unidadesPaquete}`} className="flex justify-between gap-3 border-b border-taller-linea py-1">
                 <span className="min-w-0"><span className="font-mono">{l.paquetes}</span> × {l.nombre}</span>
-                <span className="shrink-0 font-mono text-taller-suave">{pesos.format(l.subtotal)}</span>
+                <span className="shrink-0 font-mono text-taller-suave">{new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(l.subtotal)}</span>
               </li>
             ))}
           </ul>

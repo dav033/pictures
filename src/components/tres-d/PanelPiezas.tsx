@@ -3,6 +3,7 @@
 import { memo, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight, Eye, EyeOff, Plus } from "lucide-react";
 import type { Escena, EscenaArmada, NodoArmado, NodoEscena } from "@/lib/globos3d/escena";
+import { AnimatedList } from "@/components/ui/reactbits/AnimatedList";
 import { IconoTipo, NOMBRE_TIPO, padreDe } from "./tipos-pieza";
 import { BTN, FILA, FILA_ON } from "./ui-taller";
 
@@ -110,11 +111,11 @@ export const PanelPiezas = memo(function PanelPiezas({ escena, armada, seleccion
   const pintar = (r: Rama, nivel: number): ReactNode => {
     const abierta = abiertasVistas.has(r.nodo.id);
     return (
-      <li key={r.nodo.id}>
+      <>
         <FilaPieza nodo={r.nodo} hecho={porId.get(r.nodo.id)} nivel={nivel} tieneHijos={r.hijos.length > 0} abierta={abierta} elegida={r.nodo.id === seleccion} oculta={ocultos.has(r.nodo.id)}
           onAbrir={alAbrir} onSeleccion={onSeleccion} onRenombrar={onRenombrar} onOcultar={onOcultar} />
-        {abierta && r.hijos.length > 0 && <ul className="flex flex-col gap-0.5">{r.hijos.map((h) => pintar(h, nivel + 1))}</ul>}
-      </li>
+        {abierta && r.hijos.length > 0 && <AnimatedList items={r.hijos} getKey={(h) => h.nodo.id} renderItem={(h) => pintar(h, nivel + 1)} className="flex flex-col gap-0.5" />}
+      </>
     );
   };
 
@@ -128,7 +129,7 @@ export const PanelPiezas = memo(function PanelPiezas({ escena, armada, seleccion
         <nav aria-label="Piezas de la escena" className="px-2">
           {ramas.length === 0
             ? <p className="px-2 py-3 text-xs text-taller-suave">La sala está vacía: añade una pieza con «Añadir» o elige una plantilla.</p>
-            : <ul className="flex flex-col gap-0.5">{ramas.map((r) => pintar(r, 0))}</ul>}
+            : <AnimatedList items={ramas} getKey={(r) => r.nodo.id} renderItem={(r) => pintar(r, 0)} className="flex flex-col gap-0.5" />}
         </nav>
         <div className="mx-4 mt-4 border-t border-taller-linea" />
         <div className="px-4 pb-3 pt-3">{paleta}</div>

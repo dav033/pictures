@@ -1,7 +1,9 @@
 "use client";
 
-import { memo, useContext, useEffect, useMemo, useRef, useState, type PointerEvent as EventoPuntero, type RefObject } from "react";
+import { memo, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as EventoPuntero, type RefObject } from "react";
 import type { ItemBiblioteca, ResumenItem } from "@/lib/globos3d/biblioteca";
+import { AnimatedList } from "@/components/ui/reactbits/AnimatedList";
+import SpotlightCard from "@/components/ui/reactbits/SpotlightCard";
 import { descripcionParaCliente } from "@/lib/globos3d/descripcion-ficha";
 import { ArrastreDecoracionContexto, arrastreDeItem } from "./arrastre-decoracion";
 import { Miniatura3d } from "./Biblioteca";
@@ -39,8 +41,7 @@ const TarjetaCompacta = memo(function TarjetaCompacta({ item, resumen, mini, eti
     arrastrar(arrastre, { x: e.clientX, y: e.clientY });
   };
   return (
-    <li data-item-id={item.id}>
-      <button type="button" onPointerDown={alApretar}
+    <button type="button" onPointerDown={alApretar}
         onClick={(e) => {
           const desde = apretada.current;
           apretada.current = null;
@@ -49,13 +50,17 @@ const TarjetaCompacta = memo(function TarjetaCompacta({ item, resumen, mini, eti
           onAbrir(item);
         }}
         title={`${item.nombre}${descripcion ? ` — ${descripcion}` : ""}. ${arrastrable ? "Arrástrala al visor, o tócala para ver su ficha." : "Toca para ver su ficha y añadirla."}`}
-        className={`flex h-full w-full select-none flex-col gap-1.5 rounded-xl border border-taller-borde bg-taller-tarjeta p-2 text-left text-xs font-medium leading-snug text-taller-texto hover:border-taller-resalte ${arrastrable ? "cursor-grab active:cursor-grabbing" : ""}`}>
-        <Miniatura3d item={item} url={mini} className="h-[72px] w-full rounded-lg" />
-        <span className="line-clamp-2">{item.nombre}</span>
-        <span className="truncate text-[11px] font-normal text-taller-suave">{sub}</span>
-        {etiqueta && <span className="truncate text-[11px] font-normal text-taller-acento" title={`Celebración y temática: ${etiqueta}`}>{etiqueta}</span>}
-      </button>
-    </li>
+        className={`flex h-full w-full select-none flex-col rounded-xl border border-taller-borde bg-taller-tarjeta text-left text-xs font-medium leading-snug text-taller-texto hover:border-taller-resalte ${arrastrable ? "cursor-grab active:cursor-grabbing" : ""}`}>
+      <SpotlightCard theme="light" spotlightColor="#cba6f7" intensity={0.12} spotlightSize={180} borderGlow={0.25} proximity={70} flare={false} className="h-full w-full rounded-xl p-2 shadow-none"
+        style={{ "--spotlight-card-surface": "var(--taller-tarjeta)", padding: "0.5rem", boxShadow: "none", borderRadius: "0.75rem" } as CSSProperties}>
+        <div className="relative z-10 flex h-full w-full flex-col gap-1.5">
+          <Miniatura3d item={item} url={mini} className="h-[72px] w-full rounded-lg" />
+          <span className="line-clamp-2">{item.nombre}</span>
+          <span className="truncate text-[11px] font-normal text-taller-suave">{sub}</span>
+          {etiqueta && <span className="truncate text-[11px] font-normal text-taller-acento" title={`Celebración y temática: ${etiqueta}`}>{etiqueta}</span>}
+        </div>
+      </SpotlightCard>
+    </button>
   );
 }, (a, b) => a.resumen === b.resumen && a.mini === b.mini && a.etiqueta === b.etiqueta && a.onAbrir === b.onAbrir && a.item.id === b.item.id && a.item.nombre === b.item.nombre);
 
@@ -99,14 +104,13 @@ export function GrillaCompacta({ pagina, resumenes, huellas, minis, onAbrir, vac
   }, [hayMas, mostrados.length]);
   if (mostrados.length === 0) return <p className="px-1 text-xs text-taller-suave">{vacio}</p>;
   return (
-    <ul className="grid grid-cols-3 gap-2">
-      {mostrados.map((i) => <TarjetaCompacta key={i.id} item={i} resumen={resumenes.get(i.id)} mini={minis.get(huellas.get(i.id) ?? "")} etiqueta={etiquetaDe?.(i.id) ?? null} onAbrir={onAbrir} />)}
-      {hayMas && (
+    <AnimatedList items={mostrados} getKey={(i) => i.id} getItemAttributes={(i) => ({ "data-item-id": i.id })} className="grid grid-cols-3 gap-2"
+      renderItem={(i) => <TarjetaCompacta item={i} resumen={resumenes.get(i.id)} mini={minis.get(huellas.get(i.id) ?? "")} etiqueta={etiquetaDe?.(i.id) ?? null} onAbrir={onAbrir} />}
+      footer={hayMas ? (
         <li ref={finRef} className="col-span-full flex justify-center">
           <button type="button" onClick={mas} className="min-h-9 rounded-lg px-3 text-xs text-taller-acento hover:bg-taller-encima">Mostrar más ({restantes})</button>
         </li>
-      )}
-    </ul>
+      ) : null} />
   );
 }
 
