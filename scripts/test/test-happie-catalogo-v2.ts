@@ -3,7 +3,7 @@ import test from "node:test";
 import { procesarTurnoCatalogo } from "../../src/lib/happie/conversacion-catalogo";
 import { HappieConversationRequestV2Schema, HappieConversationResponseV2Schema, HappieRecommendationRequestV2Schema, HappieRecommendationResponseV2Schema, catalogOptions } from "../../src/lib/ia/contracts/happie-v2";
 import { HappieRecommendationRequestV1Schema } from "../../src/lib/ia/contracts/happie-v1";
-import type { Extraccion } from "../../src/lib/happie/conversacion-webhook";
+import { manejarChatWebhookExterno, procesarTurnoConversacion, type Extraccion } from "../../src/lib/happie/conversacion-webhook";
 
 const request = () => new Request("http://localhost/api/happie/webhook/chat", { method: "POST", body: "{}" });
 const extracted: Extraccion = { tipoEvento: "cumpleaños", invitados: 20, presupuesto: 2000000, servicios: [], preferencias: ["magia"], serviciosDeseados: ["magia"], respondioDetalles: true, confirmacion: "si", acuse: "" };
@@ -202,4 +202,67 @@ test("large valid preferences retain full state while confirmation text stays bo
   assert.ok(body.mensaje.length <= 4000);
   assert.deepEqual(body.estado.preferencias, preferences);
   assert.deepEqual(body.estado.serviciosDeseados, services);
+});
+
+test("a conversational detour preserves state and does not repeat confirmation or recommend", async () => {
+  let recommendations = 0;
+  const previous = { ...state, tipoEvento: "Comida informal", invitados: 14, presupuesto: 140000, preferencias: ["pizza"], serviciosDeseados: ["pizza"] };
+  const reply = "Me quedo con las pizzas 🙂. ¿Seguimos buscando opciones para tu comida?";
+  const result = await procesarTurnoCatalogo({ schema_version: "happie.v2", mensaje: "dame un ejemplo de hello world en js", estado: previous }, request(), async () => ({
+    ...extracted, tipoEvento: null, invitados: null, presupuesto: null, servicios: [], preferencias: [], serviciosDeseados: [],
+    confirmacion: "incierta", acuse: "Entendido.", respondioDetalles: false, respuestaConversacional: reply,
+  }), async () => { recommendations++; return { status: 500, body: {} }; });
+  const body = HappieConversationResponseV2Schema.parse(result.body);
+  assert.equal(body.mensaje, reply);
+  assert.deepEqual(body.estado, previous);
+  assert.equal(recommendations, 0);
+  assert.doesNotMatch(body.mensaje, /140[.,]?000|14 personas|Buscaré hasta|Preferencias:/);
+});
+
+
+for (const version of ["happie.v1", "happie.v2"]) {
+  test(`${version} external chat keeps resumen present and empty without losing message, data or headers`, async () => {
+    const body = { schema_version: version, tipo: "recomendaciones", mensaje: "Estas son tus opciones de pizza.", resumen: "Estas son tus opciones de pizza.", estado: state, recomendaciones: [{ tipo: "servicio", id: "existing-id" }], servicios: [], paquetes: [] };
+    const response = await manejarChatWebhookExterno(request(), async () => Response.json(body, { headers: { "cache-control": "no-store", "x-correlation-id": "existing-correlation" } }));
+    const actual = await response.json();
+    assert.deepEqual(actual, { ...body, resumen: "" });
+    assert.ok(Object.hasOwn(actual, "resumen"));
+    assert.equal(response.headers.get("x-correlation-id"), "existing-correlation");
+    assert.equal(response.headers.get("cache-control"), "no-store");
+  });
+}
+
+test("external chat leaves questions and errors untouched", async () => {
+  for (const [status, body] of [[200, { tipo: "pregunta", mensaje: "¿Seguimos?", estado: state }], [429, { error: "Espera para reintentar." }]] as const) {
+    const original = Response.json(body, { status, headers: { "retry-after": "60" } });
+    const response = await manejarChatWebhookExterno(request(), async () => original);
+    assert.equal(response, original);
+    assert.deepEqual(await response.json(), body);
+    assert.equal(response.headers.get("retry-after"), "60");
+  }
+});
+
+
+test("legacy chat also responds naturally to detours without losing event context", async () => {
+  const previous = { fase: "confirmacion" as const, tipoEvento: "Comida informal", invitados: 14, presupuesto: 140000, servicios: [] as [], preferencias: ["pizza"] };
+  const reply = "Aquí seguimos con tu comida 🙂. ¿Quieres que busque las opciones de pizza?";
+  const result = await procesarTurnoConversacion({ mensaje: "dame un hello world en js", estado: previous }, {
+    extraer: async () => ({ ...extracted, respuestaConversacional: reply, confirmacion: "incierta" }),
+    recomendar: async () => { throw new Error("A detour must not buy recommendations"); },
+  });
+  assert.deepEqual(result, { status: 200, body: { tipo: "pregunta", mensaje: reply, estado: previous } });
+});
+
+
+test("legacy thanks after recommendations sees the real completed event context", async () => {
+  const previous = { fase: "finalizado" as const, tipoEvento: "Comida informal", invitados: 14, presupuesto: 140000, servicios: [] as [], preferencias: ["pizza"] };
+  const reply = "¡Con gusto! Si quieres ajustar las opciones de pizza, aquí estoy.";
+  const result = await procesarTurnoConversacion({ mensaje: "gracias", estado: previous }, {
+    extraer: async (_, actual) => {
+      assert.deepEqual(actual, previous);
+      return { ...extracted, respuestaConversacional: reply, confirmacion: "incierta" };
+    },
+    recomendar: async () => { throw new Error("Thanks must not buy recommendations"); },
+  });
+  assert.deepEqual(result, { status: 200, body: { tipo: "pregunta", mensaje: reply, estado: previous } });
 });
