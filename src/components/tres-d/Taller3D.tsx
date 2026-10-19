@@ -61,7 +61,8 @@ import { useInsetTeclado } from "./useInsetTeclado";
 import { useEstadoAnadir } from "./useEstadoAnadir";
 import type { PiezaParaAnadir } from "./nuevas-taller";
 import type { VistaSolitario } from "./ParametrosPieza";
-import { BTN, BTN_ICO, BTN_PRI, FLOTANTE, RIEL, RIEL_ON } from "./ui-taller";
+import { BTN, BTN_ICO, FLOTANTE, RIEL, RIEL_ON } from "./ui-taller";
+import { AvisoRecuperacionWebGL, useRecuperacionWebGL } from "./ciclo-contexto-webgl";
 
 /**
  * Lo pesado se carga aparte, al abrirlo: el panel «Añadir» (con la Biblioteca: todas las ideas de Sempertex, su índice
@@ -132,7 +133,7 @@ export function Taller3D() {
   const visorCajaRef = useRef<HTMLElement>(null);
   const [visor, setVisor] = useState<EscenaGlobos | null>(null);
   const listo = visor !== null;
-  const [error, setError] = useState<string | null>(null);
+  const { error, reportarError, reintentar, prepararContexto } = useRecuperacionWebGL(lienzoRef, escenaRef);
 
   // Escena (con deshacer y rehacer: Ctrl+Z / Ctrl+Y) y su nombre; se guarda sola en el navegador.
   // La última escena guardada en este navegador (si hay) en vez de la de partida. En el servidor no hay navegador: hasta
@@ -218,29 +219,33 @@ export function Taller3D() {
   useEffect(() => {
     let vivo = true;
     let observador: ResizeObserver | null = null;
+    let quitarOyentesContexto: (() => void) | null = null;
     void import("./escena-globos").then(({ crearEscena }) => {
-      if (!vivo || !lienzoRef.current) return;
+      const lienzo = lienzoRef.current;
+      if (!vivo || !lienzo) return;
       try {
-        const escena = crearEscena(lienzoRef.current);
+        const escena = crearEscena(lienzo);
         escenaRef.current = escena;
+        quitarOyentesContexto = prepararContexto(lienzo, escena);
         observador = new ResizeObserver(() => escena.redimensionar());
-        observador.observe(lienzoRef.current);
+        observador.observe(lienzo);
         setVisor(escena);
       } catch (causa) {
-        setError("Tu navegador no pudo abrir el visor 3D (WebGL). Prueba con Chrome o Edge actualizados.");
+        reportarError("Tu navegador no pudo abrir el visor 3D (WebGL). Prueba con Chrome o Edge actualizados.");
         console.error("[3d]", causa);
       }
     });
     return () => {
       vivo = false;
       observador?.disconnect();
+      quitarOyentesContexto?.();
       escenaRef.current?.destruir();
       escenaRef.current = null;
       setVisor(null);
       encuadradoRef.current = null;
       vistaFotoPendiente.current = null;
     };
-  }, []);
+  }, [prepararContexto, reportarError]);
 
   // Guardar solo (medio segundo después del último cambio).
   useEffect(() => {
@@ -748,7 +753,7 @@ export function Taller3D() {
   const sobreVisor = (
     <>
       {!listo && !error && <p className="absolute inset-0 grid place-items-center text-sm text-taller-suave">Cargando el visor 3D…</p>}
-      {error && <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-sm">{error}</p>}
+      {error && <AvisoRecuperacionWebGL error={error} reintentar={reintentar} />}
       {esAncho && (
         <div className="pointer-events-none absolute inset-x-0 top-3.5 z-10 flex justify-center px-3">
           <BarraHerramientas solitario={solitario.activo} herramienta={herramienta} onHerramienta={setHerramienta} vista={vistaFija}

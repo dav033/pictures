@@ -87,6 +87,8 @@ export type EscenaGlobos = ExportadoresEscena & {
   mostrar: (globos: readonly GloboEnEscena[]) => void;
   /** Un módulo armado (pareja, trío, cuarteto…): los globos colocados, si se piden sus anclas, y los tubitos. */
   mostrarModulo: (globos: readonly GloboColocadoEnEscena[], anclas: readonly Punto3[], tubos?: readonly TuboEnEscena[], extras?: ExtrasEscena) => void;
+  /** Rebuilds the latest drawing after the WebGL context has been restored and frames the scene again. */
+  reconstruir: () => void;
   redimensionar: () => void;
   /**
    * Dibuja ya, sin esperar al cuadro siguiente: para leer el lienzo justo después (las miniaturas). El visor dibuja
@@ -1181,6 +1183,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   }
 
   function mostrar(globos: readonly GloboEnEscena[]) {
+    repetirModulo = () => mostrar(globos);
     vaciarModulo();
     vaciar(fila);
     dibujarSala(undefined);
@@ -1591,6 +1594,13 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
   const api: EscenaGlobos = {
     mostrar: (globos) => cronometrar(medible, "mostrar", () => mostrar(globos)),
     mostrarModulo: (globos, anclas, tubos, extras) => cronometrar(medible, "mostrarModulo", () => mostrarModulo(globos, anclas, tubos, extras)),
+    reconstruir() {
+      if (!vivo) return;
+      renderer.resetState();
+      repetirModulo?.();
+      encuadrar();
+      dibujar();
+    },
     redimensionar,
     dibujar,
     piezaEn,
@@ -1792,6 +1802,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
     },
     ...exportadores,
     destruir() {
+      if (!vivo) return;
       vivo = false;
       oyentesCuadro.clear();
       quitarMedicion();
@@ -1813,6 +1824,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
       lucesDeSala.liberar();
       pmrem.dispose();
       renderer.dispose();
+      renderer.forceContextLoss();
     },
   };
   api.capturar = optica.enOpticaNeutra(api.capturar);
