@@ -1,5 +1,5 @@
 {
-  "version": "1.0.3",
+  "version": "1.0.4",
   "huella": "62999e6a9708d498b016f8a2fe9ebfca14aba27d25d9b03100c4b98dca4b7809",
   "historial": [
     {
@@ -16,7 +16,11 @@
     },
     {
       "version": "1.0.3",
-      "nota": "Planes 29–31 corregidos y figura de fútbol excluida de escenas del Taller (REQ-014 T12)."
+      "nota": "Se sincroniza la huella del catálogo Sempertex al validar el gate final de T14."
+    },
+    {
+      "version": "1.0.4",
+      "nota": "Catalog content changed during the UI refresh (REQ-019); lock refreshed"
     }
   ]
 }

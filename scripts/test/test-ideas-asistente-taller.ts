@@ -37,7 +37,7 @@ async function main(): Promise<void> {
   const sinPlan = deLasIdeas.filter((id) => planGuardadoDeIdea(id) === null);
   assert.deepEqual(fuera.filter((f) => /^sin plan guardado/.test(f.razon)).map((f) => f.ideaId).sort(), [...sinPlan].sort(), "fuera del Taller: las 18 ideas sin plan guardado (su lista curada no trae geometría)");
   assert.equal(sinPlan.length, 18);
-  assert.deepEqual(fuera.filter((f) => !/^sin plan guardado/.test(f.razon)).map((f) => f.ideaId), ["deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1", "deco-real-27-aro-navideno-verde-salvia", "deco-real-30-columna-balon-futbol"], "fuera del Taller: las 3 que el motor no arma (centro de mesa con bouquet, aro parcial y figura de fútbol)");
+  assert.deepEqual(fuera.filter((f) => !/^sin plan guardado/.test(f.razon)).map((f) => f.ideaId), ["deco-real-03-63ba2a23-cda3-4af6-af27-bb1746751288-1", "deco-real-27-aro-navideno-verde-salvia", "deco-real-30-columna-balon-futbol"], "fuera del Taller: las 3 que el motor no arma (centro de mesa con bouquet, aro parcial y figura sin constructor genérico)");
   assert.ok(fuera.every((f) => !/la escena del Taller no lleva/.test(f.razon)), "ninguna idea que el motor arma se queda fuera por lista distinta en el Taller");
   assert.equal(Object.keys(archivo.ideas).length, 25);
   assert.equal(archivo.motor, VERSION_MOTOR, "las escenas son de esta versión del motor");
