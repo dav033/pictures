@@ -84,9 +84,9 @@ function suscribirAncho(aviso: () => void) {
   consulta.addEventListener("change", aviso);
   return () => consulta.removeEventListener("change", aviso);
 }
-/** Pantalla ancha (escritorio o tablet acostada). En el servidor se supone ancha; el navegador corrige al hidratar. */
-function useEsAncho() {
-  return useSyncExternalStore(suscribirAncho, () => window.matchMedia(CONSULTA_ANCHO).matches, () => true);
+/** Pantalla ancha (escritorio o tablet acostada). `null` = aún no medida (servidor e hidratación): se pinta un casco neutro. */
+function useAnchoMedido(): boolean | null {
+  return useSyncExternalStore<boolean | null>(suscribirAncho, () => window.matchMedia(CONSULTA_ANCHO).matches, () => null);
 }
 
 type Panel = "anadir" | "piezas" | "plantillas" | "sala";
@@ -147,6 +147,9 @@ export function Taller3D() {
   const escenaEdit = historialEscena.escena;
   const setEscenaEdit = historialEscena.cambiar;
   const [nombreEscena, setNombreEscena] = useState(() => guardadaAlAbrir?.nombre ?? "Escena nueva");
+  const anchoMedido = useAnchoMedido();
+  const esAncho = anchoMedido === true;
+  const sinMedir = anchoMedido === null;
   const cargada = useSyncExternalStore(sinSuscripcion, () => true, () => false);
   const [ultimoGuardado, setUltimoGuardado] = useState<{ escena: Escena; nombre: string; ok: boolean } | null>(null);
   const guardado = !ultimoGuardado ? (guardadaAlAbrir ? "guardado" : "guardando") : ultimoGuardado.escena !== escenaEdit || ultimoGuardado.nombre !== nombreEscena ? "guardando" : ultimoGuardado.ok ? "guardado" : "sin-guardar";
@@ -190,7 +193,6 @@ export function Taller3D() {
   /** Piezas ocultas en el visor (siguen en la escena y en la lista de compra). */
   const [ocultos, setOcultos] = useState<ReadonlySet<string>>(() => new Set());
   // Interfaz: panel abierto, pestaña de «Añadir», herramienta del visor, vista fija, diálogos.
-  const esAncho = useEsAncho();
   const insetTeclado = useInsetTeclado(!esAncho);
   const [panel, setPanelElegido] = useState<Panel | null>("piezas");
   /** Los paneles que ya se abrieron alguna vez (quedan montados). */
@@ -219,6 +221,7 @@ export function Taller3D() {
 
   // El visor se crea una vez (three.js se carga solo en el navegador).
   useEffect(() => {
+    if (sinMedir) return; // sin lienzo hasta medir el ancho
     let vivo = true;
     let observador: ResizeObserver | null = null;
     let quitarOyentesContexto: (() => void) | null = null;
@@ -248,7 +251,7 @@ export function Taller3D() {
       encuadradoRef.current = null;
       vistaFotoPendiente.current = null;
     };
-  }, [prepararContexto, reportarError]);
+  }, [sinMedir, prepararContexto, reportarError]);
 
   // Guardar solo (medio segundo después del último cambio).
   useEffect(() => {
@@ -919,6 +922,9 @@ export function Taller3D() {
 
   // Paneles que en el teléfono se abren como diálogos (Plantillas y Sala no tienen pestaña propia).
   const panelEnDialogo = !esAncho && (panel === "plantillas" || panel === "sala");
+
+  // Hasta medir el ancho no se pinta ni el riel de escritorio ni la hoja móvil: así el teléfono nunca ve el árbol de escritorio.
+  if (anchoMedido === null) return <div className="taller-3d fixed inset-0 flex flex-col overflow-hidden font-sans" aria-busy="true" />;
 
   return (
     <div className="taller-3d fixed inset-0 flex flex-col overflow-hidden font-sans">
