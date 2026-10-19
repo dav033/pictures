@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, type ReactNode, type RefObject } from "react";
-import { ArrowUp, Home, Image as ImageIcon, Paperclip, Square, X } from "lucide-react";
+import { Home, Image as ImageIcon, Paperclip, X } from "lucide-react";
 import { BotonVoz } from "@/components/voz/BotonVoz";
+import { PromptBar } from "@/components/ui/reactbits";
 import { MenuApp } from "./MenuApp";
 
 export type AdjuntoVisible = { src: string; etiqueta: string };
@@ -118,25 +119,27 @@ export function Compositor({
         </div>
       )}
 
-      <form
-        onSubmit={(evento) => {
-          evento.preventDefault();
-          onEnviar();
-        }}
-        className={`compositor ${variante === "grande" ? "grande" : ""}`}
+      <PromptBar
+        variant={variante}
+        loading={cargando}
+        canSend={!enviarDeshabilitado}
+        onSend={onEnviar}
+        onCancel={onCancelar}
+        leading={
+          <MenuApp
+            etiqueta="Adjuntar imagen"
+            testId="adjuntar-imagen"
+            lado={variante === "grande" ? "abajo" : "arriba"}
+            alineacion="izquierda"
+            claseBoton="compositor-adjuntar"
+            icono={<Paperclip className="size-[1.125rem]" aria-hidden="true" />}
+            items={[
+              { tipo: "accion", id: "referencia", etiqueta: "Foto de una decoración que te guste", onSeleccionar: () => referenciasInputRef.current?.click(), deshabilitado: !puedeAgregarReferencia, icono: <ImageIcon className="size-4" /> },
+              { tipo: "accion", id: "espacio", etiqueta: "Foto de tu espacio", onSeleccionar: () => espacioInputRef.current?.click(), icono: <Home className="size-4" /> },
+            ]}
+          />
+        }
       >
-        <MenuApp
-          etiqueta="Adjuntar imagen"
-          testId="adjuntar-imagen"
-          lado={variante === "grande" ? "abajo" : "arriba"}
-          alineacion="izquierda"
-          claseBoton="compositor-adjuntar"
-          icono={<Paperclip className="size-[1.125rem]" aria-hidden="true" />}
-          items={[
-            { tipo: "accion", id: "referencia", etiqueta: "Foto de una decoración que te guste", onSeleccionar: () => referenciasInputRef.current?.click(), deshabilitado: !puedeAgregarReferencia, icono: <ImageIcon className="size-4" /> },
-            { tipo: "accion", id: "espacio", etiqueta: "Foto de tu espacio", onSeleccionar: () => espacioInputRef.current?.click(), icono: <Home className="size-4" /> },
-          ]}
-        />
         <input
           ref={inputRef}
           id="compositor-mensaje"
@@ -149,16 +152,7 @@ export function Compositor({
           className="compositor-input"
         />
         <BotonVoz campoId="compositor-mensaje" alTexto={onEntrada} variante="cliente" clase="ui-icon-button size-10" />
-        {cargando ? (
-          <button type="button" onClick={onCancelar} aria-label="Cancelar respuesta" title="Cancelar respuesta" className="compositor-enviar" data-testid="cancelar-respuesta">
-            <Square className="size-3.5 fill-current" aria-hidden="true" />
-          </button>
-        ) : (
-          <button type="submit" disabled={enviarDeshabilitado} aria-label="Enviar" title="Enviar" className="compositor-enviar">
-            <ArrowUp className="size-[1.125rem]" aria-hidden="true" />
-          </button>
-        )}
-      </form>
+      </PromptBar>
     </div>
   );
 }

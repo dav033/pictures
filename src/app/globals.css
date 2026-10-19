@@ -1128,6 +1128,11 @@ body {
     border-color: var(--acento);
   }
 
+  /* PromptBar (React Bits): halo suave del acento al enfocar. */
+  .prompt-bar:focus-within {
+    box-shadow: 0 0 0 3px var(--acento-suave);
+  }
+
   .compositor.grande {
     min-height: 3.75rem;
     border-radius: 1.125rem;

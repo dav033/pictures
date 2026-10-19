@@ -15,6 +15,7 @@ import { resumenDeRefinado, type RondaHecha } from "@/lib/globos3d/refinado/bucl
 import { datosDeRefinado, leerRespuestaIA, mensajeDeError } from "@/lib/globos3d/respuesta-escena-ia";
 import { esDeEstaEscena, historialParaModelo, siguienteNumero, tiempoTipico, type AmbitoTurno, type PasoTurno, type TurnoPanel } from "@/lib/globos3d/turnos-ia";
 import { RONDAS_AUTOMATICAS, useRefinadoFoto } from "../useRefinadoFoto";
+import { aplicarEventoEnCurso } from "./TarjetaEnCurso";
 import { crearRegistroFeedback, pasosDelFlujo } from "./registro-feedback";
 import { marcarProducido } from "@/components/feedback-ia/producidos";
 
@@ -138,7 +139,7 @@ export function useAsistenteIA(entrada: EntradaAsistenteIA) {
         signal: mio.signal,
         alEvento: (e) => {
           if (e.tipo === "paso") { vistos.push(pasoDe(e)); pasosFlujo.push(e); }
-          setEnCurso((c) => (c ? (e.tipo === "fase" ? { ...c, fase: e.fase } : { ...c, pasos: [...c.pasos, e] }) : c));
+          setEnCurso((c) => (c ? aplicarEventoEnCurso(c, e) : c));
         },
       });
       const r = estado >= 200 && estado < 300 ? leerRespuestaIA(datos) : null;

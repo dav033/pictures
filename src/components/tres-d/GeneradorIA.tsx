@@ -9,6 +9,7 @@ import { postReanudable } from "@/lib/generacion/post-reanudable";
 import type { AspectoCaptura } from "./escena-globos";
 import { MAXIMO, borrarImagen, guardarImagen, leerImagenes, type ImagenGuardada } from "./imagenes-guardadas";
 import { VisorFoto } from "./VisorFoto";
+import { EtapasFotoRealista, type EtapaFotoRealista } from "./EtapasFotoRealista";
 
 const fecha = new Intl.DateTimeFormat("es", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
@@ -25,6 +26,8 @@ const tituloDe = (g: ImagenGuardada) => `${g.escena ? `${g.escena} · ` : ""}${A
 export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: () => Promise<{ datos: string; aspecto: AspectoCaptura; cajasLetreroV1?: CajaLetreroFotoV1[] } | null>; descripcion: string; escena?: string }) {
   const [ambiente, setAmbiente] = useState<AmbienteRender>(AMBIENTE_POR_DEFECTO);
   const [cargando, setCargando] = useState(false);
+  /** En qué punto va la foto: lo fija cada evento real de `generar` (captura, respuesta, guardado). */
+  const [etapa, setEtapa] = useState<EtapaFotoRealista | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [generadas, setGeneradas] = useState<ImagenGuardada[]>([]);
@@ -41,10 +44,12 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
     setCargando(true);
     setError(null);
     setAviso(null);
+    setEtapa("capturando");
     try {
       // Capturar puede esperar la letra de los nombres y lanza si no carga: ese error se le muestra a la persona, sin llamar a la IA.
       const captura = await capturar();
       if (!captura) throw new Error("El visor 3D todavía no está listo.");
+      setEtapa("generando");
       const respuesta = await postReanudable("/api/render-3d-imagen", JSON.stringify({
         render: captura.datos, descripcion, ambiente, aspecto: captura.aspecto, cajasLetreroV1: captura.cajasLetreroV1 ?? [],
       }));
@@ -54,6 +59,7 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
       const datos = validado.data;
       if (!respuesta.ok || !("imagen" in datos)) throw new Error("error" in datos ? datos.error : "No pude generar la foto.");
       const nueva: ImagenGuardada = { id: Date.now(), imagen: datos.imagen, ambiente, escena, creada: new Date().toISOString() };
+      setEtapa("guardando");
       setGeneradas((actuales) => [nueva, ...actuales].slice(0, MAXIMO));
       const avisos = [datos.aviso, !(await guardarImagen(nueva)) ? "Este navegador no dejó guardar la foto: descárgala para no perderla." : undefined].filter((texto): texto is string => Boolean(texto));
       if (avisos.length) setAviso(avisos.join(" "));
@@ -62,6 +68,7 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
       setError(causa instanceof TypeError ? MENSAJE_SIN_RED : causa instanceof Error ? causa.message : "No pude generar la foto.");
     } finally {
       setCargando(false);
+      setEtapa(null);
     }
   }
 
@@ -87,6 +94,7 @@ export function GeneradorIA({ capturar, descripcion, escena = "" }: { capturar: 
         </button>
         <p className="text-xs text-texto-suave">Usa lo que se ve en el visor (gíralo antes para elegir el ángulo). {resumenFotoRealista()}.</p>
       </div>
+      {cargando && <EtapasFotoRealista etapa={etapa} />}
       {error && <p role="alert" className="text-sm text-texto">{error}</p>}
       {aviso && <p role="status" className="text-sm text-texto-suave">{aviso}</p>}
       {generadas.length > 0 && (
