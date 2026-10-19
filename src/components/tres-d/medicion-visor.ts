@@ -8,12 +8,15 @@ import type * as THREE from "three";
 export const MEDIR_VISOR = process.env.NODE_ENV !== "production";
 
 export type InfoVisor = { calls: number; triangles: number; geometries: number; textures: number; programs: number };
+export type MedicionCamara = { posicion: { x: number; y: number; z: number }; objetivo: { x: number; y: number; z: number }; distancia: number };
 
 export type VisorMedible = {
   lienzo: HTMLCanvasElement;
   renderer: THREE.WebGLRenderer;
   /** Cuántos cuadros se han dibujado desde que se creó el visor (para ver que en reposo no dibuja). */
   cuadros: () => number;
+  /** Posición, objetivo y radio de la cámara orbital. */
+  camara: () => MedicionCamara;
   /** Lo que tardó cada operación (ms), la última primero. */
   tiempos: Array<{ que: string; ms: number; t: number }>;
   /** `n` cuadros seguidos, sincrónicos y esperando a la tarjeta (`gl.finish`): ms por cuadro y lo dibujado. */
@@ -36,6 +39,7 @@ type Registro = {
   /** El visor más grande que sigue en la página (el del editor). */
   principal: () => VisorMedible | null;
   info: () => InfoVisor | null;
+  camara: () => MedicionCamara | null;
   medirRender: (n?: number, conSombra?: boolean) => { msPorCuadro: number; info: InfoVisor } | null;
   tiempos: () => VisorMedible["tiempos"];
   cuadros: () => number;
@@ -66,6 +70,7 @@ function registro(): Registro | null {
     visores,
     principal,
     info: () => { const v = principal(); return v ? infoDe(v.renderer) : null; },
+    camara: () => principal()?.camara() ?? null,
     medirRender: (n = 30, conSombra = false) => principal()?.medirRender(n, conSombra) ?? null,
     tiempos: () => principal()?.tiempos ?? [],
     cuadros: () => principal()?.cuadros() ?? 0,

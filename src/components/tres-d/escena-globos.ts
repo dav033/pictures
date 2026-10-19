@@ -10,6 +10,7 @@ import { colorDeLatex, materialDe, type Calidad } from "./materiales-visor";
 import { colorPropio, geometriaParteFlor, materialParteFlor, partesFlor } from "./flores-visor";
 import type { TipoFlorArtificial } from "@/lib/globos3d/flores-artificiales";
 import { MEDIR_VISOR, cronometrar, infoDe, registrarVisor, type VisorMedible } from "./medicion-visor";
+import { medirCamara } from "./medicion-camara";
 import { camaraEstandar, type VistaEstandar } from "./camara-estandar";
 import { crearEntornoEstudio } from "./entorno-estudio";
 import { ambienteActivo, ambienteDe, crearLucesDeSala, crearOpticaVisor, lucesDeTecho, materialPiso, texturaTablones, ventanaDerecha } from "./sala-ambiente";
@@ -1568,6 +1569,7 @@ export function crearEscena(lienzo: HTMLCanvasElement): EscenaGlobos {
 
   const medible: VisorMedible | null = MEDIR_VISOR ? {
     lienzo, renderer, cuadros: () => cuadros, tiempos: [], piezaEn: (x, y) => piezaEn(x, y),
+    camara: medirCamara(camara, controles),
     medirRender(n, conSombra) {
       const gl = renderer.getContext();
       renderer.render(escena, camara);
