@@ -7,9 +7,15 @@ type ControladoresContextoWebGL = {
   alRestaurar: () => void;
 };
 
+// A lost context returns null from getExtension, so the restore handle is captured while the context is alive.
+const extensionesPerdida = new WeakMap<HTMLCanvasElement, WEBGL_lose_context>();
+
 /** Owns the browser events and manual retry path for a viewer's WebGL context. */
 export function suscribirContextoWebGL(canvas: HTMLCanvasElement, controladores: ControladoresContextoWebGL): () => void {
-  const alPerder = (evento: WebGLContextEvent) => {
+  const viva = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+  const extension = viva?.getExtension("WEBGL_lose_context");
+  if (extension) extensionesPerdida.set(canvas, extension);
+  const alPerder = (evento: Event) => {
     evento.preventDefault();
     controladores.alPerder();
   };
@@ -26,7 +32,9 @@ export function suscribirContextoWebGL(canvas: HTMLCanvasElement, controladores:
 export function intentarRecuperarContexto(canvas: HTMLCanvasElement, reconstruir: () => void): void {
   const contexto = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
   if (contexto?.isContextLost()) {
-    contexto.getExtension("WEBGL_lose_context")?.restoreContext();
+    const extension = extensionesPerdida.get(canvas);
+    if (!extension) throw new Error("El navegador no permite restaurar el contexto WebGL");
+    extension.restoreContext();
     return;
   }
   reconstruir();
@@ -52,7 +60,13 @@ export function useRecuperacionWebGL(
   }, [escenaRef]);
   const reintentar = useCallback(() => {
     const lienzo = lienzoRef.current;
-    if (lienzo) intentarRecuperarContexto(lienzo, reconstruir);
+    if (!lienzo) return;
+    try {
+      intentarRecuperarContexto(lienzo, reconstruir);
+    } catch (causa) {
+      setError("No se pudo recuperar el visor 3D. Recarga la página para volver a abrirlo.");
+      console.error("[3d] No se pudo restaurar el contexto", causa);
+    }
   }, [lienzoRef, reconstruir]);
   const prepararContexto = useCallback((canvas: HTMLCanvasElement, escena: EscenaGlobos) => suscribirContextoWebGL(canvas, {
     alPerder: () => setError("Se perdió la conexión con el visor 3D. Espera a que WebGL se recupere o inténtalo de nuevo."),

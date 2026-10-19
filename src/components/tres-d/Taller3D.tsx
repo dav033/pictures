@@ -61,7 +61,7 @@ import { useInsetTeclado } from "./useInsetTeclado";
 import { useEstadoAnadir } from "./useEstadoAnadir";
 import type { PiezaParaAnadir } from "./nuevas-taller";
 import type { VistaSolitario } from "./ParametrosPieza";
-import { BTN, BTN_ICO, FLOTANTE, RIEL, RIEL_ON } from "./ui-taller";
+import { BTN, BTN_ICO, BTN_PRI, FLOTANTE, RIEL, RIEL_ON } from "./ui-taller";
 import { AvisoRecuperacionWebGL, useRecuperacionWebGL } from "./ciclo-contexto-webgl";
 
 /**
@@ -133,6 +133,8 @@ export function Taller3D() {
   const visorCajaRef = useRef<HTMLElement>(null);
   const [visor, setVisor] = useState<EscenaGlobos | null>(null);
   const listo = visor !== null;
+  // A destroyed scene force-loses its WebGL context, so every scene gets a fresh canvas element.
+  const [generacionLienzo, setGeneracionLienzo] = useState(0);
   const { error, reportarError, reintentar, prepararContexto } = useRecuperacionWebGL(lienzoRef, escenaRef);
 
   // Escena (con deshacer y rehacer: Ctrl+Z / Ctrl+Y) y su nombre; se guarda sola en el navegador.
@@ -240,6 +242,7 @@ export function Taller3D() {
       observador?.disconnect();
       quitarOyentesContexto?.();
       escenaRef.current?.destruir();
+      if (escenaRef.current) setGeneracionLienzo((g) => g + 1);
       escenaRef.current = null;
       setVisor(null);
       encuadradoRef.current = null;
@@ -953,7 +956,7 @@ export function Taller3D() {
           )}
           <main ref={visorCajaRef} aria-label="Visor 3D" className={`relative min-w-0 flex-1 overflow-hidden ${solitario.activo ? "bg-[radial-gradient(circle_at_50%_40%,var(--taller-encima)_0,var(--taller-visor)_70%)]" : "bg-taller-visor"}`}>
             {/* En el teléfono el lienzo termina donde empieza la hoja (al encuadrar, la escena queda a la vista). */}
-            <canvas ref={lienzoRef} className={`absolute inset-x-0 top-0 block w-full touch-none ${esAncho ? "h-full" : hoja === "cerrada" ? "h-[calc(100%-84px)]" : "h-[56%]"}`} aria-label="Escena en 3D: arrastra con un dedo o el ratón para girar; pellizca o usa la rueda para acercar. Clic en una pieza para elegirla." />
+            <canvas key={generacionLienzo} ref={lienzoRef} className={`absolute inset-x-0 top-0 block w-full touch-none ${esAncho ? "h-full" : hoja === "cerrada" ? "h-[calc(100%-84px)]" : "h-[56%]"}`} aria-label="Escena en 3D: arrastra con un dedo o el ratón para girar; pellizca o usa la rueda para acercar. Clic en una pieza para elegirla." />
             {sobreVisor}
             {esAncho && solitario.activo && colgarEnSolitario && (
               <aside aria-label="Colgar decoración" onKeyDown={(e) => { if (e.key === "Escape" && !e.defaultPrevented) { e.preventDefault(); setColgarEnSolitario(false); } }}

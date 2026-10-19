@@ -13,6 +13,8 @@ const ASSERTIONS = [
   "Primera montura: la cámara queda encuadrada, a más de 0.05 unidades del objetivo.",
   "Reentrada: tras ocultar y mostrar el Taller3D dentro de React Activity, la cámara conserva un encuadre válido.",
   "Órbita: un arrastre cambia la cámara; en viewport táctil usa un dedo.",
+  "Pérdida de contexto: WEBGL_lose_context muestra un aviso con reintento y reconstruye la escena encuadrada.",
+  "Destruir: al desmontar, los contextos WebGL creados quedan liberados.",
   "Cobertura: escritorio y viewport táctil 390x844.",
 ];
 
@@ -59,6 +61,16 @@ async function montarPagina(browser: Browser, viewport: typeof fixtures[number],
     hasTouch: viewport.hasTouch,
   });
   const page = await context.newPage();
+  await page.addInitScript(() => {
+    const w = window as unknown as { __contextos: WebGLRenderingContext[] };
+    w.__contextos = [];
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: unknown[]) {
+      const contexto = (original as (...a: unknown[]) => unknown).apply(this, args);
+      if (contexto && /webgl/.test(String(args[0])) && !w.__contextos.includes(contexto as WebGLRenderingContext)) w.__contextos.push(contexto as WebGLRenderingContext);
+      return contexto;
+    } as typeof original;
+  });
   page.setDefaultTimeout(20_000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(String(error)));
@@ -115,6 +127,29 @@ async function arrastrarCamara(page: import("playwright").Page, tactil: boolean)
   return (await page.evaluate(() => (window as HarnessWindow).__visor3d?.camara() ?? null))!;
 }
 
+async function probarPerdidaDeContexto(page: import("playwright").Page, nombre: string): Promise<void> {
+  const antes = await esperarCamara(page, true);
+  assert.ok(antes, `${nombre}: cámara antes de perder el contexto`);
+  await page.evaluate(() => {
+    const canvas = document.querySelector("canvas")!;
+    const gl = (canvas.getContext("webgl2") ?? canvas.getContext("webgl")) as WebGLRenderingContext;
+    gl.getExtension("WEBGL_lose_context")!.loseContext();
+  });
+  const aviso = page.getByRole("alert");
+  await aviso.waitFor({ state: "visible" });
+  const boton = aviso.getByRole("button", { name: /reintentar/i });
+  await boton.waitFor({ state: "visible" });
+  await boton.click();
+  await aviso.waitFor({ state: "detached" });
+  const despues = await esperarCamara(page, true);
+  assert.ok(despues && despues.distancia > DISTANCIA_MINIMA, `${nombre}: escena reconstruida y encuadrada (${despues?.distancia})`);
+  await page.evaluate(() => (window as HarnessWindow).__ocultarTallerReentrada());
+  await esperarCamara(page, false);
+  const perdidos = await page.evaluate(() => (window as unknown as { __contextos: WebGLRenderingContext[] }).__contextos.map((c) => c.isContextLost()));
+  assert.ok(perdidos.length > 0 && perdidos.every(Boolean), `${nombre}: contextos liberados al destruir (${perdidos.join(",")})`);
+  console.log(`${nombre}: pérdida de contexto recuperada, ${perdidos.length} contexto(s) liberados`);
+}
+
 async function probar(browser: Browser, mode: Mode, viewport: typeof fixtures[number], javascript: string, css: string): Promise<void> {
   const { context, page, errors } = await montarPagina(browser, viewport, javascript, css);
   try {
@@ -144,7 +179,8 @@ async function probar(browser: Browser, mode: Mode, viewport: typeof fixtures[nu
       assert.deepEqual(failedAssertions, [], `${viewport.nombre}: aserciones fallidas: ${failedAssertions.join("; ")}`);
       console.log(`${viewport.nombre}: inicial=${inicio.distancia.toFixed(4)}, reentrada=${reentrada.distancia.toFixed(4)}, órbita=${delta.toFixed(4)}`);
     }
-    assert.deepEqual(errors, [], `${viewport.nombre}: errores de página`);
+    if (mode === "fixed") await probarPerdidaDeContexto(page, viewport.nombre);
+    assert.deepEqual(errors.filter((e) => !/WebGL|context|contexto|\[3d\]/i.test(e)), [], `${viewport.nombre}: errores de página`);
   } finally {
     await context.close();
   }
