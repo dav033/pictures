@@ -47,7 +47,15 @@ export const TEXTO_SIN_TIEMPO_NADA_HECHO = "No pude hacerlo: el pedido tardó m�
 
 /** El corte que se le pasa al modelo: el del navegador («Detener») o el del plazo, lo primero que llegue. */
 export function corteConPlazo(corteDelNavegador: AbortSignal, plazo: Plazo): AbortSignal {
-  return AbortSignal.any([corteDelNavegador, AbortSignal.timeout(Math.max(1, plazo.restanteMs() - MARGEN_DE_CORTE_MS))]);
+  // Explicit timer instead of AbortSignal.any + AbortSignal.timeout: under Node 24 the combined signal can fail to fire when the deadline passes.
+  const corte = new AbortController();
+  const alNavegador = () => corte.abort(corteDelNavegador.reason);
+  if (corteDelNavegador.aborted) alNavegador();
+  else corteDelNavegador.addEventListener("abort", alNavegador, { once: true });
+  const temporizador = setTimeout(() => corte.abort(new DOMException("The operation timed out.", "TimeoutError")), Math.max(1, plazo.restanteMs() - MARGEN_DE_CORTE_MS));
+  temporizador.unref();
+  corte.signal.addEventListener("abort", () => { clearTimeout(temporizador); corteDelNavegador.removeEventListener("abort", alNavegador); }, { once: true });
+  return corte.signal;
 }
 
 /** ¿Cortó el plazo la llamada al modelo (y no el navegador ni el proveedor)? */
