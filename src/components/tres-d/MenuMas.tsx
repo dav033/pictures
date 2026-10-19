@@ -13,7 +13,7 @@ export function MenuMas({ onCerrar, onRenombrar, onPlantillas, onAyuda, onGuarda
     window.addEventListener("pointerdown", fuera, true);
     return () => window.removeEventListener("pointerdown", fuera, true);
   }, [onCerrar]);
-  const item = "flex min-h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-[13px] text-taller-texto outline-none hover:bg-taller-elegido focus-visible:bg-taller-elegido";
+  const item = "flex min-h-11 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-[13px] text-taller-texto outline-none hover:bg-taller-elegido focus-visible:bg-taller-elegido";
   const hacer = (f: () => void) => () => { onCerrar(); f(); };
   return (
     <div ref={ref} role="menu" aria-label="Opciones de la escena"

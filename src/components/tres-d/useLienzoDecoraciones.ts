@@ -335,61 +335,62 @@ export function useLienzoDecoraciones(opciones: Opciones) {
     };
   }, [activo, lienzoRef, visorRef, empezarAMover, pedirCuadro, soltar, limpiar]);
 
+  /** Edición directa de una copia tocada; la misma función sirve para teclado y botones táctiles. */
+  const actuar = useCallback((key: string, modificadores: { shiftKey?: boolean; altKey?: boolean } = {}) => {
+    const d = datos.current;
+    const nodo = d.seleccion ? d.escena.nodos.find((n) => n.id === d.seleccion) : undefined;
+    if (!nodo || !d.armada) return false;
+    const c = nodo.colocacion;
+    const copia = d.copia && d.copia.id === nodo.id ? d.copia.copia : null;
+    if (c.en !== "sobre" && !(c.en === "ancla" && copia !== null)) return false;
+    const tecla = key.length === 1 ? key.toLowerCase() : key;
+    const flecha = tecla === "ArrowUp" || tecla === "ArrowDown" || tecla === "ArrowLeft" || tecla === "ArrowRight";
+    if (!flecha && tecla !== "q" && tecla !== "e" && tecla !== "Delete" && tecla !== "PageUp" && tecla !== "PageDown") return false;
+    if (tecla === "PageUp" || tecla === "PageDown") return true;
+    if (tecla === "Delete") {
+      d.onCambio(c.en === "ancla" && copia !== null ? quitarCopia(d.escena, d.armada, nodo.id, copia) : quitarNodo(d.escena, nodo.id, d.armada));
+      d.onSeleccion(null);
+      d.onCopia(null);
+      return true;
+    }
+    let escena = d.escena, armada = d.armada, id = nodo.id;
+    if (c.en === "ancla" && copia !== null) {
+      const separada = separarCopia(escena, armada, id, copia);
+      if (!separada) return true;
+      escena = separada.escena; id = separada.id;
+      armada = armarEscena(escena, d.cache);
+    }
+    let nueva = escena;
+    if (tecla === "q" || tecla === "e") nueva = girarNodo(escena, id, (tecla === "q" ? 1 : -1) * (modificadores.shiftKey ? 45 : 15));
+    else {
+      const colocacion = escena.nodos.find((n) => n.id === id)?.colocacion;
+      const sitio = colocacion?.en === "sobre" ? sitioDeSobre(armada, colocacion) : null;
+      const visor = visorRef.current;
+      if (!sitio || !visor) return true;
+      const paso = modificadores.shiftKey ? 25 : 5;
+      const signo = tecla === "ArrowUp" || tecla === "ArrowRight" ? 1 : -1;
+      const { adelante, derecha } = visor.ejesCamara();
+      const eje = tecla === "ArrowLeft" || tecla === "ArrowRight" ? derecha : Math.abs(sitio.normal.y) < 0.8 ? ARRIBA : adelante;
+      nueva = deslizarSobre(escena, armada, id, { x: eje.x * signo * paso, y: eje.y * signo * paso, z: eje.z * signo * paso }, { iman: !modificadores.altKey });
+    }
+    if (nueva !== escena || escena !== d.escena) d.onCambio(nueva);
+    if (id !== nodo.id) { d.onSeleccion(id); d.onCopia(null); }
+    return true;
+  }, [visorRef]);
+
   // Teclado sobre la copia elegida (o una pieza `sobre`): va en captura, antes que el de las piezas en general.
   useEffect(() => {
     if (!activo) return;
     const alTeclado = (e: KeyboardEvent) => {
       if (e.defaultPrevented || escribiendo(e.target) || e.ctrlKey || e.metaKey) return;
-      const d = datos.current;
-      const nodo = d.seleccion ? d.escena.nodos.find((n) => n.id === d.seleccion) : undefined;
-      if (!nodo || !d.armada) return;
-      const c = nodo.colocacion;
-      const copia = d.copia && d.copia.id === nodo.id ? d.copia.copia : null;
-      // Lo repartido en anclas sin una copia elegida (se eligió en la lista) sigue con las teclas de siempre.
-      if (c.en !== "sobre" && !(c.en === "ancla" && copia !== null)) return;
-      const tecla = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-      const flecha = tecla === "ArrowUp" || tecla === "ArrowDown" || tecla === "ArrowLeft" || tecla === "ArrowRight";
-      if (!flecha && tecla !== "q" && tecla !== "e" && tecla !== "Delete" && tecla !== "PageUp" && tecla !== "PageDown") return;
-      e.preventDefault();
-      if (tecla === "PageUp" || tecla === "PageDown") return;
-      if (tecla === "Delete") {
-        d.onCambio(c.en === "ancla" && copia !== null ? quitarCopia(d.escena, d.armada, nodo.id, copia) : quitarNodo(d.escena, nodo.id, d.armada));
-        d.onSeleccion(null);
-        d.onCopia(null);
-        return;
-      }
-      // Una copia de un reparto: primero se separa (las demás se quedan) y se sigue con la separada.
-      let escena = d.escena, armada = d.armada, id = nodo.id;
-      if (c.en === "ancla" && copia !== null) {
-        const separada = separarCopia(escena, armada, id, copia);
-        if (!separada) return;
-        escena = separada.escena; id = separada.id;
-        armada = armarEscena(escena, d.cache);
-      }
-      let nueva = escena;
-      if (tecla === "q" || tecla === "e") nueva = girarNodo(escena, id, (tecla === "q" ? 1 : -1) * (e.shiftKey ? 45 : 15));
-      else {
-        const colocacion = escena.nodos.find((n) => n.id === id)?.colocacion;
-        const sitio = colocacion?.en === "sobre" ? sitioDeSobre(armada, colocacion) : null;
-        const visor = visorRef.current;
-        if (!sitio || !visor) return;
-        const paso = e.shiftKey ? 25 : 5;
-        const signo = tecla === "ArrowUp" || tecla === "ArrowRight" ? 1 : -1;
-        const { adelante, derecha } = visor.ejesCamara();
-        // ←/→ hacia la derecha de la pantalla; ↑/↓ hacia arriba (o, si mira al techo o al piso, hacia el fondo).
-        const eje = tecla === "ArrowLeft" || tecla === "ArrowRight" ? derecha : Math.abs(sitio.normal.y) < 0.8 ? ARRIBA : adelante;
-        nueva = deslizarSobre(escena, armada, id, { x: eje.x * signo * paso, y: eje.y * signo * paso, z: eje.z * signo * paso }, { iman: !e.altKey });
-      }
-      if (nueva === escena && escena === d.escena) return;
-      d.onCambio(nueva);
-      if (id !== nodo.id) { d.onSeleccion(id); d.onCopia(null); }
+      if (actuar(e.key, { shiftKey: e.shiftKey, altKey: e.altKey })) e.preventDefault();
     };
     window.addEventListener("keydown", alTeclado, true);
     return () => window.removeEventListener("keydown", alTeclado, true);
-  }, [activo, visorRef]);
+  }, [activo, actuar]);
 
   // Al salir de la pestaña (o perder el visor) no queda nada a medias.
   useEffect(() => () => { if (sesionRef.current) limpiar(); }, [limpiar]);
 
-  return { empezarArrastre };
+  return { empezarArrastre, actuar };
 }

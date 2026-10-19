@@ -65,11 +65,11 @@ function Dato({ rotulo, children }: { rotulo: string; children: ReactNode }) {
 function DatoNumero({ id, rotulo, valor, unidad, min, max, onCambio }: { id: string; rotulo: string; valor: number; unidad: string; min: number; max: number; onCambio: (v: number) => void }) {
   return (
     <label htmlFor={id} className={`${DATO} block`}>
-      <span className="block text-[11px] text-taller-suave">{rotulo}</span>
+      <span className="block min-h-11 content-center text-[11px] text-taller-suave">{rotulo}</span>
       <span className="flex items-baseline gap-0.5">
         <input id={id} type="number" inputMode="numeric" value={Math.round(valor)} min={min} max={max} step={unidad === "°" ? 5 : 5}
           onChange={(e) => { const v = Number(e.target.value); if (Number.isFinite(v)) onCambio(Math.max(min, Math.min(max, v))); }}
-          className="w-full min-w-0 bg-transparent font-mono text-[13px] text-taller-texto outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" />
+          className="min-h-11 w-full min-w-0 bg-transparent font-mono text-[13px] text-taller-texto outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" />
         <span className="text-[11px] text-taller-suave">{unidad}</span>
       </span>
     </label>
@@ -198,7 +198,7 @@ function Lugar({ nodo, escena, armada, onNodo }: { nodo: NodoEscena; escena: Esc
       <h3 className="taller-rotulo">Lugar</h3>
       <div className="grid grid-cols-3 gap-2 text-[13px]">{datos}</div>
       <p className="text-xs text-taller-suave">{ayuda}</p>
-      <button type="button" onClick={() => setAbierto(!abierto)} aria-expanded={abierto} className="inline-flex min-h-8 items-center gap-1 self-start text-xs text-taller-acento hover:underline">
+      <button type="button" onClick={() => setAbierto(!abierto)} aria-expanded={abierto} className="inline-flex min-h-11 items-center gap-1 self-start text-xs text-taller-acento hover:underline">
         {abierto ? <ChevronDown className="size-3.5" aria-hidden /> : <ChevronRight className="size-3.5" aria-hidden />}Cambiar dónde va
       </button>
       {abierto && <EditorLugar nodo={nodo} escena={escena} armada={armada} onNodo={(cambio) => onNodo(cambio, `donde-${nodo.id}`)} />}
@@ -236,7 +236,7 @@ export function Inspector(props: Props) {
         <section className="flex flex-col gap-2" aria-label="Sala">
           <h3 className="taller-rotulo">Sala</h3>
           <div className="grid grid-cols-3 gap-2"><Dato rotulo="Ancho"><span className="font-mono">{metros(escena.sala.anchoCm)}</span></Dato><Dato rotulo="Fondo"><span className="font-mono">{metros(escena.sala.fondoCm)}</span></Dato><Dato rotulo="Alto"><span className="font-mono">{metros(escena.sala.altoCm)}</span></Dato></div>
-          <div className="flex gap-3 text-xs"><button type="button" onClick={onSala} className="min-h-8 text-taller-acento hover:underline">Cambiar la sala</button><button type="button" onClick={onPlantillas} className="min-h-8 text-taller-acento hover:underline">Empezar de una plantilla</button></div>
+          <div className="flex gap-3 text-xs"><button type="button" onClick={onSala} className="min-h-11 text-taller-acento hover:underline">Cambiar la sala</button><button type="button" onClick={onPlantillas} className="min-h-11 text-taller-acento hover:underline">Empezar de una plantilla</button></div>
         </section>
         <section>{biblioteca}</section>
       </div>
@@ -266,29 +266,29 @@ export function Inspector(props: Props) {
         <div className="mt-1.5 flex items-center gap-2">
           <label htmlFor="insp-nombre" className="sr-only">Nombre de la pieza</label>
           <input id="insp-nombre" value={nodo.nombre} onChange={(e) => onNodo(nodo.id, { nombre: e.target.value }, `nombre-${nodo.id}`)}
-            className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-0 text-lg font-semibold text-taller-texto outline-none hover:border-taller-borde focus:border-taller-resalte focus:px-1.5" />
+          className="min-h-11 min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-0 text-lg font-semibold text-taller-texto outline-none hover:border-taller-borde focus:border-taller-resalte focus:px-1.5" />
           {onMas && <button type="button" onClick={() => onMas(nodo.id)} aria-label="Más acciones" title="Más acciones" className={`${BTN_ICO} size-11`}><Ellipsis className="size-5" aria-hidden /></button>}
         </div>
         {hecho?.avisos.map((a) => <p key={a} role="status" className="mt-1 text-xs text-taller-peligro">{a}</p>)}
         {copia !== null && hecho && hecho.copias > 1 && <p className="mt-1 text-xs text-taller-suave">Copia {copia + 1} de {hecho.copias} elegida: las flechas, Q/E y Supr van solo a esa.</p>}
         <div className="mt-3.5 flex gap-2">
           {sillasDeMesa && padre ? (
-            <button type="button" onClick={() => onSeleccion(padre.id)} className={`${BTN_PRI} flex-1 justify-center`} title="Las sillas van con su mesa: elige la mesa para moverlas o duplicarlas">Elegir la mesa</button>
+            <button type="button" onClick={() => onSeleccion(padre.id)} className={`${BTN_PRI} min-h-11 flex-1 justify-center`} title="Las sillas van con su mesa: elige la mesa para moverlas o duplicarlas">Elegir la mesa</button>
           ) : (
-            <button type="button" onClick={() => onEditarSola(nodo.id)} className={`${BTN_PRI} flex-1 justify-center`} title="Abre la pieza sola con todos sus parámetros (Enter)">
+            <button type="button" onClick={() => onEditarSola(nodo.id)} className={`${BTN_PRI} min-h-11 flex-1 justify-center`} title="Abre la pieza sola con todos sus parámetros (Enter)">
               <Pencil className="size-[18px]" aria-hidden />Editar sola
             </button>
           )}
-          <button type="button" onClick={() => onDuplicar(nodo.id)} aria-label="Duplicar" title="Duplicar (Ctrl+D)" className={BTN_ICO}><Copy className="size-[18px]" aria-hidden /></button>
-          <button type="button" onClick={() => onEliminar(nodo.id)} aria-label="Eliminar" title="Eliminar (Supr)" className={`${BTN_ICO} text-taller-peligro`}><Trash2 className="size-[18px]" aria-hidden /></button>
+          <button type="button" onClick={() => onDuplicar(nodo.id)} aria-label="Duplicar" title="Duplicar (Ctrl+D)" className={`${BTN_ICO} size-11`}><Copy className="size-[18px]" aria-hidden /></button>
+          <button type="button" onClick={() => onEliminar(nodo.id)} aria-label="Eliminar" title="Eliminar (Supr)" className={`${BTN_ICO} size-11 text-taller-peligro`}><Trash2 className="size-[18px]" aria-hidden /></button>
         </div>
         {confirmar && (
           <div role="alertdialog" aria-label={`¿Quitar «${nodo.nombre}» con sus decoraciones?`} className="mt-2.5 flex flex-col gap-1.5 rounded-[10px] border border-taller-borde bg-taller-tarjeta p-2.5 text-xs">
             <p>«{nodo.nombre}» lleva {confirmar.decoraciones} decoraciones. ¿Quitarla con ellas?</p>
             <div className="flex flex-wrap gap-1.5">
-              <button type="button" autoFocus onClick={() => onConfirmarEliminar(true)} className="min-h-8 rounded-lg border border-taller-borde px-2 text-taller-peligro hover:bg-taller-encima">Sí, con ellas</button>
-              <button type="button" onClick={() => onConfirmarEliminar(false)} className="min-h-8 rounded-lg border border-taller-borde px-2 hover:bg-taller-encima">Solo la estructura</button>
-              <button type="button" onClick={() => onConfirmarEliminar(null)} className="min-h-8 rounded-lg px-2 text-taller-suave hover:text-taller-texto">Cancelar</button>
+              <button type="button" autoFocus onClick={() => onConfirmarEliminar(true)} className="min-h-11 rounded-lg border border-taller-borde px-2 text-taller-peligro hover:bg-taller-encima">Sí, con ellas</button>
+              <button type="button" onClick={() => onConfirmarEliminar(false)} className="min-h-11 rounded-lg border border-taller-borde px-2 hover:bg-taller-encima">Solo la estructura</button>
+              <button type="button" onClick={() => onConfirmarEliminar(null)} className="min-h-11 rounded-lg px-2 text-taller-suave hover:text-taller-texto">Cancelar</button>
             </div>
           </div>
         )}
@@ -304,7 +304,7 @@ export function Inspector(props: Props) {
           <PaletaEscena variante="muestras" titulo="Colores de la pieza" grupos={[{ id: "todo", nombre: "", materiales: hecho.materiales }]}
             onReemplazar={(de, a) => recolorear(de, a)} aviso={avisoColor?.id === nodo.id ? avisoColor.texto : null} puedeDeshacer={false} onDeshacer={() => {}}
             extra={<button type="button" onClick={() => onEditarSola(nodo.id)} aria-label="Más colores y patrón: editar sola" title="Más colores y patrón (Editar sola)"
-              className="grid size-[30px] place-items-center rounded-full border border-dashed border-taller-medio text-taller-medio hover:text-taller-texto"><Plus className="size-3.5" aria-hidden /></button>} />
+              className="grid size-11 place-items-center rounded-full border border-dashed border-taller-medio text-taller-medio hover:text-taller-texto"><Plus className="size-3.5" aria-hidden /></button>} />
         </section>
       )}
 
@@ -313,14 +313,14 @@ export function Inspector(props: Props) {
       <section className="flex flex-col gap-2.5" aria-label="Decoraciones colgadas">
         <div className="flex items-center justify-between">
           <h3 className="taller-rotulo">{padre ? "Cuelga de" : "Decoraciones colgadas"}</h3>
-          {!padre && <button type="button" onClick={() => onColgarOtra(nodo.id)} className="min-h-7 text-xs text-taller-acento hover:underline">{hijos.length ? "Colgar otra" : "Colgar una"}</button>}
+          {!padre && <button type="button" onClick={() => onColgarOtra(nodo.id)} className="min-h-11 text-xs text-taller-acento hover:underline">{hijos.length ? "Colgar otra" : "Colgar una"}</button>}
         </div>
         {padre ? (
           <div className="flex flex-col gap-1.5">
-            <button type="button" onClick={() => onSeleccion(padre.id)} className="flex items-center gap-2.5 rounded-[10px] border border-taller-borde bg-taller-tarjeta px-2.5 py-2 text-left text-[13px] hover:border-taller-resalte">
+            <button type="button" onClick={() => onSeleccion(padre.id)} className="flex min-h-11 items-center gap-2.5 rounded-[10px] border border-taller-borde bg-taller-tarjeta px-2.5 py-2 text-left text-[13px] hover:border-taller-resalte">
               <span className="text-taller-acento"><IconoTipo pieza={padre.pieza} /></span><span className="min-w-0 flex-1 truncate">{padre.nombre}</span>
             </button>
-            {!sillasDeMesa && <button type="button" onClick={() => onEditarSostiene(nodo.id)} className="inline-flex min-h-8 items-center gap-1.5 self-start text-xs text-taller-acento hover:underline"><Wrench className="size-3.5" aria-hidden />Editar la estructura que la sostiene</button>}
+            {!sillasDeMesa && <button type="button" onClick={() => onEditarSostiene(nodo.id)} className="inline-flex min-h-11 items-center gap-1.5 self-start text-xs text-taller-acento hover:underline"><Wrench className="size-3.5" aria-hidden />Editar la estructura que la sostiene</button>}
           </div>
         ) : hijos.length === 0 ? <p className="text-xs text-taller-suave">Nada colgado todavía.</p> : (
           <ul className="flex flex-col gap-1.5">
@@ -329,7 +329,7 @@ export function Inspector(props: Props) {
               const c = h.colocacion;
               return (
                 <li key={h.id}>
-                  <button type="button" onClick={() => onSeleccion(h.id)} className="flex w-full items-center gap-2.5 rounded-[10px] border border-taller-borde bg-taller-tarjeta px-2.5 py-2 text-left text-[13px] hover:border-taller-resalte">
+                  <button type="button" onClick={() => onSeleccion(h.id)} className="flex min-h-11 w-full items-center gap-2.5 rounded-[10px] border border-taller-borde bg-taller-tarjeta px-2.5 py-2 text-left text-[13px] hover:border-taller-resalte">
                     <span className="text-taller-deco"><IconoTipo pieza={h.pieza} className="size-[18px]" /></span>
                     <span className="min-w-0 flex-1 truncate">{h.nombre}</span>
                     <span className="shrink-0 text-xs text-taller-suave">{c.en === "ancla" ? `${c.cada > 0 ? `cada ${c.cada} anclas · ` : ""}×${hh?.copias ?? 1}` : "sobre sus globos"}</span>

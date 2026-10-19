@@ -57,10 +57,10 @@ const FilaPieza = memo(function FilaPieza({ nodo, hecho, nivel, tieneHijos, abie
   const [editando, setEditando] = useState(false);
   const copias = hecho && hecho.copias > 1 ? ` ×${hecho.copias}` : "";
   return (
-    <div className={`group ${FILA} ${elegida ? FILA_ON : ""} ${oculta ? "opacity-60" : ""} pr-1`} style={{ paddingLeft: `${8 + nivel * 24}px` }}>
+    <div className={`group ${FILA} pointer-coarse:min-h-11 pointer-coarse:h-auto ${elegida ? FILA_ON : ""} ${oculta ? "opacity-60" : ""} pr-1`} style={{ paddingLeft: `${8 + nivel * 24}px` }}>
       {tieneHijos ? (
         <button type="button" onClick={() => onAbrir(nodo.id)} aria-expanded={abierta} aria-label={`${abierta ? "Plegar" : "Desplegar"} lo que cuelga de ${nodo.nombre}`}
-          className={`grid size-5 shrink-0 place-items-center rounded ${elegida ? "text-taller-acento" : "text-taller-suave"} hover:text-taller-texto`}>
+          className={`grid size-5 pointer-coarse:size-11 shrink-0 place-items-center rounded ${elegida ? "text-taller-acento" : "text-taller-suave"} hover:text-taller-texto`}>
           {abierta ? <ChevronDown className="size-[15px]" aria-hidden /> : <ChevronRight className="size-[15px]" aria-hidden />}
         </button>
       ) : <span className="w-5 shrink-0" aria-hidden />}
@@ -74,14 +74,14 @@ const FilaPieza = memo(function FilaPieza({ nodo, hecho, nivel, tieneHijos, abie
         <button type="button" onClick={() => onSeleccion(elegida ? null : nodo.id)} onDoubleClick={() => setEditando(true)}
           onKeyDown={(e) => { if (e.key === "F2") { e.preventDefault(); setEditando(true); } }}
           aria-pressed={elegida} title={`${NOMBRE_TIPO[nodo.pieza.tipo]} · ${hecho?.globos.length ?? 0} globos. Doble clic o F2 para cambiarle el nombre.`}
-          className="min-w-0 flex-1 truncate py-2 text-left outline-none">
+          className="min-h-11 min-w-0 flex-1 truncate py-2 text-left outline-none">
           {nodo.nombre}{copias}
           {hecho?.avisos.length ? <span className="sr-only">. Aviso: {hecho.avisos.join(" ")}</span> : null}
         </button>
       )}
       {hecho?.avisos.length ? <span className="text-taller-peligro" title={hecho.avisos.join(" ")} aria-hidden>!</span> : null}
       <button type="button" onClick={() => onOcultar(nodo.id)} aria-pressed={oculta} aria-label={oculta ? `Mostrar ${nodo.nombre}` : `Ocultar ${nodo.nombre}`} title={oculta ? "Mostrar en el visor" : "Ocultar en el visor (sigue en la lista de compra)"}
-        className={`grid size-7 shrink-0 place-items-center rounded text-taller-suave hover:text-taller-texto focus-visible:opacity-100 ${oculta ? "" : "opacity-0 group-hover:opacity-100"}`}>
+        className={`grid size-7 pointer-coarse:size-11 shrink-0 place-items-center rounded text-taller-suave hover:text-taller-texto focus-visible:opacity-100 ${oculta ? "" : "pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-coarse:opacity-100"}`}>
         {oculta ? <EyeOff className="size-3.5" aria-hidden /> : <Eye className="size-3.5" aria-hidden />}
       </button>
       <span className={`w-8 shrink-0 text-right font-mono text-[11px] ${elegida ? "text-taller-acento" : "text-taller-suave"}`}>{hecho?.globos.length ?? ""}</span>
@@ -122,7 +122,7 @@ export const PanelPiezas = memo(function PanelPiezas({ escena, armada, seleccion
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center justify-between px-4 pb-2.5 pt-4">
         {!enHoja ? <h2 className="text-[15px] font-semibold">Piezas</h2> : <span className="text-xs text-taller-suave">{escena.nodos.length} piezas · {armada?.globos.length ?? 0} globos</span>}
-        <button type="button" onClick={onAnadir} className={`${BTN} h-[30px] text-xs`}><Plus className="size-[15px]" aria-hidden />Añadir</button>
+        <button type="button" onClick={onAnadir} className={`${BTN} h-[30px] pointer-coarse:h-11 text-xs`}><Plus className="size-[15px]" aria-hidden />Añadir</button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <nav aria-label="Piezas de la escena" className="px-2">
@@ -135,7 +135,7 @@ export const PanelPiezas = memo(function PanelPiezas({ escena, armada, seleccion
       </div>
       <div className="flex items-center justify-between border-t border-taller-linea px-4 py-3 text-xs text-taller-suave">
         <span>Sala {medidasSala(escena)}</span>
-        <button type="button" onClick={onSala} className="min-h-7 text-taller-acento hover:underline">Cambiar</button>
+        <button type="button" onClick={onSala} className="min-h-11 text-taller-acento hover:underline">Cambiar</button>
       </div>
     </div>
   );

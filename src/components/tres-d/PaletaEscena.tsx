@@ -59,7 +59,7 @@ export function PaletaEscena({ grupos, onReemplazar, aviso, puedeDeshacer, onDes
               return (
                 <button key={u.codigo} type="button" onClick={() => setElegido(activo ? null : { grupo: g.id, codigo: u.codigo })} aria-pressed={activo} aria-expanded={activo}
                   aria-label={`${ref?.nombreCompleto ?? u.codigo} ${u.codigo} (${u.cantidad} globos): cambiarlo en esta pieza`} title={`${ref?.nombreCompleto ?? u.codigo} ${u.codigo} · ${u.cantidad} en ${u.formatos.join(", ")}`}
-                  className={`size-[30px] shrink-0 rounded-full border-2 border-taller-panel ${activo ? "shadow-[0_0_0_2px_var(--taller-resalte)]" : "shadow-[0_0_0_1px_var(--taller-borde)] hover:shadow-[0_0_0_2px_var(--taller-borde)]"}`}
+                  className={`size-[30px] pointer-coarse:size-11 shrink-0 rounded-full border-2 border-taller-panel ${activo ? "shadow-[0_0_0_2px_var(--taller-resalte)]" : "shadow-[0_0_0_1px_var(--taller-borde)] hover:shadow-[0_0_0_2px_var(--taller-borde)]"}`}
                   style={{ background: ref?.hexGlobo ?? "#ccc" }} />
               );
             })}
@@ -78,7 +78,7 @@ export function PaletaEscena({ grupos, onReemplazar, aviso, puedeDeshacer, onDes
         <div className="flex items-center justify-between gap-2">
           <h2 className="taller-rotulo py-1">{titulo}</h2>
           {puedeDeshacer && (
-            <button type="button" onClick={onDeshacer} className="inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs text-taller-acento hover:bg-taller-encima">
+            <button type="button" onClick={onDeshacer} className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs text-taller-acento hover:bg-taller-encima">
               <Undo2 className="size-3.5" aria-hidden /> Deshacer
             </button>
           )}
@@ -92,7 +92,7 @@ export function PaletaEscena({ grupos, onReemplazar, aviso, puedeDeshacer, onDes
               return (
                 <button key={u.codigo} type="button" onClick={() => setElegido(activo ? null : { grupo: g.id, codigo: u.codigo })} aria-pressed={activo} aria-expanded={activo}
                   title={`${ref?.nombreCompleto ?? u.codigo} ${u.codigo} · ${u.cantidad} en ${u.formatos.join(", ")}`}
-                  className={`flex min-h-9 w-full items-center gap-2.5 rounded-lg px-1.5 text-left text-[13px] ${activo ? "bg-taller-elegido text-taller-texto" : "text-taller-texto-2 hover:bg-taller-encima"}`}>
+                  className={`flex min-h-11 w-full items-center gap-2.5 rounded-lg px-1.5 text-left text-[13px] ${activo ? "bg-taller-elegido text-taller-texto" : "text-taller-texto-2 hover:bg-taller-encima"}`}>
                   <span className="size-[22px] shrink-0 rounded-full border-2 border-taller-panel shadow-[0_0_0_1px_var(--taller-borde)]" style={{ background: ref?.hexGlobo ?? "#ccc" }} aria-hidden />
                   <span className="min-w-0 flex-1 truncate">{ref?.nombreCompleto ?? u.codigo}</span>
                   <span className="shrink-0 font-mono text-[11px] text-taller-suave">{u.cantidad} · {u.codigo}</span>

@@ -100,73 +100,76 @@ export function useEdicionEscena(opciones: Opciones) {
   useEffect(() => { datos.current = opciones; });
   const { activo, lienzoRef, visorRef } = opciones;
 
+  /** Ejecuta la lógica de edición desde controles táctiles sin sintetizar eventos de teclado. */
+  const actuar = useCallback((key: string, modificadores: { shiftKey?: boolean; ctrlKey?: boolean; altKey?: boolean } = {}) => {
+    const d = datos.current;
+    const tecla = key.length === 1 ? key.toLowerCase() : key;
+    if (modificadores.ctrlKey && tecla === "d" && d.seleccion) {
+      const nueva = duplicarNodo(d.escena, d.seleccion);
+      const copia = nueva.nodos.find((n) => !d.escena.nodos.some((x) => x.id === n.id));
+      d.onCambio(nueva);
+      if (copia) d.onSeleccion(copia.id);
+      return;
+    }
+    if (modificadores.ctrlKey) return;
+    const id = d.seleccion;
+    const nodo = id ? d.escena.nodos.find((n) => n.id === id) : undefined;
+    if (tecla === "Escape") { if (id) d.onSeleccion(null); return; }
+    if (!nodo) return;
+    const c = nodo.colocacion;
+    const paso = modificadores.shiftKey ? 25 : 5;
+    const mover = (delta: Punto3) => moverNodo(d.escena, nodo.id, delta, { armada: d.armada ?? undefined, iman: !modificadores.altKey });
+    let nueva: Escena | null = null;
+    if (tecla === "Delete") {
+      nueva = quitarNodo(d.escena, nodo.id, d.armada ?? undefined);
+      d.onSeleccion(null);
+    } else if (tecla === "q" || tecla === "e") {
+      nueva = girarNodo(d.escena, nodo.id, (tecla === "q" ? 1 : -1) * (modificadores.shiftKey ? 45 : 15));
+    } else if (tecla === "PageUp" || tecla === "PageDown") {
+      if (c.en === "pared" || c.en === "techo") nueva = mover(por(ARRIBA, tecla === "PageUp" ? paso : -paso));
+      else if (c.en === "libre") nueva = mover({ x: 0, y: 0, z: tecla === "PageUp" ? paso : -paso });
+    } else if (tecla === "ArrowUp" || tecla === "ArrowDown" || tecla === "ArrowLeft" || tecla === "ArrowRight") {
+      const signo = tecla === "ArrowUp" || tecla === "ArrowRight" ? 1 : -1;
+      const lateral = tecla === "ArrowLeft" || tecla === "ArrowRight";
+      if (c.en === "ancla") nueva = pasarDeAncla(d.escena, nodo.id, signo * (modificadores.shiftKey ? 5 : 1), d.armada ?? undefined);
+      else {
+        const visor = visorRef.current;
+        if (!visor) return;
+        const { adelante, derecha } = visor.ejesCamara();
+        if (c.en === "libre") nueva = mover(lateral ? por(ejeMasCercano(derecha), signo * paso) : por(ARRIBA, signo * paso));
+        else if (c.en === "pared") {
+          const largo = marcoDePared(d.escena.sala, c.pared).derecha;
+          const hacia = Math.sign(largo.x * derecha.x + largo.z * derecha.z) || 1;
+          nueva = mover(lateral ? por(largo, hacia * signo * paso) : por(ARRIBA, signo * paso));
+        } else nueva = mover(por(ejeMasCercano(lateral ? derecha : adelante), signo * paso));
+      }
+    }
+    if (nueva && nueva !== d.escena) d.onCambio(nueva);
+  }, [visorRef]);
+
   // Teclado.
   useEffect(() => {
     if (!activo) return;
     const alTeclado = (e: KeyboardEvent) => {
       if (e.defaultPrevented || escribiendo(e.target)) return;
-      const d = datos.current;
       const tecla = e.key.length === 1 ? e.key.toLowerCase() : e.key;
       if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+        const d = datos.current;
         if (tecla === "z" && !e.shiftKey) { e.preventDefault(); d.onDeshacer(); }
         else if (tecla === "y" || (tecla === "z" && e.shiftKey)) { e.preventDefault(); d.onRehacer(); }
-        else if (tecla === "d" && d.seleccion) {
-          e.preventDefault();
-          const nueva = duplicarNodo(d.escena, d.seleccion);
-          const copia = nueva.nodos.find((n) => !d.escena.nodos.some((x) => x.id === n.id));
-          d.onCambio(nueva);
-          if (copia) d.onSeleccion(copia.id);
-        }
+        else if (tecla === "d" && d.seleccion) { e.preventDefault(); actuar(tecla, { ctrlKey: true }); }
         return;
       }
       if (e.ctrlKey || e.metaKey) return;
-      const id = d.seleccion;
-      const nodo = id ? d.escena.nodos.find((n) => n.id === id) : undefined;
-      if (tecla === "Escape") { if (id) { e.preventDefault(); d.onSeleccion(null); } return; }
-      if (!nodo) return;
-      const c = nodo.colocacion;
-      const paso = e.shiftKey ? 25 : 5;
-      const opcionesMover = { armada: d.armada ?? undefined, iman: !e.altKey };
-      const mover = (delta: Punto3) => moverNodo(d.escena, nodo.id, delta, opcionesMover);
-      let nueva: Escena | null = null;
-      if (tecla === "Delete") {
-        nueva = quitarNodo(d.escena, nodo.id, d.armada ?? undefined);
-        d.onSeleccion(null);
-      } else if (tecla === "q" || tecla === "e") {
-        nueva = girarNodo(d.escena, nodo.id, (tecla === "q" ? 1 : -1) * (e.shiftKey ? 45 : 15));
-      } else if (tecla === "PageUp" || tecla === "PageDown") {
-        if (c.en === "pared" || c.en === "techo") nueva = mover(por(ARRIBA, tecla === "PageUp" ? paso : -paso));
-        // Suelta: Re Pág / Av Pág la traen al frente o la llevan al fondo (↑/↓ ya la suben y la bajan).
-        else if (c.en === "libre") nueva = mover({ x: 0, y: 0, z: tecla === "PageUp" ? paso : -paso });
-        else { e.preventDefault(); return; }
-      } else if (tecla === "ArrowUp" || tecla === "ArrowDown" || tecla === "ArrowLeft" || tecla === "ArrowRight") {
-        const signo = tecla === "ArrowUp" || tecla === "ArrowRight" ? 1 : -1;
-        const lateral = tecla === "ArrowLeft" || tecla === "ArrowRight";
-        if (c.en === "ancla") nueva = pasarDeAncla(d.escena, nodo.id, signo * (e.shiftKey ? 5 : 1), d.armada ?? undefined);
-        else {
-          const visor = visorRef.current;
-          if (!visor) return;
-          const { adelante, derecha } = visor.ejesCamara();
-          if (c.en === "libre") {
-            // Suelta: ←/→ por el eje de la sala más parecido a la derecha de la cámara, ↑/↓ en altura.
-            nueva = mover(lateral ? por(ejeMasCercano(derecha), signo * paso) : por(ARRIBA, signo * paso));
-          } else if (c.en === "pared") {
-            // En la pared: ←/→ a lo largo (hacia donde se ve la derecha en pantalla), ↑/↓ en altura.
-            const largo = marcoDePared(d.escena.sala, c.pared).derecha;
-            const hacia = Math.sign(largo.x * derecha.x + largo.z * derecha.z) || 1;
-            nueva = mover(lateral ? por(largo, hacia * signo * paso) : por(ARRIBA, signo * paso));
-          } else {
-            // En el piso y el techo: ↑ se aleja de la cámara, → va a su derecha (por el eje de la sala más parecido).
-            nueva = mover(por(ejeMasCercano(lateral ? derecha : adelante), signo * paso));
-          }
-        }
-      } else return;
+      const d = datos.current;
+      const tieneAccion = Boolean(d.seleccion && (tecla === "Escape" || tecla === "Delete" || tecla === "q" || tecla === "e" || tecla === "PageUp" || tecla === "PageDown" || tecla.startsWith("Arrow")));
+      if (!tieneAccion) return;
       e.preventDefault();
-      if (nueva && nueva !== d.escena) d.onCambio(nueva);
+      actuar(tecla, { shiftKey: e.shiftKey, altKey: e.altKey });
     };
     window.addEventListener("keydown", alTeclado);
     return () => window.removeEventListener("keydown", alTeclado);
-  }, [activo, visorRef]);
+  }, [activo, actuar]);
 
   // Ratón y dedo sobre el lienzo.
   useEffect(() => {
@@ -298,4 +301,6 @@ export function useEdicionEscena(opciones: Opciones) {
       cursor("");
     };
   }, [activo, lienzoRef, visorRef]);
+
+  return { actuar };
 }

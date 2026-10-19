@@ -42,7 +42,7 @@ export function Deslizador({ id, etiqueta, valor, min, max, paso, texto, onCambi
   return (
     <div>
       <label htmlFor={id} className="flex items-baseline justify-between text-xs font-semibold text-texto">{etiqueta}<span className="font-mono font-normal text-texto-suave">{texto}</span></label>
-      <input id={id} type="range" min={min} max={max} step={paso} value={valor} onChange={(e) => onCambio(Number(e.target.value))} className="w-full accent-taller-resalte" />
+      <input id={id} type="range" min={min} max={max} step={paso} value={valor} onChange={(e) => onCambio(Number(e.target.value))} className="h-11 w-full accent-taller-resalte" />
     </div>
   );
 }

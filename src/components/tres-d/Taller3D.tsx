@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import {
   ArrowLeft, Camera, Check, ChevronDown, CircleHelp, House, Layers, LayoutGrid, MoveVertical, Plus, Redo2, RotateCw, Scan, ShoppingCart, SlidersHorizontal, Sparkles, Undo2, X,
 } from "lucide-react";
-import { ControlesPieza } from "./ControlesTactiles";
+import { PanelControlesPieza } from "./ControlesTactiles";
 import { FORMATOS_GLOBO } from "@/lib/globos3d/formatos";
 import { referenciaPorCodigo } from "@/lib/plan/referencia-sempertex";
 import { papelDeConfeti } from "./armada-visor";
@@ -360,7 +360,7 @@ export function Taller3D() {
 
   // Escena a mano en el visor: clic elige, arrastrar mueve/gira/sube, teclado (flechas, Q/E, RePág/AvPág, Supr, Ctrl+D/Z/Y, Esc).
   const editable = listo && armadaEscena !== null && !todosLosGlobos && !ia.escenaAntes;
-  useEdicionEscena({
+  const edicion = useEdicionEscena({
     lienzoRef, visorRef: escenaRef, activo: editable, escena: escenaVista, armada: armadaEscena, seleccion, herramienta: solitario.activo ? "mover" : herramienta,
     onSeleccion: elegirEnVisor, onCambio: cambiarVista, onEnVivo: setEnVivo, onDeshacer: deshacerVista, onRehacer: rehacerVista,
   });
@@ -842,7 +842,8 @@ export function Taller3D() {
       case "pieza": return (
         <div className="min-h-0 flex-1 overflow-y-auto">
           {inspector}
-          {nodoEnVivo && <div className="border-t border-taller-linea px-4 py-3"><h3 className="taller-rotulo mb-2">Mover con botones</h3><ControlesPieza nombre={nodoEnVivo.nombre} colocacion={nodoEnVivo.colocacion} enLinea /></div>}
+          {nodoEnVivo && <PanelControlesPieza nombre={nodoEnVivo.nombre} colocacion={nodoEnVivo.colocacion} copiaElegida={copiaElegida !== null}
+            onAccion={edicion.actuar} onAccionCopia={lienzoDecoraciones.actuar} />}
         </div>
       );
       case "ia": return panelIA;
