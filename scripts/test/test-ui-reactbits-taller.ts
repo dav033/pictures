@@ -19,7 +19,6 @@ const countUp = source("src/components/ui/reactbits/CountUp.tsx");
 const piezas = source("src/components/tres-d/PanelPiezas.tsx");
 const biblioteca = source("src/components/tres-d/GrillaCompacta.tsx");
 const animatedList = source("src/components/ui/reactbits/AnimatedList.tsx");
-const spotlight = source("src/components/ui/reactbits/SpotlightCard.tsx");
 
 exige(/<CountUp\s+value=\{escena\.nodos\.length\}/.test(listaCompra), "la lista de compra anima el total de piezas");
 exige(/<CountUp\s+value=\{armada\.globos\.length\}/.test(listaCompra), "la lista de compra anima el total de globos");
@@ -29,8 +28,7 @@ exige(/aria-label=\{formatter\.format\(value\)\}/.test(countUp), "CountUp expone
 
 exige(/<AnimatedList\s+items=\{ramas\}/.test(piezas), "el árbol de piezas usa AnimatedList");
 exige(/<AnimatedList\s+items=\{mostrados\}/.test(biblioteca), "los resultados de biblioteca usan AnimatedList");
-exige(/<SpotlightCard\b/.test(biblioteca), "las tarjetas de biblioteca usan SpotlightCard");
+exige(!/SpotlightCard/.test(biblioteca), "las tarjetas táctiles de biblioteca omiten SpotlightCard tras medir su coste");
 
 exige(/useReducedMotionPreference/.test(countUp) && /prefersReducedMotion\s*\|\|/.test(countUp), "CountUp queda estático con movimiento reducido");
 exige(/useReducedMotionPreference/.test(animatedList) && /if \(prefersReducedMotion\) return/.test(animatedList), "AnimatedList omite las entradas animadas con movimiento reducido");
-exige(/prefers-reduced-motion: reduce/.test(spotlight) && /const follow = reduce/.test(spotlight), "SpotlightCard elimina el seguimiento animado con movimiento reducido");

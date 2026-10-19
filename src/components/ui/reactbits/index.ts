@@ -4,7 +4,6 @@ export { CountUp } from './CountUp';
 export { Stepper } from './Stepper';
 export type { StepperStep } from './Stepper';
 export { default as RotatingText } from './RotatingText';
-export { default as SpotlightCard } from './SpotlightCard';
 export { default as ShinyText } from './ShinyText';
 export { reactBitsShortlist } from './shortlist';
 export type { ReactBitsShortlistEntry } from './shortlist';

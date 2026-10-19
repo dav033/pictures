@@ -10,7 +10,7 @@
  * TALLER_MOVIL_SALIDA (carpeta de las capturas; por defecto, el directorio temporal del sistema).
  */
 import assert from "node:assert/strict";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { build } from "esbuild";
@@ -45,7 +45,7 @@ const CHECKS = [
   ["desplazamiento-camara", "La cámara centra la escena en el área visible sobre la hoja en cada altura."],
 ] as const;
 type Check = (typeof CHECKS)[number][0];
-type Ruta = "taller" | "asistente" | "cotizacion";
+export type Ruta = "taller" | "asistente" | "cotizacion";
 const RUTAS: Readonly<Record<Ruta, { ruta: string; fixture: string }>> = {
   taller: { ruta: "/3d", fixture: "taller-movil" },
   asistente: { ruta: "/asistente", fixture: "asistente-movil" },
@@ -123,14 +123,14 @@ function medirPagina(): Datos {
   return { medidas, fuera: fuera.slice(0, 40), scrollX: document.documentElement.scrollWidth, vw, lienzoVisible: visible / (vw * vh) };
 }
 
-async function crearBundle(ruta: Ruta): Promise<{ javascript: string; css: string }> {
+export async function crearBundle(ruta: Ruta, root = ROOT, instrumentarCamara = true): Promise<{ javascript: string; css: string }> {
   const resultado = await build({
-    entryPoints: [path.join(__dirname, "fixtures", RUTAS[ruta].fixture, "arnes.tsx")],
+    entryPoints: [path.join(root, "scripts", "test", "fixtures", RUTAS[ruta].fixture, "arnes.tsx")],
     bundle: true, write: false, format: "iife", platform: "browser", jsx: "automatic", logLevel: "silent",
     banner: { js: 'globalThis.process ??= { env: { NODE_ENV: "development" } };' },
-    alias: { "@": path.join(ROOT, "src") },
+    alias: { "@": path.join(root, "src") },
     define: { "process.env.NODE_ENV": '"development"' },
-    plugins: [{
+    plugins: instrumentarCamara ? [{
       name: "movil-camera-observation",
       setup(buildApi) {
         buildApi.onLoad({ filter: /[\\/]escena-globos\.ts$/ }, (args) => {
@@ -142,16 +142,19 @@ async function crearBundle(ruta: Ruta): Promise<{ javascript: string; css: strin
           return { contents: instrumentado, loader: "tsx" };
         });
       },
-    }],
+    }] : [],
   });
-  const globals = path.join(ROOT, "src", "app", "globals.css");
-  const cssUi = path.join(ROOT, "src", "components", "ui", "icon-button.css");
-  const cssFuente = readFileSync(globals, "utf8").replace('@import "../components/ui/icon-button.css";', readFileSync(cssUi, "utf8"));
-  const css = await postcss([tailwind({ base: ROOT })]).process(cssFuente, { from: globals });
+  const globals = path.join(root, "src", "app", "globals.css");
+  const cssUi = path.join(root, "src", "components", "ui", "icon-button.css");
+  const cssFuenteOriginal = readFileSync(globals, "utf8");
+  const cssFuente = existsSync(cssUi)
+    ? cssFuenteOriginal.replace('@import "../components/ui/icon-button.css";', readFileSync(cssUi, "utf8"))
+    : cssFuenteOriginal;
+  const css = await postcss([tailwind({ base: root })]).process(cssFuente, { from: globals });
   return { javascript: resultado.outputFiles[0]!.text, css: css.css };
 }
 
-async function abrirRuta(browser: Browser, ruta: Ruta, javascript: string, css: string): Promise<{ page: Page; errores: string[]; cerrar: () => Promise<void> }> {
+export async function abrirRuta(browser: Browser, ruta: Ruta, javascript: string, css: string): Promise<{ page: Page; errores: string[]; cerrar: () => Promise<void> }> {
   const context = await browser.newContext({ viewport: { width: ANCHO, height: ALTO }, isMobile: true, hasTouch: true });
   await context.addInitScript(SHIM_NAME);
   const page = await context.newPage();
@@ -188,7 +191,7 @@ async function abrirRuta(browser: Browser, ruta: Ruta, javascript: string, css: 
   return { page, errores, cerrar: () => context.close() };
 }
 
-async function ponerAltura(page: Page, objetivo: Altura): Promise<number> {
+export async function ponerAltura(page: Page, objetivo: Altura): Promise<number> {
   const hoja = page.locator('section[aria-label="Paneles del taller"]');
   const asa = hoja.locator('[role=button][tabindex="0"]').first();
   const alto = async () => Math.round((await hoja.boundingBox())!.height);
@@ -206,7 +209,7 @@ async function ponerAltura(page: Page, objetivo: Altura): Promise<number> {
 const SELECTOR_HOJA = 'section[aria-label="Paneles del taller"]';
 const SELECTOR_ASA = `${SELECTOR_HOJA} [role=button][tabindex="0"]`;
 
-async function arrastrarTactil(page: Page, movimientos: { dy: number; espera: number }[], alIniciar?: () => Promise<void>, alMover?: () => Promise<void>): Promise<void> {
+export async function arrastrarTactil(page: Page, movimientos: { dy: number; espera: number }[], alIniciar?: () => Promise<void>, alMover?: () => Promise<void>): Promise<void> {
   const caja = await page.locator(SELECTOR_ASA).boundingBox();
   if (!caja) throw new Error("El asa de la hoja no tiene caja táctil.");
   const x = caja.x + caja.width / 2, inicioY = caja.y + caja.height / 2;
